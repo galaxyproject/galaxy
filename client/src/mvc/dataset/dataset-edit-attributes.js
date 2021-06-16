@@ -136,7 +136,7 @@ var View = Backbone.View.extend({
                 submit_autodetect: new Ui.Button({
                     tooltip:
                         "This will inspect the dataset and attempt to correct the values of fields if they are not accurate.",
-                    icon: "fa-undo",
+                    icon: "fa-redo",
                     title: "Auto-detect",
                     onclick: function () {
                         self._submit("autodetect", form);
@@ -183,7 +183,7 @@ var View = Backbone.View.extend({
                 submit_datatype_detect: new Ui.Button({
                     tooltip: _l("Detect the datatype and change it."),
                     title: _l("Detect datatype"),
-                    icon: "fa-undo",
+                    icon: "fa-redo",
                     onclick: function () {
                         self._submit("datatype_detect", form);
                     },

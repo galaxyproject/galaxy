@@ -1,7 +1,7 @@
 <template>
     <BaseList
         :fields="fields"
-        icon="fa fa-refresh"
+        icon="fa fa-sync"
         tooltip="Refresh"
         plural="display applications"
         success="reloaded"
