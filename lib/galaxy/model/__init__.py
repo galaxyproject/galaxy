@@ -6869,8 +6869,19 @@ class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
     user = relationship('User')
 
 
-class StoredWorkflowAnnotationAssociation(RepresentById):
-    pass
+class StoredWorkflowAnnotationAssociation(Base, RepresentById):
+    __tablename__ = 'stored_workflow_annotation_association'
+    __table_args__ = (
+        Index('ix_stored_workflow_ann_assoc_annotation', 'annotation', mysql_length=200),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    stored_workflow_id = Column('stored_workflow_id', Integer,
+        ForeignKey('stored_workflow.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column('annotation', TEXT)
+    stored_workflow = relationship('StoredWorkflow', back_populates='annotations')
+    user = relationship('User')
 
 
 class WorkflowStepAnnotationAssociation(RepresentById):
