@@ -21,6 +21,14 @@
             </template>
         </FormCard>
         <div ref="form" />
+        <div v-for="step in model.steps">
+            <div v-if="step.step_type.startsWith('data_input') || step.step_type.startsWith('data_collection_input')">
+                <WorkflowRunDefaultStep :model="step" />
+            </div>
+            <div v-else>
+                <WorkflowRunToolStep :model="step" />
+            </div>
+        </div>
     </div>
 </template>
 
@@ -29,11 +37,15 @@ import { getGalaxyInstance } from "app";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
 import Form from "components/Form/Form";
 import FormCard from "components/Form/FormCard";
+import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
+import WorkflowRunToolStep from "./WorkflowRunToolStep";
 
 export default {
     components: {
         Form,
         FormCard,
+        WorkflowRunDefaultStep,
+        WorkflowRunToolStep,
     },
     props: {
         model: {

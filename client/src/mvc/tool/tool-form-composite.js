@@ -37,13 +37,13 @@ var View = Backbone.View.extend({
 
     render: function () {
         this.deferred.reset();
-        this._renderParameters();
+        /*this._renderParameters();
         this._renderHistory();
         this._renderUseCachedJob();
         this._renderResourceParameters();
         _.each(this.steps, (step) => {
             this._renderStep(step);
-        });
+        });*/
     },
 
     /** Render workflow parameters */
@@ -62,7 +62,7 @@ var View = Backbone.View.extend({
                     });
                 },
             });
-            //this._append(this.$el.empty(), this.wp_form.$el);
+            this._append(this.$el.empty(), this.wp_form.$el);
         }
     },
 
@@ -98,7 +98,7 @@ var View = Backbone.View.extend({
                 },
             ],
         });
-        //this._append(this.$el, this.history_form.$el);
+        this._append(this.$el, this.history_form.$el);
     },
 
     /** Render Workflow Options */
