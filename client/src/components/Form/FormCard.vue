@@ -29,7 +29,7 @@ export default {
         },
         icon: {
             type: String,
-            default: "fa-wrench",
+            default: "",
         },
     },
 };

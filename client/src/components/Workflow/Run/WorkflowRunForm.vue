@@ -1,8 +1,13 @@
 <template>
     <div>
-        <FormCard v-if="wpInputsAvailable" title="Workflow Parameters" icon="">
+        <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
-                <Form :inputs="wpInputsArray" :options="model" />
+                <Form :inputs="wpInputsArray" />
+            </template>
+        </FormCard>
+        <FormCard title="History Options">
+            <template v-slot:body>
+                <Form :inputs="historyInputs" />
             </template>
         </FormCard>
         <div ref="form" />
@@ -31,7 +36,32 @@ export default {
     },
     data() {
         return {
-            runForm: null,
+            historyInputs: [
+                {
+                    type: "conditional",
+                    name: "new_history",
+                    test_param: {
+                        name: "check",
+                        label: "Send results to a new history",
+                        type: "boolean",
+                        value: "false",
+                        help: "",
+                    },
+                    cases: [
+                        {
+                            value: "true",
+                            inputs: [
+                                {
+                                    name: "name",
+                                    label: "History name",
+                                    type: "text",
+                                    value: this.model.name,
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
         };
     },
     computed: {
