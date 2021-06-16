@@ -23,6 +23,11 @@ var datasets2 = [
     { name: "DP134_1_FS_PSII_FSB_42C_A10.2.fastq", state: STATES.OK}
 ]
 
+var dataset3 = [
+    {name: "UII_moo_1.1.fastq", state: STATES.OK},
+    {name: "UII_moo_1.2.fastq", state: STATES.OK}
+]
+
 var datasets1CreateRequestJSON = {
     type: "dataset_collection",
     collection_type: "list:paired",
