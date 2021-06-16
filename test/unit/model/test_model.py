@@ -196,6 +196,21 @@ def test_HistoryRatingAssociation(model, session, history, user):
         assert stored_obj.rating == rating
 
 
+def test_HistoryDatasetAssociationRatingAssociation(model, session, history_dataset_association, user):
+    cls = model.HistoryDatasetAssociationRatingAssociation
+    assert cls.__tablename__ == 'history_dataset_association_rating_association'
+    with dbcleanup(session, cls):
+        rating = 9
+        obj = cls(user, history_dataset_association, rating)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.user == user
+        assert stored_obj.history_dataset_association == history_dataset_association
+        assert stored_obj.rating == rating
+
+
 def test_PageRevision(model, session, page):
     cls = model.PageRevision
     assert cls.__tablename__ == 'page_revision'
@@ -486,6 +501,12 @@ def cloud_authz(model, session, user, user_authnz_token):
 def history(model, session):
     h = model.History()
     yield from dbcleanup_wrapper(session, h)
+
+
+@pytest.fixture
+def history_dataset_association(model, session, dataset):
+    hda = model.HistoryDatasetAssociation(dataset=dataset)
+    yield from dbcleanup_wrapper(session, hda)
 
 
 @pytest.fixture

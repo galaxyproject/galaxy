@@ -6914,7 +6914,17 @@ class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
         self.history = history
 
 
-class HistoryDatasetAssociationRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
+class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, RepresentById):
+    __tablename__ = 'history_dataset_association_rating_association'
+
+    id = Column('id', Integer, primary_key=True)
+    history_dataset_association_id = Column('history_dataset_association_id', Integer,
+        ForeignKey('history_dataset_association.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column('rating', Integer, index=True)
+    history_dataset_association = relationship('HistoryDatasetAssociation', back_populates='ratings')
+    user = relationship('User')
+
     def _set_item(self, history_dataset_association):
         self.history_dataset_association = history_dataset_association
 
