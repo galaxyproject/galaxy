@@ -1293,14 +1293,6 @@ model.LibraryDatasetCollectionAnnotationAssociation.table = Table(
 )
 
 # Ratings tables.
-model.HistoryDatasetCollectionRatingAssociation.table = Table(
-    "history_dataset_collection_rating_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_dataset_collection_id", Integer,
-        ForeignKey("history_dataset_collection_association.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("rating", Integer, index=True))
-
 model.LibraryDatasetCollectionRatingAssociation.table = Table(
     "library_dataset_collection_rating_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1981,8 +1973,8 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         order_by=model.HistoryDatasetCollectionAssociationAnnotationAssociation.table.c.id,
         backref="history_dataset_collection"),
     ratings=relation(model.HistoryDatasetCollectionRatingAssociation,
-        order_by=model.HistoryDatasetCollectionRatingAssociation.table.c.id,
-        backref="dataset_collection")
+        order_by=model.HistoryDatasetCollectionRatingAssociation.id,
+        back_populates="dataset_collection")
 )
 
 simple_mapping(model.LibraryDatasetCollectionAssociation,
@@ -2358,7 +2350,6 @@ def rating_mapping(rating_class, **kwds):
     simple_mapping(rating_class, **dict(user=relation(model.User), **kwds))
 
 
-rating_mapping(model.HistoryDatasetCollectionRatingAssociation)
 rating_mapping(model.LibraryDatasetCollectionRatingAssociation)
 
 mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(

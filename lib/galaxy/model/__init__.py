@@ -6971,7 +6971,17 @@ class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
         self.visualization = visualization
 
 
-class HistoryDatasetCollectionRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
+class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, RepresentById):
+    __tablename__ = 'history_dataset_collection_rating_association'
+
+    id = Column('id', Integer, primary_key=True)
+    history_dataset_collection_id = Column('history_dataset_collection_id', Integer,
+        ForeignKey('history_dataset_collection_association.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column('rating', Integer, index=True)
+    dataset_collection = relationship('HistoryDatasetCollectionAssociation', back_populates='ratings')
+    user = relationship('User')
+
     def _set_item(self, dataset_collection):
         self.dataset_collection = dataset_collection
 
