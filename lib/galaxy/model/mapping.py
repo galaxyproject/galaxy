@@ -1218,16 +1218,6 @@ model.ToolTagAssociation.table = Table(
     Column("user_value", TrimmedString(255), index=True))
 
 # Annotation tables.
-
-model.HistoryAnnotationAssociation.table = Table(
-    "history_annotation_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT),
-    Index('ix_history_anno_assoc_annotation', 'annotation', mysql_length=200),
-)
-
 model.HistoryDatasetAssociationAnnotationAssociation.table = Table(
     "history_dataset_association_annotation_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1526,8 +1516,8 @@ mapper_registry.map_imperatively(model.History, model.History.table, properties=
         order_by=model.HistoryTagAssociation.table.c.id,
         backref="histories"),
     annotations=relation(model.HistoryAnnotationAssociation,
-        order_by=model.HistoryAnnotationAssociation.table.c.id,
-        backref="history"),
+        order_by=model.HistoryAnnotationAssociation.id,
+        back_populates="history"),
     ratings=relation(model.HistoryRatingAssociation,
         order_by=model.HistoryRatingAssociation.id,
         back_populates="history"),
@@ -2325,7 +2315,6 @@ def annotation_mapping(annotation_class, **kwds):
     simple_mapping(annotation_class, **dict(user=relation(model.User), **kwds))
 
 
-annotation_mapping(model.HistoryAnnotationAssociation)
 annotation_mapping(model.HistoryDatasetAssociationAnnotationAssociation)
 annotation_mapping(model.StoredWorkflowAnnotationAssociation)
 annotation_mapping(model.WorkflowStepAnnotationAssociation)
