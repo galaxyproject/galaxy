@@ -227,6 +227,22 @@ def test_HistoryRatingAssociation(model, session, history, user):
         assert stored_obj.rating == rating
 
 
+def test_LibraryDatasetCollectionRatingAssociation(
+        model, session, library_dataset_collection_association, user):
+    cls = model.LibraryDatasetCollectionRatingAssociation
+    assert cls.__tablename__ == 'library_dataset_collection_rating_association'
+    with dbcleanup(session, cls):
+        rating = 9
+        obj = cls(user, library_dataset_collection_association, rating)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.user == user
+        assert stored_obj.dataset_collection == library_dataset_collection_association
+        assert stored_obj.rating == rating
+
+
 def test_PageRatingAssociation(model, session, page, user):
     cls = model.PageRatingAssociation
     assert cls.__tablename__ == 'page_rating_association'
@@ -565,12 +581,6 @@ def dataset(model, session):
 
 
 @pytest.fixture
-def history_dataset_collection_association(model, session):
-    hdca = model.HistoryDatasetCollectionAssociation()
-    yield from dbcleanup_wrapper(session, hdca)
-
-
-@pytest.fixture
 def history(model, session):
     h = model.History()
     yield from dbcleanup_wrapper(session, h)
@@ -583,6 +593,12 @@ def history_dataset_association(model, session, dataset):
 
 
 @pytest.fixture
+def history_dataset_collection_association(model, session):
+    hdca = model.HistoryDatasetCollectionAssociation()
+    yield from dbcleanup_wrapper(session, hdca)
+
+
+@pytest.fixture
 def galaxy_session(model, session, user):
     s = model.GalaxySession()
     yield from dbcleanup_wrapper(session, s)
@@ -592,6 +608,12 @@ def galaxy_session(model, session, user):
 def group(model, session):
     g = model.Group()
     yield from dbcleanup_wrapper(session, g)
+
+
+@pytest.fixture
+def library_dataset_collection_association(model, session):
+    ldca = model.LibraryDatasetCollectionAssociation()
+    yield from dbcleanup_wrapper(session, ldca)
 
 
 @pytest.fixture
