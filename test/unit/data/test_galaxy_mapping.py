@@ -275,6 +275,18 @@ class MappingTests(BaseModelTestCase):
         library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
         tag_and_test(library_dataset_collection, model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections")
 
+    def test_collection_get_interface(self):
+        model = self.model
+        u = model.User(email="mary@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        d1 = model.HistoryDatasetAssociation(extension="txt", history=h1, create_dataset=True, sa_session=model.session)
+        c1 = model.DatasetCollection(collection_type="list")
+        dces = [model.DatasetCollectionElement(collection=c1, element=d1, element_identifier=f"{i}", element_index=i) for i in range(100)]
+        self.persist(u, h1, d1, c1, *dces, flush=False, expunge=False)
+        model.session.flush()
+        for i in range(100):
+            assert c1[i] == dces[i]
+
     def test_collections_in_histories(self):
         model = self.model
 
