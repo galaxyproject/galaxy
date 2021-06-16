@@ -6873,7 +6873,9 @@ class LibraryDatasetCollectionAnnotationAssociation(RepresentById):
 
 
 # Item rating classes.
-class ItemRatingAssociation:
+class ItemRatingAssociation(Base):
+    __abstract__ = True
+
     def __init__(self, user, item, rating=0):
         self.user = user
         self.rating = rating
@@ -6885,6 +6887,15 @@ class ItemRatingAssociation:
 
 
 class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
+    __tablename__ = 'history_rating_association'
+
+    id = Column('id', Integer, primary_key=True)
+    history_id = Column('history_id', Integer, ForeignKey('history.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column('rating', Integer, index=True)
+    history = relationship('History', back_populates='ratings')
+    user = relationship('User')
+
     def _set_item(self, history):
         self.history = history
 
