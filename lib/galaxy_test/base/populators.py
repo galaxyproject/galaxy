@@ -216,7 +216,7 @@ class BasePopulator(metaclass=ABCMeta):
         """POST data to target Galaxy instance on specified route."""
 
     @abstractmethod
-    def _put(self, route, data=None, headers=None, admin=False) -> Response:
+    def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         """PUT data to target Galaxy instance on specified route."""
 
     @abstractmethod
@@ -224,7 +224,7 @@ class BasePopulator(metaclass=ABCMeta):
         """GET data from target Galaxy instance on specified route."""
 
     @abstractmethod
-    def _delete(self, route, data=None, headers=None, admin=False) -> Response:
+    def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         """DELETE against target Galaxy instance on specified route."""
 
 
@@ -632,7 +632,7 @@ class BaseDatasetPopulator(BasePopulator):
             "manage": json.dumps([role_id]),
         }
         url = f"histories/{history_id}/contents/{dataset_id}/permissions"
-        update_response = self._put(url, payload, admin=True)
+        update_response = self._put(url, payload, admin=True, json=True)
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
@@ -669,7 +669,7 @@ class BaseDatasetPopulator(BasePopulator):
 
     def prepare_export(self, history_id, data):
         url = f"histories/{history_id}/exports"
-        put_response = self._put(url, data)
+        put_response = self._put(url, data, json=True)
         put_response.raise_for_status()
 
         if put_response.status_code == 202:
@@ -732,7 +732,7 @@ class BaseDatasetPopulator(BasePopulator):
 
     def rename_history(self, history_id, new_name):
         update_url = f"histories/{history_id}"
-        put_response = self._put(update_url, {"name": new_name})
+        put_response = self._put(update_url, {"name": new_name}, json=True)
         return put_response
 
     def get_histories(self):
@@ -792,8 +792,8 @@ class GalaxyInteractorHttpMixin:
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         return self.galaxy_interactor.post(route, data, files=files, admin=admin, headers=headers, json=json)
 
-    def _put(self, route, data=None, headers=None, admin=False):
-        return self.galaxy_interactor.put(route, data, headers=headers, admin=admin)
+    def _put(self, route, data=None, headers=None, admin=False, json: bool = False):
+        return self.galaxy_interactor.put(route, data, headers=headers, admin=admin, json=json)
 
     def _get(self, route, data=None, headers=None, admin=False):
         if data is None:
@@ -801,11 +801,11 @@ class GalaxyInteractorHttpMixin:
 
         return self.galaxy_interactor.get(route, data=data, headers=headers, admin=admin)
 
-    def _delete(self, route, data=None, headers=None, admin=False):
+    def _delete(self, route, data=None, headers=None, admin=False, json: bool = False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.delete(route, data=data, headers=headers, admin=admin)
+        return self.galaxy_interactor.delete(route, data=data, headers=headers, admin=admin, json=json)
 
 
 class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
@@ -978,7 +978,7 @@ class BaseWorkflowPopulator(BasePopulator):
             workflow=workflow_object
         )
         raw_url = f'workflows/{workflow_id}'
-        put_response = self._put(raw_url, json.dumps(data))
+        put_response = self._put(raw_url, data, json=True)
         return put_response
 
     def refactor_workflow(self, workflow_id: str, actions: list, dry_run: Optional[bool] = None, style: Optional[str] = None) -> Response:
@@ -990,7 +990,7 @@ class BaseWorkflowPopulator(BasePopulator):
         if dry_run is not None:
             data["dry_run"] = dry_run
         raw_url = f'workflows/{workflow_id}/refactor'
-        put_response = self._put(raw_url, json.dumps(data))
+        put_response = self._put(raw_url, data, json=True)
         return put_response
 
     @contextlib.contextmanager
@@ -1772,14 +1772,14 @@ class GiHttpMixin:
         data['key'] = self._gi.key
         return requests.post(self._url(route), data=data, headers=headers)
 
-    def _put(self, route, data=None, headers=None, admin=False):
+    def _put(self, route, data=None, headers=None, admin=False, json: bool = False):
         if data is None:
             data = {}
         data = data.copy()
         data['key'] = self._gi.key
         return requests.put(self._url(route), data=data, headers=headers)
 
-    def _delete(self, route, data=None, headers=None):
+    def _delete(self, route, data=None, headers=None, json: bool = False):
         if data is None:
             data = {}
         data = data.copy()
