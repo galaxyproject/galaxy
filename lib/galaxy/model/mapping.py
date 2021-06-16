@@ -1293,14 +1293,6 @@ model.LibraryDatasetCollectionAnnotationAssociation.table = Table(
 )
 
 # Ratings tables.
-model.HistoryDatasetAssociationRatingAssociation.table = Table(
-    "history_dataset_association_rating_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_dataset_association_id", Integer,
-        ForeignKey("history_dataset_association.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("rating", Integer, index=True))
-
 model.StoredWorkflowRatingAssociation.table = Table(
     "stored_workflow_rating_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1453,8 +1445,8 @@ simple_mapping(model.HistoryDatasetAssociation,
         order_by=model.HistoryDatasetAssociationAnnotationAssociation.table.c.id,
         backref="hda"),
     ratings=relation(model.HistoryDatasetAssociationRatingAssociation,
-        order_by=model.HistoryDatasetAssociationRatingAssociation.table.c.id,
-        backref="hda"),
+        order_by=model.HistoryDatasetAssociationRatingAssociation.id,
+        back_populates="history_dataset_association"),
     extended_metadata=relation(model.ExtendedMetadata,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.extended_metadata_id
                      == model.ExtendedMetadata.table.c.id)),
@@ -2387,7 +2379,6 @@ def rating_mapping(rating_class, **kwds):
     simple_mapping(rating_class, **dict(user=relation(model.User), **kwds))
 
 
-rating_mapping(model.HistoryDatasetAssociationRatingAssociation)
 rating_mapping(model.StoredWorkflowRatingAssociation)
 rating_mapping(model.PageRatingAssociation)
 rating_mapping(model.VisualizationRatingAssociation)
