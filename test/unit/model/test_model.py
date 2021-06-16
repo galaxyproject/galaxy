@@ -471,6 +471,21 @@ def test_UserQuotaAssociation(model, session, user, quota):
         assert stored_obj.quota == quota
 
 
+def test_VisualizationRatingAssociation(model, session, visualization, user):
+    cls = model.VisualizationRatingAssociation
+    assert cls.__tablename__ == 'visualization_rating_association'
+    with dbcleanup(session, cls):
+        rating = 9
+        obj = cls(user, visualization, rating)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.user == user
+        assert stored_obj.visualization == visualization
+        assert stored_obj.rating == rating
+
+
 def test_VisualizationRevision(model, session, visualization):
     cls = model.VisualizationRevision
     assert cls.__tablename__ == 'visualization_revision'
