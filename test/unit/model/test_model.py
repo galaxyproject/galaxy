@@ -181,21 +181,6 @@ def test_GroupRoleAssociation(model, session, group, role):
         assert stored_obj.role == role
 
 
-def test_HistoryRatingAssociation(model, session, history, user):
-    cls = model.HistoryRatingAssociation
-    assert cls.__tablename__ == 'history_rating_association'
-    with dbcleanup(session, cls):
-        rating = 9
-        obj = cls(user, history, rating)
-        obj_id = persist(session, obj)
-
-        stored_obj = get_stored_obj(session, cls, obj_id)
-        assert stored_obj.id == obj_id
-        assert stored_obj.user == user
-        assert stored_obj.history == history
-        assert stored_obj.rating == rating
-
-
 def test_HistoryDatasetAssociationRatingAssociation(model, session, history_dataset_association, user):
     cls = model.HistoryDatasetAssociationRatingAssociation
     assert cls.__tablename__ == 'history_dataset_association_rating_association'
@@ -208,6 +193,37 @@ def test_HistoryDatasetAssociationRatingAssociation(model, session, history_data
         assert stored_obj.id == obj_id
         assert stored_obj.user == user
         assert stored_obj.history_dataset_association == history_dataset_association
+        assert stored_obj.rating == rating
+
+
+def test_HistoryDatasetCollectionRatingAssociation(
+        model, session, history_dataset_collection_association, user):
+    cls = model.HistoryDatasetCollectionRatingAssociation
+    assert cls.__tablename__ == 'history_dataset_collection_rating_association'
+    with dbcleanup(session, cls):
+        rating = 9
+        obj = cls(user, history_dataset_collection_association, rating)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.user == user
+        assert stored_obj.dataset_collection == history_dataset_collection_association
+        assert stored_obj.rating == rating
+
+
+def test_HistoryRatingAssociation(model, session, history, user):
+    cls = model.HistoryRatingAssociation
+    assert cls.__tablename__ == 'history_rating_association'
+    with dbcleanup(session, cls):
+        rating = 9
+        obj = cls(user, history, rating)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.user == user
+        assert stored_obj.history == history
         assert stored_obj.rating == rating
 
 
@@ -543,6 +559,18 @@ def cloud_authz(model, session, user, user_authnz_token):
 
 
 @pytest.fixture
+def dataset(model, session):
+    d = model.Dataset()
+    yield from dbcleanup_wrapper(session, d)
+
+
+@pytest.fixture
+def history_dataset_collection_association(model, session):
+    hdca = model.HistoryDatasetCollectionAssociation()
+    yield from dbcleanup_wrapper(session, hdca)
+
+
+@pytest.fixture
 def history(model, session):
     h = model.History()
     yield from dbcleanup_wrapper(session, h)
@@ -552,12 +580,6 @@ def history(model, session):
 def history_dataset_association(model, session, dataset):
     hda = model.HistoryDatasetAssociation(dataset=dataset)
     yield from dbcleanup_wrapper(session, hda)
-
-
-@pytest.fixture
-def dataset(model, session):
-    d = model.Dataset()
-    yield from dbcleanup_wrapper(session, d)
 
 
 @pytest.fixture
