@@ -523,7 +523,7 @@ steps:
         assert dataset_details['state'] == 'paused'
         # Undelete input dataset
         undelete_response = self._put(f"histories/{history_id}/contents/{hda1['id']}",
-                                      data=json.dumps({'deleted': False}))
+                                      data={'deleted': False}, json=True)
         self._assert_status_code_is(undelete_response, 200)
         resume_response = self._put(f"jobs/{job_id}/resume")
         self._assert_status_code_is(resume_response, 200)
@@ -574,7 +574,7 @@ steps:
         self._job_search(tool_id='identifier_single', history_id=history_id, inputs=inputs)
         dataset_details = self._get(f"histories/{history_id}/contents/{dataset_id}").json()
         dataset_details['name'] = 'Renamed Test Dataset'
-        dataset_update_response = self._put(f"histories/{history_id}/contents/{dataset_id}", data=dict(name='Renamed Test Dataset'))
+        dataset_update_response = self._put(f"histories/{history_id}/contents/{dataset_id}", data=dict(name='Renamed Test Dataset'), json=True)
         self._assert_status_code_is(dataset_update_response, 200)
         assert dataset_update_response.json()['name'] == 'Renamed Test Dataset'
         search_payload = self._search_payload(history_id=history_id, tool_id='identifier_single', inputs=inputs)
