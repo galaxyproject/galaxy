@@ -6840,8 +6840,18 @@ class ToolTagAssociation(ItemTagAssociation, RepresentById):
 
 
 # Item annotation classes.
-class HistoryAnnotationAssociation(RepresentById):
-    pass
+class HistoryAnnotationAssociation(Base, RepresentById):
+    __tablename__ = 'history_annotation_association'
+    __table_args__ = (
+        Index('ix_history_anno_assoc_annotation', 'annotation', mysql_length=200),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    history_id = Column('history_id', Integer, ForeignKey('history.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column('annotation', TEXT)
+    history = relationship('History', back_populates='annotations')
+    user = relationship('User')
 
 
 class HistoryDatasetAssociationAnnotationAssociation(RepresentById):
