@@ -6929,7 +6929,16 @@ class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, Represen
         self.history_dataset_association = history_dataset_association
 
 
-class StoredWorkflowRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
+class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
+    __tablename__ = 'stored_workflow_rating_association'
+
+    id = Column('id', Integer, primary_key=True)
+    stored_workflow_id = Column('stored_workflow_id', Integer, ForeignKey('stored_workflow.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column('rating', Integer, index=True)
+    stored_workflow = relationship('StoredWorkflow', back_populates='ratings')
+    user = relationship('User')
+
     def _set_item(self, stored_workflow):
         self.stored_workflow = stored_workflow
 

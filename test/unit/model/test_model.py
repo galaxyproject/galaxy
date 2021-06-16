@@ -346,6 +346,21 @@ def test_Role(model, session):
         assert stored_obj.deleted is False
 
 
+def test_StoredWorkflowRatingAssociation(model, session, stored_workflow, user):
+    cls = model.StoredWorkflowRatingAssociation
+    assert cls.__tablename__ == 'stored_workflow_rating_association'
+    with dbcleanup(session, cls):
+        rating = 9
+        obj = cls(user, stored_workflow, rating)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.user == user
+        assert stored_obj.stored_workflow == stored_workflow
+        assert stored_obj.rating == rating
+
+
 def testUserAction(model, session, user, galaxy_session):
     cls = model.UserAction
     assert cls.__tablename__ == 'user_action'
@@ -544,6 +559,13 @@ def quota(model, session):
 def role(model, session):
     r = model.Role()
     yield from dbcleanup_wrapper(session, r)
+
+
+@pytest.fixture
+def stored_workflow(model, session, user):
+    w = model.StoredWorkflow()
+    w.user = user
+    yield from dbcleanup_wrapper(session, w)
 
 
 @pytest.fixture
