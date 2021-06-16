@@ -6886,6 +6886,20 @@ class ItemRatingAssociation(Base):
         raise NotImplementedError()
 
 
+class _remove_ItemRatingAssociation:
+    # This is a temporary fix to make the yet-to-be-mapped-declaratively rating
+    # association models pass the tests. TO BE REMOVED BEFORE REVIEW.
+
+    def __init__(self, user, item, rating=0):
+        self.user = user
+        self.rating = rating
+        self._set_item(item)
+
+    def _set_item(self, item):
+        """ Set association's item. """
+        raise NotImplementedError()
+
+
 class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = 'history_rating_association'
 
@@ -6900,32 +6914,32 @@ class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
         self.history = history
 
 
-class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, RepresentById):
+class HistoryDatasetAssociationRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
     def _set_item(self, history_dataset_association):
         self.history_dataset_association = history_dataset_association
 
 
-class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
+class StoredWorkflowRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
     def _set_item(self, stored_workflow):
         self.stored_workflow = stored_workflow
 
 
-class PageRatingAssociation(ItemRatingAssociation, RepresentById):
+class PageRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
     def _set_item(self, page):
         self.page = page
 
 
-class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
+class VisualizationRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
     def _set_item(self, visualization):
         self.visualization = visualization
 
 
-class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, RepresentById):
+class HistoryDatasetCollectionRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
     def _set_item(self, dataset_collection):
         self.dataset_collection = dataset_collection
 
 
-class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, RepresentById):
+class LibraryDatasetCollectionRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
     def _set_item(self, dataset_collection):
         self.dataset_collection = dataset_collection
 
