@@ -1292,15 +1292,6 @@ model.LibraryDatasetCollectionAnnotationAssociation.table = Table(
     Column("annotation", TEXT),
 )
 
-# Ratings tables.
-model.LibraryDatasetCollectionRatingAssociation.table = Table(
-    "library_dataset_collection_rating_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("library_dataset_collection_id", Integer,
-        ForeignKey("library_dataset_collection_association.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("rating", Integer, index=True))
-
 model.UserPreference.table = Table(
     "user_preference", metadata,
     Column("id", Integer, primary_key=True),
@@ -1988,8 +1979,8 @@ simple_mapping(model.LibraryDatasetCollectionAssociation,
         order_by=model.LibraryDatasetCollectionAnnotationAssociation.table.c.id,
         backref="dataset_collection"),
     ratings=relation(model.LibraryDatasetCollectionRatingAssociation,
-        order_by=model.LibraryDatasetCollectionRatingAssociation.table.c.id,
-        backref="dataset_collection"))
+        order_by=model.LibraryDatasetCollectionRatingAssociation.id,
+        back_populates="dataset_collection"))
 
 simple_mapping(model.DatasetCollectionElement,
     hda=relation(model.HistoryDatasetAssociation,
@@ -2342,15 +2333,6 @@ annotation_mapping(model.PageAnnotationAssociation)
 annotation_mapping(model.VisualizationAnnotationAssociation)
 annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation)
 annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation)
-
-
-# Rating tables.
-def rating_mapping(rating_class, **kwds):
-    kwds = {key: relation(value) for key, value in kwds.items()}
-    simple_mapping(rating_class, **dict(user=relation(model.User), **kwds))
-
-
-rating_mapping(model.LibraryDatasetCollectionRatingAssociation)
 
 mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     # user=relation( model.User.mapper ),

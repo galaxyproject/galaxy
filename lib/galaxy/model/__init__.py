@@ -6886,20 +6886,6 @@ class ItemRatingAssociation(Base):
         raise NotImplementedError()
 
 
-class _remove_ItemRatingAssociation:
-    # This is a temporary fix to make the yet-to-be-mapped-declaratively rating
-    # association models pass the tests. TO BE REMOVED BEFORE REVIEW.
-
-    def __init__(self, user, item, rating=0):
-        self.user = user
-        self.rating = rating
-        self._set_item(item)
-
-    def _set_item(self, item):
-        """ Set association's item. """
-        raise NotImplementedError()
-
-
 class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = 'history_rating_association'
 
@@ -6986,7 +6972,17 @@ class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
         self.dataset_collection = dataset_collection
 
 
-class LibraryDatasetCollectionRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
+class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, RepresentById):
+    __tablename__ = 'library_dataset_collection_rating_association'
+
+    id = Column('id', Integer, primary_key=True)
+    library_dataset_collection_id = Column('library_dataset_collection_id', Integer,
+        ForeignKey('library_dataset_collection_association.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column('rating', Integer, index=True)
+    dataset_collection = relationship('LibraryDatasetCollectionAssociation', back_populates='ratings')
+    user = relationship('User')
+
     def _set_item(self, dataset_collection):
         self.dataset_collection = dataset_collection
 
