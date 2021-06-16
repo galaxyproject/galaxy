@@ -613,6 +613,25 @@ def test_WorkerProcess(model, session):
         assert stored_obj.update_time
 
 
+def test_WorkflowStepAnnotationAssociation(model, session, workflow_step, user):
+    cls = model.WorkflowStepAnnotationAssociation
+    assert cls.__tablename__ == 'workflow_step_annotation_association'
+    assert has_index(cls.__table__, ('annotation',))
+    with dbcleanup(session, cls):
+        annotation = 'a'
+        obj = cls()
+        obj.user = user
+        obj.workflow_step = workflow_step
+        obj.annotation = annotation
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.workflow_step == workflow_step
+        assert stored_obj.user == user
+        assert stored_obj.annotation == annotation
+
+
 @pytest.fixture(scope='module')
 def model():
     db_uri = 'sqlite:///:memory:'
