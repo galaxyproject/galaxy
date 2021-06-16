@@ -23,7 +23,7 @@ var datasets2 = [
     { name: "DP134_1_FS_PSII_FSB_42C_A10.2.fastq", state: STATES.OK}
 ]
 
-var dataset3 = [
+var datasets3 = [
     {name: "UII_moo_1.1.fastq", state: STATES.OK},
     {name: "UII_moo_1.2.fastq", state: STATES.OK}
 ]
@@ -160,5 +160,6 @@ var datasets1CreateRequestJSON = {
 export default {
     _1: datasets1,
     _1requestJSON: datasets1CreateRequestJSON,
-    _2: datasets2
+    _2: datasets2,
+    _3: datasets3
 };
