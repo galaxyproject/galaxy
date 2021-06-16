@@ -753,7 +753,7 @@ class GalaxyInteractorApi:
         if headers:
             kwd['headers'] = headers
         if as_json:
-            kwd['json'] = data
+            kwd['json'] = data or None
             kwd['params'] = params
         else:
             data.update(params)
