@@ -181,6 +181,21 @@ def test_GroupRoleAssociation(model, session, group, role):
         assert stored_obj.role == role
 
 
+def test_HistoryRatingAssociation(model, session, history, user):
+    cls = model.HistoryRatingAssociation
+    assert cls.__tablename__ == 'history_rating_association'
+    with dbcleanup(session, cls):
+        rating = 9
+        obj = cls(user, history, rating)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.user == user
+        assert stored_obj.history == history
+        assert stored_obj.rating == rating
+
+
 def test_PageRevision(model, session, page):
     cls = model.PageRevision
     assert cls.__tablename__ == 'page_revision'
@@ -465,6 +480,12 @@ def session(model):
 def cloud_authz(model, session, user, user_authnz_token):
     ca = model.CloudAuthz(user.id, 'a', 'b', user_authnz_token.id, 'c')
     yield from dbcleanup_wrapper(session, ca)
+
+
+@pytest.fixture
+def history(model, session):
+    h = model.History()
+    yield from dbcleanup_wrapper(session, h)
 
 
 @pytest.fixture

@@ -1293,12 +1293,6 @@ model.LibraryDatasetCollectionAnnotationAssociation.table = Table(
 )
 
 # Ratings tables.
-model.HistoryRatingAssociation.table = Table("history_rating_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("rating", Integer, index=True))
-
 model.HistoryDatasetAssociationRatingAssociation.table = Table(
     "history_dataset_association_rating_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1581,10 +1575,10 @@ mapper_registry.map_imperatively(model.History, model.History.table, properties=
         order_by=model.HistoryAnnotationAssociation.table.c.id,
         backref="history"),
     ratings=relation(model.HistoryRatingAssociation,
-        order_by=model.HistoryRatingAssociation.table.c.id,
-        backref="history"),
+        order_by=model.HistoryRatingAssociation.id,
+        back_populates="history"),
     average_rating=column_property(
-        select(func.avg(model.HistoryRatingAssociation.table.c.rating)).where(model.HistoryRatingAssociation.table.c.history_id == model.History.table.c.id).scalar_subquery(),
+        select(func.avg(model.HistoryRatingAssociation.rating)).where(model.HistoryRatingAssociation.history_id == model.History.table.c.id).scalar_subquery(),
         deferred=True
     ),
     users_shared_with_count=column_property(
@@ -2393,7 +2387,6 @@ def rating_mapping(rating_class, **kwds):
     simple_mapping(rating_class, **dict(user=relation(model.User), **kwds))
 
 
-rating_mapping(model.HistoryRatingAssociation)
 rating_mapping(model.HistoryDatasetAssociationRatingAssociation)
 rating_mapping(model.StoredWorkflowRatingAssociation)
 rating_mapping(model.PageRatingAssociation)
