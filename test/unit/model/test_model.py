@@ -432,6 +432,25 @@ def test_Role(model, session):
         assert stored_obj.deleted is False
 
 
+def test_StoredWorkflowAnnotationAssociation(model, session, stored_workflow, user):
+    cls = model.StoredWorkflowAnnotationAssociation
+    assert cls.__tablename__ == 'stored_workflow_annotation_association'
+    assert has_index(cls.__table__, ('annotation',))
+    with dbcleanup(session, cls):
+        annotation = 'a'
+        obj = cls()
+        obj.user = user
+        obj.stored_workflow = stored_workflow
+        obj.annotation = annotation
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.stored_workflow == stored_workflow
+        assert stored_obj.user == user
+        assert stored_obj.annotation == annotation
+
+
 def test_StoredWorkflowRatingAssociation(model, session, stored_workflow, user):
     cls = model.StoredWorkflowRatingAssociation
     assert cls.__tablename__ == 'stored_workflow_rating_association'
