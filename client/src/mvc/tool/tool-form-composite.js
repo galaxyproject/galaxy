@@ -62,7 +62,7 @@ var View = Backbone.View.extend({
                     });
                 },
             });
-            this._append(this.$el.empty(), this.wp_form.$el);
+            //this._append(this.$el.empty(), this.wp_form.$el);
         }
     },
 
