@@ -211,6 +211,21 @@ def test_HistoryDatasetAssociationRatingAssociation(model, session, history_data
         assert stored_obj.rating == rating
 
 
+def test_PageRatingAssociation(model, session, page, user):
+    cls = model.PageRatingAssociation
+    assert cls.__tablename__ == 'page_rating_association'
+    with dbcleanup(session, cls):
+        rating = 9
+        obj = cls(user, page, rating)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.user == user
+        assert stored_obj.page == page
+        assert stored_obj.rating == rating
+
+
 def test_PageRevision(model, session, page):
     cls = model.PageRevision
     assert cls.__tablename__ == 'page_revision'

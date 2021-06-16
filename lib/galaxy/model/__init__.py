@@ -6943,7 +6943,16 @@ class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
         self.stored_workflow = stored_workflow
 
 
-class PageRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
+class PageRatingAssociation(ItemRatingAssociation, RepresentById):
+    __tablename__ = 'page_rating_association'
+
+    id = Column('id', Integer, primary_key=True)
+    page_id = Column('page_id', Integer, ForeignKey('page.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column('rating', Integer, index=True)
+    page = relationship('Page', back_populates='ratings')
+    user = relationship('User')
+
     def _set_item(self, page):
         self.page = page
 

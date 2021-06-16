@@ -1293,13 +1293,6 @@ model.LibraryDatasetCollectionAnnotationAssociation.table = Table(
 )
 
 # Ratings tables.
-model.PageRatingAssociation.table = Table(
-    "page_rating_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("page_id", Integer, ForeignKey("page.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("rating", Integer, index=True))
-
 model.VisualizationRatingAssociation.table = Table(
     "visualization_rating_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -2278,10 +2271,10 @@ mapper_registry.map_imperatively(model.Page, model.Page.table, properties=dict(
         order_by=model.PageAnnotationAssociation.table.c.id,
         backref="page"),
     ratings=relation(model.PageRatingAssociation,
-        order_by=model.PageRatingAssociation.table.c.id,
-        backref="page"),
+        order_by=model.PageRatingAssociation.id,
+        back_populates="page"),
     average_rating=column_property(
-        select(func.avg(model.PageRatingAssociation.table.c.rating)).where(model.PageRatingAssociation.table.c.page_id == model.Page.table.c.id).scalar_subquery(),
+        select(func.avg(model.PageRatingAssociation.rating)).where(model.PageRatingAssociation.page_id == model.Page.table.c.id).scalar_subquery(),
         deferred=True
     ),
     users_shared_with=relation(model.PageUserShareAssociation, back_populates='page')
@@ -2372,7 +2365,6 @@ def rating_mapping(rating_class, **kwds):
     simple_mapping(rating_class, **dict(user=relation(model.User), **kwds))
 
 
-rating_mapping(model.PageRatingAssociation)
 rating_mapping(model.VisualizationRatingAssociation)
 rating_mapping(model.HistoryDatasetCollectionRatingAssociation)
 rating_mapping(model.LibraryDatasetCollectionRatingAssociation)
