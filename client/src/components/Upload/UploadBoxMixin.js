@@ -88,7 +88,7 @@ export default {
             if (list.length > 0) {
                 const data = this.app.toFetchData(list, this.history_id);
                 axios
-                    .post(``${getAppRoot()}api/tools/fetch`, data)
+                    .post(`${getAppRoot()}api/tools/fetch`, data)
                     .then((message) => {
                         list.forEach((model) => {
                             this._eventSuccess(model.id, message);
