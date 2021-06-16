@@ -54,7 +54,9 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         self.__plugin_classes = self.__plugins_dict()
         self.__init_schedulers()
 
-        if self._is_workflow_handler():
+        if self._is_workflow_handler() or self.app.is_job_handler:
+            # Start request monitor also if app is not a workflow handler currently, but is a job handler.
+            # This allows draining invocations that were assigned to job handlers previously.
             log.debug("Starting workflow schedulers")
             self.__start_schedulers()
             if self.active_workflow_schedulers:
@@ -270,18 +272,20 @@ class WorkflowRequestMonitor(Monitors):
         self.workflow_scheduling_manager = workflow_scheduling_manager
         self._init_monitor_thread(name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor, config=app.config)
         self.invocation_grabber = None
+        self.is_workflow_handler = self.workflow_scheduling_manager._is_workflow_handler()
         self_handler_tags = set(self.app.job_config.self_handler_tags)
         self_handler_tags.add(self.workflow_scheduling_manager.default_handler_id)
-        handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(self.workflow_scheduling_manager.handler_assignment_methods)
-        if handler_assignment_method:
-            self.invocation_grabber = ItemGrabber(
-                app=app,
-                grab_type='WorkflowInvocation',
-                handler_assignment_method=handler_assignment_method,
-                max_grab=self.workflow_scheduling_manager.handler_max_grab,
-                self_handler_tags=self_handler_tags,
-                handler_tags=self_handler_tags,
-            )
+        if self.is_workflow_handler:
+            handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(self.workflow_scheduling_manager.handler_assignment_methods)
+            if handler_assignment_method:
+                self.invocation_grabber = ItemGrabber(
+                    app=app,
+                    grab_type='WorkflowInvocation',
+                    handler_assignment_method=handler_assignment_method,
+                    max_grab=self.workflow_scheduling_manager.handler_max_grab,
+                    self_handler_tags=self_handler_tags,
+                    handler_tags=self_handler_tags,
+                )
 
     def __monitor(self):
         to_monitor = self.workflow_scheduling_manager.active_workflow_schedulers
@@ -298,6 +302,10 @@ class WorkflowRequestMonitor(Monitors):
                     if not self.monitor_running:
                         return
 
+                    if not self.is_workflow_handler:
+                        # This sidesteps the filter condition in poll_active_workflow_ids,
+                        # so that all workflows assigned to a given job handler get drained.
+                        workflow_scheduler_id = None
                     self.__schedule(workflow_scheduler_id, workflow_scheduler)
                 log.trace(monitor_step_timer.to_str())
             except Exception:

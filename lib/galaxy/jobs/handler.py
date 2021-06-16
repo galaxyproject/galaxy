@@ -104,8 +104,8 @@ class ItemGrabber:
         if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
             self._grab_conn_opts['isolation_level'] = 'SERIALIZABLE'
         log.info(
-            "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", self.handler_assignment_method,
-            self.app.config.server_name, ', '.join(str(x) for x in self.handler_tags)
+            f"{self.grab_type} grabber initialized with '{self.handler_assignment_method}'"
+            f" assignment method for handler '{self.app.config.server_name}', tag(s): {', '.join(str(x) for x in self.handler_tags)}"
         )
 
     @staticmethod

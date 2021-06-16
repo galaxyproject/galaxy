@@ -130,7 +130,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
 
     @property
     def is_app_workflow_scheduler(self):
-        return self._app.workflow_scheduling_manager.request_monitor is not None
+        return self._app.workflow_scheduling_manager._is_workflow_handler()
 
 
 class HistoryRestrictionConfigurationTestCase(BaseWorkflowHandlerConfigurationTestCase):
