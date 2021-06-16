@@ -6,13 +6,9 @@ To avoid altering the '.loc' files in test/functional/tool-data, these files are
 copied to a temp directory and then used by the integration test.
 """
 
-import json
 import os
 import shutil
 import time
-
-from requests import delete
-
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -62,9 +58,8 @@ class AdminToolDataIntegrationTestCase(integration_util.IntegrationTestCase):
         new_field = updated_fields[-1]
         url = self._api_url(f"tool_data/testbeta?key={self.galaxy_interactor.api_key}")
 
-        # TODO remove the headers here, use the interactor _delete method and add json parameter to it
-        delete_response = delete(url, data=json.dumps({"values": "\t".join(new_field)}), headers={'Content-Type': 'application/json'})
-
+        delete_payload = {"values": "\t".join(new_field)}
+        delete_response = self._delete(url, data=delete_payload, json=True)
         delete_response.raise_for_status()
         time.sleep(2)
         show_response = self._get("tool_data/testbeta")
