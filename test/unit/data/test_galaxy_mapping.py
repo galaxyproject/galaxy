@@ -281,10 +281,11 @@ class MappingTests(BaseModelTestCase):
         h1 = model.History(name="History 1", user=u)
         d1 = model.HistoryDatasetAssociation(extension="txt", history=h1, create_dataset=True, sa_session=model.session)
         c1 = model.DatasetCollection(collection_type="list")
-        dces = [model.DatasetCollectionElement(collection=c1, element=d1, element_identifier=f"{i}", element_index=i) for i in range(100)]
+        elements = 100
+        dces = [model.DatasetCollectionElement(collection=c1, element=d1, element_identifier=f"{i}", element_index=i) for i in range(elements)]
         self.persist(u, h1, d1, c1, *dces, flush=False, expunge=False)
         model.session.flush()
-        for i in range(100):
+        for i in range(elements):
             assert c1[i] == dces[i]
 
     def test_collections_in_histories(self):
