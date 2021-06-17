@@ -1,8 +1,8 @@
 <template>
     <div>
-        <FormCard title="model.label">
+        <FormCard :title="title">
             <template v-slot:body>
-                <Form :inputs="inputs" />
+                <Form :inputs="model.inputs" />
             </template>
         </FormCard>
     </div>
@@ -31,27 +31,11 @@ export default {
         console.log(this.model);
     },
     computed: {
-        isSimpleInput() {
-            return (
-                this.model.step_type.startsWith("data_input") ||
-                this.model.step_type.startsWith("data_collection_input")
-            );
-        },
-        inputs() {
-            this.model.inputs.forEach((input) => {
-                input.flavor = "module";
-                input.hide_label = this.isSimpleInput;
-            });
-            if (this.model.inputs && this.model.inputs.length > 0) {
-                return this.model.inputs;
+        title() {
+            if (this.model.fixed_title) {
+                return this.model.fixed_title;
             } else {
-                return [
-                    {
-                        type: "hidden",
-                        name: "No options available.",
-                        ignore: null,
-                    },
-                ];
+                return `${this.model.name} ${this.model.description} (Galaxy Version ${this.model.version})`;
             }
         },
     },

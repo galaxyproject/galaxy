@@ -143,10 +143,6 @@ export default {
             type: String,
             required: false,
         },
-        sustainVersion: {
-            type: Boolean,
-            default: false,
-        },
         options: {
             type: Object,
             required: true,
@@ -179,7 +175,7 @@ export default {
             return !!this.user.email && !this.isFavorite;
         },
         showVersions() {
-            return !this.sustainVersion && this.versions && this.versions.length > 1;
+            return this.versions && this.versions.length > 1;
         },
         availableVersions() {
             const versions = this.versions.slice();
