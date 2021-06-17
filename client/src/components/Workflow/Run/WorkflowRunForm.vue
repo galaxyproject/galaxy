@@ -20,7 +20,6 @@
                 <Form :inputs="resourceInputs" />
             </template>
         </FormCard>
-        <div ref="form" />
         <div v-for="step in model.steps">
             <WorkflowRunToolStep v-if="step.step_type == 'tool'" :model="step" />
             <WorkflowRunDefaultStep v-else :model="step" />
@@ -30,7 +29,6 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import ToolFormComposite from "mvc/tool/tool-form-composite";
 import Form from "components/Form/Form";
 import FormCard from "components/Form/FormCard";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
@@ -122,18 +120,6 @@ export default {
         wpInputs() {
             return this.toArray(this.model.wpInputs);
         },
-    },
-    mounted() {
-        this.$nextTick(() => {
-            const el = this.$refs["form"];
-            const formProps = {
-                el,
-                model: this.model,
-                setRunButtonStatus: this.setRunButtonStatus,
-                handleInvocations: this.handleInvocations,
-            };
-            this.runForm = new ToolFormComposite.View(formProps);
-        });
     },
     methods: {
         execute() {
