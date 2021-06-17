@@ -1,6 +1,6 @@
 <template>
     <div>
-        <FormCard :title="model.fixed_title" :icon="icon">
+        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true">
             <template v-slot:body>
                 <Form :inputs="inputs" />
             </template>
