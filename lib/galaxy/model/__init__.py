@@ -6899,8 +6899,18 @@ class WorkflowStepAnnotationAssociation(Base, RepresentById):
     user = relationship('User')
 
 
-class PageAnnotationAssociation(RepresentById):
-    pass
+class PageAnnotationAssociation(Base, RepresentById):
+    __tablename__ = 'page_annotation_association'
+    __table_args__ = (
+        Index('ix_page_annotation_association_annotation', 'annotation', mysql_length=200),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    page_id = Column('page_id', Integer, ForeignKey('page.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column('annotation', TEXT)
+    page = relationship('Page', back_populates='annotations')
+    user = relationship('User')
 
 
 class VisualizationAnnotationAssociation(RepresentById):

@@ -282,6 +282,25 @@ def test_LibraryDatasetCollectionRatingAssociation(
         assert stored_obj.rating == rating
 
 
+def test_PageAnnotationAssociation(model, session, page, user):
+    cls = model.PageAnnotationAssociation
+    assert cls.__tablename__ == 'page_annotation_association'
+    assert has_index(cls.__table__, ('annotation',))
+    with dbcleanup(session, cls):
+        annotation = 'a'
+        obj = cls()
+        obj.user = user
+        obj.page = page
+        obj.annotation = annotation
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.page == page
+        assert stored_obj.user == user
+        assert stored_obj.annotation == annotation
+
+
 def test_PageRatingAssociation(model, session, page, user):
     cls = model.PageRatingAssociation
     assert cls.__tablename__ == 'page_rating_association'
