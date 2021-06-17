@@ -261,7 +261,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
 
     def test_authenticate_sets_env_var_when_localhost_redirect(self):
         """Verify that OAUTHLIB_INSECURE_TRANSPORT var is set with localhost redirect."""
-        self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
+        self.custos_authnz = custos_authnz.KeycloakAuthnz('Custos', {
             'VERIFY_SSL': True
         }, {
             'url': self._get_idp_url(),

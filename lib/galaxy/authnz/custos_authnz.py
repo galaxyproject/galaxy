@@ -19,10 +19,9 @@ from ..authnz import IdentityProvider
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = 'galaxy-oidc-state'
 NONCE_COOKIE_NAME = 'galaxy-oidc-nonce'
-KEYCLOAK_BACKENDS = {'custos', 'cilogon', 'keycloak'}
 
 
-class CustosAuthnz(IdentityProvider):
+class KeycloakAuthnzBase(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
         provider = provider.lower()
         self.config = {'provider': provider}
@@ -35,12 +34,7 @@ class CustosAuthnz(IdentityProvider):
         self.config['extra_params'] = {
             'kc_idp_hint': oidc_backend_config.get('idphint', 'oidc' if self.config['provider'] in ['custos', 'keycloak'] else 'cilogon')
         }
-        if provider == 'cilogon':
-            self._load_config_for_cilogon()
-        elif provider == 'custos':
-            self._load_config_for_custos()
-        elif provider == 'keycloak':
-            self._load_config_for_keycloak()
+        self._load_config()
 
     def _decode_token_no_signature(self, token):
         return jwt.decode(token, audience=self.config['client_id'], options={"verify_signature": False})
@@ -252,36 +246,10 @@ class CustosAuthnz(IdentityProvider):
         if nonce_hash != nonce_cookie_hash:
             raise Exception("Nonce mismatch!")
 
-    def _load_config_for_cilogon(self):
-        # Set cilogon endpoints
-        self.config['authorization_endpoint'] = "https://cilogon.org/authorize"
-        self.config['token_endpoint'] = "https://cilogon.org/oauth2/token"
-        self.config['userinfo_endpoint'] = "https://cilogon.org/oauth2/userinfo"
-
-    def _load_config_for_custos(self):
-        self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_from_url(self.config['provider'])
-        self.config['credential_url'] = '/'.join([self.config['url'].rstrip('/'), 'credentials'])
-        self._get_custos_credentials()
-        # Set custos endpoints
-        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
-        eps = requests.get(self.config['well_known_oidc_config_uri'],
-                           headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
-                           verify=False, params={'client_id': self.config['client_id']})
-        well_known_oidc_config = eps.json()
-        self._load_well_known_oidc_config(well_known_oidc_config)
-
-    def _load_config_for_keycloak(self):
+    def _load_config(self):
         self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_from_url(self.config['provider'])
         well_known_oidc_config = self._fetch_well_known_oidc_config(self.config['well_known_oidc_config_uri'])
         self._load_well_known_oidc_config(well_known_oidc_config)
-
-    def _get_custos_credentials(self):
-        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
-        creds = requests.get(self.config['credential_url'],
-                            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
-                            verify=False, params={'client_id': self.config['client_id']})
-        credentials = creds.json()
-        self.config['iam_client_secret'] = credentials['iam_client_secret']
 
     def _get_well_known_uri_from_url(self, provider):
         # TODO: Look up this URL from a Python library
@@ -325,3 +293,57 @@ class CustosAuthnz(IdentityProvider):
         else:
             return temp_username
         return temp_username + str(count)
+
+
+class KeycloakAuthnz(KeycloakAuthnzBase):
+
+    def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
+        # Custos extra initialization?
+        super().__init__(provider, oidc_config, oidc_backend_config, idphint)
+
+
+class CustosAuthnz(KeycloakAuthnzBase):
+
+    def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
+        # Custos extra initialization?
+        super().__init__(provider, oidc_config, oidc_backend_config, idphint)
+
+    def _load_config(self):
+        self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_from_url(self.config['provider'])
+        self.config['credential_url'] = '/'.join([self.config['url'].rstrip('/'), 'credentials'])
+        self._get_custos_credentials()
+        # Set custos endpoints
+        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+        eps = requests.get(self.config['well_known_oidc_config_uri'],
+                           headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
+                           verify=False, params={'client_id': self.config['client_id']})
+        well_known_oidc_config = eps.json()
+        self._load_well_known_oidc_config(well_known_oidc_config)
+
+    def _get_custos_credentials(self):
+        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+        creds = requests.get(self.config['credential_url'],
+                            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
+                            verify=False, params={'client_id': self.config['client_id']})
+        credentials = creds.json()
+        self.config['iam_client_secret'] = credentials['iam_client_secret']
+
+
+class CILogonAuthnz(KeycloakAuthnzBase):
+
+    def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
+        # CILogon extra initialization?
+        super().__init__(provider, oidc_config, oidc_backend_config, idphint)
+
+    def _load_config(self):
+        # Set cilogon endpoints
+        self.config['authorization_endpoint'] = "https://cilogon.org/authorize"
+        self.config['token_endpoint'] = "https://cilogon.org/oauth2/token"
+        self.config['userinfo_endpoint'] = "https://cilogon.org/oauth2/userinfo"
+
+
+KEYCLOAK_BACKENDS = {
+    'custos': CustosAuthnz,
+    'cilogon': CILogonAuthnz,
+    'keycloak': KeycloakAuthnz,
+}

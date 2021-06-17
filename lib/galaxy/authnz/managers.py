@@ -22,10 +22,8 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-from .custos_authnz import (
-    CustosAuthnz,
-    KEYCLOAK_BACKENDS,
-)
+from .custos_authnz import KEYCLOAK_BACKENDS
+
 from .psa_authnz import (
     BACKENDS_NAME,
     on_the_fly_config,
@@ -120,7 +118,7 @@ class AuthnzManager:
                     self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
                 elif idp in KEYCLOAK_BACKENDS:
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
-                    self.oidc_backends_implementation[idp] = 'custos'
+                    self.oidc_backends_implementation[idp] = idp
                     self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
                 else:
                     raise etree.ParseError("Unknown provider specified")
@@ -203,10 +201,8 @@ class AuthnzManager:
     def _get_identity_provider_class(implementation):
         if implementation == 'psa':
             return PSAAuthnz
-        elif implementation == 'custos':
-            return CustosAuthnz
         else:
-            return None
+            return KEYCLOAK_BACKENDS.get(implementation)
 
     def _extend_cloudauthz_config(self, cloudauthz, request, sa_session, user_id):
         config = copy.deepcopy(cloudauthz.config)
