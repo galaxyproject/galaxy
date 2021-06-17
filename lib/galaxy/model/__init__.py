@@ -6940,8 +6940,17 @@ class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentBy
     user = relationship('User')
 
 
-class LibraryDatasetCollectionAnnotationAssociation(RepresentById):
-    pass
+class LibraryDatasetCollectionAnnotationAssociation(Base, RepresentById):
+    __tablename__ = 'library_dataset_collection_annotation_association'
+
+    id = Column('id', Integer, primary_key=True)
+    library_dataset_collection_id = Column('library_dataset_collection_id', Integer,
+        ForeignKey('library_dataset_collection_association.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column('annotation', TEXT)
+    dataset_collection = relationship('LibraryDatasetCollectionAssociation',
+        back_populates='annotations')
+    user = relationship('User')
 
 
 # Item rating classes.

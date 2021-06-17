@@ -1217,16 +1217,6 @@ model.ToolTagAssociation.table = Table(
     Column("value", TrimmedString(255), index=True),
     Column("user_value", TrimmedString(255), index=True))
 
-# Annotation tables.
-model.LibraryDatasetCollectionAnnotationAssociation.table = Table(
-    "library_dataset_collection_annotation_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("library_dataset_collection_id", Integer,
-        ForeignKey("library_dataset_collection_association.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT),
-)
-
 model.UserPreference.table = Table(
     "user_preference", metadata,
     Column("id", Integer, primary_key=True),
@@ -1911,8 +1901,8 @@ simple_mapping(model.LibraryDatasetCollectionAssociation,
         order_by=model.LibraryDatasetCollectionTagAssociation.table.c.id,
         backref='dataset_collections'),
     annotations=relation(model.LibraryDatasetCollectionAnnotationAssociation,
-        order_by=model.LibraryDatasetCollectionAnnotationAssociation.table.c.id,
-        backref="dataset_collection"),
+        order_by=model.LibraryDatasetCollectionAnnotationAssociation.id,
+        back_populates="dataset_collection"),
     ratings=relation(model.LibraryDatasetCollectionRatingAssociation,
         order_by=model.LibraryDatasetCollectionRatingAssociation.id,
         back_populates="dataset_collection"))
@@ -2252,15 +2242,6 @@ tag_mapping(model.VisualizationTagAssociation, "tagged_visualizations")
 tag_mapping(model.HistoryDatasetCollectionTagAssociation, "tagged_history_dataset_collections")
 tag_mapping(model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections")
 tag_mapping(model.ToolTagAssociation, "tagged_tools")
-
-
-# Annotation tables.
-def annotation_mapping(annotation_class, **kwds):
-    kwds = {key: relation(value) for key, value in kwds.items()}
-    simple_mapping(annotation_class, **dict(user=relation(model.User), **kwds))
-
-
-annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation)
 
 mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     # user=relation( model.User.mapper ),
