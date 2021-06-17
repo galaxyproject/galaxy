@@ -4355,10 +4355,17 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
             raise Exception("Each dataset collection must define a collection type.")
 
     def __getitem__(self, key):
+        if isinstance(key, int):
+            try:
+                return self.elements[key]
+            except IndexError:
+                pass
+        else:
+            # This might be a peformance issue for large collection, but we don't use this a lot
+            for element in self.elements:
+                if element.element_identifier == key:
+                    return element
         get_by_attribute = "element_index" if isinstance(key, int) else "element_identifier"
-        for element in self.elements:
-            if getattr(element, get_by_attribute) == key:
-                return element
         error_message = f"Dataset collection has no {get_by_attribute} with key {key}."
         raise KeyError(error_message)
 
