@@ -1218,15 +1218,6 @@ model.ToolTagAssociation.table = Table(
     Column("user_value", TrimmedString(255), index=True))
 
 # Annotation tables.
-model.HistoryDatasetCollectionAssociationAnnotationAssociation.table = Table(
-    "history_dataset_collection_annotation_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_dataset_collection_id", Integer,
-        ForeignKey("history_dataset_collection_association.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT),
-)
-
 model.LibraryDatasetCollectionAnnotationAssociation.table = Table(
     "library_dataset_collection_annotation_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1905,8 +1896,8 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         order_by=model.HistoryDatasetCollectionTagAssociation.table.c.id,
         backref='dataset_collections'),
     annotations=relation(model.HistoryDatasetCollectionAssociationAnnotationAssociation,
-        order_by=model.HistoryDatasetCollectionAssociationAnnotationAssociation.table.c.id,
-        backref="history_dataset_collection"),
+        order_by=model.HistoryDatasetCollectionAssociationAnnotationAssociation.id,
+        back_populates="history_dataset_collection"),
     ratings=relation(model.HistoryDatasetCollectionRatingAssociation,
         order_by=model.HistoryDatasetCollectionRatingAssociation.id,
         back_populates="dataset_collection")
@@ -2269,7 +2260,6 @@ def annotation_mapping(annotation_class, **kwds):
     simple_mapping(annotation_class, **dict(user=relation(model.User), **kwds))
 
 
-annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation)
 annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation)
 
 mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
