@@ -22,12 +22,8 @@
         </FormCard>
         <div ref="form" />
         <div v-for="step in model.steps">
-            <div v-if="step.step_type.startsWith('data_input') || step.step_type.startsWith('data_collection_input')">
-                <WorkflowRunDefaultStep :model="step" />
-            </div>
-            <div v-else>
-                <WorkflowRunToolStep :model="step" />
-            </div>
+            <WorkflowRunToolStep v-if="step.step_type == 'tool'" :model="step" />
+            <WorkflowRunDefaultStep v-else :model="step" />
         </div>
     </div>
 </template>
