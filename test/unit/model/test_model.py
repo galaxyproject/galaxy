@@ -580,6 +580,25 @@ def test_UserQuotaAssociation(model, session, user, quota):
         assert stored_obj.quota == quota
 
 
+def test_VisualizationAnnotationAssociation(model, session, visualization, user):
+    cls = model.VisualizationAnnotationAssociation
+    assert cls.__tablename__ == 'visualization_annotation_association'
+    assert has_index(cls.__table__, ('annotation',))
+    with dbcleanup(session, cls):
+        annotation = 'a'
+        obj = cls()
+        obj.user = user
+        obj.visualization = visualization
+        obj.annotation = annotation
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.visualization == visualization
+        assert stored_obj.user == user
+        assert stored_obj.annotation == annotation
+
+
 def test_VisualizationRatingAssociation(model, session, visualization, user):
     cls = model.VisualizationRatingAssociation
     assert cls.__tablename__ == 'visualization_rating_association'
