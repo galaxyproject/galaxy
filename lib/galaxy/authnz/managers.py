@@ -37,7 +37,7 @@ from .psa_authnz import (
 
 log = logging.getLogger(__name__)
 
-# Note: This if for backward compatibility. Icons can be specified in oidc_backends_config.xml.
+# Note: This is for backward compatibility. Icons can be specified in oidc_backends_config.xml.
 DEFAULT_OIDC_IDP_ICONS = {
     'google': 'https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png',
     'elixir': 'https://elixir-europe.org/sites/default/files/images/login-button-orange.png',
