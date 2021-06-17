@@ -32,11 +32,7 @@ export default {
     },
     computed: {
         title() {
-            if (this.model.fixed_title) {
-                return this.model.fixed_title;
-            } else {
-                return `${this.model.name} ${this.model.description} (Galaxy Version ${this.model.version})`;
-            }
+            return `${this.model.name} ${this.model.description} (Galaxy Version ${this.model.version})`;
         },
     },
     methods: {},
