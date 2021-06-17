@@ -1218,15 +1218,6 @@ model.ToolTagAssociation.table = Table(
     Column("user_value", TrimmedString(255), index=True))
 
 # Annotation tables.
-model.PageAnnotationAssociation.table = Table(
-    "page_annotation_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("page_id", Integer, ForeignKey("page.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT),
-    Index('ix_page_annotation_association_annotation', 'annotation', mysql_length=200),
-)
-
 model.VisualizationAnnotationAssociation.table = Table(
     "visualization_annotation_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -2206,8 +2197,8 @@ mapper_registry.map_imperatively(model.Page, model.Page.table, properties=dict(
         order_by=model.PageTagAssociation.table.c.id,
         backref="pages"),
     annotations=relation(model.PageAnnotationAssociation,
-        order_by=model.PageAnnotationAssociation.table.c.id,
-        backref="page"),
+        order_by=model.PageAnnotationAssociation.id,
+        back_populates="page"),
     ratings=relation(model.PageRatingAssociation,
         order_by=model.PageRatingAssociation.id,
         back_populates="page"),
@@ -2287,7 +2278,6 @@ def annotation_mapping(annotation_class, **kwds):
     simple_mapping(annotation_class, **dict(user=relation(model.User), **kwds))
 
 
-annotation_mapping(model.PageAnnotationAssociation)
 annotation_mapping(model.VisualizationAnnotationAssociation)
 annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation)
 annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation)
