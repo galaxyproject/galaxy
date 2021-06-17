@@ -235,6 +235,25 @@ def test_HistoryDatasetAssociationRatingAssociation(model, session, history_data
         assert stored_obj.rating == rating
 
 
+def test_HistoryDatasetCollectionAssociationAnnotationAssociation(
+        model, session, history_dataset_collection_association, user):
+    cls = model.HistoryDatasetCollectionAssociationAnnotationAssociation
+    assert cls.__tablename__ == 'history_dataset_collection_annotation_association'
+    with dbcleanup(session, cls):
+        annotation = 'a'
+        obj = cls()
+        obj.user = user
+        obj.history_dataset_collection = history_dataset_collection_association
+        obj.annotation = annotation
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.history_dataset_collection == history_dataset_collection_association
+        assert stored_obj.user == user
+        assert stored_obj.annotation == annotation
+
+
 def test_HistoryDatasetCollectionRatingAssociation(
         model, session, history_dataset_collection_association, user):
     cls = model.HistoryDatasetCollectionRatingAssociation

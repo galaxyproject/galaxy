@@ -6927,8 +6927,17 @@ class VisualizationAnnotationAssociation(Base, RepresentById):
     user = relationship('User')
 
 
-class HistoryDatasetCollectionAssociationAnnotationAssociation(RepresentById):
-    pass
+class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentById):
+    __tablename__ = 'history_dataset_collection_annotation_association'
+
+    id = Column('id', Integer, primary_key=True)
+    history_dataset_collection_id = Column('history_dataset_collection_id', Integer,
+        ForeignKey('history_dataset_collection_association.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column('annotation', TEXT)
+    history_dataset_collection = relationship('HistoryDatasetCollectionAssociation',
+        back_populates='annotations')
+    user = relationship('User')
 
 
 class LibraryDatasetCollectionAnnotationAssociation(RepresentById):
