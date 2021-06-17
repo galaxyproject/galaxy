@@ -1,6 +1,6 @@
 <template>
     <div>
-        <FormCard :title="title">
+        <FormCard :title="title" icon="fa-wrench">
             <template v-slot:body>
                 <Form :inputs="model.inputs" />
             </template>

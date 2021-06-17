@@ -1,6 +1,6 @@
 <template>
     <div>
-        <FormCard :title="model.fixed_title">
+        <FormCard :title="model.fixed_title" :icon="icon">
             <template v-slot:body>
                 <Form :inputs="inputs" />
             </template>
@@ -10,6 +10,7 @@
 
 <script>
 import { getGalaxyInstance } from "app";
+import WorkflowIcons from "components/Workflow/icons";
 import Form from "components/Form/Form";
 import FormCard from "components/Form/FormCard";
 
@@ -28,6 +29,9 @@ export default {
         return {};
     },
     computed: {
+        icon() {
+            return WorkflowIcons[this.model.step_type];
+        },
         isSimpleInput() {
             return (
                 this.model.step_type.startsWith("data_input") ||
