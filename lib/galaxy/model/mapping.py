@@ -1218,15 +1218,6 @@ model.ToolTagAssociation.table = Table(
     Column("user_value", TrimmedString(255), index=True))
 
 # Annotation tables.
-model.VisualizationAnnotationAssociation.table = Table(
-    "visualization_annotation_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("visualization_id", Integer, ForeignKey("visualization.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT),
-    Index('ix_visualization_annotation_association_annotation', 'annotation', mysql_length=200),
-)
-
 model.HistoryDatasetCollectionAssociationAnnotationAssociation.table = Table(
     "history_dataset_collection_annotation_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -2228,8 +2219,8 @@ mapper_registry.map_imperatively(model.Visualization, model.Visualization.table,
         order_by=model.VisualizationTagAssociation.table.c.id,
         backref="visualizations"),
     annotations=relation(model.VisualizationAnnotationAssociation,
-        order_by=model.VisualizationAnnotationAssociation.table.c.id,
-        backref="visualization"),
+        order_by=model.VisualizationAnnotationAssociation.id,
+        back_populates="visualization"),
     ratings=relation(model.VisualizationRatingAssociation,
         order_by=model.VisualizationRatingAssociation.id,
         back_populates="visualization"),
@@ -2278,7 +2269,6 @@ def annotation_mapping(annotation_class, **kwds):
     simple_mapping(annotation_class, **dict(user=relation(model.User), **kwds))
 
 
-annotation_mapping(model.VisualizationAnnotationAssociation)
 annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation)
 annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation)
 

@@ -6913,8 +6913,18 @@ class PageAnnotationAssociation(Base, RepresentById):
     user = relationship('User')
 
 
-class VisualizationAnnotationAssociation(RepresentById):
-    pass
+class VisualizationAnnotationAssociation(Base, RepresentById):
+    __tablename__ = 'visualization_annotation_association'
+    __table_args__ = (
+        Index('ix_visualization_annotation_association_annotation', 'annotation', mysql_length=200),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    visualization_id = Column('visualization_id', Integer, ForeignKey('visualization.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column('annotation', TEXT)
+    visualization = relationship('Visualization', back_populates='annotations')
+    user = relationship('User')
 
 
 class HistoryDatasetCollectionAssociationAnnotationAssociation(RepresentById):
