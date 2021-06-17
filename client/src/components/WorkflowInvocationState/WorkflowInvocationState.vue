@@ -71,7 +71,7 @@
 import { cancelWorkflowScheduling } from "./services";
 import { getRootFromIndexLink } from "onload";
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails";
-import WorkflowInvocationBiocompute from "./WorkflowInvocationBiocompute"
+import WorkflowInvocationBiocompute from "./WorkflowInvocationBiocompute";
 
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import mixin from "components/JobStates/mixin";
