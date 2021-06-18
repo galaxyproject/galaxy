@@ -1779,7 +1779,7 @@ class GiHttpMixin:
         data['key'] = self._gi.key
         return requests.put(self._url(route), data=data, headers=headers)
 
-    def _delete(self, route, data=None, headers=None, json: bool = False):
+    def _delete(self, route, data=None, headers=None, admin=False, json: bool = False):
         if data is None:
             data = {}
         data = data.copy()
