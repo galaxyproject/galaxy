@@ -10,7 +10,6 @@ import sys
 import time
 from shutil import copyfile
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from segmentation import Segmentation
 
 # Seconds to buffer beginning and end of audio segments by

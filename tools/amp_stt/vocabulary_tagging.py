@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
-import argparse
 import csv
 from pathlib import Path
 import json
-import logging
 import sys
-import os
 from datetime import datetime
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-from speech_to_text import SpeechToText
 def main():
     amp_transcript =  sys.argv[1] 
     words_to_flag_file =  sys.argv[2] 

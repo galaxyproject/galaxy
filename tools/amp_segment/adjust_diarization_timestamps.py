@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 
 import json
-import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-from segmentation import Segmentation, SegmentationMedia, SegmentationSegment
+from segmentation import Segmentation
 from adjustment import Adjustment
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
 import mgm_utils
 

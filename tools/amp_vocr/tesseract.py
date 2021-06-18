@@ -17,10 +17,8 @@ except ImportError:
     import Image
 
 from datetime import datetime
-from decimal import Decimal
 from pytesseract import Output
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
 import mgm_utils
 

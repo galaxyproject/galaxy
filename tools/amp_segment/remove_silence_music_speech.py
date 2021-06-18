@@ -10,10 +10,8 @@ import sys
 import time
 from shutil import copyfile
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from segmentation import Segmentation
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
 import mgm_utils
 

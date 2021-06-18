@@ -6,8 +6,7 @@ import json
 from pathlib import Path
 import logging
 import sys
-import os
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
+
 import hpc_submit
 import mgm_utils
 import kaldi_transcript_to_amp_transcript

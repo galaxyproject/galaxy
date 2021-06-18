@@ -6,10 +6,8 @@ import os
 from datetime import datetime
 import math
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from video_ocr import VideoOcr, VideoOcrMedia, VideoOcrResolution, VideoOcrFrame, VideoOcrObject, VideoOcrObjectScore, VideoOcrObjectVertices
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import mgm_utils
 
 

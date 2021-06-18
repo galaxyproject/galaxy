@@ -1,26 +1,20 @@
 #!/usr/bin/env python3
 
-import gzip
 import os
 import os.path
 import json
-import shutil
-import subprocess
 import sys
 import traceback
 import tempfile
-import uuid
 import string
 import time
 import tarfile
 from datetime import datetime
 import boto3
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-from entity_extraction import EntityExtraction, EntityExtractionMedia, EntityExtractionEntity
-from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
+from entity_extraction import EntityExtraction, EntityExtractionMedia
+from speech_to_text import SpeechToText
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import mgm_utils
 
 def main():

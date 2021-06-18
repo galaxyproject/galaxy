@@ -15,7 +15,6 @@ from scenedetect.stats_manager import StatsManager
 # For content-aware scene detection:
 from scenedetect.detectors.content_detector import ContentDetector
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
 import mgm_utils
 

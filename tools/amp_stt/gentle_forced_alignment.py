@@ -10,7 +10,6 @@ import tempfile
 
 import uuid
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import mgm_utils
 
 
@@ -23,7 +22,7 @@ def main():
 		tmpTranscriptName = str(uuid.uuid4())
 
 		# Define directory accessible to singularity container
-		tmpdir = '/tmp'
+		tmpdir = '/Users/dan'
 
 		# Create temp file paths
 		temp_audio_file = f"{tmpdir}/{tmpAudioName}.dat"
