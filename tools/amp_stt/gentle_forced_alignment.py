@@ -22,7 +22,7 @@ def main():
 		tmpTranscriptName = str(uuid.uuid4())
 
 		# Define directory accessible to singularity container
-		tmpdir = '/Users/dan'
+		tmpdir = '/tmp'
 
 		# Create temp file paths
 		temp_audio_file = f"{tmpdir}/{tmpAudioName}.dat"

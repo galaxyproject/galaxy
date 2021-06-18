@@ -2,7 +2,7 @@
 
 
 function add_amp_paths() {    
-    echo "GALAXY ROOT DIR IS $PWD"
+    # Sets python paths needed by amp common code in virtual environment
     _AMP_UTIL_DIR="$PWD/tools/amp_util"
     _AMP_SCHEMA_DIR="$PWD/tools/amp_schema"
     PYTHONPATH="$_AMP_UTIL_DIR:$PYTHONPATH"
