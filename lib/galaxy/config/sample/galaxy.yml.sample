@@ -1809,14 +1809,15 @@ galaxy:
   # Enable Galaxy's "Upload via FTP" interface.  You'll need to install
   # and configure an FTP server (we've used ProFTPd since it can use
   # Galaxy's database for authentication) and set the following two
-  # options. This should point to a directory containing subdirectories
-  # matching users' identifier (defaults to e-mail), where Galaxy will
-  # look for files.
-  #ftp_upload_dir: null
-
-  # This should be the hostname of your FTP server, which will be
-  # provided to users in the help text.
+  # options. This will be provided to users in the help text as 'log in
+  # to the FTP server at '. Thus, it should be the hostname of your FTP
+  # server.
   #ftp_upload_site: null
+
+  # This should point to a directory containing subdirectories matching
+  # users' identifier (defaults to e-mail), where Galaxy will look for
+  # files.
+  #ftp_upload_dir: null
 
   # User attribute to use as subdirectory in calculating default
   # ftp_upload_dir pattern. By default this will be email so a user's

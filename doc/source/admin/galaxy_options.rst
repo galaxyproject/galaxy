@@ -3652,28 +3652,29 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``ftp_upload_dir``
-~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable Galaxy's "Upload via FTP" interface.  You'll need to
-    install and configure an FTP server (we've used ProFTPd since it
-    can use Galaxy's database for authentication) and set the
-    following two options. This should point to a directory containing
-    subdirectories matching users' identifier (defaults to e-mail),
-    where Galaxy will look for files.
-:Default: ``None``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``ftp_upload_site``
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    This should be the hostname of your FTP server, which will be
-    provided to users in the help text.
+    Enable Galaxy's "Upload via FTP" interface.  You'll need to
+    install and configure an FTP server (we've used ProFTPd since it
+    can use Galaxy's database for authentication) and set the
+    following two options. This will be provided to users in the help
+    text as 'log in to the FTP server at '. Thus, it should be the
+    hostname of your FTP server.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``ftp_upload_dir``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This should point to a directory containing subdirectories
+    matching users' identifier (defaults to e-mail), where Galaxy will
+    look for files.
 :Default: ``None``
 :Type: str
 
