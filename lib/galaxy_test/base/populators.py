@@ -628,8 +628,8 @@ class BaseDatasetPopulator(BasePopulator):
         role_id = self.user_private_role_id()
         # Give manage permission to the user.
         payload = {
-            "access": json.dumps([role_id]),
-            "manage": json.dumps([role_id]),
+            "access": [role_id],
+            "manage": [role_id],
         }
         url = f"histories/{history_id}/contents/{dataset_id}/permissions"
         update_response = self._put(url, payload, admin=True, json=True)
