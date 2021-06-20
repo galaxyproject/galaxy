@@ -38,7 +38,6 @@ describe("WorkflowInvocationState.vue with terminal invocation", () => {
     it("displays report links", async () => {
         expect(wrapper.find(".invocation-pdf-link").exists()).toBeTruthy();
         expect(wrapper.find(".invocation-report-link").exists()).toBeTruthy();
-        expect(wrapper.find(".bco-json").exists()).toBeTruthy();
     });
 
     it("doesn't show cancel invocation button", async () => {
