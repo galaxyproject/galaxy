@@ -8,6 +8,7 @@ from social_core.utils import module_member, setting_name
 from sqlalchemy.exc import IntegrityError
 
 from galaxy.exceptions import MalformedContents
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from ..authnz import IdentityProvider
 from ..model import PSAAssociation, PSACode, PSANonce, PSAPartial, UserAuthnzToken
 
@@ -356,7 +357,10 @@ def verify(strategy=None, response=None, details=None, **kwargs):
             f"https://iam.googleapis.com/v1/projects/-/serviceAccounts/{endpoint}:getIamPolicy",
             headers={
                 'Authorization': 'Bearer {}'.format(response.get("access_token")),
-                'Accept': 'application/json'})
+                'Accept': 'application/json'
+            },
+            timeout=DEFAULT_SOCKET_TIMEOUT
+        )
         res = json.loads(result.content)
         if result.status_code == requests.codes.ok:
             email_addresses = res["bindings"][0]["members"]

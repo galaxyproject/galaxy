@@ -687,15 +687,15 @@ class GalaxyInteractorApi:
 
     def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
-        return requests.delete(f"{self.api_url}/{path}", params=data, headers=headers)
+        return requests.delete(f"{self.api_url}/{path}", params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT)
 
     def _patch(self, path, data=None, key=None, headers=None, admin=False, anon=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
-        return requests.patch(f"{self.api_url}/{path}", data=data, headers=headers)
+        return requests.patch(f"{self.api_url}/{path}", data=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT)
 
     def _put(self, path, data=None, key=None, headers=None, admin=False, anon=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
-        return requests.put(f"{self.api_url}/{path}", data=data, headers=headers)
+        return requests.put(f"{self.api_url}/{path}", data=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT)
 
     def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
@@ -703,7 +703,7 @@ class GalaxyInteractorApi:
             path = path[len("/api"):]
         url = f"{self.api_url}/{path}"
         # no data for GET
-        return requests.get(url, params=data, headers=headers)
+        return requests.get(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT)
 
 
 def ensure_tool_run_response_okay(submit_response_object, request_desc, inputs=None):
