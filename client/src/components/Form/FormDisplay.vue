@@ -77,6 +77,7 @@ export default {
         },
         placeholderParams() {
             this.onPlaceholderParams();
+            this.onChange();
         },
     },
     mounted() {
