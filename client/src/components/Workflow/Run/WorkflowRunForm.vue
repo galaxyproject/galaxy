@@ -2,7 +2,7 @@
     <div>
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
-                <Form :inputs="wpInputs" />
+                <Form :inputs="wpInputs" @onChange="onWpInputs" />
             </template>
         </FormCard>
         <FormCard title="History Options">
@@ -21,7 +21,7 @@
             </template>
         </FormCard>
         <div v-for="step in model.steps">
-            <WorkflowRunToolStep v-if="step.step_type == 'tool'" :model="step" />
+            <WorkflowRunToolStep v-if="step.step_type == 'tool'" :model="step" :placeholderParams="wpData" />
             <WorkflowRunDefaultStep v-else :model="step" />
         </div>
     </div>
@@ -53,6 +53,7 @@ export default {
     },
     data() {
         return {
+            wpData: {},
             historyInputs: [
                 {
                     type: "conditional",
@@ -122,6 +123,9 @@ export default {
         },
     },
     methods: {
+        onWpInputs(data) {
+            this.wpData = data;
+        },
         execute() {
             this.runForm.execute();
         },

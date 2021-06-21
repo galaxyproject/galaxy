@@ -4,6 +4,7 @@
 
 <script>
 import Form from "mvc/form/form-view";
+import FormData from "mvc/form/form-data";
 
 export default {
     props: {
@@ -39,6 +40,10 @@ export default {
             type: Object,
             default: null,
         },
+        placeholderParams: {
+            type: Object,
+            default: null,
+        },
     },
     data() {
         return {
@@ -69,6 +74,9 @@ export default {
                     this.form.errors(this.formConfig);
                 }
             });
+        },
+        placeholderParams() {
+            this.onPlaceholderParams();
         },
     },
     mounted() {
@@ -125,6 +133,32 @@ export default {
         },
     },
     methods: {
+        onPlaceholderParams() {
+            this.params = {};
+            FormData.visitInputs(this.inputs, (input, name) => {
+                this.params[name] = input;
+            });
+            _.each(this.params, (input, name) => {
+                if (input.wp_linked) {
+                    var field = this.form.field_list[this.form.data.match(name)];
+                    if (field) {
+                        var new_value;
+                        new_value = input.value;
+                        var re = /\$\{(.+?)\}/g;
+                        var match;
+                        while ((match = re.exec(input.value))) {
+                            var wp_value = this.placeholderParams[match[1]];
+                            if (wp_value) {
+                                new_value = new_value.split(match[0]).join(wp_value);
+                            }
+                        }
+                    }
+                    if (new_value !== undefined) {
+                        field.value(new_value);
+                    }
+                }
+            });
+        },
         onChange() {
             this.formData = this.form.data.create();
             this.$emit("onChange", this.formData);
@@ -142,6 +176,7 @@ export default {
                         this.onChange();
                     },
                 });
+                this.onPlaceholderParams();
                 this.onChange();
             });
         },
