@@ -1104,7 +1104,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         # Get history to export.
         #
         jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
-        return self.manager.serve_ready_history_export(trans, jeha)
+        return self.history_manager.serve_ready_history_export(trans, jeha)
 
     @web.expose
     @web.json
