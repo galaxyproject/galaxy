@@ -139,6 +139,7 @@ RUN set -xe; \
         bzip2 \
     && update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 0 \
     && update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 0 \
+    && echo "set nocompatible" >> /usr/share/vim/vimrc.tiny \
     && echo "$LANG UTF-8" > /etc/locale.gen \
     && locale-gen $LANG && update-locale LANG=$LANG \
     && apt-get autoremove -y && apt-get clean \
