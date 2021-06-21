@@ -22,6 +22,8 @@ from galaxy.managers import (
     history_contents,
     sharable
 )
+from galaxy.managers.base import ServiceBase
+from galaxy.managers.citations import CitationsManager
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.structured_app import MinimalManagerApp
 
@@ -522,20 +524,44 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
         })
 
 
-class HistoriesService:
+class HistoriesService(ServiceBase):
     """Common interface/service logic for interactions with histories in the context of the API.
 
     Provides the logic of the actions invoked by API controllers and uses type definitions
     and pydantic models to declare its parameters and return types.
     """
 
-    def __init__(self, app: MinimalManagerApp, manager: HistoryManager, serializer: HistorySerializer):
+    def __init__(
+        self,
+        app: MinimalManagerApp,
+        manager: HistoryManager,
+        serializer: HistorySerializer,
+        citations_manager: CitationsManager,
+    ):
         self.app = app
         self.manager = manager
         self.serializer = serializer
+        self.citations_manager = citations_manager
         self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
 
     # TODO: add the rest of the API actions here and call them directly from the API controller
+
+    def citations(self, trans, history_id):
+        """
+        Return all the citations for the tools used to produce the datasets in
+        the history.
+        """
+        history = self.manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
+        tool_ids = set()
+        for dataset in history.datasets:
+            job = dataset.creating_job
+            if not job:
+                continue
+            tool_id = job.tool_id
+            if not tool_id:
+                continue
+            tool_ids.add(tool_id)
+        return [citation.to_dict("bibtex") for citation in self.citations_manager.citations_for_tool_ids(tool_ids)]
 
     def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
         """Allows to publish or share with other users the given resource (by id) and returns the current sharing

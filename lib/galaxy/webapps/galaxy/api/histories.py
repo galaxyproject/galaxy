@@ -40,7 +40,6 @@ log = logging.getLogger(__name__)
 
 
 class HistoriesController(BaseGalaxyAPIController):
-    citations_manager: citations.CitationsManager = depends(citations.CitationsManager)
     user_manager: users.UserManager = depends(users.UserManager)
     workflow_manager: workflows.WorkflowsManager = depends(workflows.WorkflowsManager)
     manager: histories.HistoryManager = depends(histories.HistoryManager)
@@ -247,17 +246,7 @@ class HistoriesController(BaseGalaxyAPIController):
         Return all the citations for the tools used to produce the datasets in
         the history.
         """
-        history = self.manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
-        tool_ids = set()
-        for dataset in history.datasets:
-            job = dataset.creating_job
-            if not job:
-                continue
-            tool_id = job.tool_id
-            if not tool_id:
-                continue
-            tool_ids.add(tool_id)
-        return [citation.to_dict("bibtex") for citation in self.citations_manager.citations_for_tool_ids(tool_ids)]
+        return self.service.citations(trans, history_id)
 
     @expose_api_anonymous_and_sessionless
     def published(self, trans, **kwd):
