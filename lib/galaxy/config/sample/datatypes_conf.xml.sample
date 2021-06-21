@@ -667,7 +667,7 @@
       <!-- The ordering is important. The first one is considered as default converter in the build-in conversion function -> (as sdf)-->
       <converter file="smi_to_sdf_converter.xml" target_datatype="sdf"/>
       <converter file="smi_to_inchi_converter.xml" target_datatype="inchi"/>
-      <converter file="smi_to_cml_converter.xml" target_datatype="cml"/>
+      <converter file="to_cml_converter.xml" target_datatype="cml"/>
       <converter file="smi_to_mol_converter.xml" target_datatype="mol"/>
       <converter file="smi_to_mol2_converter.xml" target_datatype="mol2"/>
       <converter file="smi_to_smi_converter.xml" target_datatype="smi"/>
@@ -676,7 +676,7 @@
       <converter file="sdf_to_smi_converter.xml" target_datatype="smi"/>
       <converter file="sdf_to_inchi_converter.xml" target_datatype="inchi"/>
       <converter file="sdf_to_mol2_converter.xml" target_datatype="mol2"/>
-      <converter file="sdf_to_cml_converter.xml" target_datatype="cml"/>
+      <converter file="to_cml_converter.xml" target_datatype="cml"/>
       <display file="icn3d/icn3d_simple.xml"/>
     </datatype>
     <datatype extension="inchi" type="galaxy.datatypes.molecules:InChI" display_in_upload="true">
@@ -684,20 +684,20 @@
       <converter file="inchi_to_sdf_converter.xml" target_datatype="sdf"/>
       <converter file="inchi_to_mol_converter.xml" target_datatype="mol"/>
       <converter file="inchi_to_mol2_converter.xml" target_datatype="mol2"/>
-      <converter file="inchi_to_cml_converter.xml" target_datatype="cml"/>
+      <converter file="to_cml_converter.xml" target_datatype="cml"/>
     </datatype>
     <datatype extension="mol" type="galaxy.datatypes.molecules:MOL" display_in_upload="true">
       <converter file="mol_to_smi_converter.xml" target_datatype="smi"/>
       <converter file="mol_to_inchi_converter.xml" target_datatype="inchi"/>
       <converter file="mol_to_mol2_converter.xml" target_datatype="mol2"/>
-      <converter file="mol_to_cml_converter.xml" target_datatype="cml"/>
+      <converter file="to_cml_converter.xml" target_datatype="cml"/>
     </datatype>
     <datatype extension="mol2" type="galaxy.datatypes.molecules:MOL2" display_in_upload="true">
       <converter file="mol2_to_smi_converter.xml" target_datatype="smi"/>
       <converter file="mol2_to_sdf_converter.xml" target_datatype="sdf"/>
       <converter file="mol2_to_inchi_converter.xml" target_datatype="inchi"/>
       <converter file="mol2_to_mol_converter.xml" target_datatype="mol"/>
-      <converter file="mol2_to_cml_converter.xml" target_datatype="cml"/>
+      <converter file="to_cml_converter.xml" target_datatype="cml"/>
       <display file="icn3d/icn3d_simple.xml"/>
     </datatype>
     <datatype extension="cml" type="galaxy.datatypes.molecules:CML" display_in_upload="true">
