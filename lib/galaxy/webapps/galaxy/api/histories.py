@@ -41,7 +41,6 @@ log = logging.getLogger(__name__)
 
 class HistoriesController(BaseGalaxyAPIController):
     user_manager: users.UserManager = depends(users.UserManager)
-    workflow_manager: workflows.WorkflowsManager = depends(workflows.WorkflowsManager)
     manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_export_view: histories.HistoryExportView = depends(histories.HistoryExportView)
     serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
