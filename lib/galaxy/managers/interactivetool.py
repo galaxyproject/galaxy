@@ -1,6 +1,5 @@
 import logging
 import sqlite3
-from urllib.parse import urlparse
 
 from sqlalchemy import or_
 
@@ -281,7 +280,7 @@ class InteractiveToolManager:
         entry_point_prefix = self.app.config.interactivetools_prefix
         rval = "/"
         if not entry_point.requires_domain:
-            rval = str(urlparse(self.app.config.galaxy_infrastructure_url).path).rstrip("/").lstrip("/")
+            rval = str(self.app.config.interactivetools_base_path).rstrip("/").lstrip("/")
             if self.app.config.interactivetools_shorten_url:
                 rval = f'/{rval}/{entry_point_prefix}/{entry_point_encoded_id}/{entry_point.token[:10]}/'
             else:

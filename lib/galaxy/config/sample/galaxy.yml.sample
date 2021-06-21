@@ -877,6 +877,10 @@ galaxy:
   # as Galaxy by default.
   #interactivetools_proxy_host: null
 
+  # Base path for interactive tools running at a subpath without a
+  # subdomain. Defaults to "/".
+  #interactivetools_base_path: /
+
   # Map for interactivetool proxy.
   # The value of this option will be resolved with respect to
   # <data_dir>.

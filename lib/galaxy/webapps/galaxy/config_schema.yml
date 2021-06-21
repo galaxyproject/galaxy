@@ -1152,9 +1152,17 @@ mapping:
 
       interactivetools_proxy_host:
         type: str
+        required: false
         desc: |
           Proxy host - assumed to just be hosted on the same hostname and port as
           Galaxy by default.
+
+      interactivetools_base_path:
+        type: str
+        required: false
+        default: "/"
+        desc: |
+          Base path for interactive tools running at a subpath without a subdomain. Defaults to "/".
 
       interactivetools_map:
         type: str
