@@ -2,7 +2,7 @@
     <div>
         <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true">
             <template v-slot:body>
-                <Form :inputs="inputs" />
+                <Form :inputs="inputs" @onChange="onChange" />
             </template>
         </FormCard>
     </div>
@@ -56,6 +56,10 @@ export default {
             }
         },
     },
-    methods: {},
+    methods: {
+        onChange(data) {
+            this.$emit("onChange", this.model.index, data);
+        },
+    },
 };
 </script>

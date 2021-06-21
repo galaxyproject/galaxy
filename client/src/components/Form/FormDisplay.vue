@@ -5,6 +5,7 @@
 <script>
 import Form from "mvc/form/form-view";
 import FormData from "mvc/form/form-data";
+import { isDataStep } from "components/Workflow/Run/model";
 
 export default {
     props: {
@@ -40,7 +41,11 @@ export default {
             type: Object,
             default: null,
         },
-        placeholderParams: {
+        replaceParams: {
+            type: Object,
+            default: null,
+        },
+        replaceData: {
             type: Object,
             default: null,
         },
@@ -75,8 +80,12 @@ export default {
                 }
             });
         },
-        placeholderParams() {
-            this.onPlaceholderParams();
+        replaceParams() {
+            this.onReplaceParams();
+            this.onChange();
+        },
+        replaceData() {
+            this.onReplaceParams();
             this.onChange();
         },
     },
@@ -134,23 +143,46 @@ export default {
         },
     },
     methods: {
-        onPlaceholderParams() {
+        onReplaceParams() {
             this.params = {};
             FormData.visitInputs(this.inputs, (input, name) => {
                 this.params[name] = input;
             });
             _.each(this.params, (input, name) => {
-                if (input.wp_linked) {
+                if (input.wp_linked || input.step_linked) {
                     var field = this.form.field_list[this.form.data.match(name)];
                     if (field) {
                         var new_value;
-                        new_value = input.value;
-                        var re = /\$\{(.+?)\}/g;
-                        var match;
-                        while ((match = re.exec(input.value))) {
-                            var wp_value = this.placeholderParams[match[1]];
-                            if (wp_value) {
-                                new_value = new_value.split(match[0]).join(wp_value);
+                        if (input.step_linked) {
+                            new_value = { values: [] };
+                            _.each(input.step_linked, (source_step) => {
+                                if (isDataStep(source_step)) {
+                                    console.log(this.replaceData);
+                                    console.log(source_step.index);
+                                    var value = this.replaceData[source_step.index].input;
+                                    console.log(value);
+                                    if (value) {
+                                        _.each(value.values, (v) => {
+                                            new_value.values.push(v);
+                                        });
+                                    }
+                                }
+                            });
+                            if (!input.multiple && new_value.values.length > 0) {
+                                new_value = {
+                                    values: [new_value.values[0]],
+                                };
+                            }
+                        }
+                        if (input.wp_linked) {
+                            new_value = input.value;
+                            var re = /\$\{(.+?)\}/g;
+                            var match;
+                            while ((match = re.exec(input.value))) {
+                                var wp_value = this.replaceParams[match[1]];
+                                if (wp_value) {
+                                    new_value = new_value.split(match[0]).join(wp_value);
+                                }
                             }
                         }
                     }
@@ -177,7 +209,7 @@ export default {
                         this.onChange();
                     },
                 });
-                this.onPlaceholderParams();
+                this.onReplaceParams();
                 this.onChange();
             });
         },

@@ -2,7 +2,7 @@
     <div>
         <FormCard :title="title" icon="fa-wrench" :collapsible="false">
             <template v-slot:body>
-                <Form :inputs="model.inputs" :placeholderParams="placeholderParams" />
+                <Form :inputs="model.inputs" :replaceParams="replaceParams" :replaceData="replaceData" @onChange="onChange" />
             </template>
         </FormCard>
     </div>
@@ -22,7 +22,11 @@ export default {
             type: Object,
             required: true,
         },
-        placeholderParams: {
+        replaceParams: {
+            type: Object,
+            default: null,
+        },
+        replaceData: {
             type: Object,
             default: null,
         },
@@ -33,6 +37,11 @@ export default {
     computed: {
         title() {
             return `${this.model.name} ${this.model.description} (Galaxy Version ${this.model.version})`;
+        },
+    },
+    methods: {
+        onChange(data) {
+            this.$emit("onChange", this.model.index, data);
         },
     },
 };

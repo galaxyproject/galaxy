@@ -21,13 +21,20 @@
             </template>
         </FormCard>
         <div v-for="step in model.steps">
-            <WorkflowRunToolStep v-if="step.step_type == 'tool'" :model="step" :placeholderParams="wpData" />
-            <WorkflowRunDefaultStep v-else :model="step" />
+            <WorkflowRunToolStep
+                v-if="step.step_type == 'tool'"
+                :model="step"
+                :replaceData="stepData"
+                :replaceParams="wpData"
+                @onChange="onStepInputs"
+            />
+            <WorkflowRunDefaultStep v-else :model="step" @onChange="onStepInputs" />
         </div>
     </div>
 </template>
 
 <script>
+import Vue from "vue";
 import { getGalaxyInstance } from "app";
 import Form from "components/Form/Form";
 import FormCard from "components/Form/FormCard";
@@ -53,6 +60,7 @@ export default {
     },
     data() {
         return {
+            stepData: {},
             wpData: {},
             historyInputs: [
                 {
@@ -123,6 +131,9 @@ export default {
         },
     },
     methods: {
+        onStepInputs(stepId, data) {
+            Vue.set(this.stepData, stepId, data);
+        },
         onWpInputs(data) {
             this.wpData = data;
         },

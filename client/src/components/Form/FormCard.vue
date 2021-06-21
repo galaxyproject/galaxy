@@ -24,7 +24,7 @@
                 </span>
             </a>
         </div>
-        <div v-if="!collapsed" class="portlet-content">
+        <div v-show="!collapsed" class="portlet-content">
             <slot name="body" />
         </div>
     </div>
