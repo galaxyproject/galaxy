@@ -1249,7 +1249,6 @@ class BaseWorkflowPopulator(BasePopulator):
         api_asserts.assert_has_keys(bco["description_domain"], "keywords", "xref", "platform", "pipeline_steps")
         api_asserts.assert_has_keys(
             bco["execution_domain"],
-            "script_access_type",
             "script",
             "script_driver",
             "software_prerequisites",

@@ -52,7 +52,7 @@
 <script>
 
 import { getRootFromIndexLink } from "onload";
-import { mapGetters, mapActions } from "vuex";
+import { mapGetters } from "vuex";
 import axios from "axios";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
@@ -61,6 +61,7 @@ export default {
     props: {
         invocation: {
             required: true,
+            type: String
         },
     },
     data() {
