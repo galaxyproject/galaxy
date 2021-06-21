@@ -1132,3 +1132,14 @@ def is_valid_slug(slug):
 
     VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
     return VALID_SLUG_RE.match(slug)
+
+
+class ServiceBase:
+    """Base class with common logic and utils reused by other Services."""
+
+    def __init__(self, app: MinimalManagerApp):
+        self.app = app
+
+    def decode_id(self, id):
+        """Decodes a previously encoded database ID."""
+        return decode_id(self.app, id)
