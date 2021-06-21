@@ -380,6 +380,31 @@ workflows:
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
     search_box: "#workflow-search"
+    workflow_table: "#workflow-table"
+
+trs_search:
+  selectors:
+    search: "#trs-search-query"
+    search_result:
+      type: xpath
+      selector: "//td[contains(text(), '${workflow_name}')]"
+    import_button: ".workflow-import"
+    select_server_button: "#dropdownTrsServer"
+    select_server:
+      type: xpath
+      selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
+
+trs_import:
+  selectors:
+    input: "#trs-id-input"
+    # *= means attribute value contains "${version}"
+    # needed because dockstore uses branch or git tag, while workflowhub
+    # concatenates name and version
+    import_version: '[data-version-name*="${version}"]'
+    select_server_button: "#dropdownTrsServer"
+    select_server:
+      type: xpath
+      selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
 
 workflow_run:
 
