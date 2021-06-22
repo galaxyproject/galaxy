@@ -163,6 +163,14 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_visible(self.navigation.masthead.selector)
         self.wait_for_visible(self.navigation.history_panel.selector)
 
+    def trs_search(self):
+        self.driver.get(self.build_url('workflows/trs_search'))
+        self.wait_for_visible(self.navigation.masthead.selector)
+
+    def trs_by_id(self):
+        self.driver.get(self.build_url('workflows/trs_import'))
+        self.wait_for_visible(self.navigation.masthead.selector)
+
     def switch_to_main_panel(self):
         self.driver.switch_to.frame("galaxy_main")
 
