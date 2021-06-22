@@ -1,0 +1,30 @@
+<tool id="CONVERTER_biom" name="Convert Biom datasets" version="2.1.5">
+    <requirements>
+        <requirement type="package" version="2.1.5">biom-format</requirement>
+    </requirements>
+    <command><![CDATA[
+        biom convert -i '$input' -o '$output'
+        #if $__target_datatype == 'biom2'
+            --to-hdf5
+        #elif $__target_datatype == 'biom1'
+            --to-json
+        #else
+            >&2 echo "BIOM converter recieved unknown target datatype: "$__target_datatype &&
+            exit 1
+        #end if
+    ]]></command>
+    <configfiles>
+        <configfile name="ext_config">{"output": {
+  "name": "$input.name converted to $__target_datatype",
+  "ext": "$__target_datatype"
+}}</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input" type="data" format="biom1,biom2" label="Biom file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="auto"/>
+    </outputs>
+    <help>
+    </help>
+</tool>
