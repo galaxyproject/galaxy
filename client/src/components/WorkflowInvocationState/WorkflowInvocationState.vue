@@ -64,7 +64,7 @@
 import { cancelWorkflowScheduling } from "./services";
 import { getRootFromIndexLink } from "onload";
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails";
-import WorkflowInvocationBiocompute from "./WorkflowInvocationBiocompute"
+import WorkflowInvocationBiocompute from "./WorkflowInvocationBiocompute";
 
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import mixin from "components/JobStates/mixin";
@@ -141,9 +141,6 @@ export default {
         },
         invocationLink: function () {
             return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
-        },
-        bcoJSON: function () {
-            return getUrl(`api/invocations/${this.invocationId}/biocompute/download`);
         },
         invocationPdfLink: function () {
             return getUrl(`api/invocations/${this.invocationId}/report.pdf`);

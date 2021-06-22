@@ -5,52 +5,61 @@
             <div v-if="Object.keys(invocation).length">
                 <details class="invocation-biocompute-object-export">
                     <summary><b>Export BioCompute Object</b></summary>
-                     <div>
-                         <form v-on:submit.prevent="submitForm">
-                             <div class="form-group">
-                                 <label for="fetch">BCO DB Root URL</label>
-                                 <input type="text" 
-                                  class="form-control"
-                                  id="fetch" 
-                                  placeholder="https://beta.portal.aws.biochemistry.gwu.edu" 
-                                  v-model="form.fetch">
-                             </div>
-                             <div class="form-group">
-                                 <label for="authorization">User API Key</label>
-                                 <input type="text" 
-                                  class="form-control"
-                                  id="authorization" 
-                                  v-model="form.authorization">
+                    <div>
+                        <form v-on:submit.prevent="submitForm">
+                            <div class="form-group">
+                                <label for="fetch">BCO DB Root URL</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="fetch"
+                                    placeholder="https://beta.portal.aws.biochemistry.gwu.edu"
+                                    v-model="form.fetch"
+                                />
                             </div>
                             <div class="form-group">
-                                 <label for="table">Table</label>
-                                 <input type="text"
-                                  class="form-control"
-                                  id="table"
-                                  placeholder="bco_draft"
-                                  v-model="form.table">
+                                <label for="authorization">User API Key</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="authorization"
+                                    v-model="form.authorization"
+                                />
                             </div>
                             <div class="form-group">
-                                 <label for="owner_group">Group</label>
-                                 <input type="text"
-                                  class="form-control" 
-                                  id="owner_group" 
-                                  placeholder="bco_drafters"
-                                  v-model="form.owner_group">
+                                <label for="table">Table</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="table"
+                                    placeholder="bco_draft"
+                                    v-model="form.table"
+                                />
                             </div>
                             <div class="form-group">
-                                 <button class="btn btn-primary">Submit</button>
+                                <label for="owner_group">Group</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="owner_group"
+                                    placeholder="bco_drafters"
+                                    v-model="form.owner_group"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <button class="btn btn-primary">Submit</button>
                             </div>
                         </form>
-                      </div>
+                    </div>
                 </details>
             </div>
-            <div><a class="bco-json" :href="bcoJSON"><b>Download BioCompute Object</b></a></div>
+            <div>
+                <a class="bco-json" :href="bcoJSON"><b>Download BioCompute Object</b></a>
+            </div>
         </details>
     </div>
 </template>
 <script>
-
 import { getRootFromIndexLink } from "onload";
 import { mapGetters } from "vuex";
 import axios from "axios";
@@ -61,7 +70,7 @@ export default {
     props: {
         invocation: {
             required: true,
-            type: String
+            type: String,
         },
     },
     data() {
@@ -71,23 +80,25 @@ export default {
                 required: true,
             },
             form: {
-                fetch: '',
-                authorization: '',
-                table: '',
-                owner_group: ''
+                fetch: "",
+                authorization: "",
+                table: "",
+                owner_group: "",
             },
         };
     },
     created: function () {
-        axios.get(getUrl(`./api/invocations/${this.invocation}/biocompute/`))
-            .then(response => {this.bco = response.data})
-            .catch(e => {this.errors.push(e)});
+        axios
+            .get(getUrl(`./api/invocations/${this.invocation}/biocompute/`))
+            .then((response) => {
+                this.bco = response.data;
+            })
+            .catch((e) => {
+                this.errors.push(e);
+            });
     },
     computed: {
         ...mapGetters(["getInvocationById"]),
-        invocation2: function () {
-            return this.$store.state.user.currentUser;
-        },
         indexStr() {
             if (this.index == null) {
                 return 0;
@@ -97,31 +108,33 @@ export default {
         },
         bcoJSON: function () {
             return getUrl(`api/invocations/${this.invocation}/biocompute/download`);
-        }
+        },
     },
     methods: {
-        submitForm(){
+        submitForm() {
             const bcoString = {
                 POST_create_new_object: [
                     {
                         contents: this.bco,
                         owner_group: this.form.owner_group,
-                        schema: 'IEEE',
-                        state: 'DRAFT',
+                        schema: "IEEE",
+                        state: "DRAFT",
                         table: this.form.table,
-                    }
-                ]};
-            const headers = {
-               "Authorization": "Token " + this.form.authorization,
-               "Content-type": "application/json; charset=UTF-8"
+                    },
+                ],
             };
-            axios.post(this.form.fetch, bcoString, {headers:headers})
+            const headers = {
+                Authorization: "Token " + this.form.authorization,
+                "Content-type": "application/json; charset=UTF-8",
+            };
+            axios
+                .post(this.form.fetch, bcoString, { headers: headers })
                 .then((res) => {})
                 .catch((error) => {})
-                .finally(() => {console.log(this.form)
-            });
-        }
-    }
-}
+                .finally(() => {
+                    console.log(this.form);
+                });
+        },
+    },
+};
 </script>
-
