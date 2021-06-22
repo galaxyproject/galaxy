@@ -304,7 +304,6 @@ class JSAppLauncher(BaseUIController):
     def _get_extended_config(self, trans):
         config = {
             'active_view': 'analysis',
-            'enable_cloud_launch': trans.app.config.get_bool('enable_cloud_launch', False),
             'enable_webhooks': True if trans.app.webhooks_registry.webhooks else False,
             'toolbox': trans.app.toolbox.to_dict(trans),
             'message_box_visible': trans.app.config.message_box_visible,
