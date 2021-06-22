@@ -1,6 +1,0 @@
-# TODO For the converter tests the header is commented fails otherwise
-# track type=broadPeak visibility=3 db=hg19 name="bPk" description="ENCODE broadPeak Example"
-# browser position chr1:798200-800700
-chr1	798256	798454	.	116	.	4.89716	3.70716	-1
-chr1	799435	799507	.	103	.	2.46426	1.54117	-1
-chr1	800141	800596	.	107	.	3.22803	2.12614	-1
