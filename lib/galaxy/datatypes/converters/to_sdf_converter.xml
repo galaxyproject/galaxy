@@ -1,0 +1,71 @@
+<tool id="CONVERTER_to_sdf" name="InChI, mol, mol2, smiles to SDF" version="2.4.1">
+    <description></description>
+    <!-- <parallelism method="multi" split_inputs="input" split_mode="to_size" split_size="10000" shared_inputs="" merge_outputs="output"></parallelism> -->
+    <requirements>
+        <requirement type="package" version="2.4.1">openbabel</requirement>
+    </requirements>
+    <command><![CDATA[
+        obabel -i$input.ext '${input}' -osdf -O '${output}' -e 2>&1
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="cml,inchi,mol,mol2,smi" label="Molecules in cml, InChI, mol, mol2, smiles format"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="sdf"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="cml" value="drugbank_drugs.cml"/>
+            <output name="output" ftype="sdf">
+                <assert_contents>
+                    <has_text text="Goserelin"/>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="$$$$"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="inchi" value="drugbank_drugs.inchi"/>
+            <output name="output" ftype="sdf">
+                <assert_contents>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="$$$$"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="mol" value="chebi_57262.v3k.mol"/>
+            <output name="output" ftype="sdf">
+                <assert_contents>
+                    <has_text text="CHEBI:57262"/>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="$$$$"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="mol2" value="drugbank_drugs.mol2"/>
+            <output name="output" ftype="sdf">
+                <assert_contents>
+                    <has_text text="Goserelin"/>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="$$$$"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="smi" value="drugbank_drugs.smi"/>
+            <output name="output" ftype="sdf">
+                <assert_contents>
+                    <has_text text="Goserelin"/>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="$$$$"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+<![CDATA[
+]]>
+    </help>
+</tool>
