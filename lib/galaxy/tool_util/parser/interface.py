@@ -465,7 +465,7 @@ class TestCollectionOutputDef:
     def from_dict(as_dict):
         return TestCollectionOutputDef(
             name=as_dict["name"],
-            attrib=as_dict["attributes"],
+            attrib=as_dict.get("attributes", {}),
             element_tests=as_dict["element_tests"],
         )
 
