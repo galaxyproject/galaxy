@@ -1,0 +1,21 @@
+<tool id="test_CONVERTER_biom1_to_biom2" name="Test Convert Biom1 to Biom2" version="0.1">
+    <command><![CDATA[
+        #set DIR=dir()
+        echo $DIR &&
+        cp '$biom2' '$output_biom2'
+    ]]></command>
+    <inputs>
+        <param name="biom2" type="data" format="biom2" label="Biom2 file"/>
+    </inputs>
+    <outputs>
+        <data name="output_biom2" format="biom2"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="biom2" ftype="biom1" value="input_taxonomy.biom1"/>
+            <output name="output_biom2" format="biom2" value="input_taxonomy.biom2" compare="sim_size"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>
