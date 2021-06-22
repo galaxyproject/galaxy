@@ -537,11 +537,13 @@ class HistoriesService(ServiceBase):
         manager: HistoryManager,
         serializer: HistorySerializer,
         citations_manager: CitationsManager,
+        history_export_view: HistoryExportView
     ):
         self.app = app
         self.manager = manager
         self.serializer = serializer
         self.citations_manager = citations_manager
+        self.history_export_view = history_export_view
         self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
 
     # TODO: add the rest of the API actions here and call them directly from the API controller
@@ -562,6 +564,79 @@ class HistoriesService(ServiceBase):
                 continue
             tool_ids.add(tool_id)
         return [citation.to_dict("bibtex") for citation in self.citations_manager.citations_for_tool_ids(tool_ids)]
+
+    def index_exports(self, trans, id):
+        """
+        Get previous history exports (to links). Effectively returns serialized
+        JEHA objects.
+        """
+        return self.history_export_view.get_exports(trans, id)
+
+    def archive_export(self, trans, id, payload=None, **kwds):
+        """
+        start job (if needed) to create history export for corresponding
+        history.
+
+        :type   id:     str
+        :param  id:     the encoded id of the history to export
+
+        :rtype:     dict
+        :returns:   object containing url to fetch export from.
+        """
+        kwds.update(payload or {})
+        # PUT instead of POST because multiple requests should just result
+        # in one object being created.
+        history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
+        jeha = history.latest_export
+        force = 'force' in kwds  # Hack to force rebuild everytime during dev
+        exporting_to_uri = 'directory_uri' in kwds
+        # always just issue a new export when exporting to a URI.
+        up_to_date = not force and not exporting_to_uri and (jeha and jeha.up_to_date)
+        job = None
+        if not up_to_date:
+            # Need to create new JEHA + job.
+            gzip = kwds.get("gzip", True)
+            include_hidden = kwds.get("include_hidden", False)
+            include_deleted = kwds.get("include_deleted", False)
+            directory_uri = kwds.get("directory_uri", None)
+            file_name = kwds.get("file_name", None)
+            job = self.manager.queue_history_export(
+                trans,
+                history,
+                gzip=gzip,
+                include_hidden=include_hidden,
+                include_deleted=include_deleted,
+                directory_uri=directory_uri,
+                file_name=file_name,
+            )
+        else:
+            job = jeha.job
+
+        if exporting_to_uri:
+            # we don't have a jeha, there will never be a download_url. Just let
+            # the client poll on the created job_id to determine when the file has been
+            # written.
+            job_id = trans.security.encode_id(job.id)
+            return dict(job_id=job_id)
+
+        if up_to_date and jeha.ready:
+            return self.history_export_view.serialize(trans, id, jeha)
+        else:
+            # Valid request, just resource is not ready yet.
+            trans.response.status = "202 Accepted"
+            if jeha:
+                return self.history_export_view.serialize(trans, id, jeha)
+            else:
+                assert job is not None, "logic error, don't have a jeha or a job"
+                job_id = trans.security.encode_id(job.id)
+                return dict(job_id=job_id)
+
+    def archive_download(self, trans, id, jeha_id):
+        """
+        If ready and available, return raw contents of exported history.
+        """
+        jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
+        return self.manager.serve_ready_history_export(trans, jeha)
 
     def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
         """Allows to publish or share with other users the given resource (by id) and returns the current sharing
