@@ -86,6 +86,7 @@ export default {
     created() {
         getRunData(this.workflowId)
             .then((runData) => {
+                this.loading = false;
                 const model = new WorkflowRunModel(runData);
                 let simpleForm = this.preferSimpleForm;
                 if (simpleForm) {
@@ -119,7 +120,6 @@ export default {
                 this.hasUpgradeMessages = model.hasUpgradeMessages;
                 this.hasStepVersionChanges = model.hasStepVersionChanges;
                 this.workflowName = this.model.name;
-                this.loading = false;
             })
             .catch((response) => {
                 this.error = errorMessageAsString(response);

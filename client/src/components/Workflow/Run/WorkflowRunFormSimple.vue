@@ -2,8 +2,11 @@
     <div>
         <div class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b>
-            <ButtonSpinner class="float-right" title="Run Workflow" id="run-workflow" @click="onExecute" />
+            <ButtonSpinner class="float-right" title="Run Workflow" id="run-workflow" @onClick="onExecute" />
         </div>
+        <b-alert v-if="errorText" class="mt-2" variant="danger" show>
+            {{ errorText | l }}
+        </b-alert>
         <Form :inputs="formInputs" @onChange="onChange" />
         <!-- Options to default one way or the other, disable if admins want, etc.. -->
         <a href="#" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
@@ -15,6 +18,7 @@ import Form from "components/Form/Form";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import { invokeWorkflow } from "./services";
 import { isWorkflowInput } from "components/Workflow/constants";
+import { errorMessageAsString } from "utils/simple-error";
 
 export default {
     components: {
@@ -39,6 +43,7 @@ export default {
         return {
             formData: {},
             inputTypes: {},
+            errorText: null,
         };
     },
     computed: {
@@ -103,8 +108,7 @@ export default {
                     this.$emit("submissionSuccess", invocations);
                 })
                 .catch((error) => {
-                    console.log(error);
-                    this.$emit("submissionError", error);
+                    this.errorText = errorMessageAsString(error);
                 });
         },
     },
