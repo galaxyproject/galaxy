@@ -30,7 +30,5 @@ jobs:
       run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
     - name: Install planemo
       run: pip install planemo
-    - name: Run converter tests
-      run: planemo test --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' 'galaxy root'/test/functional/converters/*xml
-    - name: Run converter tests as tool tests (TODO to be removed) 
+    - name: Run tests 
       run: planemo test --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' 'galaxy root'/lib/galaxy/datatypes/converters/*xml
