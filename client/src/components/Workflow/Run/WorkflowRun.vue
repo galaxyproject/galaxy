@@ -7,11 +7,7 @@
             <b-alert v-if="loading" variant="info" show>
                 <loading-span message="Loading workflow run data" />
             </b-alert>
-            <workflow-run-success
-                v-else-if="invocations != null"
-                :invocations="invocations"
-                :workflow-name="workflowName"
-            />
+            <workflow-run-success v-else-if="!!invocations" :invocations="invocations" :workflow-name="workflowName" />
             <div v-else class="ui-form-composite">
                 <div class="ui-form-composite-messages mb-4">
                     <b-alert v-if="hasUpgradeMessages" variant="warning" show>
@@ -29,41 +25,15 @@
                         Workflow submission failed: {{ submissionError }}
                     </b-alert>
                 </div>
-                <!-- h4 as a class here looks odd but it was in the Backbone -->
-                <div class="ui-form-composite-header h4">
-                    <b>Workflow: {{ workflowName }}</b>
-                    <wait-button
-                        title="Run Workflow"
-                        id="run-workflow"
-                        variant="primary"
-                        :disabled="!runButtonEnabled"
-                        :waiting="!runButtonEnabled"
-                        :wait-text="runButtonWaitText"
-                        :percentage="runButtonPercentage"
-                        @click="execute"
-                    >
-                    </wait-button>
-                </div>
-                <workflow-run-form
-                    ref="runform"
+                <workflow-run-form-simple
+                    v-if="simpleForm"
                     :model="model"
-                    v-if="!simpleForm"
-                    :set-run-button-status="setRunButtonStatus"
+                    :target-history="simpleFormTargetHistory"
+                    :use-job-cache="simpleFormUseJobCache"
                     @submissionSuccess="handleInvocations"
+                    @showAdvanced="showAdvanced"
                 />
-                <div v-else>
-                    <workflow-run-form-simple
-                        ref="runform"
-                        :model="model"
-                        :set-run-button-status="setRunButtonStatus"
-                        :target-history="simpleFormTargetHistory"
-                        :use-job-cache="simpleFormUseJobCache"
-                        @submissionSuccess="handleInvocations"
-                        @submissionError="handleSubmissionError"
-                    />
-                    <!-- Options to default one way or the other, disable if admins want, etc.. -->
-                    <a href="#" @click="showAdvanced">Expand to full workflow form.</a>
-                </div>
+                <workflow-run-form v-else :model="model" @submissionSuccess="handleInvocations" />
             </div>
         </span>
     </span>
@@ -71,7 +41,6 @@
 
 <script>
 import { getRunData } from "./services";
-import WaitButton from "components/WaitButton";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowRunSuccess from "./WorkflowRunSuccess";
 import WorkflowRunForm from "./WorkflowRunForm";
@@ -82,7 +51,6 @@ import { errorMessageAsString } from "utils/simple-error";
 export default {
     components: {
         LoadingSpan,
-        WaitButton,
         WorkflowRunSuccess,
         WorkflowRunForm,
         WorkflowRunFormSimple,
@@ -109,10 +77,6 @@ export default {
             hasUpgradeMessages: false,
             hasStepVersionChanges: false,
             workflowName: "",
-            runForm: null,
-            runButtonEnabled: true,
-            runButtonWaitText: "",
-            runButtonPercentage: -1,
             invocations: null,
             simpleForm: null,
             submissionError: null,
@@ -158,20 +122,10 @@ export default {
                 this.loading = false;
             })
             .catch((response) => {
-                console.log(response);
                 this.error = errorMessageAsString(response);
             });
     },
     methods: {
-        execute() {
-            this.$refs.runform.execute();
-            this.submissionError = null;
-        },
-        setRunButtonStatus(enabled, waitText, percentage) {
-            this.runButtonEnabled = enabled;
-            this.runButtonWaitText = waitText;
-            this.runButtonPercentage = percentage;
-        },
         handleInvocations(invocations) {
             this.invocations = invocations;
         },

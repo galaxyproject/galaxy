@@ -1,5 +1,9 @@
 <template>
     <div>
+        <div class="h4 clearfix mb-3">
+            <b>Workflow: {{ model.name }}</b>
+            <ButtonSpinner class="float-right" title="Run Workflow" id="run-workflow" @click="onExecute" />
+        </div>
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
                 <Form :inputs="wpInputs" @onChange="onWpInputs" />
@@ -37,6 +41,7 @@
 import { getGalaxyInstance } from "app";
 import Form from "components/Form/Form";
 import FormCard from "components/Form/FormCard";
+import ButtonSpinner from "components/Common/ButtonSpinner";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunToolStep from "./WorkflowRunToolStep";
 
@@ -44,16 +49,13 @@ export default {
     components: {
         Form,
         FormCard,
+        ButtonSpinner,
         WorkflowRunDefaultStep,
         WorkflowRunToolStep,
     },
     props: {
         model: {
             type: Object,
-            required: true,
-        },
-        setRunButtonStatus: {
-            type: Function,
             required: true,
         },
     },
@@ -140,9 +142,7 @@ export default {
         onWpInputs(data) {
             this.wpData = data;
         },
-        execute() {
-            this.runForm.execute();
-        },
+        onExecute() {},
         handleInvocations(invocations) {
             this.$emit("submissionSuccess", invocations);
         },

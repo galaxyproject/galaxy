@@ -1,20 +1,26 @@
 <template>
+    <div class="h4 clearfix mb-3">
+        <b>Workflow: {{ model.name }}</b>
+        <ButtonSpinner class="float-right" title="Run Workflow" id="run-workflow" @click="execute" />
+    </div>
     <div ref="form"></div>
+    <!-- Options to default one way or the other, disable if admins want, etc.. -->
+    <a href="#" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
 </template>
 
 <script>
 import Form from "mvc/form/form-view";
+import ButtonSpinner from "components/Common/ButtonSpinner";
 import { invokeWorkflow } from "./services";
 import { isWorkflowInput } from "components/Workflow/constants";
 
 export default {
+    components: {
+        ButtonSpinner,
+    },
     props: {
         model: {
             type: Object,
-            required: true,
-        },
-        setRunButtonStatus: {
-            type: Function,
             required: true,
         },
         targetHistory: {
@@ -32,7 +38,6 @@ export default {
             inputTypes: {},
         };
     },
-    computed: {},
     created() {
         this.form = new Form(this.formDefinition());
         this.$nextTick(() => {
