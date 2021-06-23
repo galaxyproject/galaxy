@@ -435,6 +435,26 @@ def test_PageRevision(model, session, page):
         assert stored_obj.page.id == page.id
 
 
+def test_PageTagAssociation(model, session, page, tag, user):
+    cls = model.PageTagAssociation
+    # TODO assert cls.__tablename__ == ''
+    with dbcleanup(session, cls):
+        user_tname, value, user_value = 'a', 'b', 'c'
+        obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
+        obj.user_value = user_value
+        obj.page_id = page.id
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.page_id == page.id
+        assert stored_obj.tag_id == tag.id
+        assert stored_obj.user == user
+        assert stored_obj.user_tname == user_tname
+        assert stored_obj.value == value
+        assert stored_obj.user_value == user_value
+
+
 def test_PageUserShareAssociation(model, session, page, user):
     cls = model.PageUserShareAssociation
     assert cls.__tablename__ == 'page_user_share_association'
