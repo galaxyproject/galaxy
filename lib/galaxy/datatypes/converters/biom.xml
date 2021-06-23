@@ -43,5 +43,9 @@
         </test>
     </tests>
     <help>
+    Convert biom1 and biom2 datasets.
     </help>
+    <citations>
+        <citation type="doi">10.1186/2047-217X-1-7</citation>
+    </citations>
 </tool>
