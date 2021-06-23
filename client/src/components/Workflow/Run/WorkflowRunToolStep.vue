@@ -1,6 +1,6 @@
 <template>
     <div>
-        <FormCard :title="title" icon="fa-wrench" :collapsible="false">
+        <FormCard :title="title" icon="fa-wrench" :collapsible="true">
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <Form
