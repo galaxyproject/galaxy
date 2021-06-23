@@ -704,6 +704,95 @@ class HistoryBeta(HistoryDetailed):
     url: AnyUrl = UrlField
 
 
+class ExportHistoryArchivePayload(Model):
+    gzip: Optional[bool] = Field(
+        default=True,
+        title="GZip",
+        description="Whether to export as gzip archive.",
+    )
+    include_hidden: Optional[bool] = Field(
+        default=False,
+        title="Include Hidden",
+        description="Whether to include hidden datasets in the exported archive.",
+    )
+    include_deleted: Optional[bool] = Field(
+        default=False,
+        title="Include Deleted",
+        description="Whether to include deleted datasets in the exported archive.",
+    )
+    file_name: Optional[str] = Field(
+        default=None,
+        title="File Name",
+        description="The name of the file containing the exported history.",
+    )
+    directory_uri: Optional[AnyUrl] = Field(
+        default=None,
+        title="Directory URI",
+        description=(
+            "A writable directory destination where the history will be exported "
+            "using the `galaxy.files` URI infrastructure."
+        ),
+    )
+    force: Optional[bool] = Field(  # Hack to force rebuild everytime during dev
+        default=None,
+        title="Force Rebuild",
+        description="Whether to force a rebuild of the history archive.",
+        hidden=True,  # Avoids displaying this field in the documentation
+    )
+
+
+class JobExportHistoryArchive(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="The encoded database ID of the job that is currently processing a particular request.",
+    )
+    job_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Job ID",
+        description="The encoded database ID of the job that generated this history export archive.",
+    )
+    ready: bool = Field(
+        ...,
+        title="Ready",
+        description="Whether the export history job has completed successfully and the archive is ready to download",
+    )
+    preparing: bool = Field(
+        ...,
+        title="Preparing",
+        description="Whether the history archive is currently being built or in preparation.",
+    )
+    up_to_date: bool = Field(
+        ...,
+        title="Up to Date",
+        description="False, if a new export archive should be generated for the corresponding history.",
+    )
+    download_url: str = Field(
+        ...,
+        title="Download URL",
+        description="Relative API URL to download the exported history archive.",
+    )
+    external_download_latest_url: AnyUrl = Field(
+        ...,
+        title="External Download Latest URL",
+        description="Fully qualified URL to download the latests version of the exported history archive.",
+    )
+    external_download_permanent_url: AnyUrl = Field(
+        ...,
+        title="External Download Permanent URL",
+        description="Fully qualified URL to download this particular version of the exported history archive.",
+    )
+
+
+class JobIdResponse(BaseModel):
+    """Contains the ID of the job associated with a particular request."""
+    job_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Job ID",
+        description="The encoded database ID of the job that is currently processing a particular request.",
+    )
+
+
 class HDCJobStateSummary(Model):
     """Overview of the job states working inside a dataset collection."""
     all_jobs: int = Field(
