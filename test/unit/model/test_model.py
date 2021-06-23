@@ -235,6 +235,27 @@ def test_HistoryDatasetAssociationRatingAssociation(model, session, history_data
         assert stored_obj.rating == rating
 
 
+def test_HistoryDatasetAssociationTagAssociation(
+        model, session, history_dataset_association, tag, user):
+    cls = model.HistoryDatasetAssociationTagAssociation
+    # TODO assert cls.__tablename__ == ''
+    with dbcleanup(session, cls):
+        user_tname, value, user_value = 'a', 'b', 'c'
+        obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
+        obj.user_value = user_value
+        obj.history_dataset_association_id = history_dataset_association.id
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.history_dataset_association_id == history_dataset_association.id
+        assert stored_obj.tag_id == tag.id
+        assert stored_obj.user == user
+        assert stored_obj.user_tname == user_tname
+        assert stored_obj.value == value
+        assert stored_obj.user_value == user_value
+
+
 def test_HistoryDatasetCollectionAssociationAnnotationAssociation(
         model, session, history_dataset_collection_association, user):
     cls = model.HistoryDatasetCollectionAssociationAnnotationAssociation
@@ -287,6 +308,7 @@ def test_HistoryRatingAssociation(model, session, history, user):
 
 def test_HistoryTagAssociation(model, session, history, tag, user):
     cls = model.HistoryTagAssociation
+    # TODO assert cls.__tablename__ == ''
     with dbcleanup(session, cls):
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
