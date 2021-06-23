@@ -21,10 +21,29 @@
     </configfiles>
     <inputs>
         <param name="input" type="data" format="biom1,biom2" label="Biom file"/>
+        <!-- this hidden parameter is set automatically when the tool is called as
+             converter and set manually when called from the tool test -->
+        <param name="__target_datatype" type="hidden" label="Target data type"/>
     </inputs>
     <outputs>
         <data name="output" format="auto"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="biom2" value="input_taxonomy.biom2"/>
+            <param name="__target_datatype" value="biom1"/>
+            <output name="output_biom1">
+                <assert_contents>
+                    <has_text text="Biological Observation Matrix 1.0.0"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="biom2" ftype="biom1" value="input_taxonomy.biom1"/>
+            <param name="__target_datatype" value="biom2"/>
+            <output name="output_biom2" format="biom2" value="input_taxonomy.biom2" compare="sim_size"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

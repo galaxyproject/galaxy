@@ -1,4 +1,5 @@
 <tool id="test_CONVERTER_biom" name="Test Convert Biom files" version="0.1">
+    <!-- test if setting $__target_datatype works for converters -->
     <command><![CDATA[
         #if $biom1
             cp '$biom1' '$output_biom1'
