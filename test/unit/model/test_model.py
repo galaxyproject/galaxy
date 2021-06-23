@@ -605,6 +605,26 @@ def test_StoredWorkflowRatingAssociation(model, session, stored_workflow, user):
         assert stored_obj.rating == rating
 
 
+def test_StoredWorkflowTagAssociation(model, session, stored_workflow, tag, user):
+    cls = model.StoredWorkflowTagAssociation
+    # TODO assert cls.__tablename__ == ''
+    with dbcleanup(session, cls):
+        user_tname, value, user_value = 'a', 'b', 'c'
+        obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
+        obj.user_value = user_value
+        obj.stored_workflow_id = stored_workflow.id
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.stored_workflow_id == stored_workflow.id
+        assert stored_obj.tag_id == tag.id
+        assert stored_obj.user == user
+        assert stored_obj.user_tname == user_tname
+        assert stored_obj.value == value
+        assert stored_obj.user_value == user_value
+
+
 def testUserAction(model, session, user, galaxy_session):
     cls = model.UserAction
     assert cls.__tablename__ == 'user_action'
