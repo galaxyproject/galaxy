@@ -365,6 +365,26 @@ def test_LibraryDatasetCollectionAnnotationAssociation(
         assert stored_obj.annotation == annotation
 
 
+def test_LibraryDatasetCollectionTagAssociation(model, session, library_dataset_collection_association, tag, user):
+    cls = model.LibraryDatasetCollectionTagAssociation
+    # TODO assert cls.__tablename__ == ''
+    with dbcleanup(session, cls):
+        user_tname, value, user_value = 'a', 'b', 'c'
+        obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
+        obj.user_value = user_value
+        obj.library_dataset_collection_id = library_dataset_collection_association.id
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.library_dataset_collection_id == library_dataset_collection_association.id
+        assert stored_obj.tag_id == tag.id
+        assert stored_obj.user == user
+        assert stored_obj.user_tname == user_tname
+        assert stored_obj.value == value
+        assert stored_obj.user_value == user_value
+
+
 def test_LibraryDatasetCollectionRatingAssociation(
         model, session, library_dataset_collection_association, user):
     cls = model.LibraryDatasetCollectionRatingAssociation
