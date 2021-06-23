@@ -6771,13 +6771,12 @@ class ItemTagAssociation(Dictifiable):
         super().__init_subclass__(**kwargs)
         cls.associated_item_names.append(cls.__name__.replace("TagAssociation", ""))
 
-    def __init__(self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None):
-        self.id = id
+    def __init__(self, user=None, item_id=None, tag_id=None, user_tname=None, value=None):
         self.user = user
         self.item_id = item_id
         self.tag_id = tag_id
         self.user_tname = user_tname
-        self.value = None
+        self.value = value
         self.user_value = None
 
     def copy(self, cls=None):

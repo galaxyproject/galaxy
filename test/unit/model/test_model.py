@@ -285,6 +285,25 @@ def test_HistoryRatingAssociation(model, session, history, user):
         assert stored_obj.rating == rating
 
 
+def test_HistoryTagAssociation(model, session, history, tag, user):
+    cls = model.HistoryTagAssociation
+    with dbcleanup(session, cls):
+        user_tname, value, user_value = 'a', 'b', 'c'
+        obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
+        obj.user_value = user_value
+        obj.history_id = history.id
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.history_id == history.id
+        assert stored_obj.tag_id == tag.id
+        assert stored_obj.user == user
+        assert stored_obj.user_tname == user_tname
+        assert stored_obj.value == value
+        assert stored_obj.user_value == user_value
+
+
 def test_LibraryDatasetCollectionAnnotationAssociation(
         model, session, library_dataset_collection_association, user):
     cls = model.LibraryDatasetCollectionAnnotationAssociation
@@ -793,6 +812,12 @@ def stored_workflow(model, session, user):
     w = model.StoredWorkflow()
     w.user = user
     yield from dbcleanup_wrapper(session, w)
+
+
+@pytest.fixture
+def tag(model, session):
+    t = model.Tag()
+    yield from dbcleanup_wrapper(session, t)
 
 
 @pytest.fixture
