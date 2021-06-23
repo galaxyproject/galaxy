@@ -88,8 +88,8 @@
                 </div>
             </div>
             <div class="portlet-content">
-                <FormMessage class="mt-2" :message="errorText" variant="danger" :persistent="true" />
-                <FormMessage class="mt-2" :message="messageText" :variant="messageVariant" />
+                <FormMessage :message="errorText" variant="danger" :persistent="true" />
+                <FormMessage :message="messageText" :variant="messageVariant" />
                 <slot name="body" />
             </div>
         </div>

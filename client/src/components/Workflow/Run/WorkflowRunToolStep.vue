@@ -2,6 +2,7 @@
     <div>
         <FormCard :title="title" icon="fa-wrench" :collapsible="false">
             <template v-slot:body>
+                <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <Form
                     :inputs="model.inputs"
                     :form-config="formConfig"
@@ -16,6 +17,7 @@
 
 <script>
 import Form from "components/Form/Form";
+import FormMessage from "components/Form/FormMessage";
 import FormCard from "components/Form/FormCard";
 import { getTool } from "./services";
 
@@ -23,6 +25,7 @@ export default {
     components: {
         Form,
         FormCard,
+        FormMessage,
     },
     props: {
         model: {
@@ -41,6 +44,7 @@ export default {
     data() {
         return {
             formConfig: {},
+            errorText: null,
         };
     },
     computed: {
@@ -54,9 +58,8 @@ export default {
                 (formConfig) => {
                     this.formConfig = formConfig;
                 },
-                (response) => {
-                    //Galaxy.emit.debug("tool-form-composite::postchange()", "Refresh request failed.", response);
-                    //process.reject();
+                (errorText) => {
+                    this.errorText = errorText;
                 }
             );
             this.$emit("onChange", this.model.index, data);
