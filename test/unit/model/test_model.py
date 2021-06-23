@@ -830,6 +830,26 @@ def test_WorkflowStepTagAssociation(model, session, workflow_step, tag, user):
         assert stored_obj.user_value == user_value
 
 
+def test_VisualizationTagAssociation(model, session, visualization, tag, user):
+    cls = model.VisualizationTagAssociation
+    # TODO assert cls.__tablename__ == ''
+    with dbcleanup(session, cls):
+        user_tname, value, user_value = 'a', 'b', 'c'
+        obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
+        obj.user_value = user_value
+        obj.visualization_id = visualization.id
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.visualization_id == visualization.id
+        assert stored_obj.tag_id == tag.id
+        assert stored_obj.user == user
+        assert stored_obj.user_tname == user_tname
+        assert stored_obj.value == value
+        assert stored_obj.user_value == user_value
+
+
 @pytest.fixture(scope='module')
 def model():
     db_uri = 'sqlite:///:memory:'
