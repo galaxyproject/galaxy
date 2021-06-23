@@ -665,6 +665,26 @@ def test_StoredWorkflowTagAssociation(model, session, stored_workflow, tag, user
         assert stored_obj.user_value == user_value
 
 
+def test_ToolTagAssociation(model, session, tag, user):
+    cls = model.ToolTagAssociation
+    # TODO assert cls.__tablename__ == ''
+    with dbcleanup(session, cls):
+        user_tname, value, user_value, tool_id = 'a', 'b', 'c', 'd'
+        obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
+        obj.user_value = user_value
+        obj.tool_id = tool_id
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.tool_id == tool_id
+        assert stored_obj.tag_id == tag.id
+        assert stored_obj.user == user
+        assert stored_obj.user_tname == user_tname
+        assert stored_obj.user_value == user_value
+        assert stored_obj.value is None  # TODO this is a confusing special case; improve?
+
+
 def testUserAction(model, session, user, galaxy_session):
     cls = model.UserAction
     assert cls.__tablename__ == 'user_action'
