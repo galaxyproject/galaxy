@@ -31,3 +31,22 @@ export async function invokeWorkflow(workflowId, invocationData) {
     const response = await axios.post(url, invocationData);
     return response.data;
 }
+
+/**
+ * Request tool step data.
+ *
+ * @param {String} workflowId - (Stored?) Workflow ID to fetch data for.
+ */
+export async function getTool(toolId, toolVersion, toolInputs) {
+    const requestData = {
+        tool_id: toolId,
+        tool_version: toolVersion,
+        inputs: $.extend(true, {}, toolInputs),
+    };
+    try {
+        const { data } = await axios.post(`${getAppRoot()}api/tools/${toolId}/build`, requestData);
+        return data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}

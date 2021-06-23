@@ -26,9 +26,9 @@
                 :model="step"
                 :replaceData="stepData"
                 :replaceParams="wpData"
-                @onChange="onStepInputs"
+                @onChange="onToolStepInputs"
             />
-            <WorkflowRunDefaultStep v-else :model="step" @onChange="onStepInputs" />
+            <WorkflowRunDefaultStep v-else :model="step" @onChange="onDefaultStepInputs" />
         </div>
     </div>
 </template>
@@ -131,8 +131,12 @@ export default {
         },
     },
     methods: {
-        onStepInputs(stepId, data) {
+        onDefaultStepInputs(stepId, data) {
             Vue.set(this.stepData, stepId, data);
+            this.stepData = Object.assign({}, this.stepData);
+        },
+        onToolStepInputs(stepId, data) {
+            this.stepData[stepId] = data;
         },
         onWpInputs(data) {
             this.wpData = data;

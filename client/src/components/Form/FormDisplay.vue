@@ -157,10 +157,7 @@ export default {
                             new_value = { values: [] };
                             _.each(input.step_linked, (source_step) => {
                                 if (isDataStep(source_step)) {
-                                    console.log(this.replaceData);
-                                    console.log(source_step.index);
                                     var value = this.replaceData[source_step.index].input;
-                                    console.log(value);
                                     if (value) {
                                         _.each(value.values, (v) => {
                                             new_value.values.push(v);
