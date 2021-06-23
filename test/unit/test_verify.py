@@ -1,4 +1,5 @@
 import collections
+import gzip
 import tempfile
 
 import pytest
@@ -22,15 +23,17 @@ TestFile = collections.namedtuple('TestFile', 'value path')
 
 def test_file_list():
     files = []
-    for b, ext in [(F1, '.txt'), (F2, '.txt'), (F3, '.pdf'), (F4, '.txt'), (MULTILINE_MATCH, '.txt')]:
+    for b, ext in [(F1, '.txt'), (F2, '.txt'), (F3, '.pdf'), (F4, '.txt'), (MULTILINE_MATCH, '.txt'), (F1, '.txt.gz')]:
         with tempfile.NamedTemporaryFile(mode='wb', suffix=ext, delete=False) as out:
+            if ext == '.txt.gz':
+                b = gzip.compress(b)
             out.write(b)
         files.append(TestFile(b, out.name))
     return files
 
 
 def generate_tests(multiline=False):
-    f1, f2, f3, f4, multiline_match = test_file_list()
+    f1, f2, f3, f4, multiline_match, f5 = test_file_list()
     if multiline:
         tests = [(multiline_match, f1, {'lines_diff': 0, 'sort': True}, None)]
     else:
@@ -39,12 +42,13 @@ def generate_tests(multiline=False):
         (f1, f2, {'lines_diff': 0, 'sort': True}, AssertionError),
         (f1, f3, None, AssertionError),
         (f1, f4, None, None),
+        (f1, f5, {'decompress': True}, None),
     ])
     return tests
 
 
 def generate_tests_sim_size():
-    f1, f2, f3, f4, multiline_match = test_file_list()
+    f1, f2, f3, f4, multiline_match, f5 = test_file_list()
     # tests for equal files
     tests = [(f1, f1, None, None),  # pass default values
              (f1, f1, {'delta': 0}, None),  # pass for values that should always pass
