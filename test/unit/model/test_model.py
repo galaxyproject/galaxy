@@ -361,6 +361,27 @@ def test_LibraryDatasetCollectionRatingAssociation(
         assert stored_obj.rating == rating
 
 
+def test_LibraryDatasetDatasetAssociationTagAssociation(
+        model, session, library_dataset_dataset_association, tag, user):
+    cls = model.LibraryDatasetDatasetAssociationTagAssociation
+    # TODO assert cls.__tablename__ == ''
+    with dbcleanup(session, cls):
+        user_tname, value, user_value = 'a', 'b', 'c'
+        obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
+        obj.user_value = user_value
+        obj.library_dataset_dataset_association_id = library_dataset_dataset_association.id
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.library_dataset_dataset_association_id == library_dataset_dataset_association.id
+        assert stored_obj.tag_id == tag.id
+        assert stored_obj.user == user
+        assert stored_obj.user_tname == user_tname
+        assert stored_obj.value == value
+        assert stored_obj.user_value == user_value
+
+
 def test_PageAnnotationAssociation(model, session, page, user):
     cls = model.PageAnnotationAssociation
     assert cls.__tablename__ == 'page_annotation_association'
@@ -808,6 +829,12 @@ def group(model, session):
 def library_dataset_collection_association(model, session):
     ldca = model.LibraryDatasetCollectionAssociation()
     yield from dbcleanup_wrapper(session, ldca)
+
+
+@pytest.fixture
+def library_dataset_dataset_association(model, session):
+    ldda = model.LibraryDatasetDatasetAssociation()
+    yield from dbcleanup_wrapper(session, ldda)
 
 
 @pytest.fixture
