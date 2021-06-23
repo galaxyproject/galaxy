@@ -6,8 +6,7 @@
                 <Form
                     :inputs="model.inputs"
                     :form-config="formConfig"
-                    :replaceParams="replaceParams"
-                    :replaceData="replaceData"
+                    :replace-params="replaceParams"
                     @onChange="onChange"
                 />
             </template>
@@ -20,6 +19,7 @@ import Form from "components/Form/Form";
 import FormMessage from "components/Form/FormMessage";
 import FormCard from "components/Form/FormCard";
 import FormData from "mvc/form/form-data";
+import { isDataStep } from "components/Workflow/Run/model";
 import { getTool } from "./services";
 
 export default {
@@ -37,7 +37,7 @@ export default {
             type: Object,
             default: null,
         },
-        replaceData: {
+        stepData: {
             type: Object,
             default: null,
         },
@@ -51,6 +51,9 @@ export default {
         };
     },
     watch: {
+        stepData() {
+            this.onReplaceParams();
+        },
         wpData() {
             this.onReplaceParams();
         },
@@ -69,21 +72,39 @@ export default {
             const values = this.formData;
             this.replaceParams = {};
             _.each(params, (input, name) => {
-                if (input.wp_linked) {
-                    let new_value;
+                if (input.wp_linked || input.step_linked) {
+                    let newValue;
+                    if (input.step_linked) {
+                        newValue = { values: [] };
+                        _.each(input.step_linked, (source_step) => {
+                            if (isDataStep(source_step)) {
+                                var value = this.stepData[source_step.index].input;
+                                if (value) {
+                                    _.each(value.values, (v) => {
+                                        newValue.values.push(v);
+                                    });
+                                }
+                            }
+                        });
+                        if (!input.multiple && newValue.values.length > 0) {
+                            newValue = {
+                                values: [newValue.values[0]],
+                            };
+                        }
+                    }
                     if (input.wp_linked) {
-                        new_value = input.value;
+                        newValue = input.value;
                         var re = /\$\{(.+?)\}/g;
                         var match;
                         while ((match = re.exec(input.value))) {
                             var wp_value = this.wpData[match[1]];
                             if (wp_value) {
-                                new_value = new_value.split(match[0]).join(wp_value);
+                                newValue = newValue.split(match[0]).join(wp_value);
                             }
                         }
                     }
-                    if (new_value !== undefined) {
-                        this.replaceParams[name] = new_value;
+                    if (newValue !== undefined) {
+                        this.replaceParams[name] = newValue;
                     }
                 }
             });

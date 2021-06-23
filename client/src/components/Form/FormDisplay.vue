@@ -5,7 +5,6 @@
 <script>
 import Form from "mvc/form/form-view";
 import FormData from "mvc/form/form-data";
-import { isDataStep } from "components/Workflow/Run/model";
 
 export default {
     props: {
@@ -45,10 +44,6 @@ export default {
             type: Object,
             default: null,
         },
-        replaceData: {
-            type: Object,
-            default: null,
-        },
     },
     data() {
         return {
@@ -82,10 +77,6 @@ export default {
         },
         replaceParams() {
             this.onReplaceParams();
-            this.onChange();
-        },
-        replaceData() {
-            //this.onReplaceParams();
             this.onChange();
         },
     },
