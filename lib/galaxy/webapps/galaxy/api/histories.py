@@ -22,6 +22,7 @@ from galaxy.managers import (
     sharable,
     users,
 )
+from galaxy.schema.schema import ExportHistoryArchivePayload
 from galaxy.util import (
     restore_text,
     string_as_bool
@@ -478,7 +479,12 @@ class HistoriesController(BaseGalaxyAPIController):
         :rtype:     dict
         :returns:   object containing url to fetch export from.
         """
-        return self.service.archive_export(trans, id, payload, **kwds)
+        # PUT instead of POST because multiple requests should just result
+        # in one object being created.
+        payload = payload or {}
+        payload.update(kwds or {})
+        export_payload = ExportHistoryArchivePayload(**payload)
+        return self.service.archive_export(trans, id, export_payload)
 
     @expose_api_raw
     def archive_download(self, trans, id, jeha_id, **kwds):

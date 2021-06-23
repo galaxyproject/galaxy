@@ -5,7 +5,10 @@ Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
 import logging
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from sqlalchemy import (
     asc,
@@ -25,6 +28,11 @@ from galaxy.managers import (
 from galaxy.managers.base import ServiceBase
 from galaxy.managers.citations import CitationsManager
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import (
+    ExportHistoryArchivePayload,
+    JobExportHistoryArchive,
+    JobIdResponse,
+)
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -572,7 +580,7 @@ class HistoriesService(ServiceBase):
         """
         return self.history_export_view.get_exports(trans, id)
 
-    def archive_export(self, trans, id, payload=None, **kwds):
+    def archive_export(self, trans, id: EncodedDatabaseIdField, payload: ExportHistoryArchivePayload) -> Union[JobExportHistoryArchive, JobIdResponse]:
         """
         start job (if needed) to create history export for corresponding
         history.
@@ -583,31 +591,22 @@ class HistoriesService(ServiceBase):
         :rtype:     dict
         :returns:   object containing url to fetch export from.
         """
-        kwds.update(payload or {})
-        # PUT instead of POST because multiple requests should just result
-        # in one object being created.
         history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
         jeha = history.latest_export
-        force = 'force' in kwds  # Hack to force rebuild everytime during dev
-        exporting_to_uri = 'directory_uri' in kwds
+        exporting_to_uri = payload.directory_uri
         # always just issue a new export when exporting to a URI.
-        up_to_date = not force and not exporting_to_uri and (jeha and jeha.up_to_date)
+        up_to_date = not payload.force and not exporting_to_uri and (jeha and jeha.up_to_date)
         job = None
         if not up_to_date:
             # Need to create new JEHA + job.
-            gzip = kwds.get("gzip", True)
-            include_hidden = kwds.get("include_hidden", False)
-            include_deleted = kwds.get("include_deleted", False)
-            directory_uri = kwds.get("directory_uri", None)
-            file_name = kwds.get("file_name", None)
             job = self.manager.queue_history_export(
                 trans,
                 history,
-                gzip=gzip,
-                include_hidden=include_hidden,
-                include_deleted=include_deleted,
-                directory_uri=directory_uri,
-                file_name=file_name,
+                gzip=payload.gzip,
+                include_hidden=payload.include_hidden,
+                include_deleted=payload.include_deleted,
+                directory_uri=payload.directory_uri,
+                file_name=payload.file_name,
             )
         else:
             job = jeha.job
@@ -617,19 +616,21 @@ class HistoriesService(ServiceBase):
             # the client poll on the created job_id to determine when the file has been
             # written.
             job_id = trans.security.encode_id(job.id)
-            return dict(job_id=job_id)
+            return JobIdResponse(job_id=job_id)
 
         if up_to_date and jeha.ready:
-            return self.history_export_view.serialize(trans, id, jeha)
+            serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
+            return JobExportHistoryArchive.parse_obj(serialized_jeha)
         else:
             # Valid request, just resource is not ready yet.
             trans.response.status = "202 Accepted"
             if jeha:
-                return self.history_export_view.serialize(trans, id, jeha)
+                serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
+                return JobExportHistoryArchive.parse_obj(serialized_jeha)
             else:
                 assert job is not None, "logic error, don't have a jeha or a job"
                 job_id = trans.security.encode_id(job.id)
-                return dict(job_id=job_id)
+                return JobIdResponse(job_id=job_id)
 
     def archive_download(self, trans, id, jeha_id):
         """
