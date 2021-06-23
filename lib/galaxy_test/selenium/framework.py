@@ -572,7 +572,7 @@ class SeleniumSessionGetPostMixin:
         response = requests.post(full_url, data=data, cookies=cookies, files=files, headers=headers)
         return response
 
-    def _delete(self, route, data=None, headers=None, admin=False) -> Response:
+    def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
@@ -583,7 +583,7 @@ class SeleniumSessionGetPostMixin:
         response = requests.delete(full_url, data=data, cookies=cookies, headers=headers)
         return response
 
-    def _put(self, route, data=None, headers=None, admin=False) -> Response:
+    def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None

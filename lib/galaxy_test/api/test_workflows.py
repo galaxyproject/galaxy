@@ -4328,9 +4328,9 @@ input_c:
         workflow_id = self.workflow_populator.simple_workflow("dummy")
         response = self._show_workflow(workflow_id)
         assert not response['published']
-        published_worklow = self._put(f'workflows/{workflow_id}', data=json.dumps({'published': True})).json()
+        published_worklow = self._put(f'workflows/{workflow_id}', data={'published': True}, json=True).json()
         assert published_worklow['published']
-        unpublished_worklow = self._put(f'workflows/{workflow_id}', data=json.dumps({'published': False})).json()
+        unpublished_worklow = self._put(f'workflows/{workflow_id}', data={'published': False}, json=True).json()
         assert not unpublished_worklow['published']
 
     def _invoke_paused_workflow(self, history_id):

@@ -38,7 +38,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert library["deleted"] is True
         # Test undeleting
         data = dict(undelete=True)
-        create_response = self._delete(f"libraries/{library['id']}", data=data, admin=True)
+        create_response = self._delete(f"libraries/{library['id']}", data=data, admin=True, json=True)
         library = create_response.json()
         self._assert_status_code_is(create_response, 200)
         assert library["deleted"] is False
