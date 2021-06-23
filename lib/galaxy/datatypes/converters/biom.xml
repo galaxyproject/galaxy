@@ -9,7 +9,7 @@
         #elif $__target_datatype == 'biom1'
             --to-json
         #else
-            >&2 echo "BIOM converter recieved unknown target datatype: "$__target_datatype &&
+            >&2 echo "BIOM converter received unknown target datatype: $__target_datatype" &&
             exit 1
         #end if
     ]]></command>
