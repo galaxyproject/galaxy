@@ -25,7 +25,7 @@
                 v-if="step.step_type == 'tool'"
                 :model="step"
                 :replaceData="stepData"
-                :replaceParams="wpData"
+                :wpData="wpData"
                 @onChange="onToolStepInputs"
             />
             <WorkflowRunDefaultStep v-else :model="step" @onChange="onDefaultStepInputs" />

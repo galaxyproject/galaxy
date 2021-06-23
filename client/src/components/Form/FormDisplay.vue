@@ -85,7 +85,7 @@ export default {
             this.onChange();
         },
         replaceData() {
-            this.onReplaceParams();
+            //this.onReplaceParams();
             this.onChange();
         },
     },
@@ -144,50 +144,19 @@ export default {
     },
     methods: {
         onReplaceParams() {
-            this.params = {};
-            FormData.visitInputs(this.inputs, (input, name) => {
-                this.params[name] = input;
-            });
-            _.each(this.params, (input, name) => {
-                if (input.wp_linked || input.step_linked) {
-                    var field = this.form.field_list[this.form.data.match(name)];
-                    if (field) {
-                        var new_value;
-                        if (input.step_linked) {
-                            new_value = { values: [] };
-                            _.each(input.step_linked, (source_step) => {
-                                if (isDataStep(source_step)) {
-                                    var value = this.replaceData[source_step.index].input;
-                                    if (value) {
-                                        _.each(value.values, (v) => {
-                                            new_value.values.push(v);
-                                        });
-                                    }
-                                }
-                            });
-                            if (!input.multiple && new_value.values.length > 0) {
-                                new_value = {
-                                    values: [new_value.values[0]],
-                                };
-                            }
-                        }
-                        if (input.wp_linked) {
-                            new_value = input.value;
-                            var re = /\$\{(.+?)\}/g;
-                            var match;
-                            while ((match = re.exec(input.value))) {
-                                var wp_value = this.replaceParams[match[1]];
-                                if (wp_value) {
-                                    new_value = new_value.split(match[0]).join(wp_value);
-                                }
-                            }
-                        }
+            if (this.replaceParams) {
+                this.params = {};
+                FormData.visitInputs(this.inputs, (input, name) => {
+                    this.params[name] = input;
+                });
+                _.each(this.params, (input, name) => {
+                    const newValue = this.replaceParams[name];
+                    if (newValue) {
+                        const field = this.form.field_list[this.form.data.match(name)];
+                        field.value(newValue);
                     }
-                    if (new_value !== undefined) {
-                        field.value(new_value);
-                    }
-                }
-            });
+                });
+            }
         },
         onChange() {
             this.formData = this.form.data.create();
