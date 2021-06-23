@@ -12,6 +12,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 import requests
 
 from galaxy.tool_util.deps import docker_util
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from galaxy.util.sockets import get_ip
 
 
@@ -57,7 +58,7 @@ def main():
                         if ports[key]['host'] == '0.0.0.0':
                             ports[key]['host'] = host_ip
                 if callback_url:
-                    requests.post(callback_url, json={"container_runtime": ports})
+                    requests.post(callback_url, json={"container_runtime": ports}, timeout=DEFAULT_SOCKET_TIMEOUT)
                 else:
                     with open("container_runtime.json", "w") as f:
                         json.dump(ports, f)

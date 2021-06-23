@@ -13,6 +13,7 @@ from functools import partial, wraps
 import requests
 import yaml
 
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from . import sizzle
 from .components import Component
 from .data import (
@@ -193,7 +194,7 @@ class NavigatesGalaxy(HasDriver):
     def api_get(self, endpoint, data=None, raw=False):
         data = data or {}
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
-        response = requests.get(full_url, data=data, cookies=self.selenium_to_requests_cookies())
+        response = requests.get(full_url, data=data, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT)
         if raw:
             return response
         else:
@@ -202,12 +203,12 @@ class NavigatesGalaxy(HasDriver):
     def api_post(self, endpoint, data=None):
         data = data or {}
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
-        response = requests.post(full_url, data=data, cookies=self.selenium_to_requests_cookies())
+        response = requests.post(full_url, data=data, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT)
         return response.json()
 
     def api_delete(self, endpoint, raw=False):
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
-        response = requests.delete(full_url, cookies=self.selenium_to_requests_cookies())
+        response = requests.delete(full_url, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT)
         if raw:
             return response
         else:
@@ -248,7 +249,7 @@ class NavigatesGalaxy(HasDriver):
 
     def current_history(self):
         full_url = self.build_url("history/current_history_json", for_selenium=False)
-        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
+        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT)
         return response.json()
 
     def current_history_id(self):

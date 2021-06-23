@@ -364,7 +364,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                     archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
                 else:
                     try:
-                        archive_data = requests.get(archive_source).text
+                        archive_data = requests.get(archive_source, timeout=util.DEFAULT_SOCKET_TIMEOUT).text
                     except Exception:
                         raise exceptions.MessageException("Failed to open URL '%s'." % escape(archive_source))
             elif hasattr(archive_file, 'file'):
