@@ -1,6 +1,6 @@
 <template>
     <div>
-        <FormCard :title="title" icon="fa-wrench" :collapsible="true">
+        <FormCard :title="title" icon="fa-wrench" :collapsible="true" :initial-collapse="model.collapsed">
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <Form
@@ -52,6 +52,7 @@ export default {
     },
     watch: {
         stepData() {
+            console.log(this.model.id);
             this.onReplaceParams();
         },
         wpData() {
@@ -76,9 +77,10 @@ export default {
                     let newValue;
                     if (input.step_linked) {
                         newValue = { values: [] };
-                        _.each(input.step_linked, (source_step) => {
-                            if (isDataStep(source_step)) {
-                                var value = this.stepData[source_step.index].input;
+                        _.each(input.step_linked, (sourceStep) => {
+                            if (isDataStep(sourceStep)) {
+                                const sourceData = this.stepData[sourceStep.index];
+                                const value = sourceData && sourceData.input;
                                 if (value) {
                                     _.each(value.values, (v) => {
                                         newValue.values.push(v);
@@ -94,12 +96,12 @@ export default {
                     }
                     if (input.wp_linked) {
                         newValue = input.value;
-                        var re = /\$\{(.+?)\}/g;
-                        var match;
+                        const re = /\$\{(.+?)\}/g;
+                        let match;
                         while ((match = re.exec(input.value))) {
-                            var wp_value = this.wpData[match[1]];
-                            if (wp_value) {
-                                newValue = newValue.split(match[0]).join(wp_value);
+                            const wpValue = this.wpData[match[1]];
+                            if (wpValue) {
+                                newValue = newValue.split(match[0]).join(wpValue);
                             }
                         }
                     }

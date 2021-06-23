@@ -146,7 +146,7 @@ export default {
                         field.value(newValue);
                     }
                 });
-                this.onChange();
+                this.form.trigger("change");
             }
         },
         onChange() {

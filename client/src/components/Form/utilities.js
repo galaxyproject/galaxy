@@ -2,7 +2,7 @@
  * @param{dict}   inputs    - Nested dictionary of input elements
  * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
  */
- export var visitInputs = (inputs, callback, prefix, context) => {
+export var visitInputs = (inputs, callback, prefix, context) => {
     context = $.extend({}, context);
     _.each(inputs, (input) => {
         if (input && input.type && input.name) {

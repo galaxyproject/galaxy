@@ -34,7 +34,6 @@
 </template>
 
 <script>
-import Vue from "vue";
 import { getGalaxyInstance } from "app";
 import Form from "components/Form/Form";
 import FormCard from "components/Form/FormCard";
@@ -132,7 +131,7 @@ export default {
     },
     methods: {
         onDefaultStepInputs(stepId, data) {
-            Vue.set(this.stepData, stepId, data);
+            this.stepData[stepId] = data;
             this.stepData = Object.assign({}, this.stepData);
         },
         onToolStepInputs(stepId, data) {

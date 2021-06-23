@@ -48,10 +48,14 @@ export default {
             type: Boolean,
             default: false,
         },
+        initialCollapse: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
-            collapsed: this.collapsible,
+            collapsed: this.initialCollapse,
         };
     },
     computed: {
