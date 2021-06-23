@@ -2954,6 +2954,17 @@ class DatasetInstance:
                 meta_types.append(meta_type)
         return meta_types
 
+    def get_metadata_file_paths_and_extensions(self):
+        metadata = self.metadata
+        metadata_files = []
+        for metadata_name in self.metadata_file_types:
+            file_ext = metadata.spec[metadata_name].file_ext
+            metadata_file = metadata[metadata_name]
+            if metadata_file:
+                path = metadata_file.file_name
+                metadata_files.append((file_ext, path))
+        return metadata_files
+
     # This provide backwards compatibility with using the old dbkey
     # field in the database.  That field now maps to "old_dbkey" (see mapping.py).
 
@@ -4342,6 +4353,30 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
             self._dataset_action_tuples = _dataset_action_tuples
 
         return self._dataset_action_tuples
+
+    @property
+    def element_identifiers_extensions_and_paths(self):
+        q = self._get_nested_collection_attributes(
+            element_attributes=('element_identifier',),
+            hda_attributes=('extension',),
+            return_entities=(Dataset,)
+        )
+        return [(row[:-2], row.extension, row.Dataset.file_name) for row in q]
+
+    @property
+    def element_identifiers_extensions_paths_and_metadata_files(self):
+        q = self._get_nested_collection_attributes(
+            element_attributes=('element_identifier',),
+            hda_attributes=('extension',),
+            return_entities=(HistoryDatasetAssociation, Dataset)
+        )
+        results = []
+        for row in q:
+            result = [row[:-3], row.extension, row.Dataset.file_name]
+            hda = row.HistoryDatasetAssociation
+            result.append(hda.get_metadata_file_paths_and_extensions())
+            results.append(result)
+        return results
 
     @property
     def waiting_for_elements(self):
@@ -5980,6 +6015,8 @@ class MetadataFile(StorableObject, RepresentById):
             self.history_dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
             self.library_dataset = dataset
+        self.hda_id = None
+        self.lda_id = None
         self.name = name
 
     @property

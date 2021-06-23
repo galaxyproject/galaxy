@@ -1067,6 +1067,25 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
     return value
 
 
+def filesystem_safe_string(s, max_len, truncation_chars='..', strip_leading_dot=True, invalid_chars=('/',), replacement_char='_'):
+    """
+    Strip unicode null chars, truncate at 255 characters.
+    Optionally replace additional ``invalid_chars`` with `replacement_char` .
+
+    Defaults are probably only safe on linux / osx.
+    Needs further escaping if used in shell commands
+    """
+    sanitized_string = unicodify(s, strip_null=True)
+    if strip_leading_dot:
+        sanitized_string = sanitized_string.lstrip('.')
+    for invalid_char in invalid_chars:
+        sanitized_string = sanitized_string.replace(invalid_char, replacement_char)
+    if len(sanitized_string) > max_len:
+        sanitized_string = sanitized_string[:max_len - len(truncation_chars)]
+        sanitized_string = f"{sanitized_string}{truncation_chars}"
+    return sanitized_string
+
+
 def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict'):
     """
     Returns a bytestring version of 's', encoded as specified in 'encoding'.
