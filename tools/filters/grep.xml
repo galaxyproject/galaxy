@@ -1,8 +1,8 @@
-<tool id="Grep1" name="Select" version="1.0.2" profile="20.05">
+<tool id="Grep1" name="Select" version="1.0.3" profile="20.05">
+  <description>lines that match an expression</description>
   <requirements>
     <requirement type="package" version="3.4">grep</requirement>
   </requirements>
-  <description>lines that match an expression</description>
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>
@@ -17,7 +17,7 @@
     #else
       cat '$input'
     #end if
-    | grep -f '$pattern_file' $invert > '$out_file1'
+    | grep -P -f '$pattern_file' $invert > '$out_file1'
   ]]></command>
   <configfiles>
     <configfile name="pattern_file">$pattern</configfile>
@@ -65,6 +65,16 @@
       <output name="out_file1">
         <assert_contents>
           <not_has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="invert" value=""/>
+      <param name="pattern" value="147962192|147984545"/>
+      <output name="out_file1">
+        <assert_contents>
+          <has_n_lines n="2"></has_n_lines>
         </assert_contents>
       </output>
     </test>
