@@ -4,7 +4,7 @@
 
 <script>
 import Form from "mvc/form/form-view";
-import FormData from "mvc/form/form-data";
+import { visitInputs } from "components/Form/utilities";
 
 export default {
     props: {
@@ -136,7 +136,7 @@ export default {
         onReplaceParams() {
             if (this.replaceParams) {
                 this.params = {};
-                FormData.visitInputs(this.inputs, (input, name) => {
+                visitInputs(this.inputs, (input, name) => {
                     this.params[name] = input;
                 });
                 _.each(this.params, (input, name) => {

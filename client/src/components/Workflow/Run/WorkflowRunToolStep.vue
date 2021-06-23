@@ -18,7 +18,7 @@
 import Form from "components/Form/Form";
 import FormMessage from "components/Form/FormMessage";
 import FormCard from "components/Form/FormCard";
-import FormData from "mvc/form/form-data";
+import { visitInputs } from "components/Form/utilities";
 import { isDataStep } from "components/Workflow/Run/model";
 import { getTool } from "./services";
 
@@ -66,7 +66,7 @@ export default {
     methods: {
         onReplaceParams() {
             const params = {};
-            FormData.visitInputs(this.model.inputs, (input, name) => {
+            visitInputs(this.model.inputs, (input, name) => {
                 params[name] = input;
             });
             const values = this.formData;
