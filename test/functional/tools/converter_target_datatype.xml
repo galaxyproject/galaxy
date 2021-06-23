@@ -25,7 +25,7 @@
         <!-- supplying a biom2 file for the biom1 input: triggers biom2 to biom1 conversion -->
         <test>
             <param name="biom1" ftype="biom2" value="input_taxonomy.biom2"/>
-            <output name="output_biom1">
+            <output name="output_biom1" ftype="biom1">
                 <assert_contents>
                     <has_text text="Biological Observation Matrix 1.0.0"/>
                 </assert_contents>
@@ -34,7 +34,7 @@
         <!-- supplying a biom1 file for the biom2 input: triggers biom1 to biom2 conversion -->
         <test>
             <param name="biom2" ftype="biom1" value="input_taxonomy.biom1"/>
-            <output name="output_biom2" format="biom2" value="input_taxonomy.biom2" compare="sim_size"/>
+            <output name="output_biom2" ftype="biom2" value="input_taxonomy.biom2" compare="sim_size"/>
         </test>
     </tests>
     <help>
