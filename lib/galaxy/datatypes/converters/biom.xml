@@ -8,9 +8,6 @@
             --to-hdf5
         #elif $__target_datatype == 'biom1'
             --to-json
-        #else
-            >&2 echo "BIOM converter received unknown target datatype: $__target_datatype" &&
-            exit 1
         #end if
     ]]></command>
     <configfiles>
@@ -21,9 +18,10 @@
     </configfiles>
     <inputs>
         <param name="input" type="data" format="biom1,biom2" label="Biom file"/>
-        <!-- this hidden parameter is set automatically when the tool is called as
-             converter and set manually when called from the tool test -->
-        <param name="__target_datatype" type="hidden" label="Target data type"/>
+        <param name="__target_datatype" type="select" label="Target data type">
+            <option value="biom1">biom1</option>
+            <option value="biom2">biom2</option>
+        </param>
     </inputs>
     <outputs>
         <data name="output" format="auto"/>
