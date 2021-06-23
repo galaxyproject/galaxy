@@ -1601,6 +1601,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_base_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Base path for interactive tools running at a subpath without a
+    subdomain. Defaults to "/".
+:Default: ``/``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``interactivetools_map``
 ~~~~~~~~~~~~~~~~~~~~~~~~
