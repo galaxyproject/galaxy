@@ -108,7 +108,6 @@ export default {
                     }
                 }
             });
-            console.log(this.replaceParams);
         },
         onChange(data) {
             getTool(this.model.id, this.model.version, data).then(

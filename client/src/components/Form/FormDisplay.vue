@@ -77,7 +77,6 @@ export default {
         },
         replaceParams() {
             this.onReplaceParams();
-            this.onChange();
         },
     },
     mounted() {
@@ -147,6 +146,7 @@ export default {
                         field.value(newValue);
                     }
                 });
+                this.onChange();
             }
         },
         onChange() {
@@ -166,7 +166,6 @@ export default {
                         this.onChange();
                     },
                 });
-                this.onReplaceParams();
                 this.onChange();
             });
         },
