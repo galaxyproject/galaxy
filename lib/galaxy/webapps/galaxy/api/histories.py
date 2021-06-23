@@ -34,16 +34,12 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw,
 )
-from galaxy.webapps.base.controller import (
-    ExportsHistoryMixin,
-    ImportsHistoryMixin,
-)
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsHistoryMixin):
+class HistoriesController(BaseGalaxyAPIController):
     citations_manager: citations.CitationsManager = depends(citations.CitationsManager)
     user_manager: users.UserManager = depends(users.UserManager)
     workflow_manager: workflows.WorkflowsManager = depends(workflows.WorkflowsManager)
@@ -353,7 +349,7 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
                 archive_type = "file"
             else:
                 raise exceptions.MessageException("Please provide a url or file.")
-            job = self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
+            job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
             job_dict = job.to_dict()
             job_dict["message"] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
             return trans.security.encode_all_ids(job_dict)
@@ -514,7 +510,7 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
             include_deleted = kwds.get("include_deleted", False)
             directory_uri = kwds.get("directory_uri", None)
             file_name = kwds.get("file_name", None)
-            job = self.queue_history_export(
+            job = self.manager.queue_history_export(
                 trans,
                 history,
                 gzip=gzip,
@@ -557,7 +553,7 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
         ``download_url``.
         """
         jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
-        return self.serve_ready_history_export(trans, jeha)
+        return self.manager.serve_ready_history_export(trans, jeha)
 
     @expose_api
     def get_custom_builds_metadata(self, trans, id, payload=None, **kwd):

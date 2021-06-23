@@ -171,6 +171,52 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             .filter(model.Job.state.in_(model.Job.non_ready_states)))
         return jobs
 
+    def queue_history_import(self, trans, archive_type, archive_source):
+        # Run job to do import.
+        history_imp_tool = trans.app.toolbox.get_tool('__IMPORT_HISTORY__')
+        incoming = {'__ARCHIVE_SOURCE__': archive_source, '__ARCHIVE_TYPE__': archive_type}
+        job, _ = history_imp_tool.execute(trans, incoming=incoming)
+        return job
+
+    def serve_ready_history_export(self, trans, jeha):
+        assert jeha.ready
+        if jeha.compressed:
+            trans.response.set_content_type('application/x-gzip')
+        else:
+            trans.response.set_content_type('application/x-tar')
+        disposition = f'attachment; filename="{jeha.export_name}"'
+        trans.response.headers["Content-Disposition"] = disposition
+        archive = trans.app.object_store.get_filename(jeha.dataset)
+        return open(archive, mode='rb')
+
+    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None):
+        # Convert options to booleans.
+        if isinstance(gzip, str):
+            gzip = (gzip in ['True', 'true', 'T', 't'])
+        if isinstance(include_hidden, str):
+            include_hidden = (include_hidden in ['True', 'true', 'T', 't'])
+        if isinstance(include_deleted, str):
+            include_deleted = (include_deleted in ['True', 'true', 'T', 't'])
+
+        params = {
+            'history_to_export': history,
+            'compress': gzip,
+            'include_hidden': include_hidden,
+            'include_deleted': include_deleted
+        }
+
+        if directory_uri is None:
+            export_tool_id = '__EXPORT_HISTORY__'
+        else:
+            params['directory_uri'] = directory_uri
+            params['file_name'] = file_name or None
+            export_tool_id = '__EXPORT_HISTORY_TO_URI__'
+
+        # Run job to do export.
+        history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
+        job, _ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        return job
+
 
 class HistoryExportView:
 
