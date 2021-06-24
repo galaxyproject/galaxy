@@ -153,7 +153,7 @@ UuidField: UUID4 = Field(
     description="Universal unique identifier for this dataset.",
 )
 
-GenomeBuildField: str = Field(
+GenomeBuildField: Optional[str] = Field(
     "?",
     title="Genome Build",
     description="TODO",
@@ -361,7 +361,7 @@ class HDADetailed(HDASummary):
         deprecated=False  # TODO Should this field be deprecated in favor of model_class?
     )
     accessible: bool = AccessibleField
-    genome_build: str = GenomeBuildField
+    genome_build: Optional[str] = GenomeBuildField
     misc_info: str = Field(
         ...,
         title="Miscellaneous Information",
@@ -582,7 +582,14 @@ class HDCADetailed(HDCASummary):
     elements: List[DCESummary] = ElementsField
 
 
-class HistorySummary(Model):
+class HistoryBase(BaseModel):
+    """Provides basic configuration for all the History models."""
+    class Config:
+        use_enum_values = True  # When using .dict()
+        extra = Extra.allow  # Allow any other extra fields
+
+
+class HistorySummary(HistoryBase):
     """History summary information."""
     model_class: str = ModelClassField(HISTORY_MODEL_CLASS_NAME)
     id: EncodedDatabaseIdField = EncodedEntityIdField
@@ -630,6 +637,10 @@ class HistoryActiveContentCounts(Model):
     )
 
 
+HistoryStateCounts = Dict[Dataset.states, int]
+HistoryStateIds = Dict[Dataset.states, List[EncodedDatabaseIdField]]
+
+
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
     """History detailed information."""
     contents_url: RelativeUrl = Field(
@@ -664,16 +675,27 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
         title="Username and slug",
         description="The relative URL in the form of /u/{username}/h/{slug}",
     )
-    genome_build: str = GenomeBuildField
-    contents_active: HistoryActiveContentCounts = Field(
+    genome_build: Optional[str] = GenomeBuildField
+    state: Dataset.states = Field(
         ...,
-        title="Active Contents",
-        description="Contains the number of active, deleted or hidden items in the History.",
+        title="State",
+        description="The current state of the History based on the states of the datasets it contains.",
     )
-    hid_counter: int = Field(
+    state_ids: HistoryStateIds = Field(
         ...,
-        title="HID Counter",
-        description="TODO",
+        title="State IDs",
+        description=(
+            "A dictionary keyed to possible dataset states and valued with lists "
+            "containing the ids of each HDA in that state."
+        ),
+    )
+    state_details: HistoryStateCounts = Field(
+        ...,
+        title="State Counts",
+        description=(
+            "A dictionary keyed to possible dataset states and valued with the number "
+            "of datasets in this history that have those states."
+        ),
     )
 
 
@@ -696,13 +718,17 @@ class HistoryBeta(HistoryDetailed):
         title="Purged",
         description="Whether this History has been permanently removed.",
     )
-    state: Dataset.states = Field(
-        ...,
-        title="State",
-        description="The current state of the History based on the states of the datasets it contains.",
-    )
     tags: TagCollection
-    url: RelativeUrl = RelativeUrlField
+    hid_counter: int = Field(
+        ...,
+        title="HID Counter",
+        description="TODO",
+    )
+    contents_active: HistoryActiveContentCounts = Field(
+        ...,
+        title="Active Contents",
+        description="Contains the number of active, deleted or hidden items in the History.",
+    )
 
 
 class ExportHistoryArchivePayload(Model):
