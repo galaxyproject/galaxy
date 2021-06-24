@@ -6884,8 +6884,19 @@ class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
     user = relationship('User')
 
 
-class VisualizationTagAssociation(ItemTagAssociation, RepresentById):
-    pass
+class VisualizationTagAssociation(Base, ItemTagAssociation, RepresentById):
+    __tablename__ = 'visualization_tag_association'
+
+    id = Column('id', Integer, primary_key=True)
+    visualization_id = Column('visualization_id', Integer, ForeignKey('visualization.id'), index=True)
+    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column('user_tname', TrimmedString(255), index=True)
+    value = Column('value', TrimmedString(255), index=True)
+    user_value = Column('user_value', TrimmedString(255), index=True)
+    visualization = relationship('Visualization', back_populates='tags')
+    tag = relationship('Tag', back_populates='tagged_visualizations')
+    user = relationship('User')
 
 
 class HistoryDatasetCollectionTagAssociation(ItemTagAssociation, RepresentById):

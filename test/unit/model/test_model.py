@@ -922,7 +922,7 @@ def test_WorkflowStepTagAssociation(model, session, workflow_step, tag, user):
 
 def test_VisualizationTagAssociation(model, session, visualization, tag, user):
     cls = model.VisualizationTagAssociation
-    # TODO assert cls.__tablename__ == ''
+    assert cls.__tablename__ == 'visualization_tag_association'
     with dbcleanup(session, cls):
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
@@ -931,13 +931,18 @@ def test_VisualizationTagAssociation(model, session, visualization, tag, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
         assert stored_obj.visualization_id == visualization.id
         assert stored_obj.tag_id == tag.id
-        assert stored_obj.user == user
+        assert stored_obj.user_id == user.id
         assert stored_obj.user_tname == user_tname
         assert stored_obj.value == value
         assert stored_obj.user_value == user_value
+        # test mapped relationships
+        assert stored_obj.visualization.id == visualization.id
+        assert stored_obj.tag.id == tag.id
+        assert stored_obj.user.id == user.id
 
 
 @pytest.fixture(scope='module')
