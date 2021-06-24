@@ -1,14 +1,12 @@
 <tool id="test_CONVERTER_biom" name="Test Convert Biom files" version="0.1">
     <!-- test if setting $__target_datatype works for converters -->
     <command><![CDATA[
-        #if $biom1
-            cp '$biom1' '$output_biom1'
-        #elif $biom2
-            cp '$biom2' '$output_biom2'
-        #else
-            >&2 echo "neither biom1 nor biom2 input received" &&
-            exit 1
-        #end if
+#if $biom1:
+    cp '$biom1' '$output_biom1'
+#end if
+#if $biom2:
+    cp '$biom2' '$output_biom2'
+#end if
     ]]></command>
     <inputs>
         <!-- inputs are optional, because supplying both at the same time triggers 
