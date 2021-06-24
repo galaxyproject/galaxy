@@ -266,7 +266,9 @@ class CustosAuthnz(IdentityProvider):
         clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"
         eps = requests.get(self.config['well_known_oidc_config_uri'],
                            headers={"Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"},
-                           verify=False, params={'client_id': self.config['client_id']})
+                           verify=False,
+                           params={'client_id': self.config['client_id']},
+                           timeout=util.DEFAULT_SOCKET_TIMEOUT)
         well_known_oidc_config = eps.json()
         self._load_well_known_oidc_config(well_known_oidc_config)
 
@@ -279,7 +281,8 @@ class CustosAuthnz(IdentityProvider):
         clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"
         creds = requests.get(self.config['credential_url'],
                             headers={"Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"},
-                            verify=False, params={'client_id': self.config['client_id']})
+                            verify=False, params={'client_id': self.config['client_id']},
+                            timeout=util.DEFAULT_SOCKET_TIMEOUT)
         credentials = creds.json()
         self.config['iam_client_secret'] = credentials['iam_client_secret']
 
@@ -296,7 +299,8 @@ class CustosAuthnz(IdentityProvider):
     def _fetch_well_known_oidc_config(self, well_known_uri):
         try:
             return requests.get(well_known_uri,
-                                verify=self._get_verify_param()).json()
+                                verify=self._get_verify_param(),
+                                timeout=util.DEFAULT_SOCKET_TIMEOUT).json()
         except Exception:
             log.error(f"Failed to load well-known OIDC config URI: {well_known_uri}")
             raise

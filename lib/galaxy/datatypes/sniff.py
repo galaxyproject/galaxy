@@ -56,7 +56,7 @@ def stream_url_to_file(path, file_sources=None):
         file_source_path.file_source.realize_to(file_source_path.path, temp_name)
         return temp_name
     else:
-        page = urllib.request.urlopen(path)  # page will be .close()ed in stream_to_file
+        page = urllib.request.urlopen(path, timeout=util.DEFAULT_SOCKET_TIMEOUT)  # page will be .close()ed in stream_to_file
         temp_name = stream_to_file(page, prefix=prefix, source_encoding=util.get_charset_from_http_headers(page.headers))
         return temp_name
 

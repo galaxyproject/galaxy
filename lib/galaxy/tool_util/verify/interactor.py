@@ -681,31 +681,35 @@ class GalaxyInteractorApi:
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, files=files, as_json=json, headers=headers)
+        kwd['timeout'] = kwd.pop('timeout', util.DEFAULT_SOCKET_TIMEOUT)
         return requests.post(url, **kwd)
 
     def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, as_json=json, headers=headers)
+        kwd['timeout'] = kwd.pop('timeout', util.DEFAULT_SOCKET_TIMEOUT)
         return requests.delete(url, **kwd)
 
     def _patch(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, as_json=json, headers=headers)
+        kwd['timeout'] = kwd.pop('timeout', util.DEFAULT_SOCKET_TIMEOUT)
         return requests.patch(url, **kwd)
 
     def _put(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, as_json=json, headers=headers)
+        kwd['timeout'] = kwd.pop('timeout', util.DEFAULT_SOCKET_TIMEOUT)
         return requests.put(url, **kwd)
 
     def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         # no data for GET
-        return requests.get(url, params=data, headers=headers)
+        return requests.get(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT)
 
     def get_api_url(self, path: str) -> str:
         if path.startswith("http"):

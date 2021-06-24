@@ -68,7 +68,10 @@ from galaxy.tool_util.verify.wait import (
     TimeoutAssertionError,
     wait_on as tool_util_wait_on,
 )
-from galaxy.util import unicodify
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    unicodify,
+)
 from . import api_asserts
 from .api import ApiTestInteractor
 
@@ -1770,21 +1773,21 @@ class GiHttpMixin:
             data = {}
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.post(self._url(route), data=data, headers=headers)
+        return requests.post(self._url(route), data=data, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def _put(self, route, data=None, headers=None, admin=False, json: bool = False):
         if data is None:
             data = {}
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.put(self._url(route), data=data, headers=headers)
+        return requests.put(self._url(route), data=data, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def _delete(self, route, data=None, headers=None, admin=False, json: bool = False):
         if data is None:
             data = {}
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.delete(self._url(route), data=data, headers=headers)
+        return requests.delete(self._url(route), data=data, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def _url(self, route):
         if route.startswith("/api/"):

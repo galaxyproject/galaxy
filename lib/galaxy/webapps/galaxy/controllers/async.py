@@ -9,6 +9,7 @@ import requests
 
 from galaxy import web
 from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
     Params,
     unicodify,
 )
@@ -168,7 +169,7 @@ class ASync(BaseUIController):
                 url = f"{url}{url_join_char}{urlencode(params.flatten())}"
                 log.debug(f"connecting to -> {url}")
                 trans.log_event(f"Async connecting to -> {url}")
-                text = requests.get(url).text.strip()
+                text = requests.get(url, timeout=DEFAULT_SOCKET_TIMEOUT).text.strip()
                 if not text.endswith('OK'):
                     raise Exception(text)
                 data.state = data.blurb = data.states.RUNNING

@@ -22,6 +22,7 @@ from galaxy.tool_shed.util.shed_util_common import get_ctx_rev
 from galaxy.util import (
     asbool,
     build_url,
+    DEFAULT_SOCKET_TIMEOUT,
     smart_str,
     unicodify,
     url_get,
@@ -504,4 +505,4 @@ def _urlopen(url, data=None):
     assert scheme in ('http', 'https', 'ftp'), f'Invalid URL scheme: {scheme}'
     if data is not None:
         data = smart_str(data)
-    return urlopen(Request(url, data))
+    return urlopen(Request(url, data), timeout=DEFAULT_SOCKET_TIMEOUT)
