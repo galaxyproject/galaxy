@@ -1115,16 +1115,6 @@ model.Tag.table = Table(
     Column("name", TrimmedString(255)),
     UniqueConstraint("name"))
 
-model.HistoryTagAssociation.table = Table(
-    "history_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", TrimmedString(255), index=True),
-    Column("value", TrimmedString(255), index=True),
-    Column("user_value", TrimmedString(255), index=True))
-
 model.HistoryDatasetAssociationTagAssociation.table = Table(
     "history_dataset_association_tag_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1448,8 +1438,8 @@ mapper_registry.map_imperatively(model.History, model.History.table, properties=
         order_by=asc(model.HistoryDatasetCollectionAssociation.table.c.hid),
         viewonly=True),
     tags=relation(model.HistoryTagAssociation,
-        order_by=model.HistoryTagAssociation.table.c.id,
-        backref="histories"),
+        order_by=model.HistoryTagAssociation.id,
+        back_populates="history"),
     annotations=relation(model.HistoryAnnotationAssociation,
         order_by=model.HistoryAnnotationAssociation.id,
         back_populates="history"),
@@ -2224,15 +2214,17 @@ mapper_registry.map_imperatively(model.VisualizationUserShareAssociation, model.
 ))
 
 # Tag tables.
-simple_mapping(model.Tag,
-    children=relation(model.Tag, backref=backref('parent', remote_side=[model.Tag.table.c.id])))
+
+mapper_registry.map_imperatively(model.Tag, model.Tag.table, properties=dict(
+    children=relation(model.Tag, backref=backref('parent', remote_side=[model.Tag.table.c.id])),
+    tagged_histories=relation(model.HistoryTagAssociation, back_populates='tag')
+))
 
 
 def tag_mapping(tag_association_class, backref_name):
     simple_mapping(tag_association_class, tag=relation(model.Tag, backref=backref_name), user=relation(model.User))
 
 
-tag_mapping(model.HistoryTagAssociation, "tagged_histories")
 tag_mapping(model.HistoryDatasetAssociationTagAssociation, "tagged_history_dataset_associations")
 tag_mapping(model.LibraryDatasetDatasetAssociationTagAssociation, "tagged_library_dataset_dataset_associations")
 tag_mapping(model.PageTagAssociation, "tagged_pages")

@@ -6791,8 +6791,18 @@ class ItemTagAssociation(Dictifiable):
         return new_ta
 
 
-class HistoryTagAssociation(ItemTagAssociation, RepresentById):
-    pass
+class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
+    __tablename__ = 'history_tag_association'
+    id = Column('id', Integer, primary_key=True)
+    history_id = Column('history_id', Integer, ForeignKey('history.id'), index=True)
+    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column('user_tname', TrimmedString(255), index=True)
+    value = Column('value', TrimmedString(255), index=True)
+    user_value = Column('user_value', TrimmedString(255), index=True)
+    history = relationship('History', back_populates='tags')
+    tag = relationship('Tag', back_populates='tagged_histories')
+    user = relationship('User')
 
 
 class HistoryDatasetAssociationTagAssociation(ItemTagAssociation, RepresentById):
