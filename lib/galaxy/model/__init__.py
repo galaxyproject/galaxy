@@ -6915,9 +6915,20 @@ class HistoryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     user = relationship('User')
 
 
+class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, RepresentById):
+    __tablename__ = 'library_dataset_collection_tag_association'
 
-class LibraryDatasetCollectionTagAssociation(ItemTagAssociation, RepresentById):
-    pass
+    id = Column('id', Integer, primary_key=True)
+    library_dataset_collection_id = Column('library_dataset_collection_id', Integer,
+        ForeignKey('library_dataset_collection_association.id'), index=True)
+    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column('user_tname', TrimmedString(255), index=True)
+    value = Column('value', TrimmedString(255), index=True)
+    user_value = Column('user_value', TrimmedString(255), index=True)
+    dataset_collection = relationship('LibraryDatasetCollectionAssociation', back_populates='tags')
+    tag = relationship('Tag', back_populates='tagged_library_dataset_collections')
+    user = relationship('User')
 
 
 class ToolTagAssociation(ItemTagAssociation, RepresentById):
