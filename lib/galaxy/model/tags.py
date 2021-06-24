@@ -366,7 +366,7 @@ class GalaxyTagHandler(TagHandler):
         self.item_tag_assoc_info["HistoryDatasetCollectionAssociation"] = \
             ItemTagAssocInfo(model.HistoryDatasetCollectionAssociation,
                              model.HistoryDatasetCollectionTagAssociation,
-                             model.HistoryDatasetCollectionTagAssociation.table.c.history_dataset_collection_id)
+                             model.HistoryDatasetCollectionTagAssociation.history_dataset_collection_id)
         self.item_tag_assoc_info["LibraryDatasetDatasetAssociation"] = \
             ItemTagAssocInfo(model.LibraryDatasetDatasetAssociation,
                              model.LibraryDatasetDatasetAssociationTagAssociation,
