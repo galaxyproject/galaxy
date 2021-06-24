@@ -4,20 +4,33 @@
         <requirement type="package" version="0.15.4">pysam</requirement>
         <requirement type="package" version="8.25">coreutils</requirement>
     </requirements>
-    <command>
+    <command><![CDATA[
         python '$__tool_directory__/bgzip.py'
-        -c ${input1.metadata.chromCol}
-        -s ${input1.metadata.startCol}
-        -e ${input1.metadata.endCol}
+        #if $input1.ext in ['bed', 'gff']
+            -P $input1.ext
+        #else
+            -c ${input1.metadata.chromCol}
+            -s ${input1.metadata.startCol}
+            -e ${input1.metadata.endCol}
+        #end if
         '$input1' '$output1'
-    </command>
+    ]]></command>
     <inputs>
-        <param format="interval" name="input1" type="data" label="Choose Interval file"/>
+        <!-- gff because gff is not a subclass of interval -->
+        <param format="gff,interval" name="input1" type="data" label="Choose Interval file"/>
     </inputs>
     <outputs>
         <data format="bgzip" name="output1"/>
     </outputs>
     <tests>
+        <test>
+            <param name="input1" ftype="bed" value="droPer1.bed"/>
+            <output name="output1" ftype="bgzip" value="droPer1.bgzip"/>
+        </test>
+        <test>
+            <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
+            <output name="output1" ftype="bgzip" value="bgzip_filter_by_feature_count_out2.bgzip"/>
+        </test>
         <test>
             <param name="input1" ftype="interval" value="2.interval"/>
             <output name="output1" ftype="bgzip" value="2.bgzip"/>
