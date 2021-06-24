@@ -12,6 +12,7 @@
         #elif $__target_datatype == 'biom1'
             --to-json
         #end if
+        cp '$ext_config' 'galaxy.json'
     ]]></command>
     <configfiles>
         <configfile name="ext_config">{"output": {
