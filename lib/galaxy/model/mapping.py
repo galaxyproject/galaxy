@@ -1115,16 +1115,6 @@ model.Tag.table = Table(
     Column("name", TrimmedString(255)),
     UniqueConstraint("name"))
 
-model.HistoryDatasetAssociationTagAssociation.table = Table(
-    "history_dataset_association_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", TrimmedString(255), index=True),
-    Column("value", TrimmedString(255), index=True),
-    Column("user_value", TrimmedString(255), index=True))
-
 model.LibraryDatasetDatasetAssociationTagAssociation.table = Table(
     "library_dataset_dataset_association_tag_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1316,8 +1306,8 @@ simple_mapping(model.HistoryDatasetAssociation,
                      == model.LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id),
         backref='copied_from_history_dataset_association'),
     tags=relation(model.HistoryDatasetAssociationTagAssociation,
-        order_by=model.HistoryDatasetAssociationTagAssociation.table.c.id,
-        backref='history_tag_associations'),
+        order_by=model.HistoryDatasetAssociationTagAssociation.id,
+        back_populates='history_dataset_association'),
     annotations=relation(model.HistoryDatasetAssociationAnnotationAssociation,
         order_by=model.HistoryDatasetAssociationAnnotationAssociation.id,
         back_populates="hda"),
@@ -2217,7 +2207,8 @@ mapper_registry.map_imperatively(model.VisualizationUserShareAssociation, model.
 
 mapper_registry.map_imperatively(model.Tag, model.Tag.table, properties=dict(
     children=relation(model.Tag, backref=backref('parent', remote_side=[model.Tag.table.c.id])),
-    tagged_histories=relation(model.HistoryTagAssociation, back_populates='tag')
+    tagged_histories=relation(model.HistoryTagAssociation, back_populates='tag'),
+    tagged_history_dataset_associations=relation(model.HistoryDatasetAssociationTagAssociation, back_populates='tag'),
 ))
 
 
@@ -2225,7 +2216,6 @@ def tag_mapping(tag_association_class, backref_name):
     simple_mapping(tag_association_class, tag=relation(model.Tag, backref=backref_name), user=relation(model.User))
 
 
-tag_mapping(model.HistoryDatasetAssociationTagAssociation, "tagged_history_dataset_associations")
 tag_mapping(model.LibraryDatasetDatasetAssociationTagAssociation, "tagged_library_dataset_dataset_associations")
 tag_mapping(model.PageTagAssociation, "tagged_pages")
 tag_mapping(model.StoredWorkflowTagAssociation, "tagged_workflows")
