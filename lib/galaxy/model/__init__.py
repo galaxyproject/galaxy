@@ -6771,14 +6771,6 @@ class ItemTagAssociation(Dictifiable):
         super().__init_subclass__(**kwargs)
         cls.associated_item_names.append(cls.__name__.replace("TagAssociation", ""))
 
-    def __init__(self, user=None, item_id=None, tag_id=None, user_tname=None, value=None):
-        self.user = user
-        self.item_id = item_id
-        self.tag_id = tag_id
-        self.user_tname = user_tname
-        self.value = value
-        self.user_value = None
-
     def copy(self, cls=None):
         if cls:
             new_ta = cls()
@@ -6808,7 +6800,7 @@ class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
 
 class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'history_dataset_association_tag_association'
-    
+
     id = Column('id', Integer, primary_key=True)
     history_dataset_association_id = Column('history_dataset_association_id', Integer,
         ForeignKey('history_dataset_association.id'), index=True)
@@ -6856,7 +6848,7 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
 
 class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'workflow_step_tag_association'
-    
+
     id = Column('id', Integer, primary_key=True)
     workflow_step_id = Column('workflow_step_id', Integer, ForeignKey('workflow_step.id'), index=True)
     tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
@@ -6944,7 +6936,7 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
     tag = relationship('Tag', back_populates='tagged_tools')
     user = relationship('User')
 
-    
+
 # Item annotation classes.
 class HistoryAnnotationAssociation(Base, RepresentById):
     __tablename__ = 'history_annotation_association'
