@@ -1115,16 +1115,6 @@ model.Tag.table = Table(
     Column("name", TrimmedString(255)),
     UniqueConstraint("name"))
 
-model.LibraryDatasetDatasetAssociationTagAssociation.table = Table(
-    "library_dataset_dataset_association_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("library_dataset_dataset_association_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", TrimmedString(255), index=True),
-    Column("value", TrimmedString(255), index=True),
-    Column("user_value", TrimmedString(255), index=True))
-
 model.StoredWorkflowTagAssociation.table = Table(
     "stored_workflow_tag_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1657,8 +1647,8 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.L
                      == model.LibraryDatasetDatasetAssociation.table.c.id),
         backref='parent_ldda'),
     tags=relation(model.LibraryDatasetDatasetAssociationTagAssociation,
-                  order_by=model.LibraryDatasetDatasetAssociationTagAssociation.table.c.id,
-                  backref='history_tag_associations'),
+                  order_by=model.LibraryDatasetDatasetAssociationTagAssociation.id,
+                  back_populates='library_dataset_dataset_association'),
     extended_metadata=relation(model.ExtendedMetadata,
         primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id)
     ),
@@ -2209,6 +2199,7 @@ mapper_registry.map_imperatively(model.Tag, model.Tag.table, properties=dict(
     children=relation(model.Tag, backref=backref('parent', remote_side=[model.Tag.table.c.id])),
     tagged_histories=relation(model.HistoryTagAssociation, back_populates='tag'),
     tagged_history_dataset_associations=relation(model.HistoryDatasetAssociationTagAssociation, back_populates='tag'),
+    tagged_library_dataset_dataset_associations=relation(model.LibraryDatasetDatasetAssociationTagAssociation, back_populates='tag'),
 ))
 
 
@@ -2216,7 +2207,6 @@ def tag_mapping(tag_association_class, backref_name):
     simple_mapping(tag_association_class, tag=relation(model.Tag, backref=backref_name), user=relation(model.User))
 
 
-tag_mapping(model.LibraryDatasetDatasetAssociationTagAssociation, "tagged_library_dataset_dataset_associations")
 tag_mapping(model.PageTagAssociation, "tagged_pages")
 tag_mapping(model.StoredWorkflowTagAssociation, "tagged_workflows")
 tag_mapping(model.WorkflowStepTagAssociation, "tagged_workflow_steps")

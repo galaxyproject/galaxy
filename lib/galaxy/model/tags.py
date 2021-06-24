@@ -370,7 +370,7 @@ class GalaxyTagHandler(TagHandler):
         self.item_tag_assoc_info["LibraryDatasetDatasetAssociation"] = \
             ItemTagAssocInfo(model.LibraryDatasetDatasetAssociation,
                              model.LibraryDatasetDatasetAssociationTagAssociation,
-                             model.LibraryDatasetDatasetAssociationTagAssociation.table.c.library_dataset_dataset_association_id)
+                             model.LibraryDatasetDatasetAssociationTagAssociation.library_dataset_dataset_association_id)
         self.item_tag_assoc_info["Page"] = ItemTagAssocInfo(model.Page,
                                                             model.PageTagAssociation,
                                                             model.PageTagAssociation.table.c.page_id)
