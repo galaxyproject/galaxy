@@ -492,7 +492,7 @@ def test_PageRevision(model, session, page):
 
 def test_PageTagAssociation(model, session, page, tag, user):
     cls = model.PageTagAssociation
-    # TODO assert cls.__tablename__ == ''
+    assert cls.__tablename__ == 'page_tag_association'
     with dbcleanup(session, cls):
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
@@ -501,13 +501,18 @@ def test_PageTagAssociation(model, session, page, tag, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
         assert stored_obj.page_id == page.id
         assert stored_obj.tag_id == tag.id
-        assert stored_obj.user == user
+        assert stored_obj.user_id == user.id
         assert stored_obj.user_tname == user_tname
         assert stored_obj.value == value
         assert stored_obj.user_value == user_value
+        # test mapped relationships
+        assert stored_obj.page.id == page.id
+        assert stored_obj.tag.id == tag.id
+        assert stored_obj.user.id == user.id
 
 
 def test_PageUserShareAssociation(model, session, page, user):
