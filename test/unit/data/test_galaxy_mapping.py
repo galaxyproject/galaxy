@@ -253,7 +253,7 @@ class MappingTests(BaseModelTestCase):
 
         sw = model.StoredWorkflow()
         sw.user = u
-        tag_and_test(sw, model.StoredWorkflowTagAssociation, "tagged_workflows")
+        tag_and_test(sw, model.StoredWorkflowTagAssociation, "tagged_stored_workflows")
 
         h = model.History(name="History for Tagging", user=u)
         tag_and_test(h, model.HistoryTagAssociation, "tagged_histories")
