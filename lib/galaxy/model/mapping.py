@@ -1125,16 +1125,6 @@ model.StoredWorkflowTagAssociation.table = Table(
     Column("value", Unicode(255), index=True),
     Column("user_value", Unicode(255), index=True))
 
-model.PageTagAssociation.table = Table(
-    "page_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("page_id", Integer, ForeignKey("page.id"), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", TrimmedString(255), index=True),
-    Column("value", TrimmedString(255), index=True),
-    Column("user_value", TrimmedString(255), index=True))
-
 model.WorkflowStepTagAssociation.table = Table(
     "workflow_step_tag_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -2136,8 +2126,8 @@ mapper_registry.map_imperatively(model.Page, model.Page.table, properties=dict(
         primaryjoin=(model.Page.table.c.latest_revision_id == model.PageRevision.id),
         lazy=False),
     tags=relation(model.PageTagAssociation,
-        order_by=model.PageTagAssociation.table.c.id,
-        backref="pages"),
+        order_by=model.PageTagAssociation.id,
+        back_populates="page"),
     annotations=relation(model.PageAnnotationAssociation,
         order_by=model.PageAnnotationAssociation.id,
         back_populates="page"),
@@ -2200,6 +2190,7 @@ mapper_registry.map_imperatively(model.Tag, model.Tag.table, properties=dict(
     tagged_histories=relation(model.HistoryTagAssociation, back_populates='tag'),
     tagged_history_dataset_associations=relation(model.HistoryDatasetAssociationTagAssociation, back_populates='tag'),
     tagged_library_dataset_dataset_associations=relation(model.LibraryDatasetDatasetAssociationTagAssociation, back_populates='tag'),
+    tagged_pages=relation(model.PageTagAssociation, back_populates='tag'),
 ))
 
 
@@ -2207,7 +2198,6 @@ def tag_mapping(tag_association_class, backref_name):
     simple_mapping(tag_association_class, tag=relation(model.Tag, backref=backref_name), user=relation(model.User))
 
 
-tag_mapping(model.PageTagAssociation, "tagged_pages")
 tag_mapping(model.StoredWorkflowTagAssociation, "tagged_workflows")
 tag_mapping(model.WorkflowStepTagAssociation, "tagged_workflow_steps")
 tag_mapping(model.VisualizationTagAssociation, "tagged_visualizations")

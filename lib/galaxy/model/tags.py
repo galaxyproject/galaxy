@@ -373,7 +373,7 @@ class GalaxyTagHandler(TagHandler):
                              model.LibraryDatasetDatasetAssociationTagAssociation.library_dataset_dataset_association_id)
         self.item_tag_assoc_info["Page"] = ItemTagAssocInfo(model.Page,
                                                             model.PageTagAssociation,
-                                                            model.PageTagAssociation.table.c.page_id)
+                                                            model.PageTagAssociation.page_id)
         self.item_tag_assoc_info["StoredWorkflow"] = ItemTagAssocInfo(model.StoredWorkflow,
                                                                       model.StoredWorkflowTagAssociation,
                                                                       model.StoredWorkflowTagAssociation.table.c.stored_workflow_id)

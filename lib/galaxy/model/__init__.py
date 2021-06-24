@@ -6837,8 +6837,19 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
     user = relationship('User')
 
 
-class PageTagAssociation(ItemTagAssociation, RepresentById):
-    pass
+class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
+    __tablename__ = 'page_tag_association'
+    id = Column('id', Integer, primary_key=True)
+    page_id = Column('page_id', Integer, ForeignKey('page.id'), index=True)
+    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column('user_tname', TrimmedString(255), index=True)
+    value = Column('value', TrimmedString(255), index=True)
+    user_value = Column('user_value', TrimmedString(255), index=True)
+    page = relationship('Page', back_populates='tags')
+    tag = relationship('Tag', back_populates='tagged_pages')
+    user = relationship('User')
+
 
 
 class WorkflowStepTagAssociation(ItemTagAssociation, RepresentById):
