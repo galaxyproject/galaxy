@@ -6793,6 +6793,7 @@ class ItemTagAssociation(Dictifiable):
 
 class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'history_tag_association'
+
     id = Column('id', Integer, primary_key=True)
     history_id = Column('history_id', Integer, ForeignKey('history.id'), index=True)
     tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
@@ -6807,6 +6808,7 @@ class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
 
 class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'history_dataset_association_tag_association'
+    
     id = Column('id', Integer, primary_key=True)
     history_dataset_association_id = Column('history_dataset_association_id', Integer,
         ForeignKey('history_dataset_association.id'), index=True)
@@ -6822,6 +6824,7 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
 
 class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'library_dataset_dataset_association_tag_association'
+
     id = Column('id', Integer, primary_key=True)
     library_dataset_dataset_association_id = Column('library_dataset_dataset_association_id',
         Integer, ForeignKey('library_dataset_dataset_association.id'), index=True)
@@ -6830,7 +6833,6 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
     user_tname = Column('user_tname', TrimmedString(255), index=True)
     value = Column('value', TrimmedString(255), index=True)
     user_value = Column('user_value', TrimmedString(255), index=True)
-
     library_dataset_dataset_association = relationship(
         'LibraryDatasetDatasetAssociation', back_populates='tags')
     tag = relationship('Tag', back_populates='tagged_library_dataset_dataset_associations')
@@ -6839,6 +6841,7 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
 
 class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'page_tag_association'
+
     id = Column('id', Integer, primary_key=True)
     page_id = Column('page_id', Integer, ForeignKey('page.id'), index=True)
     tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
@@ -6853,22 +6856,32 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
 
 class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'workflow_step_tag_association'
+    
     id = Column('id', Integer, primary_key=True)
-
     workflow_step_id = Column('workflow_step_id', Integer, ForeignKey('workflow_step.id'), index=True)
     tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
     user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column('user_tname', TrimmedString(255), index=True)
     value = Column('value', TrimmedString(255), index=True)
     user_value = Column('user_value', TrimmedString(255), index=True)
-
     workflow_step = relationship('WorkflowStep', back_populates='tags')
     tag = relationship('Tag', back_populates='tagged_workflow_steps')
     user = relationship('User')
 
 
-class StoredWorkflowTagAssociation(ItemTagAssociation, RepresentById):
-    pass
+class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
+    __tablename__ = 'stored_workflow_tag_association'
+
+    id = Column('id', Integer, primary_key=True)
+    stored_workflow_id = Column('stored_workflow_id', Integer, ForeignKey('stored_workflow.id'), index=True)
+    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column('user_tname', TrimmedString(255), index=True)
+    value = Column('value', TrimmedString(255), index=True)
+    user_value = Column('user_value', TrimmedString(255), index=True)
+    stored_workflow = relationship('StoredWorkflow', back_populates='tags')
+    tag = relationship('Tag', back_populates='tagged_stored_workflows')
+    user = relationship('User')
 
 
 class VisualizationTagAssociation(ItemTagAssociation, RepresentById):
