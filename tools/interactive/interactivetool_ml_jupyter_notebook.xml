@@ -40,7 +40,9 @@
             ## provide all rights to copied files
 	    chown -R \$NB_USER:users `pwd` &&
             chown \$NB_USER ./home_page.ipynb &&
+            chown \$NB_USER ./notebooks/ &&
             chown \$NB_USER ./notebooks/*.ipynb &&
+            chown \$NB_USER ./elyra/ &&
             chown \$NB_USER ./elyra/*.* &&
             jupyter trust ./home_page.ipynb &&
             jupyter trust ./notebooks/*.ipynb &&
