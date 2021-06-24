@@ -3162,7 +3162,7 @@ Name | Description
 ``$__user_id__`` | Email's numeric ID (id column of ``galaxy_user`` table in the database)
 ``$__user_email__`` | User's email address
 ``$__app__`` | The ``galaxy.app.UniverseApplication`` instance, gives access to all other configuration file variables (e.g. $__app__.config.output_size_limit). Should be used as a last resort, may go away in future releases.
-``$__target_datatype__`` | Only available in converters. Contains the target datatype of the conversion
+``$__target_datatype__`` | Only available in converter tools when run internally by Galaxy. Contains the target datatype of the conversion
 
 Additional runtime properties are available as environment variables. Since these
 are not Cheetah variables (the values aren't available until runtime) these should likely
