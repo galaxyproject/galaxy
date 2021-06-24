@@ -1125,16 +1125,6 @@ model.StoredWorkflowTagAssociation.table = Table(
     Column("value", Unicode(255), index=True),
     Column("user_value", Unicode(255), index=True))
 
-model.WorkflowStepTagAssociation.table = Table(
-    "workflow_step_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", Unicode(255), index=True),
-    Column("value", Unicode(255), index=True),
-    Column("user_value", Unicode(255), index=True))
-
 model.VisualizationTagAssociation.table = Table(
     "visualization_tag_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1913,8 +1903,8 @@ mapper_registry.map_imperatively(model.WorkflowStep, model.WorkflowStep.table, p
         primaryjoin=(model.DynamicTool.id == model.WorkflowStep.table.c.dynamic_tool_id),
         back_populates="workflow_steps"),
     tags=relation(model.WorkflowStepTagAssociation,
-        order_by=model.WorkflowStepTagAssociation.table.c.id,
-        backref="workflow_steps"),
+        order_by=model.WorkflowStepTagAssociation.id,
+        back_populates="workflow_step"),
     annotations=relation(model.WorkflowStepAnnotationAssociation,
         order_by=model.WorkflowStepAnnotationAssociation.id,
         back_populates="workflow_step")
@@ -2191,6 +2181,7 @@ mapper_registry.map_imperatively(model.Tag, model.Tag.table, properties=dict(
     tagged_history_dataset_associations=relation(model.HistoryDatasetAssociationTagAssociation, back_populates='tag'),
     tagged_library_dataset_dataset_associations=relation(model.LibraryDatasetDatasetAssociationTagAssociation, back_populates='tag'),
     tagged_pages=relation(model.PageTagAssociation, back_populates='tag'),
+    tagged_workflow_steps=relation(model.WorkflowStepTagAssociation, back_populates='tag'),
 ))
 
 
@@ -2199,7 +2190,6 @@ def tag_mapping(tag_association_class, backref_name):
 
 
 tag_mapping(model.StoredWorkflowTagAssociation, "tagged_workflows")
-tag_mapping(model.WorkflowStepTagAssociation, "tagged_workflow_steps")
 tag_mapping(model.VisualizationTagAssociation, "tagged_visualizations")
 tag_mapping(model.HistoryDatasetCollectionTagAssociation, "tagged_history_dataset_collections")
 tag_mapping(model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections")
