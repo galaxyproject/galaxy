@@ -1,6 +1,9 @@
-<tool id="CONVERTER_biom" name="Convert Biom datasets" version="2.1.5">
+<tool id="CONVERTER_biom" name="Convert Biom datasets" version="@TOOL_VERSION@">
+    <macros>
+        <token name="@TOOL_VERSION@">2.1.5</token>
+    </macros>
     <requirements>
-        <requirement type="package" version="2.1.5">biom-format</requirement>
+        <requirement type="package" version="@TOOL_VERSION@">biom-format</requirement>
     </requirements>
     <command><![CDATA[
         biom convert -i '$input' -o '$output'
