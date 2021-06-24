@@ -1115,17 +1115,6 @@ model.Tag.table = Table(
     Column("name", TrimmedString(255)),
     UniqueConstraint("name"))
 
-model.LibraryDatasetCollectionTagAssociation.table = Table(
-    "library_dataset_collection_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("library_dataset_collection_id", Integer,
-        ForeignKey("library_dataset_collection_association.id"), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", TrimmedString(255), index=True),
-    Column("value", TrimmedString(255), index=True),
-    Column("user_value", TrimmedString(255), index=True))
-
 model.ToolTagAssociation.table = Table(
     "tool_tag_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1817,8 +1806,8 @@ simple_mapping(model.LibraryDatasetCollectionAssociation,
     folder=relation(model.LibraryFolder,
         backref='dataset_collections'),
     tags=relation(model.LibraryDatasetCollectionTagAssociation,
-        order_by=model.LibraryDatasetCollectionTagAssociation.table.c.id,
-        backref='dataset_collections'),
+        order_by=model.LibraryDatasetCollectionTagAssociation.id,
+        back_populates='dataset_collection'),
     annotations=relation(model.LibraryDatasetCollectionAnnotationAssociation,
         order_by=model.LibraryDatasetCollectionAnnotationAssociation.id,
         back_populates="dataset_collection"),
@@ -2154,6 +2143,7 @@ mapper_registry.map_imperatively(model.Tag, model.Tag.table, properties=dict(
     tagged_stored_workflows=relation(model.StoredWorkflowTagAssociation, back_populates='tag'),
     tagged_visualizations=relation(model.VisualizationTagAssociation, back_populates='tag'),
     tagged_history_dataset_collections=relation(model.HistoryDatasetCollectionTagAssociation, back_populates='tag'),
+    tagged_library_dataset_collections=relation(model.LibraryDatasetCollectionTagAssociation, back_populates='tag'),
 ))
 
 
@@ -2161,7 +2151,6 @@ def tag_mapping(tag_association_class, backref_name):
     simple_mapping(tag_association_class, tag=relation(model.Tag, backref=backref_name), user=relation(model.User))
 
 
-tag_mapping(model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections")
 tag_mapping(model.ToolTagAssociation, "tagged_tools")
 
 mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
