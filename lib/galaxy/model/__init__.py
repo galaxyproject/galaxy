@@ -6851,9 +6851,20 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
     user = relationship('User')
 
 
+class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
+    __tablename__ = 'workflow_step_tag_association'
+    id = Column('id', Integer, primary_key=True)
 
-class WorkflowStepTagAssociation(ItemTagAssociation, RepresentById):
-    pass
+    workflow_step_id = Column('workflow_step_id', Integer, ForeignKey('workflow_step.id'), index=True)
+    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column('user_tname', TrimmedString(255), index=True)
+    value = Column('value', TrimmedString(255), index=True)
+    user_value = Column('user_value', TrimmedString(255), index=True)
+
+    workflow_step = relationship('WorkflowStep', back_populates='tags')
+    tag = relationship('Tag', back_populates='tagged_workflow_steps')
+    user = relationship('User')
 
 
 class StoredWorkflowTagAssociation(ItemTagAssociation, RepresentById):
