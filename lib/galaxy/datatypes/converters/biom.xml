@@ -30,7 +30,7 @@
         <test>
             <param name="input" ftype="biom2" value="input_taxonomy.biom2"/>
             <param name="__target_datatype" value="biom1"/>
-            <output name="output_biom1">
+            <output name="output" ftype="biom1">
                 <assert_contents>
                     <has_text text="Biological Observation Matrix 1.0.0"/>
                 </assert_contents>
@@ -39,7 +39,7 @@
         <test>
             <param name="input" ftype="biom1" value="input_taxonomy.biom1"/>
             <param name="__target_datatype" value="biom2"/>
-            <output name="output_biom2" format="biom2" value="input_taxonomy.biom2" compare="sim_size"/>
+            <output name="output" ftype="biom2" value="input_taxonomy.biom2" compare="sim_size"/>
         </test>
     </tests>
     <help>
