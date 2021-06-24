@@ -1115,16 +1115,6 @@ model.Tag.table = Table(
     Column("name", TrimmedString(255)),
     UniqueConstraint("name"))
 
-model.VisualizationTagAssociation.table = Table(
-    "visualization_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("visualization_id", Integer, ForeignKey("visualization.id"), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", TrimmedString(255), index=True),
-    Column("value", TrimmedString(255), index=True),
-    Column("user_value", TrimmedString(255), index=True))
-
 model.HistoryDatasetCollectionTagAssociation.table = Table(
     "history_dataset_collection_tag_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -2137,8 +2127,8 @@ mapper_registry.map_imperatively(model.Visualization, model.Visualization.table,
         primaryjoin=(model.Visualization.table.c.latest_revision_id == model.VisualizationRevision.id),
         lazy=False),
     tags=relation(model.VisualizationTagAssociation,
-        order_by=model.VisualizationTagAssociation.table.c.id,
-        backref="visualizations"),
+        order_by=model.VisualizationTagAssociation.id,
+        back_populates="visualization"),
     annotations=relation(model.VisualizationAnnotationAssociation,
         order_by=model.VisualizationAnnotationAssociation.id,
         back_populates="visualization"),
@@ -2173,6 +2163,7 @@ mapper_registry.map_imperatively(model.Tag, model.Tag.table, properties=dict(
     tagged_pages=relation(model.PageTagAssociation, back_populates='tag'),
     tagged_workflow_steps=relation(model.WorkflowStepTagAssociation, back_populates='tag'),
     tagged_stored_workflows=relation(model.StoredWorkflowTagAssociation, back_populates='tag'),
+    tagged_visualizations=relation(model.VisualizationTagAssociation, back_populates='tag'),
 ))
 
 
@@ -2180,7 +2171,6 @@ def tag_mapping(tag_association_class, backref_name):
     simple_mapping(tag_association_class, tag=relation(model.Tag, backref=backref_name), user=relation(model.User))
 
 
-tag_mapping(model.VisualizationTagAssociation, "tagged_visualizations")
 tag_mapping(model.HistoryDatasetCollectionTagAssociation, "tagged_history_dataset_collections")
 tag_mapping(model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections")
 tag_mapping(model.ToolTagAssociation, "tagged_tools")

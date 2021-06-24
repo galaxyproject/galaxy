@@ -379,7 +379,7 @@ class GalaxyTagHandler(TagHandler):
                                                                       model.StoredWorkflowTagAssociation.stored_workflow_id)
         self.item_tag_assoc_info["Visualization"] = ItemTagAssocInfo(model.Visualization,
                                                                      model.VisualizationTagAssociation,
-                                                                     model.VisualizationTagAssociation.table.c.visualization_id)
+                                                                     model.VisualizationTagAssociation.visualization_id)
 
 
 class GalaxyTagHandlerSession(GalaxyTagHandler):
