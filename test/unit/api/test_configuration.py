@@ -12,3 +12,8 @@ def test_parse_serialization_params():
     keys = 'foo,bar,baz'
     serialized = parse_serialization_params(view, keys, default_view)
     assert serialized['keys'] == ['foo', 'bar', 'baz']
+
+    serialized = parse_serialization_params(default_view=default_view)
+    assert serialized['view'] is None
+    assert serialized['keys'] is None
+    assert serialized['default_view'] == default_view

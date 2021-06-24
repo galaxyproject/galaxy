@@ -19,9 +19,9 @@ SerializationKeysQueryParam: Optional[str] = Query(
 
 
 def parse_serialization_params(
-    view: Optional[str],
-    keys: Optional[str],
-    default_view: Optional[str]
+    view: Optional[str] = None,
+    keys: Optional[str] = None,
+    default_view: Optional[str] = None
 ) -> SerializationParams:
     key_list = None
     if keys:
