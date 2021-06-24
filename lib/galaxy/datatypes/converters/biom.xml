@@ -1,4 +1,4 @@
-<tool id="CONVERTER_biom" name="Convert Biom datasets" version="@TOOL_VERSION@">
+<tool id="CONVERTER_biom" name="Convert Biom datasets" version="@TOOL_VERSION@" profile="20.05">
     <macros>
         <token name="@TOOL_VERSION@">2.1.5</token>
     </macros>
