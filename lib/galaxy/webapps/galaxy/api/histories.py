@@ -33,6 +33,7 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw,
 )
+from galaxy.webapps.galaxy.api.configuration import parse_serialization_params
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
@@ -225,16 +226,10 @@ class HistoriesController(BaseGalaxyAPIController):
         :returns:   detailed history information
         """
         history_id = id
-        deleted = string_as_bool(deleted)
-
         if history_id == "most_recently_used":
-            history = self.manager.most_recent(trans.user,
-                filters=(self.app.model.History.deleted == false()), current_history=trans.history)
-        else:
-            history = self.manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
-
-        return self.serializer.serialize_to_view(history,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+            history_id = None  # Will default to the most recently used
+        serialization_params = parse_serialization_params(**kwd)
+        return self.service.show(trans, serialization_params, history_id)
 
     @expose_api_anonymous
     def citations(self, trans, history_id, **kwd):

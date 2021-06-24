@@ -12,7 +12,8 @@ from typing import (
 
 from sqlalchemy import (
     asc,
-    desc
+    desc,
+    false
 )
 
 from galaxy import (
@@ -30,9 +31,13 @@ from galaxy.managers.citations import CitationsManager
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     ExportHistoryArchivePayload,
+    HistoryBeta,
+    HistoryDetailed,
+    HistorySummary,
     JobExportHistoryArchive,
     JobIdResponse,
 )
+from galaxy.schema.types import SerializationParams
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -555,6 +560,47 @@ class HistoriesService(ServiceBase):
         self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
 
     # TODO: add the rest of the API actions here and call them directly from the API controller
+
+    def show(
+        self,
+        trans,
+        serialization_params: SerializationParams,
+        history_id: Optional[EncodedDatabaseIdField] = None,
+    ) -> Union[HistoryBeta, HistoryDetailed, HistorySummary]:
+        """
+        Returns detailed information about the history with the given encoded `id`. If no `id` is
+        provided, then the most recently used history will be returned.
+
+        :type   id:      an optional encoded id string
+        :param  id:      the encoded id of the history to query or None to use the most recently used
+
+        :type   serialization_params:   dictionary
+        :param  serialization_params:   contains the optional `view`, `keys` and `default_view` for serialization
+
+        :rtype:     dictionary
+        :returns:   detailed history information
+        """
+        if history_id is None:  # By default display the most recent history
+            history = self.manager.most_recent(
+                trans.user,
+                filters=(model.History.deleted == false()),
+                current_history=trans.history
+            )
+        else:
+            history = self.manager.get_accessible(
+                self.decode_id(history_id),
+                trans.user,
+                current_history=trans.history
+            )
+
+        serialization_params["default_view"] = "detailed"
+        serialized_history = self.serializer.serialize_to_view(
+            history,
+            user=trans.user,
+            trans=trans,
+            **serialization_params
+        )
+        return serialized_history
 
     def citations(self, trans, history_id):
         """
