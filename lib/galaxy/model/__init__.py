@@ -6931,17 +6931,20 @@ class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     user = relationship('User')
 
 
-class ToolTagAssociation(ItemTagAssociation, RepresentById):
-    def __init__(self, id=None, user=None, tool_id=None, tag_id=None, user_tname=None, value=None):
-        self.id = id
-        self.user = user
-        self.tool_id = tool_id
-        self.tag_id = tag_id
-        self.user_tname = user_tname
-        self.value = None
-        self.user_value = None
+class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
+    __tablename__ = 'tool_tag_association'
 
+    id = Column('id', Integer, primary_key=True)
+    tool_id = Column('tool_id', TrimmedString(255), index=True)
+    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column('user_tname', TrimmedString(255), index=True)
+    value = Column('value', TrimmedString(255), index=True)
+    user_value = Column('user_value', TrimmedString(255), index=True)
+    tag = relationship('Tag', back_populates='tagged_tools')
+    user = relationship('User')
 
+    
 # Item annotation classes.
 class HistoryAnnotationAssociation(Base, RepresentById):
     __tablename__ = 'history_annotation_association'

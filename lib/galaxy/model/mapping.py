@@ -1115,16 +1115,6 @@ model.Tag.table = Table(
     Column("name", TrimmedString(255)),
     UniqueConstraint("name"))
 
-model.ToolTagAssociation.table = Table(
-    "tool_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("tool_id", TrimmedString(255), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", TrimmedString(255), index=True),
-    Column("value", TrimmedString(255), index=True),
-    Column("user_value", TrimmedString(255), index=True))
-
 model.UserPreference.table = Table(
     "user_preference", metadata,
     Column("id", Integer, primary_key=True),
@@ -2144,14 +2134,8 @@ mapper_registry.map_imperatively(model.Tag, model.Tag.table, properties=dict(
     tagged_visualizations=relation(model.VisualizationTagAssociation, back_populates='tag'),
     tagged_history_dataset_collections=relation(model.HistoryDatasetCollectionTagAssociation, back_populates='tag'),
     tagged_library_dataset_collections=relation(model.LibraryDatasetCollectionTagAssociation, back_populates='tag'),
+    tagged_tools=relation(model.ToolTagAssociation, back_populates='tag'),
 ))
-
-
-def tag_mapping(tag_association_class, backref_name):
-    simple_mapping(tag_association_class, tag=relation(model.Tag, backref=backref_name), user=relation(model.User))
-
-
-tag_mapping(model.ToolTagAssociation, "tagged_tools")
 
 mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     # user=relation( model.User.mapper ),
