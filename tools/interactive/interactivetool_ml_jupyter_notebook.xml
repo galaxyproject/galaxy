@@ -21,18 +21,24 @@
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/ &&
         mkdir -p ./jupyter/data &&
+        mkdir -p ./jupyter/notebooks &&
 
         #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
         ln -sf '$input' './jupyter/data/${cleaned_name}' &&
 
         ## change into the directory where the notebooks are located
-	cd ./jupyter/ &&
-	chown -R \$NB_USER:users `pwd` &&
+        cp /home/\$NB_USER/notebooks/*.ipynb ./jupyter/notebooks/ &&
+        cd ./jupyter/ &&
+        export HOME=/home/\$NB_USER/ &&
+        export PATH=/home/\$NB_USER/.local/bin:\$PATH &&
+        chown -R \$NB_USER:users `pwd` &&
 	#if $mode.mode_select == 'scratch':
-	    cp '$__tool_directory__/default_tensorflow_notebook.ipynb' ./default_tensorflow_notebook.ipynb &&
-            chown \$NB_USER ./default_tensorflow_notebook.ipynb &&
-            jupyter trust ./default_tensorflow_notebook.ipynb &&
-	    /usr/local/bin/start-notebook.sh
+	    cp '$__tool_directory__/home_page.ipynb' ./home_page.ipynb &&
+            chown \$NB_USER ./home_page.ipynb &&
+            jupyter trust ./home_page.ipynb &&
+            
+            jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True
+	    ##/usr/local/bin/start-notebook.sh
 	#end if
     ]]>
     </command>
