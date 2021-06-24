@@ -31,6 +31,7 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     ModelClassField,
 )
+from galaxy.schema.types import RelativeUrl
 
 USER_MODEL_CLASS_NAME = "User"
 HDA_MODEL_CLASS_NAME = "HistoryDatasetAssociation"
@@ -44,7 +45,7 @@ STORED_WORKFLOW_MODEL_CLASS_NAME = "StoredWorkflow"
 
 # Generic and common Field annotations that can be reused across models
 
-UrlField: AnyUrl = Field(
+RelativeUrlField: RelativeUrl = Field(
     ...,
     title="URL",
     description="The relative URL to access this item.",
@@ -318,7 +319,7 @@ class HistoryItemCommon(HistoryItemBase):
     )
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
-    url: AnyUrl = UrlField
+    url: RelativeUrl = RelativeUrlField
     tags: TagCollection
 
 
@@ -568,7 +569,7 @@ class HDCASummary(HistoryItemCommon):
         title="Job Source Type",
         description="The type of job (model class) that produced this dataset collection. Used to track the state of the job.",
     )
-    contents_url: AnyUrl = Field(
+    contents_url: RelativeUrl = Field(
         ...,
         title="Contents URL",
         description="The relative URL to access the contents of this dataset collection.",
@@ -600,7 +601,7 @@ class HistorySummary(Model):
         title="Purged",
         description="Whether this item has been permanently removed.",
     )
-    url: AnyUrl = UrlField
+    url: RelativeUrl = RelativeUrlField
     published: bool = Field(
         ...,
         title="Published",
@@ -631,7 +632,7 @@ class HistoryActiveContentCounts(Model):
 
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
     """History detailed information."""
-    contents_url: AnyUrl = Field(
+    contents_url: RelativeUrl = Field(
         ...,
         title="Contents URL",
         description="The relative URL to access the contents of this History.",
@@ -701,7 +702,7 @@ class HistoryBeta(HistoryDetailed):
         description="The current state of the History based on the states of the datasets it contains.",
     )
     tags: TagCollection
-    url: AnyUrl = UrlField
+    url: RelativeUrl = RelativeUrlField
 
 
 class ExportHistoryArchivePayload(Model):
@@ -725,7 +726,7 @@ class ExportHistoryArchivePayload(Model):
         title="File Name",
         description="The name of the file containing the exported history.",
     )
-    directory_uri: Optional[AnyUrl] = Field(
+    directory_uri: Optional[str] = Field(
         default=None,
         title="Directory URI",
         description=(
@@ -1073,7 +1074,7 @@ class StoredWorkflowSummary(Model):
         title="Name",
         description="The name of the history.",
     )
-    url: AnyUrl = UrlField
+    url: RelativeUrl = RelativeUrlField
     published: bool = Field(
         ...,
         title="Published",
