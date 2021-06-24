@@ -2,11 +2,12 @@
     <!-- test if setting $__target_datatype__ works for converters -->
     <command><![CDATA[
 #if $biom1:
-    cp '$biom1' '$output_biom1'
+    cp '$biom1' '$output_biom1' &&
 #end if
 #if $biom2:
-    cp '$biom2' '$output_biom2'
+    cp '$biom2' '$output_biom2' &&
 #end if
+exit 0
     ]]></command>
     <inputs>
         <!-- inputs are optional, because supplying both at the same time triggers 
