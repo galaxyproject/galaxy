@@ -6808,7 +6808,8 @@ class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
 class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'history_dataset_association_tag_association'
     id = Column('id', Integer, primary_key=True)
-    history_dataset_association_id = Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True)
+    history_dataset_association_id = Column('history_dataset_association_id', Integer,
+        ForeignKey('history_dataset_association.id'), index=True)
     tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
     user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column('user_tname', TrimmedString(255), index=True)
@@ -6819,8 +6820,21 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
     user = relationship('User')
 
 
-class LibraryDatasetDatasetAssociationTagAssociation(ItemTagAssociation, RepresentById):
-    pass
+class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, RepresentById):
+    __tablename__ = 'library_dataset_dataset_association_tag_association'
+    id = Column('id', Integer, primary_key=True)
+    library_dataset_dataset_association_id = Column('library_dataset_dataset_association_id',
+        Integer, ForeignKey('library_dataset_dataset_association.id'), index=True)
+    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column('user_tname', TrimmedString(255), index=True)
+    value = Column('value', TrimmedString(255), index=True)
+    user_value = Column('user_value', TrimmedString(255), index=True)
+
+    library_dataset_dataset_association = relationship(
+        'LibraryDatasetDatasetAssociation', back_populates='tags')
+    tag = relationship('Tag', back_populates='tagged_library_dataset_dataset_associations')
+    user = relationship('User')
 
 
 class PageTagAssociation(ItemTagAssociation, RepresentById):
