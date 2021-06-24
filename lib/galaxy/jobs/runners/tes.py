@@ -5,7 +5,8 @@ import logging
 import os
 import json
 import shlex
-
+from re import escape, findall
+from os import sep
 import requests
 
 from galaxy import model
@@ -13,6 +14,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
+from galaxy.jobs.command_factory import build_command
 from galaxy.util import asbool
 
 log = logging.getLogger(__name__)
@@ -47,6 +49,7 @@ class TESJobRunner(AsynchronousJobRunner):
         """Initialize this job runner and start the monitor thread"""
         super(TESJobRunner, self).__init__(app, nworkers, **kwargs)
         self.container_workdir = "/tmp"
+        self.galaxy_url = "http://localhost:8080/"
         # self.tes_url = tes_url
         # self.tes_client = tes.HTTPClient(url=self.tes_url)
         self._init_monitor_thread()
@@ -66,56 +69,110 @@ class TESJobRunner(AsynchronousJobRunner):
         return r.json()
 
     def _cancel_job(self, master_addr, job_id):
-        # TODO TES doesn't actually shutdown running jobs.
         url = master_addr + "/v1/tasks" + str(job_id) + ":cancel"
         r = requests.post(url)
 
-    def queue_job(self, job_wrapper):
-        """Submit the job to TES."""
+    def get_upload_path(self, job_destination_params, job_id, env=None):
+        # Cannot use url_for outside of web thread.
+        # files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
+        if env is None:
+            env = []
+        encoded_job_id = self.app.security.encode_id(job_id)
+        job_key = self.app.security.encode_id(job_id, kind="jobs_files")
+        endpoint_base = "%sapi/jobs/%s/files?job_key=%s"
+        if self.app.config.nginx_upload_job_files_path:
+            endpoint_base = "%s" + \
+                            self.app.config.nginx_upload_job_files_path + \
+                            "?job_id=%s&job_key=%s"
+        files_endpoint = endpoint_base % (
+            self.galaxy_url,
+            encoded_job_id,
+            job_key
+        )
+        get_client_kwds = dict(
+            job_id=str(job_id),
+            files_endpoint=files_endpoint,
+            env=env
+        )
+        # Turn MutableDict into standard dict for pulsar consumption
+        job_destination_params = dict(job_destination_params.items())
+        return get_client_kwds, job_destination_params
 
-        log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
-        include_metadata = asbool(job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
-        if not self.prepare_job(job_wrapper, include_metadata=include_metadata):
-            return
+    def output_names(self):
+        # Maybe this should use the path mapper, but the path mapper just uses basenames
+        return self.job_wrapper.get_output_basenames()
 
-        log.debug(f"Details of Job Wrapper object {job_wrapper.__dict__}")
-        job_destination = job_wrapper.job_destination
-        galaxy_id_tag = job_wrapper.get_id_tag()
-        master_addr = job_destination.params.get("tes_master_addr")
+    def find_referenced_subfiles(self, directory, command_line, extra_files):
+        """
+        Return list of files below specified `directory` in job inputs. Could
+        use more sophisticated logic (match quotes to handle spaces, handle
+        subdirectories, etc...).
+        **Parameters**
+        directory : str
+            Full path to directory to search.
+        """
+        if directory is None:
+            return []
+
+        pattern = r'''[\'\"]?(%s%s[^\s\'\"]+)[\'\"]?''' % (escape(directory), escape(sep))
+        return self.find_pattern_references(pattern, command_line, extra_files)
+
+    def _read(self, path):
+        """
+        Utility method to quickly read small files (config files and tool
+        wrappers) into memory as bytes.
+        """
+        input = open(path, "r", encoding="utf-8")
+        try:
+            return input.read()
+        finally:
+            input.close()
+
+    def __items(self, command_line, extra_files):
+        items = [command_line]
+        config_files = {}
+        for config_file in extra_files or []:
+            config_contents = self._read(config_file)
+            config_files[config_file] = config_contents
+        items.extend(config_files.values())
+        return items
+
+    def find_pattern_references(self, pattern, command_line, extra_files):
+        referenced_files = set()
+        for input_contents in self.__items(command_line, extra_files):
+            referenced_files.update(findall(pattern, input_contents))
+        return list(referenced_files)
+
+    def __prepare_jobscript(self, job_wrapper):
+        input_files = self.__get_inputs(job_wrapper)
+        work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
+        output_files = self.get_output_files(job_wrapper)
+        metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
+        metadata_strategy = job_wrapper.get_destination_configuration('metadata_strategy', None)
+        config_files = job_wrapper.extra_filenames
+        tool_dir = job_wrapper.tool.tool_dir
+        tool_names = os.listdir(tool_dir)
+
+        client_inputs_list = self.__get_inputs(job_wrapper)
         commands = job_wrapper.command_line
-        commands = commands.split()
-        working_directory = job_wrapper.working_directory
-        # container = job_wrapper.tool.containers[0]
+        from shlex import split
+        commands = split(commands)
+        other_inputs = job_wrapper.extra_filenames
+        script_path = commands[1]
+        # final_commands = ["pip", "install", "galaxy-lib"]
+        # for cmd in commands:
+        #     final_commands.append(cmd)
 
-        # print '=' * 50
-        # print job_wrapper.command_line
-        # print
-        script_path = commands[1][1:-1]
-        # script_path = "/home/vipulchhabra/Desktop/GSoC/funnel-linux-amd64-0.10.0/fasta_to_tabular_converter.py"
-        input_file = commands[2][9:-1]
-        output_file = commands[3][10:-1]
-        commands[1] = "/inputs/test.py"
-        commands[2] = "--input=/inputs/input.dat"
-        commands[3] = "--output=/outputs/output.dat"
+        # for tool_name in tool_names:
+        #     execution_script["inputs"].append({"url": tool_dir + tool_name, "path": tool_dir + tool_name})
+
+        referenced_tool_files = self.find_referenced_subfiles(tool_dir, job_wrapper.command_line, other_inputs)
+
         execution_script = {
-            "name": "Task Executors",
+            "name": "Galaxy Job Execution",
             "description": job_wrapper.tool.description,
-            "inputs": [
-                {
-                    "url": script_path,
-                    "path": "/inputs/test.py"
-                },
-                {
-                    "url": input_file,
-                    "path": "/inputs/input.dat"
-                }
-            ],
-            "outputs": [
-                {
-                    "url": output_file,
-                    "path": "/outputs/output.dat"
-                }
-            ],
+            "inputs": [],
+            "outputs": [],
             "executors": [
                 {
                     "image": "python",
@@ -123,6 +180,60 @@ class TESJobRunner(AsynchronousJobRunner):
                 }
             ]
         }
+
+        for input in referenced_tool_files:
+            execution_script["inputs"].append({"url": input, "path": input})
+
+        for input in client_inputs_list:
+            execution_script["inputs"].append({"url": input["paths"], "path": input["paths"]})
+
+        for output in output_files:
+            execution_script["outputs"].append({"url": output, "path": output})
+
+        for output in other_inputs:
+            execution_script["inputs"].append({"url": output, "path": output})
+            execution_script["outputs"].append({"url": output, "path": output})
+
+        return execution_script
+
+    def __get_inputs(self, job_wrapper):
+        """Returns the list about the details of input files."""
+
+        client_inputs_list = []
+
+        for input_dataset_wrapper in job_wrapper.get_input_paths():
+            # str here to resolve false_path if set on a DatasetPath object.
+            path = str(input_dataset_wrapper)
+            object_store_ref = {
+                "paths": path,
+                "dataset_id": input_dataset_wrapper.dataset_id,
+                "dataset_uuid": str(input_dataset_wrapper.dataset_uuid),
+                "object_store_id": input_dataset_wrapper.object_store_id,
+            }
+            client_inputs_list.append(object_store_ref)
+
+        return client_inputs_list
+
+    def queue_job(self, job_wrapper):
+        """Submit the job to TES."""
+
+        log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
+
+        include_metadata = asbool(job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
+        if not self.prepare_job(job_wrapper, include_metadata=include_metadata):
+            return
+
+        job_id = job_wrapper.job_id
+        if hasattr(job_wrapper, 'task_id'):
+            job_id = f"{job_id}_{job_wrapper.task_id}"
+        params = job_wrapper.job_destination.params.copy()
+        client_args, destination_params = self.get_upload_path(params, job_id)
+        job_destination = job_wrapper.job_destination
+        galaxy_id_tag = job_wrapper.get_id_tag()
+        master_addr = job_destination.params.get("tes_master_addr")
+        working_directory = job_wrapper.working_directory
+
+        execution_script = self.__prepare_jobscript(job_wrapper)
 
         job_id = self._send_task(master_addr, execution_script)
 
@@ -135,6 +246,14 @@ class TESJobRunner(AsynchronousJobRunner):
         log.info("(%s) queued as %s" % (galaxy_id_tag, job_id))
         job_wrapper.set_job_destination(job_destination, job_id)
         self.monitor_job(job_state)
+
+    def get_output_files(self, job_wrapper):
+        output_paths = job_wrapper.get_output_fnames()
+        return [str(o) for o in output_paths]   # Force job_path from DatasetPath objects.
+
+    def get_input_files(self, job_wrapper):
+        input_paths = job_wrapper.get_input_paths()
+        return [str(i) for i in input_paths]
 
     def _concat_job_log(self, data, key):
         s = ''
@@ -161,7 +280,7 @@ class TESJobRunner(AsynchronousJobRunner):
         state = data['state']
         job_running = state == "RUNNING"
         job_complete = state == "COMPLETE"
-        job_failed = "ERROR" in state
+        job_failed = "ERROR" or "CANCELED" in state
 
         # run_results = client.full_status()
         # remote_metadata_directory = run_results.get("metadata_directory", None)
