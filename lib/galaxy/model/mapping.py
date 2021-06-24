@@ -1115,16 +1115,6 @@ model.Tag.table = Table(
     Column("name", TrimmedString(255)),
     UniqueConstraint("name"))
 
-model.StoredWorkflowTagAssociation.table = Table(
-    "stored_workflow_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("stored_workflow_id", Integer, ForeignKey("stored_workflow.id"), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", Unicode(255), index=True),
-    Column("value", Unicode(255), index=True),
-    Column("user_value", Unicode(255), index=True))
-
 model.VisualizationTagAssociation.table = Table(
     "visualization_tag_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1953,15 +1943,15 @@ mapper_registry.map_imperatively(model.StoredWorkflow, model.StoredWorkflow.tabl
         primaryjoin=(model.StoredWorkflow.table.c.latest_workflow_id == model.Workflow.table.c.id),
         lazy=False),
     tags=relation(model.StoredWorkflowTagAssociation,
-        order_by=model.StoredWorkflowTagAssociation.table.c.id,
-        backref="stored_workflows"),
+        order_by=model.StoredWorkflowTagAssociation.id,
+        back_populates="stored_workflow"),
     owner_tags=relation(model.StoredWorkflowTagAssociation,
         primaryjoin=(
-            and_(model.StoredWorkflow.table.c.id == model.StoredWorkflowTagAssociation.table.c.stored_workflow_id,
-                 model.StoredWorkflow.table.c.user_id == model.StoredWorkflowTagAssociation.table.c.user_id)
+            and_(model.StoredWorkflow.table.c.id == model.StoredWorkflowTagAssociation.stored_workflow_id,
+                 model.StoredWorkflow.table.c.user_id == model.StoredWorkflowTagAssociation.user_id)
         ),
         viewonly=True,
-        order_by=model.StoredWorkflowTagAssociation.table.c.id),
+        order_by=model.StoredWorkflowTagAssociation.id),
     annotations=relation(model.StoredWorkflowAnnotationAssociation,
         order_by=model.StoredWorkflowAnnotationAssociation.id,
         back_populates="stored_workflow"),
@@ -2182,6 +2172,7 @@ mapper_registry.map_imperatively(model.Tag, model.Tag.table, properties=dict(
     tagged_library_dataset_dataset_associations=relation(model.LibraryDatasetDatasetAssociationTagAssociation, back_populates='tag'),
     tagged_pages=relation(model.PageTagAssociation, back_populates='tag'),
     tagged_workflow_steps=relation(model.WorkflowStepTagAssociation, back_populates='tag'),
+    tagged_stored_workflows=relation(model.StoredWorkflowTagAssociation, back_populates='tag'),
 ))
 
 
@@ -2189,7 +2180,6 @@ def tag_mapping(tag_association_class, backref_name):
     simple_mapping(tag_association_class, tag=relation(model.Tag, backref=backref_name), user=relation(model.User))
 
 
-tag_mapping(model.StoredWorkflowTagAssociation, "tagged_workflows")
 tag_mapping(model.VisualizationTagAssociation, "tagged_visualizations")
 tag_mapping(model.HistoryDatasetCollectionTagAssociation, "tagged_history_dataset_collections")
 tag_mapping(model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections")
