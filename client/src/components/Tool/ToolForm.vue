@@ -33,7 +33,7 @@
                     itemtype="https://schema.org/CreativeWork"
                 >
                     <template v-slot:body>
-                        <Form
+                        <FormDisplay
                             :id="formConfig.id"
                             :inputs="inputs"
                             :validation-errors="validationErrors"
@@ -90,7 +90,7 @@ import ButtonSpinner from "components/Common/ButtonSpinner";
 import CurrentUser from "components/providers/CurrentUser";
 import ConfigProvider from "components/providers/ConfigProvider";
 import LoadingSpan from "components/LoadingSpan";
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import ToolSuccess from "./ToolSuccess";
 import Webhook from "components/Common/Webhook";
@@ -101,7 +101,7 @@ export default {
         CurrentUser,
         ConfigProvider,
         LoadingSpan,
-        Form,
+        FormDisplay,
         ToolCard,
         FormElement,
         ToolSuccess,

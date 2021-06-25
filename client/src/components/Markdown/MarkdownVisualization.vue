@@ -19,7 +19,7 @@
             @ok="onOk"
             @cancel="onCancel"
         >
-            <Form :inputs="formInputs" @onChange="onChange" />
+            <FormDisplay :inputs="formInputs" @onChange="onChange" />
         </b-modal>
     </span>
 </template>
@@ -29,7 +29,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import MarkdownSelector from "./MarkdownSelector";
 import DataDialog from "components/DataDialog/DataDialog";
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 
 Vue.use(BootstrapVue);
 
@@ -37,7 +37,7 @@ export default {
     components: {
         MarkdownSelector,
         DataDialog,
-        Form,
+        FormDisplay,
     },
     props: {
         argumentName: {

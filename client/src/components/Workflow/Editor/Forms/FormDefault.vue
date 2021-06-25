@@ -44,13 +44,13 @@
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @onChange="onAnnotation"
             />
-            <Form :id="id" :inputs="inputs" @onChange="onChange" />
+            <FormDisplay :id="id" :inputs="inputs" @onChange="onChange" />
         </template>
     </FormCard>
 </template>
 
 <script>
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 import FormMessage from "components/Form/FormMessage";
@@ -60,7 +60,7 @@ import WorkflowIcons from "components/Workflow/icons";
 
 export default {
     components: {
-        Form,
+        FormDisplay,
         FormCard,
         FormElement,
         FormMessage,

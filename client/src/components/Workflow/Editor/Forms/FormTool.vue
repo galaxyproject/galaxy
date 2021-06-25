@@ -29,7 +29,7 @@
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                     @onChange="onAnnotation"
                 />
-                <Form
+                <FormDisplay
                     :id="id"
                     :inputs="inputs"
                     :initial-errors="true"
@@ -52,7 +52,7 @@
 
 <script>
 import CurrentUser from "components/providers/CurrentUser";
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 import ToolCard from "components/Tool/ToolCard";
 import FormSection from "./FormSection";
 import FormElement from "components/Form/FormElement";
@@ -63,7 +63,7 @@ import Utils from "utils/utils";
 export default {
     components: {
         CurrentUser,
-        Form,
+        FormDisplay,
         ToolCard,
         FormElement,
         FormSection,
