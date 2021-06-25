@@ -167,7 +167,7 @@ galaxy:
       logfile:
         class: logging.FileHandler
         level: DEBUG
-        filename: logs/galaxy.log
+        filename: galaxy.log
         mode: a
       perflog:
         class: logging.FileHandler
@@ -177,7 +177,7 @@ galaxy:
       '':        
         handlers:
           - logfile
-        level: INFO
+        level: DEBUG
       'performance':
         handlers:
           - perflog
