@@ -6,12 +6,9 @@ import requests
 import logging
 import time
 import json
-import tempfile
-import os
 import uuid
 import boto3
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import mgm_utils
 
 

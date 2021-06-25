@@ -5,10 +5,8 @@ import json
 import os
 from datetime import datetime
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from shot_detection import ShotDetection, ShotDetectionMedia, ShotDetectionShot
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import mgm_utils
 
 

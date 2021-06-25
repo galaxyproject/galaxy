@@ -3,7 +3,6 @@ import sys
 import os
 import json
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from contact_sheet import ContactSheet
 
 def main():

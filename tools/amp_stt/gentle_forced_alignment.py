@@ -10,7 +10,6 @@ import tempfile
 
 import uuid
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import mgm_utils
 
 

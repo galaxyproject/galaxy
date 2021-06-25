@@ -4,11 +4,9 @@ import json
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
+from speech_to_text import SpeechToText
 from adjustment import Adjustment
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
 import mgm_utils
 

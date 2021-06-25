@@ -4,16 +4,12 @@ import argparse
 from datetime import datetime
 import csv
 from pathlib import Path
-import json
 import logging
 import sys
-import os
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import hpc_submit
 import mgm_utils
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from segmentation import Segmentation, SegmentationMedia
 
 

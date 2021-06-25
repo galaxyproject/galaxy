@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 
 import json
-import os
-from os import path
 import sys
-import logging
 import traceback
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
 import mgm_utils
 

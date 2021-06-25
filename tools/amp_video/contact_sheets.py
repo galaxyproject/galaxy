@@ -4,20 +4,7 @@ import ffmpeg
 import sys
 import requests
 import logging
-import time
 import json
-import tempfile
-import os
-import datetime
-from datetime import timedelta
-from datetime import datetime
-import math
-import uuid
-import subprocess
-import shutil
-from PIL import Image, ImageDraw, ImageFont
-
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from contact_sheet import ContactSheet
 
 def main():

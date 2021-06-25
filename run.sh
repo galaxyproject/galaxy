@@ -50,15 +50,11 @@ if [ "$INITIALIZE_TOOL_DEPENDENCIES" -eq 1 ]; then
     python ./scripts/manage_tool_dependencies.py init_if_needed
 fi
 
+
 # AMP customization START
-# Build the UWSGI module needed for the config
-mkdir logs
-pushd amp_metrics
-make || (
-    echo "NOTICE: Cannot build the uwsg system_metrics.so file"
-    echo "        API metrics will not be collected"
-)
-popd
+. ./scripts/amp_startup_functions.sh
+add_amp_paths
+setup_amp_metrics
 # AMP customization END
 
 [ -n "$GALAXY_UWSGI" ] && APP_WEBSERVER='uwsgi'
