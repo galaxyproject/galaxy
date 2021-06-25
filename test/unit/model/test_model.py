@@ -1,6 +1,6 @@
 import random
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 from sqlalchemy import (
@@ -39,16 +39,18 @@ def test_CloudAuthz(model, session, user, user_authnz_token):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
         assert stored_obj.user_id == user.id
         assert stored_obj.provider == provider
         assert stored_obj.config == config
         assert stored_obj.authn_id == user_authnz_token.id
-        assert stored_obj.description == description
         assert stored_obj.tokens is None
         assert stored_obj.last_update
         assert stored_obj.last_activity
+        assert stored_obj.description == description
         assert stored_obj.create_time
+        # test mapped relationships
         assert stored_obj.user.id == user.id
         assert stored_obj.authn.id == user_authnz_token.id
 
@@ -71,7 +73,9 @@ def test_CustosAuthnzToken(model, session, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
+        assert stored_obj.user_id == user.id
         assert stored_obj.external_user_id == external_user_id
         assert stored_obj.provider == provider
         assert stored_obj.access_token == access_token
@@ -79,7 +83,8 @@ def test_CustosAuthnzToken(model, session, user):
         assert stored_obj.refresh_token == refresh_token
         assert stored_obj.expiration_time == expiration_time
         assert stored_obj.refresh_expiration_time == refresh_expiration_time
-        assert stored_obj.user == user
+        # test mapped relationships
+        assert stored_obj.user.id == user.id
 
 
 def test_DatasetPermissions(model, session, dataset, role):
@@ -88,11 +93,21 @@ def test_DatasetPermissions(model, session, dataset, role):
     with dbcleanup(session, cls):
         action = 'a'
         obj = cls(action, dataset, role)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
         assert stored_obj.action == action
+        assert stored_obj.dataset_id == dataset.id
+        assert stored_obj.role_id == role.id
+        # test mapped relationships
         assert stored_obj.dataset == dataset
         assert stored_obj.role == role
 
@@ -103,12 +118,21 @@ def test_DefaultQuotaAssociation(model, session, quota):
     with dbcleanup(session, cls):
         type = cls.types.REGISTERED
         obj = cls(type, quota)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
         assert stored_obj.type == type
-        assert stored_obj.quota == quota
+        assert stored_obj.quota_id == quota.id
+        # test mapped relationships
+        assert stored_obj.quota.id == quota.id
 
 
 def test_DefaultUserPermissions(model, session, user, role):
@@ -120,10 +144,14 @@ def test_DefaultUserPermissions(model, session, user, role):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.user == user
+        assert stored_obj.user_id == user.id
         assert stored_obj.action == action
-        assert stored_obj.role == role
+        assert stored_obj.role_id == role.id
+        # test mapped relationships
+        assert stored_obj.user.id == user.id
+        assert stored_obj.role.id == role.id
 
 
 def test_DynamicTool(model, session, workflow_step):
@@ -141,20 +169,28 @@ def test_DynamicTool(model, session, workflow_step):
         value = 'f'
         obj = cls(tool_format, tool_id, tool_version, tool_path, tool_directory, uuid,
                 active, hidden, value)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
         obj.workflow_steps.append(workflow_step)
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.tool_format == tool_format
+        assert stored_obj.uuid
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
         assert stored_obj.tool_id == tool_id
         assert stored_obj.tool_version == tool_version
+        assert stored_obj.tool_format == tool_format
         assert stored_obj.tool_path == tool_path
         assert stored_obj.tool_directory == tool_directory
-        assert stored_obj.uuid
-        assert stored_obj.active == active
         assert stored_obj.hidden == hidden
+        assert stored_obj.active == active
         assert stored_obj.value == value
+        # test mapped relationships
         assert workflow_step in stored_obj.workflow_steps
 
 
@@ -163,12 +199,22 @@ def test_GroupQuotaAssociation(model, session, group, quota):
     assert cls.__tablename__ == 'group_quota_association'
     with dbcleanup(session, cls):
         obj = cls(group, quota)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.group == group
-        assert stored_obj.quota == quota
+        assert stored_obj.group_id == group.id
+        assert stored_obj.quota_id == quota.id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
+        # test mapped relationships
+        assert stored_obj.group.id == group.id
+        assert stored_obj.quota.id == quota.id
 
 
 def test_GroupRoleAssociation(model, session, group, role):
@@ -176,12 +222,22 @@ def test_GroupRoleAssociation(model, session, group, role):
     assert cls.__tablename__ == 'group_role_association'
     with dbcleanup(session, cls):
         obj = cls(group, role)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.group == group
-        assert stored_obj.role == role
+        assert stored_obj.group_id == group.id
+        assert stored_obj.role_id == role.id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
+        # test mapped relationships
+        assert stored_obj.group.id == group.id
+        assert stored_obj.role.id == role.id
 
 
 def test_HistoryAnnotationAssociation(model, session, history, user):
@@ -197,10 +253,14 @@ def test_HistoryAnnotationAssociation(model, session, history, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.history == history
-        assert stored_obj.user == user
+        assert stored_obj.history_id == history.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.annotation == annotation
+        # test mapped relationships
+        assert stored_obj.history.id == history.id
+        assert stored_obj.user.id == user.id
 
 
 def test_HistoryDatasetAssociationAnnotationAssociation(
@@ -217,10 +277,14 @@ def test_HistoryDatasetAssociationAnnotationAssociation(
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.hda == history_dataset_association
-        assert stored_obj.user == user
+        assert stored_obj.history_dataset_association_id == history_dataset_association.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.annotation == annotation
+        # test mapped relationships
+        assert stored_obj.hda.id == history_dataset_association.id
+        assert stored_obj.user.id == user.id
 
 
 def test_HistoryDatasetAssociationRatingAssociation(model, session, history_dataset_association, user):
@@ -232,10 +296,14 @@ def test_HistoryDatasetAssociationRatingAssociation(model, session, history_data
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.user == user
-        assert stored_obj.history_dataset_association == history_dataset_association
+        assert stored_obj.history_dataset_association_id == history_dataset_association.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.rating == rating
+        # test mapped relationships
+        assert stored_obj.history_dataset_association.id == history_dataset_association.id
+        assert stored_obj.user.id == user.id
 
 
 def test_HistoryDatasetAssociationTagAssociation(
@@ -277,10 +345,14 @@ def test_HistoryDatasetCollectionAssociationAnnotationAssociation(
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.history_dataset_collection == history_dataset_collection_association
-        assert stored_obj.user == user
+        assert stored_obj.history_dataset_collection_id == history_dataset_collection_association.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.annotation == annotation
+        # test mapped relationships
+        assert stored_obj.history_dataset_collection.id == history_dataset_collection_association.id
+        assert stored_obj.user.id == user.id
 
 
 def test_HistoryDatasetCollectionRatingAssociation(
@@ -293,10 +365,14 @@ def test_HistoryDatasetCollectionRatingAssociation(
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.user == user
-        assert stored_obj.dataset_collection == history_dataset_collection_association
+        assert stored_obj.history_dataset_collection_id == history_dataset_collection_association.id
+        assert stored_obj.user.id == user.id
         assert stored_obj.rating == rating
+        # test mapped relationships
+        assert stored_obj.dataset_collection.id == history_dataset_collection_association.id
+        assert stored_obj.user.id == user.id
 
 
 def test_HistoryDatasetCollectionTagAssociation(model, session, history_dataset_collection_association, tag, user):
@@ -333,10 +409,14 @@ def test_HistoryRatingAssociation(model, session, history, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.user == user
-        assert stored_obj.history == history
+        assert stored_obj.history_id == history.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.rating == rating
+        # test mapped relationships
+        assert stored_obj.history.id == history.id
+        assert stored_obj.user.id == user.id
 
 
 def test_HistoryTagAssociation(model, session, history, tag, user):
@@ -378,10 +458,14 @@ def test_LibraryDatasetCollectionAnnotationAssociation(
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.dataset_collection == library_dataset_collection_association
-        assert stored_obj.user == user
+        assert stored_obj.library_dataset_collection_id == library_dataset_collection_association.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.annotation == annotation
+        # test mapped relationships
+        assert stored_obj.dataset_collection.id == library_dataset_collection_association.id
+        assert stored_obj.user.id == user.id
 
 
 def test_LibraryDatasetCollectionTagAssociation(model, session, library_dataset_collection_association, tag, user):
@@ -419,10 +503,14 @@ def test_LibraryDatasetCollectionRatingAssociation(
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.user == user
-        assert stored_obj.dataset_collection == library_dataset_collection_association
+        assert stored_obj.library_dataset_collection_id == library_dataset_collection_association.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.rating == rating
+        # test mapped relationships
+        assert stored_obj.dataset_collection.id == library_dataset_collection_association.id
+        assert stored_obj.user.id == user.id
 
 
 def test_LibraryDatasetDatasetAssociationTagAssociation(
@@ -464,10 +552,14 @@ def test_PageAnnotationAssociation(model, session, page, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.page == page
-        assert stored_obj.user == user
+        assert stored_obj.page_id == page.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.annotation == annotation
+        # test mapped relationships
+        assert stored_obj.page.id == page.id
+        assert stored_obj.user.id == user.id
 
 
 def test_PageRatingAssociation(model, session, page, user):
@@ -479,10 +571,14 @@ def test_PageRatingAssociation(model, session, page, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.user == user
-        assert stored_obj.page == page
+        assert stored_obj.page_id == page.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.rating == rating
+        # test mapped relationships
+        assert stored_obj.page.id == page.id
+        assert stored_obj.user.id == user.id
 
 
 def test_PageRevision(model, session, page):
@@ -491,17 +587,24 @@ def test_PageRevision(model, session, page):
     with dbcleanup(session, cls):
         obj = cls()
         obj.page = page
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
+        title, content = 'a', 'b'
+        obj.title = title
+        obj.content = content
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.create_time
-        assert stored_obj.update_time
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
         assert stored_obj.page_id == page.id
-        assert stored_obj.title is None
-        assert stored_obj.content is None
+        assert stored_obj.title == title
+        assert stored_obj.content == content
         assert stored_obj.content_format == model.PageRevision.DEFAULT_CONTENT_FORMAT
-        assert stored_obj.page.id == page.id
 
 
 def test_PageTagAssociation(model, session, page, tag, user):
@@ -539,9 +642,13 @@ def test_PageUserShareAssociation(model, session, page, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.page == page
-        assert stored_obj.user == user
+        assert stored_obj.page_id == page.id
+        assert stored_obj.user_id == user.id
+        # test mapped relationships
+        assert stored_obj.page.id == page.id
+        assert stored_obj.user.id == user.id
 
 
 def test_PSAAssociation(model, session):
@@ -553,6 +660,7 @@ def test_PSAAssociation(model, session):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
         assert stored_obj.server_url == server_url
         assert stored_obj.handle == handle
@@ -572,6 +680,7 @@ def test_PSACode(model, session):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
         assert stored_obj.email == email
         assert stored_obj.code == code
@@ -586,6 +695,7 @@ def test_PSANonce(model, session):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
         assert stored_obj.server_url
         assert stored_obj.timestamp == timestamp
@@ -601,6 +711,7 @@ def test_PSAPartial(model, session):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
         assert stored_obj.token == token
         assert stored_obj.data == data
@@ -608,41 +719,75 @@ def test_PSAPartial(model, session):
         assert stored_obj.backend == backend
 
 
-def test_Quota(model, session):
+def test_Quota(
+        model,
+        session,
+        default_quota_association,
+        group_quota_association,
+        user_quota_association
+):
     cls = model.Quota
     assert cls.__tablename__ == 'quota'
     with dbcleanup(session, cls):
-        name, description = get_random_string(), 'b'
-        obj = cls(name, description)
+        name, description, amount, operation = get_random_string(), 'b', 42, '+'
+        obj = cls(name, description, amount, operation)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        def add_association(assoc_object, assoc_attribute):
+            assoc_object.quota = obj
+            getattr(obj, assoc_attribute).append(assoc_object)
+
+        add_association(default_quota_association, 'default')
+        add_association(group_quota_association, 'groups')
+        add_association(user_quota_association, 'users')
+
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.create_time
-        assert stored_obj.update_time
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
         assert stored_obj.name == name
         assert stored_obj.description == description
-        assert stored_obj.bytes == 0
-        assert stored_obj.operation == '='
+        assert stored_obj.bytes == amount
+        assert stored_obj.operation == operation
         assert stored_obj.deleted is False
+        # test mapped relationships
+        assert stored_obj.default == [default_quota_association]
+        assert stored_obj.groups == [group_quota_association]
+        assert stored_obj.users == [user_quota_association]
 
 
-def test_Role(model, session):
+def test_Role(model, session, dataset_permission, group_role_association):
     cls = model.Role
     assert cls.__tablename__ == 'role'
     with dbcleanup(session, cls):
-        name, description = get_random_string(), 'b'
-        obj = cls(name, description)
+        name, description, type_, deleted = get_random_string(), 'b', cls.types.SYSTEM, True
+        obj = cls(name, description, type_, deleted)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.dataset_actions.append(dataset_permission)
+        obj.groups.append(group_role_association)
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.create_time
-        assert stored_obj.update_time
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
         assert stored_obj.name == name
         assert stored_obj.description == description
-        assert stored_obj.type == model.Role.types.SYSTEM
-        assert stored_obj.deleted is False
+        assert stored_obj.type == type_
+        assert stored_obj.deleted == deleted
+        # test mapped relationships
+        assert stored_obj.dataset_actions == [dataset_permission]
+        assert stored_obj.groups == [group_role_association]
 
 
 def test_StoredWorkflowAnnotationAssociation(model, session, stored_workflow, user):
@@ -652,16 +797,20 @@ def test_StoredWorkflowAnnotationAssociation(model, session, stored_workflow, us
     with dbcleanup(session, cls):
         annotation = 'a'
         obj = cls()
-        obj.user = user
         obj.stored_workflow = stored_workflow
+        obj.user = user
         obj.annotation = annotation
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.stored_workflow == stored_workflow
-        assert stored_obj.user == user
+        assert stored_obj.stored_workflow_id == stored_workflow.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.annotation == annotation
+        # test mapped relationships
+        assert stored_obj.stored_workflow.id == stored_workflow.id
+        assert stored_obj.user.id == user.id
 
 
 def test_StoredWorkflowRatingAssociation(model, session, stored_workflow, user):
@@ -673,10 +822,14 @@ def test_StoredWorkflowRatingAssociation(model, session, stored_workflow, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.user == user
-        assert stored_obj.stored_workflow == stored_workflow
+        assert stored_obj.stored_workflow_id == stored_workflow.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.rating == rating
+        # test mapped relationships
+        assert stored_obj.stored_workflow.id == stored_workflow.id
+        assert stored_obj.user.id == user.id
 
 
 def test_StoredWorkflowTagAssociation(model, session, stored_workflow, tag, user):
@@ -707,7 +860,6 @@ def test_StoredWorkflowTagAssociation(model, session, stored_workflow, tag, user
 def test_Tag(
         model,
         session,
-        tag,
         history_tag_association,
         history_dataset_association_tag_association,
         library_dataset_dataset_association_tag_association,
@@ -724,13 +876,15 @@ def test_Tag(
     assert has_unique_constraint(cls.__table__, ('name',))
 
     with dbcleanup(session, cls):
-        type_, name = 1, 'a'
+        parent_tag = cls()
         child_tag = cls()
-        obj = cls(type=type_, parent_id=tag.id, name=name)
+        type_, name = 1, 'a'
+        obj = cls(type=type_, name=name)
+        obj.parent = parent_tag
         obj.children.append(child_tag)
 
         def add_association(assoc_object, assoc_attribute):
-            assoc_object.tag = tag
+            assoc_object.tag = obj
             getattr(obj, assoc_attribute).append(assoc_object)
 
         add_association(history_tag_association, 'tagged_histories')
@@ -747,12 +901,13 @@ def test_Tag(
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
-        # test fields
+        # test mapped columns
         assert stored_obj.id == obj_id
         assert stored_obj.type == type_
+        assert stored_obj.parent_id == parent_tag.id
         assert stored_obj.name == name
-        # test relationships
-        assert stored_obj.parent.id == tag.id
+        # test mapped relationships
+        assert stored_obj.parent.id == parent_tag.id
         assert stored_obj.children == [child_tag]
         assert stored_obj.tagged_histories == [history_tag_association]
         assert stored_obj.tagged_history_dataset_associations == [history_dataset_association_tag_association]
@@ -796,16 +951,20 @@ def testUserAction(model, session, user, galaxy_session):
     with dbcleanup(session, cls):
         action, params, context = 'a', 'b', 'c'
         obj = cls(user, galaxy_session.id, action, params, context)
+        create_time = datetime.now()
+        obj.create_time = create_time
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.create_time
+        assert stored_obj.create_time == create_time
         assert stored_obj.user_id == user.id
         assert stored_obj.session_id == galaxy_session.id
         assert stored_obj.action == action
         assert stored_obj.context == context
         assert stored_obj.params == params
+        # test mapped relationships
         assert stored_obj.user.id == user.id
 
 
@@ -813,15 +972,22 @@ def test_UserAddress(model, session, user):
     cls = model.UserAddress
     assert cls.__tablename__ == 'user_address'
     with dbcleanup(session, cls):
-        desc, name, institution, address, city, state, postal_code, country, phone = \
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'
+        desc, name, institution, address, city, state, postal_code, country, phone, deleted, purged = \
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', True, False
         obj = cls(user, desc, name, institution, address, city, state, postal_code, country, phone)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.deleted = deleted
+        obj.purged = purged
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.create_time
-        assert stored_obj.update_time
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
         assert stored_obj.user_id == user.id
         assert stored_obj.desc == desc
         assert stored_obj.name == name
@@ -832,9 +998,10 @@ def test_UserAddress(model, session, user):
         assert stored_obj.postal_code == postal_code
         assert stored_obj.country == country
         assert stored_obj.phone == phone
-        assert stored_obj.deleted is False
-        assert stored_obj.purged is False
-        assert stored_obj.user == user
+        assert stored_obj.deleted == deleted
+        assert stored_obj.purged == purged
+        # test mapped relationships
+        assert stored_obj.user.id == user.id
 
 
 def test_UserAuthnzToken(model, session, user, cloud_authz):
@@ -848,6 +1015,7 @@ def test_UserAuthnzToken(model, session, user, cloud_authz):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
         assert stored_obj.user_id == user.id
         assert stored_obj.uid == uid
@@ -855,8 +1023,9 @@ def test_UserAuthnzToken(model, session, user, cloud_authz):
         assert stored_obj.extra_data == extra_data
         assert stored_obj.lifetime == lifetime
         assert stored_obj.assoc_type == assoc_type
+        # test mapped relationships
+        assert stored_obj.cloudauthz == [cloud_authz]
         assert stored_obj.user.id == user.id
-        assert cloud_authz in stored_obj.cloudauthz
 
 
 def test_UserGroupAssociation(model, session, user, group):
@@ -864,12 +1033,22 @@ def test_UserGroupAssociation(model, session, user, group):
     assert cls.__tablename__ == 'user_group_association'
     with dbcleanup(session, cls):
         obj = cls(user, group)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.user == user
-        assert stored_obj.group == group
+        assert stored_obj.user_id == user.id
+        assert stored_obj.group_id == group.id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
+        # test mapped relationships
+        assert stored_obj.user.id == user.id
+        assert stored_obj.group.id == group.id
 
 
 def test_UserQuotaAssociation(model, session, user, quota):
@@ -877,12 +1056,22 @@ def test_UserQuotaAssociation(model, session, user, quota):
     assert cls.__tablename__ == 'user_quota_association'
     with dbcleanup(session, cls):
         obj = cls(user, quota)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.user == user
-        assert stored_obj.quota == quota
+        assert stored_obj.user_id == user.id
+        assert stored_obj.quota_id == quota.id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
+        # test mapped relationships
+        assert stored_obj.user.id == user.id
+        assert stored_obj.quota.id == quota.id
 
 
 def test_VisualizationAnnotationAssociation(model, session, visualization, user):
@@ -898,10 +1087,14 @@ def test_VisualizationAnnotationAssociation(model, session, visualization, user)
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.visualization == visualization
-        assert stored_obj.user == user
+        assert stored_obj.visualization_id == visualization.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.annotation == annotation
+        # test mapped relationships
+        assert stored_obj.visualization.id == visualization.id
+        assert stored_obj.user.id == user.id
 
 
 def test_VisualizationRatingAssociation(model, session, visualization, user):
@@ -913,10 +1106,14 @@ def test_VisualizationRatingAssociation(model, session, visualization, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.user == user
-        assert stored_obj.visualization == visualization
+        assert stored_obj.visualization_id == visualization.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.rating == rating
+        # test mapped relationships
+        assert stored_obj.visualization.id == visualization.id
+        assert stored_obj.user.id == user.id
 
 
 def test_VisualizationRevision(model, session, visualization):
@@ -926,16 +1123,22 @@ def test_VisualizationRevision(model, session, visualization):
     with dbcleanup(session, cls):
         visualization, title, dbkey, config = visualization, 'a', 'b', 'c'
         obj = cls(visualization, title, dbkey, config)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.create_time
-        assert stored_obj.update_time
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
         assert stored_obj.visualization_id == visualization.id
         assert stored_obj.title == title
         assert stored_obj.dbkey == dbkey
         assert stored_obj.config == config
+        # test mapped relationships
         assert stored_obj.visualization.id == visualization.id
 
 
@@ -946,14 +1149,17 @@ def test_WorkerProcess(model, session):
     with dbcleanup(session, cls):
         server_name, hostname = get_random_string(), 'a'
         obj = cls(server_name, hostname)
+        update_time = datetime.now()
+        obj.update_time = update_time
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
         assert stored_obj.server_name == server_name
         assert stored_obj.hostname == hostname
         assert stored_obj.pid is None
-        assert stored_obj.update_time
+        assert stored_obj.update_time == update_time
 
 
 def test_WorkflowStepAnnotationAssociation(model, session, workflow_step, user):
@@ -969,10 +1175,14 @@ def test_WorkflowStepAnnotationAssociation(model, session, workflow_step, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
-        assert stored_obj.workflow_step == workflow_step
-        assert stored_obj.user == user
+        assert stored_obj.workflow_step_id == workflow_step.id
+        assert stored_obj.user_id == user.id
         assert stored_obj.annotation == annotation
+        # test mapped relationships
+        assert stored_obj.workflow_step.id == workflow_step.id
+        assert stored_obj.user.id == user.id
 
 
 def test_WorkflowStepTagAssociation(model, session, workflow_step, tag, user):
@@ -1048,6 +1258,31 @@ def cloud_authz(model, session, user, user_authnz_token):
 def dataset(model, session):
     d = model.Dataset()
     yield from dbcleanup_wrapper(session, d)
+
+
+@pytest.fixture
+def dataset_permission(model, session, dataset):
+    d = model.DatasetPermissions('a', dataset)
+    yield from dbcleanup_wrapper(session, d)
+
+
+@pytest.fixture
+def default_quota_association(model, session, quota):
+    type_ = model.DefaultQuotaAssociation.types.REGISTERED
+    dqa = model.DefaultQuotaAssociation(type_, quota)
+    yield from dbcleanup_wrapper(session, dqa)
+
+
+@pytest.fixture
+def group_role_association(model, session):
+    gra = model.GroupRoleAssociation(None, None)
+    yield from dbcleanup_wrapper(session, gra)
+
+
+@pytest.fixture
+def group_quota_association(model, session):
+    gqa = model.GroupQuotaAssociation(None, None)
+    yield from dbcleanup_wrapper(session, gqa)
 
 
 @pytest.fixture
@@ -1182,6 +1417,12 @@ def user(model, session):
 def user_authnz_token(model, session, user):
     t = model.UserAuthnzToken('a', 'b', 'c', 1, 'd', user)
     yield from dbcleanup_wrapper(session, t)
+
+
+@pytest.fixture
+def user_quota_association(model, session):
+    uqa = model.UserQuotaAssociation(None, None)
+    yield from dbcleanup_wrapper(session, uqa)
 
 
 @pytest.fixture
