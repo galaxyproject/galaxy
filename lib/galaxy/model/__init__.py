@@ -7236,10 +7236,6 @@ class APIKeys(Base, RepresentById):
     key = Column('key', TrimmedString(32), index=True, unique=True)
     user = relationship('User', back_populates='api_keys')
 
-    def __init__(self, user_id=None, key=None):
-        self.user_id = user_id
-        self.key = key
-
 
 def copy_list(lst, *args, **kwds):
     if lst is None:
