@@ -6751,12 +6751,32 @@ class TransferJob(RepresentById):
         self.params = params
 
 
-class Tag(RepresentById):
-    def __init__(self, id=None, type=None, parent_id=None, name=None):
-        self.id = id
-        self.type = type
-        self.parent_id = parent_id
-        self.name = name
+class Tag(Base, RepresentById):
+    __tablename__ = 'tag'
+    __table_args__ = (
+        UniqueConstraint('name'),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    type = Column('type', Integer)
+    parent_id = Column('parent_id', Integer, ForeignKey('tag.id'))
+    name = Column('name', TrimmedString(255))
+    children = relationship('Tag', back_populates='parent')
+    parent = relationship('Tag', back_populates='children', remote_side=[id])
+    tagged_histories = relationship('HistoryTagAssociation', back_populates='tag')
+    tagged_history_dataset_associations = relationship(
+        'HistoryDatasetAssociationTagAssociation', back_populates='tag')
+    tagged_library_dataset_dataset_associations = relationship(
+        'LibraryDatasetDatasetAssociationTagAssociation', back_populates='tag')
+    tagged_pages = relationship('PageTagAssociation', back_populates='tag')
+    tagged_workflow_steps = relationship('WorkflowStepTagAssociation', back_populates='tag')
+    tagged_stored_workflows = relationship('StoredWorkflowTagAssociation', back_populates='tag')
+    tagged_visualizations = relationship('VisualizationTagAssociation', back_populates='tag')
+    tagged_history_dataset_collections = relationship(
+        'HistoryDatasetCollectionTagAssociation', back_populates='tag')
+    tagged_library_dataset_collections = relationship(
+        'LibraryDatasetCollectionTagAssociation', back_populates='tag')
+    tagged_tools = relationship('ToolTagAssociation', back_populates='tag')
 
     def __str__(self):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type or -1, self.parent_id, self.name)
