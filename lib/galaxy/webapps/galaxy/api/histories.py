@@ -3,9 +3,7 @@ API operations on a history.
 
 .. seealso:: :class:`galaxy.model.History`
 """
-import glob
 import logging
-import os
 
 from sqlalchemy import (
     false,
@@ -14,7 +12,6 @@ from sqlalchemy import (
 
 from galaxy import (
     exceptions,
-    model,
     util
 )
 from galaxy.managers import (
@@ -503,19 +500,7 @@ class HistoriesController(BaseGalaxyAPIController):
         :param id: the encoded history id
         :type  id: str
         """
-        if payload is None:
-            payload = {}
-        history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        installed_builds = []
-        for build in glob.glob(os.path.join(trans.app.config.len_file_path, "*.len")):
-            installed_builds.append(os.path.basename(build).split(".len")[0])
-        fasta_hdas = trans.sa_session.query(model.HistoryDatasetAssociation) \
-            .filter_by(history=history, extension="fasta", deleted=False) \
-            .order_by(model.HistoryDatasetAssociation.hid.desc())
-        return {
-            'installed_builds': [{'label': ins, 'value': ins} for ins in installed_builds],
-            'fasta_hdas': [{'label': f'{hda.hid}: {hda.name}', 'value': trans.security.encode_id(hda.id)} for hda in fasta_hdas],
-        }
+        return self.service.get_custom_builds_metadata(trans, id)
 
     @expose_api
     def sharing(self, trans, id, payload=None, **kwd):

@@ -4,7 +4,9 @@ Manager and Serializer for histories.
 Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
+import glob
 import logging
+import os
 from typing import (
     Optional,
     Union,
@@ -30,12 +32,14 @@ from galaxy.managers.base import ServiceBase
 from galaxy.managers.citations import CitationsManager
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
     HistoryBeta,
     HistoryDetailed,
     HistorySummary,
     JobExportHistoryArchive,
     JobIdResponse,
+    LabelValuePair,
 )
 from galaxy.schema.types import SerializationParams
 from galaxy.structured_app import MinimalManagerApp
@@ -684,6 +688,22 @@ class HistoriesService(ServiceBase):
         """
         jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
         return self.manager.serve_ready_history_export(trans, jeha)
+
+    def get_custom_builds_metadata(self, trans, id: EncodedDatabaseIdField) -> CustomBuildsMetadataResponse:
+        """
+        Returns meta data for custom builds.
+        """
+        history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
+        installed_builds = []
+        for build in glob.glob(os.path.join(trans.app.config.len_file_path, "*.len")):
+            installed_builds.append(os.path.basename(build).split(".len")[0])
+        fasta_hdas = trans.sa_session.query(model.HistoryDatasetAssociation) \
+            .filter_by(history=history, extension="fasta", deleted=False) \
+            .order_by(model.HistoryDatasetAssociation.hid.desc())
+        return CustomBuildsMetadataResponse(
+            installed_builds=[LabelValuePair(label=ins, value=ins) for ins in installed_builds],
+            fasta_hdas=[LabelValuePair(label=f'{hda.hid}: {hda.name}', value=trans.security.encode_id(hda.id)) for hda in fasta_hdas],
+        )
 
     def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
         """Allows to publish or share with other users the given resource (by id) and returns the current sharing

@@ -811,6 +811,37 @@ class JobExportHistoryArchive(Model):
     )
 
 
+class LabelValuePair(BaseModel):
+    """Generic Label/Value pair model."""
+    label: str = Field(
+        ...,
+        title="Label",
+        description="The label of the item.",
+    )
+    value: str = Field(
+        ...,
+        title="Value",
+        description="The value of the item.",
+    )
+
+
+class CustomBuildsMetadataResponse(BaseModel):
+    installed_builds: List[LabelValuePair] = Field(
+        ...,
+        title="Installed Builds",
+        description="TODO",
+    )
+    fasta_hdas: List[LabelValuePair] = Field(
+        ...,
+        title="Fasta HDAs",
+        description=(
+            "A list of label/value pairs with all the datasets of type `FASTA` contained in the History.\n"
+            " - `label` is item position followed by the name of the dataset.\n"
+            " - `value` is the encoded database ID of the dataset.\n"
+        ),
+    )
+
+
 class JobIdResponse(BaseModel):
     """Contains the ID of the job associated with a particular request."""
     job_id: EncodedDatabaseIdField = Field(
