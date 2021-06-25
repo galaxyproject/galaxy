@@ -17,16 +17,22 @@
                         <template v-slot:button-content>
                             <span class="fa fa-caret-down" />
                         </template>
-                        <b-dropdown-item @click="onCopyLink"><span class="fa fa-chain" />Copy Link</b-dropdown-item>
-                        <b-dropdown-item @click="onCopyId"><span class="fa fa-files-o" />Copy Tool ID</b-dropdown-item>
+                        <b-dropdown-item @click="onCopyLink"
+                            ><span class="fa fa-chain" /><span v-localize>Copy Link</span>
+                        </b-dropdown-item>
+                        <b-dropdown-item @click="onCopyId"
+                            ><span class="fa fa-files-o" /><span v-localize>Copy Tool ID</span>
+                        </b-dropdown-item>
                         <b-dropdown-item v-if="showDownload" @click="onDownload"
-                            ><span class="fa fa-download" />Download</b-dropdown-item
-                        >
+                            ><span class="fa fa-download" /><span v-localize>Download</span>
+                        </b-dropdown-item>
                         <b-dropdown-item v-if="showLink" @click="onLink"
-                            ><span class="fa fa-external-link" />See in Tool Shed</b-dropdown-item
+                            ><span class="fa fa-external-link" /><span v-localize
+                                >See in Tool Shed</span
+                            ></b-dropdown-item
                         >
                         <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick"
-                            ><span :class="w.icon" />{{ w.title }}</b-dropdown-item
+                            ><span :class="w.icon" />{{ w.title | l }}</b-dropdown-item
                         >
                     </b-dropdown>
                     <b-dropdown
@@ -45,7 +51,7 @@
                             <span class="fa fa-cubes" />
                         </template>
                         <b-dropdown-item v-for="v of availableVersions" :key="v" @click="$emit('onChangeVersion', v)">
-                            <span class="fa fa-cube" />Switch to {{ v }}</b-dropdown-item
+                            <span class="fa fa-cube" /><span v-localize>Switch to </span>{{ v }}</b-dropdown-item
                         >
                     </b-dropdown>
                     <b-button
