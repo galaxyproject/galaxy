@@ -8,7 +8,7 @@ import makeSection from "./makeSection";
 
 export default {
     components: {
-        Form,
+        FormDisplay,
     },
     props: {
         id: {
