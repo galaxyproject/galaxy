@@ -44,6 +44,7 @@ class HmgmRunner(AsynchronousJobRunner):
         super(HmgmRunner, self).__init__(app, nworkers)
         self._init_monitor_thread()
         self._init_worker_threads()
+        log.info("initializing hmgm job runner")
 
     def queue_job(self, job_wrapper):
         self.prepare_job(job_wrapper)
@@ -106,7 +107,7 @@ class HmgmRunner(AsynchronousJobRunner):
                 # Write the output
                 self.create_log_file(job_state, exit_code)
             except Exception as e:
-                log.debug("Job wrapper finish method failed")
+                log.debug("Job wrapper finish method failed with exit_code 0")
                 log.debug(str(e))
                 # AMPPD: Disable this to stop jobs with bad logs from failing.  
                 #log.exception("Job wrapper finish method failed")
@@ -116,9 +117,16 @@ class HmgmRunner(AsynchronousJobRunner):
         # This is a HMGM is not complete, try again later
         elif exit_code==1:
             job_state.running = False
-            # Write the output
-            self.create_log_file(job_state, exit_code)
-            job_state.job_wrapper.change_state(model.Job.states.QUEUED)
+            try:
+                # Write the output
+                self.create_log_file(job_state, exit_code)
+                job_state.job_wrapper.change_state(model.Job.states.QUEUED)
+            except Exception as e:
+                log.debug("Job wrapper finish method failed with exit_code 1")
+                log.debug(str(e))
+                # AMPPD: Disable this to stop jobs with bad logs from failing.  
+                #log.exception("Job wrapper finish method failed")
+                # self._fail_job_local(job_state.job_wrapper, "Unable to finish job")                
             # Sleep the current thread.  Let's not iterate through too fast when re-queueing tasks
             sleep(DEFAULT_POOL_SLEEP_TIME)
             return job_state
