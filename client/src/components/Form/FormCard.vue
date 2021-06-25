@@ -25,7 +25,7 @@ export default {
         },
         description: {
             type: String,
-            required: false,
+            default: null,
         },
         icon: {
             type: String,
