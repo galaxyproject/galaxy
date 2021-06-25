@@ -68,7 +68,7 @@ class TrsImportTestCase(SeleniumIntegrationTestCase):
 
     def test_import_by_organization_search_dockstore(self):
         self.trs_search()
-        self.components.trs_search.search.wait_for_and_send_keys('organization:iwc-workflows')
+        self.components.trs_search.search.wait_for_and_send_keys('organization: iwc-workflows')
         self.components.trs_search.search_result(workflow_name=TRS_NAME).wait_for_and_click()
         self.components.trs_search.import_version(version="v0.4").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
