@@ -40,7 +40,6 @@ class HistoriesController(BaseGalaxyAPIController):
     user_manager: users.UserManager = depends(users.UserManager)
     manager: histories.HistoryManager = depends(histories.HistoryManager)
     serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
-    deserializer: histories.HistoryDeserializer = depends(histories.HistoryDeserializer)
     filters: histories.HistoryFilters = depends(histories.HistoryFilters)
     # TODO move all managers above and the actions logic to the HistoriesService
     service: histories.HistoriesService = depends(histories.HistoriesService)
@@ -430,11 +429,8 @@ class HistoriesController(BaseGalaxyAPIController):
             any values that were different from the original and, therefore, updated
         """
         # TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
-        history = self.manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
-
-        self.deserializer.deserialize(history, payload, user=trans.user, trans=trans)
-        return self.serializer.serialize_to_view(history,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        serialization_params = parse_serialization_params(**kwd)
+        return self.service.update(trans, id, payload, serialization_params)
 
     @expose_api
     def index_exports(self, trans, id):

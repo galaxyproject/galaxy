@@ -553,12 +553,14 @@ class HistoriesService(ServiceBase):
         app: MinimalManagerApp,
         manager: HistoryManager,
         serializer: HistorySerializer,
+        deserializer: HistoryDeserializer,
         citations_manager: CitationsManager,
         history_export_view: HistoryExportView
     ):
         self.app = app
         self.manager = manager
         self.serializer = serializer
+        self.deserializer = deserializer
         self.citations_manager = citations_manager
         self.history_export_view = history_export_view
         self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
@@ -596,6 +598,35 @@ class HistoriesService(ServiceBase):
                 trans.user,
                 current_history=trans.history
             )
+        return self._serialize_history(trans, history, serialization_params)
+
+    def update(
+        self,
+        trans,
+        id: EncodedDatabaseIdField,
+        payload,
+        serialization_params: SerializationParams,
+    ):
+        """Updates the values for the history with the given ``id``
+
+        :type   id:      str
+        :param  id:      the encoded id of the history to update
+        :type   payload: dict
+        :param  payload: a dictionary containing any or all the
+            fields in :func:`galaxy.model.History.to_dict` and/or the following:
+
+            * annotation: an annotation for the history
+
+        :type   serialization_params:   dictionary
+        :param  serialization_params:   contains the optional `view`, `keys` and `default_view` for serialization
+
+        :rtype:     dict
+        :returns:   an error object if an error occurred or a dictionary containing
+            any values that were different from the original and, therefore, updated
+        """
+        # TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
+        history = self.manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
+        self.deserializer.deserialize(history, payload, user=trans.user, trans=trans)
         return self._serialize_history(trans, history, serialization_params)
 
     def delete(
