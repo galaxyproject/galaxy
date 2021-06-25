@@ -19,7 +19,7 @@ export async function updateTool(tool_id, tool_version, inputs) {
 }
 
 /** Tools data request helper **/
-export async function getTool(tool_id, tool_version, job_id) {
+export async function getTool(tool_id, tool_version, job_id, history_id) {
     const Galaxy = getGalaxyInstance();
     let url = "";
     let data = {};
@@ -32,6 +32,7 @@ export async function getTool(tool_id, tool_version, job_id) {
         data = Object.assign({}, Galaxy.params);
         data["tool_id"] && delete data["tool_id"];
     }
+    history_id && (data["history_id"] = history_id);
     tool_version && (data["tool_version"] = tool_version);
 
     // attach data to request url

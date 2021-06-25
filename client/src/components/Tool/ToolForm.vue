@@ -1,79 +1,82 @@
 <template>
-    <CurrentUser v-slot="{ user }">
-        <div>
-            <LoadingSpan v-if="showLoading" message="Loading Tool" />
-            <div v-if="showEntryPoints">
-                <ToolEntryPoints v-for="job in entryPoints" :job-id="job.id" :key="job.id" />
+    <ConfigProvider v-slot="{ config }">
+        <CurrentUser v-slot="{ user }">
+            <div>
+                <LoadingSpan v-if="showLoading" message="Loading Tool" />
+                <div v-if="showEntryPoints">
+                    <ToolEntryPoints v-for="job in entryPoints" :job-id="job.id" :key="job.id" />
+                </div>
+                <ToolSuccess v-if="showSuccess" :job-def="jobDef" :job-response="jobResponse" :tool-name="toolName" />
+                <Webhook v-if="showSuccess" type="tool" :tool-id="jobDef.tool_id" />
+                <div v-if="showError" class="errormessagelarge">
+                    <p>
+                        The server could not complete the request. Please contact the Galaxy Team if this error
+                        persists.
+                        {{ errorTitle | l }}
+                    </p>
+                    <pre>{{ errorContentPretty }}</pre>
+                </div>
+                <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
+                <ToolCard
+                    v-if="showForm"
+                    :id="formConfig.id"
+                    :user="user"
+                    :version="formConfig.version"
+                    :title="formConfig.name"
+                    :description="formConfig.description"
+                    :options="formConfig"
+                    :message-text="messageText"
+                    :message-variant="messageVariant"
+                    @onChangeVersion="onChangeVersion"
+                    @onUpdateFavorites="onUpdateFavorites"
+                    itemscope="itemscope"
+                    itemtype="https://schema.org/CreativeWork"
+                >
+                    <template v-slot:body>
+                        <Form
+                            :id="formConfig.id"
+                            :inputs="inputs"
+                            :validation-errors="validationErrors"
+                            :validation-scroll-to="validationScrollTo"
+                            :form-config="formConfig"
+                            @onChange="onChange"
+                            @onValidation="onValidation"
+                        />
+                        <FormElement
+                            v-if="emailAllowed(config, user)"
+                            id="send_email_notification"
+                            title="Email notification"
+                            help="Send an email notification when the job completes."
+                            type="boolean"
+                            value="false"
+                            @onChange="onChangeEmail"
+                        />
+                        <FormElement
+                            v-if="remapAllowed"
+                            id="rerun_remap_job_id"
+                            :title="remapTitle"
+                            :help="remapHelp"
+                            type="boolean"
+                            value="false"
+                            @onChange="onChangeRemap"
+                        />
+                        <FormElement
+                            v-if="reuseAllowed(user)"
+                            id="use_cached_job"
+                            title="Attempt to re-use jobs with identical parameters?"
+                            help="This may skip executing jobs that you have already run."
+                            type="boolean"
+                            value="false"
+                            @onChange="onChangeReuse"
+                        />
+                    </template>
+                    <template v-slot:buttons>
+                        <ButtonSpinner id="execute" title="Execute" @onClick="onExecute" :wait="showExecuting" />
+                    </template>
+                </ToolCard>
             </div>
-            <ToolSuccess v-if="showSuccess" :job-def="jobDef" :job-response="jobResponse" :tool-name="toolName" />
-            <Webhook v-if="showSuccess" type="tool" :tool-id="jobDef.tool_id" />
-            <div v-if="showError" class="errormessagelarge">
-                <p>
-                    The server could not complete the request. Please contact the Galaxy Team if this error persists.
-                    {{ errorTitle | l }}
-                </p>
-                <pre>{{ errorContentPretty }}</pre>
-            </div>
-            <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
-            <ToolCard
-                v-if="showForm"
-                :id="formConfig.id"
-                :user="user"
-                :version="formConfig.version"
-                :title="formConfig.name"
-                :description="formConfig.description"
-                :options="formConfig"
-                :message-text="messageText"
-                :message-variant="messageVariant"
-                @onChangeVersion="onChangeVersion"
-                @onUpdateFavorites="onUpdateFavorites"
-                itemscope="itemscope"
-                itemtype="https://schema.org/CreativeWork"
-            >
-                <template v-slot:body>
-                    <Form
-                        :id="formConfig.id"
-                        :inputs="inputs"
-                        :validation-errors="validationErrors"
-                        :validation-scroll-to="validationScrollTo"
-                        :form-config="formConfig"
-                        @onChange="onChange"
-                        @onValidation="onValidation"
-                    />
-                    <FormElement
-                        v-if="emailAllowed"
-                        id="send_email_notification"
-                        title="Email notification"
-                        help="Send an email notification when the job completes."
-                        type="boolean"
-                        value="false"
-                        @onChange="onChangeEmail"
-                    />
-                    <FormElement
-                        v-if="remapAllowed"
-                        id="rerun_remap_job_id"
-                        :title="remapTitle"
-                        :help="remapHelp"
-                        type="boolean"
-                        value="false"
-                        @onChange="onChangeRemap"
-                    />
-                    <FormElement
-                        v-if="reuseAllowed"
-                        id="use_cached_job"
-                        title="Attempt to re-use jobs with identical parameters?"
-                        help="This may skip executing jobs that you have already run."
-                        type="boolean"
-                        value="false"
-                        @onChange="onChangeReuse"
-                    />
-                </template>
-                <template v-slot:buttons>
-                    <ButtonSpinner id="execute" title="Execute" @onClick="onExecute" :wait="showExecuting" />
-                </template>
-            </ToolCard>
-        </div>
-    </CurrentUser>
+        </CurrentUser>
+    </ConfigProvider>
 </template>
 
 <script>
@@ -85,6 +88,7 @@ import { send } from "./utilities";
 import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import CurrentUser from "components/providers/CurrentUser";
+import ConfigProvider from "components/providers/ConfigProvider";
 import LoadingSpan from "components/LoadingSpan";
 import Form from "components/Form/Form";
 import FormElement from "components/Form/FormElement";
@@ -95,6 +99,7 @@ export default {
     components: {
         ButtonSpinner,
         CurrentUser,
+        ConfigProvider,
         LoadingSpan,
         Form,
         ToolCard,
@@ -112,6 +117,10 @@ export default {
             default: null,
         },
         job_id: {
+            type: String,
+            default: null,
+        },
+        history_id: {
             type: String,
             default: null,
         },
@@ -160,10 +169,6 @@ export default {
         errorContentPretty() {
             return JSON.stringify(this.errorContent, null, 4);
         },
-        emailAllowed() {
-            const Galaxy = getGalaxyInstance();
-            return Galaxy.config.server_mail_configured && !Galaxy.user.isAnonymous();
-        },
         inputs() {
             return this.formConfig.inputs;
         },
@@ -184,10 +189,18 @@ export default {
                 return "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
             }
         },
-        reuseAllowed() {
-            const Galaxy = getGalaxyInstance();
-            if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
-                const extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
+    },
+    methods: {
+        emailAllowed(config, user) {
+            return config.server_mail_configured && !user.isAnonymous();
+        },
+        reuseAllowed(user) {
+            if (
+                user.attributes &&
+                user.attributes.preferences &&
+                "extra_user_preferences" in user.attributes.preferences
+            ) {
+                const extra_user_preferences = JSON.parse(user.attributes.preferences.extra_user_preferences);
                 const keyCached = "use_cached_job|use_cached_job_checkbox";
                 const hasCachedJobs = keyCached in extra_user_preferences;
                 return hasCachedJobs ? extra_user_preferences[keyCached] : false;
@@ -195,8 +208,6 @@ export default {
                 return false;
             }
         },
-    },
-    methods: {
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
         },
@@ -226,7 +237,7 @@ export default {
         },
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
-            getTool(this.id, this.currentVersion, this.job_id).then((data) => {
+            getTool(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
                 this.formConfig = data;
                 this.showLoading = false;
                 this.showForm = true;
