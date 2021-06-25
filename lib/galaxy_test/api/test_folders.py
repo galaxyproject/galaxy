@@ -1,5 +1,3 @@
-import json
-
 from galaxy_test.base.populators import LibraryPopulator
 from ._framework import ApiTestCase
 
@@ -54,7 +52,7 @@ class FoldersApiTestCase(ApiTestCase):
             "name": updated_name,
             "description": updated_desc,
         }
-        put_response = self._put(f"folders/{folder_id}", data=json.dumps(data), admin=True)
+        put_response = self._put(f"folders/{folder_id}", data=data, admin=True, json=True)
         self._assert_status_code_is(put_response, 200)
         updated_folder = put_response.json()
         self._assert_valid_folder(updated_folder)
@@ -91,7 +89,7 @@ class FoldersApiTestCase(ApiTestCase):
         data = {
             "name": "test",
         }
-        put_response = self._put(f"folders/{folder_id}", data=json.dumps(data), admin=True)
+        put_response = self._put(f"folders/{folder_id}", data=data, admin=True, json=True)
         self._assert_status_code_is(put_response, 403)
 
     def _create_folder(self, name: str):
