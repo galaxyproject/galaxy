@@ -83,7 +83,7 @@
 import Scroller from "vue-scrollto";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import { getTool, submitJob, updateTool } from "./services";
+import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import { send } from "./utilities";
 import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
@@ -216,7 +216,7 @@ export default {
             this.onUpdate();
         },
         onUpdate() {
-            updateTool(this.formConfig.id, this.currentVersion, this.formData).then((data) => {
+            updateToolFormData(this.formConfig.id, this.currentVersion, this.formData).then((data) => {
                 this.formConfig = data;
             });
         },
@@ -237,7 +237,7 @@ export default {
         },
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
-            getTool(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
+            getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
                 this.formConfig = data;
                 this.showLoading = false;
                 this.showForm = true;

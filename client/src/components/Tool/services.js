@@ -3,7 +3,7 @@ import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 
-export async function updateTool(tool_id, tool_version, inputs) {
+export async function updateToolFormData(tool_id, tool_version, inputs) {
     const current_state = {
         tool_id: tool_id,
         tool_version: tool_version,
@@ -19,7 +19,7 @@ export async function updateTool(tool_id, tool_version, inputs) {
 }
 
 /** Tools data request helper **/
-export async function getTool(tool_id, tool_version, job_id, history_id) {
+export async function getToolFormData(tool_id, tool_version, job_id, history_id) {
     const Galaxy = getGalaxyInstance();
     let url = "";
     let data = {};
