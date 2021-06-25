@@ -570,7 +570,7 @@ class HistoriesService(ServiceBase):
         trans,
         serialization_params: SerializationParams,
         history_id: Optional[EncodedDatabaseIdField] = None,
-    ) -> Union[HistoryBeta, HistoryDetailed, HistorySummary]:
+    ):
         """
         Returns detailed information about the history with the given encoded `id`. If no `id` is
         provided, then the most recently used history will be returned.
@@ -596,15 +596,55 @@ class HistoriesService(ServiceBase):
                 trans.user,
                 current_history=trans.history
             )
+        return self._serialize_history(trans, history, serialization_params)
 
-        serialization_params["default_view"] = "detailed"
-        serialized_history = self.serializer.serialize_to_view(
-            history,
-            user=trans.user,
-            trans=trans,
-            **serialization_params
-        )
-        return serialized_history
+    def delete(
+        self,
+        trans,
+        history_id: EncodedDatabaseIdField,
+        serialization_params: SerializationParams,
+        purge: bool = False,
+    ):
+        """Delete the history with the given ``id``
+
+        .. note:: Stops all active jobs in the history if purge is set.
+
+        You can purge a history, removing all it's datasets from disk (if unshared),
+        by passing in ``purge=True`` in the url.
+
+        :type   serialization_params:   dictionary
+        :param  serialization_params:   contains the optional `view`, `keys` and `default_view` for serialization
+
+        :rtype:     dict
+        :returns:   the deleted or purged history
+        """
+        history = self.manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+        if purge:
+            self.manager.purge(history)
+        else:
+            self.manager.delete(history)
+        return self._serialize_history(trans, history, serialization_params)
+
+    def undelete(
+        self,
+        trans,
+        history_id: EncodedDatabaseIdField,
+        serialization_params: SerializationParams,
+    ):
+        """Undelete history (that hasn't been purged) with the given ``id``
+
+        :type   id:     str
+        :param  id:     the encoded id of the history to undelete
+
+        :type   serialization_params:   dictionary
+        :param  serialization_params:   contains the optional `view`, `keys` and `default_view` for serialization
+
+        :rtype:     dict
+        :returns:   the undeleted history
+        """
+        history = self.manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+        self.manager.undelete(history)
+        return self._serialize_history(trans, history, serialization_params)
 
     def citations(self, trans, history_id):
         """
@@ -710,3 +750,23 @@ class HistoriesService(ServiceBase):
         status of the resource.
         """
         return self.shareable_service.sharing(trans, id, payload)
+
+    def _serialize_history(
+            self,
+            trans,
+            history: model.History,
+            serialization_params: SerializationParams,
+            default_view: str = "detailed",
+    ) -> Union[HistoryBeta, HistoryDetailed, HistorySummary]:
+        """
+        Returns a dictionary with the corresponding values depending on the
+        serialization parameters provided.
+        """
+        serialization_params["default_view"] = default_view
+        serialized_history = self.serializer.serialize_to_view(
+            history,
+            user=trans.user,
+            trans=trans,
+            **serialization_params
+        )
+        return serialized_history

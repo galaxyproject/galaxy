@@ -385,14 +385,8 @@ class HistoriesController(BaseGalaxyAPIController):
         if kwd.get('payload', None):
             purge = string_as_bool(kwd['payload'].get('purge', purge))
 
-        history = self.manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
-        if purge:
-            self.manager.purge(history)
-        else:
-            self.manager.delete(history)
-
-        return self.serializer.serialize_to_view(history,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        serialization_params = parse_serialization_params(**kwd)
+        return self.service.delete(trans, history_id, serialization_params, purge)
 
     @expose_api
     def undelete(self, trans, id, **kwd):
@@ -410,13 +404,8 @@ class HistoriesController(BaseGalaxyAPIController):
         :rtype:     str
         :returns:   'OK' if the history was undeleted
         """
-        # TODO: remove at v2
-        history_id = id
-        history = self.manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
-        self.manager.undelete(history)
-
-        return self.serializer.serialize_to_view(history,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        serialization_params = parse_serialization_params(**kwd)
+        return self.service.undelete(trans, id, serialization_params)
 
     @expose_api
     def update(self, trans, id, payload, **kwd):
