@@ -16,14 +16,17 @@ def testAPIKeys(model, session, user):
     cls = model.APIKeys
     assert cls.__tablename__ == 'api_keys'
     with dbcleanup(session, cls):
-        user_id, key = user.id, 'a'
-        obj = cls(user_id, key)
+        create_time, user_id, key = datetime.now(), user.id, get_random_string()
+        obj = cls(user_id=user_id, key=key, create_time=create_time)
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
         assert stored_obj.id == obj_id
+        assert stored_obj.create_time == create_time
         assert stored_obj.user_id == user_id
         assert stored_obj.key == key
+        # test mapped relationships
         assert stored_obj.user.id == user.id
 
 
