@@ -3,8 +3,6 @@ import { getLocalVue } from "jest/helpers";
 import FormBoolean from "./FormBoolean";
 import Vue from "vue";
 
-jest.mock("app");
-
 const localVue = getLocalVue();
 
 describe("FormBoolean", () => {

@@ -2,8 +2,6 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import ToolCard from "./ToolCard";
 
-jest.mock("app");
-
 const localVue = getLocalVue();
 
 describe("ToolCard", () => {
