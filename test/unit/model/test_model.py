@@ -339,6 +339,7 @@ def test_HistoryRatingAssociation(model, session, history, user):
 def test_HistoryTagAssociation(model, session, history, tag, user):
     cls = model.HistoryTagAssociation
     assert cls.__tablename__ == 'history_tag_association'
+
     with dbcleanup(session, cls):
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
@@ -700,6 +701,68 @@ def test_StoredWorkflowTagAssociation(model, session, stored_workflow, tag, user
         assert stored_obj.user.id == user.id
 
 
+def test_Tag(
+        model,
+        session,
+        tag,
+        history_tag_association,
+        history_dataset_association_tag_association,
+        library_dataset_dataset_association_tag_association,
+        page_tag_association,
+        workflow_step_tag_association,
+        stored_workflow_tag_association,
+        visualization_tag_association,
+        history_dataset_collection_tag_association,
+        library_dataset_collection_tag_association,
+        tool_tag_association,
+):
+    cls = model.Tag
+    assert cls.__tablename__ == 'tag'
+    assert has_unique_constraint(cls.__table__, ('name',))
+
+    with dbcleanup(session, cls):
+        type_, name = 1, 'a'
+        child_tag = cls()
+        obj = cls(type=type_, parent_id=tag.id, name=name)
+        obj.children.append(child_tag)
+
+        def add_association(assoc_object, assoc_attribute):
+            assoc_object.tag = tag
+            getattr(obj, assoc_attribute).append(assoc_object)
+
+        add_association(history_tag_association, 'tagged_histories')
+        add_association(history_dataset_association_tag_association, 'tagged_history_dataset_associations')
+        add_association(library_dataset_dataset_association_tag_association, 'tagged_library_dataset_dataset_associations')
+        add_association(page_tag_association, 'tagged_pages')
+        add_association(workflow_step_tag_association, 'tagged_workflow_steps')
+        add_association(stored_workflow_tag_association, 'tagged_stored_workflows')
+        add_association(visualization_tag_association, 'tagged_visualizations')
+        add_association(history_dataset_collection_tag_association, 'tagged_history_dataset_collections')
+        add_association(library_dataset_collection_tag_association, 'tagged_library_dataset_collections')
+        add_association(tool_tag_association, 'tagged_tools')
+
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test fields
+        assert stored_obj.id == obj_id
+        assert stored_obj.type == type_
+        assert stored_obj.name == name
+        # test relationships
+        assert stored_obj.parent.id == tag.id
+        assert stored_obj.children == [child_tag]
+        assert stored_obj.tagged_histories == [history_tag_association]
+        assert stored_obj.tagged_history_dataset_associations == [history_dataset_association_tag_association]
+        assert stored_obj.tagged_library_dataset_dataset_associations == [library_dataset_dataset_association_tag_association]
+        assert stored_obj.tagged_pages == [page_tag_association]
+        assert stored_obj.tagged_workflow_steps == [workflow_step_tag_association]
+        assert stored_obj.tagged_stored_workflows == [stored_workflow_tag_association]
+        assert stored_obj.tagged_visualizations == [visualization_tag_association]
+        assert stored_obj.tagged_history_dataset_collections == [history_dataset_collection_tag_association]
+        assert stored_obj.tagged_library_dataset_collections == [library_dataset_collection_tag_association]
+        assert stored_obj.tagged_tools == [tool_tag_association]
+
+
 def test_ToolTagAssociation(model, session, tag, user):
     cls = model.ToolTagAssociation
     assert cls.__tablename__ == 'tool_tag_association'
@@ -711,7 +774,6 @@ def test_ToolTagAssociation(model, session, tag, user):
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
-
         # test mapped columns
         assert stored_obj.id == obj_id
         assert stored_obj.tool_id == tool_id
@@ -998,9 +1060,27 @@ def history_dataset_association(model, session, dataset):
 
 
 @pytest.fixture
+def history_dataset_association_tag_association(model, session):
+    hdata = model.HistoryDatasetAssociationTagAssociation()
+    yield from dbcleanup_wrapper(session, hdata)
+
+
+@pytest.fixture
 def history_dataset_collection_association(model, session):
     hdca = model.HistoryDatasetCollectionAssociation()
     yield from dbcleanup_wrapper(session, hdca)
+
+
+@pytest.fixture
+def history_dataset_collection_tag_association(model, session):
+    hdcta = model.HistoryDatasetCollectionTagAssociation()
+    yield from dbcleanup_wrapper(session, hdcta)
+
+
+@pytest.fixture
+def history_tag_association(model, session):
+    hta = model.HistoryTagAssociation()
+    yield from dbcleanup_wrapper(session, hta)
 
 
 @pytest.fixture
@@ -1022,9 +1102,21 @@ def library_dataset_collection_association(model, session):
 
 
 @pytest.fixture
+def library_dataset_collection_tag_association(model, session):
+    ldcta = model.LibraryDatasetCollectionTagAssociation()
+    yield from dbcleanup_wrapper(session, ldcta)
+
+
+@pytest.fixture
 def library_dataset_dataset_association(model, session):
     ldda = model.LibraryDatasetDatasetAssociation()
     yield from dbcleanup_wrapper(session, ldda)
+
+
+@pytest.fixture
+def library_dataset_dataset_association_tag_association(model, session):
+    lddata = model.LibraryDatasetDatasetAssociationTagAssociation()
+    yield from dbcleanup_wrapper(session, lddata)
 
 
 @pytest.fixture
@@ -1032,6 +1124,12 @@ def page(model, session, user):
     p = model.Page()
     p.user = user
     yield from dbcleanup_wrapper(session, p)
+
+
+@pytest.fixture
+def page_tag_association(model, session):
+    pta = model.PageTagAssociation()
+    yield from dbcleanup_wrapper(session, pta)
 
 
 @pytest.fixture
@@ -1054,9 +1152,21 @@ def stored_workflow(model, session, user):
 
 
 @pytest.fixture
+def stored_workflow_tag_association(model, session):
+    swta = model.StoredWorkflowTagAssociation()
+    yield from dbcleanup_wrapper(session, swta)
+
+
+@pytest.fixture
 def tag(model, session):
     t = model.Tag()
     yield from dbcleanup_wrapper(session, t)
+
+
+@pytest.fixture
+def tool_tag_association(model, session):
+    tta = model.ToolTagAssociation()
+    yield from dbcleanup_wrapper(session, tta)
 
 
 @pytest.fixture
@@ -1079,6 +1189,12 @@ def visualization(model, session, user):
 
 
 @pytest.fixture
+def visualization_tag_association(model, session):
+    vta = model.VisualizationTagAssociation()
+    yield from dbcleanup_wrapper(session, vta)
+
+
+@pytest.fixture
 def workflow(model, session):
     w = model.Workflow()
     yield from dbcleanup_wrapper(session, w)
@@ -1089,6 +1205,12 @@ def workflow_step(model, session, workflow):
     s = model.WorkflowStep()
     s.workflow = workflow
     yield from dbcleanup_wrapper(session, s)
+
+
+@pytest.fixture
+def workflow_step_tag_association(model, session):
+    wsta = model.WorkflowStepTagAssociation()
+    yield from dbcleanup_wrapper(session, wsta)
 
 
 @contextmanager

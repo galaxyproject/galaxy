@@ -28,7 +28,6 @@ from sqlalchemy import (
     Text,
     true,
     Unicode,
-    UniqueConstraint,
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
@@ -1106,15 +1105,6 @@ model.DataManagerJobAssociation.table = Table(
     Index('ix_data_manager_job_association_data_manager_id', 'data_manager_id', mysql_length=200),
 )
 
-# Tagging tables.
-model.Tag.table = Table(
-    "tag", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("type", Integer),
-    Column("parent_id", Integer, ForeignKey("tag.id")),
-    Column("name", TrimmedString(255)),
-    UniqueConstraint("name"))
-
 model.UserPreference.table = Table(
     "user_preference", metadata,
     Column("id", Integer, primary_key=True),
@@ -2119,22 +2109,6 @@ mapper_registry.map_imperatively(model.VisualizationUserShareAssociation, model.
         backref='visualizations_shared_by_others'),
     visualization=relation(model.Visualization,
         backref='users_shared_with')
-))
-
-# Tag tables.
-
-mapper_registry.map_imperatively(model.Tag, model.Tag.table, properties=dict(
-    children=relation(model.Tag, backref=backref('parent', remote_side=[model.Tag.table.c.id])),
-    tagged_histories=relation(model.HistoryTagAssociation, back_populates='tag'),
-    tagged_history_dataset_associations=relation(model.HistoryDatasetAssociationTagAssociation, back_populates='tag'),
-    tagged_library_dataset_dataset_associations=relation(model.LibraryDatasetDatasetAssociationTagAssociation, back_populates='tag'),
-    tagged_pages=relation(model.PageTagAssociation, back_populates='tag'),
-    tagged_workflow_steps=relation(model.WorkflowStepTagAssociation, back_populates='tag'),
-    tagged_stored_workflows=relation(model.StoredWorkflowTagAssociation, back_populates='tag'),
-    tagged_visualizations=relation(model.VisualizationTagAssociation, back_populates='tag'),
-    tagged_history_dataset_collections=relation(model.HistoryDatasetCollectionTagAssociation, back_populates='tag'),
-    tagged_library_dataset_collections=relation(model.LibraryDatasetCollectionTagAssociation, back_populates='tag'),
-    tagged_tools=relation(model.ToolTagAssociation, back_populates='tag'),
 ))
 
 mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
