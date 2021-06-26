@@ -238,6 +238,7 @@ export function fetchMenu(options = {}) {
             },
         ],
     };
+    menu.push(helpTab);
 
     //
     // User tab.
