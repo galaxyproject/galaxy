@@ -1078,7 +1078,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @skip_without_tool("collection_split_on_column")
     @uses_test_history(require_new=False)
     def test_dynamic_list_output(self, history_id):
-        new_dataset1 = self.dataset_populator.new_dataset(history_id, content='samp1\t1\nsamp1\t3\nsamp2\t2\nsamp2\t4\n')
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content='samp1\t1\nsamp1\t3\nsamp2\t2\nsamp2\t4\n', file_type="tabular")
         inputs = {
             'input1': dataset_to_param(new_dataset1),
         }
