@@ -30,19 +30,24 @@ from galaxy.managers import (
 )
 from galaxy.managers.base import ServiceBase
 from galaxy.managers.citations import CitationsManager
+from galaxy.managers.users import UserManager
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    CreateHistoryPayload,
     CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
     HistoryBeta,
     HistoryDetailed,
+    HistoryImportArchiveSourceType,
     HistorySummary,
     JobExportHistoryArchive,
     JobIdResponse,
+    JobImportHistoryResponse,
     LabelValuePair,
 )
 from galaxy.schema.types import SerializationParams
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util import restore_text
 
 log = logging.getLogger(__name__)
 
@@ -552,6 +557,7 @@ class HistoriesService(ServiceBase):
         self,
         app: MinimalManagerApp,
         manager: HistoryManager,
+        user_manager: UserManager,
         serializer: HistorySerializer,
         deserializer: HistoryDeserializer,
         citations_manager: CitationsManager,
@@ -559,6 +565,7 @@ class HistoriesService(ServiceBase):
     ):
         self.app = app
         self.manager = manager
+        self.user_manager = user_manager
         self.serializer = serializer
         self.deserializer = deserializer
         self.citations_manager = citations_manager
@@ -566,6 +573,61 @@ class HistoriesService(ServiceBase):
         self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
 
     # TODO: add the rest of the API actions here and call them directly from the API controller
+
+    def create(
+        self,
+        trans,
+        payload: CreateHistoryPayload,
+        serialization_params: SerializationParams,
+    ):
+        """Create a new history from scratch, by copying an existing one or by importing
+        from URL or File depending on the provided parameters in the payload.
+        """
+        if trans.user and trans.user.bootstrap_admin_user:
+            raise glx_exceptions.RealUserRequiredException("Only real users can create histories.")
+        hist_name = None
+        if payload.name is not None:
+            hist_name = restore_text(payload.name)
+        copy_this_history_id = payload.history_id
+        all_datasets = payload.all_datasets
+
+        if payload.archive_source is not None:
+            archive_source = payload.archive_source
+            archive_file = payload.archive_file
+            if archive_source:
+                archive_type = payload.archive_type
+            elif archive_file is not None and hasattr(archive_file, "file"):
+                archive_source = archive_file.file.name
+                archive_type = HistoryImportArchiveSourceType.file
+            else:
+                raise glx_exceptions.MessageException("Please provide a url or file.")
+            job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
+            job_dict = job.to_dict()
+            job_dict["message"] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
+            job_dict = trans.security.encode_all_ids(job_dict)
+            return JobImportHistoryResponse.parse_obj(job_dict)
+
+        new_history = None
+        # if a history id was passed, copy that history
+        if copy_this_history_id:
+            decoded_id = self.decode_id(copy_this_history_id)
+            original_history = self.manager.get_accessible(decoded_id, trans.user, current_history=trans.history)
+            hist_name = hist_name or (f"Copy of '{original_history.name}'")
+            new_history = original_history.copy(name=hist_name, target_user=trans.user, all_datasets=all_datasets)
+
+        # otherwise, create a new empty history
+        else:
+            new_history = self.manager.create(user=trans.user, name=hist_name)
+
+        trans.app.security_agent.history_set_default_permissions(new_history)
+        trans.sa_session.add(new_history)
+        trans.sa_session.flush()
+
+        # an anonymous user can only have one history
+        if self.user_manager.is_anonymous(trans.user):
+            self.manager.set_current(trans, new_history)
+
+        return self._serialize_history(trans, new_history, serialization_params)
 
     def show(
         self,

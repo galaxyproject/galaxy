@@ -19,9 +19,11 @@ from galaxy.managers import (
     sharable,
     users,
 )
-from galaxy.schema.schema import ExportHistoryArchivePayload
+from galaxy.schema.schema import (
+    CreateHistoryPayload,
+    ExportHistoryArchivePayload,
+)
 from galaxy.util import (
-    restore_text,
     string_as_bool
 )
 from galaxy.web import (
@@ -307,52 +309,9 @@ class HistoriesController(BaseGalaxyAPIController):
         :rtype:     dict
         :returns:   element view of new history
         """
-        if trans.user and trans.user.bootstrap_admin_user:
-            raise exceptions.RealUserRequiredException("Only real users can create histories.")
-        hist_name = None
-        if payload.get('name', None):
-            hist_name = restore_text(payload['name'])
-        copy_this_history_id = payload.get('history_id', None)
-
-        all_datasets = util.string_as_bool(payload.get('all_datasets', True))
-
-        if "archive_source" in payload:
-            archive_source = payload["archive_source"]
-            archive_file = payload.get("archive_file")
-            if archive_source:
-                archive_type = payload.get("archive_type", "url")
-            elif hasattr(archive_file, "file"):
-                archive_source = payload["archive_file"].file.name
-                archive_type = "file"
-            else:
-                raise exceptions.MessageException("Please provide a url or file.")
-            job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
-            job_dict = job.to_dict()
-            job_dict["message"] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
-            return trans.security.encode_all_ids(job_dict)
-
-        new_history = None
-        # if a history id was passed, copy that history
-        if copy_this_history_id:
-            decoded_id = self.decode_id(copy_this_history_id)
-            original_history = self.manager.get_accessible(decoded_id, trans.user, current_history=trans.history)
-            hist_name = hist_name or (f"Copy of '{original_history.name}'")
-            new_history = original_history.copy(name=hist_name, target_user=trans.user, all_datasets=all_datasets)
-
-        # otherwise, create a new empty history
-        else:
-            new_history = self.manager.create(user=trans.user, name=hist_name)
-
-        trans.app.security_agent.history_set_default_permissions(new_history)
-        trans.sa_session.add(new_history)
-        trans.sa_session.flush()
-
-        # an anonymous user can only have one history
-        if self.user_manager.is_anonymous(trans.user):
-            self.manager.set_current(trans, new_history)
-
-        return self.serializer.serialize_to_view(new_history,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        create_payload = CreateHistoryPayload(**payload)
+        serialization_params = parse_serialization_params(**kwd)
+        return self.service.create(trans, create_payload, serialization_params)
 
     @expose_api
     def delete(self, trans, id, **kwd):

@@ -190,6 +190,12 @@ class HistoryContentType(str, Enum):
     dataset_collection = "dataset_collection"
 
 
+class HistoryImportArchiveSourceType(str, Enum):
+    """Available types of History archive sources."""
+    url = "url"
+    file = "file"
+
+
 class DCEType(str, Enum):  # TODO: suspiciously similar to HistoryContentType
     """Available types of dataset collection elements."""
     hda = "hda"
@@ -768,6 +774,49 @@ class ExportHistoryArchivePayload(Model):
     )
 
 
+class CreateHistoryPayload(Model):
+    name: Optional[str] = Field(
+        default=None,
+        title="Name",
+        description="The new history name.",
+    )
+    history_id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        title="History ID",
+        description=(
+            "The encoded ID of the history to copy. "
+            "Provide this value only if you want to copy an existing history."
+        ),
+    )
+    all_datasets: Optional[bool] = Field(
+        default=True,
+        title="All Datasets",
+        description=(
+            "Whether to copy also deleted HDAs/HDCAs. Only applies when "
+            "providing a `history_id` to copy from."
+        ),
+    )
+    archive_source: Optional[str] = Field(
+        default=None,
+        title="Archive Source",
+        description=(
+            "The URL that will generate the archive to import when `archive_type='url'`. "
+            # This seems a bit odd but the create history action expects `archive_source` to be != None
+            "When importing from a file using `archive_file`, please set `archive_source=''`."
+        ),
+    )
+    archive_type: Optional[HistoryImportArchiveSourceType] = Field(
+        default=HistoryImportArchiveSourceType.url,
+        title="Archive Type",
+        description="The type of source from where the new history will be imported.",
+    )
+    archive_file: Optional[Any] = Field(
+        default=None,
+        title="Archive File",
+        description="Detailed file information when importing the history from a file.",
+    )
+
+
 class JobExportHistoryArchive(Model):
     id: EncodedDatabaseIdField = Field(
         ...,
@@ -937,8 +986,7 @@ class HDCABeta(HDCADetailed):  # TODO: change HDCABeta name to a more appropriat
     )
 
 
-class JobSummary(Model):
-    """Basic information about a job."""
+class JobBaseModel(Model):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(JOB_MODEL_CLASS_NAME)
     tool_id: str = Field(
@@ -946,7 +994,11 @@ class JobSummary(Model):
         title="Tool ID",
         description="Identifier of the tool that generated this job.",
     )
-    history_id: EncodedDatabaseIdField = HistoryIdField
+    history_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="History ID",
+        description="The encoded ID of the history associated with this item.",
+    )
     state: Job.states = Field(
         ...,
         title="State",
@@ -965,6 +1017,18 @@ class JobSummary(Model):
         description="The (major) version of Galaxy used to create this job.",
         example="21.05"
     )
+
+
+class JobImportHistoryResponse(JobBaseModel):
+    message: str = Field(
+        ...,
+        title="Message",
+        description="Text message containing information about the history import.",
+    )
+
+
+class JobSummary(JobBaseModel):
+    """Basic information about a job."""
     external_id: Optional[str] = Field(
         None,
         title="External ID",
