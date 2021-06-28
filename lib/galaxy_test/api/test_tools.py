@@ -1162,7 +1162,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @uses_test_history(require_new=False)
     def test_dynamic_list_output(self, history_id):
         new_dataset1 = self.dataset_populator.new_dataset(
-            history_id, content="samp1\t1\nsamp1\t3\nsamp2\t2\nsamp2\t4\n"
+            history_id, content="samp1\t1\nsamp1\t3\nsamp2\t2\nsamp2\t4\n",
+            file_type="tabular"
         )
         inputs = {
             "input1": dataset_to_param(new_dataset1),
