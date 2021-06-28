@@ -162,6 +162,7 @@ EXPOSE 8080
 USER $GALAXY_USER
 
 ENV PATH="$SERVER_DIR/.venv/bin:${PATH}"
+ENV GALAXY_CONFIG_CONDA_AUTO_INIT=False
 
 # [optional] to run:
 CMD uwsgi --yaml config/galaxy.yml
