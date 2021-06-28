@@ -71,7 +71,13 @@
                         />
                     </template>
                     <template v-slot:buttons>
-                        <ButtonSpinner id="execute" title="Execute" @onClick="onExecute" :wait="showExecuting" />
+                        <ButtonSpinner
+                            id="execute"
+                            title="Execute"
+                            @onClick="onExecute"
+                            :wait="showExecuting"
+                            :tooltip="tooltip"
+                        />
                     </template>
                 </ToolCard>
             </div>
@@ -165,6 +171,9 @@ export default {
     computed: {
         toolName() {
             return this.formConfig.name;
+        },
+        tooltip() {
+            return `Execute: ${this.formConfig.name} (${this.formConfig.version})`;
         },
         errorContentPretty() {
             return JSON.stringify(this.errorContent, null, 4);
