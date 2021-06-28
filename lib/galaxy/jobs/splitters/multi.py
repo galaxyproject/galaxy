@@ -101,7 +101,7 @@ def do_split(job_wrapper):
                 for file in names:
                     os.symlink(file, os.path.join(dir, os.path.basename(file)))
     tasks = []
-    prepare_files = f"{os.path.join(util.galaxy_directory(), 'extract_dataset_parts.sh')} %s"
+    prepare_files = f"'{os.path.join(util.galaxy_directory(), 'extract_dataset_parts.sh')}' %s"
     for dir in task_dirs:
         task = model.Task(parent_job, dir, prepare_files % dir)
         tasks.append(task)
