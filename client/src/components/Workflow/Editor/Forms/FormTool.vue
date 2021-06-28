@@ -18,7 +18,7 @@
                     :value="node.label"
                     title="Label"
                     help="Add a step label."
-                    @onChange="onLabel"
+                    @input="onLabel"
                     :error="errorLabel"
                 />
                 <FormElement
@@ -27,7 +27,7 @@
                     title="Step Annotation"
                     :area="true"
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-                    @onChange="onAnnotation"
+                    @input="onAnnotation"
                 />
                 <FormDisplay
                     :id="id"
