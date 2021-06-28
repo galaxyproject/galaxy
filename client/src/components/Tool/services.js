@@ -1,7 +1,6 @@
 import axios from "axios";
 import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
 
 export async function updateToolFormData(tool_id, tool_version, inputs) {
     const current_state = {
@@ -20,7 +19,6 @@ export async function updateToolFormData(tool_id, tool_version, inputs) {
 
 /** Tools data request helper **/
 export async function getToolFormData(tool_id, tool_version, job_id, history_id) {
-    const Galaxy = getGalaxyInstance();
     let url = "";
     let data = {};
 
@@ -29,8 +27,13 @@ export async function getToolFormData(tool_id, tool_version, job_id, history_id)
         url = `${getAppRoot()}api/jobs/${job_id}/build_for_rerun`;
     } else {
         url = `${getAppRoot()}api/tools/${tool_id}/build`;
-        data = Object.assign({}, Galaxy.params);
-        data["tool_id"] && delete data["tool_id"];
+        const queryString = window.location.search;
+        const params = new URLSearchParams(queryString);
+        for (const [key, value] of params.entries()) {
+            if (key != "tool_id") {
+                data[key] = value;
+            }
+        }
     }
     history_id && (data["history_id"] = history_id);
     tool_version && (data["tool_version"] = tool_version);
