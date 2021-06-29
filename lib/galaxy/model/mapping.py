@@ -1017,14 +1017,6 @@ model.MetadataFile.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
 
-model.FormValues.table = Table(
-    "form_values", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("content", MutableJSONType))
-
 model.Visualization.table = Table(
     "visualization", metadata,
     Column("id", Integer, primary_key=True),
@@ -1143,11 +1135,6 @@ def simple_mapping(model, **kwds):
 
 
 mapper_registry.map_imperatively(model.UserPreference, model.UserPreference.table, properties={})
-
-mapper_registry.map_imperatively(model.FormValues, model.FormValues.table, properties=dict(
-    form_definition=relation(model.FormDefinition,
-        primaryjoin=(model.FormValues.table.c.form_definition_id == model.FormDefinition.id))
-))
 
 simple_mapping(model.HistoryDatasetAssociation,
     dataset=relation(model.Dataset,
@@ -1356,7 +1343,7 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
         backref="user",
         collection_class=attribute_mapped_collection('name')),
     values=relation(model.FormValues,
-        primaryjoin=(model.User.table.c.form_values_id == model.FormValues.table.c.id)),
+        primaryjoin=(model.User.table.c.form_values_id == model.FormValues.id)),
     api_keys=relation(model.APIKeys,
         back_populates="user",
         order_by=desc(model.APIKeys.create_time)),
@@ -1430,7 +1417,7 @@ mapper_registry.map_imperatively(model.LibraryInfoAssociation, model.LibraryInfo
     template=relation(model.FormDefinition,
         primaryjoin=(model.LibraryInfoAssociation.table.c.form_definition_id == model.FormDefinition.id)),
     info=relation(model.FormValues,
-        primaryjoin=(model.LibraryInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id))
+        primaryjoin=(model.LibraryInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
 mapper_registry.map_imperatively(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
@@ -1476,7 +1463,7 @@ mapper_registry.map_imperatively(model.LibraryFolderInfoAssociation, model.Libra
     template=relation(model.FormDefinition,
         primaryjoin=(model.LibraryFolderInfoAssociation.table.c.form_definition_id == model.FormDefinition.id)),
     info=relation(model.FormValues,
-        primaryjoin=(model.LibraryFolderInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id))
+        primaryjoin=(model.LibraryFolderInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
 mapper_registry.map_imperatively(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
@@ -1537,7 +1524,7 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
     template=relation(model.FormDefinition,
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_definition_id == model.FormDefinition.id)),
     info=relation(model.FormValues,
-        primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id))
+        primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
 mapper_registry.map_imperatively(model.JobToInputDatasetAssociation, model.JobToInputDatasetAssociation.table, properties=dict(

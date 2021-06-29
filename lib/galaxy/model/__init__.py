@@ -6248,7 +6248,18 @@ class FormDefinitionCurrent(Base, RepresentById):
         self.latest_form = form_definition
 
 
-class FormValues(RepresentById):
+class FormValues(Base, RepresentById):
+    __tablename__ = 'form_values'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    form_definition_id = Column('form_definition_id', Integer, ForeignKey('form_definition.id'), index=True)
+    content = Column('content', MutableJSONType)
+    form_definition = relationship(
+        'FormDefinition',
+        primaryjoin=('FormValues.form_definition_id == FormDefinition.id'))
+
     def __init__(self, form_def=None, content=None):
         self.form_definition = form_def
         self.content = content

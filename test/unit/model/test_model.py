@@ -206,7 +206,6 @@ def test_FormDefinition(model, session, form_definition_current):
         obj.fields = fields
         obj.type = type
         obj.layout = layout
-
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         obj.create_time = create_time
@@ -253,6 +252,31 @@ def test_FormDefinitionCurrent(model, session, form_definition):
         # test mapped relationships
         assert stored_obj.latest_form.id == form_definition.id
         assert stored_obj.forms == [form_definition]
+
+
+def test_FormValues(model, session, form_definition):
+    cls = model.FormValues
+    assert cls.__tablename__ == 'form_values'
+    with dbcleanup(session, cls):
+        content = 'a'
+        obj = cls()
+        obj.form_definition = form_definition
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.content = content
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
+        assert stored_obj.content == content
+        assert stored_obj.form_definition_id == form_definition.id
+        # test mapped relationships
+        assert stored_obj.form_definition.id == form_definition.id
 
 
 def test_GroupQuotaAssociation(model, session, group, quota):
