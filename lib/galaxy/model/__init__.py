@@ -6164,7 +6164,24 @@ class MetadataFile(StorableObject, RepresentById):
         return as_dict
 
 
-class FormDefinition(Dictifiable, RepresentById):
+class FormDefinition(Base, Dictifiable, RepresentById):
+    __tablename__ = 'form_definition'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    name = Column('name', TrimmedString(255), nullable=False)
+    desc = Column('desc', TEXT)
+    form_definition_current_id = Column('form_definition_current_id', Integer,
+        ForeignKey('form_definition_current.id', use_alter=True), index=True, nullable=False)
+    fields = Column('fields', MutableJSONType)
+    type = Column('type', TrimmedString(255), index=True)
+    layout = Column('layout', MutableJSONType)
+    form_definition_current = relationship(
+        'FormDefinitionCurrent',
+        back_populates='forms',
+        primaryjoin=('FormDefinitionCurrent.id == FormDefinition.form_definition_current_id'))
+
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField]
 
@@ -6217,13 +6234,11 @@ class FormDefinitionCurrent(Base, RepresentById):
     update_time = Column('update_time', DateTime, default=now, onupdate=now)
     latest_form_id = Column('latest_form_id', Integer, ForeignKey('form_definition.id'), index=True)
     deleted = Column('deleted', Boolean, index=True, default=False)
-
     forms = relationship(
         'FormDefinition',
         back_populates='form_definition_current',
         cascade='all, delete-orphan',
         primaryjoin=('FormDefinitionCurrent.id == FormDefinition.form_definition_current_id'))
-
     latest_form = relationship(
         'FormDefinition',
         post_update=True,
