@@ -196,7 +196,7 @@ def test_DynamicTool(model, session, workflow_step):
 
 def test_FormDefinition(model, session, form_definition_current):
     cls = model.FormDefinition
-    # assert cls.__tablename__ == 'form_definition'
+    assert cls.__tablename__ == 'form_definition'
     with dbcleanup(session, cls):
         name, desc, fields, type, layout = 'a', 'b', 'c', 'd', 'e'
         obj = cls()
