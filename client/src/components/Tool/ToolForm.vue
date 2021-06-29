@@ -201,7 +201,7 @@ export default {
     },
     methods: {
         emailAllowed(config, user) {
-            return config.server_mail_configured && !user.isAnonymous();
+            return config.server_mail_configured && !user.isAnonymous;
         },
         reuseAllowed(user) {
             if (
