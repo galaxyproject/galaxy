@@ -1017,14 +1017,6 @@ model.MetadataFile.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
 
-model.FormDefinitionCurrent.table = Table(
-    "form_definition_current", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("latest_form_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False))
-
 model.FormDefinition.table = Table(
     "form_definition", metadata,
     Column("id", Integer, primary_key=True),
@@ -1169,16 +1161,10 @@ mapper_registry.map_imperatively(model.FormValues, model.FormValues.table, prope
         primaryjoin=(model.FormValues.table.c.form_definition_id == model.FormDefinition.table.c.id))
 ))
 
-mapper_registry.map_imperatively(model.FormDefinition, model.FormDefinition.table)
-
-mapper_registry.map_imperatively(model.FormDefinitionCurrent, model.FormDefinitionCurrent.table, properties=dict(
-    forms=relation(model.FormDefinition,
-        backref='form_definition_current',
-        cascade="all, delete-orphan",
-        primaryjoin=(model.FormDefinitionCurrent.table.c.id == model.FormDefinition.table.c.form_definition_current_id)),
-    latest_form=relation(model.FormDefinition,
-        post_update=True,
-        primaryjoin=(model.FormDefinitionCurrent.table.c.latest_form_id == model.FormDefinition.table.c.id))
+mapper_registry.map_imperatively(model.FormDefinition, model.FormDefinition.table, properties=dict(
+    form_definition_current=relation(model.FormDefinitionCurrent,
+        back_populates='forms',
+        primaryjoin=(model.FormDefinitionCurrent.id == model.FormDefinition.table.c.form_definition_current_id)),
 ))
 
 simple_mapping(model.HistoryDatasetAssociation,
