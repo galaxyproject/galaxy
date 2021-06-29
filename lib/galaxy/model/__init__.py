@@ -6630,8 +6630,9 @@ class Page(Base, Dictifiable, RepresentById):
     users_shared_with = relationship(
         'PageUserShareAssociation',
         back_populates='page')
-    # `average_rating` added as column_property at the bottom of this module
+    # `average_rating` added at the bottom of this module
     # (cannot be added before PageRatingAssociation is defined)
+    average_rating: column_property
 
     dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted', 'username']
 
