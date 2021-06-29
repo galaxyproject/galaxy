@@ -49,7 +49,7 @@
                             help="Send an email notification when the job completes."
                             type="boolean"
                             value="false"
-                            @onChange="onChangeEmail"
+                            v-model="email"
                         />
                         <FormElement
                             v-if="remapAllowed"
@@ -58,7 +58,7 @@
                             :help="remapHelp"
                             type="boolean"
                             value="false"
-                            @onChange="onChangeRemap"
+                            @input="onChangeRemap"
                         />
                         <FormElement
                             v-if="reuseAllowed(user)"
@@ -67,7 +67,7 @@
                             help="This may skip executing jobs that you have already run."
                             type="boolean"
                             value="false"
-                            @onChange="onChangeReuse"
+                            v-model="reuse"
                         />
                     </template>
                     <template v-slot:buttons>
@@ -230,9 +230,6 @@ export default {
         },
         onChangeVersion(newVersion) {
             this.requestTool(newVersion);
-        },
-        onChangeEmail(email) {
-            this.email = email;
         },
         onChangeRemap(remap) {
             this.remap = remap ? this.job_id : null;

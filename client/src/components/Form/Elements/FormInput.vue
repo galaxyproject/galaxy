@@ -1,6 +1,6 @@
 <template>
-    <textarea v-if="area" class="ui-input" v-model="currentValue" @input="onChange" @change="onChange" />
-    <input v-else class="ui-input" v-model="currentValue" @input="onChange" @change="onChange" />
+    <textarea v-if="area" class="ui-input" v-model="currentValue" />
+    <input v-else class="ui-input" v-model="currentValue" />
 </template>
 <script>
 export default {
@@ -18,19 +18,14 @@ export default {
             default: false,
         },
     },
-    data() {
-        return {
-            currentValue: this.value,
-        };
-    },
-    watch: {
-        value(newValue) {
-            this.currentValue = newValue;
-        },
-    },
-    methods: {
-        onChange() {
-            this.$emit("onChange", this.currentValue);
+    computed: {
+        currentValue: {
+            get() {
+                return this.value;
+            },
+            set(val) {
+                this.$emit("input", val);
+            },
         },
     },
 };

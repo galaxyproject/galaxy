@@ -6,8 +6,8 @@
         </div>
         <div class="ui-form-title">{{ title }}</div>
         <div class="ui-form-field">
-            <FormInput v-if="type == 'text'" :id="id" :value="value" :area="area" @onChange="onChange" />
-            <FormBoolean v-else-if="type == 'boolean'" :id="id" :value="value" @onChange="onChange" />
+            <FormInput v-if="type == 'text'" :id="id" :area="area" v-model="currentValue" />
+            <FormBoolean v-else-if="type == 'boolean'" :id="id" v-model="currentValue" />
             <span class="ui-form-info form-text text-muted mt-2">{{ help }}</span>
         </div>
     </div>
@@ -52,6 +52,18 @@ export default {
         },
     },
     computed: {
+        currentValue: {
+            get() {
+                if (this.type === "boolean") {
+                    return typeof this.value == "boolean" ? this.value : this.value === "true";
+                } else {
+                    return this.value;
+                }
+            },
+            set(val) {
+                this.$emit("input", val);
+            },
+        },
         hasError() {
             return !!this.error;
         },
@@ -61,11 +73,6 @@ export default {
             } else {
                 return "ui-form-element section-row";
             }
-        },
-    },
-    methods: {
-        onChange(value) {
-            this.$emit("onChange", value);
         },
     },
 };
