@@ -9,11 +9,10 @@
         <configfile name="ext_config">{"output1": {
   "name": "${input1.name[0:-len('.bz2')] if $input1.name.endswith('.bz2') else $input1.name} uncompressed",
   "ext": "${input1.ext[0:-len('.bz2')]}"
-}}
-    </configfile>
+}}</configfile>
     </configfiles>
     <inputs>
-        <param format="data" name="input1" type="data" label="Choose compressed file"/>
+        <param name="input1" type="data" format="data" label="Choose compressed file"/>
     </inputs>
     <outputs>
         <!-- auto doesn't sniff - it defers to galaxy.json in this context. -->
@@ -23,12 +22,12 @@
         <test>
             <param name="input1" value="1.fastqsanger.bz2"/>
             <output name="output1" ftype="fastqsanger">
-              <assert_contents>
-                <has_text text="@1831_573_1004/1"/>
-              </assert_contents>
+                <assert_contents>
+                    <has_text text="@1831_573_1004/1"/>
+                </assert_contents>
             </output>
         </test>
     </tests>
-  <help>
-  </help>
+    <help>
+    </help>
 </tool>
