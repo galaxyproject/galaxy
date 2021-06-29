@@ -19,6 +19,7 @@ from galaxy.managers import (
     sharable,
     users,
 )
+from galaxy.schema import FilterQueryParams
 from galaxy.schema.schema import (
     CreateHistoryPayload,
     ExportHistoryArchivePayload,
@@ -274,19 +275,9 @@ class HistoriesController(BaseGalaxyAPIController):
 
         Follows the same filtering logic as the index() method above.
         """
-        current_user = trans.user
-        limit, offset = self.parse_limit_offset(kwd)
-        filter_params = self.parse_filter_params(kwd)
-        filters = self.filters.parse_filters(filter_params)
-        order_by = self._parse_order_by(manager=self.manager, order_by_string=kwd.get('order', 'create_time-dsc'))
-        histories = self.manager.list_shared_with(current_user,
-            filters=filters, order_by=order_by, limit=limit, offset=offset)
-        rval = []
-        for history in histories:
-            history_dict = self.serializer.serialize_to_view(history, user=current_user, trans=trans,
-                **self._parse_serialization_params(kwd, 'summary'))
-            rval.append(history_dict)
-        return rval
+        serialization_params = parse_serialization_params(**kwd)
+        filter_parameters = FilterQueryParams(**kwd)
+        return self.service.shared_with_me(trans, serialization_params, filter_parameters)
 
     @expose_api_anonymous
     def create(self, trans, payload, **kwd):

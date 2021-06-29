@@ -28,9 +28,13 @@ from galaxy.managers import (
     history_contents,
     sharable
 )
-from galaxy.managers.base import ServiceBase
+from galaxy.managers.base import (
+    ServiceBase,
+    SortableManager,
+)
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.users import UserManager
+from galaxy.schema import FilterQueryParams
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateHistoryPayload,
@@ -52,7 +56,7 @@ from galaxy.util import restore_text
 log = logging.getLogger(__name__)
 
 
-class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin):
+class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
 
     model_class = model.History
     foreign_key_name = 'history'
@@ -561,7 +565,8 @@ class HistoriesService(ServiceBase):
         serializer: HistorySerializer,
         deserializer: HistoryDeserializer,
         citations_manager: CitationsManager,
-        history_export_view: HistoryExportView
+        history_export_view: HistoryExportView,
+        filters: HistoryFilters,
     ):
         self.app = app
         self.manager = manager
@@ -570,6 +575,7 @@ class HistoriesService(ServiceBase):
         self.deserializer = deserializer
         self.citations_manager = citations_manager
         self.history_export_view = history_export_view
+        self.filters = filters
         self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
 
     # TODO: add the rest of the API actions here and call them directly from the API controller
@@ -738,6 +744,24 @@ class HistoriesService(ServiceBase):
         history = self.manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         self.manager.undelete(history)
         return self._serialize_history(trans, history, serialization_params)
+
+    def shared_with_me(
+        self,
+        trans,
+        serialization_params: SerializationParams,
+        filter_query_params: FilterQueryParams,
+    ):
+        """
+        Return all histories that are shared with the current user. The results can be filtered.
+        """
+        current_user = trans.user
+        filters = self.filters.parse_query_filters(filter_query_params)
+        order_by = self.build_order_by(self.manager, filter_query_params.order)
+        histories = self.manager.list_shared_with(current_user,
+            filters=filters, order_by=order_by,
+            limit=filter_query_params.limit, offset=filter_query_params.offset)
+        rval = [self._serialize_history(trans, history, serialization_params, default_view="summary") for history in histories]
+        return rval
 
     def citations(self, trans, history_id):
         """
