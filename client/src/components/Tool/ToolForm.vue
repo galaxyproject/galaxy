@@ -205,11 +205,10 @@ export default {
         },
         reuseAllowed(user) {
             if (
-                user.attributes &&
-                user.attributes.preferences &&
-                "extra_user_preferences" in user.attributes.preferences
+                user.preferences &&
+                "extra_user_preferences" in user.preferences
             ) {
-                const extra_user_preferences = JSON.parse(user.attributes.preferences.extra_user_preferences);
+                const extra_user_preferences = JSON.parse(user.preferences.extra_user_preferences);
                 const keyCached = "use_cached_job|use_cached_job_checkbox";
                 const hasCachedJobs = keyCached in extra_user_preferences;
                 return hasCachedJobs ? extra_user_preferences[keyCached] : false;
