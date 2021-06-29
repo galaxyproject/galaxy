@@ -20,11 +20,7 @@
     <tests>
         <test>
             <param name="input1" ftype="encodepeak" value="encode.broad.peak"/>
-            <output name="output1" ftype="bgzip" decompress="true">
-                <assert_contents>
-                    <has_text text="798256"/>
-                </assert_contents>
-            </output>
+            <output name="output1" ftype="bgzip" decompress="true" md5="56df80a4b19f3e86b2a0ccffc803134e"/>
         </test>
     </tests>
     <help>
