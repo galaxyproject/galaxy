@@ -550,7 +550,7 @@ def test_Page(
         page_user_share_association,
 ):
     cls = model.Page
-    #assert cls.__tablename__ == 'page_annotation_association'
+    assert cls.__tablename__ == 'page'
     assert has_index(cls.__table__, ('slug',))
     with dbcleanup(session, cls):
         title, deleted, importable, slug, published = 'a', True, True, 'b', True
@@ -586,7 +586,7 @@ def test_Page(
         assert stored_obj.importable == importable
         assert stored_obj.slug == slug
         assert stored_obj.published == published
-        # This doesn't test the average; need to use multiple ratings for that.
+        # This doesn't test the average amount, just the mapping.
         assert stored_obj.average_rating == page_rating_association.rating
         # test mapped relationships
         assert stored_obj.user.id == user.id
@@ -596,6 +596,21 @@ def test_Page(
         assert stored_obj.annotations == [page_annotation_association]
         assert stored_obj.ratings == [page_rating_association]
         assert stored_obj.users_shared_with == [page_user_share_association]
+
+
+def test_Page_average_rating(model, session, page, user):
+    cls = model.PageRatingAssociation
+    with dbcleanup(session, cls):
+        # Page has been expunged; to access its deferred properties,
+        # it needs to be added back to the session.
+        session.add(page)
+        assert page.average_rating is None  # With no ratings, we expect None.
+        # Create ratings
+        for rating in (1, 2, 3, 4, 5):
+            r = cls(user, page)
+            r.rating = rating
+            persist(session, r)
+        assert page.average_rating == 3.0  # Expect average after ratings added.
 
 
 def test_PageAnnotationAssociation(model, session, page, user):
@@ -664,6 +679,8 @@ def test_PageRevision(model, session, page):
         assert stored_obj.title == title
         assert stored_obj.content == content
         assert stored_obj.content_format == model.PageRevision.DEFAULT_CONTENT_FORMAT
+        # test mapped relationships
+        assert stored_obj.page.id == page.id
 
 
 def test_PageTagAssociation(model, session, page, tag, user):
