@@ -539,6 +539,65 @@ def test_LibraryDatasetDatasetAssociationTagAssociation(
         assert stored_obj.user.id == user.id
 
 
+def test_Page(
+        model,
+        session,
+        user,
+        page_revision,
+        page_tag_association,
+        page_annotation_association,
+        page_rating_association,
+        page_user_share_association,
+):
+    cls = model.Page
+    #assert cls.__tablename__ == 'page_annotation_association'
+    assert has_index(cls.__table__, ('slug',))
+    with dbcleanup(session, cls):
+        title, deleted, importable, slug, published = 'a', True, True, 'b', True
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj = cls()
+        obj.user = user
+        obj.title = title
+        obj.deleted = deleted
+        obj.importable = importable
+        obj.slug = slug
+        obj.published = published
+        obj.create_time = create_time
+        obj.update_time = update_time
+        # This is OK for this test; however, page_revision.page != obj. Can we do better?
+        obj.latest_revision = page_revision
+        obj.revisions.append(page_revision)
+        obj.tags.append(page_tag_association)
+        obj.annotations.append(page_annotation_association)
+        obj.ratings.append(page_rating_association)
+        obj.users_shared_with.append(page_user_share_association)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
+        assert stored_obj.user_id == user.id
+        assert stored_obj.latest_revision_id == page_revision.id
+        assert stored_obj.title == title
+        assert stored_obj.deleted == deleted
+        assert stored_obj.importable == importable
+        assert stored_obj.slug == slug
+        assert stored_obj.published == published
+        # This doesn't test the average; need to use multiple ratings for that.
+        assert stored_obj.average_rating == page_rating_association.rating
+        # test mapped relationships
+        assert stored_obj.user.id == user.id
+        assert stored_obj.revisions == [page_revision]
+        assert stored_obj.latest_revision.id == page_revision.id
+        assert stored_obj.tags == [page_tag_association]
+        assert stored_obj.annotations == [page_annotation_association]
+        assert stored_obj.ratings == [page_rating_association]
+        assert stored_obj.users_shared_with == [page_user_share_association]
+
+
 def test_PageAnnotationAssociation(model, session, page, user):
     cls = model.PageAnnotationAssociation
     assert cls.__tablename__ == 'page_annotation_association'
@@ -945,7 +1004,7 @@ def test_ToolTagAssociation(model, session, tag, user):
         assert stored_obj.user.id == user.id
 
 
-def testUserAction(model, session, user, galaxy_session):
+def test_UserAction(model, session, user, galaxy_session):
     cls = model.UserAction
     assert cls.__tablename__ == 'user_action'
     with dbcleanup(session, cls):
@@ -1365,9 +1424,34 @@ def page(model, session, user):
 
 
 @pytest.fixture
+def page_revision(model, session, page):
+    pr = model.PageRevision()
+    pr.page = page
+    yield from dbcleanup_wrapper(session, pr)
+
+
+@pytest.fixture
+def page_annotation_association(model, session):
+    paa = model.PageAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, paa)
+
+
+@pytest.fixture
+def page_rating_association(model, session):
+    pra = model.PageRatingAssociation(None, None)
+    yield from dbcleanup_wrapper(session, pra)
+
+
+@pytest.fixture
 def page_tag_association(model, session):
     pta = model.PageTagAssociation()
     yield from dbcleanup_wrapper(session, pta)
+
+
+@pytest.fixture
+def page_user_share_association(model, session):
+    pra = model.PageUserShareAssociation()
+    yield from dbcleanup_wrapper(session, pra)
 
 
 @pytest.fixture
