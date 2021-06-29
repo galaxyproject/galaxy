@@ -1045,22 +1045,6 @@ model.FormValues.table = Table(
     Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
     Column("content", MutableJSONType))
 
-model.Page.table = Table(
-    "page", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=False),
-    Column("latest_revision_id", Integer,
-        ForeignKey("page_revision.id", use_alter=True, name='page_latest_revision_id_fk'), index=True),
-    Column("title", TEXT),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("importable", Boolean, index=True, default=False),
-    Column("slug", TEXT),
-    Column("published", Boolean, index=True, default=False),
-    Index('ix_page_slug', 'slug', mysql_length=200),
-)
-
 model.Visualization.table = Table(
     "visualization", metadata,
     Column("id", Integer, primary_key=True),
@@ -1408,6 +1392,7 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     api_keys=relation(model.APIKeys,
         back_populates="user",
         order_by=desc(model.APIKeys.create_time)),
+    pages=relation(model.Page, back_populates='user'),
 ))
 
 mapper_registry.map_imperatively(model.PasswordResetToken, model.PasswordResetToken.table,
@@ -2041,33 +2026,6 @@ simple_mapping(
     workflow_invocation_step=relation(model.WorkflowInvocationStep, backref="output_dataset_collections"),
     dataset_collection=relation(model.HistoryDatasetCollectionAssociation),
 )
-
-
-mapper_registry.map_imperatively(model.Page, model.Page.table, properties=dict(
-    user=relation(model.User),
-    revisions=relation(model.PageRevision,
-        backref='page',
-        cascade="all, delete-orphan",
-        primaryjoin=(model.Page.table.c.id == model.PageRevision.page_id)),
-    latest_revision=relation(model.PageRevision,
-        post_update=True,
-        primaryjoin=(model.Page.table.c.latest_revision_id == model.PageRevision.id),
-        lazy=False),
-    tags=relation(model.PageTagAssociation,
-        order_by=model.PageTagAssociation.id,
-        back_populates="page"),
-    annotations=relation(model.PageAnnotationAssociation,
-        order_by=model.PageAnnotationAssociation.id,
-        back_populates="page"),
-    ratings=relation(model.PageRatingAssociation,
-        order_by=model.PageRatingAssociation.id,
-        back_populates="page"),
-    average_rating=column_property(
-        select(func.avg(model.PageRatingAssociation.rating)).where(model.PageRatingAssociation.page_id == model.Page.table.c.id).scalar_subquery(),
-        deferred=True
-    ),
-    users_shared_with=relation(model.PageUserShareAssociation, back_populates='page')
-))
 
 # Set up proxy so that
 #   Page.users_shared_with

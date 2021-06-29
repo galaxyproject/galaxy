@@ -62,6 +62,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import (
     aliased,
+    column_property,
     joinedload,
     object_session,
     Query,
@@ -6586,8 +6587,52 @@ class CloudAuthz(Base, _HasTable):
                          and self.config[k] == config[k]}) == len(self.config))
 
 
-class Page(Dictifiable, RepresentById):
-    # username needed for slug generation
+class Page(Base, Dictifiable, RepresentById):
+    __tablename__ = 'page'
+    __table_args__ = (
+        Index('ix_page_slug', 'slug', mysql_length=200),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True, nullable=False)
+    latest_revision_id = Column('latest_revision_id', Integer,
+        ForeignKey('page_revision.id', use_alter=True, name='page_latest_revision_id_fk'), index=True)
+    title = Column('title', TEXT)
+    deleted = Column('deleted', Boolean, index=True, default=False)
+    importable = Column('importable', Boolean, index=True, default=False)
+    slug = Column('slug', TEXT)
+    published = Column('published', Boolean, index=True, default=False)
+    user = relationship('User', back_populates='pages')
+    revisions = relationship(
+        'PageRevision',
+        cascade="all, delete-orphan",
+        primaryjoin=('Page.id == PageRevision.page_id'),
+        back_populates='page')
+    latest_revision = relationship(
+        'PageRevision',
+        post_update=True,
+        primaryjoin=('Page.latest_revision_id == PageRevision.id'),
+        lazy=False)
+    tags = relationship(
+        'PageTagAssociation',
+        order_by='PageTagAssociation.id',
+        back_populates='page')
+    annotations = relationship(
+        'PageAnnotationAssociation',
+        order_by='PageAnnotationAssociation.id',
+        back_populates='page')
+    ratings = relationship(
+        'PageRatingAssociation',
+        order_by='PageRatingAssociation.id',
+        back_populates='page')
+    users_shared_with = relationship(
+        'PageUserShareAssociation',
+        back_populates='page')
+    # `average_rating` added as column_property at the bottom of this module
+    # (cannot be added before PageRatingAssociation is defined)
+
     dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted', 'username']
 
     def __init__(self):
@@ -6608,6 +6653,7 @@ class Page(Dictifiable, RepresentById):
         rval['revision_ids'] = rev
         return rval
 
+    # username needed for slug generation
     @property
     def username(self):
         return self.user.username
@@ -6623,7 +6669,9 @@ class PageRevision(Base, Dictifiable, RepresentById):
     title = Column('title', TEXT)
     content = Column('content', TEXT)
     content_format = Column('content_format', TrimmedString(32))
-
+    page = relationship(
+        'Page',
+        primaryjoin=('Page.id == PageRevision.page_id'))
     DEFAULT_CONTENT_FORMAT = 'html'
     dict_element_visible_keys = ['id', 'page_id', 'title', 'content', 'content_format']
 
@@ -7258,3 +7306,10 @@ def _prepare_metadata_for_serialization(id_encoder, serialization_options, metad
         processed_metadata[name] = value
 
     return processed_metadata
+
+
+# This must be defined after PageRatingAssociation has been mapped
+Page.average_rating = column_property(
+    select(func.avg(PageRatingAssociation.rating)).where(PageRatingAssociation.page_id == Page.id).scalar_subquery(),
+    deferred=True
+)
