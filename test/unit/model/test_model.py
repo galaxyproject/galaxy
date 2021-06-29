@@ -12,7 +12,7 @@ from sqlalchemy import (
 import galaxy.model.mapping as mapping
 
 
-def testAPIKeys(model, session, user):
+def test_APIKeys(model, session, user):
     cls = model.APIKeys
     assert cls.__tablename__ == 'api_keys'
     with dbcleanup(session, cls):
@@ -192,6 +192,67 @@ def test_DynamicTool(model, session, workflow_step):
         assert stored_obj.value == value
         # test mapped relationships
         assert workflow_step in stored_obj.workflow_steps
+
+
+def test_FormDefinition(model, session, form_definition_current):
+    cls = model.FormDefinition
+    # assert cls.__tablename__ == 'form_definition'
+    with dbcleanup(session, cls):
+        name, desc, fields, type, layout = 'a', 'b', 'c', 'd', 'e'
+        obj = cls()
+        obj.name = name
+        obj.desc = desc
+        obj.form_definition_current = form_definition_current
+        obj.fields = fields
+        obj.type = type
+        obj.layout = layout
+
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
+        assert stored_obj.name == name
+        assert stored_obj.desc == desc
+        assert stored_obj.form_definition_current_id == form_definition_current.id
+        assert stored_obj.fields == fields
+        assert stored_obj.type == type
+        assert stored_obj.layout == layout
+        # test mapped relationships
+        assert stored_obj.form_definition_current.id == form_definition_current.id
+
+
+def test_FormDefinitionCurrent(model, session, form_definition):
+    cls = model.FormDefinitionCurrent
+    assert cls.__tablename__ == 'form_definition_current'
+    with dbcleanup(session, cls):
+        obj = cls()
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        deleted = True
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.latest_form = form_definition
+        obj.deleted = deleted
+        obj.forms.append(form_definition)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
+        assert stored_obj.latest_form_id == form_definition.id
+        assert stored_obj.deleted == deleted
+        # test mapped relationships
+        assert stored_obj.latest_form.id == form_definition.id
+        assert stored_obj.forms == [form_definition]
 
 
 def test_GroupQuotaAssociation(model, session, group, quota):
@@ -1350,15 +1411,39 @@ def default_quota_association(model, session, quota):
 
 
 @pytest.fixture
-def group_role_association(model, session):
-    gra = model.GroupRoleAssociation(None, None)
-    yield from dbcleanup_wrapper(session, gra)
+def form_definition(model, session, form_definition_current):
+    fd = model.FormDefinition(name='a', form_definition_current=form_definition_current)
+    yield from dbcleanup_wrapper(session, fd)
+
+
+@pytest.fixture
+def form_definition_current(model, session):
+    fdc = model.FormDefinitionCurrent()
+    yield from dbcleanup_wrapper(session, fdc)
+
+
+@pytest.fixture
+def galaxy_session(model, session, user):
+    s = model.GalaxySession()
+    yield from dbcleanup_wrapper(session, s)
+
+
+@pytest.fixture
+def group(model, session):
+    g = model.Group()
+    yield from dbcleanup_wrapper(session, g)
 
 
 @pytest.fixture
 def group_quota_association(model, session):
     gqa = model.GroupQuotaAssociation(None, None)
     yield from dbcleanup_wrapper(session, gqa)
+
+
+@pytest.fixture
+def group_role_association(model, session):
+    gra = model.GroupRoleAssociation(None, None)
+    yield from dbcleanup_wrapper(session, gra)
 
 
 @pytest.fixture
@@ -1395,18 +1480,6 @@ def history_dataset_collection_tag_association(model, session):
 def history_tag_association(model, session):
     hta = model.HistoryTagAssociation()
     yield from dbcleanup_wrapper(session, hta)
-
-
-@pytest.fixture
-def galaxy_session(model, session, user):
-    s = model.GalaxySession()
-    yield from dbcleanup_wrapper(session, s)
-
-
-@pytest.fixture
-def group(model, session):
-    g = model.Group()
-    yield from dbcleanup_wrapper(session, g)
 
 
 @pytest.fixture

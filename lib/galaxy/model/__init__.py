@@ -6209,7 +6209,26 @@ class FormDefinition(Dictifiable, RepresentById):
         return gridfields
 
 
-class FormDefinitionCurrent(RepresentById):
+class FormDefinitionCurrent(Base, RepresentById):
+    __tablename__ = 'form_definition_current'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    latest_form_id = Column('latest_form_id', Integer, ForeignKey('form_definition.id'), index=True)
+    deleted = Column('deleted', Boolean, index=True, default=False)
+
+    forms = relationship(
+        'FormDefinition',
+        back_populates='form_definition_current',
+        cascade='all, delete-orphan',
+        primaryjoin=('FormDefinitionCurrent.id == FormDefinition.form_definition_current_id'))
+
+    latest_form = relationship(
+        'FormDefinition',
+        post_update=True,
+        primaryjoin=('FormDefinitionCurrent.latest_form_id == model.FormDefinition.id'))
+
     def __init__(self, form_definition=None):
         self.latest_form = form_definition
 
