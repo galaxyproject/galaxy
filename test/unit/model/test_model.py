@@ -325,6 +325,24 @@ def test_GroupRoleAssociation(model, session, group, role):
         assert stored_obj.role.id == role.id
 
 
+def test_HistoryAudit(model, session, history):
+    cls = model.HistoryAudit
+    # TODO: assert cls.__tablename__ == 'history_audit'
+    # TODO: assert pkey constraint
+    with dbcleanup(session, cls):
+        update_time = datetime.now()
+        obj = cls(history, update_time)
+        persist(session, obj, return_id=False)
+
+        stmt = select(cls).where(cls.history_id == history.id, cls.update_time == update_time)
+        stored_obj = get_stored_obj(session, cls, stmt=stmt)
+        # test mapped columns
+        assert stored_obj.history_id == history.id
+        assert stored_obj.update_time == update_time
+        # test mapped relationships
+        assert stored_obj.history.id == history.id
+
+
 def test_HistoryAnnotationAssociation(model, session, history, user):
     cls = model.HistoryAnnotationAssociation
     assert cls.__tablename__ == 'history_annotation_association'
@@ -1672,10 +1690,10 @@ def dbcleanup_wrapper(session, obj):
         yield obj
 
 
-def persist(session, obj):
+def persist(session, obj, return_id=True):
     session.add(obj)
     session.flush()
-    obj_id = obj.id
+    obj_id = obj.id if return_id else None  # save this before obj is expunged
     # Remove from session, so that on a subsequent load we get a *new* obj from the db
     session.expunge(obj)
     return obj_id
@@ -1696,8 +1714,11 @@ def has_index(table, fields):
             return True
 
 
-def get_stored_obj(session, cls, obj_id):
-    stmt = select(cls).filter(cls.id == obj_id)
+def get_stored_obj(session, cls, obj_id=None, stmt=None):
+    # Either obj_id or stmt must be provided, but not both
+    assert bool(obj_id) ^ (stmt is not None)
+    if stmt is None:
+        stmt = select(cls).where(cls.id == obj_id)
     return session.execute(stmt).scalar_one()
 
 
