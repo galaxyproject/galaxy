@@ -763,6 +763,24 @@ class HistoriesService(ServiceBase):
         rval = [self._serialize_history(trans, history, serialization_params, default_view="summary") for history in histories]
         return rval
 
+    def published(
+        self,
+        trans,
+        serialization_params: SerializationParams,
+        filter_query_params: FilterQueryParams,
+    ):
+        """
+        Return all histories that are published. The results can be filtered.
+        """
+        filters = self.filters.parse_query_filters(filter_query_params)
+        order_by = self.build_order_by(self.manager, filter_query_params.order)
+        histories = self.manager.list_published(
+            filters=filters, order_by=order_by,
+            limit=filter_query_params.limit, offset=filter_query_params.offset,
+        )
+        rval = [self._serialize_history(trans, history, serialization_params, default_view="summary") for history in histories]
+        return rval
+
     def citations(self, trans, history_id):
         """
         Return all the citations for the tools used to produce the datasets in
