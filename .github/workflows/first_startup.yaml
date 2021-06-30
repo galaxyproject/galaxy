@@ -1,5 +1,7 @@
 name: first startup
 on: [push, pull_request]
+env:
+  YARN_INSTALL_OPTS: --frozen-lockfile
 jobs:
 
   test:

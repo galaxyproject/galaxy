@@ -6,6 +6,7 @@ env:
   GALAXY_TEST_SELENIUM_REMOTE_PORT: "4444"
   GALAXY_SKIP_CLIENT_BUILD: '0'
   GALAXY_TEST_SELENIUM_RETRIES: 1
+  YARN_INSTALL_OPTS: --frozen-lockfile
 jobs:
   test:
     name: Test

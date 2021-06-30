@@ -15,7 +15,7 @@ jobs:
     - uses: mvdbeek/gha-yarn-cache@master
       with:
         yarn-lock-file: 'client/yarn.lock'
-    - run: yarn install
+    - run: yarn install --frozen-lockfile
       working-directory: client
     - run: yarn jest
       working-directory: client
