@@ -20,7 +20,7 @@ export async function updateToolFormData(tool_id, tool_version, inputs) {
 /** Tools data request helper **/
 export async function getToolFormData(tool_id, tool_version, job_id, history_id) {
     let url = "";
-    let data = {};
+    const data = {};
 
     // build request url and collect request data
     if (job_id) {

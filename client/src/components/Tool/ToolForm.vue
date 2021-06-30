@@ -87,7 +87,6 @@
 
 <script>
 import Scroller from "vue-scrollto";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import ToolCard from "./ToolCard";
@@ -251,7 +250,6 @@ export default {
                 return;
             }
             this.showExecuting = true;
-            const options = this.formData;
             const Galaxy = getGalaxyInstance();
             const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
             const jobDef = {

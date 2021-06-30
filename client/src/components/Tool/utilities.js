@@ -1,4 +1,3 @@
-import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { copy } from "utils/clipboard";
 
