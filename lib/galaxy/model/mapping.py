@@ -21,7 +21,6 @@ from sqlalchemy import (
     Integer,
     not_,
     Numeric,
-    PrimaryKeyConstraint,
     select,
     String, Table,
     TEXT,
@@ -97,17 +96,6 @@ model.History.table = Table(
     Column("published", Boolean, index=True, default=False),
     Index('ix_history_slug', 'slug', mysql_length=200),
 )
-
-model.HistoryAudit.table = Table(
-    "history_audit", metadata,
-    Column("history_id", Integer, ForeignKey("history.id"), primary_key=True, nullable=False),
-    Column("update_time", DateTime, default=now, primary_key=True, nullable=False),
-    PrimaryKeyConstraint(sqlite_on_conflict='IGNORE')
-)
-
-# Add this temporarily as a bug fix (class was unmapped); remove upon remapping declaratively
-mapper_registry.map_imperatively(model.HistoryAudit, model.HistoryAudit.table, properties=dict(
-    history=relation(model.History)))
 
 model.HistoryUserShareAssociation.table = Table(
     "history_user_share_association", metadata,
@@ -1296,7 +1284,7 @@ mapper_registry.map_imperatively(model.History, model.History.table, properties=
         deferred=True
     ),
     update_time=column_property(
-        select(func.max(model.HistoryAudit.table.c.update_time)).where(model.HistoryAudit.table.c.history_id == model.History.table.c.id).scalar_subquery(),
+        select(func.max(model.HistoryAudit.update_time)).where(model.HistoryAudit.history_id == model.History.table.c.id).scalar_subquery(),
     ),
 ))
 
