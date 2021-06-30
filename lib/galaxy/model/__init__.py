@@ -2906,8 +2906,15 @@ class Dataset(StorableObject, RepresentById, _HasTable):
         return rval
 
 
-class DatasetSource(RepresentById):
-    """ """
+class DatasetSource(Base, RepresentById):
+    __tablename__ = 'dataset_source'
+
+    id = Column('id', Integer, primary_key=True)
+    dataset_id = Column('dataset_id', Integer, ForeignKey('dataset.id'), index=True)
+    source_uri = Column("source_uri", TEXT)
+    extra_files_path = Column("extra_files_path", TEXT)
+    transform = Column("transform", MutableJSONType)
+    dataset = relationship('Dataset', back_populates='sources')
 
 
 class DatasetSourceHash(RepresentById):

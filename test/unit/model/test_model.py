@@ -110,6 +110,29 @@ def test_DatasetHash(model, session, dataset):
         assert stored_obj.dataset.id == dataset.id
 
 
+def test_DatasetSource(model, session, dataset):
+    cls = model.DatasetSource
+    assert cls.__tablename__ == 'dataset_source'
+    with dbcleanup(session, cls):
+        source_uri, extra_files_path, transform = 'a', 'b', 'c'
+        obj = cls()
+        obj.dataset = dataset
+        obj.source_uri = source_uri
+        obj.extra_files_path = extra_files_path
+        obj.transform = transform
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.dataset_id == dataset.id
+        assert stored_obj.source_uri == source_uri
+        assert stored_obj.extra_files_path == extra_files_path
+        assert stored_obj.transform == transform
+        # test mapped relationships
+        assert stored_obj.dataset.id == dataset.id
+
+
 def test_DatasetPermissions(model, session, dataset, role):
     cls = model.DatasetPermissions
     assert cls.__tablename__ == 'dataset_permissions'
