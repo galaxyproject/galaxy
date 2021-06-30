@@ -90,7 +90,6 @@ import Scroller from "vue-scrollto";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
-import { send } from "./utilities";
 import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import CurrentUser from "components/providers/CurrentUser";
@@ -261,10 +260,6 @@ export default {
                 tool_version: this.formConfig.version,
                 inputs: this.formData,
             };
-            if (this.formConfig.action !== `${getAppRoot()}tool_runner/index`) {
-                send(options, jobDef);
-                return;
-            }
             Galaxy.emit.debug("tool-form::submit()", "Validation complete.", jobDef);
             submitJob(jobDef).then(
                 (jobResponse) => {
