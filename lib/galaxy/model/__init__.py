@@ -2915,10 +2915,17 @@ class DatasetSource(Base, RepresentById):
     extra_files_path = Column("extra_files_path", TEXT)
     transform = Column("transform", MutableJSONType)
     dataset = relationship('Dataset', back_populates='sources')
+    hashes = relationship('DatasetSourceHash', back_populates='source')
 
 
-class DatasetSourceHash(RepresentById):
-    """ """
+class DatasetSourceHash(Base, RepresentById):
+    __tablename__ = 'dataset_source_hash'
+
+    id = Column('id', Integer, primary_key=True)
+    dataset_source_id = Column('dataset_source_id', Integer, ForeignKey('dataset_source.id'), index=True)
+    hash_function = Column('hash_function', TEXT)
+    hash_value = Column('hash_value', TEXT)
+    source = relationship('DatasetSource', back_populates='hashes')
 
 
 class DatasetHash(Base, RepresentById):

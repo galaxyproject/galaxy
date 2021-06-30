@@ -161,14 +161,6 @@ model.Dataset.table = Table(
     Column('total_size', Numeric(15, 0)),
     Column('uuid', UUIDType()))
 
-model.DatasetSourceHash.table = Table(
-    "dataset_source_hash", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("dataset_source_id", Integer, ForeignKey("dataset_source.id"), index=True),
-    Column("hash_function", TEXT),
-    Column("hash_value", TEXT)
-)
-
 # hda read access permission given by a user to a specific site (gen. for external display applications)
 model.HistoryDatasetAssociationDisplayAtAuthorization.table = Table(
     "history_dataset_association_display_at_authorization", metadata,
@@ -1162,10 +1154,6 @@ simple_mapping(model.Dataset,
     hashes=relation(model.DatasetHash, back_populates='dataset'),
     sources=relation(model.DatasetSource, back_populates='dataset'),
 )
-
-mapper_registry.map_imperatively(model.DatasetSourceHash, model.DatasetSourceHash.table, properties=dict(
-    source=relation(model.DatasetSource, backref='hashes')
-))
 
 mapper_registry.map_imperatively(model.HistoryDatasetAssociationHistory, model.HistoryDatasetAssociationHistory.table)
 

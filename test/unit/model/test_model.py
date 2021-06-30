@@ -110,7 +110,7 @@ def test_DatasetHash(model, session, dataset):
         assert stored_obj.dataset.id == dataset.id
 
 
-def test_DatasetSource(model, session, dataset):
+def test_DatasetSource(model, session, dataset, dataset_source_hash):
     cls = model.DatasetSource
     assert cls.__tablename__ == 'dataset_source'
     with dbcleanup(session, cls):
@@ -120,6 +120,7 @@ def test_DatasetSource(model, session, dataset):
         obj.source_uri = source_uri
         obj.extra_files_path = extra_files_path
         obj.transform = transform
+        obj.hashes.append(dataset_source_hash)
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
@@ -131,6 +132,28 @@ def test_DatasetSource(model, session, dataset):
         assert stored_obj.transform == transform
         # test mapped relationships
         assert stored_obj.dataset.id == dataset.id
+        assert stored_obj.hashes == [dataset_source_hash]
+
+
+def test_DatasetSourceHash(model, session, dataset_source):
+    cls = model.DatasetSourceHash
+    assert cls.__tablename__ == 'dataset_source_hash'
+    with dbcleanup(session, cls):
+        hash_function, hash_value = 'a', 'b'
+        obj = cls()
+        obj.source = dataset_source
+        obj.hash_function = hash_function
+        obj.hash_value = hash_value
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.dataset_source_id == dataset_source.id
+        assert stored_obj.hash_function == hash_function
+        assert stored_obj.hash_value == hash_value
+        # test mapped relationships
+        assert stored_obj.source.id == dataset_source.id
 
 
 def test_DatasetPermissions(model, session, dataset, role):
@@ -1506,6 +1529,18 @@ def dataset(model, session):
 @pytest.fixture
 def dataset_permission(model, session, dataset):
     d = model.DatasetPermissions('a', dataset)
+    yield from dbcleanup_wrapper(session, d)
+
+
+@pytest.fixture
+def dataset_source(model, session):
+    d = model.DatasetSource()
+    yield from dbcleanup_wrapper(session, d)
+
+
+@pytest.fixture
+def dataset_source_hash(model, session):
+    d = model.DatasetSourceHash()
     yield from dbcleanup_wrapper(session, d)
 
 
