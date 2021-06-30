@@ -161,15 +161,6 @@ model.Dataset.table = Table(
     Column('total_size', Numeric(15, 0)),
     Column('uuid', UUIDType()))
 
-model.DatasetSource.table = Table(
-    "dataset_source", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
-    Column("source_uri", TEXT),
-    Column("extra_files_path", TEXT),
-    Column("transform", MutableJSONType)
-)
-
 model.DatasetSourceHash.table = Table(
     "dataset_source_hash", metadata,
     Column("id", Integer, primary_key=True),
@@ -1169,11 +1160,8 @@ simple_mapping(model.Dataset,
             & (model.LibraryDatasetDatasetAssociation.table.c.deleted == false())),
         viewonly=True),
     hashes=relation(model.DatasetHash, back_populates='dataset'),
+    sources=relation(model.DatasetSource, back_populates='dataset'),
 )
-
-mapper_registry.map_imperatively(model.DatasetSource, model.DatasetSource.table, properties=dict(
-    dataset=relation(model.Dataset, backref='sources')
-))
 
 mapper_registry.map_imperatively(model.DatasetSourceHash, model.DatasetSourceHash.table, properties=dict(
     source=relation(model.DatasetSource, backref='hashes')
