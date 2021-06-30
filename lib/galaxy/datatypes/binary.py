@@ -236,6 +236,33 @@ class Meryldb(CompressedArchive):
         return False
 
 
+class Bref3(Binary):
+    """Bref3 format is a binary format for storing phased, non-missing genotypes for a list of samples."""
+
+    file_ext = "bref3"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self._magic = binascii.unhexlify("7a8874f400156272")
+
+    def sniff_prefix(self, sniff_prefix):
+        return sniff_prefix.startswith_bytes(self._magic)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary bref3 file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Binary bref3 file ({nice_size(dataset.get_size())})"
+
+
 class DynamicCompressedArchive(CompressedArchive):
 
     def matches_any(self, target_datatypes):
