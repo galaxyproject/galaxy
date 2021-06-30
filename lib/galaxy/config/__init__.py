@@ -1081,6 +1081,10 @@ def configure_logging(config):
         sentry_handler.setLevel(logging.WARN)
         register_postfork_function(root.addHandler, sentry_handler)
 
+    # AMP: Dump logging configuration
+    import logging_tree
+    logging_tree.printout()        
+
 
 class ConfiguresGalaxyMixin:
     """Shared code for configuring Galaxy-like app objects."""
