@@ -27,6 +27,6 @@ describe("FormBoolean", () => {
         expect(input.element.checked).toBe(false);
         input.trigger("click");
         expect(input.element.checked).toBe(true);
-        expect(wrapper.emitted().onChange[0][0]).toBe(true);
+        expect(wrapper.emitted().input[0][0]).toBe(true);
     });
 });
