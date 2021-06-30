@@ -40,7 +40,7 @@
                             :validation-scroll-to="validationScrollTo"
                             :form-config="formConfig"
                             @onChange="onChange"
-                            @onValidation="onValidation"
+                            v-model="validationInternal"
                         />
                         <FormElement
                             v-if="emailAllowed(config, user)"
@@ -48,7 +48,7 @@
                             title="Email notification"
                             help="Send an email notification when the job completes."
                             type="boolean"
-                            value="false"
+                            :value="false"
                             v-model="email"
                         />
                         <FormElement
@@ -57,7 +57,7 @@
                             :title="remapTitle"
                             :help="remapHelp"
                             type="boolean"
-                            value="false"
+                            :value="false"
                             @input="onChangeRemap"
                         />
                         <FormElement
@@ -66,7 +66,7 @@
                             title="Attempt to re-use jobs with identical parameters?"
                             help="This may skip executing jobs that you have already run."
                             type="boolean"
-                            value="false"
+                            :value="false"
                             v-model="reuse"
                         />
                     </template>
@@ -204,10 +204,7 @@ export default {
             return config.server_mail_configured && !user.isAnonymous;
         },
         reuseAllowed(user) {
-            if (
-                user.preferences &&
-                "extra_user_preferences" in user.preferences
-            ) {
+            if (user.preferences && "extra_user_preferences" in user.preferences) {
                 const extra_user_preferences = JSON.parse(user.preferences.extra_user_preferences);
                 const keyCached = "use_cached_job|use_cached_job_checkbox";
                 const hasCachedJobs = keyCached in extra_user_preferences;
@@ -215,9 +212,6 @@ export default {
             } else {
                 return false;
             }
-        },
-        onValidation(validationInternal) {
-            this.validationInternal = validationInternal;
         },
         onChange(newData) {
             this.formData = newData;
