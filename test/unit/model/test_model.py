@@ -327,8 +327,7 @@ def test_GroupRoleAssociation(model, session, group, role):
 
 def test_HistoryAudit(model, session, history):
     cls = model.HistoryAudit
-    # TODO: assert cls.__tablename__ == 'history_audit'
-    # TODO: assert pkey constraint
+    assert cls.__tablename__ == 'history_audit'
     with dbcleanup(session, cls):
         update_time = datetime.now()
         obj = cls(history, update_time)
