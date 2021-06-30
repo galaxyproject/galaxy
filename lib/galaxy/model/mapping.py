@@ -105,6 +105,10 @@ model.HistoryAudit.table = Table(
     PrimaryKeyConstraint(sqlite_on_conflict='IGNORE')
 )
 
+# Add this temporarily as a bug fix (class was unmapped); remove upon remapping declaratively
+mapper_registry.map_imperatively(model.HistoryAudit, model.HistoryAudit.table, properties=dict(
+    history=relation(model.History)))
+
 model.HistoryUserShareAssociation.table = Table(
     "history_user_share_association", metadata,
     Column("id", Integer, primary_key=True),
