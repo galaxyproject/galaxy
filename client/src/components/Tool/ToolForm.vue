@@ -48,7 +48,7 @@
                             title="Email notification"
                             help="Send an email notification when the job completes."
                             type="boolean"
-                            value="false"
+                            :value="false"
                             v-model="email"
                         />
                         <FormElement
@@ -57,7 +57,7 @@
                             :title="remapTitle"
                             :help="remapHelp"
                             type="boolean"
-                            value="false"
+                            :value="false"
                             @input="onChangeRemap"
                         />
                         <FormElement
@@ -66,7 +66,7 @@
                             title="Attempt to re-use jobs with identical parameters?"
                             help="This may skip executing jobs that you have already run."
                             type="boolean"
-                            value="false"
+                            :value="false"
                             v-model="reuse"
                         />
                     </template>
