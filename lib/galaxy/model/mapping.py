@@ -73,12 +73,6 @@ model.User.table = Table(
     Column("active", Boolean, index=True, default=True, nullable=False),
     Column("activation_token", TrimmedString(64), nullable=True, index=True))
 
-model.PasswordResetToken.table = Table(
-    "password_reset_token", metadata,
-    Column("token", String(32), primary_key=True, unique=True, index=True),
-    Column("expiration_time", DateTime),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
-
 model.History.table = Table(
     "history", metadata,
     Column("id", Integer, primary_key=True),
@@ -1340,11 +1334,8 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
         back_populates="user",
         order_by=desc(model.APIKeys.create_time)),
     pages=relation(model.Page, back_populates='user'),
+    reset_tokens=relation(model.PasswordResetToken, back_populates='user'),
 ))
-
-mapper_registry.map_imperatively(model.PasswordResetToken, model.PasswordResetToken.table,
-       properties=dict(user=relation(model.User, backref="reset_tokens")))
-
 
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
