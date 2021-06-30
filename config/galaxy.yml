@@ -161,26 +161,72 @@ galaxy:
   # AMP admin users
   admin_users: amppd@iu.edu,amppd-ci@iu.edu
       
-  # AMP Performance Logging configuration
+  # AMP Logging configuration (with performance log added)
   logging:
-    handlers:
-      logfile:
-        class: logging.FileHandler
-        level: DEBUG
-        filename: galaxy.log
-        mode: a
-      perflog:
-        class: logging.FileHandler
-        level: DEBUG
-        filename: logs/performance.log  
-    loggers:
-      '':        
-        handlers:
-          - logfile
-        level: DEBUG
-      'performance':
+    disable_existing_loggers: False
+    version: 1
+    root: 
+      handlers: 
+        - logfile
+      level: DEBUG
+    
+    loggers: 
+      paste.httpserver.ThreadPool: 
+        level: WARN
+        qualname: paste.httpserver.ThreadPool
+        
+      sqlalchemy_json.track:
+        level: DEBUG  # turn on DEBUG temporarily to troubleshoot ORM exception
+        qualname: sqlalchemy_json.track
+
+      urllib3.connectionpool: 
+        level: WARN
+        qualname: urllib3.connectionpool
+      
+      routes.middleware: 
+        level: WARN
+        qualname: routes.middleware
+    
+      amqp:
+        level: INFO
+        qualname: amqp
+    
+      botocore: 
+        level: INFO
+        qualname: botocore
+
+      performance:  
         handlers:
           - perflog
         level: DEBUG
-    version: 1
+        propagate: false
+
+    filters: 
+      stack: 
+        (): galaxy.web_stack.application_stack_log_filter
+
+    handlers: 
+      console: 
+        class: logging.StreamHandler
+        formatter: stack
+        level: DEBUG
+        stream: ext://sys.stderr
+        filters: [stack]
+      
+      perflog:
+        class: logging.FileHandler
+        level: DEBUG
+        filename: logs/performance.log
+
+      logfile:
+        class: logging.handlers.TimedRotatingFileHandler
+        level: DEBUG
+        filename: logs/galaxy.log
+        filters: [stack]
+        when: midnight
+
+    formatters: 
+      stack: 
+        (): galaxy.web_stack.application_stack_log_formatter  
+  
     

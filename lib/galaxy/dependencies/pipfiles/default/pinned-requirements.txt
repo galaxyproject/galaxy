@@ -191,3 +191,6 @@ wrapt==1.12.1
 yacman==0.7.0
 zipp==3.4.0; python_version < '3.8'
 zipstream-new==1.1.8
+
+# AMP customization
+logging_tree==1.9
