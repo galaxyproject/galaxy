@@ -829,6 +829,25 @@ def test_PageUserShareAssociation(model, session, page, user):
         assert stored_obj.user.id == user.id
 
 
+def test_PasswordResetToken(model, session, user):
+    cls = model.PasswordResetToken
+    assert cls.__tablename__ == 'password_reset_token'
+    with dbcleanup(session, cls):
+        token = get_random_string()
+        expiration_time = datetime.now()
+        obj = cls(user, token)
+        obj.expiration_time = expiration_time
+        persist(session, obj, return_id=False)
+
+        stmt = select(cls).where(cls.token == token)
+        stored_obj = get_stored_obj(session, cls, stmt=stmt)
+        # test mapped columns
+        assert stored_obj.token == token
+        assert stored_obj.expiration_time == expiration_time
+        # test mapped relationships
+        assert stored_obj.user.id == user.id
+
+
 def test_PSAAssociation(model, session):
     cls = model.PSAAssociation
     assert cls.__tablename__ == 'psa_association'

@@ -684,7 +684,14 @@ class User(Dictifiable, RepresentById):
         session.flush()
 
 
-class PasswordResetToken(_HasTable):
+class PasswordResetToken(Base, _HasTable):
+    __tablename__ = 'password_reset_token'
+
+    token = Column('token', String(32), primary_key=True, unique=True, index=True)
+    expiration_time = Column('expiration_time', DateTime)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    user = relationship('User', back_populates='reset_tokens')
+
     def __init__(self, user, token=None):
         if token:
             self.token = token
