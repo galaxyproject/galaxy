@@ -16,6 +16,7 @@ TRS_CONFIG = """
   link_url: https://workflowhub.eu
 """
 TRS_ID_DOCKSTORE = "workflow/github.com/iwc-workflows/sars-cov-2-pe-illumina-artic-variant-calling/COVID-19-PE-ARTIC-ILLUMINA"
+TRS_NAME = "sars-cov-2-pe-illumina-artic-variant-calling/COVID-19-PE-ARTIC-ILLUMINA"
 TRS_VERSION_DOCKSTORE = 'v0.4'
 TRS_ID_WORKFLOWHUB = "110"
 TRS_VERSION_WORKFLOWHUB = "4"
@@ -64,6 +65,15 @@ class TrsImportTestCase(SeleniumIntegrationTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
         self.assert_workflow_imported("Test Workflow")
+
+    def test_import_by_organization_search_dockstore(self):
+        self.trs_search()
+        self.components.trs_search.search.wait_for_and_send_keys('organization: iwc-workflows')
+        self.components.trs_search.search_result(workflow_name=TRS_NAME).wait_for_and_click()
+        self.components.trs_search.import_version(version="v0.4").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_index_open()
+        self.assert_workflow_imported(WORKFLOW_NAME)
 
     def test_import_by_search_workflowhub(self):
         self.trs_search()

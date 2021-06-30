@@ -390,6 +390,7 @@ trs_search:
       selector: "//td[contains(text(), '${workflow_name}')]"
     import_button: ".workflow-import"
     select_server_button: "#dropdownTrsServer"
+    import_version: '[data-version-name*="${version}"]'
     select_server:
       type: xpath
       selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
