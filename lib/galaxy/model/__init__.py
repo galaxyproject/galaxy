@@ -2914,8 +2914,15 @@ class DatasetSourceHash(RepresentById):
     """ """
 
 
-class DatasetHash(RepresentById):
-    """ """
+class DatasetHash(Base, RepresentById):
+    __tablename__ = 'dataset_hash'
+
+    id = Column('id', Integer, primary_key=True)
+    dataset_id = Column('dataset_id', Integer, ForeignKey('dataset.id'), index=True)
+    hash_function = Column('hash_function', TEXT)
+    hash_value = Column('hash_value', TEXT)
+    extra_files_path = Column('extra_files_path', TEXT)
+    dataset = relationship('Dataset', back_populates='hashes')
 
     def serialize(self, id_encoder, serialization_options):
         # serialize Dataset objects only for jobs that can actually modify these models.

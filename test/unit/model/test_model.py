@@ -87,6 +87,29 @@ def test_CustosAuthnzToken(model, session, user):
         assert stored_obj.user.id == user.id
 
 
+def test_DatasetHash(model, session, dataset):
+    cls = model.DatasetHash
+    assert cls.__tablename__ == 'dataset_hash'
+    with dbcleanup(session, cls):
+        hash_function, hash_value, extra_files_path = 'a', 'b', 'c'
+        obj = cls()
+        obj.dataset = dataset
+        obj.hash_function = hash_function
+        obj.hash_value = hash_value
+        obj.extra_files_path = extra_files_path
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.dataset_id == dataset.id
+        assert stored_obj.hash_function == hash_function
+        assert stored_obj.hash_value == hash_value
+        assert stored_obj.extra_files_path == extra_files_path
+        # test mapped relationships
+        assert stored_obj.dataset.id == dataset.id
+
+
 def test_DatasetPermissions(model, session, dataset, role):
     cls = model.DatasetPermissions
     assert cls.__tablename__ == 'dataset_permissions'
