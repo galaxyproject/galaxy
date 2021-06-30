@@ -5,8 +5,10 @@ from typing import (
     Union,
 )
 
-from fastapi import Query
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    Field,
+)
 
 
 class BootstrapAdminUser(BaseModel):
@@ -20,31 +22,31 @@ class BootstrapAdminUser(BaseModel):
 
 
 class FilterQueryParams(BaseModel):
-    q: Optional[Union[List[str], str]] = Query(
+    q: Optional[Union[List[str], str]] = Field(
         default=None,
         title="Filter Query",
         description="Generally a property name to filter by followed by an (often optional) hyphen and operator string.",
         example="create_time-gt",
     )
-    qv: Optional[Union[List[str], str]] = Query(
+    qv: Optional[Union[List[str], str]] = Field(
         default=None,
         title="Filter Value",
         description="The value to filter by.",
         example="2015-01-29",
     )
-    offset: Optional[int] = Query(
+    offset: Optional[int] = Field(
         default=0,
         ge=0,
         title="Offset",
         description="Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item",
     )
-    limit: Optional[int] = Query(
+    limit: Optional[int] = Field(
         default=None,
         ge=1,
         title="Limit",
         description="The maximum number of items to return.",
     )
-    order: Optional[str] = Query(
+    order: Optional[str] = Field(
         default="create_time-dsc",
         title="Order",
         description=(
