@@ -5,19 +5,12 @@ API operations on a history.
 """
 import logging
 
-from sqlalchemy import (
-    false,
-    true
-)
-
 from galaxy import (
-    exceptions,
     util
 )
 from galaxy.managers import (
     histories,
     sharable,
-    users,
 )
 from galaxy.schema import FilterQueryParams
 from galaxy.schema.schema import (
@@ -40,11 +33,6 @@ log = logging.getLogger(__name__)
 
 
 class HistoriesController(BaseGalaxyAPIController):
-    user_manager: users.UserManager = depends(users.UserManager)
-    manager: histories.HistoryManager = depends(histories.HistoryManager)
-    serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
-    filters: histories.HistoryFilters = depends(histories.HistoryFilters)
-    # TODO move all managers above and the actions logic to the HistoriesService
     service: histories.HistoriesService = depends(histories.HistoriesService)
 
     @expose_api_anonymous
@@ -139,68 +127,11 @@ class HistoriesController(BaseGalaxyAPIController):
 
         'order' defaults to 'create_time-dsc'
         """
-        serialization_params = self._parse_serialization_params(kwd, 'summary')
-        limit, offset = self.parse_limit_offset(kwd)
-        filter_params = self.parse_filter_params(kwd)
-
-        # bail early with current history if user is anonymous
-        current_user = self.user_manager.current_user(trans)
-        if self.user_manager.is_anonymous(current_user):
-            current_history = self.manager.get_current(trans)
-            if not current_history:
-                return []
-            # note: ignores filters, limit, offset
-            return [self.serializer.serialize_to_view(current_history,
-                     user=current_user, trans=trans, **serialization_params)]
-
-        filters = []
-        # support the old default of not-returning/filtering-out deleted histories
-        filters += self._get_deleted_filter(deleted, filter_params)
-        # get optional parameter 'all'
+        deleted_only = util.string_as_bool(deleted)
         all_histories = util.string_as_bool(kwd.get('all', False))
-        # if parameter 'all' is true, throw exception if not admin
-        # else add current user filter to query (default behaviour)
-        if all_histories:
-            if not trans.user_is_admin:
-                message = "Only admins can query all histories"
-                raise exceptions.AdminRequiredException(message)
-        else:
-            filters += [self.app.model.History.user == current_user]
-        # and any sent in from the query string
-        filters += self.filters.parse_filters(filter_params)
-
-        order_by = self._parse_order_by(manager=self.manager, order_by_string=kwd.get('order', 'create_time-dsc'))
-        histories = self.manager.list(filters=filters, order_by=order_by, limit=limit, offset=offset)
-
-        rval = []
-        for history in histories:
-            history_dict = self.serializer.serialize_to_view(history, user=trans.user, trans=trans, **serialization_params)
-            rval.append(history_dict)
-        return rval
-
-    def _get_deleted_filter(self, deleted, filter_params):
-        # TODO: this should all be removed (along with the default) in v2
-        # support the old default of not-returning/filtering-out deleted histories
-        try:
-            # the consumer must explicitly ask for both deleted and non-deleted
-            #   but pull it from the parsed params (as the filter system will error on None)
-            deleted_filter_index = filter_params.index(('deleted', 'eq', 'None'))
-            filter_params.pop(deleted_filter_index)
-            return []
-        except ValueError:
-            pass
-
-        # the deleted string bool was also used as an 'include deleted' flag
-        if deleted in ('True', 'true'):
-            return [self.app.model.History.deleted == true()]
-
-        # the third option not handled here is 'return only deleted'
-        #   if this is passed in (in the form below), simply return and let the filter system handle it
-        if ('deleted', 'eq', 'True') in filter_params:
-            return []
-
-        # otherwise, do the default filter of removing the deleted histories
-        return [self.app.model.History.deleted == false()]
+        serialization_params = parse_serialization_params(**kwd)
+        filter_parameters = FilterQueryParams(**kwd)
+        return self.service.index(trans, serialization_params, filter_parameters, deleted_only, all_histories)
 
     @expose_api_anonymous
     def show(self, trans, id, deleted='False', **kwd):

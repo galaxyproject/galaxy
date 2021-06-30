@@ -8,14 +8,17 @@ import glob
 import logging
 import os
 from typing import (
+    List,
     Optional,
+    Tuple,
     Union,
 )
 
 from sqlalchemy import (
     asc,
     desc,
-    false
+    false,
+    true,
 )
 
 from galaxy import (
@@ -578,7 +581,78 @@ class HistoriesService(ServiceBase):
         self.filters = filters
         self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
 
-    # TODO: add the rest of the API actions here and call them directly from the API controller
+    def index(
+        self,
+        trans,
+        serialization_params: SerializationParams,
+        filter_query_params: FilterQueryParams,
+        deleted_only: Optional[bool] = False,
+        all_histories: bool = False,
+    ):
+        """
+        Return a collection of histories for the current user. Additional filters can be applied.
+
+        :type   deleted_only: optional boolean
+        :param  deleted_only: if True, show only deleted histories, if False, non-deleted
+
+        .. note:: Anonymous users are allowed to get their current history
+        """
+        # bail early with current history if user is anonymous
+        current_user = self.user_manager.current_user(trans)
+        if self.user_manager.is_anonymous(current_user):
+            current_history = self.manager.get_current(trans)
+            if not current_history:
+                return []
+            # note: ignores filters, limit, offset
+            return [self._serialize_history(trans, current_history, serialization_params)]
+
+        filter_params = self.filters.build_filter_params(filter_query_params)
+        filters = []
+        # support the old default of not-returning/filtering-out deleted_only histories
+        filters += self._get_deleted_filter(deleted_only, filter_params)
+
+        # if parameter 'all_histories' is true, throw exception if not admin
+        # else add current user filter to query (default behaviour)
+        if all_histories:
+            if not trans.user_is_admin:
+                message = "Only admins can query all histories"
+                raise glx_exceptions.AdminRequiredException(message)
+        else:
+            filters += [model.History.user == current_user]
+        # and any sent in from the query string
+        filters += self.filters.parse_filters(filter_params)
+        order_by = self.build_order_by(self.manager, filter_query_params.order)
+
+        histories = self.manager.list(
+            filters=filters, order_by=order_by,
+            limit=filter_query_params.limit, offset=filter_query_params.offset)
+
+        rval = [self._serialize_history(trans, history, serialization_params, default_view="summary") for history in histories]
+        return rval
+
+    def _get_deleted_filter(self, deleted: Optional[bool], filter_params: List[Tuple[str, str, str]]):
+        # TODO: this should all be removed (along with the default) in v2
+        # support the old default of not-returning/filtering-out deleted histories
+        try:
+            # the consumer must explicitly ask for both deleted and non-deleted
+            #   but pull it from the parsed params (as the filter system will error on None)
+            deleted_filter_index = filter_params.index(('deleted', 'eq', 'None'))
+            filter_params.pop(deleted_filter_index)
+            return []
+        except ValueError:
+            pass
+
+        # the deleted string bool was also used as an 'include deleted' flag
+        if deleted is True:
+            return [model.History.deleted == true()]
+
+        # the third option not handled here is 'return only deleted'
+        #   if this is passed in (in the form below), simply return and let the filter system handle it
+        if ('deleted', 'eq', 'True') in filter_params:
+            return []
+
+        # otherwise, do the default filter of removing the deleted histories
+        return [model.History.deleted == false()]
 
     def create(
         self,
