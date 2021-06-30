@@ -170,15 +170,6 @@ model.DatasetSource.table = Table(
     Column("transform", MutableJSONType)
 )
 
-model.DatasetHash.table = Table(
-    "dataset_hash", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
-    Column("hash_function", TEXT),
-    Column("hash_value", TEXT),
-    Column("extra_files_path", TEXT),
-)
-
 model.DatasetSourceHash.table = Table(
     "dataset_source_hash", metadata,
     Column("id", Integer, primary_key=True),
@@ -1177,11 +1168,8 @@ simple_mapping(model.Dataset,
             (model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id)
             & (model.LibraryDatasetDatasetAssociation.table.c.deleted == false())),
         viewonly=True),
+    hashes=relation(model.DatasetHash, back_populates='dataset'),
 )
-
-mapper_registry.map_imperatively(model.DatasetHash, model.DatasetHash.table, properties=dict(
-    dataset=relation(model.Dataset, backref='hashes')
-))
 
 mapper_registry.map_imperatively(model.DatasetSource, model.DatasetSource.table, properties=dict(
     dataset=relation(model.Dataset, backref='sources')
