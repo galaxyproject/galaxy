@@ -19,8 +19,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" format="sam" value="bfast_out1.sam"/>
-            <output name="output" format="bam" value="bfast_out1.bam"/>
+            <param name="input" ftype="sam" value="bfast_out1.sam"/>
+            <output name="output" ftype="bam" value="bfast_out1.bam"/>
         </test>
     </tests>
     <help>

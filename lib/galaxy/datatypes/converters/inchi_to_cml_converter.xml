@@ -15,6 +15,19 @@
     <outputs>
         <data name="output" format="cml"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="inchi" value="drugbank_drugs.inchi"/>
+            <output name="output" ftype="cml">
+                <assert_contents>
+                    <is_valid_xml/>
+                    <has_text text="http://www.xml-cml.org/schema"/>
+                    <has_text text="xml version"/>
+                    <has_text text="atomArray"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
     <help>
 <![CDATA[
 ]]>
