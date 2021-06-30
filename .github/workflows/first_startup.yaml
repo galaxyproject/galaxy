@@ -30,6 +30,9 @@ jobs:
       with:
         path: ~/.cache/pip
         key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+    - uses: mvdbeek/gha-yarn-cache@master
+      with:
+        yarn-lock-file: 'galaxy root/client/yarn.lock'
     - name: Install tox
       run: pip install tox
       # Use this job to test the latest migrations

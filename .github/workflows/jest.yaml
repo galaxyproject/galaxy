@@ -12,6 +12,9 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node}}
+    - uses: mvdbeek/gha-yarn-cache@master
+      with:
+        yarn-lock-file: 'client/yarn.lock'
     - run: yarn install
       working-directory: client
     - run: yarn jest
