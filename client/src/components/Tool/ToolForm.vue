@@ -204,10 +204,7 @@ export default {
             return config.server_mail_configured && !user.isAnonymous;
         },
         reuseAllowed(user) {
-            if (
-                user.preferences &&
-                "extra_user_preferences" in user.preferences
-            ) {
+            if (user.preferences && "extra_user_preferences" in user.preferences) {
                 const extra_user_preferences = JSON.parse(user.preferences.extra_user_preferences);
                 const keyCached = "use_cached_job|use_cached_job_checkbox";
                 const hasCachedJobs = keyCached in extra_user_preferences;
