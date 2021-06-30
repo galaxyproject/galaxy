@@ -1,5 +1,8 @@
 name: Unit tests
 on: [push, pull_request]
+concurrency:
+  group: py-unit-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: Test

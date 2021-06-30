@@ -1,5 +1,8 @@
 name: Integration Selenium
 on: [push, pull_request]
+concurrency:
+  group: integration-selenium-${{ github.ref }}
+  cancel-in-progress: true
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_SELENIUM_REMOTE: '1'

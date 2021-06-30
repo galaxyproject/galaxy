@@ -1,5 +1,8 @@
 name: Client Unit Testing
 on: [push, pull_request]
+concurrency:
+  group: client-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   jest:
     runs-on: ubuntu-latest
