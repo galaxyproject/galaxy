@@ -53,6 +53,7 @@ from galaxy.schema.schema import (
     LabelValuePair,
 )
 from galaxy.schema.types import SerializationParams
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import restore_text
 
@@ -562,7 +563,7 @@ class HistoriesService(ServiceBase):
 
     def __init__(
         self,
-        app: MinimalManagerApp,
+        security: IdEncodingHelper,
         manager: HistoryManager,
         user_manager: UserManager,
         serializer: HistorySerializer,
@@ -571,7 +572,7 @@ class HistoriesService(ServiceBase):
         history_export_view: HistoryExportView,
         filters: HistoryFilters,
     ):
-        self.app = app
+        super().__init__(security)
         self.manager = manager
         self.user_manager = user_manager
         self.serializer = serializer

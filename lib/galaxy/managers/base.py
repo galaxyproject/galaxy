@@ -29,6 +29,7 @@ import datetime
 import logging
 import re
 from typing import (
+    Any,
     Callable,
     Dict,
     List,
@@ -46,6 +47,7 @@ from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.schema import FilterQueryParams
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import BasicApp, MinimalManagerApp
 from galaxy.util import namedtuple
 
@@ -102,10 +104,14 @@ def get_class(class_name):
     return item_class
 
 
-def decode_id(app, id):
+def decode_id(app: BasicApp, id: Any):
     # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
     #   resulting in error for valid id
-    return app.security.decode_id(str(id))
+    return decode_with_security(app.security, id)
+
+
+def decode_with_security(security: IdEncodingHelper, id: Any):
+    return security.decode_id(str(id))
 
 
 def get_object(trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
@@ -1198,12 +1204,12 @@ class SortableManager:
 class ServiceBase:
     """Base class with common logic and utils reused by other Services."""
 
-    def __init__(self, app: MinimalManagerApp):
-        self.app = app
+    def __init__(self, security: IdEncodingHelper):
+        self.security = security
 
     def decode_id(self, id):
         """Decodes a previously encoded database ID."""
-        return decode_id(self.app, id)
+        return decode_with_security(self.security, id)
 
     def build_order_by(self, manager: SortableManager, order_by_query: Optional[str] = None):
         """Returns an ORM compatible order_by clause using the order attribute and the given manager.
