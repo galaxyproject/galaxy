@@ -32,7 +32,11 @@
         </test>
         <test>
             <param name="input1" ftype="encodepeak" value="encode.broad.peak"/>
-            <output name="output1" ftype="tabix" value="encode.broad.tabix"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="110" delta="10"/>
+                </assert_contents>
+            </output>
         </test>
         <test>
             <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
