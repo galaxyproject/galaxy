@@ -300,18 +300,6 @@ model.ExtendedMetadataIndex.table = Table(
     Column("path", String(255)),
     Column("value", TEXT))
 
-model.Library.table = Table(
-    "library", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("root_folder_id", Integer, ForeignKey("library_folder.id"), index=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", String(255), index=True),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("purged", Boolean, index=True, default=False),
-    Column("description", TEXT),
-    Column("synopsis", TEXT))
-
 model.LibraryFolder.table = Table(
     "library_folder", metadata,
     Column("id", Integer, primary_key=True),
@@ -1330,11 +1318,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociationPermissio
     role=relation(model.Role, backref="library_dataset_dataset_actions")
 ))
 
-mapper_registry.map_imperatively(model.Library, model.Library.table, properties=dict(
-    root_folder=relation(model.LibraryFolder, backref=backref("library_root")),
-    actions=relation(model.LibraryPermissions, back_populates='library'),
-))
-
 mapper_registry.map_imperatively(model.ExtendedMetadata, model.ExtendedMetadata.table, properties=dict(
     children=relation(model.ExtendedMetadataIndex, backref='extended_metadata')
 ))
@@ -1344,7 +1327,7 @@ mapper_registry.map_imperatively(model.ExtendedMetadataIndex, model.ExtendedMeta
 mapper_registry.map_imperatively(model.LibraryInfoAssociation, model.LibraryInfoAssociation.table, properties=dict(
     library=relation(model.Library,
         primaryjoin=(
-            (model.LibraryInfoAssociation.table.c.library_id == model.Library.table.c.id)
+            (model.LibraryInfoAssociation.table.c.library_id == model.Library.id)
             & (not_(model.LibraryInfoAssociation.table.c.deleted))
         ),
         backref="info_association"),
@@ -1384,7 +1367,8 @@ mapper_registry.map_imperatively(model.LibraryFolder, model.LibraryFolder.table,
         ),
         order_by=asc(model.LibraryDataset.table.c._name),
         lazy=True,
-        viewonly=True)
+        viewonly=True),
+    library_root=relation(model.Library, back_populates='root_folder'),
 ))
 
 mapper_registry.map_imperatively(model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.table, properties=dict(

@@ -3878,7 +3878,21 @@ class HistoryDatasetAssociationSubset(RepresentById):
         self.location = location
 
 
-class Library(Dictifiable, HasName, RepresentById):
+class Library(Base, Dictifiable, HasName, RepresentById):
+    __tablename__ = 'library'
+
+    id = Column("id", Integer, primary_key=True)
+    root_folder_id = Column("root_folder_id", Integer, ForeignKey("library_folder.id"), index=True)
+    create_time = Column("create_time", DateTime, default=now)
+    update_time = Column("update_time", DateTime, default=now, onupdate=now)
+    name = Column("name", String(255), index=True)
+    deleted = Column("deleted", Boolean, index=True, default=False)
+    purged = Column("purged", Boolean, index=True, default=False)
+    description = Column("description", TEXT)
+    synopsis = Column("synopsis", TEXT)
+    root_folder = relationship('LibraryFolder', back_populates='library_root')
+    actions = relationship('LibraryPermissions', back_populates='library')
+
     permitted_actions = get_permitted_actions(filter='LIBRARY')
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id', 'create_time']
