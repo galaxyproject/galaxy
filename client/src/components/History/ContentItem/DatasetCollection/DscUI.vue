@@ -13,7 +13,12 @@
     >
         <nav class="content-top-menu">
             <div class="content-status-indicators mr-1" @click.stop>
-                <b-check v-if="showSelection" :checked="selected" @change="$emit('update:selected', $event)" />
+                <b-check
+                    class="selector"
+                    v-if="showSelection"
+                    :checked="selected"
+                    @change="$emit('update:selected', $event)"
+                />
 
                 <StatusIcon
                     v-if="dsc.state != 'ok'"

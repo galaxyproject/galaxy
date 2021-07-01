@@ -18,7 +18,12 @@ either through the props, and make updates through the events -->
         <!-- name, state buttons, menus -->
         <nav class="content-top-menu" @click.stop="$emit('update:expanded', !expanded)">
             <div class="content-status-indicators" @click.stop>
-                <b-check v-if="showSelection" :checked="selected" @change="$emit('update:selected', $event)" />
+                <b-check
+                    class="selector"
+                    v-if="showSelection"
+                    :checked="selected"
+                    @change="$emit('update:selected', $event)"
+                />
                 <StatusIcon v-if="!ok" class="status-icon px-1" :state="dataset.state" @click.stop="onStatusClick" />
                 <StateBtn
                     v-if="!dataset.visible"

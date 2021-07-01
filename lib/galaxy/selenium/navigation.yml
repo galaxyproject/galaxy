@@ -149,9 +149,9 @@ history_panel:
 
   multi_operations:
     selectors:
-      show_button: '#current-history-panel .actions .show-selectors-btn'
-      action_button: '#current-history-panel .list-action-menu .list-action-menu-btn'
-      action_menu: '.list-action-menu div.dropdown-menu'
+      show_button: '.show-history-content-selectors-btn'
+      action_button: '.history-contents-list-action-menu-btn'
+      action_menu: '.list-action-menu .dropdown-menu'
 
     labels:
       build_pair: "Build Dataset Pair"

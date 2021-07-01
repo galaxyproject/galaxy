@@ -485,7 +485,7 @@ var HistoryViewEdit = _super.extend(
         // ------------------------------------------------------------------------ panel events
         /** event map */
         events: _.extend(_.clone(_super.prototype.events), {
-            "click .show-selectors-btn": "toggleSelectors",
+            "click .show-history-content-selectors-btn": "toggleSelectors",
             "click .toggle-deleted-link": function (ev) {
                 this.toggleShowDeleted();
             },

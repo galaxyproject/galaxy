@@ -32,6 +32,7 @@ var _super = LIST_VIEW.ModelListPanel;
 var HistoryView = _super.extend(
     /** @lends HistoryView.prototype */ {
         _logNamespace: "history",
+        actionButtonClass: "history-contents-list-action-menu-btn",
 
         /** class to use for constructing the HDA views */
         HDAViewClass: HDA_LI.HDAListItemView,
@@ -172,18 +173,18 @@ var HistoryView = _super.extend(
             // do not render (and remove even) if nothing to select
             if (!this.views.length) {
                 this.hideSelectors();
-                $where.find(".controls .actions .show-selectors-btn").remove();
+                $where.find(".controls .actions .show-history-content-selectors-btn").remove();
                 return null;
             }
             // don't bother rendering if there's one already
-            var $existing = $where.find(".controls .actions .show-selectors-btn");
+            var $existing = $where.find(".controls .actions .show-history-content-selectors-btn");
             if ($existing.length) {
                 return $existing;
             }
 
             return faIconButton({
                 title: _l("Operations on multiple datasets"),
-                classes: "show-selectors-btn",
+                classes: "show-history-content-selectors-btn",
                 faIcon: "fa-check-square-o",
                 tooltipConfig: { placement: "top" },
             }).prependTo($where.find(".controls .actions"));
@@ -347,7 +348,7 @@ var HistoryView = _super.extend(
         // ------------------------------------------------------------------------ panel events
         /** event map */
         events: _.extend(_.clone(_super.prototype.events), {
-            "click .show-selectors-btn": "toggleSelectors",
+            "click .show-history-content-selectors-btn": "toggleSelectors",
             "click > .controls .prev": "_clickPrevPage",
             "click > .controls .next": "_clickNextPage",
             "change > .controls .pages": "_changePageSelect",
