@@ -208,9 +208,7 @@ history_panel:
     options_show_history_structure:
       type: xpath
       selector: '//a[contains(text(), "Show Structure")]'
-    options_show_export_history_to_file:
-      type: xpath
-      selector: '//a[text()="Export History to File"]'
+    options_show_export_history_to_file: 'a[title="Export History to File"]'
     options_use_beta_history:
       type: xpath
       selector: '//a[text()="Use Beta History Panel"]'
