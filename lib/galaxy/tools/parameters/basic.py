@@ -1900,13 +1900,12 @@ class DataToolParameter(BaseDataToolParameter):
                         rval.append(trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(decoded_id))
                     else:
                         raise ValueError(f"Unknown input source {single_value['src']} passed to job submission API.")
-                elif isinstance(single_value, trans.app.model.HistoryDatasetCollectionAssociation):
-                    rval.append(single_value)
-                elif isinstance(single_value, trans.app.model.DatasetCollectionElement):
-                    rval.append(single_value)
-                elif isinstance(single_value, trans.app.model.HistoryDatasetAssociation):
-                    rval.append(single_value)
-                elif isinstance(single_value, trans.app.model.LibraryDatasetDatasetAssociation):
+                elif isinstance(single_value, (
+                        trans.app.model.HistoryDatasetCollectionAssociation,
+                        trans.app.model.DatasetCollectionElement,
+                        trans.app.model.HistoryDatasetAssociation,
+                        trans.app.model.LibraryDatasetDatasetAssociation
+                )):
                     rval.append(single_value)
                 else:
                     if len(str(single_value)) == 16:
@@ -1919,7 +1918,7 @@ class DataToolParameter(BaseDataToolParameter):
                 for val in rval:
                     if not isinstance(val, trans.app.model.HistoryDatasetCollectionAssociation):
                         raise ParameterValueError("if collections are supplied to multiple data input parameter, only collections may be used", self.name)
-        elif isinstance(value, trans.app.model.HistoryDatasetAssociation):
+        elif isinstance(value, (trans.app.model.HistoryDatasetAssociation, trans.app.model.LibraryDatasetDatasetAssociation)):
             rval = value
         elif isinstance(value, dict) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
