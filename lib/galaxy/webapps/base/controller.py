@@ -107,6 +107,7 @@ class BaseController:
         """
         return trans.security.encode_all_ids(rval, recursive=recursive)
 
+    # TODO this will be replaced by lib.galaxy.managers.base.ModelFilterParser.build_filter_params
     def parse_filter_params(self, qdict, filter_attr_key='q', filter_value_key='qv', attr_op_split_char='-'):
         """
         """
@@ -231,6 +232,7 @@ class BaseAPIController(BaseController):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 
+    # TODO: this will be replaced by lib.galaxy.schema.FilterQueryParams.build_order_by
     def _parse_order_by(self, manager, order_by_string):
         ORDER_BY_SEP_CHAR = ','
         if ORDER_BY_SEP_CHAR in order_by_string:
