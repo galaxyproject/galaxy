@@ -657,6 +657,28 @@ def test_JobToInputDatasetCollectionAssociation(
         assert stored_obj.dataset_collection.id == history_dataset_collection_association.id
 
 
+def test_JobToInputDatasetCollectionElementAssociation(
+        model, session, dataset_collection_element, job):
+    cls = model.JobToInputDatasetCollectionElementAssociation
+    assert cls.__tablename__ == 'job_to_input_dataset_collection_element'
+
+    with dbcleanup(session, cls):
+        name = 'a'
+        obj = cls(name, dataset_collection_element)
+        obj.job = job
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.job_id == job.id
+        assert stored_obj.dataset_collection_element_id == dataset_collection_element.id
+        assert stored_obj.name == name
+        # test mapped relationships
+        assert stored_obj.job.id == job.id
+        assert stored_obj.dataset_collection_element.id == dataset_collection_element.id
+
+
 def test_JobToInputDatasetAssociation(model, session, history_dataset_association, job):
     cls = model.JobToInputDatasetAssociation
     assert cls.__tablename__ == 'job_to_input_dataset'
@@ -1738,6 +1760,20 @@ def cloud_authz(model, session, user, user_authnz_token):
 def dataset(model, session):
     d = model.Dataset()
     yield from dbcleanup_wrapper(session, d)
+
+
+@pytest.fixture
+def dataset_collection(model, session):
+    dc = model.DatasetCollection(collection_type='a')
+    yield from dbcleanup_wrapper(session, dc)
+
+
+@pytest.fixture
+def dataset_collection_element(
+        model, session, dataset_collection, history_dataset_association):
+    dce = model.DatasetCollectionElement(
+        collection=dataset_collection, element=history_dataset_association)
+    yield from dbcleanup_wrapper(session, dce)
 
 
 @pytest.fixture
