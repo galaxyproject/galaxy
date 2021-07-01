@@ -366,13 +366,6 @@ model.JobToOutputDatasetAssociation.table = Table(
     Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
     Column("name", String(255)))
 
-model.JobToInputDatasetCollectionAssociation.table = Table(
-    "job_to_input_dataset_collection", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
-    Column("name", Unicode(255)))
-
 model.JobToInputDatasetCollectionElementAssociation.table = Table(
     "job_to_input_dataset_collection_element", metadata,
     Column("id", Integer, primary_key=True),
@@ -1396,11 +1389,6 @@ mapper_registry.map_imperatively(model.JobToOutputDatasetAssociation, model.JobT
         backref="creating_job_associations")
 ))
 
-mapper_registry.map_imperatively(model.JobToInputDatasetCollectionAssociation, model.JobToInputDatasetCollectionAssociation.table, properties=dict(
-    dataset_collection=relation(model.HistoryDatasetCollectionAssociation,
-        lazy=False)
-))
-
 mapper_registry.map_imperatively(model.JobToInputDatasetCollectionElementAssociation, model.JobToInputDatasetCollectionElementAssociation.table, properties=dict(
     dataset_collection_element=relation(model.DatasetCollectionElement,
     lazy=False)
@@ -1887,7 +1875,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     library_folder=relation(model.LibraryFolder, lazy=True),
     parameters=relation(model.JobParameter, lazy=True),
     input_datasets=relation(model.JobToInputDatasetAssociation, back_populates="job"),
-    input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, backref="job", lazy=True),
+    input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, back_populates="job", lazy=True),
     input_dataset_collection_elements=relation(model.JobToInputDatasetCollectionElementAssociation,
         backref="job", lazy=True),
     output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation,
