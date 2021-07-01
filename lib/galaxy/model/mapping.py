@@ -359,14 +359,6 @@ model.JobParameter.table = Table(
     Column("name", String(255)),
     Column("value", TEXT))
 
-model.JobToInputDatasetAssociation.table = Table(
-    "job_to_input_dataset", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("dataset_version", Integer),
-    Column("name", String(255)))
-
 model.JobToOutputDatasetAssociation.table = Table(
     "job_to_output_dataset", metadata,
     Column("id", Integer, primary_key=True),
@@ -1072,7 +1064,8 @@ simple_mapping(model.HistoryDatasetAssociation,
                      == model.HistoryDatasetCollectionAssociation.table.c.id),
         uselist=False,
         backref="hidden_dataset_instances"),
-    _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata)
+    _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata),
+    dependent_jobs=relation(model.JobToInputDatasetAssociation, back_populates='dataset'),
 )
 
 simple_mapping(model.Dataset,
@@ -1393,12 +1386,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_definition_id == model.FormDefinition.id)),
     info=relation(model.FormValues,
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.id))
-))
-
-mapper_registry.map_imperatively(model.JobToInputDatasetAssociation, model.JobToInputDatasetAssociation.table, properties=dict(
-    dataset=relation(model.HistoryDatasetAssociation,
-        lazy=False,
-        backref="dependent_jobs")
 ))
 
 mapper_registry.map_imperatively(model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation.table, properties=dict(
@@ -1899,7 +1886,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     history=relation(model.History, backref="jobs"),
     library_folder=relation(model.LibraryFolder, lazy=True),
     parameters=relation(model.JobParameter, lazy=True),
-    input_datasets=relation(model.JobToInputDatasetAssociation, backref="job"),
+    input_datasets=relation(model.JobToInputDatasetAssociation, back_populates="job"),
     input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, backref="job", lazy=True),
     input_dataset_collection_elements=relation(model.JobToInputDatasetCollectionElementAssociation,
         backref="job", lazy=True),

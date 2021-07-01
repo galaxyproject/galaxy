@@ -1562,7 +1562,18 @@ class JobParameter(RepresentById):
         return JobParameter(name=self.name, value=self.value)
 
 
-class JobToInputDatasetAssociation(RepresentById):
+class JobToInputDatasetAssociation(Base, RepresentById):
+    __tablename__ = 'job_to_input_dataset'
+
+    id = Column('id', Integer, primary_key=True)
+    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
+    dataset_id = Column('dataset_id', Integer,
+        ForeignKey('history_dataset_association.id'), index=True)
+    dataset_version = Column('dataset_version', Integer)
+    name = Column('name', String(255))
+    dataset = relationship('HistoryDatasetAssociation', lazy=False, back_populates='dependent_jobs')
+    job = relationship('Job', back_populates='input_datasets')
+
     def __init__(self, name, dataset):
         self.name = name
         self.dataset = dataset
