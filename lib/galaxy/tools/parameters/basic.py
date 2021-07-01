@@ -2102,8 +2102,8 @@ class DataToolParameter(BaseDataToolParameter):
                 continue
 
         # sort both lists
-        d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k['hid'], reverse=True)
-        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k['hid'], reverse=True)
+        d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k.get('hid', -1), reverse=True)
+        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k.get('hid', -1), reverse=True)
 
         # return final dictionary
         return d
@@ -2269,7 +2269,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             })
 
         # sort both lists
-        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k['hid'], reverse=True)
+        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k.get('hid', -1), reverse=True)
 
         # return final dictionary
         return d
