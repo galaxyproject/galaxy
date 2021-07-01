@@ -1580,7 +1580,17 @@ class JobToInputDatasetAssociation(Base, RepresentById):
         self.dataset_version = 0  # We start with version 0 and update once the job is ready
 
 
-class JobToOutputDatasetAssociation(RepresentById):
+class JobToOutputDatasetAssociation(Base, RepresentById):
+    __tablename__ = 'job_to_output_dataset'
+
+    id = Column('id', Integer, primary_key=True)
+    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
+    dataset_id = Column('dataset_id', Integer,
+        ForeignKey('history_dataset_association.id'), index=True)
+    name = Column('name', String(255))
+    dataset = relationship('HistoryDatasetAssociation', lazy=False, back_populates='creating_job_associations')
+    job = relationship('Job', back_populates='output_datasets')
+
     def __init__(self, name, dataset):
         self.name = name
         self.dataset = dataset

@@ -359,13 +359,6 @@ model.JobParameter.table = Table(
     Column("name", String(255)),
     Column("value", TEXT))
 
-model.JobToOutputDatasetAssociation.table = Table(
-    "job_to_output_dataset", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("name", String(255)))
-
 model.JobToImplicitOutputDatasetCollectionAssociation.table = Table(
     "job_to_implicit_output_dataset_collection", metadata,
     Column("id", Integer, primary_key=True),
@@ -1045,6 +1038,8 @@ simple_mapping(model.HistoryDatasetAssociation,
         backref="hidden_dataset_instances"),
     _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata),
     dependent_jobs=relation(model.JobToInputDatasetAssociation, back_populates='dataset'),
+    creating_job_associations=relation(
+        model.JobToOutputDatasetAssociation, back_populates='dataset'),
 )
 
 simple_mapping(model.Dataset,
@@ -1365,14 +1360,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_definition_id == model.FormDefinition.id)),
     info=relation(model.FormValues,
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.id))
-))
-
-mapper_registry.map_imperatively(model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation.table, properties=dict(
-    job=relation(model.Job,
-        backref="output_datasets"),
-    dataset=relation(model.HistoryDatasetAssociation,
-        lazy=False,
-        backref="creating_job_associations")
 ))
 
 mapper_registry.map_imperatively(model.JobToImplicitOutputDatasetCollectionAssociation, model.JobToImplicitOutputDatasetCollectionAssociation.table, properties=dict(
@@ -1865,12 +1852,13 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation,
         backref="job", lazy=True),
     external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True, backref='job'),
-    tasks=relation(model.Task, backref='job')
+    tasks=relation(model.Task, backref='job'),
+    output_datasets=relation(model.JobToOutputDatasetAssociation, back_populates='job'),
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],
-           and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
-                model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
+           and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.job_id,
+                model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.dataset_id,
                 model.HistoryDatasetAssociation.table.c.deleted == true())
            )
 )
