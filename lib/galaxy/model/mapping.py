@@ -359,13 +359,6 @@ model.JobParameter.table = Table(
     Column("name", String(255)),
     Column("value", TEXT))
 
-model.JobToImplicitOutputDatasetCollectionAssociation.table = Table(
-    "job_to_implicit_output_dataset_collection", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("dataset_collection_id", Integer, ForeignKey("dataset_collection.id"), index=True),
-    Column("name", Unicode(255)))
-
 model.JobToInputLibraryDatasetAssociation.table = Table(
     "job_to_input_library_dataset", metadata,
     Column("id", Integer, primary_key=True),
@@ -1362,11 +1355,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
-mapper_registry.map_imperatively(model.JobToImplicitOutputDatasetCollectionAssociation, model.JobToImplicitOutputDatasetCollectionAssociation.table, properties=dict(
-    dataset_collection=relation(model.DatasetCollection,
-        backref="output_dataset_collections")
-))
-
 mapper_registry.map_imperatively(model.JobToInputLibraryDatasetAssociation, model.JobToInputLibraryDatasetAssociation.table, properties=dict(
     dataset=relation(model.LibraryDatasetDatasetAssociation,
         lazy=False,
@@ -1482,7 +1470,9 @@ simple_mapping(model.DatasetCollection,
         primaryjoin=(model.DatasetCollection.table.c.id == model.DatasetCollectionElement.table.c.dataset_collection_id),
         remote_side=[model.DatasetCollectionElement.table.c.dataset_collection_id],
         backref="collection",
-        order_by=model.DatasetCollectionElement.table.c.element_index)
+        order_by=model.DatasetCollectionElement.table.c.element_index),
+    output_dataset_collections=relation(
+        model.JobToImplicitOutputDatasetCollectionAssociation, back_populates='dataset_collection'),
 )
 
 simple_mapping(model.HistoryDatasetCollectionAssociation,
@@ -1846,7 +1836,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation,
         back_populates="job", lazy=True),
     output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation,
-        backref="job", lazy=True),
+        back_populates="job", lazy=True),
     post_job_actions=relation(model.PostJobActionAssociation, backref="job", lazy=False),
     input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation, backref="job"),
     output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation,

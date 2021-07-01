@@ -635,6 +635,28 @@ def test_HistoryTagAssociation(model, session, history, tag, user):
         assert stored_obj.user.id == user.id
 
 
+def test_JobToImplicitOutputDatasetCollectionAssociation(
+        model, session, dataset_collection, job):
+    cls = model.JobToImplicitOutputDatasetCollectionAssociation
+    assert cls.__tablename__ == 'job_to_implicit_output_dataset_collection'
+
+    with dbcleanup(session, cls):
+        name = 'a'
+        obj = cls(name, dataset_collection)
+        obj.job = job
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.job_id == job.id
+        assert stored_obj.dataset_collection_id == dataset_collection.id
+        assert stored_obj.name == name
+        # test mapped relationships
+        assert stored_obj.job.id == job.id
+        assert stored_obj.dataset_collection.id == dataset_collection.id
+
+
 def test_JobToInputDatasetCollectionAssociation(
         model, session, history_dataset_collection_association, job):
     cls = model.JobToInputDatasetCollectionAssociation

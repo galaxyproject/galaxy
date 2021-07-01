@@ -1651,7 +1651,18 @@ class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
 # A DatasetCollection will be mapped to at most one job per tool output
 # using these. (You can think of many of these models as going into the
 # creation of a JobToOutputDatasetCollectionAssociation.)
-class JobToImplicitOutputDatasetCollectionAssociation(RepresentById):
+class JobToImplicitOutputDatasetCollectionAssociation(Base, RepresentById):
+    __tablename__ = 'job_to_implicit_output_dataset_collection'
+
+    id = Column('id', Integer, primary_key=True)
+    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
+    dataset_collection_id = Column(
+        'dataset_collection_id', Integer, ForeignKey('dataset_collection.id'), index=True)
+    name = Column('name', Unicode(255))
+    dataset_collection = relationship(
+        'DatasetCollection', back_populates="output_dataset_collections")
+    job = relationship('Job', back_populates='output_dataset_collections')
+
     def __init__(self, name, dataset_collection):
         self.name = name
         self.dataset_collection = dataset_collection
