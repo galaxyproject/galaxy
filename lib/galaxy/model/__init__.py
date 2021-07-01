@@ -1620,7 +1620,19 @@ class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
 
 # Many jobs may map to one HistoryDatasetCollection using these for a given
 # tool output (if mapping over an input collection).
-class JobToOutputDatasetCollectionAssociation(RepresentById):
+class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
+    __tablename__ = 'job_to_output_dataset_collection'
+
+    id = Column('id', Integer, primary_key=True)
+    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
+    dataset_collection_id = Column('dataset_collection_id', Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    name = Column('name', Unicode(255))
+    dataset_collection_instance = relationship(
+        'HistoryDatasetCollectionAssociation',
+        lazy=False,
+        back_populates="output_dataset_collection_instances")
+    job = relationship('Job', back_populates='output_dataset_collection_instances')
+
     def __init__(self, name, dataset_collection_instance):
         self.name = name
         self.dataset_collection_instance = dataset_collection_instance

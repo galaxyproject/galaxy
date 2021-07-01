@@ -373,13 +373,6 @@ model.JobToImplicitOutputDatasetCollectionAssociation.table = Table(
     Column("dataset_collection_id", Integer, ForeignKey("dataset_collection.id"), index=True),
     Column("name", Unicode(255)))
 
-model.JobToOutputDatasetCollectionAssociation.table = Table(
-    "job_to_output_dataset_collection", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
-    Column("name", Unicode(255)))
-
 model.JobToInputLibraryDatasetAssociation.table = Table(
     "job_to_input_library_dataset", metadata,
     Column("id", Integer, primary_key=True),
@@ -1382,12 +1375,6 @@ mapper_registry.map_imperatively(model.JobToOutputDatasetAssociation, model.JobT
         backref="creating_job_associations")
 ))
 
-mapper_registry.map_imperatively(model.JobToOutputDatasetCollectionAssociation, model.JobToOutputDatasetCollectionAssociation.table, properties=dict(
-    dataset_collection_instance=relation(model.HistoryDatasetCollectionAssociation,
-        lazy=False,
-        backref="output_dataset_collection_instances")
-))
-
 mapper_registry.map_imperatively(model.JobToImplicitOutputDatasetCollectionAssociation, model.JobToImplicitOutputDatasetCollectionAssociation.table, properties=dict(
     dataset_collection=relation(model.DatasetCollection,
         backref="output_dataset_collections")
@@ -1549,7 +1536,10 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         back_populates="history_dataset_collection"),
     ratings=relation(model.HistoryDatasetCollectionRatingAssociation,
         order_by=model.HistoryDatasetCollectionRatingAssociation.id,
-        back_populates="dataset_collection")
+        back_populates="dataset_collection"),
+    output_dataset_collection_instances=relation(
+        model.JobToOutputDatasetCollectionAssociation,
+        back_populates='dataset_collection_instance'),
 )
 
 simple_mapping(model.LibraryDatasetCollectionAssociation,
@@ -1867,7 +1857,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     input_dataset_collection_elements=relation(model.JobToInputDatasetCollectionElementAssociation,
         back_populates="job", lazy=True),
     output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation,
-        backref="job", lazy=True),
+        back_populates="job", lazy=True),
     output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation,
         backref="job", lazy=True),
     post_job_actions=relation(model.PostJobActionAssociation, backref="job", lazy=False),
@@ -1886,8 +1876,8 @@ model.Job.any_output_dataset_deleted = column_property(  # type: ignore
 )
 model.Job.any_output_dataset_collection_instances_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetCollectionAssociation.table.c.id],
-           and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.job_id,
-                model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.dataset_collection_id,
+           and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.job_id,
+                model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.dataset_collection_id,
                 model.HistoryDatasetCollectionAssociation.table.c.deleted == true())
            )
 )
