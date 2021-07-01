@@ -2665,7 +2665,16 @@ class DefaultUserPermissions(Base, RepresentById):
         self.role = role
 
 
-class DefaultHistoryPermissions(RepresentById):
+class DefaultHistoryPermissions(Base, RepresentById):
+    __tablename__ = 'default_history_permissions'
+
+    id = Column('id', Integer, primary_key=True)
+    history_id = Column('history_id', Integer, ForeignKey('history.id'), index=True)
+    action = Column('action', TEXT)
+    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
+    history = relationship('History', back_populates='default_permissions')
+    role = relationship('Role')
+
     def __init__(self, history, action, role):
         self.history = history
         self.action = action

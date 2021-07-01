@@ -199,13 +199,6 @@ model.UserRoleAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
-model.DefaultHistoryPermissions.table = Table(
-    "default_history_permissions", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("action", TEXT),
-    Column("role_id", Integer, ForeignKey("role.id"), index=True))
-
 model.LibraryDataset.table = Table(
     "library_dataset", metadata,
     Column("id", Integer, primary_key=True),
@@ -1194,6 +1187,7 @@ mapper_registry.map_imperatively(model.History, model.History.table, properties=
     update_time=column_property(
         select(func.max(model.HistoryAudit.update_time)).where(model.HistoryAudit.history_id == model.History.table.c.id).scalar_subquery(),
     ),
+    default_permissions=relation(model.DefaultHistoryPermissions, back_populates='history'),
 ))
 
 # Set up proxy so that
@@ -1254,11 +1248,6 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
 model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)  # type: ignore
-
-mapper_registry.map_imperatively(model.DefaultHistoryPermissions, model.DefaultHistoryPermissions.table, properties=dict(
-    history=relation(model.History, backref="default_permissions"),
-    role=relation(model.Role)
-))
 
 mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssociation.table, properties=dict(
     user=relation(model.User, backref="roles"),
