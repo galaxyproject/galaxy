@@ -24,7 +24,7 @@
             </output>
         </test>
         <test>
-            <param name="input" ftype="mol" value="chebi_57262.v3k.mol"/>
+            <param name="input" ftype="mol" value="drugbank_drugs.mol"/>
             <output name="output" ftype="inchi">
                 <assert_contents>
                     <has_text text="InChI="/>
