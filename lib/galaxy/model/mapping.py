@@ -199,15 +199,6 @@ model.UserRoleAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
-model.LibraryDatasetPermissions.table = Table(
-    "library_dataset_permissions", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("action", TEXT),
-    Column("library_dataset_id", Integer, ForeignKey("library_dataset.id"), nullable=True, index=True),
-    Column("role_id", Integer, ForeignKey("role.id"), index=True))
-
 model.LibraryDatasetDatasetAssociationPermissions.table = Table(
     "library_dataset_dataset_association_permissions", metadata,
     Column("id", Integer, primary_key=True),
@@ -1294,11 +1285,6 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
     )
 ))
 
-mapper_registry.map_imperatively(model.LibraryDatasetPermissions, model.LibraryDatasetPermissions.table, properties=dict(
-    library_dataset=relation(model.LibraryDataset, backref="actions"),
-    role=relation(model.Role, backref="library_dataset_actions")
-))
-
 mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociationPermissions, model.LibraryDatasetDatasetAssociationPermissions.table, properties=dict(
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation, backref="actions"),
     role=relation(model.Role, backref="library_dataset_dataset_actions")
@@ -1384,7 +1370,8 @@ mapper_registry.map_imperatively(model.LibraryDataset, model.LibraryDataset.tabl
                   == model.LibraryDatasetDatasetAssociation.table.c.id))
         ),
         viewonly=True,
-        uselist=True)
+        uselist=True),
+    actions=relation(model.LibraryDatasetPermissions, back_populates='library_dataset'),
 ))
 
 mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
