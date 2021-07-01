@@ -504,7 +504,7 @@ def test_HistoryDatasetAssociationTagAssociation(
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
         obj.user_value = user_value
-        obj.history_dataset_association_id = history_dataset_association.id
+        obj.history_dataset_association = history_dataset_association
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
@@ -572,7 +572,7 @@ def test_HistoryDatasetCollectionTagAssociation(model, session, history_dataset_
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
         obj.user_value = user_value
-        obj.history_dataset_collection_id = history_dataset_collection_association.id
+        obj.dataset_collection = history_dataset_collection_association
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
@@ -617,7 +617,7 @@ def test_HistoryTagAssociation(model, session, history, tag, user):
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
         obj.user_value = user_value
-        obj.history_id = history.id
+        obj.history = history
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
@@ -708,7 +708,6 @@ def test_JobToInputDatasetAssociation(model, session, history_dataset_associatio
     with dbcleanup(session, cls):
         name, dataset_version = 'a', 9
         obj = cls(name, history_dataset_association)
-        obj.history_dataset_association_id = history_dataset_association.id
         obj.job = job
         obj.dataset_version = dataset_version
         obj_id = persist(session, obj)
@@ -829,7 +828,7 @@ def test_LibraryDatasetCollectionTagAssociation(model, session, library_dataset_
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
         obj.user_value = user_value
-        obj.library_dataset_collection_id = library_dataset_collection_association.id
+        obj.dataset_collection = library_dataset_collection_association
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
@@ -901,7 +900,7 @@ def test_LibraryDatasetDatasetAssociationTagAssociation(
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
         obj.user_value = user_value
-        obj.library_dataset_dataset_association_id = library_dataset_dataset_association.id
+        obj.library_dataset_dataset_association = library_dataset_dataset_association
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
@@ -1145,7 +1144,7 @@ def test_PageTagAssociation(model, session, page, tag, user):
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
         obj.user_value = user_value
-        obj.page_id = page.id
+        obj.page = page
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
@@ -1406,7 +1405,7 @@ def test_StoredWorkflowTagAssociation(model, session, stored_workflow, tag, user
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
         obj.user_value = user_value
-        obj.stored_workflow_id = stored_workflow.id
+        obj.stored_workflow = stored_workflow
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
@@ -1759,7 +1758,7 @@ def test_WorkflowStepTagAssociation(model, session, workflow_step, tag, user):
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
         obj.user_value = user_value
-        obj.workflow_step_id = workflow_step.id
+        obj.workflow_step = workflow_step
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
@@ -1784,7 +1783,7 @@ def test_VisualizationTagAssociation(model, session, visualization, tag, user):
         user_tname, value, user_value = 'a', 'b', 'c'
         obj = cls(user=user, tag_id=tag.id, user_tname=user_tname, value=value)
         obj.user_value = user_value
-        obj.visualization_id = visualization.id
+        obj.visualization = visualization
         obj_id = persist(session, obj)
 
         stored_obj = get_stored_obj(session, cls, obj_id)
