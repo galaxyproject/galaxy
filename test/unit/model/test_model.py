@@ -635,6 +635,30 @@ def test_HistoryTagAssociation(model, session, history, tag, user):
         assert stored_obj.user.id == user.id
 
 
+def test_JobToInputDatasetAssociation(model, session, history_dataset_association, job):
+    cls = model.JobToInputDatasetAssociation
+    assert cls.__tablename__ == 'job_to_input_dataset'
+
+    with dbcleanup(session, cls):
+        name, dataset_version = 'a', 9
+        obj = cls(name, history_dataset_association)
+        obj.history_dataset_association_id = history_dataset_association.id
+        obj.job = job
+        obj.dataset_version = dataset_version
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.job_id == job.id
+        assert stored_obj.dataset_id == history_dataset_association.id
+        assert stored_obj.dataset_version == dataset_version
+        assert stored_obj.name == name
+        # test mapped relationships
+        assert stored_obj.job.id == job.id
+        assert stored_obj.dataset.id == history_dataset_association.id
+
+
 def test_Library(model, session, library_folder, library_permission):
     cls = model.Library
     assert cls.__tablename__ == 'library'
@@ -1789,6 +1813,12 @@ def history_dataset_collection_tag_association(model, session):
 def history_tag_association(model, session):
     hta = model.HistoryTagAssociation()
     yield from dbcleanup_wrapper(session, hta)
+
+
+@pytest.fixture
+def job(model, session):
+    j = model.Job()
+    yield from dbcleanup_wrapper(session, j)
 
 
 @pytest.fixture
