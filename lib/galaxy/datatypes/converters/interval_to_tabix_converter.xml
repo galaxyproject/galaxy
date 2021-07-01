@@ -16,7 +16,7 @@
     ]]></command>
     <inputs>
         <!-- gff because gff is not a subclass of interval -->
-        <param format="gff,interval" name="input1" type="data" label="Choose Interval file"/>
+        <param format="gff,vcf,interval" name="input1" type="data" label="Choose Interval file"/>
         <param format="bgzip" name="bgzip" type="data" label="BGZIP file"/>
     </inputs>
     <outputs>
