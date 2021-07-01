@@ -16,6 +16,7 @@
         '$input1' '$output1'
     ]]></command>
     <inputs>
+        <!-- gff because gff and vcf are not a subclass of interval -->
         <param format="gff,vcf,interval" name="input1" type="data" label="Choose Interval file"/>
     </inputs>
     <outputs>
