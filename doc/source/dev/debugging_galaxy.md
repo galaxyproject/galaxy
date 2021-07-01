@@ -6,10 +6,10 @@
 The following instructions assume that you have cloned your Galaxy fork into the
 `~/galaxy` directory and have created a VS Code workspace per instructions
 [here](./debugging_tests.md).  Additionally, we assume you have configured
-Galaxy and are using ${workspaceFolder}/config/galaxy.yml as your galaxy
-configuration file (so, not the default .sample). If you are still using the
-default configuration, simply `cp config/galaxy.yml.sample config/galaxy.yml`
-and it should work fine.
+Galaxy and are using `~/galaxy/config/galaxy.yml` as your galaxy configuration
+file (so, not the default .sample). If you are still using the default
+configuration, simply `cp config/galaxy.yml.sample config/galaxy.yml` and it
+should work fine.
 
 
 1. Add the following code snippet to `~/galaxy/.vscode/launch.json` (create the file if it does not already exist)
