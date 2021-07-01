@@ -181,6 +181,25 @@ def test_DatasetPermissions(model, session, dataset, role):
         assert stored_obj.role == role
 
 
+def test_DefaultHistoryPermissions(model, session, history, role):
+    cls = model.DefaultHistoryPermissions
+    assert cls.__tablename__ == 'default_history_permissions'
+    with dbcleanup(session, cls):
+        action = 'a'
+        obj = cls(history, action, role)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.action == action
+        assert stored_obj.history_id == history.id
+        assert stored_obj.role_id == role.id
+        # test mapped relationships
+        assert stored_obj.history.id == history.id
+        assert stored_obj.role == role
+
+
 def test_DefaultQuotaAssociation(model, session, quota):
     cls = model.DefaultQuotaAssociation
     assert cls.__tablename__ == 'default_quota_association'
