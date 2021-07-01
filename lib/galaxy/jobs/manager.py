@@ -29,6 +29,9 @@ class JobManager:
             self.job_handler = handler.JobHandler(app)
         else:
             self.job_handler = NoopHandler()
+
+    def _check_jobs_at_startup(self):
+        if not self.app.is_job_handler:
             self.__check_jobs_at_startup()
 
     def __check_jobs_at_startup(self):
