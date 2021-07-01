@@ -24,13 +24,12 @@
 <script>
 import { DatasetProvider } from "./providers";
 import DatasetUIWrapper from "./DatasetUIWrapper";
-import DatasetCollectionUIWrapper from "./DatasetCollectionUIWrapper";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
         DatasetProvider,
-        DatasetCollectionUIWrapper,
+        DatasetCollectionUIWrapper: () => import("components/WorkflowInvocationState/DatasetCollectionUIWrapper"),
         DatasetUIWrapper,
         LoadingSpan,
     },
