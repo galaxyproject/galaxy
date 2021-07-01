@@ -2412,6 +2412,7 @@ class Role(Base, Dictifiable, RepresentById):
     deleted = Column('deleted', Boolean, index=True, default=False)
     dataset_actions = relationship('DatasetPermissions', back_populates='role')
     groups = relationship('GroupRoleAssociation', back_populates='role')
+    library_actions = relationship('LibraryPermissions', back_populates='role')
 
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
@@ -2558,7 +2559,18 @@ class DatasetPermissions(Base, RepresentById):
             self.role_id = role_id
 
 
-class LibraryPermissions(RepresentById):
+class LibraryPermissions(Base, RepresentById):
+    __tablename__ = 'library_permissions'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    action = Column('action', TEXT)
+    library_id = Column('library_id', Integer, ForeignKey('library.id'), nullable=True, index=True)
+    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
+    library = relationship('Library', back_populates='actions')
+    role = relationship('Role', back_populates='library_actions')
+
     def __init__(self, action, library_item, role):
         self.action = action
         if isinstance(library_item, Library):
