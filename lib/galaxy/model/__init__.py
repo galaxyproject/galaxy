@@ -1586,7 +1586,18 @@ class JobToOutputDatasetAssociation(RepresentById):
         self.dataset = dataset
 
 
-class JobToInputDatasetCollectionAssociation(RepresentById):
+class JobToInputDatasetCollectionAssociation(Base, RepresentById):
+    __tablename__ = 'job_to_input_dataset_collection'
+
+    id = Column('id', Integer, primary_key=True)
+    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
+    dataset_collection_id = Column('dataset_collection_id', Integer,
+        ForeignKey('history_dataset_collection_association.id'), index=True)
+    dataset_version = Column('dataset_version', Integer)
+    name = Column('name', String(255))
+    dataset_collection = relationship('HistoryDatasetCollectionAssociation', lazy=False)
+    job = relationship('Job', back_populates='input_dataset_collections')
+
     def __init__(self, name, dataset_collection):
         self.name = name
         self.dataset_collection = dataset_collection
