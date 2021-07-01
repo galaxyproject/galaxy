@@ -616,6 +616,37 @@ def test_HistoryTagAssociation(model, session, history, tag, user):
         assert stored_obj.user.id == user.id
 
 
+def test_Library(model, session, library_folder, library_permission):
+    cls = model.Library
+    assert cls.__tablename__ == 'library'
+    with dbcleanup(session, cls):
+        name, deleted, purged, description, synopsis = 'a', True, True, 'b', 'c'
+        obj = cls(name, description, synopsis, library_folder)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.deleted = deleted
+        obj.purged = purged
+        obj.actions.append(library_permission)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.root_folder_id == library_folder.id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
+        assert stored_obj.name == name
+        assert stored_obj.deleted == deleted
+        assert stored_obj.purged == purged
+        assert stored_obj.description == description
+        assert stored_obj.synopsis == synopsis
+        # test mapped relationships
+        assert stored_obj.root_folder.id == library_folder.id
+        assert stored_obj.actions == [library_permission]
+
+
 def test_LibraryDatasetCollectionAnnotationAssociation(
         model, session, library_dataset_collection_association, user):
     cls = model.LibraryDatasetCollectionAnnotationAssociation
@@ -1654,6 +1685,12 @@ def history_tag_association(model, session):
 def library(model, session):
     lb = model.Library()
     yield from dbcleanup_wrapper(session, lb)
+
+
+@pytest.fixture
+def library_folder(model, session):
+    lf = model.LibraryFolder()
+    yield from dbcleanup_wrapper(session, lf)
 
 
 @pytest.fixture
