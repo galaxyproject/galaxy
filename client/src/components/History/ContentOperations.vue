@@ -27,6 +27,7 @@
 
                 <PriorityMenuItem
                     key="copy-datasets"
+                    class="copy-datasets-menu-item"
                     title="Copy Datasets"
                     icon="fas fa-copy"
                     @click="iframeRedirect('/dataset/copy_datasets')"

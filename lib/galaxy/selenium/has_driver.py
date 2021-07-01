@@ -208,8 +208,12 @@ class HasDriver:
         submit_button.click()
 
     def prepend_timeout_message(self, timeout_exception, message):
+        msg = message
+        timeout_msg = timeout_exception.msg
+        if timeout_msg:
+            msg += f" {timeout_msg}"
         return TimeoutException(
-            msg=message + (timeout_exception.msg or ''),
+            msg=msg,
             screen=timeout_exception.screen,
             stacktrace=timeout_exception.stacktrace,
         )

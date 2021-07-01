@@ -299,6 +299,8 @@ class NavigatesGalaxy(HasDriver):
         item = self.components.history_panel.item.selector
         if multi_history_panel:
             item = self.components.multi_history_view.item
+        elif self.is_beta_history():
+            item = self.components.history_panel.beta_item.selector
         return item(
             history_content_type=history_item["history_content_type"],
             id=history_item["id"]
@@ -1248,7 +1250,10 @@ class NavigatesGalaxy(HasDriver):
         self.components.history_panel.new_history_button.wait_for_and_click()
 
     def history_panel_click_copy_elements(self):
-        self.click_history_option("Copy Datasets")
+        if self.is_beta_history():
+            self.components.history_panel.options_button_copy_datasets_beta.wait_for_and_click()
+        else:
+            self.click_history_option("Copy Datasets")
 
     @retry_during_transitions
     def histories_click_advanced_search(self):

@@ -5,6 +5,7 @@
     <div
         class="dataset dataset-collection collapsed"
         :class="{ selected }"
+        :id="typedId"
         :data-state="dsc.state"
         @keydown.arrow-right.self.stop="$emit('viewCollection')"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
@@ -97,6 +98,11 @@ export default {
     methods: {
         onStatusClick() {
             console.log("onStatusClick", ...arguments);
+        },
+    },
+    computed: {
+        typedId() {
+            return this.dsc.type_id;
         },
     },
 };

@@ -3,7 +3,7 @@
         <UserHistories v-if="user" :user="user" v-slot="{ currentHistory, histories, handlers }">
             <HistoryPanel v-if="currentHistory" :history="currentHistory" v-on="handlers">
                 <template v-slot:nav>
-                    <div>
+                    <div id="current-history-panel">
                         <HistorySelector
                             :histories="histories"
                             :current-history="currentHistory"

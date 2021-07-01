@@ -7,7 +7,7 @@ either through the props, and make updates through the events -->
 
 <template>
     <div
-        class="dataset"
+        class="dataset history-content"
         :id="typedId"
         :class="{ expanded, collapsed, selected }"
         :data-state="dataset.state"

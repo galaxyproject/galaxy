@@ -111,6 +111,10 @@ history_panel:
     labels:
       new: 'Create New'
 
+  beta_item:
+    selectors:
+      _: ' #${history_content_type}-${id}' 
+
   item:
     selectors:
       # These now appear other places :_( - e.g. in the invocation view so we'll try
@@ -175,7 +179,7 @@ history_panel:
     name_beta: '.history-title span:last-child'
     name_edit_input: '.name input'
     name_edit_input_beta: '.history-title input'
-    contents: '#current-history-panel .list-items div.history-content'
+    contents: '#current-history-panel .history-content'
 
     empty_message: '.empty-message'
     size: '.history-size'
@@ -195,6 +199,7 @@ history_panel:
     options_button: '#history-options-button'
     options_button_icon: '.history-details .menu-expand-button'
     options_button_icon_beta: '.history-details .menu-expand-button'
+    options_button_copy_datasets_beta: '.copy-datasets-menu-item'
     options_menu: '#history-options-button-menu'
     options_menu_item:
       type: sizzle
