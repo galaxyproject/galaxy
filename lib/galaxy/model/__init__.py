@@ -1603,7 +1603,16 @@ class JobToInputDatasetCollectionAssociation(Base, RepresentById):
         self.dataset_collection = dataset_collection
 
 
-class JobToInputDatasetCollectionElementAssociation(RepresentById):
+class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
+    __tablename__ = 'job_to_input_dataset_collection_element'
+
+    id = Column('id', Integer, primary_key=True)
+    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
+    dataset_collection_element_id = Column('dataset_collection_element_id', Integer, ForeignKey('dataset_collection_element.id'), index=True)
+    name = Column('name', Unicode(255))
+    dataset_collection_element = relationship('DatasetCollectionElement', lazy=False)
+    job = relationship('Job', back_populates='input_dataset_collection_elements')
+
     def __init__(self, name, dataset_collection_element):
         self.name = name
         self.dataset_collection_element = dataset_collection_element
