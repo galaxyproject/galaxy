@@ -1,5 +1,8 @@
 name: Database indexes
 on: [push, pull_request]
+concurrency:
+  group: database-${{ github.ref }}
+  cancel-in-progress: true
 defaults:
   run:
     working-directory: 'galaxy root'

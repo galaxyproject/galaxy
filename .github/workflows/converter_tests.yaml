@@ -1,5 +1,8 @@
 name: Converter tests
 on: [push, pull_request]
+concurrency:
+  group: converter-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: Test

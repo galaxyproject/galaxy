@@ -3,6 +3,9 @@ on: [push, pull_request]
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_USE_UVICORN: false
+concurrency:
+  group: api-legacy-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: Test
