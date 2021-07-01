@@ -40,7 +40,7 @@
                             :validation-scroll-to="validationScrollTo"
                             :form-config="formConfig"
                             @onChange="onChange"
-                            v-model="validationInternal"
+                            @onValidation="validationInternal"
                         />
                         <FormElement
                             v-if="emailAllowed(config, user)"
@@ -210,6 +210,9 @@ export default {
             } else {
                 return false;
             }
+        },
+        onValidation(validationInternal) {
+            this.validationInternal = validationInternal;
         },
         onChange(newData) {
             this.formData = newData;

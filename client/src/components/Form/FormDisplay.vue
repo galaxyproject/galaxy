@@ -54,7 +54,7 @@ export default {
         },
         validation() {
             this.onHighlight(this.validation, true);
-            this.$emit("input", this.validation);
+            this.$emit("onValidation", this.validation);
         },
         validationErrors() {
             const matchedErrors = Object.entries(this.form.data.matchResponse(this.validationErrors));
