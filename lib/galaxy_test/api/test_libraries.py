@@ -478,7 +478,7 @@ class LibrariesApiTestCase(ApiTestCase):
             description="new subfolder desc",
             name="New Subfolder",
         )
-        return self._post(f"folders/{containing_folder_id}", data=create_data)
+        return self._post(f"folders/{containing_folder_id}", data=create_data, json=True)
 
     def _create_dataset_in_folder_in_library(self, library_name, content="1 2 3", wait=False):
         library = self.library_populator.new_private_library(library_name)
