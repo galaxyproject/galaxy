@@ -741,6 +741,31 @@ def test_LibraryDatasetDatasetAssociationTagAssociation(
         assert stored_obj.user.id == user.id
 
 
+def test_LibraryFolderPermissions(model, session, library_folder, role):
+    cls = model.LibraryFolderPermissions
+    assert cls.__tablename__ == 'library_folder_permissions'
+    with dbcleanup(session, cls):
+        action = 'a'
+        obj = cls(action, library_folder, role)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.update_time == update_time
+        assert stored_obj.action == action
+        assert stored_obj.library_folder_id == library_folder.id
+        assert stored_obj.role_id == role.id
+        # test mapped relationships
+        assert stored_obj.folder.id == library_folder.id
+        assert stored_obj.role.id == role.id
+
+
 def test_LibraryPermissions(model, session, library, role):
     cls = model.LibraryPermissions
     assert cls.__tablename__ == 'library_permissions'
@@ -1084,7 +1109,14 @@ def test_Quota(
         assert stored_obj.users == [user_quota_association]
 
 
-def test_Role(model, session, dataset_permission, group_role_association, library_permission):
+def test_Role(
+        model,
+        session,
+        dataset_permission,
+        group_role_association,
+        library_permission,
+        library_folder_permission,
+):
     cls = model.Role
     assert cls.__tablename__ == 'role'
     with dbcleanup(session, cls):
@@ -1096,6 +1128,7 @@ def test_Role(model, session, dataset_permission, group_role_association, librar
         obj.update_time = update_time
         obj.dataset_actions.append(dataset_permission)
         obj.library_actions.append(library_permission)
+        obj.library_folder_actions.append(library_folder_permission)
         obj.groups.append(group_role_association)
         obj_id = persist(session, obj)
 
@@ -1112,6 +1145,7 @@ def test_Role(model, session, dataset_permission, group_role_association, librar
         assert stored_obj.dataset_actions == [dataset_permission]
         assert stored_obj.groups == [group_role_association]
         assert stored_obj.library_actions == [library_permission]
+        assert stored_obj.library_folder_actions == [library_folder_permission]
 
 
 def test_StoredWorkflowAnnotationAssociation(model, session, stored_workflow, user):
@@ -1715,6 +1749,12 @@ def library_dataset_dataset_association(model, session):
 def library_dataset_dataset_association_tag_association(model, session):
     lddata = model.LibraryDatasetDatasetAssociationTagAssociation()
     yield from dbcleanup_wrapper(session, lddata)
+
+
+@pytest.fixture
+def library_folder_permission(model, session, library_folder, role):
+    lfp = model.LibraryFolderPermissions('a', library_folder, role)
+    yield from dbcleanup_wrapper(session, lfp)
 
 
 @pytest.fixture

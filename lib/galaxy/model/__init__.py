@@ -2413,6 +2413,7 @@ class Role(Base, Dictifiable, RepresentById):
     dataset_actions = relationship('DatasetPermissions', back_populates='role')
     groups = relationship('GroupRoleAssociation', back_populates='role')
     library_actions = relationship('LibraryPermissions', back_populates='role')
+    library_folder_actions = relationship('LibraryFolderPermissions', back_populates='role')
 
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
@@ -2580,7 +2581,18 @@ class LibraryPermissions(Base, RepresentById):
         self.role = role
 
 
-class LibraryFolderPermissions(RepresentById):
+class LibraryFolderPermissions(Base, RepresentById):
+    __tablename__ = 'library_folder_permissions'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    action = Column('action', TEXT)
+    library_folder_id = Column('library_folder_id', Integer, ForeignKey('library_folder.id'), nullable=True, index=True)
+    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
+    folder = relationship('LibraryFolder', back_populates='actions')
+    role = relationship('Role', back_populates='library_folder_actions')
+
     def __init__(self, action, library_item, role):
         self.action = action
         if isinstance(library_item, LibraryFolder):

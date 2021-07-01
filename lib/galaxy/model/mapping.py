@@ -199,15 +199,6 @@ model.UserRoleAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
-model.LibraryFolderPermissions.table = Table(
-    "library_folder_permissions", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("action", TEXT),
-    Column("library_folder_id", Integer, ForeignKey("library_folder.id"), nullable=True, index=True),
-    Column("role_id", Integer, ForeignKey("role.id"), index=True))
-
 model.LibraryDatasetPermissions.table = Table(
     "library_dataset_permissions", metadata,
     Column("id", Integer, primary_key=True),
@@ -1303,11 +1294,6 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
     )
 ))
 
-mapper_registry.map_imperatively(model.LibraryFolderPermissions, model.LibraryFolderPermissions.table, properties=dict(
-    folder=relation(model.LibraryFolder, backref="actions"),
-    role=relation(model.Role, backref="library_folder_actions")
-))
-
 mapper_registry.map_imperatively(model.LibraryDatasetPermissions, model.LibraryDatasetPermissions.table, properties=dict(
     library_dataset=relation(model.LibraryDataset, backref="actions"),
     role=relation(model.Role, backref="library_dataset_actions")
@@ -1369,6 +1355,7 @@ mapper_registry.map_imperatively(model.LibraryFolder, model.LibraryFolder.table,
         lazy=True,
         viewonly=True),
     library_root=relation(model.Library, back_populates='root_folder'),
+    actions=relation(model.LibraryFolderPermissions, back_populates='folder'),
 ))
 
 mapper_registry.map_imperatively(model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.table, properties=dict(
