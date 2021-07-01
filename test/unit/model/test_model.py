@@ -703,6 +703,28 @@ def test_JobToInputDatasetAssociation(model, session, history_dataset_associatio
         assert stored_obj.dataset.id == history_dataset_association.id
 
 
+def test_JobToOutputDatasetCollectionAssociation(
+        model, session, history_dataset_collection_association, job):
+    cls = model.JobToOutputDatasetCollectionAssociation
+    assert cls.__tablename__ == 'job_to_output_dataset_collection'
+
+    with dbcleanup(session, cls):
+        name = 'a'
+        obj = cls(name, history_dataset_collection_association)
+        obj.job = job
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.job_id == job.id
+        assert stored_obj.dataset_collection_id == history_dataset_collection_association.id
+        assert stored_obj.name == name
+        # test mapped relationships
+        assert stored_obj.job.id == job.id
+        assert stored_obj.dataset_collection_instance.id == history_dataset_collection_association.id
+
+
 def test_Library(model, session, library_folder, library_permission):
     cls = model.Library
     assert cls.__tablename__ == 'library'
