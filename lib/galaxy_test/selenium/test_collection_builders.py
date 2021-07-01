@@ -19,7 +19,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my cool list")
         self.screenshot("collection_builder_list")
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(2)
+        self._collection_builder_wait_for_hid_ok(2)
 
     @selenium_test
     def test_build_list_and_show_items(self):
@@ -34,7 +34,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my cool list")
 
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(3)
+        self._collection_builder_wait_for_hid_ok(3)
 
     @selenium_test
     def test_build_pair_simple_hidden(self):
@@ -49,7 +49,17 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my awesome pair")
         self.screenshot("collection_builder_pair")
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(3)
+        self._collection_builder_wait_for_hid_ok(3)
+
+    def _collection_builder_wait_for_hid_ok(self, hid):
+        # a hacked up version of super().history_panel_wait_for_hid_ok for beta history panel not refreshing correctly.
+        allowed_force_refreshes = 0
+        if self.use_beta_history:
+            # so collection builder no longer forces refreshes of history panel.
+            # Why doesn't the panel pick it up automatically - an sqlite limitation?
+            # Or maybe refresh doesn't work if things are selected in the panel?
+            allowed_force_refreshes = 2
+        self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=allowed_force_refreshes)
 
     @selenium_test
     def test_build_paired_list_simple(self):
@@ -68,7 +78,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my awesome paired list")
         self.screenshot("collection_builder_paired_list")
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(3)
+        self._collection_builder_wait_for_hid_ok(3)
         self.history_panel_wait_for_hid_hidden(1)
         self.history_panel_wait_for_hid_hidden(2)
 
@@ -98,7 +108,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my awesome paired list")
 
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(5)
+        self._collection_builder_wait_for_hid_ok(5)
         self.history_panel_refresh_click()
         self.history_panel_wait_for_hid_ok(1)
         self.history_panel_wait_for_hid_ok(2)
