@@ -673,28 +673,28 @@
       <converter file="smi_to_smi_converter.xml" target_datatype="smi"/>
     </datatype>
     <datatype extension="sdf" type="galaxy.datatypes.molecules:SDF" display_in_upload="true">
-      <converter file="sdf_to_smi_converter.xml" target_datatype="smi"/>
+      <converter file="molecules_converter.xml" target_datatype="smi"/>
       <converter file="molecules_converter.xml" target_datatype="inchi"/>
       <converter file="molecules_converter.xml" target_datatype="mol2"/>
       <converter file="molecules_converter.xml" target_datatype="cml"/>
       <display file="icn3d/icn3d_simple.xml"/>
     </datatype>
     <datatype extension="inchi" type="galaxy.datatypes.molecules:InChI" display_in_upload="true">
-      <converter file="inchi_to_smi_converter.xml" target_datatype="smi"/>
+      <converter file="molecules_converter.xml" target_datatype="smi"/>
       <converter file="molecules_converter.xml" target_datatype="sdf"/>
       <converter file="inchi_to_mol_converter.xml" target_datatype="mol"/>
       <converter file="molecules_converter.xml" target_datatype="mol2"/>
       <converter file="molecules_converter.xml" target_datatype="cml"/>
     </datatype>
     <datatype extension="mol" type="galaxy.datatypes.molecules:MOL" display_in_upload="true">
-      <converter file="mol_to_smi_converter.xml" target_datatype="smi"/>
+      <converter file="molecules_converter.xml" target_datatype="smi"/>
       <converter file="molecules_converter.xml" target_datatype="sdf"/>
       <converter file="molecules_converter.xml" target_datatype="inchi"/>
       <converter file="molecules_converter.xml" target_datatype="mol2"/>
       <converter file="molecules_converter.xml" target_datatype="cml"/>
     </datatype>
     <datatype extension="mol2" type="galaxy.datatypes.molecules:MOL2" display_in_upload="true">
-      <converter file="mol2_to_smi_converter.xml" target_datatype="smi"/>
+      <converter file="molecules_converter.xml" target_datatype="smi"/>
       <converter file="molecules_converter.xml" target_datatype="sdf"/>
       <converter file="molecules_converter.xml" target_datatype="inchi"/>
       <converter file="mol2_to_mol_converter.xml" target_datatype="mol"/>
