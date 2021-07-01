@@ -199,17 +199,6 @@ model.UserRoleAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
-model.LibraryDatasetDatasetAssociationPermissions.table = Table(
-    "library_dataset_dataset_association_permissions", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("action", TEXT),
-    Column("library_dataset_dataset_association_id", Integer,
-        ForeignKey("library_dataset_dataset_association.id"),
-        nullable=True, index=True),
-    Column("role_id", Integer, ForeignKey("role.id"), index=True))
-
 model.DefaultHistoryPermissions.table = Table(
     "default_history_permissions", metadata,
     Column("id", Integer, primary_key=True),
@@ -1285,11 +1274,6 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
     )
 ))
 
-mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociationPermissions, model.LibraryDatasetDatasetAssociationPermissions.table, properties=dict(
-    library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation, backref="actions"),
-    role=relation(model.Role, backref="library_dataset_dataset_actions")
-))
-
 mapper_registry.map_imperatively(model.ExtendedMetadata, model.ExtendedMetadata.table, properties=dict(
     children=relation(model.ExtendedMetadataIndex, backref='extended_metadata')
 ))
@@ -1402,7 +1386,10 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.L
     extended_metadata=relation(model.ExtendedMetadata,
         primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id)
     ),
-    _metadata=deferred(model.LibraryDatasetDatasetAssociation.table.c._metadata)
+    _metadata=deferred(model.LibraryDatasetDatasetAssociation.table.c._metadata),
+    actions=relation(
+        model.LibraryDatasetDatasetAssociationPermissions,
+        back_populates='library_dataset_dataset_association'),
 ))
 
 mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetInfoAssociation.table, properties=dict(
