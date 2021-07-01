@@ -175,8 +175,12 @@ galaxy:
         level: WARN
         qualname: paste.httpserver.ThreadPool
         
+      sqlalchemy:
+        level: TRACE  # turn on DEBUG temporarily to troubleshoot ORM exception
+        qualname: sqlalchemy
+
       sqlalchemy_json.track:
-        level: DEBUG  # turn on DEBUG temporarily to troubleshoot ORM exception
+        level: TRACE  # turn on DEBUG temporarily to troubleshoot ORM exception
         qualname: sqlalchemy_json.track
 
       urllib3.connectionpool: 
@@ -226,6 +230,8 @@ galaxy:
         when: midnight
 
     formatters: 
+      defaultformat:
+        (): '%(name)s %(levelname)s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s'
       stack: 
         (): galaxy.web_stack.application_stack_log_formatter  
   
