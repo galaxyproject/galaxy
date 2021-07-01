@@ -359,13 +359,6 @@ model.JobParameter.table = Table(
     Column("name", String(255)),
     Column("value", TEXT))
 
-model.JobToInputLibraryDatasetAssociation.table = Table(
-    "job_to_input_library_dataset", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("ldda_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True),
-    Column("name", String(255)))
-
 model.JobToOutputLibraryDatasetAssociation.table = Table(
     "job_to_output_library_dataset", metadata,
     Column("id", Integer, primary_key=True),
@@ -1339,6 +1332,8 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.L
     actions=relation(
         model.LibraryDatasetDatasetAssociationPermissions,
         back_populates='library_dataset_dataset_association'),
+    dependent_jobs=relation(
+        model.JobToInputLibraryDatasetAssociation, back_populates='dataset'),
 ))
 
 mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetInfoAssociation.table, properties=dict(
@@ -1353,12 +1348,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_definition_id == model.FormDefinition.id)),
     info=relation(model.FormValues,
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.id))
-))
-
-mapper_registry.map_imperatively(model.JobToInputLibraryDatasetAssociation, model.JobToInputLibraryDatasetAssociation.table, properties=dict(
-    dataset=relation(model.LibraryDatasetDatasetAssociation,
-        lazy=False,
-        backref="dependent_jobs")
 ))
 
 mapper_registry.map_imperatively(model.JobToOutputLibraryDatasetAssociation, model.JobToOutputLibraryDatasetAssociation.table, properties=dict(
@@ -1838,7 +1827,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation,
         back_populates="job", lazy=True),
     post_job_actions=relation(model.PostJobActionAssociation, backref="job", lazy=False),
-    input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation, backref="job"),
+    input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation, back_populates="job"),
     output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation,
         backref="job", lazy=True),
     external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True, backref='job'),

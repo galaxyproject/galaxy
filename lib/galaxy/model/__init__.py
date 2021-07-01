@@ -1668,7 +1668,17 @@ class JobToImplicitOutputDatasetCollectionAssociation(Base, RepresentById):
         self.dataset_collection = dataset_collection
 
 
-class JobToInputLibraryDatasetAssociation(RepresentById):
+class JobToInputLibraryDatasetAssociation(Base, RepresentById):
+    __tablename__ = 'job_to_input_library_dataset'
+
+    id = Column('id', Integer, primary_key=True)
+    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
+    ldda_id = Column('ldda_id', Integer, ForeignKey('library_dataset_dataset_association.id'), index=True)
+    name = Column('name', Unicode(255))
+    job = relationship('Job', back_populates='input_library_datasets')
+    dataset = relationship(
+        'LibraryDatasetDatasetAssociation', lazy=False, back_populates='dependent_jobs')
+
     def __init__(self, name, dataset):
         self.name = name
         self.dataset = dataset
