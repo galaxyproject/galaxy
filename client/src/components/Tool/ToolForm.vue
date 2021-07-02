@@ -232,9 +232,6 @@ export default {
         onChangeRemap(remap) {
             this.remap = remap ? this.job_id : null;
         },
-        onChangeReuse(reuse) {
-            this.reuse = reuse;
-        },
         onUpdateFavorites(user, newFavorites) {
             user.preferences["favorites"] = newFavorites;
         },
