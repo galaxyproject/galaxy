@@ -114,6 +114,10 @@ def decode_with_security(security: IdEncodingHelper, id: Any):
     return security.decode_id(str(id))
 
 
+def encode_with_security(security: IdEncodingHelper, id: Any):
+    return security.encode_id(id)
+
+
 def get_object(trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
     """
     Convenience method to get a model object with the specified checks. This is
@@ -1210,6 +1214,10 @@ class ServiceBase:
     def decode_id(self, id):
         """Decodes a previously encoded database ID."""
         return decode_with_security(self.security, id)
+
+    def encode_id(self, id):
+        """Decodes a previously encoded database ID."""
+        return encode_with_security(self.security, id)
 
     def build_order_by(self, manager: SortableManager, order_by_query: Optional[str] = None):
         """Returns an ORM compatible order_by clause using the order attribute and the given manager.
