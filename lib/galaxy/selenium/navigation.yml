@@ -157,7 +157,7 @@ history_panel:
 
   collection_view:
     selectors:
-      _: '.list-panel.dataset-collection-panel'
+      _: '.dataset-collection-panel'
       back: '.navigation .back'
       title: '.dataset-collection-panel .controls .title .editable-text'
       title_input: '.dataset-collection-panel .controls .title input'

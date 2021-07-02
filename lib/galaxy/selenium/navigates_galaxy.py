@@ -1400,10 +1400,10 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_click_item_title(self, hid, **kwds):
         item_component = self.history_panel_item_component(hid=hid)
         details_component = item_component.details
-        details_displayed = details_component.is_displayed
         item_component.title.wait_for_and_click()
 
         if kwds.get("wait", False):
+            details_displayed = details_component.is_displayed
             if details_displayed:
                 details_component.wait_for_absent_or_hidden()
             else:

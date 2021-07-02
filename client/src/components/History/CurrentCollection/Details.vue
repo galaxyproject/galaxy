@@ -1,5 +1,5 @@
 <template>
-    <section class="history-details">
+    <section class="history-details controls">
         <ClickToEdit
             :value="dsc.name"
             v-if="writable"
