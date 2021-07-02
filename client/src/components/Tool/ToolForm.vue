@@ -40,7 +40,7 @@
                             :validation-scroll-to="validationScrollTo"
                             :form-config="formConfig"
                             @onChange="onChange"
-                            @onValidation="validationInternal"
+                            @onValidation="onValidation"
                         />
                         <FormElement
                             v-if="emailAllowed(config, user)"
@@ -254,9 +254,8 @@ export default {
             }
             this.showExecuting = true;
             const Galaxy = getGalaxyInstance();
-            const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
             const jobDef = {
-                history_id: history_id,
+                history_id: this.history_id,
                 tool_id: this.formConfig.id,
                 tool_version: this.formConfig.version,
                 inputs: this.formData,
