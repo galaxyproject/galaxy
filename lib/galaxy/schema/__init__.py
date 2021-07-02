@@ -47,12 +47,12 @@ class FilterQueryParams(BaseModel):
         description="The maximum number of items to return.",
     )
     order: Optional[str] = Field(
-        default="create_time-dsc",
+        default=None,
         title="Order",
         description=(
             "String containing one of the valid ordering attributes followed (optionally) "
             "by '-asc' or '-dsc' for ascending and descending order respectively. "
-                "Orders can be stacked as a comma-separated list of values."
+            "Orders can be stacked as a comma-separated list of values."
         ),
         example="name-dsc,create_time",
     )

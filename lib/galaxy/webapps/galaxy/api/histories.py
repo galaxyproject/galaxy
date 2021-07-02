@@ -4,6 +4,7 @@ API operations on a history.
 .. seealso:: :class:`galaxy.model.History`
 """
 import logging
+from typing import Optional
 
 from galaxy import (
     util
@@ -13,6 +14,7 @@ from galaxy.managers import (
     sharable,
 )
 from galaxy.schema import FilterQueryParams
+from galaxy.schema.fields import OrderParamField
 from galaxy.schema.schema import (
     CreateHistoryPayload,
     ExportHistoryArchivePayload,
@@ -30,6 +32,10 @@ from galaxy.webapps.galaxy.api.configuration import parse_serialization_params
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
+
+
+class HistoryFilterQueryParams(FilterQueryParams):
+    order: Optional[str] = OrderParamField(default_order="create_time-dsc")
 
 
 class HistoriesController(BaseGalaxyAPIController):
@@ -130,7 +136,7 @@ class HistoriesController(BaseGalaxyAPIController):
         deleted_only = util.string_as_bool(deleted)
         all_histories = util.string_as_bool(kwd.get('all', False))
         serialization_params = parse_serialization_params(**kwd)
-        filter_parameters = FilterQueryParams(**kwd)
+        filter_parameters = HistoryFilterQueryParams(**kwd)
         return self.service.index(trans, serialization_params, filter_parameters, deleted_only, all_histories)
 
     @expose_api_anonymous
@@ -183,7 +189,7 @@ class HistoriesController(BaseGalaxyAPIController):
         Follows the same filtering logic as the index() method above.
         """
         serialization_params = parse_serialization_params(**kwd)
-        filter_parameters = FilterQueryParams(**kwd)
+        filter_parameters = HistoryFilterQueryParams(**kwd)
         return self.service.published(trans, serialization_params, filter_parameters)
 
     @expose_api
@@ -199,7 +205,7 @@ class HistoriesController(BaseGalaxyAPIController):
         Follows the same filtering logic as the index() method above.
         """
         serialization_params = parse_serialization_params(**kwd)
-        filter_parameters = FilterQueryParams(**kwd)
+        filter_parameters = HistoryFilterQueryParams(**kwd)
         return self.service.shared_with_me(trans, serialization_params, filter_parameters)
 
     @expose_api_anonymous
