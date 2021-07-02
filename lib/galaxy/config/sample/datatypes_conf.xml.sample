@@ -717,12 +717,12 @@
     <datatype extension="pdbqt" type="galaxy.datatypes.molecules:PDBQT" display_in_upload="true"/>
     <datatype extension="pqr" type="galaxy.datatypes.molecules:PQR" display_in_upload="true" />
     <datatype extension="trr" type="galaxy.datatypes.binary:Trr" display_in_upload="true">
-      <converter file="trr_or_dcd_to_xtc.xml" target_datatype="xtc"/>
-      <converter file="xtc_or_trr_to_dcd.xml" target_datatype="dcd"/>
+      <converter file="mdconvert.xml" target_datatype="xtc"/>
+      <converter file="mdconvert.xml" target_datatype="dcd"/>
     </datatype>
     <datatype extension="dcd" type="galaxy.datatypes.binary:Dcd" display_in_upload="true">
-      <converter file="trr_or_dcd_to_xtc.xml" target_datatype="xtc"/>
-      <converter file="xtc_or_dcd_to_trr.xml" target_datatype="trr"/>
+      <converter file="mdconvert.xml" target_datatype="xtc"/>
+      <converter file="mdconvert.xml" target_datatype="trr"/>
     </datatype>
     <datatype extension="top" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="itp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
@@ -730,8 +730,8 @@
     <datatype extension="ndx" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="xvg" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="xtc" type="galaxy.datatypes.binary:Xtc" display_in_upload="true">
-      <converter file="xtc_or_dcd_to_trr.xml" target_datatype="trr"/>
-      <converter file="xtc_or_trr_to_dcd.xml" target_datatype="dcd"/>
+      <converter file="mdconvert.xml" target_datatype="trr"/>
+      <converter file="mdconvert.xml" target_datatype="dcd"/>
     </datatype>
     <datatype extension="cpt" type="galaxy.datatypes.binary:Cpt" display_in_upload="true"/>
     <datatype extension="edr" type="galaxy.datatypes.binary:Edr" display_in_upload="true"/>
