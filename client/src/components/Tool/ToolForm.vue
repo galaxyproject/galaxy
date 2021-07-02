@@ -1,93 +1,99 @@
 <template>
     <ConfigProvider v-slot="{ config }">
         <CurrentUser v-slot="{ user }">
-            <div>
-                <LoadingSpan v-if="showLoading" message="Loading Tool" />
-                <div v-if="showEntryPoints">
-                    <ToolEntryPoints v-for="job in entryPoints" :job-id="job.id" :key="job.id" />
+            <UserHistories v-if="user" :user="user" v-slot="{ currentHistory }">
+                <div>
+                    <LoadingSpan v-if="showLoading" message="Loading Tool" />
+                    <div v-if="showEntryPoints">
+                        <ToolEntryPoints v-for="job in entryPoints" :job-id="job.id" :key="job.id" />
+                    </div>
+                    <ToolSuccess
+                        v-if="showSuccess"
+                        :job-def="jobDef"
+                        :job-response="jobResponse"
+                        :tool-name="toolName"
+                    />
+                    <Webhook v-if="showSuccess" type="tool" :tool-id="jobDef.tool_id" />
+                    <div v-if="showError" class="errormessagelarge">
+                        <p>
+                            The server could not complete the request. Please contact the Galaxy Team if this error
+                            persists.
+                            {{ errorTitle | l }}
+                        </p>
+                        <pre>{{ errorContentPretty }}</pre>
+                    </div>
+                    <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
+                    <ToolCard
+                        v-if="showForm"
+                        :id="formConfig.id"
+                        :user="user"
+                        :version="formConfig.version"
+                        :title="formConfig.name"
+                        :description="formConfig.description"
+                        :options="formConfig"
+                        :message-text="messageText"
+                        :message-variant="messageVariant"
+                        @onChangeVersion="onChangeVersion"
+                        @onUpdateFavorites="onUpdateFavorites"
+                        itemscope="itemscope"
+                        itemtype="https://schema.org/CreativeWork"
+                    >
+                        <template v-slot:body>
+                            <FormDisplay
+                                :id="formConfig.id"
+                                :inputs="inputs"
+                                :validation-errors="validationErrors"
+                                :validation-scroll-to="validationScrollTo"
+                                :form-config="formConfig"
+                                @onChange="onChange"
+                                @onValidation="onValidation"
+                            />
+                            <FormElement
+                                v-if="emailAllowed(config, user)"
+                                id="send_email_notification"
+                                title="Email notification"
+                                help="Send an email notification when the job completes."
+                                type="boolean"
+                                :value="false"
+                                v-model="email"
+                            />
+                            <FormElement
+                                v-if="remapAllowed"
+                                id="rerun_remap_job_id"
+                                :title="remapTitle"
+                                :help="remapHelp"
+                                type="boolean"
+                                :value="false"
+                                @input="onChangeRemap"
+                            />
+                            <FormElement
+                                v-if="reuseAllowed(user)"
+                                id="use_cached_job"
+                                title="Attempt to re-use jobs with identical parameters?"
+                                help="This may skip executing jobs that you have already run."
+                                type="boolean"
+                                :value="false"
+                                v-model="reuse"
+                            />
+                        </template>
+                        <template v-slot:buttons>
+                            <ButtonSpinner
+                                id="execute"
+                                title="Execute"
+                                @onClick="onExecute(config, currentHistory.id)"
+                                :wait="showExecuting"
+                                :tooltip="tooltip"
+                            />
+                        </template>
+                    </ToolCard>
                 </div>
-                <ToolSuccess v-if="showSuccess" :job-def="jobDef" :job-response="jobResponse" :tool-name="toolName" />
-                <Webhook v-if="showSuccess" type="tool" :tool-id="jobDef.tool_id" />
-                <div v-if="showError" class="errormessagelarge">
-                    <p>
-                        The server could not complete the request. Please contact the Galaxy Team if this error
-                        persists.
-                        {{ errorTitle | l }}
-                    </p>
-                    <pre>{{ errorContentPretty }}</pre>
-                </div>
-                <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
-                <ToolCard
-                    v-if="showForm"
-                    :id="formConfig.id"
-                    :user="user"
-                    :version="formConfig.version"
-                    :title="formConfig.name"
-                    :description="formConfig.description"
-                    :options="formConfig"
-                    :message-text="messageText"
-                    :message-variant="messageVariant"
-                    @onChangeVersion="onChangeVersion"
-                    @onUpdateFavorites="onUpdateFavorites"
-                    itemscope="itemscope"
-                    itemtype="https://schema.org/CreativeWork"
-                >
-                    <template v-slot:body>
-                        <FormDisplay
-                            :id="formConfig.id"
-                            :inputs="inputs"
-                            :validation-errors="validationErrors"
-                            :validation-scroll-to="validationScrollTo"
-                            :form-config="formConfig"
-                            @onChange="onChange"
-                            @onValidation="onValidation"
-                        />
-                        <FormElement
-                            v-if="emailAllowed(config, user)"
-                            id="send_email_notification"
-                            title="Email notification"
-                            help="Send an email notification when the job completes."
-                            type="boolean"
-                            :value="false"
-                            v-model="email"
-                        />
-                        <FormElement
-                            v-if="remapAllowed"
-                            id="rerun_remap_job_id"
-                            :title="remapTitle"
-                            :help="remapHelp"
-                            type="boolean"
-                            :value="false"
-                            @input="onChangeRemap"
-                        />
-                        <FormElement
-                            v-if="reuseAllowed(user)"
-                            id="use_cached_job"
-                            title="Attempt to re-use jobs with identical parameters?"
-                            help="This may skip executing jobs that you have already run."
-                            type="boolean"
-                            :value="false"
-                            v-model="reuse"
-                        />
-                    </template>
-                    <template v-slot:buttons>
-                        <ButtonSpinner
-                            id="execute"
-                            title="Execute"
-                            @onClick="onExecute"
-                            :wait="showExecuting"
-                            :tooltip="tooltip"
-                        />
-                    </template>
-                </ToolCard>
-            </div>
+            </UserHistories>
         </CurrentUser>
     </ConfigProvider>
 </template>
 
 <script>
 import Scroller from "vue-scrollto";
-import { getGalaxyInstance } from "app";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
@@ -97,6 +103,7 @@ import LoadingSpan from "components/LoadingSpan";
 import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import ToolSuccess from "./ToolSuccess";
+import UserHistories from "components/History/providers/UserHistories";
 import Webhook from "components/Common/Webhook";
 
 export default {
@@ -109,6 +116,7 @@ export default {
         ToolCard,
         FormElement,
         ToolSuccess,
+        UserHistories,
         Webhook,
     },
     props: {
@@ -159,12 +167,6 @@ export default {
     },
     created() {
         this.requestTool();
-        const Galaxy = getGalaxyInstance();
-        if (Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.collection.on("change", () => {
-                this.onUpdate();
-            });
-        }
     },
     computed: {
         toolName() {
@@ -247,25 +249,21 @@ export default {
                 }
             });
         },
-        onExecute() {
+        onExecute(config, historyId) {
             if (this.validationInternal) {
                 this.validationScrollTo = this.validationInternal.slice();
                 return;
             }
             this.showExecuting = true;
-            const Galaxy = getGalaxyInstance();
             const jobDef = {
-                history_id: this.history_id,
+                history_id: historyId,
                 tool_id: this.formConfig.id,
                 tool_version: this.formConfig.version,
                 inputs: this.formData,
             };
-            Galaxy.emit.debug("tool-form::submit()", "Validation complete.", jobDef);
+            console.debug("toolForm::onExecute()", jobDef);
             submitJob(jobDef).then(
                 (jobResponse) => {
-                    if (Galaxy.currHistoryPanel) {
-                        Galaxy.currHistoryPanel.refreshContents();
-                    }
                     this.showForm = false;
                     if (jobResponse.produces_entry_points) {
                         this.showEntryPoints = true;
@@ -281,7 +279,7 @@ export default {
                         this.errorTitle = "Invalid success response. No jobs found.";
                         this.errorContent = jobResponse;
                     }
-                    if ([true, "true"].includes(Galaxy.config.enable_tool_recommendations)) {
+                    if ([true, "true"].includes(config.enable_tool_recommendations)) {
                         this.showRecommendation = true;
                     }
                     Scroller.scrollTo("body");
