@@ -45,6 +45,7 @@ from sqlalchemy import (
     Integer,
     join,
     not_,
+    Numeric,
     or_,
     PrimaryKeyConstraint,
     select,
@@ -771,8 +772,15 @@ class TaskMetricText(Base, BaseJobMetric, RepresentById):
     task = relationship('Task', back_populates='text_metrics')
 
 
-class TaskMetricNumeric(BaseJobMetric, RepresentById):
-    pass
+class TaskMetricNumeric(Base, BaseJobMetric, RepresentById):
+    __tablename__ = 'task_metric_numeric'
+
+    id = Column('id', Integer, primary_key=True)
+    task_id = Column('task_id', Integer, ForeignKey('task.id'), index=True)
+    plugin = Column('plugin', Unicode(255))
+    metric_name = Column('metric_name', Unicode(255))
+    metric_value = Column('metric_value', Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
+    task = relationship('Task', back_populates='numeric_metrics')
 
 
 class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):

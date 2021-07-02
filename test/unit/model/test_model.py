@@ -1574,6 +1574,25 @@ def test_Tag(
         assert stored_obj.tagged_tools == [tool_tag_association]
 
 
+def test_TaskMetricNumeric(model, session, task):
+    cls = model.TaskMetricNumeric
+    assert cls.__tablename__ == 'task_metric_numeric'
+    with dbcleanup(session, cls):
+        plugin, metric_name, metric_value = 'a', 'b', 9
+        obj = cls(plugin, metric_name, metric_value)
+        obj.task = task
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.task_id == task.id
+        assert stored_obj.plugin == plugin
+        assert stored_obj.metric_value == metric_value
+        # test mapped relationships
+        assert stored_obj.task.id == task.id
+
+
 def test_TaskMetricText(model, session, task):
     cls = model.TaskMetricText
     assert cls.__tablename__ == 'task_metric_text'
