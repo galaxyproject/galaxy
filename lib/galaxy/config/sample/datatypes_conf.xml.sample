@@ -233,6 +233,7 @@
     <datatype extension="nhdr" type="galaxy.datatypes.images:Nrrd" subclass="true"/>
     <datatype extension="rna_eps" type="galaxy.datatypes.sequence:RNADotPlotMatrix" mimetype="image/eps" display_in_upload="true"/>
     <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true"/>
+    <datatype extension="dehydrated.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
       <converter file="tar_to_directory.xml" target_datatype="directory"/>
     </datatype>

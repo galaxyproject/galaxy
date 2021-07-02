@@ -15,7 +15,7 @@ datasets download genome taxon '$taxon' --refseq --dehydrated --filename '$outpu
         <param name="taxon" type="text"/>
     </inputs>
     <outputs>
-        <data name="output" format="zip"/>
+        <data name="output" format="dehydrated.zip"/>
     </outputs>
     <options sanitize="true"/>
     <citations>
