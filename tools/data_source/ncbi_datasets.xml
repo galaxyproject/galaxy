@@ -3,6 +3,9 @@
     <edam_operations>
         <edam_operation>operation_0224</edam_operation>
     </edam_operations>
+    <requirements>
+        <requirement type="package" version="11.25.1">ncbi-datasets-cli</requirement>
+    </requirements>
     <command><![CDATA[
 datasets download genome taxon '$taxon' --refseq --dehydrated --filename '$output'
     ]]></command>
