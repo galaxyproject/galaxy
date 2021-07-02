@@ -745,8 +745,15 @@ class BaseJobMetric:
         self.metric_value = metric_value
 
 
-class JobMetricText(BaseJobMetric, RepresentById):
-    pass
+class JobMetricText(Base, BaseJobMetric, RepresentById):
+    __tablename__ = 'job_metric_text'
+
+    id = Column('id', Integer, primary_key=True)
+    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
+    plugin = Column('plugin', Unicode(255))
+    metric_name = Column('metric_name', Unicode(255))
+    metric_value = Column('metric_value', Unicode(JOB_METRIC_MAX_LENGTH))
+    job = relationship('Job', back_populates='text_metrics')
 
 
 class JobMetricNumeric(BaseJobMetric, RepresentById):

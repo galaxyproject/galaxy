@@ -405,14 +405,6 @@ model.JobImportHistoryArchive.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("archive_dir", TEXT))
 
-model.JobMetricText.table = Table(
-    "job_metric_text", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("plugin", Unicode(255)),
-    Column("metric_name", Unicode(255)),
-    Column("metric_value", Unicode(model.JOB_METRIC_MAX_LENGTH)))
-
 model.TaskMetricText.table = Table(
     "task_metric_text", metadata,
     Column("id", Integer, primary_key=True),
@@ -1336,9 +1328,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
-simple_mapping(model.JobMetricText,
-    job=relation(model.Job, backref="text_metrics"))
-
 simple_mapping(model.TaskMetricText,
     task=relation(model.Task, backref="text_metrics"))
 
@@ -1811,6 +1800,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     tasks=relation(model.Task, backref='job'),
     output_datasets=relation(model.JobToOutputDatasetAssociation, back_populates='job'),
     state_history=relation(model.JobStateHistory, back_populates='job'),
+    text_metrics=relation(model.JobMetricText, back_populates='job'),
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],
