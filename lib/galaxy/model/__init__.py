@@ -760,8 +760,15 @@ class JobMetricNumeric(BaseJobMetric, RepresentById):
     pass
 
 
-class TaskMetricText(BaseJobMetric, RepresentById):
-    pass
+class TaskMetricText(Base, BaseJobMetric, RepresentById):
+    __tablename__ = 'task_metric_text'
+
+    id = Column('id', Integer, primary_key=True)
+    task_id = Column('task_id', Integer, ForeignKey('task.id'), index=True)
+    plugin = Column('plugin', Unicode(255))
+    metric_name = Column('metric_name', Unicode(255))
+    metric_value = Column('metric_value', Unicode(JOB_METRIC_MAX_LENGTH))
+    task = relationship('Task', back_populates='text_metrics')
 
 
 class TaskMetricNumeric(BaseJobMetric, RepresentById):
