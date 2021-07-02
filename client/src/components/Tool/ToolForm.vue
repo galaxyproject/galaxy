@@ -94,6 +94,7 @@
 
 <script>
 import Scroller from "vue-scrollto";
+import { getGalaxyInstance } from "app";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
@@ -255,6 +256,7 @@ export default {
                 return;
             }
             this.showExecuting = true;
+            const Galaxy = getGalaxyInstance();
             const jobDef = {
                 history_id: historyId,
                 tool_id: this.formConfig.id,
@@ -264,6 +266,9 @@ export default {
             console.debug("toolForm::onExecute()", jobDef);
             submitJob(jobDef).then(
                 (jobResponse) => {
+                    if (Galaxy.currHistoryPanel) {
+                        Galaxy.currHistoryPanel.refreshContents();
+                    }
                     this.showForm = false;
                     if (jobResponse.produces_entry_points) {
                         this.showEntryPoints = true;
