@@ -413,15 +413,6 @@ model.JobMetricNumeric.table = Table(
     Column("metric_name", Unicode(255)),
     Column("metric_value", Numeric(model.JOB_METRIC_PRECISION, model.JOB_METRIC_SCALE)))
 
-model.TaskMetricNumeric.table = Table(
-    "task_metric_numeric", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("task_id", Integer, ForeignKey("task.id"), index=True),
-    Column("plugin", Unicode(255)),
-    Column("metric_name", Unicode(255)),
-    Column("metric_value", Numeric(model.JOB_METRIC_PRECISION, model.JOB_METRIC_SCALE)))
-
-
 model.GenomeIndexToolData.table = Table(
     "genome_index_tool_data", metadata,
     Column("id", Integer, primary_key=True),
@@ -1323,9 +1314,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
 simple_mapping(model.JobMetricNumeric,
     job=relation(model.Job, backref="numeric_metrics"))
 
-simple_mapping(model.TaskMetricNumeric,
-    task=relation(model.Task, backref="numeric_metrics"))
-
 simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
     input_dataset_collection=relation(model.HistoryDatasetCollectionAssociation,
         primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id
@@ -1404,6 +1392,7 @@ mapper_registry.map_imperatively(model.PostJobActionAssociation, model.PostJobAc
 
 mapper_registry.map_imperatively(model.Task, model.Task.table, properties=dict(
     text_metrics=relation(model.TaskMetricText, back_populates='task'),
+    numeric_metrics=relation(model.TaskMetricNumeric, back_populates='task'),
 ))
 
 mapper_registry.map_imperatively(model.DeferredJob, model.DeferredJob.table, properties={})
