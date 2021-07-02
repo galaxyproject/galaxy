@@ -6,7 +6,7 @@
             v-on="$listeners"
             :dsc="datasetCollection"
             :show-tags="true"
-            @update:expanded="toggleExpand"
+            @viewCollection="toggleExpand"
             @hide="onHide(datasetCollection)"
             @unhide="onUnhide(datasetCollection)"
             @delete="onDelete(datasetCollection, $event)"
