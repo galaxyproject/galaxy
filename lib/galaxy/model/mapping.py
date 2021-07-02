@@ -343,15 +343,6 @@ model.Job.table = Table(
     Column("params", TrimmedString(255), index=True),
     Column("handler", TrimmedString(255), index=True))
 
-model.JobStateHistory.table = Table(
-    "job_state_history", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("state", String(64), index=True),
-    Column("info", TrimmedString(255)))
-
 model.JobParameter.table = Table(
     "job_parameter", metadata,
     Column("id", Integer, primary_key=True),
@@ -1345,9 +1336,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
-simple_mapping(model.JobStateHistory,
-    job=relation(model.Job, backref="state_history"))
-
 simple_mapping(model.JobMetricText,
     job=relation(model.Job, backref="text_metrics"))
 
@@ -1822,6 +1810,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True, backref='job'),
     tasks=relation(model.Task, backref='job'),
     output_datasets=relation(model.JobToOutputDatasetAssociation, back_populates='job'),
+    state_history=relation(model.JobStateHistory, back_populates='job'),
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],
