@@ -1700,7 +1700,17 @@ class JobToOutputLibraryDatasetAssociation(Base, RepresentById):
         self.dataset = dataset
 
 
-class JobStateHistory(RepresentById):
+class JobStateHistory(Base, RepresentById):
+    __tablename__ = 'job_state_history'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
+    state = Column('state', String(64), index=True)
+    info = Column('info', TrimmedString(255))
+    job = relationship('Job', back_populates='state_history')
+
     def __init__(self, job):
         self.job = job
         self.state = job.state
