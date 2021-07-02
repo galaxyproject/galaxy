@@ -63,7 +63,7 @@ either through the props, and make updates through the events -->
         </div>
 
         <!-- expanded view with editors -->
-        <header v-if="expanded" class="p-2">
+        <header v-if="expanded" class="p-2 details">
             <ClickToEdit
                 v-if="dataset.canEditName"
                 tag-name="h4"

@@ -104,7 +104,7 @@ HDCAListItemView.prototype.templates = (() => {
     var titleBarTemplate = (collection) => `
         <div class="title-bar clear" tabindex="0">
             <span class="state-icon"></span>
-            <div class="title">
+            <div class="title content-title">
                 <span class="hid">${collection.hid}</span>
                 <span class="name">${_.escape(collection.name)}</span>
             </div>

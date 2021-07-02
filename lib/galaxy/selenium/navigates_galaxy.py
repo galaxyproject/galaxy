@@ -12,6 +12,7 @@ from functools import partial, wraps
 
 import requests
 import yaml
+from selenium.webdriver.common.keys import Keys
 
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from . import sizzle
@@ -299,8 +300,6 @@ class NavigatesGalaxy(HasDriver):
         item = self.components.history_panel.item.selector
         if multi_history_panel:
             item = self.components.multi_history_view.item
-        elif self.is_beta_history():
-            item = self.components.history_panel.beta_item.selector
         return item(
             history_content_type=history_item["history_content_type"],
             id=history_item["id"]
@@ -1618,7 +1617,12 @@ class NavigatesGalaxy(HasDriver):
         editable.wait_for_and_click()
         edit_el = edit.wait_for_and_click()
         if clear_text:
-            edit_el.clear()
+            # previously this was just edit_el.clear() but
+            # .clear() doesn't work with beta history panel
+            action_chains = self.action_chains()
+            for _ in range(40):
+                action_chains.send_keys(Keys.BACKSPACE)
+            action_chains.perform()
         edit_el.send_keys(annotation)
 
         if self.is_beta_history():
