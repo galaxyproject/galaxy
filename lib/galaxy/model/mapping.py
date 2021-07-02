@@ -405,14 +405,6 @@ model.JobImportHistoryArchive.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("archive_dir", TEXT))
 
-model.JobMetricNumeric.table = Table(
-    "job_metric_numeric", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("plugin", Unicode(255)),
-    Column("metric_name", Unicode(255)),
-    Column("metric_value", Numeric(model.JOB_METRIC_PRECISION, model.JOB_METRIC_SCALE)))
-
 model.GenomeIndexToolData.table = Table(
     "genome_index_tool_data", metadata,
     Column("id", Integer, primary_key=True),
@@ -1311,9 +1303,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
-simple_mapping(model.JobMetricNumeric,
-    job=relation(model.Job, backref="numeric_metrics"))
-
 simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
     input_dataset_collection=relation(model.HistoryDatasetCollectionAssociation,
         primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id
@@ -1781,6 +1770,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     output_datasets=relation(model.JobToOutputDatasetAssociation, back_populates='job'),
     state_history=relation(model.JobStateHistory, back_populates='job'),
     text_metrics=relation(model.JobMetricText, back_populates='job'),
+    numeric_metrics=relation(model.JobMetricNumeric, back_populates='job'),
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],

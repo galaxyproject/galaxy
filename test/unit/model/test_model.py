@@ -635,6 +635,26 @@ def test_HistoryTagAssociation(model, session, history, tag, user):
         assert stored_obj.user.id == user.id
 
 
+def test_JobMetricNumeric(model, session, job):
+    cls = model.JobMetricNumeric
+    assert cls.__tablename__ == 'job_metric_numeric'
+    with dbcleanup(session, cls):
+        plugin, metric_name, metric_value = 'a', 'b', 9
+        obj = cls(plugin, metric_name, metric_value)
+        obj.job = job
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.job_id == job.id
+        assert stored_obj.plugin == plugin
+        assert stored_obj.plugin == plugin
+        assert stored_obj.metric_value == metric_value
+        # test mapped relationships
+        assert stored_obj.job.id == job.id
+
+
 def test_JobMetricText(model, session, job):
     cls = model.JobMetricText
     assert cls.__tablename__ == 'job_metric_text'
