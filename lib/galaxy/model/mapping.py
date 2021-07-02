@@ -405,14 +405,6 @@ model.JobImportHistoryArchive.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("archive_dir", TEXT))
 
-model.TaskMetricText.table = Table(
-    "task_metric_text", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("task_id", Integer, ForeignKey("task.id"), index=True),
-    Column("plugin", Unicode(255)),
-    Column("metric_name", Unicode(255)),
-    Column("metric_value", Unicode(model.JOB_METRIC_MAX_LENGTH)))
-
 model.JobMetricNumeric.table = Table(
     "job_metric_numeric", metadata,
     Column("id", Integer, primary_key=True),
@@ -1328,9 +1320,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
-simple_mapping(model.TaskMetricText,
-    task=relation(model.Task, backref="text_metrics"))
-
 simple_mapping(model.JobMetricNumeric,
     job=relation(model.Job, backref="numeric_metrics"))
 
@@ -1413,7 +1402,9 @@ mapper_registry.map_imperatively(model.PostJobActionAssociation, model.PostJobAc
     post_job_action=relation(model.PostJobAction)
 ))
 
-mapper_registry.map_imperatively(model.Task, model.Task.table)
+mapper_registry.map_imperatively(model.Task, model.Task.table, properties=dict(
+    text_metrics=relation(model.TaskMetricText, back_populates='task'),
+))
 
 mapper_registry.map_imperatively(model.DeferredJob, model.DeferredJob.table, properties={})
 
