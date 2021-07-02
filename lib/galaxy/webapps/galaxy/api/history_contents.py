@@ -6,6 +6,14 @@ import json
 import logging
 import os
 import re
+from typing import (
+    Any,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Union,
+)
 
 import dateutil.parser
 
@@ -20,11 +28,26 @@ from galaxy.managers import (
     histories,
     history_contents
 )
+from galaxy.managers.base import (
+    ModelSerializer,
+    ServiceBase,
+)
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
 )
 from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
+from galaxy.schema import FilterQueryParams
+from galaxy.schema.fields import (
+    EncodedDatabaseIdField,
+    Field,
+    OrderParamField,
+)
+from galaxy.schema.schema import (
+    HistoryContentType,
+    Model,
+)
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.json import safe_dumps
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
@@ -41,6 +64,103 @@ from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
+DatasetDetailsType = Union[Set[EncodedDatabaseIdField], Literal['all']]
+
+
+class HistoryContentsFilterQueryParams(FilterQueryParams):
+    order: Optional[str] = OrderParamField(default_order="hid-asc")
+
+
+class HistoryContentsIndexLegacyParamsBase(Model):
+    deleted: Optional[bool] = Field(
+        default=None,
+        title="Deleted",
+        description="Whether to return deleted or undeleted datasets only. Leave unset for both.",
+    )
+    visible: Optional[bool] = Field(
+        default=None,
+        title="Visible",
+        description="Whether to return visible or hidden datasets only. Leave unset for both.",
+    )
+
+
+class HistoryContentsIndexLegacyParams(HistoryContentsIndexLegacyParamsBase):
+    v: Optional[str] = Field(  # Should this be deprecated at some point and directly use the latest version by default?
+        default=None,
+        title="Version",
+        description="Only `dev` value is allowed. Set it to use the latest version of this endpoint.",
+    )
+    ids: Optional[str] = Field(
+        default=None,
+        title="IDs",
+        description=(
+            "A comma separated list of encoded `HDA` IDs. If this list is provided, only information about the "
+            "specific datasets will be provided. Also, setting this value will set `dataset_details` to `all`."
+        ),
+    )
+    types: Optional[str] = Field(
+        default=None,
+        alias="type",  # Legacy alias
+        title="Types",
+        description=(
+            "A comma separated list of kinds of contents to return "
+            "(currently just `dataset` and `dataset_collection` are available)."
+        ),
+    )
+    dataset_details: Optional[str] = Field(
+        default=None,
+        alias="details",  # Legacy alias
+        title="Dataset Details",
+        description=(
+            "A comma separated list of encoded dataset IDs that will return additional (full) details "
+            "instead of the *summary* default information."
+        ),
+    )
+
+
+class ParsedHistoryContentsLegacyParams(HistoryContentsIndexLegacyParamsBase):
+    ids: Optional[List[int]] = Field(
+        default=None,
+        title="IDs",
+        description="A list of (decoded) `HDA` IDs to return detailed information. Only these items will be returned.",
+    )
+    types: List[HistoryContentType] = Field(
+        default=[],
+        title="Types",
+        description="A list with the types of contents to return.",
+    )
+    dataset_details: Optional[DatasetDetailsType] = Field(
+        default=None,
+        title="Dataset Details",
+        description=(
+            "A set of encoded IDs for the datasets that will be returned with detailed "
+            "information or the value `all` to return (full) details for all datasets."
+        ),
+    )
+
+
+class HistoriesContentsService(ServiceBase):
+    """Common interface/service logic for interactions with histories contents in the context of the API.
+
+    Provides the logic of the actions invoked by API controllers and uses type definitions
+    and pydantic models to declare its parameters and return types.
+    """
+
+    def __init__(
+        self,
+        security: IdEncodingHelper,
+        history_manager: histories.HistoryManager,
+        history_contents_manager: history_contents.HistoryContentsManager,
+        hda_serializer: hdas.HDASerializer,
+        hdca_serializer: hdcas.HDCASerializer,
+        history_contents_filters: history_contents.HistoryContentsFilters,
+    ):
+        super().__init__(security)
+        self.history_manager = history_manager
+        self.history_contents_manager = history_contents_manager
+        self.hda_serializer = hda_serializer
+        self.hdca_serializer = hdca_serializer
+        self.history_contents_filters = history_contents_filters
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
