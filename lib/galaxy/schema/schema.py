@@ -2107,7 +2107,7 @@ class LibraryFolderDetails(BaseModel):
         title="Parent Folder ID",
         description="Encoded ID of the parent folder. Empty if it's the root folder.",
     )
-    genome_build: str = GenomeBuildField
+    genome_build: Optional[str] = GenomeBuildField
     update_time: datetime = UpdateTimeField
     deleted: bool = Field(
         ...,
