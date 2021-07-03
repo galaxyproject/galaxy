@@ -621,20 +621,21 @@ def sanitize_for_filename(text, default=None):
     return out
 
 
-def find_instance_nested(item, instances, match_key=None):
+def find_instance_nested(item, instances):
     """
     Recursively find instances from lists, dicts, tuples.
 
-    `instances` should be a tuple of valid instances
-    If match_key is given the key must match for an instance to be added to the list of found instances.
+    `instances` should be a tuple of valid instances.
+    Returns a dictionary, where keys are the deepest key at which an instance has been found,
+    and the value is the matched instance.
     """
 
-    matches = []
+    matches = {}
 
     def visit(path, key, value):
         if isinstance(value, instances):
-            if match_key is None or match_key == key:
-                matches.append(value)
+            if key not in matches:
+                matches[key] = value
         return key, value
 
     def enter(path, key, value):
