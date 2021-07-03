@@ -6280,9 +6280,19 @@ class WorkflowInvocationStep(Dictifiable, RepresentById):
         return rval
 
 
-class WorkflowRequestInputParameter(Dictifiable, RepresentById):
+class WorkflowRequestInputParameter(Base, Dictifiable, RepresentById):
     """ Workflow-related parameters not tied to steps or inputs.
     """
+    __tablename__ = 'workflow_request_input_parameters'
+
+    id = Column('id', Integer, primary_key=True)
+    workflow_invocation_id = Column('workflow_invocation_id', Integer,
+        ForeignKey('workflow_invocation.id', onupdate='CASCADE', ondelete='CASCADE'))
+    name = Column('name', Unicode(255))
+    value = Column('value', TEXT)
+    type = Column('type', Unicode(255))
+    workflow_invocation = relationship('WorkflowInvocation', back_populates='input_parameters')
+
     dict_collection_visible_keys = ['id', 'name', 'value', 'type']
 
     class types(str, Enum):
