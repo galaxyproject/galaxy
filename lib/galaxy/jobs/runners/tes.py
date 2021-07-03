@@ -158,16 +158,27 @@ class TESJobRunner(AsynchronousJobRunner):
         from shlex import split
         commands = split(commands)
         other_inputs = job_wrapper.extra_filenames
-        script_path = commands[1]
+        # script_path = commands[1]
         # final_commands = ["pip", "install", "galaxy-lib"]
         # for cmd in commands:
         #     final_commands.append(cmd)
 
         # for tool_name in tool_names:
         #     execution_script["inputs"].append({"url": tool_dir + tool_name, "path": tool_dir + tool_name})
+        remote_container = self._find_container(job_wrapper)
+        remote_image = "galaxy/pulsar-pod-staging:0.14.0"
+
+        if(hasattr(remote_container, "container_id")):
+            remote_image = remote_container.container_id
+
+        tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")
+        if os.path.exists(tool_script):
+            client_inputs_list.append({"paths": tool_script})
+
+        final_commands = ["/bin/bash", client_inputs_list[-1]["paths"]]
 
         referenced_tool_files = self.find_referenced_subfiles(tool_dir, job_wrapper.command_line, other_inputs)
-
+        env_variables = job_wrapper.environment_variables
         execution_script = {
             "name": "Galaxy Job Execution",
             "description": job_wrapper.tool.description,
@@ -175,8 +186,8 @@ class TESJobRunner(AsynchronousJobRunner):
             "outputs": [],
             "executors": [
                 {
-                    "image": "python",
-                    "command": commands,
+                    "image": remote_image,
+                    "command": final_commands,
                 }
             ]
         }
@@ -188,6 +199,7 @@ class TESJobRunner(AsynchronousJobRunner):
             execution_script["inputs"].append({"url": input["paths"], "path": input["paths"]})
 
         for output in output_files:
+            # execution_script["inputs"].append({"url": output, "path": output})
             execution_script["outputs"].append({"url": output, "path": output})
 
         for output in other_inputs:
