@@ -343,13 +343,6 @@ model.Job.table = Table(
     Column("params", TrimmedString(255), index=True),
     Column("handler", TrimmedString(255), index=True))
 
-model.JobParameter.table = Table(
-    "job_parameter", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("name", String(255)),
-    Column("value", TEXT))
-
 model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
     "implicitly_created_dataset_collection_inputs", metadata,
     Column("id", Integer, primary_key=True),
@@ -1335,8 +1328,6 @@ simple_mapping(
         uselist=False,
     ),
 )
-
-mapper_registry.map_imperatively(model.JobParameter, model.JobParameter.table)
 
 mapper_registry.map_imperatively(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, properties=dict(
     history_dataset_association=relation(model.HistoryDatasetAssociation, lazy=False),

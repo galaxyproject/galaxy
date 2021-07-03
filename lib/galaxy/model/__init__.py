@@ -1582,7 +1582,14 @@ class Task(JobLike, RepresentById):
         self.prepare_input_files_cmd = prepare_input_files_cmd
 
 
-class JobParameter(RepresentById):
+class JobParameter(Base, RepresentById):
+    __tablename__ = 'job_parameter'
+
+    id = Column('id', Integer, primary_key=True)
+    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
+    name = Column('name', String(255))
+    value = Column('value', TEXT)
+
     def __init__(self, name, value):
         self.name = name
         self.value = value
