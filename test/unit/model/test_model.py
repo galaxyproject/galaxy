@@ -649,7 +649,6 @@ def test_JobMetricNumeric(model, session, job):
         assert stored_obj.id == obj_id
         assert stored_obj.job_id == job.id
         assert stored_obj.plugin == plugin
-        assert stored_obj.plugin == plugin
         assert stored_obj.metric_value == metric_value
         # test mapped relationships
         assert stored_obj.job.id == job.id
@@ -669,10 +668,26 @@ def test_JobMetricText(model, session, job):
         assert stored_obj.id == obj_id
         assert stored_obj.job_id == job.id
         assert stored_obj.plugin == plugin
-        assert stored_obj.plugin == plugin
         assert stored_obj.metric_value == metric_value
         # test mapped relationships
         assert stored_obj.job.id == job.id
+
+
+def test_JobParameter(model, session, job):
+    cls = model.JobParameter
+    assert cls.__tablename__ == 'job_parameter'
+    with dbcleanup(session, cls):
+        name, value = 'a', 'b'
+        obj = cls(name, value)
+        obj.job_id = job.id
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.job_id == job.id
+        assert stored_obj.name == name
+        assert stored_obj.value == value
 
 
 def test_JobStateHistory(model, session, job):
