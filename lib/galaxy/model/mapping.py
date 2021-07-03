@@ -661,15 +661,6 @@ model.WorkflowRequestStepState.table = Table(
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
     Column("value", MutableJSONType))
 
-model.WorkflowRequestInputParameter.table = Table(
-    "workflow_request_input_parameters", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer,
-        ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")),
-    Column("name", Unicode(255)),
-    Column("value", TEXT),
-    Column("type", Unicode(255)))
-
 model.WorkflowRequestInputStepParameter.table = Table(
     "workflow_request_input_step_parameter", metadata,
     Column("id", Integer, primary_key=True),
@@ -1583,7 +1574,7 @@ mapper_registry.map_imperatively(model.StoredWorkflowMenuEntry, model.StoredWork
 
 mapper_registry.map_imperatively(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict(
     history=relation(model.History, backref=backref('workflow_invocations', uselist=True)),
-    input_parameters=relation(model.WorkflowRequestInputParameter, backref='workflow_invocation'),
+    input_parameters=relation(model.WorkflowRequestInputParameter, back_populates='workflow_invocation'),
     step_states=relation(model.WorkflowRequestStepState, backref='workflow_invocation'),
     input_step_parameters=relation(model.WorkflowRequestInputStepParameter,
         backref='workflow_invocation'),
@@ -1621,9 +1612,6 @@ simple_mapping(model.WorkflowInvocationStep,
         )).scalar_subquery(),
     ),
 )
-
-
-simple_mapping(model.WorkflowRequestInputParameter)
 
 simple_mapping(model.WorkflowRequestStepState,
     workflow_step=relation(model.WorkflowStep))

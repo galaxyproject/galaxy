@@ -1961,6 +1961,26 @@ def test_VisualizationTagAssociation(model, session, visualization, tag, user):
         assert stored_obj.user.id == user.id
 
 
+def test_WorkflowRequestInputParameter(model, session, workflow_invocation):
+    cls = model.WorkflowRequestInputParameter
+    assert cls.__tablename__ == 'workflow_request_input_parameters'
+    with dbcleanup(session, cls):
+        name, value, type = 'a', 'b', 'c'
+        obj = cls(name, value, type)
+        obj.workflow_invocation = workflow_invocation
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.workflow_invocation_id == workflow_invocation.id
+        assert stored_obj.name == name
+        assert stored_obj.value == value
+        assert stored_obj.type == type
+        # test mapped relationships
+        assert stored_obj.workflow_invocation.id == workflow_invocation.id
+
+
 @pytest.fixture(scope='module')
 def model():
     db_uri = 'sqlite:///:memory:'
@@ -2285,6 +2305,13 @@ def visualization_tag_association(model, session):
 def workflow(model, session):
     w = model.Workflow()
     yield from dbcleanup_wrapper(session, w)
+
+
+@pytest.fixture
+def workflow_invocation(model, session, workflow):
+    wi = model.WorkflowInvocation()
+    wi.workflow = workflow
+    yield from dbcleanup_wrapper(session, wi)
 
 
 @pytest.fixture
