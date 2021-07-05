@@ -266,6 +266,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Load history import/export tools.
         load_lib_tools(self.toolbox)
         self.toolbox.persist_cache(register_postfork=True)
+        # If app is not job handler but uses mule messaging.
+        # Can be removed when removing mule support.
+        self.job_manager._check_jobs_at_startup()
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = self._register_singleton(VisualizationsRegistry, VisualizationsRegistry(
             self,

@@ -1107,6 +1107,7 @@ class JobWrapper(HasResourceParameters):
         Prepare the job to run by creating the working directory and the
         config files.
         """
+        prepare_timer = util.ExecutionTimer()
         self.sa_session.expunge_all()  # this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
 
         if not os.path.exists(self.working_directory):
@@ -1153,6 +1154,7 @@ class JobWrapper(HasResourceParameters):
             self.write_version_cmd = f"{version_string_cmd} > {compute_environment.version_path()} 2>&1"
         else:
             self.write_version_cmd = None
+        log.debug(f"Job wrapper for Job [{job.id}] prepared {prepare_timer}")
         return self.extra_filenames
 
     def _setup_working_directory(self, job=None):
