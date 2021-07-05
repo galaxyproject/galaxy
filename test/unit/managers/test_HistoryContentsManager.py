@@ -23,11 +23,11 @@ class HistoryAsContainerBaseTestCase(BaseTestCase, CreatesCollectionsMixin):
 
     def set_up_managers(self):
         super().set_up_managers()
-        self.history_manager = HistoryManager(self.app)
-        self.hda_manager = hdas.HDAManager(self.app)
-        self.collection_manager = collections.DatasetCollectionManager(self.app)
-        self.contents_manager = history_contents.HistoryContentsManager(self.app)
-        self.history_contents_filters = history_contents.HistoryContentsFilters(self.app)
+        self.history_manager = self.app[HistoryManager]
+        self.hda_manager = self.app[hdas.HDAManager]
+        self.collection_manager = self.app[collections.DatasetCollectionManager]
+        self.contents_manager = self.app[history_contents.HistoryContentsManager]
+        self.history_contents_filters = self.app[history_contents.HistoryContentsFilters]
 
     def add_hda_to_history(self, history, **kwargs):
         dataset = self.hda_manager.dataset_manager.create()
@@ -241,15 +241,15 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         contents.append(self.add_list_collection_to_history(history, contents[4:6]))
 
         self.log("should allow filtering by update_time")
-        # in the case of collections we have to change the collection.collection (ugh) to change the update_time
-        contents[3].collection.populated_state = 'big ball of mud'
+        # change the update_time by updating the name
+        contents[3].name = 'big ball of mud'
         self.app.model.context.flush()
-        update_time = contents[3].collection.update_time
+        update_time = contents[3].update_time
 
         def get_update_time(item):
             update_time = getattr(item, 'update_time', None)
             if not update_time:
-                update_time = item.collection.update_time
+                update_time = item.update_time
             return update_time
 
         results = self.contents_manager.contents(history, filters=[parsed_filter("orm", column('update_time') >= update_time)])

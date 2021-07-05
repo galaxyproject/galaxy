@@ -8,6 +8,7 @@ from social_core.utils import module_member, setting_name
 from sqlalchemy.exc import IntegrityError
 
 from galaxy.exceptions import MalformedContents
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from ..authnz import IdentityProvider
 from ..model import PSAAssociation, PSACode, PSANonce, PSAPartial, UserAuthnzToken
 
@@ -127,6 +128,7 @@ class PSAAuthnz(IdentityProvider):
         self.config['KEY'] = oidc_backend_config.get('client_id')
         self.config['SECRET'] = oidc_backend_config.get('client_secret')
         self.config['redirect_uri'] = oidc_backend_config.get('redirect_uri')
+        self.config['EXTRA_SCOPES'] = oidc_backend_config.get('extra_scopes')
         if oidc_backend_config.get('prompt') is not None:
             self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
         if oidc_backend_config.get('api_url') is not None:
@@ -154,6 +156,10 @@ class PSAAuthnz(IdentityProvider):
                 "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config and \
                 "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config:
             backend.DEFAULT_SCOPE.append("https://www.googleapis.com/auth/cloud-platform")
+
+        if self.config['EXTRA_SCOPES'] is not None:
+            backend.DEFAULT_SCOPE.extend(self.config['EXTRA_SCOPES'])
+
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
@@ -282,9 +288,10 @@ def contains_required_data(response=None, is_new=False, **kwargs):
     and returns void if otherwise.
 
     :type  response: dict
-    :param response:    a dictionary containing decoded response from
-                        OIDC backend that contain the following keys
-                        among others:
+    :param response:  a dictionary containing decoded response from
+                      OIDC backend that contain the following keys
+                      among others:
+
                         -   id_token;       see: http://openid.net/specs/openid-connect-core-1_0.html#IDToken
                         -   access_token;   see: https://tools.ietf.org/html/rfc6749#section-1.4
                         -   refresh_token;  see: https://tools.ietf.org/html/rfc6749#section-1.5
@@ -297,6 +304,7 @@ def contains_required_data(response=None, is_new=False, **kwargs):
     :param is_new: has the user been authenticated?
 
     :param kwargs:      may contain the following keys among others:
+
                         -   uid:        user ID
                         -   user:       Galaxy user; if user is already authenticated
                         -   backend:    the backend that is used for user authentication.
@@ -349,7 +357,10 @@ def verify(strategy=None, response=None, details=None, **kwargs):
             f"https://iam.googleapis.com/v1/projects/-/serviceAccounts/{endpoint}:getIamPolicy",
             headers={
                 'Authorization': 'Bearer {}'.format(response.get("access_token")),
-                'Accept': 'application/json'})
+                'Accept': 'application/json'
+            },
+            timeout=DEFAULT_SOCKET_TIMEOUT
+        )
         res = json.loads(result.content)
         if result.status_code == requests.codes.ok:
             email_addresses = res["bindings"][0]["members"]

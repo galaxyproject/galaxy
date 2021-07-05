@@ -15,17 +15,16 @@ import galaxy.model
 from galaxy import util
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
+    dbkeys,
     sanitize_param,
     string_as_bool,
     string_as_bool_or_none,
     unicodify,
     XML,
 )
-from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.rules_dsl import RuleSet
-from galaxy.web import url_for
 from . import (
     dynamic_options,
     history_query,
@@ -38,7 +37,12 @@ from .sanitize import ToolParameterSanitizer
 
 log = logging.getLogger(__name__)
 
-workflow_building_modes = Bunch(DISABLED=False, ENABLED=True, USE_HISTORY=1)
+
+class workflow_building_modes:
+    DISABLED = False
+    ENABLED = True
+    USE_HISTORY = 1
+
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile(r'\$\{.+?\}')
 
@@ -58,8 +62,8 @@ def contains_workflow_parameter(value, search=False):
 
 
 def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (isinstance(value, dict) and
-        value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
+    return isinstance(value, RuntimeValue) or (isinstance(value, dict)
+        and value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
 
 
 def is_runtime_context(trans, other_values):
@@ -70,8 +74,8 @@ def is_runtime_context(trans, other_values):
             return True
         for v in util.listify(context_value):
             if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
-                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
-                    hasattr(v, 'implicit_conversion')):
+                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK)
+                    or hasattr(v, 'implicit_conversion')):
                 return True
     return False
 
@@ -141,7 +145,6 @@ class ToolParameter(Dictifiable):
         self.name = self.__class__.parse_name(input_source)
         self.type = input_source.get("type")
         self.hidden = input_source.get_bool("hidden", False)
-        self.load_contents = int(input_source.get("load_contents", 0))
         self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
         self.is_dynamic = False
@@ -208,6 +211,8 @@ class ToolParameter(Dictifiable):
     def value_from_basic(self, value, app, ignore_errors=False):
         # Handle Runtime and Unvalidated values
         if is_runtime_value(value):
+            if isinstance(self, HiddenToolParameter):
+                raise ParameterValueError(message_suffix='Runtime Parameter not valid', parameter_name=self.name)
             return runtime_to_object(value)
         elif isinstance(value, dict) and value.get('__class__') == 'UnvalidatedValue':
             return value['value']
@@ -422,7 +427,7 @@ class IntegerToolParameter(TextToolParameter):
             raise err
 
     def get_initial_value(self, trans, other_values):
-        if self.value:
+        if self.value not in {None, ''}:
             return int(self.value)
         else:
             return None
@@ -786,14 +791,16 @@ class BaseURLToolParameter(HiddenToolParameter):
         self.value = input_source.get('value', '')
 
     def get_initial_value(self, trans, other_values):
-        return self._get_value()
+        return self._get_value(trans)
 
     def from_json(self, value=None, trans=None, other_values=None):
-        return self._get_value()
+        return self._get_value(trans)
 
-    def _get_value(self):
+    def _get_value(self, trans):
         try:
-            return url_for(self.value, qualified=True)
+            if not self.value.startswith("/"):
+                raise Exception("baseurl value must start with a /")
+            return trans.qualified_url_builder(self.value)
         except Exception as e:
             log.debug('Url creation failed for "%s": %s', self.name, unicodify(e))
             return self.value
@@ -877,25 +884,29 @@ class SelectToolParameter(ToolParameter):
         else:
             return self.static_options
 
-    def get_legal_values(self, trans, other_values):
-        if self.options:
-            return {v for _, v, _ in self.options.get_options(trans, other_values)}
-        elif self.dynamic_options:
-            try:
-                call_other_values = self._get_dynamic_options_call_other_values(trans, other_values)
-                return {v for _, v, _ in eval(self.dynamic_options, self.tool.code_namespace, call_other_values)}
-            except Exception as e:
-                log.debug("Determining legal values failed for '%s': %s", self.name, unicodify(e))
-                return set()
-        else:
-            return self.legal_values
+    def get_legal_values(self, trans, other_values, value):
+        """
+        determine the set of values of legal options
+        """
+        return {v for _, v, _ in self.get_options(trans, other_values)}
+
+    def get_legal_names(self, trans, other_values):
+        """
+        determine a mapping from names to values for all legal options
+        """
+        return {n: v for n, v, _ in self.get_options(trans, other_values)}
 
     def from_json(self, value, trans, other_values=None, require_legal_value=True):
         other_values = other_values or {}
         try:
-            legal_values = self.get_legal_values(trans, other_values)
+            legal_values = self.get_legal_values(trans, other_values, value)
         except ImplicitConversionRequired:
             return value
+        # if the given value is not found in the set of values of the legal
+        # options we fall back to check if the value is in the set of names of
+        # the legal options. this is done with the fallback_values dict which
+        # allows to determine the corresponding legal values
+        fallback_values = self.get_legal_names(trans, other_values)
         if (not legal_values or not require_legal_value) and is_runtime_context(trans, other_values):
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
@@ -919,17 +930,18 @@ class SelectToolParameter(ToolParameter):
             if self.optional and self.tool.profile < 18.09:
                 # Covers optional parameters with default values that reference other optional parameters.
                 # These will have a value but no legal_values.
+                # See https://github.com/galaxyproject/tools-iuc/pull/1842#issuecomment-394083768 for context.
                 return None
             raise ParameterValueError("requires a value, but no legal values defined", self.name, is_dynamic=self.is_dynamic)
         if isinstance(value, list):
             if not self.multiple:
                 raise ParameterValueError("multiple values provided but parameter is not expecting multiple values", self.name, is_dynamic=self.is_dynamic)
-            rval = []
-            for v in value:
-                if v not in legal_values:
-                    raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(v, ",".join(legal_values)), self.name, v, is_dynamic=self.is_dynamic)
-                rval.append(v)
-            return rval
+            if set(value).issubset(legal_values):
+                return value
+            elif set(value).issubset(set(fallback_values.keys())):
+                return [fallback_values[v] for v in value]
+            else:
+                raise ParameterValueError("invalid options ({!r}) were selected (valid options: {})".format(",".join(set(value) - set(legal_values)), ",".join(legal_values)), self.name, is_dynamic=self.is_dynamic)
         else:
             value_is_none = (value == "None" and "None" not in legal_values)
             if value_is_none or not value:
@@ -940,9 +952,14 @@ class SelectToolParameter(ToolParameter):
                         raise ParameterValueError("no option was selected for non optional parameter", self.name, is_dynamic=self.is_dynamic)
             if is_runtime_value(value):
                 return None
-            if value not in legal_values and require_legal_value:
+            if value in legal_values:
+                return value
+            elif value in fallback_values:
+                return fallback_values[value]
+            elif not require_legal_value:
+                return value
+            else:
                 raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(value, ",".join(legal_values)), self.name, value, is_dynamic=self.is_dynamic)
-            return value
 
     def to_param_dict_string(self, value, other_values=None):
         if value in (None, []):
@@ -1029,7 +1046,7 @@ class GenomeBuildParameter(SelectToolParameter):
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=util.read_dbnames(None))
+    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=dbkeys.read_dbnames(None))
     >>> p = GenomeBuildParameter(None, XML('<param name="_name" type="genomebuild" value="hg17" />'))
     >>> print(p.name)
     _name
@@ -1056,7 +1073,7 @@ class GenomeBuildParameter(SelectToolParameter):
         for dbkey, build_name in self._get_dbkey_names(trans=trans):
             yield build_name, dbkey, (dbkey == last_used_build)
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         return {dbkey for dbkey, _ in self._get_dbkey_names(trans=trans)}
 
     def to_dict(self, trans, other_values=None):
@@ -1083,7 +1100,7 @@ class GenomeBuildParameter(SelectToolParameter):
     def _get_dbkey_names(self, trans=None):
         if not self.tool:
             # Hack for unit tests, since we have no tool
-            return util.read_dbnames(None)
+            return dbkeys.read_dbnames(None)
         return self.tool.app.genome_builds.get_genome_build_names(trans=trans)
 
 
@@ -1169,7 +1186,7 @@ class SelectTagParameter(SelectToolParameter):
             return self.default_value
         return SelectToolParameter.get_initial_value(self, trans, other_values)
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         if self.data_ref not in other_values and not trans.workflow_building_mode:
             raise ValueError("Value for associated data reference not found (data_ref).")
         return set(self.get_tag_list(other_values))
@@ -1262,7 +1279,7 @@ class ColumnListParameter(SelectToolParameter):
     @staticmethod
     def _strip_c(column):
         if isinstance(column, str):
-            if column.startswith('c'):
+            if column.startswith('c') and len(column) > 1 and all(c.isdigit() for c in column[1:]):
                 column = column.strip().lower()[1:]
         return column
 
@@ -1342,10 +1359,28 @@ class ColumnListParameter(SelectToolParameter):
             return self.default_value
         return super().get_initial_value(trans, other_values)
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         if self.data_ref not in other_values:
             raise ValueError("Value for associated data reference not found (data_ref).")
-        return set(self.get_column_list(trans, other_values))
+        legal_values = self.get_column_list(trans, other_values)
+
+        if value is not None:
+            # There are cases where 'value' is a string of comma separated values. This ensures
+            # that it is converted into a list, with extra whitespace around items removed.
+            value = util.listify(value, do_strip=True)
+            if not set(value).issubset(set(legal_values)) and self.is_file_empty(trans, other_values):
+                legal_values.extend(value)
+
+        return set(legal_values)
+
+    def is_file_empty(self, trans, other_values):
+        for dataset in util.listify(other_values.get(self.data_ref)):
+            # Use representative dataset if a dataset collection is parsed
+            if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
+                dataset = dataset.to_hda_representative()
+            if is_runtime_value(dataset) or not dataset.has_data():
+                return True
+        return False
 
     def get_dependencies(self):
         return [self.data_ref]
@@ -1364,7 +1399,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     Creating a hierarchical select menu, which allows users to 'drill down' a tree-like set of options.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=util.read_dbnames(None))
+    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=dbkeys.read_dbnames(None))
     >>> p = DrillDownSelectToolParameter(None, XML(
     ... '''
     ... <param name="_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
@@ -1474,7 +1509,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             return options
         return self.options
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         def recurse_options(legal_values, options):
             for option in options:
                 legal_values.append(option['value'])
@@ -1485,7 +1520,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
     def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
-        legal_values = self.get_legal_values(trans, other_values)
+        legal_values = self.get_legal_values(trans, other_values, value)
         if not legal_values and trans.workflow_building_mode:
             if self.multiple:
                 if value == '':  # No option selected
@@ -1619,6 +1654,18 @@ class BaseDataToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source, trans):
         super().__init__(tool, input_source)
+        self.min = input_source.get('min')
+        self.max = input_source.get('max')
+        if self.min:
+            try:
+                self.min = int(self.min)
+            except ValueError:
+                raise ParameterValueError("attribute 'min' must be an integer", self.name)
+        if self.max:
+            try:
+                self.max = int(self.max)
+            except ValueError:
+                raise ParameterValueError("attribute 'max' must be an integer", self.name)
         self.refresh_on_change = True
         # Find datatypes_registry
         if self.tool is None:
@@ -1747,6 +1794,43 @@ class BaseDataToolParameter(ToolParameter):
         else:
             return app.model.context.query(app.model.HistoryDatasetAssociation).get(int(value))
 
+    def validate(self, value, trans=None):
+
+        def do_validate(v):
+            for validator in self.validators:
+                if validator.requires_dataset_metadata and v and hasattr(v, 'dataset') and v.dataset.state != galaxy.model.Dataset.states.OK:
+                    return
+                else:
+                    validator.validate(v, trans)
+
+        dataset_count = 0
+        if value:
+            if self.multiple:
+                if not isinstance(value, list):
+                    value = [value]
+            else:
+                value = [value]
+
+            for v in value:
+                if isinstance(v, galaxy.model.HistoryDatasetCollectionAssociation):
+                    for dataset_instance in v.collection.dataset_instances:
+                        dataset_count += 1
+                        do_validate(dataset_instance)
+                elif isinstance(v, galaxy.model.DatasetCollectionElement):
+                    for dataset_instance in v.child_collection.dataset_instances:
+                        dataset_count += 1
+                        do_validate(dataset_instance)
+                else:
+                    dataset_count += 1
+                    do_validate(v)
+
+        if self.min is not None:
+            if self.min > dataset_count:
+                raise ValueError("At least %d datasets are required for %s" % (self.min, self.name))
+        if self.max is not None:
+            if self.max < dataset_count:
+                raise ValueError("At most %d datasets are required for %s" % (self.max, self.name))
+
 
 class DataToolParameter(BaseDataToolParameter):
     # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
@@ -1765,23 +1849,12 @@ class DataToolParameter(BaseDataToolParameter):
     def __init__(self, tool, input_source, trans=None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source, trans)
+        self.load_contents = int(input_source.get("load_contents", 0))
         # Add metadata validator
         if not input_source.get_bool('no_validation', False):
             self.validators.append(validation.MetadataValidator())
         self._parse_formats(trans, input_source)
         self.multiple = input_source.get_bool('multiple', False)
-        self.min = input_source.get('min')
-        self.max = input_source.get('max')
-        if self.min:
-            try:
-                self.min = int(self.min)
-            except ValueError:
-                raise ParameterValueError("attribute 'min' must be an integer", self.name)
-        if self.max:
-            try:
-                self.max = int(self.max)
-            except ValueError:
-                raise ParameterValueError("attribute 'max' must be an integer", self.name)
         if not self.multiple and (self.min is not None):
             raise ParameterValueError("cannot specify 'min' property on single data parameter. Set multiple=\"true\" to enable this option", self.name)
         if not self.multiple and (self.max is not None):
@@ -1827,13 +1900,12 @@ class DataToolParameter(BaseDataToolParameter):
                         rval.append(trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(decoded_id))
                     else:
                         raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
-                elif isinstance(single_value, trans.app.model.HistoryDatasetCollectionAssociation):
-                    rval.append(single_value)
-                elif isinstance(single_value, trans.app.model.DatasetCollectionElement):
-                    rval.append(single_value)
-                elif isinstance(single_value, trans.app.model.HistoryDatasetAssociation):
-                    rval.append(single_value)
-                elif isinstance(single_value, trans.app.model.LibraryDatasetDatasetAssociation):
+                elif isinstance(single_value, (
+                        trans.app.model.HistoryDatasetCollectionAssociation,
+                        trans.app.model.DatasetCollectionElement,
+                        trans.app.model.HistoryDatasetAssociation,
+                        trans.app.model.LibraryDatasetDatasetAssociation
+                )):
                     rval.append(single_value)
                 else:
                     if len(str(single_value)) == 16:
@@ -1846,7 +1918,7 @@ class DataToolParameter(BaseDataToolParameter):
                 for val in rval:
                     if not isinstance(val, trans.app.model.HistoryDatasetCollectionAssociation):
                         raise ParameterValueError("if collections are supplied to multiple data input parameter, only collections may be used", self.name)
-        elif isinstance(value, trans.app.model.HistoryDatasetAssociation):
+        elif isinstance(value, (trans.app.model.HistoryDatasetAssociation, trans.app.model.LibraryDatasetDatasetAssociation)):
             rval = value
         elif isinstance(value, dict) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
@@ -1904,42 +1976,6 @@ class DataToolParameter(BaseDataToolParameter):
             except Exception:
                 pass
         return "No dataset."
-
-    def validate(self, value, trans=None):
-        dataset_count = 0
-        for validator in self.validators:
-            def do_validate(v):
-                if validator.requires_dataset_metadata and v and hasattr(v, 'dataset') and v.dataset.state != galaxy.model.Dataset.states.OK:
-                    return
-                else:
-                    validator.validate(v, trans)
-
-            if value and self.multiple:
-                if not isinstance(value, list):
-                    value = [value]
-                for v in value:
-                    if isinstance(v, galaxy.model.HistoryDatasetCollectionAssociation):
-                        for dataset_instance in v.collection.dataset_instances:
-                            dataset_count += 1
-                            do_validate(dataset_instance)
-                    elif isinstance(v, galaxy.model.DatasetCollectionElement):
-                        for dataset_instance in v.child_collection.dataset_instances:
-                            dataset_count += 1
-                            do_validate(dataset_instance)
-                    else:
-                        dataset_count += 1
-                        do_validate(v)
-            else:
-                if value:
-                    dataset_count += 1
-                do_validate(value)
-
-        if self.min is not None:
-            if self.min > dataset_count:
-                raise ValueError("At least %d datasets are required for %s" % (self.min, self.name))
-        if self.max is not None:
-            if self.max < dataset_count:
-                raise ValueError("At most %d datasets are required for %s" % (self.max, self.name))
 
     def get_dependencies(self):
         """
@@ -2066,8 +2102,8 @@ class DataToolParameter(BaseDataToolParameter):
                 continue
 
         # sort both lists
-        d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k['hid'], reverse=True)
-        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k['hid'], reverse=True)
+        d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k.get('hid', -1), reverse=True)
+        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k.get('hid', -1), reverse=True)
 
         # return final dictionary
         return d
@@ -2175,9 +2211,6 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             display_text = "No dataset collection."
         return display_text
 
-    def validate(self, value, trans=None):
-        return True  # TODO
-
     def to_dict(self, trans, other_values=None):
         # create dictionary and fill default parameters
         other_values = other_values or {}
@@ -2236,7 +2269,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             })
 
         # sort both lists
-        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k['hid'], reverse=True)
+        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k.get('hid', -1), reverse=True)
 
         # return final dictionary
         return d

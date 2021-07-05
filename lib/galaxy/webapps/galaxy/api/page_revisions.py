@@ -5,22 +5,14 @@ import logging
 
 from galaxy.managers.base import get_object
 from galaxy.managers.pages import PageManager
-from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    SharableItemSecurityMixin,
-    SharableMixin
-)
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.manager = PageManager(app)
+class PageRevisionsController(BaseGalaxyAPIController):
+    manager: PageManager = depends(PageManager)
 
     @expose_api
     def index(self, trans, page_id, **kwd):

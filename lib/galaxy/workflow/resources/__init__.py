@@ -123,8 +123,8 @@ def validate_by_group_workflow_parameters_mapper(by_group, workflow_resource_par
         if 'groups' not in by_group:
             raise Exception("'workflow_resource_params_mapper' YAML file is malformed, 'groups' attribute not found!")
         if default_group not in by_group['groups']:
-            raise Exception("'workflow_resource_params_mapper' YAML file is malformed, default group with title '" +
-                            default_group + "' not found in 'groups'!")
+            raise Exception("'workflow_resource_params_mapper' YAML file is malformed, default group with title '"
+                            + default_group + "' not found in 'groups'!")
         for group in by_group['groups']:
             for attrib in by_group['groups'][group]:
                 if type(attrib) is dict:
@@ -132,8 +132,8 @@ def validate_by_group_workflow_parameters_mapper(by_group, workflow_resource_par
                         raise Exception("'workflow_resource_params_mapper' YAML file is malformed, "
                                         "'name' attribute not found in attribute of group '" + group + "'!")
                     if attrib['name'] not in workflow_resource_params:
-                        raise Exception("'workflow_resource_params_mapper' YAML file is malformed, group with name '" +
-                                        attrib['name'] + "' not found in 'workflow_resource_params'!")
+                        raise Exception("'workflow_resource_params_mapper' YAML file is malformed, group with name '"
+                                        + attrib['name'] + "' not found in 'workflow_resource_params'!")
                     if 'options' not in attrib:
                         raise Exception("'workflow_resource_params_mapper' YAML file is malformed, "
                                         "'options' attribute not found in attribute of group '" + group + "'!")
@@ -143,8 +143,8 @@ def validate_by_group_workflow_parameters_mapper(by_group, workflow_resource_par
                         valid_options.append(param_option.attrib['value'])
                     for option in attrib['options']:
                         if option not in valid_options:
-                            raise Exception("'workflow_resource_params_mapper' YAML file is malformed, '" + option +
-                                            "' in 'options' of '" + attrib['name'] + "' not found in attribute of group '" + group + "'!")
+                            raise Exception("'workflow_resource_params_mapper' YAML file is malformed, '" + option
+                                            + "' in 'options' of '" + attrib['name'] + "' not found in attribute of group '" + group + "'!")
                 else:
                     if attrib not in workflow_resource_params:
                         raise Exception("'workflow_resource_params_mapper' YAML file is malformed, attribute with name "

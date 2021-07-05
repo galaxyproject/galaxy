@@ -102,7 +102,7 @@ def test_job_hash_unique_by_default():
     rule_helper = __rule_helper()
     job1, job2 = __two_jobs_in_a_history()
 
-    rule_helper.job_hash(job1) != rule_helper.job_hash(job2)
+    assert rule_helper.job_hash(job1) != rule_helper.job_hash(job2)
 
 
 def test_job_hash_history():
@@ -163,7 +163,7 @@ def __two_jobs():
 
 
 def __do_a_bunch(work):
-    for i in range(20):
+    for _ in range(20):
         work()
 
 

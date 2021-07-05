@@ -5,12 +5,12 @@ from urllib.parse import quote
 from galaxy.exceptions import MessageException
 from galaxy.util import url_get
 from galaxy.web import expose_api, require_admin
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class ToolShedController(BaseAPIController):
+class ToolShedController(BaseGalaxyAPIController):
     """RESTful controller for interactions with Toolsheds."""
 
     @expose_api

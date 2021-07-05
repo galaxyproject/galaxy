@@ -10,7 +10,6 @@ import logging
 import os
 from collections import (
     namedtuple,
-    OrderedDict
 )
 from typing import Any, NamedTuple, Optional
 
@@ -21,6 +20,7 @@ from galaxy.exceptions import (
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.util import (
+    chunk_iterable,
     ExecutionTimer
 )
 from galaxy.util.hash_util import HASH_NAME_MAP
@@ -28,6 +28,7 @@ from galaxy.util.hash_util import HASH_NAME_MAP
 log = logging.getLogger(__name__)
 
 UNSET = object()
+DEFAULT_CHUNK_SIZE = 1000
 
 
 class ModelPersistenceContext(metaclass=abc.ABCMeta):
@@ -36,7 +37,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     This class implement the create_dataset method that takes care of populating metadata
     required for datasets and other potential model objects.
     """
-
     def create_dataset(
         self,
         ext,
@@ -58,6 +58,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         hashes=None,
         created_from_basename=None,
         final_job_state='ok',
+        creating_job_id=None,
     ):
         tag_list = tag_list or []
         sources = sources or []
@@ -89,9 +90,10 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                                                                       dbkey=dbkey,
                                                                       create_dataset=True,
                                                                       flush=False,
-                                                                      sa_session=sa_session)
-
+                                                                      sa_session=sa_session,
+                                                                      creating_job_id=creating_job_id)
                 self.persist_object(primary_data)
+
                 if init_from:
                     self.permission_provider.copy_dataset_permissions(init_from, primary_data)
                     primary_data.state = init_from.state
@@ -155,7 +157,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
         # If match specified a name use otherwise generate one from
         # designation.
-        primary_data.name = name
+        if name is not None:
+            primary_data.name = name
 
         # Copy metadata from one of the inputs if requested.
         if metadata_source_name:
@@ -218,9 +221,20 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         #    <sort regex="part_(\d+)_sample_([^_]+).fastq" by="2:lexical,1:numerical" />
         if name is None:
             name = "unnamed output"
+        if self.flush_per_n_datasets and self.flush_per_n_datasets > 0:
+            for chunk in chunk_iterable(filenames.items(), size=self.flush_per_n_datasets):
+                self._populate_elements(chunk=chunk, name=name, root_collection_builder=root_collection_builder, metadata_source_name=metadata_source_name, final_job_state=final_job_state)
+                if len(chunk) == self.flush_per_n_datasets:
+                    # In most cases we don't need to flush, that happens in the caller.
+                    # Only flush here for saving memory.
+                    root_collection_builder.populate_partial()
+                    self.flush()
+        else:
+            self._populate_elements(chunk=filenames.items(), name=name, root_collection_builder=root_collection_builder, metadata_source_name=metadata_source_name, final_job_state=final_job_state)
 
+    def _populate_elements(self, chunk, name, root_collection_builder, metadata_source_name, final_job_state):
         element_datasets = {'element_identifiers': [], 'datasets': [], 'tag_lists': [], 'paths': [], 'extra_files': []}
-        for filename, discovered_file in filenames.items():
+        for filename, discovered_file in chunk:
             create_dataset_timer = ExecutionTimer()
             fields_match = discovered_file.match
             if not fields_match:
@@ -405,6 +419,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         self.sa_session = None
         self.object_store = object_store
         self.export_store = export_store
+        self.flush_per_n_datasets = None
 
         self.job_working_directory = working_directory  # TODO: rename...
 
@@ -460,7 +475,7 @@ def persist_extra_files(object_store, src_extra_files_path, primary_data):
     if src_extra_files_path and os.path.exists(src_extra_files_path):
         primary_data.dataset.create_extra_files_path()
         target_extra_files_path = primary_data.extra_files_path
-        for root, dirs, files in os.walk(src_extra_files_path):
+        for root, _dirs, files in os.walk(src_extra_files_path):
             extra_dir = os.path.join(target_extra_files_path, root.replace(src_extra_files_path, '', 1).lstrip(os.path.sep))
             extra_dir = os.path.normpath(extra_dir)
             for f in files:
@@ -517,7 +532,7 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
 
 
 def persist_elements_to_hdca(model_persistence_context, elements, hdca, collector=None):
-    filenames = OrderedDict()
+    filenames = {}
 
     def add_to_discovered_files(elements, parent_identifiers=None):
         parent_identifiers = parent_identifiers or []

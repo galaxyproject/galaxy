@@ -1,6 +1,5 @@
 import logging
 import os
-from collections import OrderedDict
 
 from galaxy.tool_util.cwl.parser import tool_proxy
 from galaxy.tool_util.deps import requirements
@@ -113,14 +112,14 @@ class CwlToolSource(ToolSource):
 
     def parse_outputs(self, tool):
         output_instances = self.tool_proxy.output_instances()
-        outputs = OrderedDict()
+        outputs = {}
         output_defs = []
         for output_instance in output_instances:
             output_defs.append(self._parse_output(tool, output_instance))
         # TODO: parse outputs collections
         for output_def in output_defs:
             outputs[output_def.name] = output_def
-        return outputs, OrderedDict()
+        return outputs, {}
 
     def _parse_output(self, tool, output_instance):
         name = output_instance.name

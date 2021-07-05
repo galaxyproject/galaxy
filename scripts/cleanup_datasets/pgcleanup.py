@@ -136,12 +136,11 @@ class Action:
             h = set_log_handler(filename=logf)
         h.setLevel(logging.DEBUG if self._debug else logging.INFO)
         h.setFormatter(LevelFormatter())
-        l = logging.getLogger(self.name)
-        l.addHandler(h)
-        l.propagate = False
+        self.__log = logging.getLogger(self.name)
+        self.__log.addHandler(h)
+        self.__log.propagate = False
         m = ('==== Log opened: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
-        l.info(m)
-        self.__log = l
+        self.__log.info(m)
 
     def __close_log(self):
         m = ('==== Log closed: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
@@ -274,9 +273,9 @@ class RemovesObjects:
                 if not self._dry_run:
                     self.object_store.delete(object_to_remove, entire_dir=entire_dir, **object_store_kwargs)
         except ObjectNotFound as e:
-            [l.warning('object store failure: %s: %s', object_to_remove, e) for l in loggers]
+            [log_.warning('object store failure: %s: %s', object_to_remove, e) for log_ in loggers]
         except Exception as e:
-            [l.error('delete failure: %s: %s', object_to_remove, e) for l in loggers]
+            [log_.error('delete failure: %s: %s', object_to_remove, e) for log_ in loggers]
 
     def remove_object(self, object_to_remove):
         raise NotImplementedError()

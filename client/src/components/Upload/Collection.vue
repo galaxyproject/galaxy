@@ -36,14 +36,14 @@
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome (set all):</span>
             <select2 container-class="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
-                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">{{
-                    listGenome.text
-                }}</option>
+                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
+                    {{ listGenome.text }}
+                </option>
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
-                {{ btnCloseTitle }}
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
+                {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
                 ref="btnReset"
@@ -129,6 +129,7 @@ export default {
     components: { BButton },
     data() {
         return {
+            uploadUrl: null,
             topInfo: "",
             showHelper: true,
             extension: this.app.defaultExtension,
@@ -157,7 +158,6 @@ export default {
             btnBuildTitle: _l("Build"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
         };
     },
     created() {
@@ -169,7 +169,12 @@ export default {
         this.initFtpPopover();
         // file upload
         this.initUploadbox({
-            url: this.app.uploadPath,
+            initUrl: (index) => {
+                if (!this.uploadUrl) {
+                    this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
+                }
+                return this.uploadUrl;
+            },
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
             },
@@ -237,6 +242,7 @@ export default {
                 file_mode: file.mode || "local",
                 file_path: file.path,
                 file_data: file,
+                file_uri: file.uri,
                 extension: this.extension,
                 genome: this.genome,
             };
@@ -262,7 +268,7 @@ export default {
             this.counterRunning = 0;
             this._updateStateForCounters();
             this._eventReset();
-            this.app.hide();
+            this.$emit("dismiss");
         },
 
         /** Start upload process */

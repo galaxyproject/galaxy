@@ -4,6 +4,7 @@ import tempfile
 import pytest
 
 from galaxy import util
+from galaxy.util.json import safe_loads
 
 SECTION_XML = """<?xml version="1.0" ?>
 <section id="fasta_fastq_manipulation" name="Fasta Fastq Manipulation" version="">
@@ -19,17 +20,6 @@ SECTION_XML = """<?xml version="1.0" ?>
 def test_strip_control_characters():
     s = '\x00bla'
     assert util.strip_control_characters(s) == 'bla'
-
-
-def test_strip_control_characters_nested():
-    s = '\x00bla'
-    stripped_s = 'bla'
-    l = [s]
-    t = (s, 'blub')
-    d = {42: s}
-    assert util.strip_control_characters_nested(l)[0] == stripped_s
-    assert util.strip_control_characters_nested(t)[0] == stripped_s
-    assert util.strip_control_characters_nested(d)[42] == stripped_s
 
 
 def test_parse_xml_string():
@@ -89,3 +79,14 @@ def test_clean_multiline_string():
         c
 """)
     assert x == "a\nb\nc\n"
+
+
+def test_safe_loads():
+    d = {}
+    rval = safe_loads(d)
+    assert rval == d
+    assert rval is not d
+    rval['foo'] = 'bar'
+    assert 'foo' not in d
+    s = '{"foo": "bar"}'
+    assert safe_loads(s) == {"foo": "bar"}

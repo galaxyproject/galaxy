@@ -18,6 +18,7 @@ import galaxy.jobs
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file, read_exit_code_from
 from galaxy.jobs.command_factory import build_command
+from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
     job_script,
@@ -36,7 +37,6 @@ from galaxy.util import (
     shrink_stream_by_size,
     unicodify,
 )
-from galaxy.util.bunch import Bunch
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
@@ -141,7 +141,9 @@ class BaseJobRunner:
                     job_state = JobState(job_wrapper=arg, job_destination={})
                 else:
                     job_state = arg
-                self.work_queue.put((self.fail_job, job_state))
+                if method != self.fail_job:
+                    # Prevent fail_job cycle in the work_queue
+                    self.work_queue.put((self.fail_job, job_state))
 
     # Causes a runner's `queue_job` method to be called from a worker thread
     def put(self, job_wrapper):
@@ -350,7 +352,7 @@ class BaseJobRunner:
                                                                            set_extension=True,
                                                                            tmp_dir=job_wrapper.working_directory,
                                                                            # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
-                                                                           kwds={'overwrite' : False})
+                                                                           kwds={'overwrite': False})
             external_metadata_script = f"{lib_adjust} {venv} {external_metadata_script}"
             if resolve_requirements:
                 dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(job_directory=job_wrapper.working_directory)
@@ -546,15 +548,7 @@ class JobState:
     """
     Encapsulate state of jobs.
     """
-    runner_states = Bunch(
-        WALLTIME_REACHED='walltime_reached',
-        MEMORY_LIMIT_REACHED='memory_limit_reached',
-        JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER='Job output not returned from cluster',
-        UNKNOWN_ERROR='unknown_error',
-        GLOBAL_WALLTIME_REACHED='global_walltime_reached',
-        OUTPUT_SIZE_LIMIT='output_size_limit',
-        TOOL_DETECT_ERROR='tool_detected',  # job runner interaction worked fine but the tool indicated error
-    )
+    runner_states = runner_states
 
     def __init__(self, job_wrapper, job_destination):
         self.runner_state_handled = False

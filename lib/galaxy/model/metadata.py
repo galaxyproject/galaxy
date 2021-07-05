@@ -15,6 +15,7 @@ from collections.abc import Mapping
 from os.path import abspath
 
 from sqlalchemy.orm import object_session
+from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
 from galaxy.util import (
@@ -92,9 +93,18 @@ class MetadataCollection(Mapping):
 
     def __getitem__(self, key):
         try:
-            return self.__getattr__(key)
-        except Exception:
-            return KeyError
+            self.__getattribute__(key)
+        except AttributeError:
+            try:
+                return self.__getattr__(key)
+            except Exception:
+                raise KeyError
+        # `key` is an attribute of this instance, not some metadata: raise
+        # KeyError to prevent e.g. `'items' in dataset.metadata` from returning
+        # True
+        # Not doing this would also break Cheetah's NameMapper._valueForName()
+        # since dataset.metadata['items'] would be None
+        raise KeyError
 
     def __len__(self):
         return len(self.spec)
@@ -113,6 +123,8 @@ class MetadataCollection(Mapping):
             return self.spec[name].wrap(self.spec[name].default, object_session(self.parent))
         if name in self.parent._metadata:
             return self.parent._metadata[name]
+        # Instead of raising an AttributeError for non-existing metadata, we return None
+        return None
 
     def __setattr__(self, name, value):
         if name == "parent":
@@ -122,6 +134,7 @@ class MetadataCollection(Mapping):
                 self.parent._metadata[name] = self.spec[name].unwrap(value)
             else:
                 self.parent._metadata[name] = value
+            flag_modified(self.parent, '_metadata')
 
     def remove_key(self, name):
         if name in self.parent._metadata:
@@ -132,12 +145,13 @@ class MetadataCollection(Mapping):
     def element_is_set(self, name):
         """
         check if the meta data with the given name is set, i.e.
+
         - if the such a metadata actually exists and
         - if its value differs from no_value
 
-        param name the name of the metadata element
-        return True if the value differes from the no_value
-            False if its equal of if no metadata with the name is specified
+        :param name: the name of the metadata element
+        :returns: True if the value differes from the no_value
+                  False if its equal of if no metadata with the name is specified
         """
         try:
             meta_val = self.parent._metadata[name]
@@ -214,6 +228,7 @@ class MetadataCollection(Mapping):
             dataset.validated_state = JSONified_dict['__validated_state__']
         if '__validated_state_message__' in JSONified_dict:
             dataset.validated_state_message = JSONified_dict['__validated_state_message__']
+        flag_modified(dataset, '_metadata')
 
     def to_JSON_dict(self, filename=None):
         meta_dict = {}

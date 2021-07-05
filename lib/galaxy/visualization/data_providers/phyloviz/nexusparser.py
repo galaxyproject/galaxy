@@ -35,7 +35,7 @@ class Nexus_Parser(Newick_Parser):
             line = line.replace(";\n", "")
             lline = line.lower()
 
-            if rowCount > MAX_READLINES or (not nex_file) :
+            if rowCount > MAX_READLINES or (not nex_file):
                 break
             rowCount += 1
             # We are only interested in the tree block.
@@ -92,7 +92,7 @@ class Nexus_Parser(Newick_Parser):
                     self.inCommentBlock = True
                 else:
                     return "Nextline"   # need to move on to the nextline after getting out of comment
-        else :
+        else:
             if "]" in line:
                 if line.rfind("[") > line.rfind("]"):
                     pass                # a comment block is closed but another is open.

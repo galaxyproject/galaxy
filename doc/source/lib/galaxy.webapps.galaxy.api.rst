@@ -193,6 +193,14 @@ galaxy.webapps.galaxy.api.job\_files module
    :undoc-members:
    :show-inheritance:
 
+galaxy.webapps.galaxy.api.job\_lock module
+------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.job_lock
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.webapps.galaxy.api.job\_ports module
 -------------------------------------------
 

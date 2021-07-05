@@ -6,7 +6,10 @@ import requests
 import yaml
 
 from galaxy.exceptions import MessageException
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    DEFAULT_SOCKET_TIMEOUT,
+)
 from galaxy.util.search import parse_filters
 
 log = logging.getLogger(__name__)
@@ -94,7 +97,7 @@ class TrsProxy:
         return tool_id
 
     def _get(self, url, params=None):
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=DEFAULT_SOCKET_TIMEOUT)
         if response.ok:
             return response.json()
         else:

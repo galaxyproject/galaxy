@@ -5,6 +5,7 @@ Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
 import logging
+from typing import Optional
 
 from sqlalchemy import (
     asc,
@@ -21,6 +22,8 @@ from galaxy.managers import (
     history_contents,
     sharable
 )
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
@@ -37,11 +40,11 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     # TODO: incorporate imp/exp (or alias to)
 
-    def __init__(self, app, *args, **kwargs):
-        super().__init__(app, *args, **kwargs)
-        self.hda_manager = hdas.HDAManager(app)
-        self.contents_manager = history_contents.HistoryContentsManager(app)
-        self.contents_filters = history_contents.HistoryContentsFilters(app)
+    def __init__(self, app: MinimalManagerApp, hda_manager: hdas.HDAManager, contents_manager: history_contents.HistoryContentsManager, contents_filters: history_contents.HistoryContentsFilters):
+        super().__init__(app)
+        self.hda_manager = hda_manager
+        self.contents_manager = contents_manager
+        self.contents_filters = contents_filters
 
     def copy(self, history, user, **kwargs):
         """
@@ -82,7 +85,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         if self.user_manager.is_anonymous(user):
             return None if (not current_history or current_history.deleted) else current_history
-        desc_update_time = desc(self.model_class.table.c.update_time)
+        desc_update_time = desc(self.model_class.update_time)
         filters = self._munge_filters(filters, self.model_class.user_id == user.id)
         # TODO: normalize this return value
         return self.query(filters=filters, order_by=desc_update_time, limit=1, **kwargs).first()
@@ -169,6 +172,53 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return jobs
 
 
+class HistoryExportView:
+
+    def __init__(self, app: MinimalManagerApp):
+        self.app = app
+
+    def get_exports(self, trans, history_id):
+        history = self._history(trans, history_id)
+        matching_exports = history.exports
+        return [self.serialize(trans, history_id, e) for e in matching_exports]
+
+    def serialize(self, trans, history_id, jeha):
+        rval = jeha.to_dict()
+        encoded_jeha_id = trans.security.encode_id(jeha.id)
+        api_url = self.app.url_for("history_archive_download", id=history_id, jeha_id=encoded_jeha_id)
+        # this URL is less likely to be blocked by a proxy and require an API key, so export
+        # older-style controller version for use with within the GUI and such.
+        external_url = self.app.url_for(controller='history', action="export_archive", id=history_id, qualified=True)
+        external_permanent_url = self.app.url_for(controller='history', action="export_archive", id=history_id, jeha_id=encoded_jeha_id, qualified=True)
+        rval["download_url"] = api_url
+        rval["external_download_latest_url"] = external_url
+        rval["external_download_permanent_url"] = external_permanent_url
+        rval = trans.security.encode_all_ids(rval)
+        return rval
+
+    def get_ready_jeha(self, trans, history_id, jeha_id="latest"):
+        history = self._history(trans, history_id)
+        matching_exports = history.exports
+        if jeha_id != "latest":
+            decoded_jeha_id = trans.security.decode_id(jeha_id)
+            matching_exports = [e for e in matching_exports if e.id == decoded_jeha_id]
+        if len(matching_exports) == 0:
+            raise glx_exceptions.ObjectNotFound("Failed to find target history export")
+
+        jeha = matching_exports[0]
+        if not jeha.ready:
+            raise glx_exceptions.MessageException("Export not available or not yet ready.")
+
+        return jeha
+
+    def _history(self, trans, history_id):
+        if history_id is not None:
+            history = self.app.history_manager.get_accessible(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
+        else:
+            history = trans.history
+        return history
+
+
 class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSerializerMixin):
     """
     Interface/service object for serializing histories into dictionaries.
@@ -176,13 +226,13 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
     model_manager_class = HistoryManager
     SINGLE_CHAR_ABBR = 'h'
 
-    def __init__(self, app, **kwargs):
-        super().__init__(app, **kwargs)
+    def __init__(self, app: MinimalManagerApp, hda_manager: hdas.HDAManager, hda_serializer: hdas.HDASerializer, history_contents_serializer: history_contents.HistoryContentsSerializer):
+        super().__init__(app)
 
         self.history_manager = self.manager
-        self.hda_manager = hdas.HDAManager(app)
-        self.hda_serializer = hdas.HDASerializer(app)
-        self.history_contents_serializer = history_contents.HistoryContentsSerializer(app)
+        self.hda_manager = hda_manager
+        self.hda_serializer = hda_serializer
+        self.history_contents_serializer = history_contents_serializer
 
         self.default_view = 'summary'
         self.add_view('summary', [
@@ -197,6 +247,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             'published',
             'annotation',
             'tags',
+            'update_time',
         ])
         self.add_view('detailed', [
             'contents_url',
@@ -267,21 +318,21 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'model_class'   : lambda *a, **c: 'History',
-            'size'          : lambda i, k, **c: int(i.disk_size),
-            'nice_size'     : lambda i, k, **c: i.disk_nice_size,
-            'state'         : self.serialize_history_state,
+            'model_class': lambda *a, **c: 'History',
+            'size': lambda i, k, **c: int(i.disk_size),
+            'nice_size': lambda i, k, **c: i.disk_nice_size,
+            'state': self.serialize_history_state,
 
-            'url'           : lambda i, k, **c: self.url_for('history', id=self.app.security.encode_id(i.id)),
-            'contents_url'  : lambda i, k, **c: self.url_for('history_contents',
-                                                             history_id=self.app.security.encode_id(i.id)),
+            'url': lambda i, k, **c: self.url_for('history', id=self.app.security.encode_id(i.id)),
+            'contents_url': lambda i, k, **c: self.url_for('history_contents',
+                                                           history_id=self.app.security.encode_id(i.id)),
 
-            'empty'         : lambda i, k, **c: (len(i.datasets) + len(i.dataset_collections)) <= 0,
-            'count'         : lambda i, k, **c: len(i.datasets),
-            'hdas'          : lambda i, k, **c: [self.app.security.encode_id(hda.id) for hda in i.datasets],
-            'state_details' : self.serialize_state_counts,
-            'state_ids'     : self.serialize_state_ids,
-            'contents'      : self.serialize_contents,
+            'empty': lambda i, k, **c: (len(i.datasets) + len(i.dataset_collections)) <= 0,
+            'count': lambda i, k, **c: len(i.datasets),
+            'hdas': lambda i, k, **c: [self.app.security.encode_id(hda.id) for hda in i.datasets],
+            'state_details': self.serialize_state_counts,
+            'state_ids': self.serialize_state_ids,
+            'contents': self.serialize_contents,
             'non_ready_jobs': lambda i, k, **c: [self.app.security.encode_id(job.id) for job
                                                  in self.manager.non_ready_jobs(i)],
 
@@ -289,7 +340,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             'contents_active': self.serialize_contents_active,
             #  TODO: Use base manager's serialize_id for user_id (and others)
             #  after refactoring hierarchy here?
-            'user_id'       : lambda i, k, **c: self.app.security.encode_id(i.user_id) if i.user_id is not None else None
+            'user_id': lambda i, k, **c: self.app.security.encode_id(i.user_id) if i.user_id is not None else None
         })
 
     # remove this
@@ -345,16 +396,16 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             state = states.NEW
 
         else:
-            if (hda_state_counts[states.RUNNING] > 0 or
-                    hda_state_counts[states.SETTING_METADATA] > 0 or
-                    hda_state_counts[states.UPLOAD] > 0):
+            if (hda_state_counts[states.RUNNING] > 0
+                    or hda_state_counts[states.SETTING_METADATA] > 0
+                    or hda_state_counts[states.UPLOAD] > 0):
                 state = states.RUNNING
             # TODO: this method may be more useful if we *also* polled the histories jobs here too
-            elif (hda_state_counts[states.QUEUED] > 0 or
-                    hda_state_counts[states.NEW] > 0):
+            elif (hda_state_counts[states.QUEUED] > 0
+                    or hda_state_counts[states.NEW] > 0):
                 state = states.QUEUED
-            elif (hda_state_counts[states.ERROR] > 0 or
-                    hda_state_counts[states.FAILED_METADATA] > 0):
+            elif (hda_state_counts[states.ERROR] > 0
+                    or hda_state_counts[states.FAILED_METADATA] > 0):
                 state = states.ERROR
             elif hda_state_counts[states.OK] == num_hdas:
                 state = states.OK
@@ -395,7 +446,7 @@ class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.Purgable
     """
     model_manager_class = HistoryManager
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.history_manager = self.manager
 
@@ -404,8 +455,8 @@ class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.Purgable
         deletable.PurgableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update({
-            'name'          : self.deserialize_basestring,
-            'genome_build'  : self.deserialize_genome_build,
+            'name': self.deserialize_basestring,
+            'genome_build': self.deserialize_genome_build,
         })
 
 
@@ -418,8 +469,30 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
         deletable.PurgableFiltersMixin._add_parsers(self)
         self.orm_filter_parsers.update({
             # history specific
-            'name'          : {'op': ('eq', 'contains', 'like')},
-            'genome_build'  : {'op': ('eq', 'contains', 'like')},
-            'create_time'   : {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
-            'update_time'   : {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
+            'name': {'op': ('eq', 'contains', 'like')},
+            'genome_build': {'op': ('eq', 'contains', 'like')},
+            'create_time': {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
+            'update_time': {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
         })
+
+
+class HistoriesService:
+    """Common interface/service logic for interactions with histories in the context of the API.
+
+    Provides the logic of the actions invoked by API controllers and uses type definitions
+    and pydantic models to declare its parameters and return types.
+    """
+
+    def __init__(self, app: MinimalManagerApp, manager: HistoryManager, serializer: HistorySerializer):
+        self.app = app
+        self.manager = manager
+        self.serializer = serializer
+        self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
+
+    # TODO: add the rest of the API actions here and call them directly from the API controller
+
+    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
+        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
+        status of the resource.
+        """
+        return self.shareable_service.sharing(trans, id, payload)

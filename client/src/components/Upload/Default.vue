@@ -28,13 +28,13 @@
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome (set all):</span>
             <select2 container-class="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
-                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">{{
-                    listGenome.text
-                }}</option>
+                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
+                    {{ listGenome.text }}
+                </option>
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
@@ -60,6 +60,7 @@
                 class="ui-button-default"
                 id="btn-build"
                 @click="_eventSelect"
+                v-if="selectable"
                 :disabled="!enableBuild"
                 :variant="enableBuild ? 'primary' : ''"
             >
@@ -127,12 +128,12 @@ export default {
     },
     data() {
         return {
+            uploadUrl: null,
             topInfo: "",
             highlightBox: false,
             showHelper: true,
             extension: this.app.defaultExtension,
             genome: this.app.defaultGenome,
-            callback: this.app.callback,
             listExtensions: [],
             listGenomes: [],
             running: false,
@@ -152,7 +153,6 @@ export default {
             btnStartTitle: _l("Start"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
             btnSelectTitle: _l("Select"),
         };
     },
@@ -165,7 +165,12 @@ export default {
         this.initFtpPopover();
         // file upload
         this.initUploadbox({
-            url: this.app.uploadPath,
+            initUrl: (index) => {
+                if (!this.uploadUrl) {
+                    this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
+                }
+                return this.uploadUrl;
+            },
             multiple: this.multiple,
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
@@ -231,10 +236,11 @@ export default {
                 return {
                     id: model.attributes.id, // model.id has datatype prefix
                     src: model.src,
+                    hid: model.attributes.hid,
+                    name: model.attributes.name,
                 };
             });
-            this.callback(asDict);
-            this.app.cancel();
+            this.$emit("dismiss", asDict);
         },
         _newUploadModelProps: function (index, file) {
             return {
@@ -243,6 +249,7 @@ export default {
                 file_size: file.size,
                 file_mode: file.mode || "local",
                 file_path: file.path,
+                file_uri: file.uri,
                 file_data: file,
             };
         },

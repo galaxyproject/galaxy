@@ -116,6 +116,11 @@ def dictify_dataset_collection_instance(dataset_collection_instance, parent, sec
         # TODO: Work in progress - this end-point is not right yet...
         dict_value['url'] = web.url_for('library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id)
 
+    dict_value['contents_url'] = web.url_for(
+        'contents_dataset_collection',
+        hdca_id=encoded_id,
+        parent_id=security.encode_id(dataset_collection_instance.collection_id)
+    )
     if view in ["element", "element-reference"]:
         collection = dataset_collection_instance.collection
         rank_fuzzy_counts = gen_rank_fuzzy_counts(collection.collection_type, fuzzy_count)

@@ -11,7 +11,6 @@ import logging
 import os
 import pickle
 from abc import ABCMeta, abstractmethod
-from collections import OrderedDict
 from uuid import uuid4
 
 
@@ -1214,7 +1213,7 @@ class ConditionalInstance:
             name=self.name,
             type=INPUT_TYPE.CONDITIONAL,
             test=self.case.to_dict(),
-            when=OrderedDict(),
+            when={},
         )
         for value, block in self.whens:
             as_dict["when"][value] = [i.to_dict() for i in block]

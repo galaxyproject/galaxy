@@ -15,6 +15,7 @@ import Backbone from "backbone";
 import CurrentHistoryView from "mvc/history/history-view-edit-current";
 import { History } from "mvc/history/history-model";
 import "./HistoryPanelProxy.scss";
+import store from "store";
 
 // bypass polling while using the beta panel, skips contents loading
 const FakeHistoryViewModel = CurrentHistoryView.CurrentHistoryView.extend({
@@ -37,6 +38,7 @@ export const HistoryPanelProxy = Backbone.View.extend({
 
         // fake view of the current history
         this.historyView = new FakeHistoryViewModel({
+            fakeHistoryViewModel: true,
             className: `fake ${CurrentHistoryView.CurrentHistoryView.prototype.className} middle`,
             purgeAllowed: this.allow_user_dataset_purge,
             linkTarget: "galaxy_main",
@@ -59,6 +61,18 @@ export const HistoryPanelProxy = Backbone.View.extend({
                 url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`,
             });
         });
+
+        // Watch the store, change the fake history model when it changs
+        store.watch(
+            (st, gets) => gets["betaHistory/currentHistory"],
+            (history) => {
+                const panel = Galaxy.currHistoryPanel;
+                const existingId = panel?.model?.id || undefined;
+                if (existingId != history.id) {
+                    panel.setModel(new History({ id: history.id }));
+                }
+            }
+        );
     },
     render() {
         // Hack: For now, remove unused "unified-panel" elements until we can

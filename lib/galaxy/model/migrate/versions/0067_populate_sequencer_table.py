@@ -221,7 +221,7 @@ def downgrade(migrate_engine):
 
     RequestType_table = Table("request_type", metadata, autoload=True)
     # create the 'datatx_info' column
-    col = Column("datatx_info", JSONType())
+    col = Column("datatx_info", JSONType)
     add_column(col, RequestType_table, metadata)
     # restore the datatx_info column data in the request_type table with data from
     # the sequencer and the form_values table

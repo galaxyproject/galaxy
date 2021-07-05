@@ -50,7 +50,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         hda1.visible = False
         hda2.visible = False
         self.stub_active_datasets(hda1, hda2)
-        field = self._simple_field(other_values={"data2" : hda2})
+        field = self._simple_field(other_values={"data2": hda2})
         assert len(field['options']['hda']) == 1  # hda1 not an option, not visible or selected
         assert field['options']['hda'][0]['name'] == "(hidden) hda2"
 
@@ -60,7 +60,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         hda1.visible = False
         hda2.deleted = True
         self.stub_active_datasets(hda1, hda2)
-        field = self._simple_field(other_values={"data2" : hda2})
+        field = self._simple_field(other_values={"data2": hda2})
         assert len(field['options']['hda']) == 1  # hda1 not an option, not visible or selected
         assert field['options']['hda'][0]['name'] == "(deleted) hda2"
 

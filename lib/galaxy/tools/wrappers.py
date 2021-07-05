@@ -1,7 +1,6 @@
 import logging
 import shlex
 import tempfile
-from collections import OrderedDict
 from functools import total_ordering
 
 from galaxy import exceptions
@@ -453,7 +452,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.collection = collection
 
         elements = collection.elements
-        element_instances = OrderedDict()
+        element_instances = {}
 
         element_instance_list = []
         for dataset_collection_element in elements:

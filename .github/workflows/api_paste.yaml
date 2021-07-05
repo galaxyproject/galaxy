@@ -1,7 +1,7 @@
 name: API (legacy paste) tests
 on: [push, pull_request]
 env:
-  GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_USE_UVICORN: false
 jobs:
   test:
@@ -12,7 +12,8 @@ jobs:
         python-version: ['3.7']
     services:
       postgres:
-        image: postgres:11
+        # Run tests on the oldest Galaxy-supported version
+        image: postgres:9.6
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

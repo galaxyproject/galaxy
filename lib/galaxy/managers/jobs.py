@@ -9,6 +9,7 @@ from pydantic import (
 )
 from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import aliased
+from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
 
 from galaxy import model
@@ -21,6 +22,8 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     defaultdict,
     ExecutionTimer,
@@ -55,11 +58,11 @@ def get_path_key(path_tuple):
 
 class JobManager:
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
         self.dataset_manager = DatasetManager(app)
 
-    def job_lock(self):
+    def job_lock(self) -> JobLock:
         return JobLock(active=self.app.job_manager.job_lock)
 
     def update_job_lock(self, job_lock: JobLock):
@@ -84,7 +87,7 @@ class JobManager:
     def stop(self, job, message=None):
         if not job.finished:
             job.mark_deleted(self.app.config.track_jobs_in_database)
-            self.app.model.context.current.flush()
+            self.app.model.session.flush()
             self.app.job_manager.stop(job, message=message)
             return True
         else:
@@ -93,13 +96,19 @@ class JobManager:
 
 class JobSearch:
     """Search for jobs using tool inputs or other jobs"""
-    def __init__(self, app):
-        self.app = app
-        self.sa_session = app.model.context
-        self.hda_manager = HDAManager(app)
-        self.dataset_collection_manager = DatasetCollectionManager(app)
-        self.ldda_manager = LDDAManager(app)
-        self.decode_id = self.app.security.decode_id
+    def __init__(
+        self,
+        sa_session: scoped_session,
+        hda_manager: HDAManager,
+        dataset_collection_manager: DatasetCollectionManager,
+        ldda_manager: LDDAManager,
+        id_encoding_helper: IdEncodingHelper,
+    ):
+        self.sa_session = sa_session
+        self.hda_manager = hda_manager
+        self.dataset_collection_manager = dataset_collection_manager
+        self.ldda_manager = ldda_manager
+        self.decode_id = id_encoding_helper.decode_id
 
     def by_tool_input(self, trans, tool_id, tool_version, param=None, param_dump=None, job_state='ok'):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
@@ -387,6 +396,8 @@ class JobSearch:
 def view_show_job(trans, job, full: bool) -> typing.Dict:
     is_admin = trans.user_is_admin
     job_dict = trans.app.security.encode_all_ids(job.to_dict('element', system_details=is_admin), True)
+    if trans.app.config.expose_dataset_path and 'command_line' not in job_dict:
+        job_dict['command_line'] = job.command_line
     if full:
         job_dict.update(dict(
             tool_stdout=job.tool_stdout,
@@ -610,7 +621,9 @@ def summarize_destination_params(trans, job):
     destination_params = {'Runner': job.job_runner_name,
                           'Runner Job ID': job.job_runner_external_id,
                           'Handler': job.handler}
-    destination_params.update(job.destination_params)
+    job_destination_params = job.destination_params
+    if job_destination_params:
+        destination_params.update(job_destination_params)
     return destination_params
 
 

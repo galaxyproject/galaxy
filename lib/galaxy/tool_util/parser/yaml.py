@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
@@ -117,10 +115,10 @@ class YamlToolSource(ToolSource):
             else:
                 message = "Unknown output_type [%s] encountered." % output_type
                 raise Exception(message)
-        outputs = OrderedDict()
+        outputs = {}
         for output in output_defs:
             outputs[output.name] = output
-        output_collections = OrderedDict()
+        output_collections = {}
         for output in output_collection_defs:
             output_collections[output.name] = output
 

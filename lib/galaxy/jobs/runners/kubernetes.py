@@ -6,6 +6,7 @@ import logging
 import math
 import os
 import re
+from datetime import datetime
 
 import yaml
 
@@ -17,17 +18,26 @@ from galaxy.jobs.runners import (
 )
 from galaxy.jobs.runners.util.pykube_util import (
     DEFAULT_JOB_API_VERSION,
+    delete_ingress,
+    delete_job,
+    delete_service,
     ensure_pykube,
+    find_ingress_object_by_name,
     find_job_object_by_name,
     find_pod_object_by_name,
+    find_service_object_by_name,
     galaxy_instance_id,
+    Ingress,
+    ingress_object_dict,
+    is_pod_unschedulable,
     Job,
     job_object_dict,
     Pod,
     produce_k8s_job_prefix,
     pull_policy,
     pykube_client_from_dict,
-    stop_job,
+    Service,
+    service_object_dict
 )
 from galaxy.util.bytesize import ByteSize
 
@@ -57,19 +67,24 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_pod_priority_class=dict(map=str, default=None),
             k8s_affinity=dict(map=str, default=None),
             k8s_node_selector=dict(map=str, default=None),
+            k8s_extra_job_envs=dict(map=str, default=None),
             k8s_tolerations=dict(map=str, default=None),
             k8s_galaxy_instance_id=dict(map=str),
             k8s_timeout_seconds_job_deletion=dict(map=int, valid=lambda x: int > 0, default=30),
             k8s_job_api_version=dict(map=str, default=DEFAULT_JOB_API_VERSION),
             k8s_job_ttl_secs_after_finished=dict(map=int, valid=lambda x: x is None or int(x) >= 0, default=None),
-            k8s_supplemental_group_id=dict(map=str),
+            k8s_job_metadata=dict(map=str, default=None),
+            k8s_supplemental_group_id=dict(map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None),
             k8s_pull_policy=dict(map=str, default="Default"),
-            k8s_run_as_user_id=dict(map=str, valid=lambda s: s == "$uid" or s.isdigit()),
-            k8s_run_as_group_id=dict(map=str, valid=lambda s: s == "$gid" or s.isdigit()),
-            k8s_fs_group_id=dict(map=int),
+            k8s_run_as_user_id=dict(map=str, valid=lambda s: s == "$uid" or isinstance(s, int) or not s or s.isdigit(), default=None),
+            k8s_run_as_group_id=dict(map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None),
+            k8s_fs_group_id=dict(map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None),
             k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
             k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=3),
-            k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800))
+            k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800),
+            k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=1800),
+            k8s_interactivetools_use_ssl=dict(map=bool, default=False),
+            k8s_interactivetools_ingress_annotations=dict(map=str),)
 
         if 'runner_param_specs' not in kwargs:
             kwargs['runner_param_specs'] = dict()
@@ -96,9 +111,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             volume_claims = dict(volume.split(":") for volume in self.runner_params['k8s_persistent_volume_claims'].split(','))
         else:
             volume_claims = {}
-        mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}} for claim_name in volume_claims]
+        mountable_volumes = list(set([claim_name if "/" not in claim_name else claim_name.split("/")[0] for claim_name in volume_claims]))
+        mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}} for claim_name in mountable_volumes]
         self.runner_params['k8s_mountable_volumes'] = mountable_volumes
         volume_mounts = [{'name': claim_name, 'mountPath': mount_path} for claim_name, mount_path in volume_claims.items()]
+        for each in volume_mounts:
+            vmount = each.get("name")
+            if "/" in vmount:
+                name = vmount.split("/")[0]
+                subpath = vmount.split("/")[1]
+                each["name"] = name
+                each["subPath"] = subpath
         self.runner_params['k8s_volume_mounts'] = volume_mounts
 
     def queue_job(self, job_wrapper):
@@ -128,20 +151,46 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
         k8s_job_prefix = self.__produce_k8s_job_prefix()
+        guest_ports = ajs.job_wrapper.guest_ports
+        ports_dict = {}
+        for guest_port in guest_ports:
+            ports_dict[str(guest_port)] = dict(host='manual', port=guest_port, protocol="https")
+        eps = None
+        if ajs.job_wrapper.guest_ports:
+            k8s_job_name = self.__get_k8s_job_name(k8s_job_prefix, ajs.job_wrapper)
+            log.debug(f'Configuring entry points and deploying service/ingress for job with ID {ajs.job_id}')
+            k8s_service_obj = service_object_dict(
+                self.runner_params,
+                k8s_job_name,
+                self.__get_k8s_service_spec(ajs)
+            )
+            eps = self.app.interactivetool_manager.configure_entry_points(ajs.job_wrapper.get_job(), ports_dict)
+            k8s_ingress_obj = ingress_object_dict(
+                self.runner_params,
+                k8s_job_name,
+                self.__get_k8s_ingress_spec(ajs, eps)
+            )
+            service = Service(self._pykube_api, k8s_service_obj)
+            service.create()
+            ingress = Ingress(self._pykube_api, k8s_ingress_obj)
+            ingress.create()
         k8s_job_obj = job_object_dict(
             self.runner_params,
             k8s_job_prefix,
-            self.__get_k8s_job_spec(ajs)
+            self.__get_k8s_job_spec(ajs, eps)
         )
-
         job = Job(self._pykube_api, k8s_job_obj)
-        job.create()
-        job_id = job.metadata['name']
+        try:
+            job.create()
+            job_id = job.metadata.get('name')
+            # define job attributes in the AsyncronousJobState for follow-up
+            ajs.job_id = job_id
+            # store runner information for tracking if Galaxy restarts
+            job_wrapper.set_external_id(job_id)
+        except Exception as e:
+            log.exception("Error occurred while creating kubernetes job object")
+            raise e
 
-        # define job attributes in the AsyncronousJobState for follow-up
-        ajs.job_id = job_id
-        # store runner information for tracking if Galaxy restarts
-        job_wrapper.set_external_id(job_id)
         self.monitor_queue.put(ajs)
 
     def __get_overridable_params(self, job_wrapper, param_key):
@@ -152,39 +201,48 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return pull_policy(self.runner_params)
 
     def __get_run_as_user_id(self):
-        if "k8s_run_as_user_id" in self.runner_params:
+        if self.runner_params.get("k8s_run_as_user_id") or self.runner_params.get("k8s_run_as_user_id") == 0:
             run_as_user = self.runner_params["k8s_run_as_user_id"]
             if run_as_user == "$uid":
                 return os.getuid()
             else:
-                return int(self.runner_params["k8s_run_as_user_id"])
+                try:
+                    return int(self.runner_params["k8s_run_as_user_id"])
+                except Exception:
+                    log.warning("User ID passed for Kubernetes runner needs to be an integer or \"$uid\", value "
+                             + self.runner_params["k8s_run_as_user_id"] + " passed is invalid")
+                    return None
         return None
 
     def __get_run_as_group_id(self):
-        if "k8s_run_as_group_id" in self.runner_params:
+        if self.runner_params.get("k8s_run_as_group_id") or self.runner_params.get("k8s_run_as_group_id") == 0:
             run_as_group = self.runner_params["k8s_run_as_group_id"]
             if run_as_group == "$gid":
                 return self.app.config.gid
             else:
-                return int(self.runner_params["k8s_run_as_group_id"])
+                try:
+                    return int(self.runner_params["k8s_run_as_group_id"])
+                except Exception:
+                    log.warning("Group ID passed for Kubernetes runner needs to be an integer or \"$gid\", value "
+                             + self.runner_params["k8s_run_as_group_id"] + " passed is invalid")
         return None
 
     def __get_supplemental_group(self):
-        if "k8s_supplemental_group_id" in self.runner_params:
+        if self.runner_params.get("k8s_supplemental_group_id") or self.runner_params.get("k8s_supplemental_group_id") == 0:
             try:
                 return int(self.runner_params["k8s_supplemental_group_id"])
             except Exception:
-                log.warning("Supplemental group passed for Kubernetes runner needs to be an integer, value "
+                log.warning("Supplemental group passed for Kubernetes runner needs to be an integer or \"$gid\", value "
                          + self.runner_params["k8s_supplemental_group_id"] + " passed is invalid")
                 return None
         return None
 
     def __get_fs_group(self):
-        if "k8s_fs_group_id" in self.runner_params:
+        if self.runner_params.get("k8s_fs_group_id") or self.runner_params.get("k8s_fs_group_id") == 0:
             try:
                 return int(self.runner_params["k8s_fs_group_id"])
             except Exception:
-                log.warning("FS group passed for Kubernetes runner needs to be an integer, value "
+                log.warning("FS group passed for Kubernetes runner needs to be an integer or \"$gid\", value "
                          + self.runner_params["k8s_fs_group_id"] + " passed is invalid")
                 return None
         return None
@@ -197,10 +255,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         instance_id = self._galaxy_instance_id or ''
         return produce_k8s_job_prefix(app_prefix='gxy', instance_id=instance_id)
 
-    def __get_k8s_job_spec(self, ajs):
+    def __get_k8s_job_spec(self, ajs, eps=None):
         """Creates the k8s Job spec. For a Job spec, the only requirement is to have a .spec.template.
         If the job hangs around unlimited it will be ended after k8s wall time limit, which sets activeDeadlineSeconds"""
-        k8s_job_spec = {"template": self.__get_k8s_job_spec_template(ajs),
+        k8s_job_spec = {"template": self.__get_k8s_job_spec_template(ajs, eps),
                         "activeDeadlineSeconds": int(self.runner_params['k8s_walltime_limit'])}
         job_ttl = self.runner_params["k8s_job_ttl_secs_after_finished"]
         if self.runner_params["k8s_cleanup_job"] != "never" and job_ttl is not None:
@@ -221,7 +279,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             label_val += 'x'
         return label_val
 
-    def __get_k8s_job_spec_template(self, ajs):
+    def __get_k8s_job_spec_template(self, ajs, eps=None):
         """The k8s spec template is nothing but a Pod spec, except that it is nested and does not have an apiversion
         nor kind. In addition to required fields for a Pod, a pod template in a job must specify appropriate labels
         (see pod selector) and an appropriate restart policy."""
@@ -246,7 +304,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "spec": {
                 "volumes": self.runner_params['k8s_mountable_volumes'],
                 "restartPolicy": self.__get_k8s_restart_policy(ajs.job_wrapper),
-                "containers": self.__get_k8s_containers(ajs),
+                "containers": self.__get_k8s_containers(ajs, eps),
                 "priorityClassName": self.runner_params['k8s_pod_priority_class'],
                 "tolerations": yaml.safe_load(self.runner_params['k8s_tolerations'] or "[]"),
                 "affinity": yaml.safe_load(self.__get_overridable_params(ajs.job_wrapper,
@@ -258,13 +316,101 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
         k8s_spec_template["spec"]["securityContext"] = self.__get_k8s_security_context()
+        extra_metadata = self.runner_params['k8s_job_metadata'] or '{}'
+        if isinstance(extra_metadata, str):
+            extra_metadata = yaml.safe_load(extra_metadata)
+        k8s_spec_template["metadata"]["labels"].update(extra_metadata.get('labels', {}))
+        k8s_spec_template["metadata"]["annotations"].update(extra_metadata.get('annotations', {}))
+        return k8s_spec_template
+
+    def __get_k8s_service_spec(self, ajs):
+        """The k8s spec template is nothing but a Service spec, except that it is nested and does not have an apiversion
+        nor kind."""
+        guest_ports = ajs.job_wrapper.guest_ports
+        k8s_spec_template = {
+            "metadata": {
+                "labels": {
+                    "app.galaxyproject.org/handler": self.__force_label_conformity(self.app.config.server_name),
+                    "app.galaxyproject.org/destination": self.__force_label_conformity(
+                        str(ajs.job_wrapper.job_destination.id))
+                },
+                "annotations": {
+                    "app.galaxyproject.org/tool_id": ajs.job_wrapper.tool.id
+                }
+            },
+            "spec": {
+                "ports": [{"name": "job-{}-{}".format(self.__force_label_conformity(ajs.job_wrapper.get_id_tag()), p),
+                           "port": int(p),
+                           "protocol": "TCP",
+                           "targetPort": int(p)} for p in guest_ports],
+                "selector": {
+                    "app.kubernetes.io/name": self.__force_label_conformity(ajs.job_wrapper.tool.old_id),
+                    "app.kubernetes.io/component": "tool",
+                    "app.galaxyproject.org/job_id": self.__force_label_conformity(ajs.job_wrapper.get_id_tag())
+                },
+                "type": "ClusterIP"
+            }
+        }
+        return k8s_spec_template
+
+    def __get_k8s_ingress_spec(self, ajs, eps=None):
+        """The k8s spec template is nothing but a Ingress spec, except that it is nested and does not have an apiversion
+        nor kind."""
+        guest_ports = ajs.job_wrapper.guest_ports
+        if len(guest_ports) > 0:
+            entry_points = []
+            for entry_point in eps.get('configured', []):
+                # sending in self.app as `trans` since it's only used for `.security` so seems to work
+                entry_point_path = self.app.interactivetool_manager.get_entry_point_path(self.app, entry_point)
+                if '?' in entry_point_path:
+                    # Removing all the parameters from the ingress path, but they will still be in the database
+                    # so the link that the user clicks on will still have them
+                    log.warn("IT urls including parameters (eg: /myit?mykey=myvalue) are only experimentally supported on K8S")
+                    entry_point_path = entry_point_path.split('?')[0]
+                entry_point_domain = f'{self.app.config.interactivetools_proxy_host}'
+                if entry_point.requires_domain:
+                    entry_point_subdomain = self.app.interactivetool_manager.get_entry_point_subdomain(self.app, entry_point)
+                    entry_point_domain = f'{entry_point_subdomain}.{entry_point_domain}'
+                    entry_point_path = '/'
+                entry_points.append({"tool_port": entry_point.tool_port, "domain": entry_point_domain, "entry_path": entry_point_path})
+        k8s_spec_template = {
+            "metadata": {
+                "labels": {
+                    "app.galaxyproject.org/handler": self.__force_label_conformity(self.app.config.server_name),
+                    "app.galaxyproject.org/destination": self.__force_label_conformity(
+                        str(ajs.job_wrapper.job_destination.id))
+                },
+                "annotations": {
+                    "app.galaxyproject.org/tool_id": ajs.job_wrapper.tool.id
+                }
+            },
+            "spec": {
+                "rules": [{"host": ep["domain"],
+                           "http": {
+                               "paths": [{
+                                   "backend": {
+                                       "serviceName": self.__get_k8s_job_name(self.__produce_k8s_job_prefix(), ajs.job_wrapper),
+                                       "servicePort": int(ep["tool_port"])
+                                   },
+                                   "path": ep.get("entry_path", '/'),
+                                   "pathType": "Prefix"
+                               }]}} for ep in entry_points]
+            }
+        }
+        if self.runner_params.get("k8s_interactivetools_use_ssl"):
+            domains = list(set([e["domain"] for e in entry_points]))
+            k8s_spec_template["spec"]["tls"] = [{"hosts": [domain],
+                                                 "secretName": re.sub("[^a-z0-9-]", "-", domain)} for domain in domains]
+        if self.runner_params.get("k8s_interactivetools_ingress_annotations"):
+            new_ann = yaml.safe_load(self.runner_params.get("k8s_interactivetools_ingress_annotations"))
+            k8s_spec_template["metadata"]["annotations"].update(new_ann)
         return k8s_spec_template
 
     def __get_k8s_security_context(self):
         security_context = {}
-        if self._run_as_user_id:
+        if self._run_as_user_id or self._run_as_user_id == 0:
             security_context["runAsUser"] = self._run_as_user_id
-        if self._run_as_group_id:
+        if self._run_as_group_id or self._run_as_group_id == 0:
             security_context["runAsGroup"] = self._run_as_group_id
         if self._supplemental_group and self._supplemental_group > 0:
             security_context["supplementalGroups"] = [self._supplemental_group]
@@ -276,7 +422,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """The default Kubernetes restart policy for Jobs"""
         return "Never"
 
-    def __get_k8s_containers(self, ajs):
+    def __get_k8s_containers(self, ajs, eps=None):
         """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
            this has been set.
            $GALAXY_VIRTUAL_ENV is set to None to avoid the galaxy virtualenv inside the tool container.
@@ -284,9 +430,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
            Setting these variables changes the described behaviour in the job file shell script
            used to execute the tool inside the container.
         """
+        container = self._find_container(ajs.job_wrapper)
         k8s_container = {
             "name": self.__get_k8s_container_name(ajs.job_wrapper),
-            "image": self._find_container(ajs.job_wrapper).container_id,
+            "image": container.container_id,
             # this form of command overrides the entrypoint and allows multi command
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
@@ -295,22 +442,50 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "workingDir": ajs.job_wrapper.working_directory,
             "volumeMounts": self.runner_params['k8s_volume_mounts']
         }
-
         resources = self.__get_resources(ajs.job_wrapper)
         if resources:
             envs = []
+            cpu_val = None
             if 'requests' in resources:
                 requests = resources['requests']
-                if 'memory' in requests:
-                    envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(ByteSize(requests['memory']).to_unit('M', as_string=False))})
                 if 'cpu' in requests:
-                    envs.append({'name': 'GALAXY_SLOTS', 'value': str(int(math.ceil(float(requests['cpu']))))})
+                    cpu_val = int(math.ceil(float(requests['cpu'])))
+                    envs.append({'name': 'GALAXY_SLOTS', 'value': str(cpu_val)})
+                if 'memory' in requests:
+                    mem_val = ByteSize(requests['memory']).to_unit('M', as_string=False)
+                    envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(mem_val)})
+                    if cpu_val:
+                        envs.append({'name': 'GALAXY_MEMORY_MB_PER_SLOT', 'value': str(math.floor(mem_val / cpu_val))})
             elif 'limits' in resources:
                 limits = resources['limits']
-                if 'memory' in limits:
-                    envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(ByteSize(limits['memory']).to_unit('M', as_string=False))})
                 if 'cpu' in limits:
-                    envs.append({'name': 'GALAXY_SLOTS', 'value': str(int(math.ceil(float(limits['cpu']))))})
+                    cpu_val = int(math.floor(float(limits['cpu'])))
+                    cpu_val = cpu_val or 1
+                    envs.append({'name': 'GALAXY_SLOTS', 'value': str(cpu_val)})
+                if 'memory' in limits:
+                    mem_val = ByteSize(limits['memory']).to_unit('M', as_string=False)
+                    envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(mem_val)})
+                    if cpu_val:
+                        envs.append({'name': 'GALAXY_MEMORY_MB_PER_SLOT', 'value': str(math.floor(mem_val / cpu_val))})
+            extra_envs = yaml.safe_load(self.__get_overridable_params(ajs.job_wrapper, 'k8s_extra_job_envs') or "{}")
+            for key in extra_envs:
+                envs.append({'name': key, 'value': extra_envs[key]})
+            if eps:
+                for entry_point in eps.get('configured', []):
+                    # sending in self.app as `trans` since it's only used for `.security` so seems to work
+                    entry_point_path = self.app.interactivetool_manager.get_entry_point_path(self.app, entry_point)
+                    if '?' in entry_point_path:
+                        # Removing all the parameters from the ingress path, but they will still be in the database
+                        # so the link that the user clicks on will still have them
+                        log.warn("IT urls including parameters (eg: /myit?mykey=myvalue) are only experimentally supported on K8S")
+                        entry_point_path = entry_point_path.split('?')[0]
+                    entry_point_domain = f'{self.app.config.interactivetools_proxy_host}'
+                    if entry_point.requires_domain:
+                        entry_point_subdomain = self.app.interactivetool_manager.get_entry_point_subdomain(self.app, entry_point)
+                        entry_point_domain = f'{entry_point_subdomain}.{entry_point_domain}'
+                    envs.append({'name': 'INTERACTIVETOOL_PORT', 'value': str(entry_point.tool_port)})
+                    envs.append({'name': 'INTERACTIVETOOL_DOMAIN', 'value': str(entry_point_domain)})
+                    envs.append({'name': 'INTERACTIVETOOL_PATH', 'value': str(entry_point_path)})
             k8s_container['resources'] = resources
             k8s_container['env'] = envs
 
@@ -415,10 +590,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             return cleaned_id
         return "job-container"
 
+    def __get_k8s_job_name(self, prefix, job_wrapper):
+        return "{}-{}".format(prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
+
     def __get_destination_params(self, job_wrapper):
         """Obtains allowable runner param overrides from the destination"""
         job_destination = job_wrapper.job_destination
-        OVERRIDABLE_PARAMS = ["k8s_node_selector", "k8s_affinity"]
+        OVERRIDABLE_PARAMS = ["k8s_node_selector", "k8s_affinity", "k8s_extra_job_envs"]
         new_params = {}
         for each_param in OVERRIDABLE_PARAMS:
             if each_param in job_destination.params:
@@ -466,8 +644,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return None
             elif active > 0 and failed <= max_pod_retries:
                 if not job_state.running:
-                    job_state.running = True
-                    job_state.job_wrapper.change_state(model.Job.states.RUNNING)
+                    if self.__job_pending_due_to_unschedulable_pod(job_state):
+                        creation_time_str = job.obj['metadata'].get('creationTimestamp')
+                        creation_time = datetime.strptime(creation_time_str, '%Y-%m-%dT%H:%M:%SZ')
+                        elapsed_seconds = (datetime.utcnow() - creation_time).total_seconds()
+                        if elapsed_seconds > self.runner_params['k8s_unschedulable_walltime_limit']:
+                            return self._handle_unschedulable_job(job, job_state)
+                    else:
+                        job_state.running = True
+                        job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                 return job_state
             elif job_persisted_state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job and job has not been deleted,
@@ -497,6 +682,20 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # job is no longer viable - remove from watched jobs
             return None
 
+    def _handle_unschedulable_job(self, job, job_state):
+        # Handle unschedulable job that exceeded deadline
+        job_state.fail_message = "Job was unschedulable longer than specified deadline"
+        job_state.runner_state = JobState.runner_states.WALLTIME_REACHED
+        job_state.running = False
+        self.mark_as_failed(job_state)
+        try:
+            if job_state.job_wrapper.guest_ports:
+                self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
+            self.__cleanup_k8s_job(job)
+        except Exception:
+            log.exception("Could not clean up k8s batch job. Ignoring...")
+        return None
+
     def _handle_job_failure(self, job, job_state):
         # Figure out why job has failed
         with open(job_state.error_file, 'a') as error_file:
@@ -514,6 +713,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_state.running = False
         self.mark_as_failed(job_state)
         try:
+            if job_state.job_wrapper.guest_ports:
+                self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
         except Exception:
             log.exception("Could not clean up k8s batch job. Ignoring...")
@@ -521,11 +722,28 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __cleanup_k8s_job(self, job):
         k8s_cleanup_job = self.runner_params['k8s_cleanup_job']
-        stop_job(job, k8s_cleanup_job)
+        delete_job(job, k8s_cleanup_job)
+
+    def __cleanup_k8s_ingress(self, ingress, job_failed):
+        k8s_cleanup_job = self.runner_params['k8s_cleanup_job']
+        delete_ingress(ingress, k8s_cleanup_job, job_failed)
+
+    def __cleanup_k8s_service(self, service, job_failed):
+        k8s_cleanup_job = self.runner_params['k8s_cleanup_job']
+        delete_service(service, k8s_cleanup_job, job_failed)
 
     def __job_failed_due_to_walltime_limit(self, job):
         conditions = job.obj['status'].get('conditions') or []
         return any(True for c in conditions if c['type'] == 'Failed' and c['reason'] == 'DeadlineExceeded')
+
+    def _get_pod_for_job(self, job_state):
+        pods = Pod.objects(self._pykube_api).filter(selector="app=%s" % job_state.job_id,
+                                                    namespace=self.runner_params['k8s_namespace'])
+        if not pods.response['items']:
+            return None
+
+        pod = Pod(self._pykube_api, pods.response['items'][0])
+        return pod
 
     def __job_failed_due_to_low_memory(self, job_state):
         """
@@ -533,17 +751,42 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         for being out of memory (pod status OOMKilled). If that is the case
         marks the job for resubmission (resubmit logic is part of destinations).
         """
+        pods = find_pod_object_by_name(self._pykube_api, job_state.job_id, self.runner_params['k8s_namespace'])
+        if not pods.response['items']:
+            return False
 
+        pod = self._get_pod_for_job(job_state)
+        if pod and pod.obj['status']['phase'] == "Failed" and \
+                pod.obj['status']['containerStatuses'][0]['state']['terminated']['reason'] == "OOMKilled":
+            return True
+
+        return False
+
+    def __job_pending_due_to_unschedulable_pod(self, job_state):
+        """
+        checks the state of the pod to see if it is unschedulable.
+        """
         pods = find_pod_object_by_name(self._pykube_api, job_state.job_id, self.runner_params['k8s_namespace'])
         if not pods.response['items']:
             return False
 
         pod = Pod(self._pykube_api, pods.response['items'][0])
-        if pod.obj['status']['phase'] == "Failed" and \
-                pod.obj['status']['containerStatuses'][0]['state']['terminated']['reason'] == "OOMKilled":
-            return True
+        return is_pod_unschedulable(self._pykube_api, pod, self.runner_params['k8s_namespace'])
 
-        return False
+    def __cleanup_k8s_interactivetools(self, job_wrapper, k8s_job):
+        k8s_job_prefix = self.__produce_k8s_job_prefix()
+        k8s_job_name = "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
+        log.debug(f'Deleting service/ingress for job with ID {job_wrapper.get_id_tag()}')
+        job_failed = (k8s_job.obj['status']['failed'] > 0
+                      if 'failed' in k8s_job.obj['status'] else False)
+        ingress_to_delete = find_ingress_object_by_name(self._pykube_api, k8s_job_name, self.runner_params['k8s_namespace'])
+        if ingress_to_delete and len(ingress_to_delete.response['items']) > 0:
+            k8s_ingress = Ingress(self._pykube_api, ingress_to_delete.response['items'][0])
+            self.__cleanup_k8s_ingress(k8s_ingress, job_failed)
+        service_to_delete = find_service_object_by_name(self._pykube_api, k8s_job_name, self.runner_params['k8s_namespace'])
+        if service_to_delete and len(service_to_delete.response['items']) > 0:
+            k8s_service = Service(self._pykube_api, service_to_delete.response['items'][0])
+            self.__cleanup_k8s_service(k8s_service, job_failed)
 
     def stop_job(self, job_wrapper):
         """Attempts to delete a dispatched job to the k8s cluster"""
@@ -552,10 +795,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_to_delete = find_job_object_by_name(self._pykube_api, job.get_job_runner_external_id(), self.runner_params['k8s_namespace'])
             if job_to_delete and len(job_to_delete.response['items']) > 0:
                 k8s_job = Job(self._pykube_api, job_to_delete.response['items'][0])
+                if job_wrapper.guest_ports:
+                    self.__cleanup_k8s_interactivetools(job_wrapper, k8s_job)
                 self.__cleanup_k8s_job(k8s_job)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
             log.debug(f"({job.id}/{job.job_runner_external_id}) Terminated at user's request")
+
         except Exception as e:
             log.exception("({}/{}) User killed running job, but error encountered during termination: {}".format(
                 job.id, job.get_job_runner_external_id(), e))
@@ -592,4 +838,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             log.warning("More than one job matches selector. Possible configuration error"
                         " in job id '%s'", job_state.job_id)
         job = Job(self._pykube_api, jobs.response['items'][0])
+        if job_state.job_wrapper.guest_ports:
+            self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
         self.__cleanup_k8s_job(job)

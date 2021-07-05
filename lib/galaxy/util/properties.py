@@ -142,6 +142,7 @@ class NicerConfigParser(ConfigParser):
             self._interpolation = self.InterpolateWrapper(self._interpolation)
 
     read_file = getattr(ConfigParser, 'read_file', ConfigParser.readfp)
+    read_file.__doc__ = ""
 
     def defaults(self):
         """Return the defaults, with their values interpolated (with the

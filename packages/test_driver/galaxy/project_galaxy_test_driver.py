@@ -1,4 +1,4 @@
-__version__ = '20.9.1.dev0'
+__version__ = "21.5.0"
 
 PROJECT_NAME = "galaxy-test-driver"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"

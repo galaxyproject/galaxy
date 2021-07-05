@@ -25,3 +25,11 @@ galaxy.webapps.galaxy.buildapp module
    :members:
    :undoc-members:
    :show-inheritance:
+
+galaxy.webapps.galaxy.fast\_app module
+--------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.fast_app
+   :members:
+   :undoc-members:
+   :show-inheritance:

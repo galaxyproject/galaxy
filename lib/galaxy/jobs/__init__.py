@@ -18,6 +18,7 @@ from abc import (
     abstractmethod,
 )
 from json import loads
+from typing import Any, Dict, List
 
 import packaging.version
 import yaml
@@ -40,9 +41,12 @@ from galaxy.job_execution.datasets import (
     TaskPathRewriter
 )
 from galaxy.job_execution.output_collect import collect_extra_files
-from galaxy.job_execution.setup import (
+from galaxy.job_execution.setup import (  # noqa: F401
     create_working_directory_for_job,
     ensure_configs_directory,
+    # This is read by certain misbehaving tool wrappers that import Galaxy internals
+    TOOL_PROVIDED_JOB_METADATA_FILE,
+    TOOL_PROVIDED_JOB_METADATA_KEYS,
 )
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import (
@@ -53,6 +57,7 @@ from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import store
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
     check_output,
@@ -71,12 +76,6 @@ from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 
 log = logging.getLogger(__name__)
-
-# Legacy definition - this is read by certain misbehaving tool wrappers
-# that import Galaxy internals - but it shouldn't be used in Galaxy's code
-# itself.
-TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
-TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey', 'created_from_basename']
 
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = '/bin/bash'
@@ -280,9 +279,18 @@ class JobConfiguration(ConfiguresHandlers):
 
     These features are configured in the job configuration, by default, ``job_conf.xml``
     """
+    runner_plugins: List[dict]
+    handlers: dict
+    handler_runner_plugins: Dict[str, str]
+    tools: Dict[str, list]
+    resource_groups: Dict[str, list]
+    destinations: Dict[str, tuple]
+    resource_parameters: Dict[str, Any]
     DEFAULT_BASE_HANDLER_POOLS = ('job-handlers',)
 
     DEFAULT_NWORKERS = 4
+
+    DEFAULT_HANDLER_READY_WINDOW_SIZE = 100
 
     JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
         <param name="__job_resource__select" type="select" label="Job Resource Parameters">
@@ -293,7 +301,7 @@ class JobConfiguration(ConfiguresHandlers):
         <when value="yes"/>
     </conditional>"""
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         """Parse the job configuration XML.
         """
         self.app = app
@@ -305,8 +313,8 @@ class JobConfiguration(ConfiguresHandlers):
         self.handler_assignment_methods = None
         self.handler_assignment_methods_configured = False
         self.handler_max_grab = None
+        self.handler_ready_window_size = None
         self.destinations = {}
-        self.destination_tags = {}
         self.default_destination_id = None
         self.tools = {}
         self.resource_groups = {}
@@ -395,6 +403,8 @@ class JobConfiguration(ConfiguresHandlers):
         log.info("Job handler assignment methods set to: %s", ', '.join(self.handler_assignment_methods))
         for tag, handlers in [(t, h) for t, h in self.handlers.items() if isinstance(h, list)]:
             log.info("Tag [%s] handlers: %s", tag, ', '.join(handlers))
+        self.handler_ready_window_size = int(handling_config_dict.get(
+            'ready_window_size', JobConfiguration.DEFAULT_HANDLER_READY_WINDOW_SIZE))
 
         # Parse environments
         job_metrics = self.app.job_metrics
@@ -549,6 +559,7 @@ class JobConfiguration(ConfiguresHandlers):
             self._set_default_handler_assignment_methods()
         else:
             self.app.application_stack.init_job_handling(self)
+        self.handler_ready_window_size = JobConfiguration.DEFAULT_HANDLER_READY_WINDOW_SIZE
         # Set the destination
         self.default_destination_id = 'local'
         self.destinations['local'] = [JobDestination(id='local', runner='local')]
@@ -1096,6 +1107,7 @@ class JobWrapper(HasResourceParameters):
         Prepare the job to run by creating the working directory and the
         config files.
         """
+        prepare_timer = util.ExecutionTimer()
         self.sa_session.expunge_all()  # this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
 
         if not os.path.exists(self.working_directory):
@@ -1142,6 +1154,7 @@ class JobWrapper(HasResourceParameters):
             self.write_version_cmd = f"{version_string_cmd} > {compute_environment.version_path()} 2>&1"
         else:
             self.write_version_cmd = None
+        log.debug(f"Job wrapper for Job [{job.id}] prepared {prepare_timer}")
         return self.extra_filenames
 
     def _setup_working_directory(self, job=None):
@@ -1163,10 +1176,13 @@ class JobWrapper(HasResourceParameters):
     @property
     def guest_ports(self):
         if hasattr(self, "interactivetools"):
+            # This works when the job is being prepared
             guest_ports = [ep.get('port') for ep in self.interactivetools]
             return guest_ports
         else:
-            return []
+            # This works when handling a running job
+            job = self._load_job()
+            return [ep.tool_port for ep in job.interactivetool_entry_points]
 
     @property
     def working_directory(self):
@@ -1310,9 +1326,7 @@ class JobWrapper(HasResourceParameters):
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
-                self.sa_session.add(dataset)
-                self.sa_session.flush()
-            job.set_final_state(job.states.ERROR)
+            job.set_final_state(job.states.ERROR, supports_skip_locked=self.app.application_stack.supports_skip_locked())
             job.command_line = unicodify(self.command_line)
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
@@ -1339,7 +1353,10 @@ class JobWrapper(HasResourceParameters):
             ActionBox.execute(self.app, self.sa_session, pja, job)
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
-            self.tool.job_failed(self, message, exception)
+            try:
+                self.tool.job_failed(self, message, exception)
+            except Exception:
+                log.exception(f"Error occured while calling tool specific fail actions for job {job.id}")
         cleanup_job = self.cleanup_job
         delete_files = cleanup_job == 'always' or (cleanup_job == 'onsuccess' and job.state == job.states.DELETED)
         self.cleanup(delete_files=delete_files)
@@ -1396,7 +1413,7 @@ class JobWrapper(HasResourceParameters):
             job.info = info
         job.set_state(state)
         self.sa_session.add(job)
-        job.update_output_states()
+        job.update_output_states(self.app.application_stack.supports_skip_locked())
         if flush:
             self.sa_session.flush()
 
@@ -1731,7 +1748,11 @@ class JobWrapper(HasResourceParameters):
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
         param_dict = self.get_param_dict(job)
-        self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
+        try:
+            self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
+        except Exception:
+            log.exception(f"exec_after_process hook failed for job {self.job_id}")
+            final_job_state = job.states.ERROR
         # Call 'exec_after_process' hook
         self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
                             out_data=out_data, param_dict=param_dict,
@@ -1760,7 +1781,7 @@ class JobWrapper(HasResourceParameters):
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
-        job.set_final_state(final_job_state)
+        job.set_final_state(final_job_state, supports_skip_locked=self.app.application_stack.supports_skip_locked())
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
@@ -1834,7 +1855,6 @@ class JobWrapper(HasResourceParameters):
                         if e.errno != errno.ENOENT:
                             raise
                 self.external_output_metadata.cleanup_external_metadata(self.sa_session)
-            galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             if delete_files:
                 self.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
         except Exception:
@@ -2134,9 +2154,18 @@ class JobWrapper(HasResourceParameters):
             log.debug("found container runtime %s" % container_runtime)
             self.app.interactivetool_manager.configure_entry_points(job, container_runtime)
             return True
+        container_exception_path = os.path.join(working_directory, "container_monitor_exception.txt")
+        if os.path.exists(container_exception_path):
+            with open(container_exception_path) as fh:
+                exception_string = fh.read()
+            error_message = "Monitoring interactive tool entry point failed"
+            log.error(f"Monitoring interactive tool entry point for job {self.job_id} failed: {exception_string}")
+            self.fail(error_message)
+            # local job runner uses return value to determine if we're done polling
+            return True
 
     def container_monitor_command(self, container, **kwds):
-        if not container or not self.tool.produces_entry_points:
+        if not container or not self.tool.produces_entry_points or not self.get_destination_configuration("container_monitor", True):
             return None
 
         exec_dir = kwds.get('exec_dir', os.path.abspath(os.getcwd()))
@@ -2224,7 +2253,7 @@ class JobWrapper(HasResourceParameters):
     def change_ownership_for_run(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if job.user is not None and external_chown_script is not None:
+        if job.user is not None and external_chown_script:
             ret = external_chown(self.working_directory, self.user_system_pwent,
                            external_chown_script, description="working directory")
             if not ret:
@@ -2233,7 +2262,7 @@ class JobWrapper(HasResourceParameters):
     def reclaim_ownership(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if job.user is not None:
+        if job.user is not None and external_chown_script:
             external_chown(self.working_directory, self.galaxy_system_pwent,
                            external_chown_script, description="working directory")
 
@@ -2587,6 +2616,10 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
 
     def working_directory(self):
         return self.job_wrapper.working_directory
+
+    def env_config_directory(self):
+        """Working directory (possibly as environment variable evaluation)."""
+        return "$_GALAXY_JOB_DIR"
 
     def new_file_path(self):
         return os.path.abspath(self.app.config.new_file_path)

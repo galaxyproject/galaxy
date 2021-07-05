@@ -15,9 +15,9 @@ class RepositoryRevisionsController(BaseAPIController):
     """RESTful controller for interactions with tool shed repository revisions."""
 
     def __get_value_mapper(self, trans):
-        value_mapper = {'id' : trans.security.encode_id,
-                        'repository_id' : trans.security.encode_id,
-                        'user_id' : trans.security.encode_id}
+        value_mapper = {'id': trans.security.encode_id,
+                        'repository_id': trans.security.encode_id,
+                        'user_id': trans.security.encode_id}
         return value_mapper
 
     @web.legacy_expose_api_anonymous

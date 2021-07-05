@@ -140,7 +140,7 @@ def test_import_export_library():
     all_lddas = sa_session.query(model.LibraryDatasetDatasetAssociation).all()
     assert len(all_lddas) == 2, len(all_lddas)
 
-    new_library = [l for l in all_libraries if l.id != library.id][0]
+    new_library = [lib for lib in all_libraries if lib.id != library.id][0]
     assert new_library.name == "my library 1"
     assert new_library.description == "my library description"
     assert new_library.synopsis == "my synopsis"

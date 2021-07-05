@@ -28,14 +28,14 @@
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" ref="footerExtensionInfo" />
             <span class="upload-footer-title">Genome/Build:</span>
             <select2 container-class="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
-                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">{{
-                    listGenome.text
-                }}</option>
+                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
+                    {{ listGenome.text }}
+                </option>
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" @click="app.dismiss()">
-                {{ btnCloseTitle }}
+            <b-button ref="btnClose" class="ui-button-default" @click="$emit('dismiss')">
+                {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
                 ref="btnStart"
@@ -74,7 +74,6 @@ export default {
             showHelper: true,
             btnResetTitle: _l("Reset"),
             btnStartTitle: _l("Start"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
             readyStart: false,
         };
     },
@@ -142,7 +141,7 @@ export default {
             });
             $.uploadpost({
                 url: this.app.uploadPath,
-                data: this.app.toData(this.collection.filter()),
+                data: this.app.toFileUploadData(this.collection.filter()),
                 success: (message) => {
                     this._eventSuccess(message);
                 },

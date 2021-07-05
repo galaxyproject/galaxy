@@ -28,7 +28,7 @@ class RepoManager:
         :type   decoded_repo_id:       int
 
         :returns:   the requested repo
-        :rtype:     Repository
+        :rtype:     tool_shed.webapp.model.Repository
         """
         try:
             repo = trans.sa_session.query(trans.app.model.Repository).filter(trans.app.model.Repository.table.c.id == decoded_repo_id).one()

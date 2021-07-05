@@ -1,6 +1,5 @@
 import logging
 import math
-from collections import OrderedDict
 from json import dumps, loads
 from typing import Dict, List, Optional
 
@@ -391,9 +390,6 @@ class DeletedColumn(GridColumn):
 class StateColumn(GridColumn):
     """
     Column that tracks and filters for items with state attribute.
-
-    IMPORTANT NOTE: self.model_class must have a states Bunch or dict if
-    this column type is used in the grid.
     """
 
     def get_value(self, trans, grid, item):
@@ -403,7 +399,7 @@ class StateColumn(GridColumn):
         """Modify query to filter self.model_class by state."""
         if column_filter == "All":
             pass
-        elif column_filter in [v for k, v in self.model_class.states.items()]:
+        elif column_filter in list(self.model_class.states):
             query = query.filter(self.model_class.state == column_filter)
         return query
 
@@ -411,9 +407,9 @@ class StateColumn(GridColumn):
         """Returns a list of accepted filters for this column."""
         all = GridColumnFilter('all', {self.key: 'All'})
         accepted_filters = [all]
-        for v in self.model_class.states.values():
-            args = {self.key: v}
-            accepted_filters.append(GridColumnFilter(v, args))
+        for state in self.model_class.states:
+            args = {self.key: state.value}
+            accepted_filters.append(GridColumnFilter(state.value, args))
         return accepted_filters
 
 
@@ -457,7 +453,7 @@ class SharingStatusColumn(GridColumn):
 
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
-        accepted_filter_labels_and_vals = OrderedDict()
+        accepted_filter_labels_and_vals = {}
         accepted_filter_labels_and_vals["private"] = "private"
         accepted_filter_labels_and_vals["shared"] = "shared"
         accepted_filter_labels_and_vals["accessible"] = "accessible"
@@ -810,8 +806,8 @@ class Grid:
                                    use_panels=self.use_panels,
                                    use_hide_message=self.use_hide_message,
                                    advanced_search=self.advanced_search,
-                                   show_item_checkboxes=(self.show_item_checkboxes or
-                                                         kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
+                                   show_item_checkboxes=(self.show_item_checkboxes
+                                                         or kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
                                    # Pass back kwargs so that grid template can set and use args without
                                    # grid explicitly having to pass them.
                                    kwargs=kwargs)

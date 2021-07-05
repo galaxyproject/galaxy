@@ -18,17 +18,15 @@ The following instructions assume that you have cloned your Galaxy fork into the
                 "console": "integratedTerminal"
             },
             {
-                "name": "Galaxy debug",
+                "name": "GalaxyFastAPI uvicorn",
                 "type": "python",
                 "request": "launch",
-                "program": "${workspaceFolder}/scripts/paster.py",
-                "args": [
-                    "serve",
-                    "config/galaxy_vscode.ini",
-                    "--log-file",
-                    "galaxy.log",
-                ],
-            }
+                "module": "uvicorn",
+                "args": ["--app-dir", "lib",  "--factory", "galaxy.webapps.galaxy.fast_factory:factory"],
+                "env": {
+                    "GALAXY_CONFIG_FILE": "${workspaceFolder}/config/galaxy.yml"
+                }
+            },
         ]
     }
 

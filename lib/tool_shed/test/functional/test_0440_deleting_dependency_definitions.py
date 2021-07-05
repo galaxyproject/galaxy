@@ -22,6 +22,7 @@ bwa_tool_dependency_repository_long_description = "NT space mapping with BWA"
 
 '''
 Simple repository dependencies:
+
 1. Create and populate column_maker_0440 so that it has an installable revision 0.
 2. Create and populate convert_chars_0440 so that it has an installable revision 0.
 3. Add a valid simple repository_dependencies.xml to convert_chars_0440 that points to the installable revision of column_maker_0440.
@@ -29,6 +30,7 @@ Simple repository dependencies:
 5. Delete repository_dependencies.xml from convert_chars_0440, and make sure convert_chars_0440 now has two installable revisions: 1 and 2
 
 Complex repository dependencies:
+
 1. Create and populate bwa_package_0440 so that it has a valid tool dependency definition and an installable revision 0.
 2. Create and populate bwa_base_0440 so that it has an installable revision 0.
 3. Add a valid complex repository dependency tool_dependencies.xml to bwa_base_0440 that points to the installable revision 0 of bwa_package_0440.
@@ -36,11 +38,13 @@ Complex repository dependencies:
 5. Delete tool_dependencies.xml from bwa_base_0440, and make sure bwa_base_0440 now has two installable revisions: 1 and 2
 
 Tool dependencies:
+
 1. Create and populate bwa_tool_dependency_0440 so that it has a valid tool dependency definition and an installable revision 0.
 2. Delete tool_dependencies.xml from bwa_tool_dependency_0440, and make sure that bwa_tool_dependency_0440 still has
    a single installable revision 0.
 3. Add the same tool_dependencies.xml file to bwa_tool_dependency_0440, and make sure that bwa_tool_dependency_0440
    still has a single installable revision 0.
+
 '''
 
 

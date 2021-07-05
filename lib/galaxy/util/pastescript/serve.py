@@ -514,8 +514,8 @@ class ServeCommand(Command):
                 cmd = None
                 restvars = self.args[:]
 
-        if (getattr(self.options, 'daemon', False) and
-                getattr(self.options, 'reload', False)):
+        if (getattr(self.options, 'daemon', False)
+                and getattr(self.options, 'reload', False)):
             raise BadCommand('The --daemon and --reload options may not be used together')
 
         jython_monitor = False
@@ -1025,8 +1025,8 @@ commands = {
 
 
 def run(args=None):
-    if (not args and len(sys.argv) >= 2 and os.environ.get('_') and
-            sys.argv[0] != os.environ['_'] and os.environ['_'] == sys.argv[1]):
+    if (not args and len(sys.argv) >= 2 and os.environ.get('_')
+            and sys.argv[0] != os.environ['_'] and os.environ['_'] == sys.argv[1]):
         # probably it's an exe execution
         args = ['exe', os.environ['_']] + sys.argv[2:]
     if args is None:

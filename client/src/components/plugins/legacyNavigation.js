@@ -37,7 +37,9 @@ export const legacyNavigationMixin = {
         iframeRedirect(path, target = "galaxy_main") {
             try {
                 const targetFrame = window.frames[target];
-                if (!targetFrame) throw new Error(`Requested frame ${target} doesn't exist`);
+                if (!targetFrame) {
+                    throw new Error(`Requested frame ${target} doesn't exist`);
+                }
                 targetFrame.location = prependPath(path);
                 return true;
             } catch (err) {

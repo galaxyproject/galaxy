@@ -134,6 +134,7 @@ export default {
                 format: this.format,
                 callback: this.callback,
                 modalShow: true,
+                selectable: true,
             };
             mountUploadModal(propsData);
             this.modalShow = false;

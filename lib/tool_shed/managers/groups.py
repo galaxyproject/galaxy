@@ -34,7 +34,7 @@ class GroupManager:
         :type   decoded_group_id:       int
 
         :returns:   the requested group
-        :rtype:     Group
+        :rtype:     tool_shed.model.Group
         """
         if decoded_group_id is None and name is None:
             raise RequestParameterInvalidException('You must supply either ID or a name of the group.')

@@ -115,7 +115,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         request["inputs"] = dumps(index_map)
         request["inputs_by"] = 'step_index'
         url = "workflows/%s/invocations" % (workflow_id)
-        for i in range(n):
+        for _ in range(n):
             self._post(url, data=request)
 
     def _get_workflow_invocations(self):
@@ -135,6 +135,9 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
 
 class HistoryRestrictionConfigurationTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
+    # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
+    assign_with = 'db-preassign'
+
     def test_history_to_handler_restriction(self):
         self._invoke_n_workflows(10)
         workflow_invocations = self._get_workflow_invocations()
@@ -149,9 +152,12 @@ class HistoryRestrictionConfigurationTestCase(BaseWorkflowHandlerConfigurationTe
 
 class HistoryParallelConfigurationTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
+    # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
+    assign_with = 'db-preassign'
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        super().handle_galaxy_config_kwds(config)
         config["parallelize_workflow_scheduling_within_histories"] = True
 
     def test_workflows_spread_across_multiple_handlers(self):
@@ -170,9 +176,12 @@ class HistoryParallelConfigurationTestCase(BaseWorkflowHandlerConfigurationTestC
 # Setup an explicit workflow handler and make sure this is assigned to that.
 class WorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTestCase):
 
+    # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
+    assign_with = 'db-preassign'
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        super().handle_galaxy_config_kwds(config)
         config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
 
     def test_handler_assignment(self):
@@ -205,7 +214,7 @@ class DefaultWorkflowHandlerIfJobHandlerOnTestCase(BaseWorkflowHandlerConfigurat
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        super().handle_galaxy_config_kwds(config)
         config["server_name"] = "handler0"
 
     def test_default_job_handler_is_workflow_handler(self):
@@ -218,7 +227,7 @@ class JobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigurati
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        super().handle_galaxy_config_kwds(config)
         config["server_name"] = "handler0"
 
     def test_handler_assignment(self):
@@ -244,7 +253,7 @@ class DefaultWorkflowHandlerIfJobHandlerOffTestCase(BaseWorkflowHandlerConfigura
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        super().handle_galaxy_config_kwds(config)
         config["server_name"] = "web0"
 
     def test_default_job_handler_is_not_workflow_handler(self):
@@ -257,7 +266,7 @@ class ExplicitWorkflowHandlersOnTestCase(BaseWorkflowHandlerConfigurationTestCas
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        super().handle_galaxy_config_kwds(config)
         config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
         config["server_name"] = "work1"
 
@@ -287,9 +296,22 @@ class ExplicitWorkflowHandlersOffTestCase(BaseWorkflowHandlerConfigurationTestCa
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        super().handle_galaxy_config_kwds(config)
         config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
         config["server_name"] = "handler0"  # Configured as a job handler but not a workflow handler.
+
+    def test_app_is_not_workflow_scheduler(self):
+        assert not self.is_app_workflow_scheduler
+
+
+class ExplicitWorkflowHandlersOffPoolTestCase(BaseWorkflowHandlerConfigurationTestCase):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
+        config["server_name"] = "handler0"  # Configured as a job handler but not a workflow handler.
+        config["attach_to_pools"] = ["job-handlers"]
 
     def test_app_is_not_workflow_scheduler(self):
         assert not self.is_app_workflow_scheduler

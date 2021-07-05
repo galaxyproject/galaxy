@@ -94,7 +94,7 @@ class Newick_Parser(Base_Parser):
                         if enclosingSymbol == ")" or enclosingSymbol == ":" or enclosingSymbol == ",":
                             termToReplace = newickString[end:j]
 
-                            newString += newickString[start : end] + nameMap[termToReplace]  # + "'"  "'" +
+                            newString += newickString[start:end] + nameMap[termToReplace]  # + "'"  "'" +
                             start = j
                             break
 
@@ -159,7 +159,7 @@ class Newick_Parser(Base_Parser):
                         lenOfPreceedingInternalNodeString = 0
 
                     # recussive call to make the internal claude
-                    childSubString = string[i + 1 : j]
+                    childSubString = string[i + 1:j]
                     InternalNode.addChildNode(self.parseNode(childSubString, depth + 1))
 
                     nodes.append(InternalNode)  # we append the internal node later to preserve order

@@ -393,9 +393,9 @@ class Bed(Interval):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Sets the metadata information for datasets previously determined to be in bed format."""
-        i = 0
         if dataset.has_data():
-            for i, line in enumerate(open(dataset.file_name)):
+            i = 0
+            for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
                     elems = line.split('\t')
@@ -477,9 +477,9 @@ class Bed(Interval):
         if not get_headers(file_prefix, '\t', comment_designator='#', count=1):
             return False
         try:
-            headers = iter_headers(file_prefix, '\t', comment_designator='#')
-            for hdr in headers:
-                if hdr[0] == '':
+            found_valid_lines = False
+            for hdr in iter_headers(file_prefix, '\t', comment_designator='#'):
+                if not hdr or hdr == ['']:
                     continue
                 if len(hdr) < 3 or len(hdr) > 12:
                     return False
@@ -542,7 +542,8 @@ class Bed(Interval):
                         return False
                     if len(block_sizes) != block_count or len(block_starts) != block_count:
                         return False
-            return True
+                found_valid_lines = True
+            return found_valid_lines
         except Exception:
             return False
 
@@ -683,7 +684,7 @@ class Gff(Tabular, _RemoteCallMixin):
 
         i = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_fh:
-            for i, line in enumerate(in_fh):
+            for i, line in enumerate(in_fh):  # noqa: B007
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
                     elems = line.split('\t')
@@ -818,28 +819,33 @@ class Gff(Tabular, _RemoteCallMixin):
         if len(get_headers(file_prefix, '\t', count=2)) < 2:
             return False
         try:
-            headers = iter_headers(file_prefix, '\t')
-            for hdr in headers:
-                if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
+            found_valid_lines = False
+            for hdr in iter_headers(file_prefix, '\t'):
+                if not hdr or hdr == ['']:
+                    continue
+                if hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
                     return False
-                if hdr and hdr[0] and not hdr[0].startswith('#'):
-                    if len(hdr) != 9:
-                        return False
+                # The gff-version header comment may have been stripped, so inspect the data
+                if hdr[0].startswith('#'):
+                    continue
+                if len(hdr) != 9:
+                    return False
+                try:
+                    int(hdr[3])
+                    int(hdr[4])
+                except Exception:
+                    return False
+                if hdr[5] != '.':
                     try:
-                        int(hdr[3])
-                        int(hdr[4])
+                        float(hdr[5])
                     except Exception:
                         return False
-                    if hdr[5] != '.':
-                        try:
-                            float(hdr[5])
-                        except Exception:
-                            return False
-                    if hdr[6] not in data.valid_strand:
-                        return False
-                    if hdr[7] not in self.valid_gff_frame:
-                        return False
-            return True
+                if hdr[6] not in data.valid_strand:
+                    return False
+                if hdr[7] not in self.valid_gff_frame:
+                    return False
+                found_valid_lines = True
+            return found_valid_lines
         except Exception:
             return False
 
@@ -889,7 +895,7 @@ class Gff3(Gff):
         self.set_attribute_metadata(dataset)
         i = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_fh:
-            for i, line in enumerate(in_fh):
+            for i, line in enumerate(in_fh):  # noqa: B007
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
                     elems = line.split('\t')
@@ -953,37 +959,41 @@ class Gff3(Gff):
         if len(get_headers(file_prefix, '\t', count=2)) < 2:
             return False
         try:
-            headers = iter_headers(file_prefix, '\t')
-            for hdr in headers:
-                if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('3') >= 0:
+            found_valid_lines = False
+            for hdr in iter_headers(file_prefix, '\t'):
+                if not hdr or hdr == ['']:
+                    continue
+                if hdr[0].startswith('##gff-version') and hdr[0].find('3') >= 0:
                     return True
-                elif hdr and hdr[0].startswith('##gff-version') and hdr[0].find('3') < 0:
+                elif hdr[0].startswith('##gff-version') and hdr[0].find('3') < 0:
                     return False
-                # Header comments may have been stripped, so inspect the data
-                if hdr and hdr[0] and not hdr[0].startswith('#'):
-                    if len(hdr) != 9:
+                # The gff-version header comment may have been stripped, so inspect the data
+                if hdr[0].startswith('#'):
+                    continue
+                if len(hdr) != 9:
+                    return False
+                try:
+                    int(hdr[3])
+                except Exception:
+                    if hdr[3] != '.':
                         return False
+                try:
+                    int(hdr[4])
+                except Exception:
+                    if hdr[4] != '.':
+                        return False
+                if hdr[5] != '.':
                     try:
-                        int(hdr[3])
+                        float(hdr[5])
                     except Exception:
-                        if hdr[3] != '.':
-                            return False
-                    try:
-                        int(hdr[4])
-                    except Exception:
-                        if hdr[4] != '.':
-                            return False
-                    if hdr[5] != '.':
-                        try:
-                            float(hdr[5])
-                        except Exception:
-                            return False
-                    if hdr[6] not in self.valid_gff3_strand:
                         return False
-                    if hdr[7] not in self.valid_gff3_phase:
-                        return False
-                    parse_gff3_attributes(hdr[8])
-            return True
+                if hdr[6] not in self.valid_gff3_strand:
+                    return False
+                if hdr[7] not in self.valid_gff3_phase:
+                    return False
+                parse_gff3_attributes(hdr[8])
+                found_valid_lines = True
+            return found_valid_lines
         except Exception:
             return False
 
@@ -1031,34 +1041,38 @@ class Gtf(Gff):
         if len(get_headers(file_prefix, '\t', count=2)) < 2:
             return False
         try:
-            headers = iter_headers(file_prefix, '\t')
-            for hdr in headers:
-                if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
+            found_valid_lines = False
+            for hdr in iter_headers(file_prefix, '\t'):
+                if not hdr or hdr == ['']:
+                    continue
+                if hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
                     return False
-                if hdr and hdr[0] and not hdr[0].startswith('#'):
-                    if len(hdr) != 9:
-                        return False
+                # The gff-version header comment may have been stripped, so inspect the data
+                if hdr[0].startswith('#'):
+                    continue
+                if len(hdr) != 9:
+                    return False
+                try:
+                    int(hdr[3])
+                    int(hdr[4])
+                except Exception:
+                    return False
+                if hdr[5] != '.':
                     try:
-                        int(hdr[3])
-                        int(hdr[4])
+                        float(hdr[5])
                     except Exception:
                         return False
-                    if hdr[5] != '.':
-                        try:
-                            float(hdr[5])
-                        except Exception:
-                            return False
-                    if hdr[6] not in data.valid_strand:
-                        return False
-                    if hdr[7] not in self.valid_gff_frame:
-                        return False
-
-                    # Check attributes for gene_id (transcript_id is also mandatory
-                    # but not for genes)
-                    attributes = parse_gff_attributes(hdr[8])
-                    if 'gene_id' not in attributes:
-                        return False
-            return True
+                if hdr[6] not in data.valid_strand:
+                    return False
+                if hdr[7] not in self.valid_gff_frame:
+                    return False
+                # Check attributes for gene_id (transcript_id is also mandatory
+                # but not for genes)
+                attributes = parse_gff_attributes(hdr[8])
+                if 'gene_id' not in attributes:
+                    return False
+                found_valid_lines = True
+            return found_valid_lines
         except Exception:
             return False
 
@@ -1171,7 +1185,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
     def set_meta(self, dataset, overwrite=True, **kwd):
         max_data_lines = None
         i = 0
-        for i, line in enumerate(open(dataset.file_name)):
+        for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
             line = line.rstrip('\r\n')
             if line and not line.startswith('#'):
                 elems = line.split('\t')

@@ -1,7 +1,7 @@
 import copy
 import itertools
 import logging
-from collections import namedtuple, OrderedDict
+from collections import namedtuple
 
 from galaxy import (
     exceptions,
@@ -178,7 +178,7 @@ def expand_meta_parameters(trans, tool, incoming):
         if not incoming_key.startswith('__'):
             process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
 
-    reordered_incoming = OrderedDict()
+    reordered_incoming = {}
 
     def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
         if prefixed_name in incoming_copy:

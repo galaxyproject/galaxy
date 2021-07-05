@@ -36,8 +36,8 @@
         <div slot="modal-footer" slot-scope="{ ok, cancel }">
             <div>
                 <b-button @click="cancel()" class="mr-3"> Cancel </b-button>
-                <b-button @click="copyHistory(ok)" :variant="saveVariant" :disabled="!formValid">
-                    {{ saveTitle }}
+                <b-button @click="copy(ok)" :variant="saveVariant" :disabled="!formValid">
+                    {{ saveTitle | localize }}
                 </b-button>
             </div>
         </div>
@@ -46,7 +46,6 @@
 
 <script>
 import { History } from "./model/History";
-import { cloneHistory } from "./model/queries";
 import { mapActions, mapGetters } from "vuex";
 
 export default {
@@ -94,14 +93,12 @@ export default {
         },
     },
     methods: {
-        ...mapActions("betaHistory", ["storeCurrentHistoryId", "storeHistory"]),
+        ...mapActions("betaHistory", ["copyHistory"]),
 
-        async copyHistory(close) {
+        async copy(close) {
             this.loading = true;
             const { history, name, copyAll } = this;
-            const newHistory = await cloneHistory(history, name, copyAll);
-            await this.storeHistory(newHistory);
-            await this.storeCurrentHistoryId(newHistory.id);
+            await this.copyHistory({ history, name, copyAll });
             this.loading = false;
             close();
         },

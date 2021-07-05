@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 try:
     import pip
 except ImportError:
-    pip = None
+    pip = None  # type: ignore
 
 
 CONFIGURE_URL = "https://docs.galaxyproject.org/en/master/admin/"
@@ -154,7 +154,8 @@ def _handle_galaxy_yml(args, config_dir, data_dir):
 
     galaxy_config_template = []
     with open(GALAXY_CONFIG_TEMPLATE_FILE) as fh:
-        for line in [l.rstrip('\n') for l in fh.readlines()]:
+        for line in fh:
+            line = line.rstrip('\n')
             for k, v in GALAXY_CONFIG_SUBSTITUTIONS.items():
                 if line == k:
                     line = v

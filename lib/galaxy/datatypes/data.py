@@ -5,7 +5,6 @@ import os
 import shutil
 import string
 import tempfile
-from collections import OrderedDict
 from inspect import isclass
 from typing import Any, Dict, Optional
 
@@ -125,7 +124,7 @@ class Data(metaclass=DataMeta):
     is_binary = True
     # Composite datatypes
     composite_type: Optional[str] = None
-    composite_files: Dict[str, Any] = OrderedDict()
+    composite_files: Dict[str, Any] = {}
     primary_file_name = 'index'
     # Allow user to change between this datatype and others. If left to None,
     # datatype change is allowed if the datatype is not composite.
@@ -144,7 +143,7 @@ class Data(metaclass=DataMeta):
         object.__init__(self, **kwd)
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
-        self.display_applications = OrderedDict()
+        self.display_applications = {}
 
     @classmethod
     def is_datatype_change_allowed(cls):
@@ -319,7 +318,7 @@ class Data(metaclass=DataMeta):
     def _serve_raw(self, trans, dataset, to_ext, **kwd):
         trans.response.headers['Content-Length'] = str(os.stat(dataset.file_name).st_size)
         trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
-        filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"))
+        filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"), filename_pattern=kwd.get("filename_pattern"))
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
         return open(dataset.file_name, mode='rb')
 
@@ -565,7 +564,7 @@ class Data(metaclass=DataMeta):
         return self.display_applications.get(key, default)
 
     def get_display_applications_by_dataset(self, dataset, trans):
-        rval = OrderedDict()
+        rval = {}
         for key, value in self.display_applications.items():
             value = value.filter_by_dataset(dataset, trans)
             if value.links:
@@ -685,7 +684,7 @@ class Data(metaclass=DataMeta):
 
     @property
     def writable_files(self):
-        files = OrderedDict()
+        files = {}
         if self.composite_type != 'auto_primary_file':
             files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
         for key, value in self.get_composite_files().items():
@@ -701,7 +700,7 @@ class Data(metaclass=DataMeta):
                     meta_value = self.metadata_spec[composite_file.substitute_name_with_metadata].default
                 return key % meta_value
             return key
-        files = OrderedDict()
+        files = {}
         for key, value in self.composite_files.items():
             files[substitute_composite_key(key, value)] = value
         return files

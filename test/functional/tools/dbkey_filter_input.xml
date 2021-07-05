@@ -1,7 +1,8 @@
 <tool id="dbkey_filter_input" name="dbkey_filter_input" version="0.1.0">
     <description>Filter (single) input on a dbkey</description>
     <command><![CDATA[
-cat '$inputs' > '$output'
+       cat '$inputs' > '$output' &&
+       echo $index
     ]]></command>
     <inputs>
         <param name="inputs" type="data" format="txt" label="Inputs" help="" />
@@ -21,20 +22,35 @@ cat '$inputs' > '$output'
         <!-- can choose a dbkey if it matches input -->
         <test>
             <param name="inputs" value="simple_line.txt" dbkey="hg19" />
-            <param name="index" value="hg19" />
+            <param name="index" value="hg19_value" />
             <output name="output" file="simple_line.txt" />
+            <assert_stdout>
+                <has_text text="hg19_value"/>
+            </assert_stdout>
         </test>
         <!-- choose any dbkey if not specified in reference -->
         <test>
             <param name="inputs" value="simple_line.txt" />
-            <param name="index" value="hg19" />
+            <param name="index" value="hg19_value" />
             <output name="output" file="simple_line.txt" />
+            <assert_stdout>
+                <has_text text="hg19_value"/>
+            </assert_stdout>
         </test>
         <!-- cant choose a dkkey different from reference -->
         <test expect_failure="true">
             <param name="inputs" value="simple_line.txt" dbkey="hg18" />
-            <param name="index" value="hg19" />
+            <param name="index" value="hg19_value" />
             <output name="output" file="simple_line.txt" />
+        </test>
+        <!-- demonstrate that dynamic selects can be chosen by name -->
+        <test>
+            <param name="inputs" value="simple_line.txt" />
+            <param name="index" value="hg19_name" />
+            <output name="output" file="simple_line.txt" />
+            <assert_stdout>
+                <has_text text="hg19_value"/>
+            </assert_stdout>
         </test>
     </tests>
     <help>

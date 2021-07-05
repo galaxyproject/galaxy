@@ -296,7 +296,7 @@ if __name__ == "__main__":
         elif o in ("-s", "--sample"):
             samples = read_list(a)
         else:
-            assert False, "unhandled option"
+            raise AssertionError("unhandled option")
 
     if rsquare < 0.00 or rsquare > 1.00:
         print("input value of rsquare should be in [0.00, 1.00]", file=stderr)

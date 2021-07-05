@@ -26,7 +26,7 @@ echo foo > '$mapped_reads'
     <tests>
         <test>
             <param name="input" value="simple_line.txt" dbkey="hg18" />
-            <param name="index" value="hg18"/>
+            <param name="index" value="hg18_value"/>
             <output name="mapped_reads">
                 <metadata name="dbkey" value="hg18" />
                 <assert_contents>

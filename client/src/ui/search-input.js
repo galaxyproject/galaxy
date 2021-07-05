@@ -37,7 +37,7 @@ function searchInput(parentNode, options) {
     // .................................................................... input rendering and events
     // visually clear the search, trigger an event, and call the callback
     function clearSearchInput(event) {
-        var $input = $(this).parent().children("input");
+        var $input = $(this).closest(".search-control").children("input");
         $input.val("").trigger("searchInput.clear").blur();
         options.onclear();
     }

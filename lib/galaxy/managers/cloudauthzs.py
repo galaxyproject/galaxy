@@ -7,7 +7,6 @@ import logging
 from galaxy import model
 from galaxy.exceptions import (
     InternalServerError,
-    MalformedId
 )
 from galaxy.managers import base
 from galaxy.managers import sharable
@@ -53,16 +52,16 @@ class CloudAuthzsSerializer(base.ModelSerializer):
         # k  : serialized dictionary key (e.g., 'model_class', 'provider').
         # **c: a dictionary containing 'trans' and 'user' objects.
         self.serializers.update({
-            'id'           : lambda i, k, **c: self.app.security.encode_id(i.id),
-            'model_class'  : lambda *a, **c: 'CloudAuthz',
-            'user_id'      : lambda i, k, **c: self.app.security.encode_id(i.user_id),
-            'provider'     : lambda i, k, **c: str(i.provider),
-            'config'       : lambda i, k, **c: i.config,
-            'authn_id'     : lambda i, k, **c: self.app.security.encode_id(i.authn_id) if i.authn_id else None,
-            'last_update'  : lambda i, k, **c: str(i.last_update),
+            'id': lambda i, k, **c: self.app.security.encode_id(i.id),
+            'model_class': lambda *a, **c: 'CloudAuthz',
+            'user_id': lambda i, k, **c: self.app.security.encode_id(i.user_id),
+            'provider': lambda i, k, **c: str(i.provider),
+            'config': lambda i, k, **c: i.config,
+            'authn_id': lambda i, k, **c: self.app.security.encode_id(i.authn_id) if i.authn_id else None,
+            'last_update': lambda i, k, **c: str(i.last_update),
             'last_activity': lambda i, k, **c: str(i.last_activity),
-            'create_time'  : lambda i, k, **c: str(i.create_time),
-            'description'  : lambda i, k, **c: str(i.description)
+            'create_time': lambda i, k, **c: str(i.create_time),
+            'description': lambda i, k, **c: str(i.description)
         })
 
 
@@ -103,11 +102,7 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
         :return:        decoded authentication ID.
         """
 
-        try:
-            decoded_authn_id = self.app.security.decode_id(val)
-        except Exception:
-            log.debug("cannot decode authz_id `" + str(val) + "`")
-            raise MalformedId(f"Invalid `authz_id` {val}!")
+        decoded_authn_id = self.app.security.decode_id(val, object_name='authz')
 
         trans = context.get("trans")
         if trans is None:

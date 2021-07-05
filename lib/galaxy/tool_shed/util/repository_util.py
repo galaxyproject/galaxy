@@ -308,7 +308,7 @@ def get_repository_by_id(app, id):
     if is_tool_shed_client(app):
         return app.install_model.context.query(app.install_model.ToolShedRepository).get(app.security.decode_id(id))
     else:
-        sa_session = app.model.context.current
+        sa_session = app.model.session
         return sa_session.query(app.model.Repository).get(app.security.decode_id(id))
 
 
@@ -495,7 +495,7 @@ def get_repository_query(app):
 
 def get_role_by_id(app, role_id):
     """Get a Role from the database by id."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Role).get(app.security.decode_id(role_id))
 
 

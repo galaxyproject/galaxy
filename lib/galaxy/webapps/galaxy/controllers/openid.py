@@ -7,6 +7,7 @@ import logging
 from galaxy import web
 from galaxy.openid.openid_manager import OpenIDManager
 from galaxy.openid.providers import OpenIDProviders
+from galaxy.structured_app import StructuredApp
 from galaxy.util import unicodify
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import BaseUIController
@@ -16,7 +17,7 @@ log = logging.getLogger(__name__)
 
 class OpenID(BaseUIController):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         if app.config.enable_openid:
             self.openid_manager = OpenIDManager(app.config.openid_consumer_cache_path)

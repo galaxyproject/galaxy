@@ -38,12 +38,8 @@
                     <pre v-if="itemContent.item_data">
                         <code class="text-normalwrap">{{ itemContent.item_data }}</code>
                     </pre>
-                    <div v-else>
-                        No content found.
-                    </div>
-                    <b-link v-if="itemContent.truncated" :href="itemContent.item_url">
-                        Show More...
-                    </b-link>
+                    <div v-else>No content found.</div>
+                    <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
                 </div>
             </b-card-body>
         </b-card>

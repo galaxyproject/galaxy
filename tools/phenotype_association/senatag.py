@@ -253,7 +253,7 @@ if __name__ == "__main__":
         elif o in ("-e", "--excluded"):
             excluded = read_list(a)
         else:
-            assert False, "unhandled option"
+            raise AssertionError("unhandled option")
 
     if len(args) != 2:
         usage()

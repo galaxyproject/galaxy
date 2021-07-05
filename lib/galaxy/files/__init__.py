@@ -39,15 +39,18 @@ class ConfiguredFileSources:
                         return
                 stock_file_source_conf_dict.append({'type': plugin_type})
 
+            if file_sources_config.ftp_upload_dir is not None:
+                _ensure_loaded('gxftp')
             if file_sources_config.library_import_dir is not None:
                 _ensure_loaded('gximport')
             if file_sources_config.user_library_import_dir is not None:
                 _ensure_loaded('gxuserimport')
-            if file_sources_config.ftp_upload_dir is not None:
-                _ensure_loaded('gxftp')
             if stock_file_source_conf_dict:
                 stock_plugin_source = plugin_config.plugin_source_from_dict(stock_file_source_conf_dict)
-                file_sources.extend(self._parse_plugin_source(stock_plugin_source))
+                # insert at begining instead of append so FTP and library import appear
+                # at the top of the list (presumably the most common options). Admins can insert
+                # these explicitly for greater control.
+                file_sources = self._parse_plugin_source(stock_plugin_source) + file_sources
 
         self._file_sources = file_sources
         self.custom_sources_configured = custom_sources_configured
@@ -240,6 +243,23 @@ class ProvidesUserFileSourcesUserContext:
         user = self.trans.user
         return user and user.extra_preferences or defaultdict(lambda: None)
 
+    @property
+    def role_names(self):
+        """The set of role names of this user."""
+        user = self.trans.user
+        return user and set([ura.role.name for ura in user.roles])
+
+    @property
+    def group_names(self):
+        """The set of group names to which this user belongs."""
+        user = self.trans.user
+        return user and set([ugr.group.name for ugr in user.groups])
+
+    @property
+    def is_admin(self):
+        """Whether this user is an administrator."""
+        return self.trans.user_is_admin
+
 
 class DictFileSourcesUserContext:
 
@@ -261,3 +281,15 @@ class DictFileSourcesUserContext:
     @property
     def preferences(self):
         return self._kwd.get("preferences")
+
+    @property
+    def role_names(self):
+        return self._kwd.get("role_names")
+
+    @property
+    def group_names(self):
+        return self._kwd.get("group_names")
+
+    @property
+    def is_admin(self):
+        return self._kwd.get("is_admin")

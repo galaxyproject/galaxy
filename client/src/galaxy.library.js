@@ -6,14 +6,9 @@
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-// import mod_utils from "utils/utils";
 import mod_baseMVC from "mvc/base-mvc";
-// import mod_library_model from "mvc/library/library-model";
-import mod_librarylist_view from "mvc/library/library-librarylist-view";
-import mod_librarytoolbar_view from "mvc/library/library-librarytoolbar-view";
 import mod_library_dataset_view from "mvc/library/library-dataset-view";
 import mod_library_library_view from "mvc/library/library-library-view";
-import mod_library_folder_view from "mvc/library/library-folder-view";
 // ============================================================================
 /**
  * The Data Libraries router. Takes care about triggering routes
@@ -59,7 +54,7 @@ var LibraryRouter = Backbone.Router.extend({
     },
 
     /**
-     * Track every route change as a page view in Google Analytics.
+     * Track every route change as a page view in Google Analytics or Plausible
      */
     trackPageview: function () {
         var url = Backbone.history.getFragment();
@@ -69,6 +64,13 @@ var LibraryRouter = Backbone.Router.extend({
         }
         if (typeof ga !== "undefined") {
             ga("send", "pageview", `${getAppRoot()}library/list${url}`);
+        }
+        if (typeof window.plausible !== "undefined") {
+            window.plausible(`pageview ${getAppRoot()}library/list${url}`);
+        }
+        if (typeof window._paq !== "undefined") {
+            window._paq.push(["setCustomUrl", `${getAppRoot()}library/list${url}`]);
+            window._paq.push(["trackPageView"]);
         }
     },
 });
@@ -120,31 +122,39 @@ var GalaxyLibrary = Backbone.View.extend({
             ga("create", Galaxy.config.ga_code, "auto");
             ga("send", "pageview");
         }
+        if (Galaxy.config.plausible_server && Galaxy.config.plausible_domain) {
+            document.write(
+                '<script async defer data-domain="' +
+                    Galaxy.config.plausible_domain +
+                    '" src="' +
+                    Galaxy.config.plausible_server +
+                    '/js/plausible.js"></script>'
+            );
+        }
+        if (Galaxy.config.matomo_server && Galaxy.config.matomo_site_id) {
+            var _paq = (window._paq = window._paq || []);
+            /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+            _paq.push(["trackPageView"]);
+            _paq.push(["enableLinkTracking"]);
+            (function () {
+                var u = Galaxy.config.matomo_server + "/";
+                _paq.push(["setTrackerUrl", u + "matomo.php"]);
+                _paq.push(["setSiteId", Galaxy.config.matomo_site_id]);
+                var d = document;
+                var g = d.createElement("script");
+                var s = d.getElementsByTagName("script")[0];
+                g.type = "text/javascript";
+                g.async = true;
+                g.src = u + "matomo.js";
+                s.parentNode.insertBefore(g, s);
+            })();
+        }
 
         Galaxy.libraries = this;
 
         this.preferences = new LibraryPrefs({ id: "global-lib-prefs" });
 
         this.library_router = new LibraryRouter();
-
-        this.library_router.on("route:libraries", () => {
-            if (Galaxy.libraries.libraryToolbarView) {
-                Galaxy.libraries.libraryToolbarView.$el.unbind("click");
-            }
-            Galaxy.libraries.libraryToolbarView = new mod_librarytoolbar_view.LibraryToolbarView();
-            Galaxy.libraries.libraryListView = new mod_librarylist_view.LibraryListView();
-        });
-
-        this.library_router.on("route:libraries_page", (show_page) => {
-            if (Galaxy.libraries.libraryToolbarView === null) {
-                Galaxy.libraries.libraryToolbarView = new mod_librarytoolbar_view.LibraryToolbarView();
-                Galaxy.libraries.libraryListView = new mod_librarylist_view.LibraryListView({ show_page: show_page });
-            } else {
-                Galaxy.libraries.libraryListView.render({
-                    show_page: show_page,
-                });
-            }
-        });
 
         this.library_router.on("route:dataset_detail", (folder_id, dataset_id) => {
             if (Galaxy.libraries.datasetView) {
@@ -184,16 +194,6 @@ var GalaxyLibrary = Backbone.View.extend({
             }
             Galaxy.libraries.libraryView = new mod_library_library_view.LibraryView({
                 id: library_id,
-                show_permissions: true,
-            });
-        });
-
-        this.library_router.on("route:folder_permissions", (folder_id) => {
-            if (Galaxy.libraries.folderView) {
-                Galaxy.libraries.folderView.$el.unbind("click");
-            }
-            Galaxy.libraries.folderView = new mod_library_folder_view.FolderView({
-                id: folder_id,
                 show_permissions: true,
             });
         });

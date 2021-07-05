@@ -1,5 +1,4 @@
 import logging
-from collections import OrderedDict
 
 from sqlalchemy import (
     and_,
@@ -240,7 +239,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         status = kwd.get('status', 'done')
         review_id = kwd.get('id', None)
         review = review_util.get_review(trans.app, review_id)
-        components_dict = OrderedDict()
+        components_dict = {}
         for component in review_util.get_components(trans.app):
             components_dict[component.name] = dict(component=component, component_review=None)
         repository = review.repository
@@ -389,6 +388,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
     def manage_repositories_ready_for_review(self, trans, **kwd):
         """
         A repository is ready to be reviewed if one of the following conditions is met:
+
         1) It contains no tools
         2) It contains tools the tools_functionally_correct flag is set to True.  This implies that the repository metadata revision was installed and tested
            by the Tool Shed's install and test framework.
@@ -486,7 +486,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             repo = repository.hg_repo
             metadata_revision_hashes = [metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions]
             reviewed_revision_hashes = [review.changeset_revision for review in repository.reviews]
-            reviews_dict = OrderedDict()
+            reviews_dict = {}
             for changeset in hg_util.get_reversed_changelog_changesets(repo):
                 changeset_revision = str(repo[changeset])
                 if changeset_revision in metadata_revision_hashes or changeset_revision in reviewed_revision_hashes:

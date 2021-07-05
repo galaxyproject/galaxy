@@ -1,29 +1,33 @@
-from collections import OrderedDict
-
 from galaxy import model
+from galaxy.util.oset import OrderedSet
 from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
 
-def build_collection(type, dataset_instances):
+def build_collection(type, dataset_instances, collection=None, associated_identifiers=None):
     """
     Build DatasetCollection with populated DatasetcollectionElement objects
     corresponding to the supplied dataset instances or throw exception if
     this is not a valid collection of the specified type.
     """
-    dataset_collection = model.DatasetCollection()
-    set_collection_elements(dataset_collection, type, dataset_instances)
+    dataset_collection = collection or model.DatasetCollection()
+    associated_identifiers = associated_identifiers or set()
+    set_collection_elements(dataset_collection, type, dataset_instances, associated_identifiers)
     return dataset_collection
 
 
-def set_collection_elements(dataset_collection, type, dataset_instances):
-    element_index = 0
+def set_collection_elements(dataset_collection, type, dataset_instances, associated_identifiers):
+    new_element_keys = OrderedSet(dataset_instances.keys()) - associated_identifiers
+    new_dataset_instances = {k: dataset_instances[k] for k in new_element_keys}
+    dataset_collection.element_count = dataset_collection.element_count or 0
+    element_index = dataset_collection.element_count
     elements = []
-    for element in type.generate_elements(dataset_instances):
+    for element in type.generate_elements(new_dataset_instances):
         element.element_index = element_index
         element.collection = dataset_collection
         elements.append(element)
 
         element_index += 1
+        associated_identifiers.add(element.element_identifier)
 
     dataset_collection.element_count = element_index
     return dataset_collection
@@ -34,7 +38,10 @@ class CollectionBuilder:
 
     def __init__(self, collection_type_description):
         self._collection_type_description = collection_type_description
-        self._current_elements = OrderedDict()
+        self._current_elements = {}
+        # Store collection here so we don't recreate the collection all the time
+        self.collection = None
+        self.associated_identifiers = set()
 
     def replace_elements_in_collection(self, template_collection, replacement_dict):
         self._current_elements = self._replace_elements_in_collection(
@@ -43,7 +50,7 @@ class CollectionBuilder:
         )
 
     def _replace_elements_in_collection(self, template_collection, replacement_dict):
-        elements = OrderedDict()
+        elements = {}
         for element in template_collection.elements:
             if element.is_collection:
                 collection_builder = CollectionBuilder(
@@ -77,17 +84,19 @@ class CollectionBuilder:
     def build_elements(self):
         elements = self._current_elements
         if self._nested_collection:
-            new_elements = OrderedDict()
+            new_elements = {}
             for identifier, element in elements.items():
                 new_elements[identifier] = element.build()
             elements = new_elements
+        else:
+            self._current_elements = {}
         return elements
 
     def build(self):
         type_plugin = self._collection_type_description.rank_type_plugin()
-        collection = build_collection(type_plugin, self.build_elements())
-        collection.collection_type = self._collection_type_description.collection_type
-        return collection
+        self.collection = build_collection(type_plugin, self.build_elements(), self.collection, self.associated_identifiers)
+        self.collection.collection_type = self._collection_type_description.collection_type
+        return self.collection
 
     @property
     def _subcollection_type_description(self):
@@ -109,8 +118,11 @@ class BoundCollectionBuilder(CollectionBuilder):
         collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
         super().__init__(collection_type_description)
 
-    def populate(self):
+    def populate_partial(self):
         elements = self.build_elements()
         type_plugin = self._collection_type_description.rank_type_plugin()
-        set_collection_elements(self.dataset_collection, type_plugin, elements)
+        set_collection_elements(self.dataset_collection, type_plugin, elements, self.associated_identifiers)
+
+    def populate(self):
+        self.populate_partial()
         self.dataset_collection.mark_as_populated()

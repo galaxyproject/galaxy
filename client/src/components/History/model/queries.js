@@ -8,7 +8,6 @@
 import axios from "axios";
 import moment from "moment";
 import { prependPath } from "utils/redirect";
-// import { historyFields } from "./fields";
 
 // #region setup & utils
 
@@ -26,7 +25,9 @@ const api = axios.create({
  */
 
 const doResponse = (response) => {
-    if (response.status != 200) throw new Error(response);
+    if (response.status != 200) {
+        throw new Error(response);
+    }
     return response.data;
 };
 
@@ -52,8 +53,12 @@ function buildLegacyParam(fields = {}) {
 }
 
 function pythonBooleanFormat(val) {
-    if (val === true) return "True";
-    if (val === false) return "False";
+    if (val === true) {
+        return "True";
+    }
+    if (val === false) {
+        return "False";
+    }
     return val;
 }
 
@@ -76,28 +81,14 @@ function formData(fields = {}) {
 
 const stdHistoryParams = {
     view: "betawebclient",
-    // keys: historyFields.join(","),
 };
 
 /**
  * Return list of available histories
  */
-export async function getHistoriesForCurrentUser(lastUpdate = null) {
-    const url = `/histories`;
-
-    // TODO: remove q,qv syntax
-    const legacyParams = {
-        deleted: "None",
-    };
-    if (lastUpdate) {
-        legacyParams["update_time-gt"] = moment.utc(lastUpdate);
-    }
-    const incomptentQueryString = buildLegacyQueryString(legacyParams);
-
-    const response = await api.get(`${url}?${incomptentQueryString}`, {
-        params: stdHistoryParams,
-    });
-
+export async function getHistoryList() {
+    const params = { view: "summary" };
+    const response = await api.get("/histories", { params });
     return doResponse(response);
 }
 
@@ -105,8 +96,10 @@ export async function getHistoriesForCurrentUser(lastUpdate = null) {
  * Load one history by id
  * @param {String} id
  */
-export async function getHistoryById(id) {
-    const url = `/histories/${id}`;
+export async function getHistoryById(id, since) {
+    const path = `/histories/${id}`;
+    const sinceParam = since !== undefined ? moment.utc(since).toISOString() : null;
+    const url = sinceParam ? `${path}?q=update_time-gt&qv=${sinceParam}` : path;
     const response = await api.get(url, { params: stdHistoryParams });
     return doResponse(response);
 }
@@ -116,10 +109,19 @@ export async function getHistoryById(id) {
  * @param {Object} props Optional history props
  */
 export async function createNewHistory(props = {}) {
-    const url = `/histories`;
-    const data = Object.assign({ name: "New History" }, props);
-    const response = await api.post(url, data, { params: stdHistoryParams });
-    return doResponse(response);
+    // TODO: adjust api, keep this for later
+    // const url = `/histories`;
+    // const data = Object.assign({ name: "New History" }, props);
+    // const response = await api.post(url, data, { params: stdHistoryParams });
+
+    // using old route to create and select new history at same time
+    const url = prependPath("/history/create_new_current");
+    const createResponse = await api.get(url, { baseURL: "" });
+    const id = createResponse?.data?.id || null;
+    if (!id) {
+        throw new Error("failed to create and select new history");
+    }
+    return doResponse(createResponse);
 }
 
 /**
@@ -166,8 +168,8 @@ export async function undeleteHistoryById(id) {
  * @param {Object} history
  * @param {Object} payload fields to update
  */
-export async function updateHistoryFields(history, payload) {
-    const url = `/histories/${history.id}`;
+export async function updateHistoryFields(id, payload) {
+    const url = `/histories/${id}`;
     const response = await api.put(url, payload, { params: stdHistoryParams });
     return doResponse(response);
 }
@@ -177,14 +179,18 @@ export async function updateHistoryFields(history, payload) {
  * TODO: rewrite API endpoint for this
  * @param {String} history_id
  */
-export async function secureHistory(history_id) {
+export async function secureHistory(history) {
     // NOTE: does not hit normal api/ endpoint
+    const { id } = history;
     const url = prependPath("/history/make_private");
-    const response = await axios.post(url, formData({ history_id }));
+    const response = await axios.post(url, formData({ history_id: id }));
     if (response.status != 200) {
         throw new Error(response);
     }
-    return await getHistoryById(history_id);
+    // instead of a full lookup we could alternately figure out if
+    // just a couple fields are changed and return the model with those
+    // fields updated. it would avoid an extraneous ajax call
+    return await getHistoryById(id);
 }
 
 // #endregion

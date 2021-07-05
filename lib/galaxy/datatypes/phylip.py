@@ -46,26 +46,99 @@ class Phylip(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+    def sniff_strict_interleaved(self, nb_seq, seq_length, alignment_prefix):
+        found_seq_length = None
+        for _ in range(nb_seq):
+            line = alignment_prefix.readline()
+            if not line:
+                # Not enough lines, either the prefix is too short or this is not PHYLIP
+                return False
+            line = line.rstrip("\n")
+            if len(line) < 11:
+                # Sequence characters immediately follow the sequence ID.
+                # They must start at the 11th character in the line, as the first 10 characters are reserved for the sequence ID
+                return False
+            seq = line[10:].replace(" ", "")
+            this_seq_length = len(seq)
+            if this_seq_length > seq_length:
+                return False
+            if found_seq_length is None:
+                found_seq_length = this_seq_length
+            elif this_seq_length != found_seq_length:
+                # All sequence parts should have the same length
+                return False
+            # Fail if sequence is not ascii
+            seq.encode('ascii')
+            if any(str.isdigit(c) for c in seq):
+                # Could tighten up further by requiring IUPAC strings chars
+                return False
+        # There may be more lines with the remaining parts of the sequences
+        return True
+
+    def sniff_strict_sequential(self, nb_seq, seq_length, alignment_prefix):
+        raise NotImplementedError
+
+    def sniff_relaxed_interleaved(self, nb_seq, seq_length, alignment_prefix):
+        found_seq_length = None
+        for _ in range(nb_seq):
+            line = alignment_prefix.readline()
+            if not line:
+                # Not enough lines, either the prefix is too short or this is not PHYLIP
+                return False
+            line = line.rstrip("\n")
+            # In the relaxed format the sequence id can have any length.
+            # The id and sequence are separated by some whitespaces.
+            seq = line.split(None, 1)[1].replace(" ", "")
+            this_seq_length = len(seq)
+            if this_seq_length > seq_length:
+                return False
+            if found_seq_length is None:
+                found_seq_length = this_seq_length
+            elif this_seq_length != found_seq_length:
+                # All sequence parts should have the same length
+                return False
+            # Fail if sequence is not ascii
+            seq.encode('ascii')
+            if any(str.isdigit(c) for c in seq):
+                # Could tighten up further by requiring IUPAC strings chars
+                return False
+        # There may be more lines with the remaining parts of the sequences
+        return True
+
     def sniff_prefix(self, file_prefix):
         """
         All Phylip files starts with the number of sequences so we can use this
         to count the following number of sequences in the first 'stack'
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('test.phylip')
+        >>> fname = get_test_fname('test_strict_interleaved.phylip')
+        >>> Phylip().sniff(fname)
+        True
+        >>> fname = get_test_fname('test_relaxed_interleaved.phylip')
         >>> Phylip().sniff(fname)
         True
         """
         f = file_prefix.string_io()
-        # Get number of sequence from first line
-        nb_seq = int(f.readline().split()[0])
-        assert nb_seq > 0
-        # counts number of sequence from first stack
-        count = 0
-        for line in f:
-            if not line.split():
-                break
-            count += 1
-            if count > nb_seq:
-                return False
-        return count == nb_seq
+        # Get number of sequences and sequence length from first line
+        nb_seq, seq_length = (int(n) for n in f.readline().split())
+        if nb_seq <= 0 or seq_length <= 0:
+            return False
+        file_pos = f.tell()
+        try:
+            if self.sniff_strict_interleaved(nb_seq, seq_length, f):
+                return True
+        except Exception:
+            pass
+        f.seek(file_pos)
+        try:
+            if self.sniff_strict_sequential(nb_seq, seq_length, f):
+                return True
+        except Exception:
+            pass
+        f.seek(file_pos)
+        try:
+            if self.sniff_relaxed_interleaved(nb_seq, seq_length, f):
+                return True
+        except Exception:
+            pass
+        return False

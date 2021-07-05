@@ -176,13 +176,13 @@ class ToolsController(BaseAPIController):
         tool_dict['inputs'] = {}
         tool.populate_model(trans, tool.inputs, {}, tool_dict['inputs'])
         tool_dict.update({
-            'help'          : tool_help,
-            'citations'     : bool(tool.citations),
-            'requirements'  : [{'name' : r.name, 'version' : r.version} for r in tool.requirements],
-            'state_inputs'  : params_to_strings(tool.inputs, {}, trans.app),
-            'display'       : tool.display_interface,
-            'action'        : web.url_for(tool.action),
-            'method'        : tool.method,
-            'enctype'       : tool.enctype
+            'help': tool_help,
+            'citations': bool(tool.citations),
+            'requirements': [{'name': r.name, 'version': r.version} for r in tool.requirements],
+            'state_inputs': params_to_strings(tool.inputs, {}, trans.app),
+            'display': tool.display_interface,
+            'action': web.url_for(tool.action),
+            'method': tool.method,
+            'enctype': tool.enctype
         })
         return json.dumps(tool_dict)

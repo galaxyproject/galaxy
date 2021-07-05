@@ -142,8 +142,8 @@ class ExtractInputAction(BaseAction):
     position: Optional[Position]
 
 
-class ExtractLegacyParameter(BaseAction):
-    action_type: Literal['extract_legacy_parameter']
+class ExtractUntypedParameter(BaseAction):
+    action_type: Literal['extract_untyped_parameter']
     name: str
     label: Optional[str]  # defaults to name if unset
     position: Optional[Position]
@@ -211,13 +211,17 @@ class UpgradeToolAction(BaseAction):
     tool_version: Optional[str]
 
 
+class UpgradeAllStepsAction(BaseAction):
+    action_type: Literal['upgrade_all_steps']
+
+
 union_action_classes = Union[
     AddInputAction,
     AddStepAction,
     ConnectAction,
     DisconnectAction,
     ExtractInputAction,
-    ExtractLegacyParameter,
+    ExtractUntypedParameter,
     FileDefaultsAction,
     FillStepDefaultsAction,
     UpdateAnnotationAction,
@@ -230,13 +234,21 @@ union_action_classes = Union[
     UpdateStepPositionAction,
     UpgradeSubworkflowAction,
     UpgradeToolAction,
+    UpgradeAllStepsAction,
     RemoveUnlabeledWorkflowOutputs,
 ]
 
 
 ACTION_CLASSES_BY_TYPE = {}
 for action_class in union_action_classes.__args__:  # type: ignore
-    action_type = action_class.schema()["properties"]["action_type"]["const"]
+    action_type_def = action_class.schema()["properties"]["action_type"]
+    try:
+        # pydantic 1.8
+        action_type = action_type_def["enum"][0]
+    except KeyError:
+        # pydantic 1.7
+        action_type = action_type_def["const"]
+
     ACTION_CLASSES_BY_TYPE[action_type] = action_class
 
 

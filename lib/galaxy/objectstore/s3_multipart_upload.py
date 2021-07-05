@@ -32,7 +32,10 @@ def mp_from_ids(s3server, mp_id, mp_keyname, mp_bucketname):
                                calling_format=boto.s3.connection.OrdinaryCallingFormat(),
                                path=s3server['conn_path'])
     else:
-        conn = S3Connection(s3server['access_key'], s3server['secret_key'])
+        if s3server['access_key']:
+            conn = S3Connection(s3server['access_key'], s3server['secret_key'])
+        else:
+            conn = S3Connection()
 
     bucket = conn.lookup(mp_bucketname)
     mp = boto.s3.multipart.MultiPartUpload(bucket)

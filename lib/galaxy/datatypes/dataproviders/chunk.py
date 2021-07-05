@@ -25,8 +25,8 @@ class ChunkDataProvider(base.DataProvider):
     MAX_CHUNK_SIZE = 2 ** 16
     DEFAULT_CHUNK_SIZE = MAX_CHUNK_SIZE
     settings = {
-        'chunk_index'   : 'int',
-        'chunk_size'    : 'int'
+        'chunk_index': 'int',
+        'chunk_size': 'int'
     }
 
     # TODO: subclass from LimitedOffsetDataProvider?

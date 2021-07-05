@@ -243,3 +243,13 @@ class MauveXmfa(Text):
 
     def set_meta(self, dataset, **kwd):
         dataset.metadata.number_of_models = generic_util.count_special_lines('^#Sequence([[:digit:]]+)Entry', dataset.file_name)
+
+
+class Msf(Text):
+    """
+    Multiple sequence alignment format produced by the Accelrys GCG suite and
+    other programs.
+    """
+    edam_data = "data_0863"
+    edam_format = "format_1947"
+    file_ext = 'msf'

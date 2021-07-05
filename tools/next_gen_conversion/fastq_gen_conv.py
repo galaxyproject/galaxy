@@ -85,8 +85,8 @@ def __main__():
                         # make sure we haven't lost any quality values
                         if len(phred_list) == base_len:
                             # print first three lines
-                            for l in lines:
-                                fout.write(l)
+                            for line_to_write in lines:
+                                fout.write(line_to_write)
                             # print converted quality line
                             fout.write(''.join(phred_list))
                             # reset
@@ -147,8 +147,8 @@ def __main__():
                         # make sure we don't have bad qualities
                         if len(quals) == base_len:
                             # print first three lines
-                            for l in lines:
-                                fout.write(l)
+                            for line_to_write in lines:
+                                fout.write(line_to_write)
                             # print out quality line
                             fout.write(quals + '\n')
                         # reset

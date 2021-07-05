@@ -37,6 +37,8 @@ from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 OptionData = namedtuple('OptionData', ('key', 'expected', 'loaded'))
 
+driver_created = False
+
 # Configuration properties that are paths should be absolute paths, by default resolved w.r.t root.
 PATH_CONFIG_PROPERTIES = [
     # For now, these include base config properties
@@ -44,6 +46,7 @@ PATH_CONFIG_PROPERTIES = [
     'config_file',
     'config_dir',
     'managed_config_dir',
+    'cache_dir',
     'data_dir',
     'auth_config_file',
     'email_domain_blocklist_file',
@@ -166,11 +169,13 @@ DO_NOT_TEST = [
     'database_connection',  # untestable; refactor config/__init__ to test
     'database_engine_option_max_overflow',  # overridden for tests running on non-sqlite databases
     'database_engine_option_pool_size',  # overridden for tests runnign on non-sqlite databases
+    'database_log_query_counts',  # overridden for tests
     'database_template',  # default value set for tests
     'datatypes_config_file',  # broken
     'default_locale',  # broken
     'dependency_resolution',  # nested properties
     'disable_library_comptypes',  # broken: default overridden with empty string
+    'enable_per_request_sql_debugging',  # overridden for tests
     'expose_dataset_path',  # broken: default overridden
     'ftp_upload_purge',  # broken: default overridden
     'ftp_upload_dir_template',  # dynamically sets os.path.sep
@@ -198,6 +203,7 @@ DO_NOT_TEST = [
     'retry_metadata_internally',  # broken: default overridden
     'simplified_workflow_run_ui',  # set to off in testing
     'statsd_host',  # broken: default overridden with empty string
+    'statsd_influxdb',  # overridden for tests
     'template_cache_path',  # may or may not be able to test; may be broken
     'tool_config_file',  # default not used; may or may not be testable
     'tool_data_table_config_path',  # broken: remove 'config/' prefix from schema
@@ -226,9 +232,12 @@ def create_driver():
     # Ideally `create_driver` would be a fixture and clean up after the yield,
     # but that's not compatible with the use use of pytest.mark.parametrize:
     # a fixture is not directly callable, so it cannot be used in place of get_config_data.
-    global DRIVER
-    DRIVER = GalaxyTestDriver()
-    DRIVER.setup()
+    global driver_created
+    if not driver_created:
+        global DRIVER
+        DRIVER = GalaxyTestDriver()
+        DRIVER.setup()
+        driver_created = True
 
 
 def get_config_data():
@@ -240,6 +249,7 @@ def get_config_data():
             'managed_config_dir': DRIVER.app.config.managed_config_dir,
             'data_dir': DRIVER.app.config.data_dir,
             'tool_data_path': DRIVER.app.config.tool_data_path,
+            'cache_dir': DRIVER.app.config.cache_dir
         }
 
     def resolve(parent, child):
@@ -269,6 +279,7 @@ def get_config_data():
 
 
 def get_path_data():
+    create_driver()  # create + setup DRIVER
     yield from PATH_CONFIG_PROPERTIES
 
 

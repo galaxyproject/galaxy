@@ -15,6 +15,7 @@ GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
 DYNAMIC_ARGUMENTS = object()
 VALID_ARGUMENTS = {
+    "history_link": ["history_id"],
     "history_dataset_display": ["input", "output", "history_dataset_id"],
     "history_dataset_embedded": ["input", "output", "history_dataset_id"],
     "history_dataset_as_image": ["input", "output", "history_dataset_id", "path"],
@@ -32,9 +33,9 @@ VALID_ARGUMENTS = {
     "tool_stdout": ["step", "job_id"],
     "generate_galaxy_version": [],
     "generate_time": [],
-    "invocation_time": ["invocation_id"],
     "visualization": DYNAMIC_ARGUMENTS,
     # Invocation Flavored Markdown
+    "invocation_time": ["invocation_id"],
     "invocation_outputs": [],
     "invocation_inputs": [],
 }

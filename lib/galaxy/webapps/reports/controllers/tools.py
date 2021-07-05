@@ -1,4 +1,3 @@
-import collections
 import logging
 from datetime import timedelta
 
@@ -85,7 +84,7 @@ class Tools(BaseUIController):
             lambda v: tools_and_jobs_ok.get(v, 0),
             lambda v: tools_and_jobs_error.get(v, 0))
 
-        data = collections.OrderedDict()
+        data = {}
 
         # select count(id), tool_id from job where state='ok' group by tool_id;
         tools_and_jobs_ok = sa.select((galaxy.model.Job.table.c.tool_id .label('tool'),
@@ -139,7 +138,7 @@ class Tools(BaseUIController):
         if tool is None:
             raise TypeError("Tool can't be None")
 
-        data = collections.OrderedDict()
+        data = {}
 
         # select count(id), create_time from job where state='ok' and tool_id=$tool group by date;
         date_and_jobs_ok = sa.select((sa.func.date(galaxy.model.Job.table.c.create_time).label('date'),
@@ -194,7 +193,7 @@ class Tools(BaseUIController):
         color = True if kwd.get("color", '') == "True" else False
 
         data = {}
-        ordered_data = collections.OrderedDict()
+        ordered_data = {}
 
         sort_keys = (
             lambda v: v.lower(),
@@ -260,7 +259,7 @@ class Tools(BaseUIController):
         if tool is None:
             raise ValueError("Tool can't be None")
 
-        ordered_data = collections.OrderedDict()
+        ordered_data = {}
         sort_keys = [(lambda v, i=i: v[i]) for i in range(4)]
 
         jobs_times = sa.select((sa.func.date_trunc('month', galaxy.model.Job.table.c.create_time).label('date'),
@@ -314,7 +313,7 @@ class Tools(BaseUIController):
             else:
                 counter[error[0]] = [1, error[1]]
 
-        data = collections.OrderedDict()
+        data = {}
         keys = list(counter.keys())
         if cutoff:
             keys = keys[:cutoff]

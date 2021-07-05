@@ -10,7 +10,13 @@
                 <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
                     {{ error }}
                 </b-alert>
-                <tool-section :category="historySection" @onClick="onClick" :expanded="true" />
+                <tool-section
+                    v-if="isWorkflow"
+                    :category="historyInEditorSection"
+                    @onClick="onClick"
+                    :expanded="true"
+                />
+                <tool-section v-else :category="historySection" @onClick="onClick" :expanded="true" />
                 <tool-section :category="jobSection" @onClick="onClick" :expanded="true" />
                 <tool-section
                     v-if="isWorkflow"
@@ -52,6 +58,59 @@ import { getAppRoot } from "onload/loadConfig";
 
 Vue.use(BootstrapVue);
 
+const historySharedElements = [
+    {
+        id: "history_dataset_display",
+        name: "Dataset",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_collection_display",
+        name: "Collection",
+        emitter: "onHistoryCollectionId",
+    },
+    {
+        id: "history_dataset_as_image",
+        name: "Image",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_index",
+        name: "Dataset Index",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_embedded",
+        name: "Embedded Dataset",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_type",
+        name: "Dataset Type",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_link",
+        name: "Link to Dataset",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_name",
+        name: "Name of Dataset",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_peek",
+        name: "Peek into Dataset",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_info",
+        name: "Dataset Details",
+        emitter: "onHistoryDatasetId",
+    },
+];
+
 export default {
     components: {
         MarkdownDialog,
@@ -69,61 +128,29 @@ export default {
             selectedType: null,
             selectedLabels: null,
             selectedShow: false,
+            selectedPayload: null,
             visualizationIndex: {},
             error: null,
             historySection: {
                 title: "History",
                 name: "history",
                 elems: [
+                    ...historySharedElements,
                     {
-                        id: "history_dataset_display",
-                        name: "Dataset",
+                        id: "history_link",
+                        name: "Link to Import",
                         emitter: "onHistoryId",
                     },
+                ],
+            },
+            historyInEditorSection: {
+                title: "History",
+                name: "history",
+                elems: [
+                    ...historySharedElements,
                     {
-                        id: "history_collection_display",
-                        name: "Collection",
-                        emitter: "onHistoryCollectionId",
-                    },
-                    {
-                        id: "history_dataset_as_image",
-                        name: "Image",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_index",
-                        name: "Dataset Index",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_embedded",
-                        name: "Embedded Dataset",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_type",
-                        name: "Dataset Type",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_link",
-                        name: "Link to Dataset",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_name",
-                        name: "Name of Dataset",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_peek",
-                        name: "Peek into Dataset",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_info",
-                        name: "Dataset Details",
-                        emitter: "onHistoryId",
+                        id: "history_link",
+                        name: "Link to Import",
                     },
                 ],
             },
@@ -264,6 +291,9 @@ export default {
         },
         onClick(item) {
             switch (item.emitter) {
+                case "onHistoryDatasetId":
+                    this.onHistoryDatasetId(item.id);
+                    break;
                 case "onHistoryId":
                     this.onHistoryId(item.id);
                     break;
@@ -304,6 +334,11 @@ export default {
             this.selectedShow = true;
         },
         onHistoryId(argumentName) {
+            this.selectedArgumentName = argumentName;
+            this.selectedType = "history_id";
+            this.selectedShow = true;
+        },
+        onHistoryDatasetId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "history_dataset_id";
             this.selectedLabels = this.getOutputs();

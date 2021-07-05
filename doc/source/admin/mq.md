@@ -1,3 +1,4 @@
+
 # Message queue
 
 Galaxy uses a message queue internally for communicating between processes. 

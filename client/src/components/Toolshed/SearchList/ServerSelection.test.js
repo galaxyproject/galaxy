@@ -1,5 +1,8 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import ServerSelection from "./ServerSelection";
+
+const localVue = getLocalVue();
 
 describe("ServerSelection", () => {
     it("test server selection dropdown", () => {
@@ -10,6 +13,7 @@ describe("ServerSelection", () => {
                 loading: false,
                 total: "total",
             },
+            localVue,
         });
         expect(wrapper.find(".description").text()).toBe("total repositories available at");
         const $options = wrapper.findAll("a");

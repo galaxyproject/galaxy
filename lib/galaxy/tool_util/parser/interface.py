@@ -110,7 +110,8 @@ class ToolSource(metaclass=ABCMeta):
         return ["TMPDIR", "TMP", "TEMP"]
 
     def parse_docker_env_pass_through(self):
-        return ["GALAXY_SLOTS", "HOME", "_GALAXY_JOB_HOME_DIR", "_GALAXY_JOB_TMP_DIR"] + self.parse_tmp_directory_vars()
+        return ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT", "HOME",
+                "_GALAXY_JOB_HOME_DIR", "_GALAXY_JOB_TMP_DIR"] + self.parse_tmp_directory_vars()
 
     @abstractmethod
     def parse_interpreter(self):
@@ -464,7 +465,7 @@ class TestCollectionOutputDef:
     def from_dict(as_dict):
         return TestCollectionOutputDef(
             name=as_dict["name"],
-            attrib=as_dict["attributes"],
+            attrib=as_dict.get("attributes", {}),
             element_tests=as_dict["element_tests"],
         )
 

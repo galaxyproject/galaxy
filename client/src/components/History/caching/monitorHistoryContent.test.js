@@ -1,23 +1,29 @@
 import { timer, of } from "rxjs";
-import { take, pluck, takeUntil } from "rxjs/operators";
+import { takeUntil } from "rxjs/operators";
 import { firstValueFrom } from "utils/observable/firstValueFrom";
 import { wipeDatabase } from "./db/wipeDatabase";
 import { wait } from "jest/helpers";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 
 import { SearchParams } from "../model/SearchParams";
-import { content$, buildContentId } from "../caching/db/observables";
-import { bulkCacheContent, getCachedContent, cacheContent } from "../caching/db/promises";
+import { content$ } from "../caching/db/observables";
+import { bulkCacheContent, cacheContent } from "../caching/db/promises";
 import { find } from "../caching/db/find";
 import { buildContentPouchRequest, monitorHistoryContent } from "./monitorHistoryContent";
-import { ACTIONS } from "../caching/db/monitorQuery";
 
 // test data
 import historyContent from "../test/json/historyContent.json";
 // import collectionContent from "../../test/json/collectionContent.json";
 
+jest.mock("app");
+jest.mock("../caching");
+
 beforeEach(wipeDatabase);
 afterEach(wipeDatabase);
+
+const monitorSpinUp = 100;
+const monitorSafetyTimeout = 1000;
+const selectorHasField = (selector, field) => selector.$and.some((row) => row[field] !== undefined);
 
 describe("buildContentPouchRequest", () => {
     test("should turn inputs into a pouch request suitable for find", () => {
@@ -29,13 +35,24 @@ describe("buildContentPouchRequest", () => {
         const request = fn(inputs);
 
         expect(request).toBeDefined();
-        expect(request.selector._id).toBeDefined();
-        expect(request.selector.history_id).toBeDefined();
+        expect(request.selector).toBeDefined();
+        expect(request.selector.$and).toBeDefined();
+        expect(selectorHasField(request.selector, "_id")).toBeTruthy();
+        expect(selectorHasField(request.selector, "history_id")).toBeTruthy();
     });
 });
 
 describe("monitorHistoryContent", () => {
-    beforeEach(async () => await bulkCacheContent(historyContent));
+    let cachedContentMap;
+
+    // cache sample content, store in a map for later, keyed by HID
+    beforeEach(async () => {
+        const cachedContent = await bulkCacheContent(historyContent, true);
+        const cachedContentEntries = cachedContent.map((o) => [o.hid, o]);
+        cachedContentMap = new Map(cachedContentEntries);
+    });
+
+    afterEach(() => (cachedContentMap = null));
 
     test("sanity check all the data is in there", async () => {
         const { history_id } = historyContent[0];
@@ -50,28 +67,25 @@ describe("monitorHistoryContent", () => {
         const monitor$ = of([history_id, new SearchParams(), hid]).pipe(
             monitorHistoryContent({
                 inputDebounce: 50,
-                pageSize: 100000000, // get everything without pagination for now
+                pageSize: 10, // get everything without pagination for now
             }),
-            pluck("initialMatches"),
-            take(1),
-            takeUntil(timer(2000)) // safety
+            takeUntil(timer(monitorSafetyTimeout)) // safety
         );
 
         const spy = new ObserverSpy();
         monitor$.subscribe(spy);
-
         await spy.onComplete();
+        expect(spy.getValuesLength()).toBeGreaterThan(0);
 
-        // monitorHistoryContent has 2 seeks, one up, one down, so two emits
-        // with initialMatches, some of the test rows have been doctored so they
-        // don't match the initial filters
-        const evts = spy.getValues();
-        const matches = evts.reduce((acc, matches) => acc + matches.length, 0);
-
-        // show only visible, undeleted rows, there are a couple that don't match
-        const expectedRows = historyContent.filter((row) => row.deleted == false && row.visible == true);
-        expect(expectedRows.length).not.toEqual(historyContent.length);
-        expect(matches).toEqual(expectedRows.length);
+        spy.getValues().forEach((evt) => {
+            const { key, match, doc } = evt;
+            expect(match).toBe(true);
+            expect(doc.hid).toEqual(key);
+            expect(cachedContentMap.has(key)).toBe(true);
+            // we had default params
+            expect(doc.isDeleted).toBe(false);
+            expect(doc.visible).toBe(true);
+        });
     });
 
     test("should see subsequent updates", async () => {
@@ -81,37 +95,29 @@ describe("monitorHistoryContent", () => {
 
         const monitor$ = of(inputs).pipe(
             monitorHistoryContent({ inputDebounce: 50 }),
-            take(2),
-            takeUntil(timer(2000)) // safety, ends stream if test fails
+            takeUntil(timer(monitorSafetyTimeout)) // safety
         );
 
         // monitor observable
         const spy = new ObserverSpy();
         monitor$.subscribe(spy);
 
-        // wait for first emission before updating
-        await wait(500);
+        // wait for first emission before updating, this lets all
+        // the initial matches emit
+        await wait(monitorSpinUp);
 
-        // update doc
-        const lookup = await getCachedContent(buildContentId(firstDoc));
-        lookup.foobar = 123;
-        const cached = await cacheContent(lookup);
-        expect(cached.updated).toBeTruthy();
+        // update one doc
+        const firstHid = historyContent[0].hid;
+        const updateMe = cachedContentMap.get(firstHid);
+        const fakeVal = 123;
+        updateMe.foobar = fakeVal;
+        const updatedContent = await cacheContent(updateMe, true);
+        expect(updatedContent.foobar).toEqual(fakeVal);
 
         // wait until monitor completes
         await spy.onComplete();
-        expect(spy.getValuesLength()).toEqual(2);
-        expect(spy.receivedError()).toBe(false);
-        expect(spy.receivedNext()).toBe(true);
-        expect(spy.receivedComplete()).toBe(true);
 
-        // first emission should have been the initial load
-        const firstUpdate = spy.getFirstValue();
-        expect(firstUpdate.action).toEqual(ACTIONS.INITIAL);
-
-        const lastUpdate = spy.getLastValue();
-        expect(lastUpdate.action).toEqual(ACTIONS.UPDATE);
-        expect(lastUpdate.doc._id).toEqual(lookup._id);
-        expect(lastUpdate.doc.foobar).toEqual(123);
+        const lastEmit = spy.getLastValue();
+        expect(lastEmit.doc.foobar).toEqual(fakeVal);
     });
 });

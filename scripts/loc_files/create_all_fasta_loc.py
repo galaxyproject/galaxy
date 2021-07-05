@@ -227,7 +227,7 @@ def __main__():
         possible_names.extend([f'{genome_subdir}{_}' for _ in variants])
         # get paths to all fasta files
         for path_to_look_in in paths_to_look_in:
-            for dirpath, dirnames, filenames in os.walk(path_to_look_in % genome_subdir):
+            for dirpath, _dirnames, filenames in os.walk(path_to_look_in % genome_subdir):
                 for fn in filenames:
                     ext = os.path.splitext(fn)[-1]
                     fasta_base = os.path.splitext(fn)[0]

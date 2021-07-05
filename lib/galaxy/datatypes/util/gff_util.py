@@ -2,7 +2,6 @@
 Provides utilities for working with GFF files.
 """
 import copy
-from collections import OrderedDict
 
 from bx.intervals.io import GenomicInterval, GenomicIntervalReader, MissingFieldError, NiceReaderWrapper, ParseError
 from bx.tabular.io import Comment, Header
@@ -428,7 +427,7 @@ def read_unordered_gtf(iterator, strict=False):
             return fields[0] + '_' + get_transcript_id(fields)
 
     # Aggregate intervals by transcript_id and collect comments.
-    feature_intervals = OrderedDict()
+    feature_intervals = {}
     comments = []
     for line in iterator:
         if line.startswith('#'):

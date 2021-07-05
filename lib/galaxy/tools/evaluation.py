@@ -272,17 +272,17 @@ class ToolEvaluator:
         # - Only necessary when self.check_values is False (==external dataset
         #   tool?: can this be abstracted out as part of being a datasouce tool?)
         # For now we try to not wrap unnecessarily, but this should be untangled at some point.
+        matches = None
         for name, data in input_datasets.items():
             param_dict_value = param_dict.get(name, None)
             if data and param_dict_value is None:
                 # We may have a nested parameter that is not fully prefixed.
                 # We try recovering from param_dict, but tool authors should really use fully-qualified
                 # variables
-                wrappers = find_instance_nested(param_dict,
-                                                instances=(DatasetFilenameWrapper, DatasetListWrapper),
-                                                match_key=name)
-                if len(wrappers) == 1:
-                    wrapper = wrappers[0]
+                if matches is None:
+                    matches = find_instance_nested(param_dict, instances=(DatasetFilenameWrapper, DatasetListWrapper))
+                wrapper = matches.get(name)
+                if wrapper:
                     param_dict[name] = wrapper
                     continue
             if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
@@ -495,12 +495,10 @@ class ToolEvaluator:
             raise
         if interpreter:
             # TODO: path munging for cluster/dataset server relocatability
-            command_line_tokens = shlex.split(command_line)
-            executable = command_line_tokens[0]
+            executable = command_line.split()[0]
             tool_dir = os.path.abspath(self.tool.tool_dir)
             abs_executable = os.path.join(tool_dir, executable)
-            command_line_tokens[0:1] = [interpreter, abs_executable]
-            command_line = ' '.join(map(shlex.quote, command_line_tokens))
+            command_line = command_line.replace(executable, f"{interpreter} {shlex.quote(abs_executable)}", 1)
         self.command_line = command_line
 
     def __build_config_files(self):
@@ -542,13 +540,14 @@ class ToolEvaluator:
                 is_template = False
             else:
                 is_template = True
-            with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
+            with tempfile.NamedTemporaryFile(dir=directory, prefix="tool_env_", delete=False) as temp:
                 config_filename = temp.name
             self.__write_workdir_file(config_filename, environment_variable_template, param_dict, is_template=is_template, strip=environment_variable_def.get("strip", False))
             config_file_basename = os.path.basename(config_filename)
             # environment setup in job file template happens before `cd $working_directory`
-            environment_variable["value"] = '`cat "$_GALAXY_JOB_DIR/%s"`' % config_file_basename
+            environment_variable["value"] = '`cat "%s/%s"`' % (self.compute_environment.env_config_directory(), config_file_basename)
             environment_variable["raw"] = True
+            environment_variable["job_directory_path"] = config_filename
             environment_variables.append(environment_variable)
 
         home_dir = self.compute_environment.home_directory()

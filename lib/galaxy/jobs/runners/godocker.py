@@ -10,7 +10,10 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
-from galaxy.util import unicodify
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    unicodify,
+)
 
 
 log = logging.getLogger(__name__)
@@ -39,7 +42,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.post(url, data, headers=header, verify=verify_ssl)
+            res = requests.post(url, data, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A transport error occurred in the GoDocker job runner:', e)
@@ -55,7 +58,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.get(url, headers=header, verify=verify_ssl)
+            res = requests.get(url, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A communication error occurred in the GoDocker job runner:', e)
@@ -71,7 +74,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.delete(url, headers=header, verify=verify_ssl)
+            res = requests.delete(url, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A communication error occurred in the GoDocker job runner:', e)
@@ -87,7 +90,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.put(url, data, headers=header, verify=verify_ssl)
+            res = requests.put(url, data, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A communication error occurred in the GoDocker job runner:', e)

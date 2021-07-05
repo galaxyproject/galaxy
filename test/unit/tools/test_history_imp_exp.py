@@ -597,8 +597,8 @@ def _hid_dict(history):
     return hids
 
 
-def _assert_distinct(l):
-    assert len(l) == len(set(l))
+def _assert_distinct(list_):
+    assert len(list_) == len(set(list_))
 
 
 def _create_datasets(sa_session, history, n, extension="txt"):
@@ -622,6 +622,8 @@ def _import_export(app, h, dest_export=None):
         dest_export = os.path.join(dest_parent, "moo.tgz")
 
     job = model.Job()
+    app.model.session.add(job, h)
+    app.model.session.flush()
     jeha = model.JobExportHistoryArchive.create_for_history(
         h, job, app.model.context, app.object_store, compressed=True
     )

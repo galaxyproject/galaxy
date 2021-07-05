@@ -26,7 +26,7 @@ class PageJsonEncodingIntegrationTestCase(integration_util.IntegrationTestCase):
             title="MY PAGE",
             content='''<p>Page!<div class="embedded-item" id="History-%s"></div></p>''' % self.history_id,
         )
-        page_response = self._post("pages", request)
+        page_response = self._post("pages", request, json=True)
         api_asserts.assert_status_code_is_ok(page_response)
         sa_session = self._app.model.context
         page_revision = sa_session.query(model.PageRevision).filter_by(content_format="html").all()[0]
@@ -50,7 +50,7 @@ history_dataset_display(history_dataset_id=%s)
 ```''' % dataset["id"],
             content_format="markdown",
         )
-        page_response = self._post("pages", request)
+        page_response = self._post("pages", request, json=True)
         api_asserts.assert_status_code_is_ok(page_response)
         sa_session = self._app.model.context
         page_revision = sa_session.query(model.PageRevision).filter_by(content_format="markdown").all()[0]

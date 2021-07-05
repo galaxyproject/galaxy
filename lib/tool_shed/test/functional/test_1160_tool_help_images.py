@@ -11,13 +11,10 @@ repository_long_description = "Convert bed to gff"
 category_name = 'Test 0140 Tool Help Images'
 category_description = 'Test 0140 Tool Help Images'
 
-'''
-1) Create and populate the htseq_count_0140 repository.
-2) Visit the manage_repository page, then the tool page, and look for the image string
-similar to the following string where the encoded repository_id is previously determined:
-
-src="/repository/static/images/<id>/count_modes.png"
-'''
+# 1) Create and populate the htseq_count_0140 repository.
+# 2) Visit the manage_repository page, then the tool page, and look for the image string
+# similar to the following string where the encoded repository_id is previously determined:
+# src="/repository/static/images/<id>/count_modes.png"
 
 
 class TestToolHelpImages(ShedTwillTestCase):

@@ -316,14 +316,6 @@ galaxy.util.sqlite module
    :undoc-members:
    :show-inheritance:
 
-galaxy.util.streamball module
------------------------------
-
-.. automodule:: galaxy.util.streamball
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.util.submodules module
 -----------------------------
 
@@ -400,6 +392,14 @@ galaxy.util.yaml\_util module
 -----------------------------
 
 .. automodule:: galaxy.util.yaml_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.util.zipstream module
+----------------------------
+
+.. automodule:: galaxy.util.zipstream
    :members:
    :undoc-members:
    :show-inheritance:

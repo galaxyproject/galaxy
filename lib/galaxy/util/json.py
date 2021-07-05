@@ -56,7 +56,7 @@ def safe_loads(arg):
         if loaded is not None and not isinstance(loaded, Iterable):
             loaded = arg
     except (TypeError, ValueError):
-        loaded = arg
+        loaded = copy.deepcopy(arg)
     return loaded
 
 
@@ -70,7 +70,7 @@ def safe_dumps(*args, **kwargs):
     try:
         dumped = json.dumps(*args, allow_nan=False, **kwargs)
     except ValueError:
-        obj = swap_inf_nan(copy.deepcopy(args[0]))
+        obj = swap_inf_nan(args[0])
         dumped = json.dumps(obj, allow_nan=False, **kwargs)
     if kwargs.get('escape_closing_tags', True):
         return dumped.replace('</', '<\\/')

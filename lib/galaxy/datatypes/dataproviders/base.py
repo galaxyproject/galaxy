@@ -66,10 +66,11 @@ class HasSettings(type):
 class DataProvider(metaclass=HasSettings):
     """
     Base class for all data providers. Data providers:
-        (a) have a source (which must be another file-like object)
-        (b) implement both the iterator and context manager interfaces
-        (c) do not allow write methods
-            (but otherwise implement the other file object interface methods)
+
+    - have a source (which must be another file-like object)
+    - implement both the iterator and context manager interfaces
+    - do not allow write methods (but otherwise implement the other file object interface methods)
+
     """
     # a definition of expected types for keyword arguments sent to __init__
     #   useful for controlling how query string dictionaries can be parsed into correct types for __init__
@@ -77,10 +78,12 @@ class DataProvider(metaclass=HasSettings):
     settings: Dict[str, str] = {}
 
     def __init__(self, source, **kwargs):
-        """
+        """Sets up a data provider, validates supplied source.
+
         :param source: the source that this iterator will loop over.
-            (Should implement the iterable interface and ideally have the
-            context manager interface as well)
+                       (Should implement the iterable interface and ideally have the
+                       context manager interface as well)
+
         """
         self.source = self.validate_source(source)
 

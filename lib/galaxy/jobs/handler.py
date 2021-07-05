@@ -40,7 +40,16 @@ JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED,
 DEFAULT_JOB_PUT_FAILURE_MESSAGE = 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.'
 
 
-class JobHandler:
+class JobHandlerI:
+
+    def start(self):
+        pass
+
+    def shutdown(self):
+        pass
+
+
+class JobHandler(JobHandlerI):
     """
     Handle the preparation, running, tracking, and finishing of jobs
     """
@@ -69,25 +78,34 @@ class ItemGrabber:
         self.sa_session = app.model.context
         self.grab_this = getattr(model, grab_type)
         self.grab_type = grab_type
+        self.handler_assignment_method = handler_assignment_method
+        self.self_handler_tags = self_handler_tags
+        self.max_grab = max_grab
+        self.handler_tags = handler_tags
         self._grab_conn_opts = {'autocommit': False}
+        self._grab_query = None
+        self._supports_returning = self.app.application_stack.supports_returning()
+
+    def setup_query(self):
         subq = select([self.grab_this.id]) \
             .where(and_(
-                self.grab_this.table.c.handler.in_(self_handler_tags),
+                self.grab_this.table.c.handler.in_(self.self_handler_tags),
                 self.grab_this.table.c.state == self.grab_this.states.NEW)) \
             .order_by(self.grab_this.table.c.id)
-        if max_grab:
-            subq = subq.limit(max_grab)
-        if handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
+        if self.max_grab:
+            subq = subq.limit(self.max_grab)
+        if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
             subq = subq.with_for_update(skip_locked=True)
         self._grab_query = self.grab_this.table.update() \
-            .returning(self.grab_this.table.c.id) \
             .where(self.grab_this.table.c.id.in_(subq)) \
             .values(handler=self.app.config.server_name)
-        if handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
+        if self._supports_returning:
+            self._grab_query = self._grab_query.returning(self.grab_this.table.c.id)
+        if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
             self._grab_conn_opts['isolation_level'] = 'SERIALIZABLE'
         log.info(
-            "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", handler_assignment_method,
-            self.app.config.server_name, ', '.join(str(x) for x in handler_tags)
+            "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", self.handler_assignment_method,
+            self.app.config.server_name, ', '.join(str(x) for x in self.handler_tags)
         )
 
     @staticmethod
@@ -110,16 +128,22 @@ class ItemGrabber:
         """
         # an excellent discussion on PostgreSQL concurrency safety:
         # https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
+        if self._grab_query is None:
+            self.setup_query()
         self.sa_session.expunge_all()
         conn = self.sa_session.connection(execution_options=self._grab_conn_opts)
         with conn.begin() as trans:
             try:
-                rows = conn.execute(self._grab_query).fetchall()
-                if rows:
-                    log.debug('Grabbed %s(s): %s', self.grab_type, ', '.join(str(row[0]) for row in rows))
-                    trans.commit()
+                proxy = conn.execute(self._grab_query)
+                if self._supports_returning:
+                    rows = proxy.fetchall()
+                    if rows:
+                        log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
+                        trans.commit()
+                    else:
+                        trans.rollback()
                 else:
-                    trans.rollback()
+                    trans.commit()
             except OperationalError as e:
                 # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
                 # and should have attribute `code`. Other engines should just report the message and move on.
@@ -209,13 +233,13 @@ class JobHandlerQueue(Monitors):
         if self.app.config.user_activation_on:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
                 .outerjoin(model.User) \
-                .filter(model.Job.state.in_(in_list) &
-                        (model.Job.handler == self.app.config.server_name) &
-                        or_((model.Job.user_id == null()), (model.User.active == true()))).all()
+                .filter(model.Job.state.in_(in_list)
+                        & (model.Job.handler == self.app.config.server_name)
+                        & or_((model.Job.user_id == null()), (model.User.active == true()))).all()
         else:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                .filter(model.Job.state.in_(in_list) &
-                        (model.Job.handler == self.app.config.server_name)).all()
+                .filter(model.Job.state.in_(in_list)
+                        & (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
@@ -325,22 +349,31 @@ class JobHandlerQueue(Monitors):
                 .join(model.Dataset) \
                 .filter(and_(model.Job.state == model.Job.states.NEW,
                              model.Dataset.state.in_(model.Dataset.non_ready_states))).subquery()
+            rank = func.rank().over(partition_by=model.Job.table.c.user_id,
+                                    order_by=model.Job.table.c.id).label('rank')
+            job_filter_conditions = (
+                (model.Job.state == model.Job.states.NEW),
+                (model.Job.handler == self.app.config.server_name),
+                ~model.Job.table.c.id.in_(hda_not_ready),
+                ~model.Job.table.c.id.in_(ldda_not_ready))
             if self.app.config.user_activation_on:
-                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                    .outerjoin(model.User) \
-                    .filter(and_((model.Job.state == model.Job.states.NEW),
-                                 or_((model.Job.user_id == null()), (model.User.active == true())),
-                                 (model.Job.handler == self.app.config.server_name),
-                                 ~model.Job.table.c.id.in_(hda_not_ready),
-                                 ~model.Job.table.c.id.in_(ldda_not_ready))) \
-                    .order_by(model.Job.id).all()
+                job_filter_conditions = job_filter_conditions + (
+                    or_((model.Job.user_id == null()), (model.User.active == true())),)
+            if self.sa_session.bind.name == 'sqlite':
+                query_objects = (model.Job,)
             else:
-                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                    .filter(and_((model.Job.state == model.Job.states.NEW),
-                                 (model.Job.handler == self.app.config.server_name),
-                                 ~model.Job.table.c.id.in_(hda_not_ready),
-                                 ~model.Job.table.c.id.in_(ldda_not_ready))) \
-                    .order_by(model.Job.id).all()
+                query_objects = (model.Job, rank)
+            ready_query = self.sa_session.query(*query_objects).enable_eagerloads(False) \
+                .outerjoin(model.User) \
+                .filter(and_(*job_filter_conditions)) \
+                .order_by(model.Job.id)
+            if self.sa_session.bind.name == 'sqlite':
+                jobs_to_check = ready_query.all()
+            else:
+                ranked = ready_query.subquery()
+                jobs_to_check = self.sa_session.query(model.Job) \
+                    .join(ranked, model.Job.id == ranked.c.id) \
+                    .filter(ranked.c.rank <= self.app.job_config.handler_ready_window_size).all()
             # Filter jobs with invalid input states
             jobs_to_check = self.__filter_jobs_with_invalid_input_states(jobs_to_check)
             # Fetch all "resubmit" jobs
@@ -416,13 +449,15 @@ class JobHandlerQueue(Monitors):
                                    JOB_USER_OVER_TOTAL_WALLTIME):
                     if job_state == JOB_USER_OVER_QUOTA:
                         log.info("(%d) User (%s) is over quota: job paused" % (job.id, job.user_id))
+                        what = "your disk quota"
                     else:
                         log.info("(%d) User (%s) is over total walltime limit: job paused" % (job.id, job.user_id))
+                        what = "your total job runtime"
 
                     job.set_state(model.Job.states.PAUSED)
                     for dataset_assoc in job.output_datasets + job.output_library_datasets:
                         dataset_assoc.dataset.dataset.state = model.Dataset.states.PAUSED
-                        dataset_assoc.dataset.info = "Execution of this dataset's job is paused because you were over your disk quota at the time it was ready to run"
+                        dataset_assoc.dataset.info = f"Execution of this dataset's job is paused because you were over {what} at the time it was ready to run"
                         self.sa_session.add(dataset_assoc.dataset.dataset)
                     self.sa_session.add(job)
                 elif job_state == JOB_ERROR:
@@ -436,9 +471,8 @@ class JobHandlerQueue(Monitors):
         if not self.track_jobs_in_database:
             self.waiting_jobs = new_waiting_jobs
         # Remove cached wrappers for any jobs that are no longer being tracked
-        for id in list(self.job_wrappers.keys()):
-            if id not in new_waiting_jobs:
-                del self.job_wrappers[id]
+        for id in set(self.job_wrappers.keys()) - set(new_waiting_jobs):
+            del self.job_wrappers[id]
         # Flush, if we updated the state
         self.sa_session.flush()
         # Done with the session
@@ -582,16 +616,15 @@ class JobHandlerQueue(Monitors):
         if state == JOB_READY and self.app.quota_agent.is_over_quota(self.app, job, job_destination):
             return JOB_USER_OVER_QUOTA, job_destination
         # Check total walltime limits
-        if (state == JOB_READY and
-                "delta" in self.app.job_config.limits.total_walltime):
+        if (state == JOB_READY and "delta" in self.app.job_config.limits.total_walltime):
             jobs_to_check = self.sa_session.query(model.Job).filter(
-                model.Job.user_id == job.user.id,
-                model.Job.update_time >= datetime.datetime.now() -
-                datetime.timedelta(
-                    self.app.job_config.limits.total_walltime["window"]
-                ),
+                model.Job.update_time >= datetime.datetime.now() - datetime.timedelta(self.app.job_config.limits.total_walltime["window"]),
                 model.Job.state == 'ok'
-            ).all()
+            )
+            if job.user_id:
+                jobs_to_check = jobs_to_check.filter(model.Job.user_id == job.user_id)
+            else:
+                jobs_to_check = jobs_to_check.filter(model.Job.session_id == job.session_id)
             time_spent = datetime.timedelta(0)
             for job in jobs_to_check:
                 # History is job.state_history
@@ -605,7 +638,11 @@ class JobHandlerQueue(Monitors):
                     elif history.state == "ok":
                         finished = history.create_time
 
-                time_spent += finished - started
+                if started is not None and finished is not None:
+                    time_spent += finished - started
+                else:
+                    log.warning("Unable to calculate time spent for job %s; started: %s, finished: %s",
+                                job.id, started, finished)
 
             if time_spent > self.app.job_config.limits.total_walltime["delta"]:
                 return JOB_USER_OVER_TOTAL_WALLTIME, job_destination
@@ -896,7 +933,7 @@ class JobHandlerStopQueue(Monitors):
         if error_msg is not None:
             final_state = job.states.ERROR
             job.info = error_msg
-        job.set_final_state(final_state)
+        job.set_final_state(final_state, supports_skip_locked=self.app.application_stack.supports_skip_locked())
         self.sa_session.add(job)
         self.sa_session.flush()
 
@@ -919,8 +956,8 @@ class JobHandlerStopQueue(Monitors):
             newly_deleted_jobs = self.sa_session.query(model.Job).enable_eagerloads(False) \
                                      .filter((model.Job.state.in_((model.Job.states.DELETED_NEW,
                                                                    model.Job.states.DELETING,
-                                                                   model.Job.states.STOPPING))) &
-                                             (model.Job.handler == self.app.config.server_name)).all()
+                                                                   model.Job.states.STOPPING)))
+                                             & (model.Job.handler == self.app.config.server_name)).all()
             for job in newly_deleted_jobs:
                 # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
                 # while any `not None` message returned in self.queue.get_nowait() is interpreted
@@ -944,8 +981,8 @@ class JobHandlerStopQueue(Monitors):
                      job.states.DELETING,
                      job.states.DELETED,
                      job.states.STOPPING,
-                     job.states.STOPPED) and
-                    job.finished):
+                     job.states.STOPPED)
+                    and job.finished):
                 # terminated before it got here
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
                 continue

@@ -16,6 +16,7 @@ import galaxy.model.mapping
 import galaxy.web.framework
 import galaxy.webapps.base.webapp
 from galaxy import util
+from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 from galaxy.web.framework.middleware.batch import BatchMiddleware
@@ -28,12 +29,22 @@ log = logging.getLogger(__name__)
 
 
 class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
-    pass
+    injection_aware = True
 
 
-def app_factory(global_conf, load_app_kwds=None, **kwargs):
+def app_factory(*args, **kwargs):
     """
     Return a wsgi application serving the root object
+    """
+    return app_pair(*args, **kwargs)[0]
+
+
+def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
+    """
+    Return a wsgi application serving the root object and the Galaxy application.
+
+    When creating an app for asgi, set wsgi_preflight to False to allow FastAPI
+    middleware to handle CORS options, etc..
     """
     load_app_kwds = load_app_kwds or {}
     kwargs = load_app_properties(
@@ -90,16 +101,27 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     webapp.add_route('/display_application/{dataset_id}/{app_name}/{link_name}/{user_id}/{app_action}/{action_param}/{action_param_extra:.+?}',
                      controller='dataset', action='display_application', dataset_id=None, user_id=None,
                      app_name=None, link_name=None, app_action=None, action_param=None, action_param_extra=None)
-    webapp.add_route('/u/{username}/d/{slug}/{filename}', controller='dataset', action='display_by_username_and_slug', filename=None)
-    webapp.add_route('/u/{username}/p/{slug}', controller='page', action='display_by_username_and_slug')
-    webapp.add_route('/u/{username}/h/{slug}', controller='history', action='display_by_username_and_slug')
-    webapp.add_route('/u/{username}/w/{slug}', controller='workflow', action='display_by_username_and_slug')
-    webapp.add_route('/u/{username}/w/{slug}/{format}', controller='workflow', action='display_by_username_and_slug')
-    webapp.add_route('/u/{username}/v/{slug}', controller='visualization', action='display_by_username_and_slug')
+
+    USERNAME_REQS = {'username': VALID_PUBLICNAME_RE.pattern.strip("^$")}
+    webapp.add_route('/u/{username}/d/{slug}/{filename}', controller='dataset', action='display_by_username_and_slug', filename=None, requirements=USERNAME_REQS)
+    webapp.add_route('/u/{username}/p/{slug}', controller='page', action='display_by_username_and_slug', requirements=USERNAME_REQS)
+    webapp.add_route('/u/{username}/h/{slug}', controller='history', action='display_by_username_and_slug', requirements=USERNAME_REQS)
+    webapp.add_route('/u/{username}/w/{slug}', controller='workflow', action='display_by_username_and_slug', requirements=USERNAME_REQS)
+    webapp.add_route('/u/{username}/w/{slug}/{format}', controller='workflow', action='display_by_username_and_slug', requirements=USERNAME_REQS)
+    webapp.add_route('/u/{username}/v/{slug}', controller='visualization', action='display_by_username_and_slug', requirements=USERNAME_REQS)
 
     # TODO: Refactor above routes into external method to allow testing in
     # isolation as well.
     populate_api_routes(webapp, app)
+    if wsgi_preflight:
+        # API OPTIONS RESPONSE
+        webapp.mapper.connect(
+            'options',
+            '/api/{path_info:.*?}',
+            controller='authenticate',
+            action='options',
+            conditions={'method': ['OPTIONS']},
+        )
 
     # CLIENTSIDE ROUTES
     # The following are routes that are handled completely on the clientside.
@@ -146,6 +168,7 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     webapp.add_client_route('/histories/citations')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/import')
+    webapp.add_client_route('/histories/{history_id}/export')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
@@ -168,7 +191,7 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
-    webapp.add_client_route('/library/folders/{folder_id}')
+    webapp.add_client_route('/libraries{path:.*?}')
 
     # ==== Done
     # Indicate that all configuration settings have been provided
@@ -199,7 +222,7 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
         if th.is_alive():
             log.debug("Prior to webapp return, Galaxy thread %s is alive.", th)
     # Return
-    return webapp
+    return webapp, app
 
 
 def uwsgi_app():
@@ -224,6 +247,7 @@ def populate_api_routes(webapp, app):
     ]
 
     # Accesss HDA details via histories/{history_id}/contents/datasets/{hda_id}
+    # and HDCA details via histories/{history_id}/contents/dataset_collections/{hdca_id}
     webapp.mapper.resource("content_typed",
                            "{type:%s}s" % "|".join(valid_history_contents_types),
                            name_prefix="history_",
@@ -447,8 +471,8 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/workflows/menu', action='set_workflow_menu', controller="workflows", conditions=dict(method=["PUT"]))
     webapp.mapper.connect('/api/workflows/{id}/refactor', action='refactor', controller="workflows", conditions=dict(method=["PUT"]))
     webapp.mapper.resource('workflow', 'workflows', path_prefix='/api')
-    webapp.mapper.connect('/api/licenses', controller='licenses', action='index')
-    webapp.mapper.connect('/api/licenses/{id}', controller='licenses', action='get')
+    webapp.mapper.connect('/api/licenses', controller='licenses', action='index', conditions=dict(method="GET"))
+    webapp.mapper.connect('/api/licenses/{id}', controller='licenses', action='get', conditions=dict(method="GET"))
     webapp.mapper.resource_with_deleted('history', 'histories', path_prefix='/api')
     webapp.mapper.connect('/api/histories/{history_id}/citations', action='citations', controller="histories")
     webapp.mapper.connect('/api/histories/{id}/sharing', action='sharing', controller="histories", conditions=dict(method=["GET", "POST"]))
@@ -496,6 +520,9 @@ def populate_api_routes(webapp, app):
                            controller='page_revisions',
                            parent_resources=dict(member_name='page', collection_name='pages'))
 
+    webapp.mapper.connect("history_exports",
+                          "/api/histories/{id}/exports", controller="histories",
+                          action="index_exports", conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_archive_export",
                           "/api/histories/{id}/exports", controller="histories",
                           action="archive_export", conditions=dict(method=["PUT"]))
@@ -697,13 +724,6 @@ def populate_api_routes(webapp, app):
                           action='get_api_key',
                           conditions=dict(method=["GET"]))
 
-    # API OPTIONS RESPONSE
-    webapp.mapper.connect('options',
-                          '/api/{path_info:.*?}',
-                          controller='authenticate',
-                          action='options',
-                          conditions={'method': ['OPTIONS']})
-
     # ======================================
     # ====== DISPLAY APPLICATIONS API ======
     # ======================================
@@ -751,6 +771,12 @@ def populate_api_routes(webapp, app):
                           controller='users',
                           action='api_key',
                           conditions=dict(method=["POST"]))
+
+    webapp.mapper.connect('api_key',
+                          '/api/users/{id}/api_key',
+                          controller='users',
+                          action='get_or_create_api_key',
+                          conditions=dict(method=["GET"]))
 
     webapp.mapper.connect('get_api_key',
                           '/api/users/{id}/api_key/inputs',
@@ -1266,8 +1292,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                               args=(statsd_host,
                                     conf.get('statsd_port', 8125),
                                     conf.get('statsd_prefix', 'galaxy'),
-                                    conf.get('statsd_influxdb', False)))
-        log.debug("Enabling 'statsd' middleware")
+                                    conf.get('statsd_influxdb', False),
+                                    conf.get('statsd_mock_calls', False)))
+        log.info("Enabling 'statsd' middleware")
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server

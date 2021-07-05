@@ -29,9 +29,9 @@ import WorkflowImport from "components/Workflow/WorkflowImport.vue";
 import TrsImport from "components/Workflow/TrsImport.vue";
 import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
-import LibraryFolder from "components/LibraryFolder/LibraryFolder.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
+import { HistoryExport } from "components/HistoryExport/index";
 import HistoryView from "components/HistoryView.vue";
 import WorkflowInvocationReport from "components/Workflow/InvocationReport.vue";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
@@ -48,12 +48,14 @@ import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import Confirmation from "components/login/Confirmation.vue";
+import LibraryFolderRouter from "components/Libraries/LibraryFolderRouter";
 import Vue from "vue";
 import store from "store";
+import VueRouterMain from "./VueRouterMain.vue";
 
 /** Routes */
-export const getAnalysisRouter = (Galaxy) =>
-    Router.extend({
+export const getAnalysisRouter = (Galaxy) => {
+    return Router.extend({
         routes: {
             "(/)(#)(_=_)": "home",
             "(/)root*": "home",
@@ -87,6 +89,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)histories(/)rename(/)": "show_histories_rename",
             "(/)histories(/)sharing(/)": "show_histories_sharing",
             "(/)histories(/)import(/)": "show_histories_import",
+            "(/)histories(/)(:history_id)(/)export(/)": "show_history_export",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories/view": "show_history_view",
             "(/)histories/show_structure": "show_history_structure",
@@ -96,7 +99,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
-            "(/)library/folders(/)(:folder_id)": "show_library_folder",
+            "(/)libraries*path": "show_library_folder",
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth", "show_external_ids"],
@@ -114,6 +117,17 @@ export const getAnalysisRouter = (Galaxy) =>
             }
             this.page.display(container, noPadding);
             new instance({ store, propsData }).$mount(container);
+        },
+        _display_vue_router: function (router, propsData = {}, active_tab = null, noPadding = false) {
+            const container = document.createElement("div");
+            if (active_tab) {
+                container.active_tab = active_tab;
+            }
+            this.page.display(container, noPadding);
+            new Vue({
+                router: router,
+                render: (h) => h(VueRouterMain),
+            }).$mount(container);
         },
 
         show_tours: function (tour_id) {
@@ -150,7 +164,7 @@ export const getAnalysisRouter = (Galaxy) =>
         show_library_folder: function (folder_id) {
             this.page.toolPanel?.component.hide(0);
             this.page.panels.right.hide();
-            this._display_vue_helper(LibraryFolder, { folder_id: folder_id });
+            this._display_vue_router(LibraryFolderRouter, { folder_id: folder_id });
         },
 
         show_cloud_auth: function () {
@@ -249,6 +263,12 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_histories_import: function () {
             this._display_vue_helper(HistoryImport);
+        },
+
+        show_history_export: function (history_id) {
+            this._display_vue_helper(HistoryExport, {
+                historyId: history_id,
+            });
         },
 
         show_tools_view: function () {
@@ -449,3 +469,4 @@ export const getAnalysisRouter = (Galaxy) =>
             this._display_vue_helper(WorkflowRun, props, "workflow");
         },
     });
+};

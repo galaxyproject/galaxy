@@ -9,7 +9,11 @@ import tempfile
 import requests
 
 from .mulled_list import get_singularity_containers
-from .util import build_target, v2_image_name
+from .util import (
+    build_target,
+    MULLED_SOCKET_TIMEOUT,
+    v2_image_name,
+)
 
 try:
     from conda.cli.python_api import run_command
@@ -46,7 +50,7 @@ class QuaySearch():
 
         parameters = {'public': 'true', 'namespace': self.organization}
         r = requests.get(QUAY_API_URL, headers={
-                         'Accept-encoding': 'gzip'}, params=parameters, timeout=12)
+                         'Accept-encoding': 'gzip'}, params=parameters, timeout=MULLED_SOCKET_TIMEOUT)
         tmp_dir = tempfile.mkdtemp()
         schema = Schema(title=TEXT(stored=True), content=STORED)
         self.index = create_in(tmp_dir, schema)
@@ -98,7 +102,7 @@ class QuaySearch():
         get the tag-field which includes the version number.
         """
         url = f"{QUAY_API_URL}/{self.organization}/{repository_string}"
-        r = requests.get(url, headers={'Accept-encoding': 'gzip'})
+        r = requests.get(url, headers={'Accept-encoding': 'gzip'}, timeout=MULLED_SOCKET_TIMEOUT)
 
         json_decoder = json.JSONDecoder()
         decoded_request = json_decoder.decode(r.text)
@@ -141,7 +145,7 @@ class GitHubSearch():
         Takes search_string variable and return results from the bioconda-recipes github repository in JSON format
         """
         response = requests.get(
-            "https://api.github.com/search/code?q=%s+in:path+repo:bioconda/bioconda-recipes+path:recipes" % search_string).json()
+            "https://api.github.com/search/code?q=%s+in:path+repo:bioconda/bioconda-recipes+path:recipes" % search_string, timeout=MULLED_SOCKET_TIMEOUT).json()
         return response
 
     def process_json(self, json, search_string):
@@ -160,7 +164,7 @@ class GitHubSearch():
         """
         Check if a recipe exists in bioconda-recipes which matches search_string exactly
         """
-        if requests.get("https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/%s" % search_string).status_code == 200:
+        if requests.get("https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/%s" % search_string, timeout=MULLED_SOCKET_TIMEOUT).status_code == 200:
             return True
         else:
             return False
@@ -184,7 +188,7 @@ def get_package_hash(packages, versions):
     if versions:
         hash_results['version_hash'] = package_hash.split(':')[1]
 
-    r = requests.get("https://quay.io/api/v1/repository/biocontainers/%s" % hash_results['package_hash'])
+    r = requests.get("https://quay.io/api/v1/repository/biocontainers/%s" % hash_results['package_hash'], timeout=MULLED_SOCKET_TIMEOUT)
     if r.status_code == 200:
         hash_results['container_present'] = True
         if versions:  # now test if the version hash is listed in the repository tags
@@ -228,15 +232,15 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
         sys.stdout.write("The query returned the following result(s).\n")
         # put quay, conda etc results as lists in lines
         lines = [['LOCATION', 'NAME', 'VERSION', 'COMMAND\n']]
-        for search_string, results in json.get('quay', {}).items():
+        for results in json.get('quay', {}).values():
             for result in results:
                 lines.append(['quay', result['package'], result['version'], 'docker pull quay.io/%s/%s:%s\n' %
                               (organization, result['package'], result['version'])])  # NOT a real solution
-        for search_string, results in json.get('conda', {}).items():
+        for results in json.get('conda', {}).values():
             for result in results:
                 lines.append(['conda', result['package'], '{}--{}'.format(result['version'], result['build']),
                               'conda install -c {} {}={}={}\n'.format(channel, result['package'], result['version'], result['build'])])
-        for search_string, results in json.get('singularity', {}).items():
+        for results in json.get('singularity', {}).values():
             for result in results:
                 lines.append(['singularity', result['package'], result['version'],
                               'wget https://depot.galaxyproject.org/singularity/{}:{}\n'.format(result['package'], result['version'])])

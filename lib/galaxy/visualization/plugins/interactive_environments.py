@@ -322,13 +322,13 @@ class InteractiveEnvironmentRequest:
             volumes.insert(0, import_volume_def)
 
         return (
-            self.base_docker_cmd('run') +
-            shlex.split(command_inject) +
-            name +
-            _flag_opts('-e', ['='.join(map(str, t)) for t in env.items()]) +
-            ['-d', '-P'] +
-            _flag_opts('-v', map(str, volumes)) +
-            [image]
+            self.base_docker_cmd('run')
+            + shlex.split(command_inject)
+            + name
+            + _flag_opts('-e', ['='.join(map(str, t)) for t in env.items()])
+            + ['-d', '-P']
+            + _flag_opts('-v', map(str, volumes))
+            + [image]
         )
 
     @property
@@ -510,7 +510,7 @@ class InteractiveEnvironmentRequest:
         :type env_override: dict
         :param env_override: dictionary of environment variables to add.
 
-        :type volumes: list of :class:`galaxy.containers.docker_model.DockerVolume`s
+        :type volumes: list of py:class:`galaxy.containers.docker_model.DockerVolume` s
         :param volumes: dictionary of docker volume mounts
 
         """

@@ -14,6 +14,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.workflows import (
     MissingToolsException,
     WorkflowUpdateOptions,
@@ -181,6 +182,7 @@ class SingleTagContentsParser(HTMLParser):
 class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
+    slug_builder = SlugBuilder()
 
     @web.expose
     @web.require_login("use Galaxy workflows")
@@ -544,15 +546,15 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     def create(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
             return {
-                'title'  : 'Create Workflow',
-                'inputs' : [{
-                    'name'  : 'workflow_name',
-                    'label' : 'Name',
-                    'value' : 'Unnamed workflow'
+                'title': 'Create Workflow',
+                'inputs': [{
+                    'name': 'workflow_name',
+                    'label': 'Name',
+                    'value': 'Unnamed workflow'
                 }, {
-                    'name'  : 'workflow_annotation',
-                    'label' : 'Annotation',
-                    'help'  : 'A description of the workflow; annotation is shown alongside shared or published workflows.'
+                    'name': 'workflow_annotation',
+                    'label': 'Annotation',
+                    'help': 'A description of the workflow; annotation is shown alongside shared or published workflows.'
                 }]}
         else:
             user = trans.get_user()
@@ -564,7 +566,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
             stored_workflow.user = user
-            self.create_item_slug(trans.sa_session, stored_workflow)
+            self.slug_builder.create_item_slug(trans.sa_session, stored_workflow)
             # And the first (empty) workflow revision
             workflow = model.Workflow()
             workflow.name = workflow_name
@@ -591,7 +593,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
             stored_workflow.user = user
-            self.create_item_slug(trans.sa_session, stored_workflow)
+            self.slug_builder.create_item_slug(trans.sa_session, stored_workflow)
             workflow = model.Workflow()
             workflow.name = workflow_name
             workflow.stored_workflow = stored_workflow
@@ -703,10 +705,10 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # create workflow models
         workflows = [{
-            'id'                  : trans.security.encode_id(workflow.id),
-            'latest_id'           : trans.security.encode_id(workflow.latest_workflow.id),
-            'step_count'          : len(workflow.latest_workflow.steps),
-            'name'                : workflow.name
+            'id': trans.security.encode_id(workflow.id),
+            'latest_id': trans.security.encode_id(workflow.latest_workflow.id),
+            'step_count': len(workflow.latest_workflow.steps),
+            'name': workflow.name
         } for workflow in workflows if workflow.id != stored.id]
 
         # identify item tags
@@ -717,15 +719,15 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # build workflow editor model
         editor_config = {
-            'id'                      : trans.security.encode_id(stored.id),
-            'name'                    : stored.name,
-            'tags'                    : item_tag_names,
-            'version'                 : version,
-            'annotation'              : self.get_item_annotation_str(trans.sa_session, trans.user, stored),
-            'toolbox'                 : trans.app.toolbox.to_dict(trans),
-            'moduleSections'          : module_sections,
-            'dataManagers'            : data_managers,
-            'workflows'               : workflows
+            'id': trans.security.encode_id(stored.id),
+            'name': stored.name,
+            'tags': item_tag_names,
+            'initialVersion': version,
+            'annotation': self.get_item_annotation_str(trans.sa_session, trans.user, stored),
+            'toolbox': trans.app.toolbox.to_dict(trans),
+            'moduleSections': module_sections,
+            'dataManagers': data_managers,
+            'workflows': workflows
         }
 
         # parse to mako

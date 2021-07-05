@@ -1,7 +1,10 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import InstallationSettings from "./InstallationSettings";
 
 jest.mock("app");
+
+const localVue = getLocalVue();
 
 describe("InstallationSettings", () => {
     it("test tool repository installer interface", () => {
@@ -18,6 +21,7 @@ describe("InstallationSettings", () => {
                 requiresPanel: true,
                 toolshedUrl: "toolshedUrl",
             },
+            localVue,
         });
         expect(wrapper.find(".title").text()).toBe("Installing 'name'");
         expect(wrapper.find(".description").text()).toBe("long_description");

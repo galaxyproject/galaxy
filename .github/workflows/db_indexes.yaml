@@ -9,11 +9,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: ['3.7']
         db: ['postgresql', 'sqlite']
+        postgresql-version: ['13']
+        include:
+          - db: postgresql
+            postgresql-version: '9.6'
     services:
       postgres:
-        image: postgres:11
+        image: postgres:${{ matrix.postgresql-version }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -38,7 +42,7 @@ jobs:
     - name: Check indexes on postgresql
       if: matrix.db == 'postgresql'
       env:
-        GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+        GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
       run: tox -e check_indexes
     - name: Check indexes on sqlite
       if: matrix.db == 'sqlite'

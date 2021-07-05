@@ -42,6 +42,9 @@ class CustosAuthnz(IdentityProvider):
         elif provider == 'keycloak':
             self._load_config_for_keycloak()
 
+    def _decode_token_no_signature(self, token):
+        return jwt.decode(token, audience=self.config['client_id'], options={"verify_signature": False})
+
     def authenticate(self, trans, idphint=None):
         base_authorize_url = self.config['authorization_endpoint']
         scopes = ['openid', 'email', 'profile']
@@ -77,7 +80,7 @@ class CustosAuthnz(IdentityProvider):
         # Get nonce from token['id_token'] and validate. 'nonce' in the
         # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
         # cookie.
-        id_token_decoded = jwt.decode(id_token, verify=False)
+        id_token_decoded = self._decode_token_no_signature(id_token)
         nonce_hash = id_token_decoded['nonce']
         self._validate_nonce(trans, nonce_hash)
 
@@ -102,9 +105,9 @@ class CustosAuthnz(IdentityProvider):
                     # TODO: Future work will expand on this and provide an
                     # interface for when there are multiple auth providers
                     # allowing explicit authenticated association.
-                    if (trans.app.config.enable_oidc and
-                            len(trans.app.config.oidc) == 1 and
-                            len(trans.app.auth_manager.authenticators) == 0):
+                    if (trans.app.config.enable_oidc
+                            and len(trans.app.config.oidc) == 1
+                            and len(trans.app.auth_manager.authenticators) == 0):
                         user = existing_user
                     else:
                         message = "There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email
@@ -144,7 +147,7 @@ class CustosAuthnz(IdentityProvider):
         # Get nonce from token['id_token'] and validate. 'nonce' in the
         # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
         # cookie.
-        userinfo = jwt.decode(id_token, verify=False)
+        userinfo = self._decode_token_no_signature(id_token)
 
         # Get userinfo and create Galaxy user record
         email = userinfo['email']
@@ -180,7 +183,7 @@ class CustosAuthnz(IdentityProvider):
                 raise Exception("User is not associated with provider {}".format(self.config["provider"]))
             if len(provider_tokens) > 1:
                 for idx, token in enumerate(provider_tokens):
-                    id_token_decoded = jwt.decode(token.id_token, verify=False)
+                    id_token_decoded = self._decode_token_no_signature(token.id_token)
                     if (id_token_decoded['email'] == email):
                         index = idx
             trans.sa_session.delete(provider_tokens[index])
@@ -263,7 +266,9 @@ class CustosAuthnz(IdentityProvider):
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
         eps = requests.get(self.config['well_known_oidc_config_uri'],
                            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
-                           verify=False, params={'client_id': self.config['client_id']})
+                           verify=False,
+                           params={'client_id': self.config['client_id']},
+                           timeout=util.DEFAULT_SOCKET_TIMEOUT)
         well_known_oidc_config = eps.json()
         self._load_well_known_oidc_config(well_known_oidc_config)
 
@@ -276,7 +281,9 @@ class CustosAuthnz(IdentityProvider):
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
         creds = requests.get(self.config['credential_url'],
                             headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
-                            verify=False, params={'client_id': self.config['client_id']})
+                            verify=False,
+                            params={'client_id': self.config['client_id']},
+                            timeout=util.DEFAULT_SOCKET_TIMEOUT)
         credentials = creds.json()
         self.config['iam_client_secret'] = credentials['iam_client_secret']
 
@@ -293,7 +300,8 @@ class CustosAuthnz(IdentityProvider):
     def _fetch_well_known_oidc_config(self, well_known_uri):
         try:
             return requests.get(well_known_uri,
-                                verify=self._get_verify_param()).json()
+                                verify=self._get_verify_param(),
+                                timeout=util.DEFAULT_SOCKET_TIMEOUT).json()
         except Exception:
             log.error(f"Failed to load well-known OIDC config URI: {well_known_uri}")
             raise

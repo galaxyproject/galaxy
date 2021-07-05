@@ -1,7 +1,6 @@
 /**
     This class creates input elements. New input parameter types should be added to the types dictionary.
 */
-import $ from "jquery";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
@@ -45,7 +44,7 @@ export default Backbone.Model.extend({
     /** Returns an input field for a given field type */
     create: function (input_def) {
         const Galaxy = getGalaxyInstance();
-        var fieldClass = this.types[input_def.type];
+        var fieldClass = this.types[input_def.hiddenInWorkflow ? "hidden" : input_def.type];
         var field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
         if (!field) {
             field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
@@ -141,12 +140,16 @@ export default Backbone.Model.extend({
     /** Text input field */
     _fieldText: function (input_def) {
         // field replaces e.g. a select field
-        if (input_def.model_class === "SelectTagParameter" || (input_def.options && input_def.data)) {
+        const inputClass = input_def.optional && input_def.type === "select" ? Ui.NullableText : Ui.Input;
+        if (
+            ["SelectTagParameter", "ColumnListParameter"].includes(input_def.model_class) ||
+            (input_def.options && input_def.data)
+        ) {
             input_def.area = input_def.multiple;
             if (Utils.isEmpty(input_def.value)) {
                 input_def.value = null;
             } else {
-                if ($.isArray(input_def.value)) {
+                if (Array.isArray(input_def.value)) {
                     var str_value = "";
                     for (var i in input_def.value) {
                         str_value += String(input_def.value[i]);
@@ -160,7 +163,7 @@ export default Backbone.Model.extend({
             }
         }
         // create input element
-        return new Ui.Input({
+        return new inputClass({
             id: `field-${input_def.id}`,
             type: input_def.type,
             area: input_def.area,
@@ -168,6 +171,7 @@ export default Backbone.Model.extend({
             placeholder: input_def.placeholder,
             datalist: input_def.datalist,
             onchange: input_def.onchange,
+            value: input_def.value,
         });
     },
 

@@ -16,8 +16,8 @@ log = logging.getLogger(__name__)
 
 QUAY_REPOSITORY_API_ENDPOINT = 'https://quay.io/api/v1/repository'
 BUILD_NUMBER_REGEX = re.compile(r'\d+$')
-PARSED_TAG = collections.namedtuple('ParsedTag', 'tag version build_string build_number')
-QUAY_IO_TIMEOUT = 10
+PARSED_TAG = collections.namedtuple('PARSED_TAG', 'tag version build_string build_number')
+MULLED_SOCKET_TIMEOUT = 12
 
 
 def create_repository(namespace, repo_name, oauth_token):
@@ -29,7 +29,7 @@ def create_repository(namespace, repo_name, oauth_token):
         "description": "",
         "visibility": "public",
     }
-    requests.post("https://quay.io/api/v1/repository", json=data, headers=headers, timeout=QUAY_IO_TIMEOUT)
+    requests.post("https://quay.io/api/v1/repository", json=data, headers=headers, timeout=MULLED_SOCKET_TIMEOUT)
 
 
 def quay_versions(namespace, pkg_name, session=None):
@@ -51,7 +51,7 @@ def quay_repository(namespace, pkg_name, session=None):
     url = f'https://quay.io/api/v1/repository/{namespace}/{pkg_name}'
     if not session:
         session = requests.session()
-    response = session.get(url, timeout=QUAY_IO_TIMEOUT)
+    response = session.get(url, timeout=MULLED_SOCKET_TIMEOUT)
     data = response.json()
     return data
 
@@ -67,7 +67,7 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
         repos_parameters = {'public': 'true', 'namespace': namespace}
         repos_headers = {'Accept-encoding': 'gzip', 'Accept': 'application/json'}
         repos_response = requests.get(
-            QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=QUAY_IO_TIMEOUT)
+            QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=MULLED_SOCKET_TIMEOUT)
 
         repos = repos_response.json()['repositories']
         repo_names = [r["name"] for r in repos]
@@ -296,7 +296,7 @@ def v2_image_name(targets, image_build=None, name_override=None):
 
 def get_file_from_recipe_url(url):
     """Downloads file at url and returns tarball"""
-    r = requests.get(url)
+    r = requests.get(url, timeout=MULLED_SOCKET_TIMEOUT)
     return tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
 
 

@@ -3,7 +3,10 @@ import ToolsJson from "./ToolsJson";
 import testToolsListResponse from "../testData/toolsList";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import { mount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
+
+const localVue = getLocalVue();
 
 describe("ToolsView/ToolsView.vue", () => {
     let wrapper;
@@ -12,7 +15,7 @@ describe("ToolsView/ToolsView.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        wrapper = mount(ToolsJson);
+        wrapper = shallowMount(ToolsJson, { localVue });
         axiosMock.onGet("/api/tools?tool_help=True").reply(200, testToolsListResponse);
         await wrapper.vm.$nextTick();
     });

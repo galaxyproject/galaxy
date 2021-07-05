@@ -26,6 +26,7 @@ from galaxy import (
 )
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
     params_to_incoming,
     visit_input_values
@@ -68,7 +69,7 @@ class WorkflowsManager:
     the galaxy.workflow module.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
 
     def get_stored_workflow(self, trans, workflow_id, by_stored_id=True):
@@ -247,7 +248,8 @@ class WorkflowsManager:
         trans.sa_session.flush()
         return workflow_invocation_step
 
-    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, user_id=None, include_terminal=True, limit=None):
+    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, job_id=None, user_id=None,
+                                include_terminal=True, limit=None):
         """Get invocations owned by the current user."""
         sa_session = trans.sa_session
         invocations_query = sa_session.query(model.WorkflowInvocation).order_by(model.WorkflowInvocation.table.c.id.desc())
@@ -272,6 +274,11 @@ class WorkflowsManager:
             invocations_query = invocations_query.filter(
                 model.WorkflowInvocation.table.c.history_id == history_id
             )
+
+        if job_id is not None:
+            invocations_query = invocations_query.join(
+                model.WorkflowInvocationStep
+            ).filter(model.WorkflowInvocationStep.table.c.job_id == job_id)
 
         if not include_terminal:
             invocations_query = invocations_query.filter(
@@ -305,7 +312,7 @@ CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", 
 
 class WorkflowContentsManager(UsesAnnotations):
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         self._resource_mapper_function = get_resource_mapper_function(app)
 
@@ -360,8 +367,9 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(f"Invalid workflow format detected [{data}]")
 
         workflow_input_name = data['name']
-        if source:
-            name = f"{workflow_input_name} (imported from {source})"
+        imported_sufix = f"(imported from {source})"
+        if source and imported_sufix not in workflow_input_name:
+            name = f"{workflow_input_name} {imported_sufix}"
         else:
             name = workflow_input_name
         workflow, missing_tool_tups = self._workflow_from_raw_description(
@@ -537,7 +545,6 @@ class WorkflowContentsManager(UsesAnnotations):
         option describes the workflow in a context more tied to the current Galaxy instance and includes
         fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
         """
-
         def to_format_2(wf_dict, **kwds):
             return from_galaxy_native(wf_dict, None, **kwds)
 
@@ -610,7 +617,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 continue
             if step.upgrade_messages:
                 has_upgrade_messages = True
-            if step.type == 'tool' or step.type is None:
+            if step.type in ('tool', 'subworkflow', None):
                 if step.module.version_changes:
                     step_version_changes.extend(step.module.version_changes)
                 step_errors = step.module.get_errors()
@@ -798,7 +805,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Fix any missing parameters
             upgrade_message_dict = module.check_and_update_state() or {}
             if hasattr(module, "version_changes") and module.version_changes:
-                upgrade_message_dict[module.tool.name] = "\n".join(module.version_changes)
+                upgrade_message_dict[module.get_name()] = "\n".join(module.version_changes)
             # Get user annotation.
             config_form = module.get_config_form(step=step)
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
@@ -1272,12 +1279,12 @@ class WorkflowContentsManager(UsesAnnotations):
             uuid = step_dict.get("uuid", None)
             if uuid and uuid != "None":
                 if uuid in discovered_uuids:
-                    raise exceptions.DuplicatedIdentifierException("Duplicate step UUID in request.")
+                    raise exceptions.DuplicatedIdentifierException(f"Duplicate step UUID '{uuid}' in request.")
                 discovered_uuids.add(uuid)
             label = step_dict.get("label", None)
             if label:
                 if label in discovered_labels:
-                    raise exceptions.DuplicatedIdentifierException("Duplicated step label in request.")
+                    raise exceptions.DuplicatedIdentifierException(f"Duplicated step label '{label}' in request.")
                 discovered_labels.add(label)
 
             if 'workflow_outputs' in step_dict:
@@ -1290,13 +1297,13 @@ class WorkflowContentsManager(UsesAnnotations):
                         output_label = output_dict.get("label", None)
                         if output_label:
                             if label in discovered_output_labels:
-                                raise exceptions.DuplicatedIdentifierException("Duplicated workflow output label in request.")
+                                raise exceptions.DuplicatedIdentifierException(f"Duplicated workflow output label '{label}' in request.")
                             discovered_output_labels.add(label)
 
                         output_uuid = step_dict.get("output_uuid", None)
                         if output_uuid:
                             if output_uuid in discovered_output_uuids:
-                                raise exceptions.DuplicatedIdentifierException("Duplicate workflow output UUID in request.")
+                                raise exceptions.DuplicatedIdentifierException(f"Duplicate workflow output UUID '{output_uuid}' in request.")
                             discovered_output_uuids.add(uuid)
 
             yield step_dict
@@ -1483,6 +1490,16 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow=self.workflow_to_dict(trans, refactored_workflow.stored_workflow, style=refactor_request.style),
             dry_run=refactor_request.dry_run,
         )
+
+    def get_all_tool_ids(self, workflow):
+        tool_ids = set()
+        for step in workflow.steps:
+            if step.type == 'tool':
+                if step.tool_id:
+                    tool_ids.add(step.tool_id)
+            elif step.type == 'subworkflow':
+                tool_ids.update(self.get_all_tool_ids(step.subworkflow))
+        return tool_ids
 
 
 class RefactorRequest(RefactorActions):

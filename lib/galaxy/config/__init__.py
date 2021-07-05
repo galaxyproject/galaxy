@@ -29,6 +29,7 @@ from galaxy.config.schema import AppSchema
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.model import mapping
+from galaxy.model.database_utils import database_exists
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
 from galaxy.util import (
     ExecutionTimer,
@@ -66,6 +67,14 @@ LOGGING_CONFIG_DEFAULT = {
             'level': 'WARN',
             'qualname': 'paste.httpserver.ThreadPool',
         },
+        'sqlalchemy_json.track': {
+            'level': 'WARN',
+            'qualname': 'sqlalchemy_json.track',
+        },
+        'urllib3.connectionpool': {
+            'level': 'WARN',
+            'qualname': 'urllib3.connectionpool',
+        },
         'routes.middleware': {
             'level': 'WARN',
             'qualname': 'routes.middleware',
@@ -73,6 +82,10 @@ LOGGING_CONFIG_DEFAULT = {
         'amqp': {
             'level': 'INFO',
             'qualname': 'amqp',
+        },
+        'botocore': {
+            'level': 'INFO',
+            'qualname': 'botocore',
         },
     },
     'filters': {
@@ -112,7 +125,7 @@ class BaseAppConfiguration:
     listify_options: Set[str] = set()  # values for these options are processed as lists of values
 
     def __init__(self, **kwargs):
-        self._process_renamed_options(kwargs)
+        self._preprocess_kwargs(kwargs)
         self._kwargs = kwargs  # Save these as a record of explicitly set options
         self.config_dict = kwargs
         self.root = find_root(kwargs)
@@ -125,6 +138,10 @@ class BaseAppConfiguration:
         self._resolve_paths()  # Overwrite attribute values with resolved paths
         self._postprocess_paths_to_resolve()  # Any steps that need to happen after paths are resolved
 
+    def _preprocess_kwargs(self, kwargs):
+        self._process_renamed_options(kwargs)
+        self._fix_postgresql_dburl(kwargs)
+
     def _process_renamed_options(self, kwargs):
         """Update kwargs to set any unset renamed options to values of old-named options, if set.
 
@@ -134,6 +151,25 @@ class BaseAppConfiguration:
             for old, new in self.renamed_options.items():
                 if old in kwargs and new not in kwargs:
                     kwargs[new] = kwargs[old]
+
+    def _fix_postgresql_dburl(self, kwargs):
+        """
+        Fix deprecated database URLs (postgres... >> postgresql...)
+        https://docs.sqlalchemy.org/en/14/changelog/changelog_14.html#change-3687655465c25a39b968b4f5f6e9170b
+        """
+        old_dialect, new_dialect = 'postgres', 'postgresql'
+        old_prefixes = (f'{old_dialect}:', f'{old_dialect}+')  # check for postgres://foo and postgres+driver//foo
+        offset = len(old_dialect)
+        keys = ('database_connection', 'install_database_connection')
+        for key in keys:
+            if key in kwargs:
+                value = kwargs[key]
+                for prefix in old_prefixes:
+                    if value.startswith(prefix):
+                        value = f'{new_dialect}{value[offset:]}'
+                        kwargs[key] = value
+                        log.warning('PostgreSQL database URLs of the form "postgres://" have been '
+                            'deprecated. Please use "postgresql://".')
 
     def is_set(self, key):
         """Check if a configuration option has been explicitly set."""
@@ -518,7 +554,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self._process_config(kwargs)
 
     def _load_schema(self):
-        return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
+        # Schemas are symlinked to the root of the galaxy-app package
+        config_schema_path = os.path.join(os.path.dirname(__file__), os.pardir, 'config_schema.yml')
+        if os.path.exists(GALAXY_CONFIG_SCHEMA_PATH):
+            config_schema_path = GALAXY_CONFIG_SCHEMA_PATH
+        return AppSchema(config_schema_path, GALAXY_APP_NAME)
 
     def _override_tempdir(self, kwargs):
         if string_as_bool(kwargs.get("override_tempdir", "True")):
@@ -623,11 +663,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             self.preserve_python_environment = "legacy_only"
         self.nodejs_path = kwargs.get("nodejs_path")
-        # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
-        # should probably drop the backward compatiblity to save the path check.
-        self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_images"))
-        if not os.path.exists(self.container_image_cache_path):
-            self.container_image_cache_path = self._in_root_dir(kwargs.get("container_image_cache_path", self._in_data_dir("container_cache")))
+        self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_cache"))
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         # activation_email was used until release_15.03
         activation_email = kwargs.get('activation_email')
@@ -636,8 +672,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.email_domain_blocklist_content = self._load_list_from_file(self._in_config_dir(self.email_domain_blocklist_file)) if self.email_domain_blocklist_file else None
         self.email_domain_allowlist_content = self._load_list_from_file(self._in_config_dir(self.email_domain_allowlist_file)) if self.email_domain_allowlist_file else None
 
-        # The transfer manager and deferred job queue
-        self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
@@ -813,8 +847,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         # InteractiveTools propagator mapping file
         self.interactivetools_map = self._in_root_dir(kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite")))
-        self.interactivetools_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
-        self.interactivetools_proxy_host = kwargs.get("interactivetool_proxy_host", None)
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
@@ -857,6 +889,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             }
 
         log_destination = kwargs.get("log_destination")
+        galaxy_daemon_log_destination = os.environ.get('GALAXY_DAEMON_LOG')
         if log_destination == "stdout":
             LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
                 'class': 'logging.StreamHandler',
@@ -870,9 +903,18 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 'class': 'logging.FileHandler',
                 'formatter': 'stack',
                 'level': 'DEBUG',
-                'filename': kwargs['log_destination'],
+                'filename': log_destination,
                 'filters': ['stack']
             }
+        if galaxy_daemon_log_destination:
+            LOGGING_CONFIG_DEFAULT['handlers']['files'] = {
+                'class': 'logging.FileHandler',
+                'formatter': 'stack',
+                'level': 'DEBUG',
+                'filename': galaxy_daemon_log_destination,
+                'filters': ['stack']
+            }
+            LOGGING_CONFIG_DEFAULT['root']['handlers'].append('files')
 
     def _configure_dataset_storage(self):
         # The default for `file_path` has changed in 20.05; we may need to fall back to the old default
@@ -896,6 +938,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         if "HOST_IP" in self.galaxy_infrastructure_url:
             self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
                 'HOST_IP': socket.gethostbyname(socket.gethostname())
+            })
+        if "GALAXY_WEB_PORT" in self.galaxy_infrastructure_url:
+            port = os.environ.get('GALAXY_WEB_PORT')
+            if not port:
+                raise Exception('$GALAXY_WEB_PORT set in galaxy_infrastructure_url, but environment variable not set')
+            self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
+                'GALAXY_WEB_PORT': port
             })
         if "UWSGI_PORT" in self.galaxy_infrastructure_url:
             import uwsgi
@@ -1264,7 +1313,6 @@ class ConfiguresGalaxyMixin:
             signal.signal(sig, handler)
 
     def _wait_for_database(self, url):
-        from sqlalchemy_utils import database_exists
         attempts = self.config.database_wait_attempts
         pause = self.config.database_wait_sleep
         for i in range(1, attempts):

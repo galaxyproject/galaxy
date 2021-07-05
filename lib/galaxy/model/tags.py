@@ -1,6 +1,8 @@
 import logging
 import re
+from typing import Dict
 
+from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
@@ -26,7 +28,7 @@ class TagHandler:
     Manages CRUD operations related to tagging objects.
     """
 
-    def __init__(self, sa_session):
+    def __init__(self, sa_session: scoped_session) -> None:
         self.sa_session = sa_session
         # Minimum tag length.
         self.min_tag_len = 1
@@ -39,7 +41,7 @@ class TagHandler:
         # Key-value separator.
         self.key_value_separators = "=:"
         # Initialize with known classes - add to this in subclasses.
-        self.item_tag_assoc_info = {}
+        self.item_tag_assoc_info: Dict[str, ItemTagAssocInfo] = {}
 
     def create_tag_handler_session(self):
         # Creates a transient tag handler that avoids repeated flushes
@@ -216,22 +218,25 @@ class TagHandler:
             return self.sa_session.query(galaxy.model.Tag).filter_by(name=tag_name.lower()).first()
         return None
 
-    def _create_tag(self, tag_str):
+    def _create_tag(self, tag_str: str):
         """Create a Tag object from a tag string."""
         tag_hierarchy = tag_str.split(self.hierarchy_separator)
         tag_prefix = ""
         parent_tag = None
+        tag = None
         for sub_tag in tag_hierarchy:
             # Get or create subtag.
-            tag_name = tag_prefix + self._scrub_tag_name(sub_tag)
-            tag = self._get_tag(tag_name)
-            if not tag:
-                tag = self._create_tag_instance(tag_name)
-            # Set tag parent.
-            tag.parent = parent_tag
-            # Update parent and tag prefix.
-            parent_tag = tag
-            tag_prefix = tag.name + self.hierarchy_separator
+            sub_tag_name = self._scrub_tag_name(sub_tag)
+            if sub_tag_name:
+                tag_name = tag_prefix + sub_tag_name
+                tag = self._get_tag(tag_name)
+                if not tag:
+                    tag = self._create_tag_instance(tag_name)
+                # Set tag parent.
+                tag.parent = parent_tag
+                # Update parent and tag prefix.
+                parent_tag = tag
+                tag_prefix = tag.name + self.hierarchy_separator
         return tag
 
     def _get_tag(self, tag_name):
@@ -348,7 +353,7 @@ class TagHandler:
 
 
 class GalaxyTagHandler(TagHandler):
-    def __init__(self, sa_session):
+    def __init__(self, sa_session: scoped_session):
         from galaxy import model
         TagHandler.__init__(self, sa_session)
         self.item_tag_assoc_info["History"] = ItemTagAssocInfo(model.History,
@@ -379,6 +384,7 @@ class GalaxyTagHandler(TagHandler):
 
 class GalaxyTagHandlerSession(GalaxyTagHandler):
     """Like GalaxyTagHandler, but avoids one flush per created tag."""
+
     def __init__(self, sa_session):
         super().__init__(sa_session)
         self.created_tags = {}

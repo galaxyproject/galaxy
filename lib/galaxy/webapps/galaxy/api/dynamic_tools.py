@@ -17,9 +17,6 @@ class DynamicToolsController(BaseAPIController):
     to run these tools and view functional information.
     """
 
-    def __init__(self, app):
-        super().__init__(app)
-
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwds):
         """

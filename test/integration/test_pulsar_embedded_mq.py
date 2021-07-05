@@ -52,8 +52,6 @@ class EmbeddedMessageQueuePulsarIntegrationInstance(integration_util.Integration
     """
 
     framework_tool_and_types = True
-    # Test leverages $UWSGI_PORT in job code, need to set this up.
-    require_uwsgi = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -71,7 +69,7 @@ class EmbeddedMessageQueuePulsarIntegrationInstance(integration_util.Integration
         with tempfile.NamedTemporaryFile(suffix="_mq_job_conf.yml", mode="w", delete=False) as job_conf:
             job_conf.write(job_conf_str)
         config["job_config_file"] = job_conf.name
-        infrastructure_url = "http://localhost:$UWSGI_PORT"
+        infrastructure_url = "http://localhost:$GALAXY_WEB_PORT"
         config["galaxy_infrastructure_url"] = infrastructure_url
 
 

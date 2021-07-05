@@ -19,7 +19,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from string import Template
-from typing import Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from boltons.iterutils import remap
@@ -35,8 +35,10 @@ from sqlalchemy import (
     select,
     text,
     true,
+    tuple_,
     type_coerce,
     types)
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import (
     aliased,
@@ -101,6 +103,8 @@ else:
 
 
 class RepresentById(_HasTable):
+    id: int
+
     def __repr__(self):
         try:
             r = '<galaxy.model.{}({}) at {}>'.format(self.__class__.__name__, cached_id(self), hex(id(self)))
@@ -368,6 +372,7 @@ class JobLike:
 class User(Dictifiable, RepresentById):
     use_pbkdf2 = True
     bootstrap_admin_user = False
+    api_keys: 'List[APIKeys]'
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.
@@ -398,7 +403,7 @@ class User(Dictifiable, RepresentById):
         extra_user_preferences = self.preferences.get('extra_user_preferences')
         if extra_user_preferences:
             try:
-                data = json.loads(extra_user_preferences)
+                data.update(json.loads(extra_user_preferences))
             except Exception:
                 pass
         return data
@@ -435,24 +440,17 @@ class User(Dictifiable, RepresentById):
         Gives the system user pwent entry based on e-mail or username depending
         on the value in real_system_username
         """
-        system_user_pwent = None
         if real_system_username == 'user_email':
-            try:
-                system_user_pwent = pwd.getpwnam(self.email.split('@')[0])
-            except KeyError:
-                pass
+            username = self.email.split('@')[0]
         elif real_system_username == 'username':
-            try:
-                system_user_pwent = pwd.getpwnam(self.username)
-            except KeyError:
-                pass
+            username = self.username
         else:
-            try:
-                system_user_pwent = pwd.getpwnam(real_system_username)
-            except KeyError:
-                log.warning("invalid configuration of real_system_username")
-                system_user_pwent = None
-        return system_user_pwent
+            username = real_system_username
+        try:
+            return pwd.getpwnam(username)
+        except Exception:
+            log.exception(f"Error getting the password database entry for user {username}")
+            raise
 
     def all_roles(self):
         """
@@ -759,8 +757,11 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.state_history = []
         self.imported = False
         self.handler = None
+        self.create_time = None
         self.exit_code = None
+        self.history_id = None
         self.job_messages = None
+        self.update_time = None
         self._init_metrics()
         self.state_history.append(JobStateHistory(self))
 
@@ -1131,14 +1132,25 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return job_attrs
 
     def to_dict(self, view='collection', system_details=False):
-        rval = super().to_dict(view=view)
+        if view == 'admin_job_list':
+            rval = super().to_dict(view='collection')
+        else:
+            rval = super().to_dict(view=view)
         rval['tool_id'] = self.tool_id
         rval['history_id'] = self.history_id
-        if system_details:
+        if system_details or view == 'admin_job_list':
             # System level details that only admins should have.
             rval['external_id'] = self.job_runner_external_id
             rval['command_line'] = self.command_line
-
+        if view == 'admin_job_list':
+            rval['user_email'] = self.user.email if self.user else None
+            rval['handler'] = self.handler
+            rval['job_runner_name'] = self.job_runner_name
+            rval['info'] = self.info
+            rval['traceback'] = self.traceback
+            rval['session_id'] = self.session_id
+            if self.galaxy_session and self.galaxy_session.remote_host:
+                rval['remote_host'] = self.galaxy_session.remote_host
         if view == 'element':
             param_dict = {p.name: p.value for p in self.parameters}
             rval['params'] = param_dict
@@ -1147,13 +1159,13 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             for i in self.input_datasets:
                 if i.dataset is not None:
                     input_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "hda",
-                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                        "id": i.dataset.id, "src": "hda",
+                        "uuid": str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
                     }
             for i in self.input_library_datasets:
                 if i.dataset is not None:
                     input_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "ldda",
+                        "id": i.dataset.id, "src": "ldda",
                         "uuid": str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
                     }
             for k in input_dict:
@@ -1165,20 +1177,49 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             for i in self.output_datasets:
                 if i.dataset is not None:
                     output_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "hda",
-                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                        "id": i.dataset.id, "src": "hda",
+                        "uuid": str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
                     }
             for i in self.output_library_datasets:
                 if i.dataset is not None:
                     output_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "ldda",
-                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                        "id": i.dataset.id, "src": "ldda",
+                        "uuid": str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
                     }
             rval['outputs'] = output_dict
 
         return rval
 
-    def set_final_state(self, final_state):
+    def update_hdca_update_time_for_job(self, update_time, sa_session, supports_skip_locked):
+        subq = sa_session.query(HistoryDatasetCollectionAssociation.id) \
+            .join(ImplicitCollectionJobs) \
+            .join(ImplicitCollectionJobsJobAssociation) \
+            .filter(ImplicitCollectionJobsJobAssociation.job_id == self.id)
+        if supports_skip_locked:
+            subq = subq.with_for_update(skip_locked=True).subquery()
+        implicit_statement = HistoryDatasetCollectionAssociation.table.update() \
+            .where(HistoryDatasetCollectionAssociation.table.c.id.in_(subq)) \
+            .values(update_time=update_time)
+        explicit_statement = HistoryDatasetCollectionAssociation.table.update() \
+            .where(HistoryDatasetCollectionAssociation.table.c.job_id == self.id) \
+            .values(update_time=update_time)
+        sa_session.execute(explicit_statement)
+        if supports_skip_locked:
+            sa_session.execute(implicit_statement)
+        else:
+            conn = sa_session.connection(execution_options={'isolation_level': 'SERIALIZABLE'})
+            with conn.begin() as trans:
+                try:
+                    conn.execute(implicit_statement)
+                    trans.commit()
+                except OperationalError as e:
+                    # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
+                    # and should have attribute `code`. Other engines should just report the message and move on.
+                    if int(getattr(e.orig, 'pgcode', -1)) != 40001:
+                        log.debug(f"Updating implicit collection uptime_time for job {self.id} failed (this is expected for large collections and not a problem): {unicodify(e)}")
+                    trans.rollback()
+
+    def set_final_state(self, final_state, supports_skip_locked):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
         statement = '''
@@ -1187,9 +1228,11 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             WHERE job_id = :job_id;
         '''
         sa_session = object_session(self)
+        update_time = galaxy.model.orm.now.now()
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
-            'update_time': galaxy.model.orm.now.now()
+            'update_time': update_time
         }
         sa_session.execute(statement, params)
 
@@ -1213,7 +1256,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for dataset_assoc in self.output_datasets:
             return dataset_assoc.dataset.tool_version
 
-    def update_output_states(self):
+    def update_output_states(self, supports_skip_locked):
         # TODO: migrate to where-in subqueries?
         statements = ['''
             UPDATE dataset
@@ -1257,11 +1300,13 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             );
         ''']
         sa_session = object_session(self)
+        update_time = galaxy.model.orm.now.now()
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
             'state': self.state,
             'info': self.info,
-            'update_time': galaxy.model.orm.now.now()
+            'update_time': update_time
         }
         for statement in statements:
             sa_session.execute(statement, params)
@@ -1542,7 +1587,7 @@ class ImplicitCollectionJobs(RepresentById):
 class ImplicitCollectionJobsJobAssociation(RepresentById):
 
     def __init__(self):
-        pass
+        self.implicit_collection_jobs_id = None
 
 
 class PostJobAction(RepresentById):
@@ -1585,7 +1630,7 @@ class JobExternalOutputMetadata(RepresentById):
 # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
 # fake dataset association that provides the needed attributes for
 # preparing a job.
-class FakeDatasetAssociation :
+class FakeDatasetAssociation:
     fake_dataset_association = True
 
     def __init__(self, dataset=None):
@@ -1666,6 +1711,15 @@ class JobExportHistoryArchive(RepresentById):
         history_attrs_filename = os.path.join(temp_output_dir, jeha.ATTRS_FILENAME_HISTORY)
         jeha.history_attrs_filename = history_attrs_filename
         return jeha
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'job_id': self.job.id,
+            'ready': self.ready,
+            'preparing': self.preparing,
+            'up_to_date': self.up_to_date,
+        }
 
 
 class JobImportHistoryArchive(RepresentById):
@@ -1792,6 +1846,27 @@ def is_hda(d):
     return isinstance(d, HistoryDatasetAssociation)
 
 
+class HistoryAudit(RepresentById):
+    def __init__(self, history, update_time):
+        self.history = history
+        self.update_time = update_time
+
+    @classmethod
+    def prune(cls, sa_session):
+        history_audit_table = cls.table
+        latest_subq = sa_session.query(
+            history_audit_table.c.history_id,
+            func.max(history_audit_table.c.update_time).label('max_update_time')).group_by(history_audit_table.c.history_id).subquery()
+        not_latest_query = sa_session.query(
+            history_audit_table.c.history_id, history_audit_table.c.update_time
+        ).select_from(latest_subq).join(
+            history_audit_table, and_(
+                history_audit_table.c.update_time < latest_subq.columns.max_update_time,
+                history_audit_table.c.history_id == latest_subq.columns.history_id))
+        d = history_audit_table.delete()
+        sa_session.execute(d.where(tuple_(history_audit_table.c.history_id, history_audit_table.c.update_time).in_(not_latest_query)))
+
+
 class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
 
     dict_collection_visible_keys = ['id', 'name', 'published', 'deleted']
@@ -1807,6 +1882,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         self.importing = False
         self.genome_build = None
         self.published = False
+        self.update_time = None
         # Relationships
         self.user = user
         self.datasets = []
@@ -2287,7 +2363,7 @@ class DefaultQuotaAssociation(Quota, Dictifiable, RepresentById):
         REGISTERED = 'registered'
 
     def __init__(self, type, quota):
-        assert type in self.types.__dict__.values(), 'Invalid type'
+        assert type in self.types.__members__.values(), 'Invalid type'
         self.type = type
         self.quota = quota
 
@@ -2651,6 +2727,7 @@ class DatasetSourceHash(RepresentById):
 
 class DatasetHash(RepresentById):
     """ """
+
     def serialize(self, id_encoder, serialization_options):
         # serialize Dataset objects only for jobs that can actually modify these models.
         rval = dict_for(
@@ -2688,10 +2765,11 @@ class DatasetInstance:
         INVALID = 'invalid'
         OK = 'ok'
 
-    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
-                 dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                 parent_id=None, validated_state='unknown', validated_state_message=None, visible=True, create_dataset=False, sa_session=None,
-                 extended_metadata=None, flush=True):
+    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None,
+                 extension=None, dbkey=None, metadata=None, history=None, dataset=None, deleted=False,
+                 designation=None, parent_id=None, validated_state='unknown', validated_state_message=None,
+                 visible=True, create_dataset=False, sa_session=None, extended_metadata=None, flush=True,
+                 creating_job_id=None):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -2714,6 +2792,7 @@ class DatasetInstance:
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset(state=Dataset.states.NEW)
+            dataset.job_id = creating_job_id
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()
@@ -3079,6 +3158,7 @@ class DatasetInstance:
 
     @property
     def creating_job(self):
+        # TODO this should work with `return self.dataset.job` (revise failing unit tests)
         creating_job_associations = None
         if self.creating_job_associations:
             creating_job_associations = self.creating_job_associations
@@ -3304,6 +3384,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     def copy_tags_to(self, copy_tags=None):
         if copy_tags is not None:
+            if isinstance(copy_tags, dict):
+                copy_tags = copy_tags.values()
             for tag in copy_tags:
                 copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
                 self.tags.append(copied_tag)
@@ -3491,7 +3573,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     continue
                 val = val.file_name
             # If no value for metadata, look in datatype for metadata.
-            elif val is None and hasattr(hda.datatype, name):
+            elif not hda.metadata.element_is_set(name) and hasattr(hda.datatype, name):
                 val = getattr(hda.datatype, name)
             rval['metadata_' + name] = val
         return rval
@@ -4135,7 +4217,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 select_stmt = select(list(map(lambda dc: dc.c.populated_state, collection_depth_aliases))).select_from(select_from).where(dc.c.id == self.id).distinct()
                 for populated_states in db_session.execute(select_stmt).fetchall():
                     for populated_state in populated_states:
-                        if populated_state != DatasetCollection.populated_states.OK:
+                        if populated_state and populated_state != DatasetCollection.populated_states.OK:
                             _populated_optimized = False
 
             self._populated_optimized = _populated_optimized
@@ -4273,14 +4355,21 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
             raise Exception("Each dataset collection must define a collection type.")
 
     def __getitem__(self, key):
+        if isinstance(key, int):
+            try:
+                return self.elements[key]
+            except IndexError:
+                pass
+        else:
+            # This might be a peformance issue for large collection, but we don't use this a lot
+            for element in self.elements:
+                if element.element_identifier == key:
+                    return element
         get_by_attribute = "element_index" if isinstance(key, int) else "element_identifier"
-        for element in self.elements:
-            if getattr(element, get_by_attribute) == key:
-                return element
         error_message = f"Dataset collection has no {get_by_attribute} with key {key}."
         raise KeyError(error_message)
 
-    def copy(self, destination=None, element_destination=None, flush=True):
+    def copy(self, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
         new_collection = DatasetCollection(
             collection_type=self.collection_type,
             element_count=self.element_count
@@ -4290,6 +4379,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 new_collection,
                 destination=destination,
                 element_destination=element_destination,
+                dataset_instance_attributes=dataset_instance_attributes,
                 flush=flush
             )
         object_session(self).add(new_collection)
@@ -4531,7 +4621,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
                 break
         return matching_collection
 
-    def copy(self, element_destination=None):
+    def copy(self, element_destination=None, dataset_instance_attributes=None):
         """
         Create a copy of this history dataset collection association. Copy
         underlying collection.
@@ -4552,6 +4642,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         collection_copy = self.collection.copy(
             destination=hdca,
             element_destination=element_destination,
+            dataset_instance_attributes=dataset_instance_attributes,
             flush=False,
         )
         hdca.collection = collection_copy
@@ -4713,17 +4804,22 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
         else:
             return [element_object]
 
-    def copy_to_collection(self, collection, destination=None, element_destination=None, flush=True):
+    def copy_to_collection(self, collection, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
+        dataset_instance_attributes = dataset_instance_attributes or {}
         element_object = self.element_object
         if element_destination:
             if self.is_collection:
                 element_object = element_object.copy(
                     destination=destination,
                     element_destination=element_destination,
+                    dataset_instance_attributes=dataset_instance_attributes,
                     flush=flush
                 )
             else:
                 new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
+                for attribute, value in dataset_instance_attributes.items():
+                    setattr(new_element_object, attribute, value)
+
                 new_element_object.visible = False
                 if destination is not None and element_object.hidden_beneath_collection_instance:
                     new_element_object.hidden_beneath_collection_instance = destination
@@ -4889,6 +4985,7 @@ class Workflow(Dictifiable, RepresentById):
         self.has_cycles = None
         self.has_errors = None
         self.steps = []
+        self.stored_workflow_id = None
         if uuid is None:
             self.uuid = uuid4()
         else:
@@ -4985,6 +5082,9 @@ class Workflow(Dictifiable, RepresentById):
         copied_workflow.name = self.name
         copied_workflow.has_cycles = self.has_cycles
         copied_workflow.has_errors = self.has_errors
+        copied_workflow.reports_config = self.reports_config
+        copied_workflow.license = self.license
+        copied_workflow.creator_metadata = self.creator_metadata
 
         # Map old step ids to new steps
         step_mapping = {}
@@ -5314,6 +5414,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.subworkflow_invocations = []
         self.step_states = []
         self.steps = []
+        self.workflow_id = None
 
     def create_subworkflow_invocation_for_step(self, step):
         assert step.type == "subworkflow"
@@ -5522,27 +5623,41 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             rval['steps'] = steps
 
             inputs = {}
-            for step in self.steps:
-                if step.workflow_step.type == 'tool':
-                    for job in step.jobs:
-                        if job is None:
-                            continue
-                        for step_input in step.workflow_step.input_connections:
-                            output_step_type = step_input.output_step.type
-                            if output_step_type in ['data_input', 'data_collection_input']:
-                                src = "hda" if output_step_type == 'data_input' else 'hdca'
-                                for job_input in job.input_datasets:
-                                    if not job_input.dataset:
-                                        continue
-                                    if job_input.name == step_input.input_name:
-                                        inputs[str(step_input.output_step.order_index)] = {
-                                            "id": job_input.dataset_id, "src": src,
-                                            "uuid" : str(job_input.dataset.dataset.uuid) if job_input.dataset.dataset.uuid is not None else None
-                                        }
+            for input_item_association in self.input_datasets + self.input_dataset_collections:
+                if input_item_association.history_content_type == 'dataset':
+                    src = 'hda'
+                    item = input_item_association.dataset
+                elif input_item_association.history_content_type == 'dataset_collection':
+                    src = 'hdca'
+                    item = input_item_association.dataset_collection
+                else:
+                    # TODO: LDDAs are not implemented in workflow_request_to_input_dataset table
+                    raise Exception(f"Unknown history content type '{input_item_association.history_content_type}'")
+                # Should this maybe also be by label ? Would break backwards compatibility though
+                inputs[str(input_item_association.workflow_step.order_index)] = {
+                    'id': item.id,
+                    'src': src,
+                    'label': input_item_association.workflow_step.label,
+                    'workflow_step_id': input_item_association.workflow_step_id,
+                }
+
             rval['inputs'] = inputs
+
+            input_parameters = {}
+            for input_step_parameter in self.input_step_parameters:
+                label = input_step_parameter.workflow_step.label
+                if not label:
+                    continue
+                input_parameters[label] = {
+                    'parameter_value': input_step_parameter.parameter_value,
+                    'label': label,
+                    'workflow_step_id': input_step_parameter.workflow_step_id,
+                }
+            rval['input_step_parameters'] = input_parameters
 
             outputs = {}
             for output_assoc in self.output_datasets:
+                # TODO: does this work correctly if outputs are mapped over?
                 label = output_assoc.workflow_output.label
                 if not label:
                     continue
@@ -5550,6 +5665,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 outputs[label] = {
                     'src': 'hda',
                     'id': output_assoc.dataset_id,
+                    'workflow_step_id': output_assoc.workflow_step_id,
                 }
 
             output_collections = {}
@@ -5561,6 +5677,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 output_collections[label] = {
                     'src': 'hdca',
                     'id': output_assoc.dataset_collection_id,
+                    'workflow_step_id': output_assoc.workflow_step_id,
                 }
 
             rval['outputs'] = outputs
@@ -5649,6 +5766,11 @@ class WorkflowInvocationStep(Dictifiable, RepresentById):
         SCHEDULED = 'scheduled'  # Workflow invocation step has been scheduled.
         # CANCELLED = 'cancelled',  TODO: implement and expose
         # FAILED = 'failed',  TODO: implement and expose
+
+    def __init__(self):
+        self.implicit_collection_jobs_id = None
+        self.job_id = None
+        self.workflow_invocation_id = None
 
     @property
     def is_new(self):
@@ -5862,14 +5984,14 @@ class FormDefinition(Dictifiable, RepresentById):
         values = values or {}
         form_def = {'id': security.encode_id(self.id) if security else self.id, 'name': self.name, 'inputs': []}
         for field in self.fields:
-            FieldClass = ({'AddressField'         : AddressField,
-                           'CheckboxField'        : CheckboxField,
-                           'HistoryField'         : HistoryField,
-                           'PasswordField'        : PasswordField,
-                           'SelectField'          : SelectField,
-                           'TextArea'             : TextArea,
-                           'TextField'            : TextField,
-                           'WorkflowField'        : WorkflowField}).get(field['type'], TextField)
+            FieldClass = ({'AddressField': AddressField,
+                           'CheckboxField': CheckboxField,
+                           'HistoryField': HistoryField,
+                           'PasswordField': PasswordField,
+                           'SelectField': SelectField,
+                           'TextArea': TextArea,
+                           'TextField': TextField,
+                           'WorkflowField': WorkflowField}).get(field['type'], TextField)
             form_def['inputs'].append(FieldClass(user=user, value=values.get(field['name'], field['default']), security=security, **field).to_dict())
         return form_def
 
@@ -5910,16 +6032,16 @@ class UserAddress(RepresentById):
         self.phone = phone
 
     def to_dict(self, trans):
-        return {'id'           : trans.security.encode_id(self.id),
-                'name'         : sanitize_html(self.name),
-                'desc'         : sanitize_html(self.desc),
-                'institution'  : sanitize_html(self.institution),
-                'address'      : sanitize_html(self.address),
-                'city'         : sanitize_html(self.city),
-                'state'        : sanitize_html(self.state),
-                'postal_code'  : sanitize_html(self.postal_code),
-                'country'      : sanitize_html(self.country),
-                'phone'        : sanitize_html(self.phone)}
+        return {'id': trans.security.encode_id(self.id),
+                'name': sanitize_html(self.name),
+                'desc': sanitize_html(self.desc),
+                'institution': sanitize_html(self.institution),
+                'address': sanitize_html(self.address),
+                'city': sanitize_html(self.city),
+                'state': sanitize_html(self.state),
+                'postal_code': sanitize_html(self.postal_code),
+                'country': sanitize_html(self.country),
+                'phone': sanitize_html(self.phone)}
 
 
 class PSAAssociation(AssociationMixin, RepresentById):
@@ -6109,7 +6231,7 @@ class UserAuthnzToken(UserMixin, RepresentById):
 
     @classmethod
     def get_users_by_email(cls, email):
-        return cls.user_query().filter_by(email=email)
+        return cls.user_query().filter(func.lower(User.table.c.email) == email.lower())
 
     @classmethod
     def get_social_auth(cls, provider, uid):
@@ -6323,6 +6445,11 @@ class Tag(RepresentById):
 class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ['id', 'user_tname', 'user_value']
     dict_element_visible_keys = dict_collection_visible_keys
+    associated_item_names: List[str] = []
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.associated_item_names.append(cls.__name__.replace("TagAssociation", ""))
 
     def __init__(self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None):
         self.id = id

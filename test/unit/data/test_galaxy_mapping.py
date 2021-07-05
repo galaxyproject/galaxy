@@ -5,11 +5,11 @@ import uuid
 
 import pytest
 from sqlalchemy import inspect
-from sqlalchemy_utils import create_database
 
 import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
+from galaxy.model.database_utils import create_database
 from galaxy.model.security import GalaxyRBACAgent
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -275,6 +275,19 @@ class MappingTests(BaseModelTestCase):
         library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
         tag_and_test(library_dataset_collection, model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections")
 
+    def test_collection_get_interface(self):
+        model = self.model
+        u = model.User(email="mary@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        d1 = model.HistoryDatasetAssociation(extension="txt", history=h1, create_dataset=True, sa_session=model.session)
+        c1 = model.DatasetCollection(collection_type="list")
+        elements = 100
+        dces = [model.DatasetCollectionElement(collection=c1, element=d1, element_identifier=f"{i}", element_index=i) for i in range(elements)]
+        self.persist(u, h1, d1, c1, *dces, flush=False, expunge=False)
+        model.session.flush()
+        for i in range(elements):
+            assert c1[i] == dces[i]
+
     def test_collections_in_histories(self):
         model = self.model
 
@@ -302,7 +315,7 @@ class MappingTests(BaseModelTestCase):
 
         u = model.User(email="mary2@example.com", password="password")
         lf = model.LibraryFolder(name="RootFolder")
-        l = model.Library(name="Library1", root_folder=lf)
+        library = model.Library(name="Library1", root_folder=lf)
         ld1 = model.LibraryDataset()
         ld2 = model.LibraryDataset()
 
@@ -312,7 +325,7 @@ class MappingTests(BaseModelTestCase):
         c1 = model.DatasetCollection(collection_type="pair")
         dce1 = model.DatasetCollectionElement(collection=c1, element=ldda1)
         dce2 = model.DatasetCollectionElement(collection=c1, element=ldda2)
-        self.persist(u, l, lf, ld1, ld2, c1, ldda1, ldda2, dce1, dce2)
+        self.persist(u, library, lf, ld1, ld2, c1, ldda1, ldda2, dce1, dce2)
 
         # TODO:
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
@@ -378,6 +391,22 @@ class MappingTests(BaseModelTestCase):
         assert hist0.name == "History 1"
         assert hist1.name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
+
+    def test_metadata_spec(self):
+        metadata = dict(chromCol=1, startCol=2, endCol=3)
+        d = self.model.HistoryDatasetAssociation(extension="interval", metadata=metadata, sa_session=self.model.session)
+        assert d.metadata.chromCol == 1
+        assert d.metadata.anyAttribute is None
+        assert 'items' not in d.metadata
+
+    def test_dataset_job_relationship(self):
+        model = self.model
+        dataset = model.Dataset()
+        job = model.Job()
+        dataset.job = job
+        self.persist(job, dataset)
+        loaded_dataset = model.session.query(model.Dataset).filter(model.Dataset.id == dataset.id).one()
+        assert loaded_dataset.job_id == job.id
 
     def test_jobs(self):
         model = self.model
@@ -455,6 +484,46 @@ class MappingTests(BaseModelTestCase):
         assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id], max_in_filter_length=1) == ["1", "2", "3", "4"]
 
         assert contents_iter_names(ids=[d1.id, d3.id]) == ["1", "3"]
+
+    def test_history_audit(self):
+        model = self.model
+        u = model.User(email="contents@foo.bar.baz", password="password")
+        h1 = model.History(name="HistoryAuditHistory", user=u)
+        h2 = model.History(name="HistoryAuditHistory", user=u)
+
+        def get_audit_table_entries(history):
+            return self.session().query(model.HistoryAudit.table).filter(
+                model.HistoryAudit.table.c.history_id == history.id).all()
+
+        def get_latest_entry(entries):
+            # key ensures result is correct if new columns are added
+            return max(entries, key=lambda x: x.update_time)
+
+        self.persist(u, h1, h2, expunge=False)
+        assert len(get_audit_table_entries(h1)) == 1
+        assert len(get_audit_table_entries(h2)) == 1
+
+        self.new_hda(h1, name="1")
+        self.new_hda(h2, name="2")
+        self.session().flush()
+        # db_next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
+
+        h1_audits = get_audit_table_entries(h1)
+        h2_audits = get_audit_table_entries(h2)
+        assert len(h1_audits) == 3
+        assert len(h2_audits) == 3
+
+        h1_latest = get_latest_entry(h1_audits)
+        h2_latest = get_latest_entry(h2_audits)
+
+        model.HistoryAudit.prune(self.session())
+
+        h1_audits = get_audit_table_entries(h1)
+        h2_audits = get_audit_table_entries(h2)
+        assert len(h1_audits) == 1
+        assert len(h2_audits) == 1
+        assert h1_audits[0] == h1_latest
+        assert h2_audits[0] == h2_latest
 
     def _non_empty_flush(self):
         model = self.model

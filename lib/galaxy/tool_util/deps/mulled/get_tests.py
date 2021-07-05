@@ -22,6 +22,7 @@ except ImportError:
 
 from .util import (
     get_file_from_recipe_url,
+    MULLED_SOCKET_TIMEOUT,
     split_container_name,
 )
 
@@ -138,7 +139,7 @@ def find_anaconda_versions(name, anaconda_channel='bioconda'):
     """
     Find a list of available anaconda versions for a given container name
     """
-    r = requests.get(f"https://anaconda.org/{anaconda_channel}/{name}/files")
+    r = requests.get(f"https://anaconda.org/{anaconda_channel}/{name}/files", timeout=MULLED_SOCKET_TIMEOUT)
     urls = []
     for line in r.text.split('\n'):
         if 'download/linux' in line:
@@ -153,7 +154,7 @@ def open_recipe_file(file, recipes_path=None, github_repo='bioconda/bioconda-rec
     if recipes_path:
         return open(f'{recipes_path}/{file}').read()
     else:  # if no clone of the repo is available locally, download from GitHub
-        r = requests.get(f'https://raw.githubusercontent.com/{github_repo}/master/{file}')
+        r = requests.get(f'https://raw.githubusercontent.com/{github_repo}/master/{file}', timeout=MULLED_SOCKET_TIMEOUT)
         if r.status_code == 404:
             raise OSError
         else:
@@ -162,16 +163,16 @@ def open_recipe_file(file, recipes_path=None, github_repo='bioconda/bioconda-rec
 
 def get_alternative_versions(filepath, filename, recipes_path=None, github_repo='bioconda/bioconda-recipes'):
     """
-    Return files that match 'filepath/*/filename' in the bioconda-recipes repository
+    Return files that match ``filepath/*/filename`` in the bioconda-recipes repository
     """
     if recipes_path:
         return [n.replace('%s/' % recipes_path, '') for n in glob(f'{recipes_path}/{filepath}/*/{filename}')]
     # else use the GitHub API:
     versions = []
-    r = json.loads(requests.get(f'https://api.github.com/repos/{github_repo}/contents/{filepath}').text)
+    r = json.loads(requests.get(f'https://api.github.com/repos/{github_repo}/contents/{filepath}', timeout=MULLED_SOCKET_TIMEOUT).text)
     for subfile in r:
         if subfile['type'] == 'dir':
-            if requests.get('https://raw.githubusercontent.com/{}/master/{}/{}'.format(github_repo, subfile['path'], filename)).status_code == 200:
+            if requests.get('https://raw.githubusercontent.com/{}/master/{}/{}'.format(github_repo, subfile['path'], filename), timeout=MULLED_SOCKET_TIMEOUT).status_code == 200:
                 versions.append('{}/{}'.format(subfile['path'], filename))
     return versions
 
@@ -246,7 +247,7 @@ def hashed_test_search(container, recipes_path=None, deep=False, anaconda_channe
     """
     package_tests = {'commands': [], 'imports': [], 'container': container, 'import_lang': 'python -c'}
 
-    githubpage = requests.get('https://raw.githubusercontent.com/BioContainers/multi-package-containers/master/combinations/%s.tsv' % container)
+    githubpage = requests.get('https://raw.githubusercontent.com/BioContainers/multi-package-containers/master/combinations/%s.tsv' % container, timeout=MULLED_SOCKET_TIMEOUT)
     if githubpage.status_code == 200:
         packages = githubpage.text.split(',')  # get names of packages from github
         packages = [package.split('=') for package in packages]
@@ -255,7 +256,7 @@ def hashed_test_search(container, recipes_path=None, deep=False, anaconda_channe
 
     containers = []
     for package in packages:
-        r = requests.get("https://anaconda.org/bioconda/%s/files" % package[0])
+        r = requests.get("https://anaconda.org/bioconda/%s/files" % package[0], timeout=MULLED_SOCKET_TIMEOUT)
         p = '-'.join(package)
         for line in r.text.split('\n'):
             if p in line:

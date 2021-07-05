@@ -122,7 +122,7 @@ var Base = Backbone.View.extend({
             this._setValue(this.first());
         }
         if (this.all_button) {
-            this.all_button.value($.isArray(this._getValue()) ? this._getValue().length : 0, this.length());
+            this.all_button.value(Array.isArray(this._getValue()) ? this._getValue().length : 0, this.length());
         }
     },
 
@@ -171,7 +171,7 @@ var Base = Backbone.View.extend({
         if (new_value !== undefined) {
             this.$("input").prop("checked", false);
             if (new_value !== null) {
-                var values = $.isArray(new_value) ? new_value : [new_value];
+                var values = Array.isArray(new_value) ? new_value : [new_value];
                 _.each(values, (v) => {
                     self.$(`input[value="${v}"]`).first().prop("checked", true);
                 });

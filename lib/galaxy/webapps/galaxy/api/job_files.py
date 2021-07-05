@@ -14,12 +14,12 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class JobFilesAPIController(BaseAPIController):
+class JobFilesAPIController(BaseGalaxyAPIController):
     """ This job files controller allows remote job running mechanisms to
     read and modify the current state of files for queued and running jobs.
     It is certainly not meant to represent part of Galaxy's stable, user
@@ -34,10 +34,10 @@ class JobFilesAPIController(BaseAPIController):
     @expose_api_raw_anonymous_and_sessionless
     def index(self, trans, job_id, **kwargs):
         """
-        index( self, trans, job_id, **kwargs )
-        * GET /api/jobs/{job_id}/files
-            Get a file required to staging a job (proper datasets, extra inputs,
-            task-split inputs, working directory files).
+        GET /api/jobs/{job_id}/files
+
+        Get a file required to staging a job (proper datasets, extra inputs,
+        task-split inputs, working directory files).
 
         :type   job_id: str
         :param  job_id: encoded id string of the job
@@ -46,6 +46,7 @@ class JobFilesAPIController(BaseAPIController):
         :type   job_key: str
         :param  job_key: A key used to authenticate this request as acting on
                          behalf or a job runner for the specified job.
+
         ..note:
             This API method is intended only for consumption by job runners,
             not end users.

@@ -410,3 +410,4 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
 
     def shutdown(self):
         self.should_stop = True
+        self.join()

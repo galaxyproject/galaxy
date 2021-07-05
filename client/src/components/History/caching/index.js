@@ -7,6 +7,7 @@ import { toPromise, toOperator } from "./workerClient";
 export const monitorContentQuery = toOperator("monitorContentQuery");
 export const monitorDscQuery = toOperator("monitorDscQuery");
 export const monitorHistoryContent = toOperator("monitorHistoryContent");
+export const monitorCollectionContent = toOperator("monitorCollectionContent");
 
 /**
  * Loaders
@@ -24,6 +25,7 @@ export const bulkCacheContent = toPromise("bulkCacheContent");
 export const cacheCollectionContent = toPromise("cacheCollectionContent");
 export const getCachedCollectionContent = toPromise("getCachedCollectionContent");
 export const bulkCacheDscContent = toPromise("bulkCacheDscContent");
+export const getContentByTypeId = toPromise("getContentByTypeId");
 
 // Debugging
 export const wipeDatabase = toPromise("wipeDatabase");

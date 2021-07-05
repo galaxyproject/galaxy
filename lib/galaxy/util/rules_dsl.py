@@ -6,8 +6,6 @@ from typing import List, Type
 import yaml
 from pkg_resources import resource_stream
 
-from galaxy.util import strip_control_characters_nested
-
 
 def get_rules_specification():
     return yaml.safe_load(resource_stream(__name__, 'rules_dsl_spec.yml'))
@@ -498,7 +496,7 @@ def flat_map(f, items):
 class RuleSet:
 
     def __init__(self, rule_set_as_dict):
-        self.raw_rules = strip_control_characters_nested(rule_set_as_dict["rules"])
+        self.raw_rules = rule_set_as_dict["rules"]
         self.raw_mapping = rule_set_as_dict.get("mapping", [])
 
     @property

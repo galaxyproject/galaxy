@@ -32,6 +32,7 @@ from galaxy.managers import (
     taggable,
     tools
 )
+from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
@@ -72,10 +73,10 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
     )
     default_order_by = 'hid'
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
-        self.contained_manager = self.contained_class_manager_class(app)
-        self.subcontainer_manager = self.subcontainer_class_manager_class(app)
+        self.contained_manager = app[self.contained_class_manager_class]
+        self.subcontainer_manager = app[self.subcontainer_class_manager_class]
 
     # ---- interface
     def contained(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
@@ -363,12 +364,9 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             # TODO: should be purgable? fix
             purged=literal(False),
             extension=literal(None),
-            # these are attached instead to the inner collection joined below
-            create_time=model.DatasetCollection.create_time,
-            update_time=model.DatasetCollection.update_time
         )
         subquery = self._session().query(*columns)
-        # for the HDCA's we need to join the DatasetCollection since it has update/create times
+        # for the HDCA's we need to join the DatasetCollection since it has the populated_state
         subquery = subquery.join(model.DatasetCollection,
             model.DatasetCollection.id == component_class.collection_id)
         if history_id:
@@ -426,7 +424,7 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
     """
     model_manager_class = HistoryContentsManager
 
-    def __init__(self, app, **kwargs):
+    def __init__(self, app: MinimalManagerApp, **kwargs):
         super().__init__(app, **kwargs)
 
         self.default_view = 'summary'
@@ -453,10 +451,10 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'type_id'       : self.serialize_type_id,
-            'history_id'    : self.serialize_id,
-            'dataset_id'    : self.serialize_id_or_skip,
-            'collection_id' : self.serialize_id_or_skip,
+            'type_id': self.serialize_type_id,
+            'history_id': self.serialize_id,
+            'dataset_id': self.serialize_id_or_skip,
+            'collection_id': self.serialize_id_or_skip,
         })
 
     def serialize_id_or_skip(self, content, key, **context):
@@ -542,14 +540,14 @@ class HistoryContentsFilters(base.ModelFilterParser,
         taggable.TaggableFilterMixin._add_parsers(self)
         tools.ToolFilterMixin._add_parsers(self)
         self.orm_filter_parsers.update({
-            'history_content_type' : {'op': ('eq')},
-            'type_id'       : {'op': ('eq', 'in'), 'val': self.parse_type_id_list},
-            'hid'           : {'op': ('eq', 'ge', 'le', 'gt', 'lt'), 'val': int},
+            'history_content_type': {'op': ('eq')},
+            'type_id': {'op': ('eq', 'in'), 'val': self.parse_type_id_list},
+            'hid': {'op': ('eq', 'ge', 'le', 'gt', 'lt'), 'val': int},
             # TODO: needs a different val parser - but no way to add to the above
             # 'hid-in'        : { 'op': ( 'in' ), 'val': self.parse_int_list },
-            'name'          : {'op': ('eq', 'contains', 'like')},
-            'state'         : {'op': ('eq', 'in')},
-            'visible'       : {'op': ('eq'), 'val': self.parse_bool},
-            'create_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
-            'update_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
+            'name': {'op': ('eq', 'contains', 'like')},
+            'state': {'op': ('eq', 'in')},
+            'visible': {'op': ('eq'), 'val': self.parse_bool},
+            'create_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
+            'update_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
         })

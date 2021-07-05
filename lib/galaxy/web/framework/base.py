@@ -3,16 +3,18 @@ A simple WSGI application/framework.
 """
 import io
 import logging
-import os.path
+import os
 import socket
 import tarfile
 import tempfile
 import time
 import types
 from http.cookies import CookieError, SimpleCookie
+from importlib import import_module
 
 import routes
 import webob.compat
+import webob.cookies
 import webob.exc
 import webob.exc as httpexceptions  # noqa: F401
 # We will use some very basic HTTP/wsgi utilities from the paste library
@@ -382,7 +384,8 @@ class Request(webob.Request):
         cookies = SimpleCookie()
         cookie_header = self.environ.get("HTTP_COOKIE")
         if cookie_header:
-            galaxy_cookies = "; ".join(x.strip() for x in cookie_header.split('; ') if x.startswith('galaxy'))
+            all_cookies = webob.cookies.parse_cookie(cookie_header)
+            galaxy_cookies = {k.decode(): v.decode() for k, v in all_cookies if k.startswith(b'galaxy')}
             if galaxy_cookies:
                 try:
                     cookies.load(galaxy_cookies)
@@ -520,3 +523,14 @@ def flatten(seq):
                 yield smart_str(y)
         else:
             yield smart_str(x)
+
+
+def walk_controller_modules(package_name):
+    package = import_module(package_name)
+    controller_dir = package.__path__[0]
+    for fname in os.listdir(controller_dir):
+        if not(fname.startswith("_")) and fname.endswith(".py"):
+            name = fname[:-3]
+            module_name = package_name + "." + name
+            module = import_module(module_name)
+            yield name, module

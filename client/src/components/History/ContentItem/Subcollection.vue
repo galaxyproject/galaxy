@@ -7,12 +7,10 @@
         v-on="$listeners"
         class="collapsed"
         :data-state="state"
-        @keydown.arrow-right.self.stop.prevent="eventHub.$emit('selectCollection', dsc)"
+        @keydown.arrow-right.self.stop.prevent="$emit('viewCollection')"
+        @click.stop="$emit('viewCollection')"
     >
-        <nav
-            class="content-top-menu d-flex align-items-center justify-content-between p-1"
-            @click.stop="eventHub.$emit('selectCollection', dsc)"
-        >
+        <nav class="content-top-menu d-flex align-items-center justify-content-between p-1">
             <h5 class="flex-grow-1 overflow-hidden mr-auto text-nowrap text-truncate">
                 <span class="name">{{ dsc.name }}</span>
                 <span class="description">
@@ -25,9 +23,9 @@
 
 <script>
 import { DatasetCollection } from "../model/DatasetCollection";
+import { STATES } from "../model";
 
 export default {
-    inject: ["STATES"],
     props: {
         item: { type: Object, required: true },
         index: { type: Number, required: true },
@@ -40,7 +38,7 @@ export default {
             // TODO: see if there are situations where this rule won't work
             // subcollection doesn't have as much information as the collection
             // did, but it's probably ok
-            return this.dsc.state || this.STATES.OK;
+            return this.dsc.state || STATES.OK;
         },
     },
 };

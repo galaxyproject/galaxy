@@ -4,6 +4,7 @@ All message queues used by Galaxy
 
 """
 import socket
+from typing import Optional
 
 from kombu import (
     Connection,
@@ -37,7 +38,7 @@ def control_queues_from_config(config):
     return exchange_queue, non_exchange_queue
 
 
-def connection_from_config(config):
+def connection_from_config(config) -> Optional[Connection]:
     if config.amqp_internal_connection:
         return Connection(config.amqp_internal_connection)
     else:

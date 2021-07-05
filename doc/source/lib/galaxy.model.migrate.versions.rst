@@ -1377,6 +1377,14 @@ galaxy.model.migrate.versions.0171\_schemaorg\_metadata module
    :undoc-members:
    :show-inheritance:
 
+galaxy.model.migrate.versions.0172\_it\_entrypoint\_requires\_domain module
+---------------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0172_it_entrypoint_requires_domain
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.model.migrate.versions.util module
 -----------------------------------------
 

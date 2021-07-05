@@ -23,6 +23,10 @@ export class Dataset extends Content {
         return urlType in urls ? urls[urlType] : null;
     }
 
+    get canEditName() {
+        return this.element_identifier ? false : true;
+    }
+
     get hasData() {
         return this.file_size && this.file_size > 0;
     }

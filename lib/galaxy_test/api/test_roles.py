@@ -134,6 +134,9 @@ class RolesApiTestCase(ApiTestCase):
     def test_create_only_admin(self):
         response = self._post("roles", json=True)
         assert_status_code_is(response, 403)
+        response_err = response.json()
+        assert response_err["err_code"] == 403006
+        assert "administrator" in response_err["err_msg"]
 
     @staticmethod
     def check_role_dict(role_dict, assert_id=None):

@@ -207,6 +207,16 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert output["inherit_format"] is True
 
     @skip_without_tool("test_data_source")
+    def test_data_source_build_request(self):
+        with self.dataset_populator.test_history() as history_id:
+            build = self.dataset_populator.build_tool_state("test_data_source", history_id)
+            galaxy_url_param = build["inputs"][0]
+            assert galaxy_url_param["name"] == "GALAXY_URL"
+            galaxy_url = galaxy_url_param["value"]
+            assert galaxy_url.startswith("http")
+            assert galaxy_url.endswith("tool_runner?tool_id=ratmine")
+
+    @skip_without_tool("test_data_source")
     def test_data_source_ok_request(self):
         with self.dataset_populator.test_history() as history_id:
             payload = self.dataset_populator.run_tool_payload(
@@ -402,11 +412,21 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     def test_unzip_nested(self):
         with self.dataset_populator.test_history() as history_id:
-            hdca_list_id = self.__build_nested_list(history_id)
+            response = self.dataset_collection_populator.upload_collection(history_id, "list:paired", elements=[
+                {
+                    "name": "test0",
+                    "elements": [
+                        {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "txt", "tags": ["#foo"]},
+                        {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "txt", "tags": ["#bar"]},
+                    ]
+                }
+            ])
+            self._assert_status_code_is(response, 200)
+            hdca_id = response.json()["outputs"][0]["id"]
             inputs = {
                 "input": {
                     'batch': True,
-                    'values': [{'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_list_id}],
+                    'values': [{'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_id}],
                 }
             }
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -714,7 +734,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         test_data_response = self._get("tools/%s/test_data?tool_version=*" % "multiple_versions")
         test_data_response.raise_for_status()
         test_data_dicts = test_data_response.json()
-        assert len(test_data_dicts) == 2
+        assert len(test_data_dicts) == 3
 
     @skip_without_tool("multiple_versions")
     @uses_test_history(require_new=False)
@@ -1217,7 +1237,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         tool_test_dicts = [{
             "inputs": {
                 "input": ["simple_line.txt"],
-                "index": ["hg18"],
+                "index": ["hg18_value"],
             },
             "outputs": {},
             "required_files": [['simple_line.txt', {'value': 'simple_line.txt', 'dbkey': 'hg18'}]],
@@ -1235,7 +1255,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         tool_test_dicts = [{
             "inputs": {
                 "input": ["simple_line.txt"],
-                "index": ["hg18"],
+                "index": ["hg18_value"],
             },
             "outputs": {},
             "required_files": [['simple_line.txt', {'value': 'simple_line.txt', 'dbkey': 'hgnot18'}]],
@@ -1440,6 +1460,21 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self.assertEqual(len(implicit_collections), 3)
         self._check_implicit_collection_populated(create)
 
+    @skip_without_tool("output_filter_with_input_optional")
+    @uses_test_history(require_new=False)
+    def test_map_over_with_output_filter_on_optional_input(self, history_id):
+        hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=["myinputs"]).json()["id"]
+        inputs = {
+            "input_1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
+        }
+        create = self._run('output_filter_with_input_optional', history_id, inputs).json()
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEqual(len(jobs), 1)
+        self.dataset_populator.wait_for_job(jobs[0]["id"], assert_ok=True)
+        self.assertEqual(len(implicit_collections), 1)
+        self._check_implicit_collection_populated(create)
+
     @skip_without_tool("output_filter_with_input")
     @uses_test_history(require_new=False)
     def test_map_over_with_output_filter_one_filtered(self, history_id):
@@ -1549,7 +1584,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @uses_test_history(require_new=False)
     def test_list_selectable_in_multidata_input(self, history_id):
         self.dataset_collection_populator.create_list_in_history(history_id, contents=["123", "456"])
-        build = self._post("tools/identifier_multiple/build?history_id=%s" % history_id).json()
+        build = self.dataset_populator.build_tool_state("identifier_multiple", history_id)
         assert len(build['inputs'][0]['options']['hdca']) == 1
 
     @skip_without_tool("identifier_multiple")
@@ -1648,7 +1683,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @skip_without_tool("identifier_in_conditional")
     @uses_test_history(require_new=False)
     def test_identifier_map_over_input_in_conditional(self, history_id):
-        hdca_id = self._build_pair(history_id, ["123", "456"])
+        # Run cat tool, so HDA names are different from element identifiers
+        hdca_id = self._build_pair(history_id, ["123", "456"], run_cat=True)
         inputs = {
             "outer_cond|input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
             "outer_cond|multi_input": False,
@@ -2484,9 +2520,15 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         hdca_list_id = response.json()["outputs"][0]["id"]
         return hdca_list_id
 
-    def _build_pair(self, history_id, contents):
+    def _build_pair(self, history_id, contents, run_cat=False):
         create_response = self.dataset_collection_populator.create_pair_in_history(history_id, contents=contents, direct_upload=True)
-        hdca_id = create_response.json()["outputs"][0]["id"]
+        hdca_id = create_response.json()["output_collections"][0]["id"]
+        inputs = {
+            "input1": {'batch': True, 'values': [dict(src="hdca", id=hdca_id)]},
+        }
+        if run_cat:
+            outputs = self._run_cat(history_id, inputs=inputs, assert_ok=True)
+            hdca_id = outputs['implicit_collections'][0]['id']
         return hdca_id
 
     def _assert_dataset_permission_denied_response(self, response):

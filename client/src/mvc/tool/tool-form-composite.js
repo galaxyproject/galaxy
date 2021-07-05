@@ -357,6 +357,19 @@ var View = Backbone.View.extend({
                             (!input_def.is_workflow && input_value !== null);
                     }
                     if (!validated) {
+                        if (input_def.type == "hidden") {
+                            this.modal.show({
+                                title: _l("Workflow submission failed"),
+                                body: `Step ${step_index}: ${
+                                    step.step_label || step.step_name
+                                } is in an invalid state. Please remove and re-add this step in the Workflow Editor.`,
+                                buttons: {
+                                    Close: () => {
+                                        this.modal.hide();
+                                    },
+                                },
+                            });
+                        }
                         form.highlight(input_id);
                         break;
                     }
@@ -376,7 +389,7 @@ var View = Backbone.View.extend({
             invokeWorkflow(this.runWorkflowModel.workflowId, job_def)
                 .then((invocations) => {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", invocations);
-                    if ($.isArray(invocations) && invocations.length > 0) {
+                    if (Array.isArray(invocations) && invocations.length > 0) {
                         this.handleInvocations(invocations);
                     } else {
                         this.submissionErrorModal(job_def, invocations);

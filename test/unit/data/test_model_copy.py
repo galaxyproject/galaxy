@@ -34,7 +34,7 @@ def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=I
         print("history copied %s" % history_copy_timer)
         assert new_history.name == "HistoryCopyHistory1"
         assert new_history.user == old_history.user
-        for i, hda in enumerate(new_history.active_datasets):
+        for hda in new_history.active_datasets:
             assert hda.get_size() == 3
             if include_metadata_file:
                 _check_metadata_file(hda)
@@ -84,7 +84,7 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
         new_history = old_history.copy(target_user=old_history.user)
         print("history copied %s" % history_copy_timer)
 
-        for i, hda in enumerate(new_history.active_datasets):
+        for hda in new_history.active_datasets:
             assert hda.get_size() == 3
             annotation_str = hda.get_item_annotation_str(model.context, old_history.user, hda)
             assert annotation_str == "annotation #%d" % hda.hid, annotation_str

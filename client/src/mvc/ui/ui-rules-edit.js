@@ -4,7 +4,7 @@ import axios from "axios";
 import _l from "utils/localization";
 import Ui from "mvc/ui/ui-misc";
 import Vue from "vue";
-import ListCollectionCreator from "mvc/collection/list-collection-creator";
+import RuleBasedCollectionCreatorModal from "components/Collections/RuleBasedCollectionCreatorModal";
 import RulesDisplay from "components/RulesDisplay.vue";
 
 /**
@@ -77,12 +77,12 @@ var View = Backbone.View.extend({
             saveRulesFn: (rules) => this._handleRulesSave(rules),
             initialRules: value,
         };
-        ListCollectionCreator.ruleBasedCollectionCreatorModal(
+        RuleBasedCollectionCreatorModal.ruleBasedCollectionCreatorModal(
             elements,
             elementsType,
             importType,
             options
-        ).done(() => {});
+        ).catch(() => {});
     },
 
     _handleRulesSave: function (rules) {

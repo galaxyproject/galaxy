@@ -17,8 +17,14 @@ class FunctionalTestCase(unittest.TestCase):
     server is already running.
     """
     galaxy_driver_class: Optional[type] = None
+    history_id: Optional[str]
+    host: str
+    port: Optional[str]
+    url: str
+    keepOutdir: str
+    test_data_resolver: TestDataResolver
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.history_id = os.environ.get('GALAXY_TEST_HISTORY_ID', None)
         self.host, self.port, self.url = target_url_parts()
         self.test_data_resolver = TestDataResolver()
@@ -39,6 +45,6 @@ class FunctionalTestCase(unittest.TestCase):
         if cls._test_driver:
             cls._test_driver.tear_down()
 
-    def get_filename(self, filename):
+    def get_filename(self, filename: str) -> str:
         # No longer used by tool tests - drop if isn't used else where.
         return self.test_data_resolver.get_filename(filename)

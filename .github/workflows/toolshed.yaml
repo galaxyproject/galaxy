@@ -1,18 +1,18 @@
 name: Toolshed tests
 on: [push, pull_request]
 env:
-  GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-  TOOL_SHED_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/toolshed?client_encoding=utf8'
+  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  TOOL_SHED_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/toolshed?client_encoding=utf8'
 jobs:
   test:
     name: Test
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: ['3.7']
     services:
       postgres:
-        image: postgres:11
+        image: postgres:13
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

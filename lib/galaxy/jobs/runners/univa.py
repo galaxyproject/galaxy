@@ -4,9 +4,12 @@ Job control via the DRMAA API / qstat and qacct.
 Known to work on the UNIVA grid engine.
 
 known bugs/problems:
+
 - if a job runs longer than the time limits of the queue two things happen
+
   1. at the soft limit (s_rt) SIGUSR1 is sent to the job
   2. at the hard limit (h_rt) SIGKILL is sent to the job
+
   The second case is covered by the runner -- it's the same mechanism that
   kills a job when the job time limit is reached. The first case is currently
   not covered. The good thing is that most programs ignore SIGUSR1.
@@ -14,11 +17,12 @@ known bugs/problems:
   at random.
 
   Possible solutions:
+
   - configure the job destinations such that the queue limits are never reached.
     the time limits can be determined with
     `for i in `qconf -sql`; do qconf -sq $i | grep -E '(h|s)_rt'; done`
-
   - extend the job runner to cover s_rt cases (some ideas):
+
     * I'm unsure if the programs reaction to SIGUSR1 can be determined easily
       because it depends on the program. It seems that exit code is in most
       cases 10.

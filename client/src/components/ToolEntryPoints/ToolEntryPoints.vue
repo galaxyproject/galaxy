@@ -1,8 +1,6 @@
 <template>
     <div class="infomessagelarge">
-        <p v-if="entryPoints.length == 0">
-            Waiting for InteractiveTool result view(s) to become available.
-        </p>
+        <p v-if="entryPoints.length == 0">Waiting for InteractiveTool result view(s) to become available.</p>
         <p v-else-if="entryPoints.length == 1">
             <span v-if="entryPoints[0].active">
                 There is an InteractiveTool result view available,
@@ -17,10 +15,8 @@
             <ul>
                 <li v-for="entryPoint of entryPoints" :key="entryPoint.id">
                     {{ entryPoint.name }}
-                    <span v-if="entryPoint.active"> (<a :href="entryPoints[0].target">click here to display</a>) </span>
-                    <span v-else>
-                        (waiting to become active...)
-                    </span>
+                    <span v-if="entryPoint.active"> (<a :href="entryPoint.target">click here to display</a>) </span>
+                    <span v-else> (waiting to become active...) </span>
                 </li>
             </ul>
         </div>

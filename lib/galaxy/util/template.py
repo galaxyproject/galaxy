@@ -77,7 +77,7 @@ def fill_template(template_text,
         raise first_exception or e
     t = klass(searchList=[context])
     try:
-        return unicodify(t)
+        return unicodify(t, log_exception=False)
     except NotFound as e:
         if first_exception is None:
             first_exception = e

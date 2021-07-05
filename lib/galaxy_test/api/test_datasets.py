@@ -1,3 +1,4 @@
+import json
 import textwrap
 
 from galaxy_test.base.populators import (
@@ -122,12 +123,13 @@ class DatasetsApiTestCase(ApiTestCase):
 
     def test_tag_change(self):
         hda_id = self.dataset_populator.new_dataset(self.history_id)['id']
-        payload = {
+        payload = json.dumps({
             'item_id': hda_id,
             'item_class': 'HistoryDatasetAssociation',
             'item_tags': ['cool:tag_a', 'cool:tag_b', 'tag_c', 'name:tag_d', '#tag_e'],
-        }
-        self._put("tags", payload).json()
+        })
+        put_response = self._put("tags", payload)
+        self._assert_status_code_is_ok(put_response)
         updated_hda = self._get(
             f"histories/{self.history_id}/contents/{hda_id}").json()
         assert 'cool:tag_a' in updated_hda['tags']

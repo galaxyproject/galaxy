@@ -5,6 +5,10 @@ from ._framework import ApiTestCase
 
 class ApiFrameworkTestCase(ApiTestCase):
 
+    def test_default_xframe_options(self):
+        get_response = self._get("licenses")
+        assert get_response.headers['x-frame-options'] == "SAMEORIGIN"
+
     # Next several tests test the API's run_as functionality.
     def test_user_cannont_run_as(self):
         post_data = dict(name="TestHistory1", run_as="another_user")

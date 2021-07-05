@@ -8,7 +8,6 @@ import tarfile
 import tempfile
 import time
 import zipfile
-from collections import OrderedDict
 from json import dumps
 from logging import getLogger
 
@@ -43,7 +42,7 @@ DEFAULT_FTYPE = 'auto'
 DEFAULT_DBKEY = os.environ.get("GALAXY_TEST_DEFAULT_DBKEY", "?")
 
 
-class OutputsDict(OrderedDict):
+class OutputsDict(dict):
     """Ordered dict that can also be accessed by index.
 
     >>> out = OutputsDict()
@@ -57,12 +56,7 @@ class OutputsDict(OrderedDict):
         if isinstance(item, int):
             return self[list(self.keys())[item]]
         else:
-            # ideally we'd do `return super(OutputsDict, self)[item]`,
-            # but this fails because OrderedDict has no `__getitem__`. (!?)
-            item = self.get(item)
-            if item is None:
-                raise KeyError(item)
-            return item
+            return super().__getitem__(item)
 
 
 def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history=None, force_path_paste=False, maxseconds=DEFAULT_TOOL_TEST_WAIT):
@@ -138,9 +132,8 @@ class GalaxyInteractorApi:
 
     def get_tool_tests(self, tool_id, tool_version=None):
         url = "tools/%s/test_data" % tool_id
-        if tool_version is not None:
-            url += "?tool_version=%s" % tool_version
-        response = self._get(url)
+        params = {'tool_version': tool_version} if tool_version else None
+        response = self._get(url, data=params)
         assert response.status_code == 200, "Non 200 response from tool test API. [%s]" % response.content
         return response.json()
 
@@ -497,7 +490,7 @@ class GalaxyInteractorApi:
         return element_identifiers
 
     def __dictify_output_collections(self, submit_response):
-        output_collections_dict = OrderedDict()
+        output_collections_dict = {}
         for output_collection in submit_response['output_collections']:
             output_collections_dict[output_collection.get("output_name")] = output_collection
         return output_collections_dict
@@ -521,10 +514,8 @@ class GalaxyInteractorApi:
     def __job_ready(self, job_id, history_id=None):
         if job_id is None:
             raise ValueError("__job_ready passed empty job_id")
-        job_json = self._get("jobs/%s" % job_id).json()
-        state = job_json['state']
         try:
-            return self._state_ready(state, error_msg="Job in error state.")
+            return self._state_ready(job_id, error_msg="Job in error state.")
         except Exception:
             if VERBOSE_ERRORS and history_id is not None:
                 self._summarize_history(history_id)
@@ -562,7 +553,7 @@ class GalaxyInteractorApi:
                 print("| Dataset Info:")
                 print(self.format_for_summary(dataset_info.get("misc_info", ""), "Dataset info is empty."))
                 print("| Peek:")
-                print(self.format_for_summary(dataset_info.get("peek", ""), "Peek unavilable."))
+                print(self.format_for_summary(dataset_info.get("peek", ""), "Peek unavailable."))
             except Exception:
                 print("| *TEST FRAMEWORK ERROR FETCHING DATASET DETAILS*")
             try:
@@ -609,11 +600,13 @@ class GalaxyInteractorApi:
         history_contents_response.raise_for_status()
         return history_contents_response.json()
 
-    def _state_ready(self, state_str, error_msg):
+    def _state_ready(self, job_id, error_msg):
+        state_str = self.__get_job(job_id).json()['state']
         if state_str == 'ok':
             return True
         elif state_str == 'error':
-            raise Exception(error_msg)
+            job_json = self.get_job_stdio(job_id)
+            raise Exception(f"{error_msg}. tool_id: {job_json['tool_id']}, exit_code: {job_json['exit_code']}, stderr: {job_json['stderr']}.")
         return None
 
     def __submit_tool(self, history_id, tool_id, tool_input, extra_data=None, files=None):
@@ -676,41 +669,41 @@ class GalaxyInteractorApi:
 
         return fetcher
 
-    def api_key_header(self, key, admin, anon):
-        header = {}
+    def api_key_header(self, key, admin, anon, headers):
+        header = headers or {}
         if not anon:
             if not key:
                 key = self.api_key if not admin else self.master_api_key
             header['x-api-key'] = key
         return header
 
-    def _post(self, path, data=None, files=None, key=None, admin=False, anon=False, json=False):
+    def _post(self, path, data=None, files=None, key=None, headers=None, admin=False, anon=False, json=False):
         # If json=True, use post payload using request's json parameter instead of the data
         # parameter (i.e. assume the contents is a jsonified blob instead of form parameters
         # with individual parameters jsonified if needed).
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = f"{self.api_url}/{path}"
         return galaxy_requests_post(url, data=data, files=files, as_json=json, headers=headers)
 
-    def _delete(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
-        return requests.delete(f"{self.api_url}/{path}", params=data, headers=headers)
+    def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
+        return requests.delete(f"{self.api_url}/{path}", params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT)
 
-    def _patch(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
-        return requests.patch(f"{self.api_url}/{path}", data=data, headers=headers)
+    def _patch(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
+        return requests.patch(f"{self.api_url}/{path}", data=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT)
 
-    def _put(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
-        return requests.put(f"{self.api_url}/{path}", data=data, headers=headers)
+    def _put(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
+        return requests.put(f"{self.api_url}/{path}", data=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT)
 
-    def _get(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         if path.startswith("/api"):
             path = path[len("/api"):]
         url = f"{self.api_url}/{path}"
         # no data for GET
-        return requests.get(url, params=data, headers=headers)
+        return requests.get(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT)
 
 
 def ensure_tool_run_response_okay(submit_response_object, request_desc, inputs=None):
@@ -786,7 +779,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
     if expected_collection_type:
         collection_type = data_collection["collection_type"]
         if expected_collection_type != collection_type:
-            template = "Expected output collection [%s] to be of type [%s], was of type [%s]."
+            template = "Output collection '%s': expected to be of type [%s], was of type [%s]."
             message = template % (name, expected_collection_type, collection_type)
             raise AssertionError(message)
 
@@ -794,7 +787,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
     if expected_element_count:
         actual_element_count = len(data_collection["elements"])
         if expected_element_count != actual_element_count:
-            template = "Expected output collection [%s] to have %s elements, but it had %s."
+            template = "Output collection '%s': expected to have %s elements, but it had %s."
             message = template % (name, expected_element_count, actual_element_count)
             raise AssertionError(message)
 
@@ -819,7 +812,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
             element = get_element(element_objects, element_identifier)
             if not element:
-                template = "Failed to find identifier '%s' in the tool generated collection elements %s"
+                template = "Output collection '%s': failed to find identifier '%s' in the tool generated elements %s"
                 message = template % (element_identifier, eo_ids)
                 raise AssertionError(message)
 
@@ -841,8 +834,8 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                         break
                     i += 1
                 if element is None:
-                    template = "Collection identifier '%s' found out of order, expected order of %s for the tool generated collection elements %s"
-                    message = template % (element_identifier, expected_sort_order, eo_ids)
+                    template = "Output collection '%s': identifier '%s' found out of order, expected order of %s for the tool generated collection elements %s"
+                    message = template % (name, element_identifier, expected_sort_order, eo_ids)
                     raise AssertionError(message)
 
     verify_elements(data_collection["elements"], output_collection_def.element_tests)
@@ -883,7 +876,7 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
         elif extra_file_type == 'directory':
             extracted_path = test_data_downloader(extra_file_value, mode='directory')
             cleanup_directories.append(extracted_path)
-            for root, directories, files in util.path.safe_walk(extracted_path):
+            for root, _directories, files in util.path.safe_walk(extracted_path):
                 for filename in files:
                     filename = os.path.join(root, filename)
                     filename = os.path.relpath(filename, extracted_path)
@@ -1105,8 +1098,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
         expected = testdef.num_outputs
         actual = len(data_list) + len(data_collection_list)
         if expected != actual:
-            message_template = "Incorrect number of outputs - expected %d, found %s."
-            message = message_template % (expected, actual)
+            message = f"Incorrect number of outputs - expected {expected}, found {actual}: datasets {data_list} collections {data_collection_list}"
             raise Exception(message)
     found_exceptions = []
 
@@ -1290,7 +1282,7 @@ class ToolTestDescription:
         self.error = processed_test_dict.get("error", False)
         self.exception = processed_test_dict.get("exception", None)
 
-        self.output_collections = map(TestCollectionOutputDef.from_dict, processed_test_dict.get("output_collections", []))
+        self.output_collections = [TestCollectionOutputDef.from_dict(d) for d in processed_test_dict.get("output_collections", [])]
         self.command_line = processed_test_dict.get("command_line", None)
         self.command_version = processed_test_dict.get("command_version", None)
         self.stdout = processed_test_dict.get("stdout", None)

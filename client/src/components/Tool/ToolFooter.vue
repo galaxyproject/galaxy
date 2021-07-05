@@ -6,7 +6,7 @@
                 v-b-tooltip.hover
                 title="Copy all citations as BibTeX"
                 icon="copy"
-                style="cursor: pointer;"
+                style="cursor: pointer"
                 @click="copyBibtex"
             />
             <Citation
@@ -32,7 +32,7 @@
         </div>
         <div class="mb-1" v-if="hasLicense">
             <span class="font-weight-bold">License:</span>
-            <License :licenseId="license" />
+            <License :license-id="license" />
         </div>
         <div v-if="hasReferences" class="mb-1">
             <span class="font-weight-bold">References:</span>

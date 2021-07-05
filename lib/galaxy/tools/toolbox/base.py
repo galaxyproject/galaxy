@@ -4,10 +4,7 @@ import os
 import string
 import time
 import urllib.request
-from collections import (
-    namedtuple,
-    OrderedDict
-)
+from collections import namedtuple
 from errno import ENOENT
 from urllib.parse import urlparse
 
@@ -59,7 +56,7 @@ SHED_TOOL_CONF_XML = """<?xml version="1.0"?>
 
 # A fake ToolShedRepository constructed from a shed tool conf
 _ToolConfRepository = namedtuple(
-    'ToolConfRepository',
+    '_ToolConfRepository',
     (
         'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision',
         'tool_dependencies_installed_or_in_error', 'repository_path', 'tool_path',
@@ -103,7 +100,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
-        self.data_manager_tools = OrderedDict()
+        self.data_manager_tools = {}
         self._lineage_map = LineageMap(app)
         # Sets self._integrated_tool_panel and self._integrated_tool_panel_config_has_contents
         self._init_integrated_tool_panel(app.config)
@@ -150,7 +147,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         with open(self.app.config.beta_edam_toolbox_ontology_path, 'r') as handle:
             log.debug(f'Processing {handle}')
             self.edam = {}
-            for idx, line in enumerate(handle.readlines()):
+            for line in handle.readlines():
                 fields = line.split('\t')
                 if not fields[0].startswith('http://edamontology.org/'):
                     continue
@@ -322,9 +319,13 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def get_shed_config_dict_by_filename(self, filename):
         filename = os.path.abspath(filename)
+        dynamic_tool_conf_paths = []
         for shed_config_dict in self._dynamic_tool_confs:
-            if shed_config_dict['config_filename'] == filename:
+            dynamic_tool_conf_path = os.path.abspath(shed_config_dict['config_filename'])
+            dynamic_tool_conf_paths.append(dynamic_tool_conf_path)
+            if dynamic_tool_conf_path == filename:
                 return shed_config_dict
+        log.warning("'{}' not among installable tool config files ({})".format(filename, ', '.join(dynamic_tool_conf_paths)))
         return None
 
     def update_shed_config(self, shed_conf):
@@ -432,11 +433,11 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     log.warning("Could not find lineage for tool '%s'", tool.id)
                 if not inserted:
                     if (
-                        tool.guid is None or
-                        tool.tool_shed is None or
-                        tool.repository_name is None or
-                        tool.repository_owner is None or
-                        tool.installed_changeset_revision is None
+                        tool.guid is None
+                        or tool.tool_shed is None
+                        or tool.repository_name is None
+                        or tool.repository_owner is None
+                        or tool.installed_changeset_revision is None
                     ):
                         # We have a tool that was not installed from the Tool
                         # Shed, but is also not yet defined in
@@ -459,9 +460,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         edam = tool.edam_operations + tool.edam_topics
         if len(edam) > 0:
             for term in edam:
-                yield term, self.edam.get(term, {'label': f'Unknown EDAM Term {term}'})['label']
+                yield term
         else:
-            yield 'uncategorized', 'Uncategorized'
+            yield 'uncategorized'
 
     def _get_section(self, sec_id, sec_nm):
         if sec_id not in self._tool_panel:
@@ -503,7 +504,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 tool_id = key.replace('tool_', '', 1)
                 if tool_id in self._tools_by_id:
                     if tool_id in self._tools_by_id:
-                        for term, label in self._get_edam_sec(val):
+                        for term in self._get_edam_sec(val):
                             if term == 'uncategorized':
                                 uncategorized.append((tool_id, key, val, val.name))
                             else:
@@ -528,7 +529,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     if section_item_type == panel_item_types.TOOL:
                         tool_id = section_key.replace('tool_', '', 1)
                         if tool_id in self._tools_by_id:
-                            for term, label in self._get_edam_sec(section_val):
+                            for term in self._get_edam_sec(section_val):
                                 if term == 'uncategorized':
                                     uncategorized.append((tool_id, key, section_val, val.name))
                                 else:
@@ -759,21 +760,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if tool_id not in self._tools_by_id:
             return True
         return False
-
-    def get_tool_id(self, tool_id):
-        """ Take a tool id - potentially from a different Galaxy instance or that
-        is no longer loaded - and find the closest match to the currently loaded
-        tools (using get_tool for inexact matches which currently returns the oldest
-        tool shed installed tool with the same short id).
-        """
-        if tool_id not in self._tools_by_id:
-            tool = self.get_tool(tool_id)
-            if tool:
-                tool_id = tool.id
-            else:
-                tool_id = None
-        # else exact match - leave unmodified.
-        return tool_id
 
     def get_loaded_tools_by_lineage(self, tool_id):
         """Get all loaded tools associated by lineage to the tool whose id is tool_id."""

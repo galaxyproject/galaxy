@@ -14,15 +14,21 @@ export function userLogout(logoutAll = false) {
     const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
     axios
         .get(url)
-        .then(() => {
+        .then((response) => {
             if (galaxy.user) {
                 galaxy.user.clearSessionStorage();
             }
             // Check if we need to logout of OIDC IDP
             if (galaxy.config.enable_oidc) {
+                const provider = localStorage.getItem("galaxy-provider");
+                if (provider) {
+                    localStorage.removeItem("galaxy-provider");
+                    return axios.get(`${galaxy.root}authnz/logout?provider=${provider}`);
+                }
                 return axios.get(`${galaxy.root}authnz/logout`);
             } else {
-                return {};
+                // Otherwise pass through the initial logout response
+                return response;
             }
         })
         .then((response) => {
@@ -64,11 +70,10 @@ export function fetchMenu(options = {}) {
     //
     menu.push({
         id: "analysis",
-        title: _l("Analyze Data"),
         url: "",
-        tooltip: _l("Analysis home view"),
+        tooltip: _l("Tools and Current History"),
+        icon: "fa-home",
     });
-
     //
     // Workflow tab.
     //
@@ -109,38 +114,49 @@ export function fetchMenu(options = {}) {
     //
     // 'Shared Items' or Libraries tab.
     //
-    menu.push({
-        id: "shared",
-        title: _l("Shared Data"),
-        url: "javascript:void(0)",
-        tooltip: _l("Access published resources"),
-        menu: [
-            {
-                title: _l("Data Libraries"),
-                url: "library/list",
-            },
-            {
-                title: _l("Histories"),
-                url: "histories/list_published",
-                target: "__use_router__",
-            },
-            {
-                title: _l("Workflows"),
-                url: "workflows/list_published",
-                target: "__use_router__",
-            },
-            {
-                title: _l("Visualizations"),
-                url: "visualizations/list_published",
-                target: "__use_router__",
-            },
-            {
-                title: _l("Pages"),
-                url: "pages/list_published",
-                target: "__use_router__",
-            },
-        ],
-    });
+    if (Galaxy.config.single_user) {
+        // Single user can still use libraries, especially as we may grow that
+        // functionality as a representation for external data.  The rest is
+        // hidden though.
+        menu.push({
+            title: _l("Data Libraries"),
+            url: "libraries",
+            id: "libraries",
+        });
+    } else {
+        menu.push({
+            id: "shared",
+            title: _l("Shared Data"),
+            url: "javascript:void(0)",
+            tooltip: _l("Access published resources"),
+            menu: [
+                {
+                    title: _l("Data Libraries"),
+                    url: "libraries",
+                },
+                {
+                    title: _l("Histories"),
+                    url: "histories/list_published",
+                    target: "__use_router__",
+                },
+                {
+                    title: _l("Workflows"),
+                    url: "workflows/list_published",
+                    target: "__use_router__",
+                },
+                {
+                    title: _l("Visualizations"),
+                    url: "visualizations/list_published",
+                    target: "__use_router__",
+                },
+                {
+                    title: _l("Pages"),
+                    url: "pages/list_published",
+                    target: "__use_router__",
+                },
+            ],
+        });
+    }
 
     //
     // Admin.
@@ -254,7 +270,7 @@ export function fetchMenu(options = {}) {
             menu: [
                 {
                     title: `${_l("Logged in as")} ${Galaxy.user.get("email")}`,
-                    class: "dropdown-item disabled",
+                    disabled: true,
                 },
                 {
                     title: _l("Preferences"),
@@ -266,10 +282,11 @@ export function fetchMenu(options = {}) {
                     url: "custom_builds",
                     target: "__use_router__",
                 },
+                { divider: true },
                 {
                     title: _l("Logout"),
-                    divider: true,
                     onclick: userLogout,
+                    hidden: Galaxy.config.single_user,
                 },
                 {
                     title: _l("Datasets"),
@@ -285,6 +302,7 @@ export function fetchMenu(options = {}) {
                     title: _l("Histories shared with me"),
                     url: "histories/list_shared",
                     target: "__use_router__",
+                    hidden: Galaxy.config.single_user,
                 },
                 {
                     title: _l("Pages"),
@@ -306,7 +324,7 @@ export function fetchMenu(options = {}) {
             });
         }
         if (Galaxy.config.interactivetools_enable) {
-            userTab.menu[userTab.menu.length - 1].divider = true;
+            userTab.menu.push({ divider: true });
             userTab.menu.push({
                 title: _l("Active InteractiveTools"),
                 url: "interactivetool_entry_points/list",
@@ -315,6 +333,5 @@ export function fetchMenu(options = {}) {
         }
     }
     menu.push(userTab);
-
     return menu;
 }

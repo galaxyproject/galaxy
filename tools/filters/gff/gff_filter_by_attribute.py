@@ -231,7 +231,7 @@ if not check_expression(cond_text):
 # Prepare the column variable names and wrappers for column data types. Only
 # prepare columns up to largest column in condition.
 attrs, type_casts = [], []
-for name, attr_type in attribute_types.items():
+for name in attribute_types.keys():
     attrs.append(name)
     type_cast = "get_value('%(name)s', attribute_types['%(name)s'], attribute_values)" % ({'name': name})
     type_casts.append(type_cast)

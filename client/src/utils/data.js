@@ -41,7 +41,6 @@ export function dialog(callback, options = {}) {
             history: history_id,
         });
         if (options.new) {
-            options.modalShow = true;
             mountUploadModal(options);
         } else {
             _mountSelectionDialog(DataDialog, options);

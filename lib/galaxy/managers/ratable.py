@@ -84,8 +84,8 @@ class RatableSerializerMixin:
         # than getting the rows and calc'ing both here with one query
         manager = self.manager
         return {
-            'average' : manager.ratings_avg(item),
-            'count'   : manager.ratings_count(item),
+            'average': manager.ratings_avg(item),
+            'count': manager.ratings_count(item),
         }
 
 
@@ -115,11 +115,11 @@ class RatableFilterMixin:
         self.fn_filter_parsers.update({
             'community_rating': {
                 'op': {
-                    'eq' : lambda i, v: self._ratings_avg_accessor(i) == v,
+                    'eq': lambda i, v: self._ratings_avg_accessor(i) == v,
                     # TODO: default to greater than (currently 'eq' due to base/controller.py)
-                    'ge' : lambda i, v: self._ratings_avg_accessor(i) >= v,
-                    'le' : lambda i, v: self._ratings_avg_accessor(i) <= v,
+                    'ge': lambda i, v: self._ratings_avg_accessor(i) >= v,
+                    'le': lambda i, v: self._ratings_avg_accessor(i) <= v,
                 },
-                'val' : float
+                'val': float
             }
         })

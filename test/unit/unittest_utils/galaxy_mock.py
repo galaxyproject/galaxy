@@ -5,22 +5,29 @@ import os
 import shutil
 import tempfile
 
+from sqlalchemy.orm.scoping import scoped_session
+
 from galaxy import (
+    di,
     model,
     objectstore,
-    quota
+    quota,
 )
 from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.users import UserManager
 from galaxy.model import mapping, tags
+from galaxy.model.base import SharedModelMapping
+from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.security import idencoding
+from galaxy.structured_app import BasicApp, MinimalManagerApp, StructuredApp
 from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import ApplicationStack
+from galaxy_test.base.celery_helper import rebind_container_to_task
 
 
 # =============================================================================
@@ -56,22 +63,33 @@ def buildMockEnviron(**kwargs):
     return environ
 
 
-class MockApp:
+class MockApp(di.Container):
 
     def __init__(self, config=None, **kwargs):
+        super().__init__()
+        self[BasicApp] = self
+        self[MinimalManagerApp] = self
+        self[StructuredApp] = self
         self.config = config or MockAppConfig(**kwargs)
         self.security = self.config.security
+        self[idencoding.IdEncodingHelper] = self.security
         self.name = kwargs.get('name', 'galaxy')
         self.object_store = objectstore.build_object_store_from_config(self.config)
         self.model = mapping.init("/tmp", self.config.database_connection, create_tables=True, object_store=self.object_store)
+        self[SharedModelMapping] = self.model
+        self[GalaxyModelMapping] = self.model
+        self[scoped_session] = self.model.context
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
+        self[tags.GalaxyTagHandler] = self.tag_handler
         self.quota_agent = quota.DatabaseQuotaAgent(self.model)
         self.init_datatypes()
         self.job_config = Bunch(
             dynamic_params=None,
-            destinations={}
+            destinations={},
+            use_messaging=False,
+            assign_handler=lambda *args, **kwargs: None
         )
         self.tool_data_tables = {}
         self.dataset_collections_service = None
@@ -81,9 +99,11 @@ class MockApp:
         self.genome_builds = GenomeBuilds(self)
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
-        self.auth_manager = AuthManager(self)
+        self.auth_manager = AuthManager(self.config)
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
+        self.is_job_handler = False
+        rebind_container_to_task(self)
 
         def url_for(*args, **kwds):
             return "/mock/url"
@@ -125,6 +145,7 @@ class MockAppConfig(Bunch):
         self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
         self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
+        self.enable_celery_tasks = False
         self.data_dir = os.path.join(root, 'database')
         self.file_path = os.path.join(self.data_dir, 'files')
         self.jobs_directory = os.path.join(self.data_dir, 'jobs_directory')
@@ -152,6 +173,7 @@ class MockAppConfig(Bunch):
         self.password_expiration_period = 0
 
         self.umask = 0o77
+        self.flush_per_n_datasets = 0
 
         # Compliance related config
         self.redact_email_in_job_name = False
@@ -170,6 +192,7 @@ class MockAppConfig(Bunch):
 
         # set by MockDir
         self.root = root
+        self.enable_tool_document_cache = False
         self.tool_cache_data_dir = os.path.join(root, 'tool_cache')
         self.delay_tool_initialization = True
         self.external_chown_script = None
@@ -213,6 +236,7 @@ class MockTrans:
         self.anonymous = False
         self.debug = True
         self.user_is_admin = True
+        self.qualified_url_builder = None
 
         self.galaxy_session = None
         self.__user = user
@@ -220,7 +244,7 @@ class MockTrans:
         self.history = history
 
         self.request = Bunch(headers={}, body=None)
-        self.response = Bunch(headers={}, set_content_type=lambda i : None)
+        self.response = Bunch(headers={}, set_content_type=lambda i: None)
 
     def check_csrf_token(self, payload):
         pass

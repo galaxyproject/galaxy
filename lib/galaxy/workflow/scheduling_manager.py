@@ -187,6 +187,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         if use_default_scheduler:
             self.__init_default_scheduler()
         else:
+            self.DEFAULT_BASE_HANDLER_POOLS = ('workflow-schedulers',)
             plugins_element = parse_xml(config_file).getroot()
             self.__init_schedulers_for_element(plugins_element)
 
@@ -194,6 +195,8 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             # Stack has a pool for us so override inherited config and use the pool
             self.__init_handlers()
             self.__handlers_configured = True
+        elif use_default_scheduler:
+            self._set_default_handler_assignment_methods()
 
     def __init_default_scheduler(self):
         self.default_scheduler_id = DEFAULT_SCHEDULER_ID
@@ -283,19 +286,22 @@ class WorkflowRequestMonitor(Monitors):
     def __monitor(self):
         to_monitor = self.workflow_scheduling_manager.active_workflow_schedulers
         while self.monitor_running:
-            if self.invocation_grabber:
-                self.invocation_grabber.grab_unhandled_items()
+            try:
+                if self.invocation_grabber:
+                    self.invocation_grabber.grab_unhandled_items()
 
-            monitor_step_timer = self.app.execution_timer_factory.get_timer(
-                'internal.galaxy.workflows.scheduling_manager.monitor_step',
-                'Workflow scheduling manager monitor step complete.'
-            )
-            for workflow_scheduler_id, workflow_scheduler in to_monitor.items():
-                if not self.monitor_running:
-                    return
+                monitor_step_timer = self.app.execution_timer_factory.get_timer(
+                    'internal.galaxy.workflows.scheduling_manager.monitor_step',
+                    'Workflow scheduling manager monitor step complete.'
+                )
+                for workflow_scheduler_id, workflow_scheduler in to_monitor.items():
+                    if not self.monitor_running:
+                        return
 
-                self.__schedule(workflow_scheduler_id, workflow_scheduler)
-            log.trace(monitor_step_timer.to_str())
+                    self.__schedule(workflow_scheduler_id, workflow_scheduler)
+                log.trace(monitor_step_timer.to_str())
+            except Exception:
+                log.exception('An exception occured scheduling while scheduling workflows')
             self._monitor_sleep(1)
 
     def __schedule(self, workflow_scheduler_id, workflow_scheduler):

@@ -1,6 +1,6 @@
 """Utilities for loading tools and workflows from paths for admin user requests."""
 
-from gxformat2.converter import ordered_load
+import yaml
 
 from galaxy import exceptions
 
@@ -13,7 +13,7 @@ def artifact_class(trans, as_dict):
 
         workflow_path = as_dict.get("path")
         with open(workflow_path) as f:
-            as_dict = ordered_load(f)
+            as_dict = yaml.safe_load(f)
 
     artifact_class = as_dict.get("class", None)
     if artifact_class is None and "$graph" in as_dict:

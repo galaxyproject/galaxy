@@ -31,10 +31,10 @@ class Node:
     def toJson(self):
         """Converts the data in the node to a dict representation of json"""
         thisJson = {
-            "name"      : self.name,
-            "id"        : self.id,
-            "depth"     : self.depth,
-            "dist"      : self.length
+            "name": self.name,
+            "id": self.id,
+            "depth": self.depth,
+            "dist": self.length
         }
         thisJson = self.addChildrenToJson(thisJson)
         thisJson = self.addMiscToJson(thisJson)

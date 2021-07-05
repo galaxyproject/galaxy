@@ -5,12 +5,15 @@ import requests
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
+from galaxy.structured_app import BasicApp
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+
 log = logging.getLogger(__name__)
 
 
 class CitationsManager:
 
-    def __init__(self, app):
+    def __init__(self, app: BasicApp) -> None:
         self.app = app
         self.doi_cache = DoiCache(app.config)
 
@@ -46,7 +49,7 @@ class DoiCache:
     def _raw_get_bibtex(self, doi):
         doi_url = "https://doi.org/" + doi
         headers = {'Accept': 'application/x-bibtex'}
-        req = requests.get(doi_url, headers=headers)
+        req = requests.get(doi_url, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         req.encoding = req.apparent_encoding
         return req.text
 

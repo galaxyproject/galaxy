@@ -112,8 +112,8 @@ http {
     }
 
     server {
-        listen 443 default_server;
-        listen [::]:443 default_server;
+        listen 443 ssl default_server;
+        listen [::]:443 ssl default_server;
         server_name _;
 
         # use a variable for convenience
@@ -364,7 +364,7 @@ nginx should serve files and edit `galaxy.yml` and make the following changes be
 ```yaml
 galaxy:
     #...
-    upstream_zip: true
+    upstream_mod_zip: true
 ```
 
 Instead of creating archives Galaxy will send a special header containing the list of files to be archived.
@@ -399,7 +399,7 @@ these paths need to exposed in the same way.
 
 You may find it useful to require authentication for access to certain paths on your server.  For example, Galaxy can
 run a separate reports app which gives useful information about your Galaxy instance. See the [Reports Configuration
-documentation](reports) and [Peter Briggs' blog post on the
+documentation](./reports) and [Peter Briggs' blog post on the
 subject](http://galacticengineer.blogspot.com/2015/06/exposing-galaxy-reports-via-nginx-in.html) for more.
 
 After successfully following the blog post, Galaxy reports should be available at e.g. `https://galaxy.example.org/reports`.

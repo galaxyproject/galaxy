@@ -1,0 +1,36 @@
+- type: dropbox
+  id: dropbox1
+  label: Dropbox files (configure access in user preferences)
+  doc: Your Dropbox files - configure an access token via the user preferences
+  accessToken: ${user.preferences['dropbox|access_token']}
+
+- type: webdav
+  id: owncloud1
+  label: OwnCloud
+  doc: External OwnCloud files (configure access in user preferences)
+  url: ${user.preferences['owncloud|url']}
+  root: ${user.preferences['owncloud|root']}
+  login: ${user.preferences['owncloud|username']}
+  password: ${user.preferences['owncloud|password']}
+
+- type: posix
+  id: posix1
+  label: Posix
+  doc: Files from local path
+  root: /some/path/
+
+- type: s3fs
+  label: My MinIO storage
+  endpoint_url: "https://minio.usegalaxy.eu"
+  id: galaxy-minio-storage
+  doc: Galaxy MinIO S3 storage
+  anon: false
+  secret: "UHAJ6asd6asdhasd"
+  key: "MCJU76agdt98GGFAROIP7"
+
+- type: s3fs
+  label: CMIP6 GCMs downscaled using WRF
+  id: wrf-cmip6-noversioning
+  doc: High-resolution historical and future climate simulations from 1980-2100
+  bucket: wrf-cmip6-noversioning
+  anon: true

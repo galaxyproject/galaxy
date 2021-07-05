@@ -1,6 +1,5 @@
 import copy
 import logging
-from collections import OrderedDict
 
 from galaxy.util import asbool
 from galaxy.web import url_for
@@ -71,8 +70,8 @@ class RepositoryDependencyAttributeHandler:
         if len(sub_elems) > 0:
             # At this point, a <repository> tag will point only to a package.
             # <package name="xorg_macros" version="1.17.1" />
-            # Coerce the list to an OrderedDict().
-            sub_elements = OrderedDict()
+            # Coerce the list to dict.
+            sub_elements = {}
             packages = []
             for sub_elem in sub_elems:
                 sub_elem_type = sub_elem.tag
@@ -88,7 +87,7 @@ class RepositoryDependencyAttributeHandler:
             # We're exporting the repository, so eliminate all toolshed and changeset_revision attributes
             # from the <repository> tag.
             if toolshed or changeset_revision:
-                attributes = OrderedDict()
+                attributes = {}
                 attributes['name'] = name
                 attributes['owner'] = owner
                 prior_installation_required = elem.get('prior_installation_required')

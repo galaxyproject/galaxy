@@ -6,7 +6,7 @@ from galaxy_test.selenium import (
 selenium_test = framework.selenium_test
 
 
-class SeleniumIntegrationTestCase(integration_util.IntegrationTestCase, framework.TestWithSeleniumMixin):
+class SeleniumIntegrationTestCase(integration_util.IntegrationTestCase, framework.TestWithSeleniumMixin, framework.UsesLibraryAssertions):
 
     def setUp(self):
         super().setUp()
