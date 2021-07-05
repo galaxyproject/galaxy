@@ -37,6 +37,11 @@ from galaxy.managers.collections_util import (
     dictify_dataset_collection_instance,
 )
 from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
+from galaxy.model import (
+    History,
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+)
 from galaxy.schema import FilterQueryParams
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
@@ -44,9 +49,16 @@ from galaxy.schema.fields import (
     OrderParamField,
 )
 from galaxy.schema.schema import (
+    HDABeta,
+    HDADetailed,
+    HDASummary,
+    HDCABeta,
+    HDCADetailed,
+    HDCASummary,
     HistoryContentType,
     Model,
 )
+from galaxy.schema.types import SerializationParams
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.json import safe_dumps
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -60,11 +72,16 @@ from galaxy.webapps.base.controller import (
     UsesLibraryMixinItems,
     UsesTagsMixin
 )
+from galaxy.webapps.galaxy.api.common import parse_serialization_params
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 DatasetDetailsType = Union[Set[EncodedDatabaseIdField], Literal['all']]
+AnyHistoryContentItem = Union[
+    HDASummary, HDADetailed, HDABeta,
+    HDCASummary, HDCADetailed, HDCABeta
+]
 
 
 class HistoryContentsFilterQueryParams(FilterQueryParams):
@@ -162,6 +179,154 @@ class HistoriesContentsService(ServiceBase):
         self.hdca_serializer = hdca_serializer
         self.history_contents_filters = history_contents_filters
 
+    def index(
+        self,
+        trans,
+        history_id: EncodedDatabaseIdField,
+        legacy_params: HistoryContentsIndexLegacyParams,
+        serialization_params: SerializationParams,
+        filter_query_params: HistoryContentsFilterQueryParams,
+    ) -> List[AnyHistoryContentItem]:
+        """
+        Return a list of contents (HDAs and HDCAs) for the history with the given ``id``
+
+        .. note:: Anonymous users are allowed to get their current history contents
+        """
+        if legacy_params.v == 'dev':
+            return self.__index_v2(
+                trans, history_id, legacy_params, serialization_params, filter_query_params
+            )
+        return self.__index_legacy(trans, history_id, legacy_params)
+
+    def __index_legacy(
+        self, trans,
+        history_id: EncodedDatabaseIdField,
+        legacy_params: HistoryContentsIndexLegacyParams,
+    ) -> List[AnyHistoryContentItem]:
+        """Legacy implementation of the `index` action."""
+        history = self._get_history(trans, history_id)
+        parsed_legacy_params = self._parse_legacy_contents_params(legacy_params)
+        contents = history.contents_iter(**parsed_legacy_params)
+        return [
+            self._serialize_legacy_content_item(trans, content, parsed_legacy_params.get("dataset_details"))
+            for content in contents
+        ]
+
+    def __index_v2(
+        self,
+        trans,
+        history_id: EncodedDatabaseIdField,
+        legacy_params: HistoryContentsIndexLegacyParams,
+        serialization_params: SerializationParams,
+        filter_query_params: HistoryContentsFilterQueryParams,
+    ) -> List[AnyHistoryContentItem]:
+        """
+        Latests implementation of the `index` action.
+        Allows additional filtering of contents and custom serialization.
+        """
+        history = self._get_history(trans, history_id)
+        filters = self.history_contents_filters.parse_query_filters(filter_query_params)
+        order_by = self.build_order_by(self.history_contents_manager, filter_query_params.order)
+
+        # TODO: > 16.04: remove these
+        # TODO: remove 'dataset_details' and the following section when the UI doesn't need it
+        parsed_legacy_params = self._parse_legacy_contents_params(legacy_params)
+
+        contents = self.history_contents_manager.contents(
+            history,
+            filters=filters,
+            limit=filter_query_params.limit,
+            offset=filter_query_params.offset,
+            order_by=order_by,
+            serialization_params=serialization_params
+        )
+        return [
+            self._serialize_content_item(
+                trans, content,
+                dataset_details=parsed_legacy_params.get("dataset_details"),
+                serialization_params=serialization_params,
+            )
+            for content in contents
+        ]
+
+    def _serialize_legacy_content_item(
+        self,
+        trans,
+        content,
+        dataset_details: Optional[DatasetDetailsType] = None,
+    ):
+        encoded_content_id = self.encode_id(content.id)
+        detailed = dataset_details and (dataset_details == 'all' or (encoded_content_id in dataset_details))
+        if isinstance(content, HistoryDatasetAssociation):
+            view = 'detailed' if detailed else 'summary'
+            return self.hda_serializer.serialize_to_view(content, view=view, user=trans.user, trans=trans)
+        elif isinstance(content, HistoryDatasetCollectionAssociation):
+            view = 'element' if detailed else 'collection'
+            return self.__collection_dict(trans, content, view=view)
+
+    def _serialize_content_item(
+            self,
+            trans,
+            content,
+            dataset_details: Optional[DatasetDetailsType],
+            serialization_params: SerializationParams,
+            default_view: str = "summary",
+    ):
+        """
+        Returns a dictionary with the appropriate values depending on the
+        serialization parameters provided.
+        """
+        view = serialization_params.pop("view", default_view) or default_view
+
+        serializer: Optional[ModelSerializer] = None
+        if isinstance(content, HistoryDatasetAssociation):
+            serializer = self.hda_serializer
+            if dataset_details and (dataset_details == 'all' or self.encode_id(content.id) in dataset_details):
+                view = "detailed"
+        elif isinstance(content, HistoryDatasetCollectionAssociation):
+            serializer = self.hdca_serializer
+
+        if serializer is None:
+            raise exceptions.UnknownContentsType(f'Unknown contents type: {content.content_type}')
+
+        return serializer.serialize_to_view(
+            content, user=trans.user, trans=trans, view=view, **serialization_params
+        )
+
+    def _parse_legacy_contents_params(self, params: HistoryContentsIndexLegacyParams):
+        if params.types:
+            types = util.listify(params.types)
+        else:
+            types = [e.value for e in HistoryContentType]
+
+        details: Any = params.dataset_details
+        ids = None
+        if params.ids:
+            ids = [self.decode_id(id) for id in params.ids.split(',')]
+            # If explicit ids given, always used detailed result.
+            details = 'all'
+        else:
+            if details and details != 'all':
+                details = set(util.listify(details))
+
+        return ParsedHistoryContentsLegacyParams(
+            types=types,
+            ids=ids,
+            deleted=params.deleted,
+            visible=params.visible,
+            dataset_details=details,
+        ).dict(exclude_defaults=True)
+
+    def __collection_dict(self, trans, dataset_collection_instance, **kwds):
+        return dictify_dataset_collection_instance(dataset_collection_instance,
+            security=trans.security, parent=dataset_collection_instance.history, **kwds)
+
+    def _get_history(self, trans, history_id: EncodedDatabaseIdField) -> History:
+        """Retrieves the History with the given ID or raises an error if the current user cannot access it."""
+        history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
+        return history
+
+
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
@@ -172,8 +337,10 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
     hdca_serializer: hdcas.HDCASerializer = depends(hdcas.HDCASerializer)
     history_contents_filters: history_contents.HistoryContentsFilters = depends(history_contents.HistoryContentsFilters)
 
+    service: HistoriesContentsService = depends(HistoriesContentsService)
+
     @expose_api_anonymous
-    def index(self, trans, history_id, ids=None, v=None, **kwd):
+    def index(self, trans, history_id, **kwd):
         """
         GET /api/histories/{history_id}/contents
 
@@ -198,54 +365,14 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :rtype:     list
         :returns:   dictionaries containing summary or detailed HDA information
         """
-        if v == 'dev':
-            return self.__index_v2(trans, history_id, **kwd)
-
-        rval = []
-
-        history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
-
-        # Allow passing in type or types - for continuity rest of methods
-        # take in type - but this one can be passed multiple types and
-        # type=dataset,dataset_collection is a bit silly.
-        types = kwd.get('type', kwd.get('types', None)) or []
-        if types:
-            types = util.listify(types)
-        else:
-            types = ['dataset', "dataset_collection"]
-
-        contents_kwds = {'types': types}
-        if ids:
-            ids = [self.decode_id(id) for id in ids.split(',')]
-            contents_kwds['ids'] = ids
-            # If explicit ids given, always used detailed result.
-            details = 'all'
-        else:
-            contents_kwds['deleted'] = kwd.get('deleted', None)
-            contents_kwds['visible'] = kwd.get('visible', None)
-            # details param allows a mixed set of summary and detailed hdas
-            # Ever more convoluted due to backwards compat..., details
-            # should be considered deprecated in favor of more specific
-            # dataset_details (and to be implemented dataset_collection_details).
-            details = kwd.get('details', None) or kwd.get('dataset_details', None) or []
-            if details and details != 'all':
-                details = util.listify(details)
-
-        for content in history.contents_iter(**contents_kwds):
-            encoded_content_id = trans.security.encode_id(content.id)
-            detailed = details == 'all' or (encoded_content_id in details)
-
-            if isinstance(content, trans.app.model.HistoryDatasetAssociation):
-                view = 'detailed' if detailed else 'summary'
-                hda_dict = self.hda_serializer.serialize_to_view(content, view=view, user=trans.user, trans=trans)
-                rval.append(hda_dict)
-
-            elif isinstance(content, trans.app.model.HistoryDatasetCollectionAssociation):
-                view = 'element' if detailed else 'collection'
-                collection_dict = self.__collection_dict(trans, content, view=view)
-                rval.append(collection_dict)
-
-        return rval
+        legacy_params = HistoryContentsIndexLegacyParams(**kwd)
+        serialization_params = parse_serialization_params(**kwd)
+        filter_parameters = HistoryContentsFilterQueryParams(**kwd)
+        return self.service.index(
+            trans, history_id,
+            legacy_params,
+            serialization_params, filter_parameters
+        )
 
     def __collection_dict(self, trans, dataset_collection_instance, **kwds):
         return dictify_dataset_collection_instance(dataset_collection_instance,
@@ -941,127 +1068,6 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
 
     def __handle_unknown_contents_type(self, trans, contents_type):
         raise exceptions.UnknownContentsType(f'Unknown contents type: {type}')
-
-    def __index_v2(self, trans, history_id, **kwd):
-        """
-        index( self, trans, history_id, **kwd )
-        * GET /api/histories/{history_id}/contents
-            return a list of HDA data for the history with the given ``id``
-        .. note:: Anonymous users are allowed to get their current history contents
-
-        If ids is given, index returns a *more complete* json object for each
-        HDA in the ids list.
-
-        :type   history_id: str
-        :param  history_id: encoded id string of the HDA's History
-
-        :rtype:     list
-        :returns:   dictionaries containing summary or detailed HDA information
-
-        The following are optional parameters:
-            view:   string, one of ('summary','detailed'), defaults to 'summary'
-                    controls which set of properties to return
-            keys:   comma separated strings, unused by default
-                    keys/names of individual properties to return
-
-        If neither keys or views are sent, the default view (set of keys) is returned.
-        If both a view and keys are sent, the key list and the view's keys are
-        combined.
-        If keys are sent and no view, only those properties in keys are returned.
-
-        For which properties are available see:
-            galaxy/managers/hdas/HDASerializer
-        and:
-            galaxy/managers/collection_util
-
-        The list returned can be filtered by using two optional parameters:
-            q:      string, generally a property name to filter by followed
-                    by an (often optional) hyphen and operator string.
-            qv:     string, the value to filter by
-
-        ..example:
-            To filter the list to only those created after 2015-01-29,
-            the query string would look like:
-                '?q=create_time-gt&qv=2015-01-29'
-
-            Multiple filters can be sent in using multiple q/qv pairs:
-                '?q=create_time-gt&qv=2015-01-29&q=name-contains&qv=experiment-1'
-
-        The list returned can be paginated using two optional parameters:
-            limit:  integer, defaults to no value and no limit (return all)
-                    how many items to return
-            offset: integer, defaults to 0 and starts at the beginning
-                    skip the first ( offset - 1 ) items and begin returning
-                    at the Nth item
-
-        ..example:
-            limit and offset can be combined. Skip the first two and return five:
-                '?limit=5&offset=3'
-
-        The list returned can be ordered using the optional parameter:
-            order:  string containing one of the valid ordering attributes followed
-                    (optionally) by '-asc' or '-dsc' for ascending and descending
-                    order respectively. Orders can be stacked as a comma-
-                    separated list of values.
-
-        ..example:
-            To sort by name descending then create time descending:
-                '?order=name-dsc,create_time'
-
-        The ordering attributes and their default orders are:
-            hid defaults to 'hid-asc'
-            create_time defaults to 'create_time-dsc'
-            update_time defaults to 'update_time-dsc'
-            name    defaults to 'name-asc'
-
-        'order' defaults to 'hid-asc'
-        """
-        rval = []
-
-        history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user,
-            current_history=trans.history)
-
-        filter_params = self.parse_filter_params(kwd)
-        filters = self.history_contents_filters.parse_filters(filter_params)
-        limit, offset = self.parse_limit_offset(kwd)
-        order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=kwd.get('order', 'hid-asc'))
-        serialization_params = self._parse_serialization_params(kwd, 'summary')
-        # TODO: > 16.04: remove these
-        # TODO: remove 'dataset_details' and the following section when the UI doesn't need it
-        # details param allows a mixed set of summary and detailed hdas
-        # Ever more convoluted due to backwards compat..., details
-        # should be considered deprecated in favor of more specific
-        # dataset_details (and to be implemented dataset_collection_details).
-        details = kwd.get('details', [])
-        if details and details != 'all':
-            details = util.listify(details)
-        view = serialization_params.pop('view')
-
-        contents = self.history_contents_manager.contents(history,
-            filters=filters,
-            limit=limit,
-            offset=offset,
-            order_by=order_by,
-            serialization_params=serialization_params)
-
-        for content in contents:
-
-            # TODO: remove split
-            if isinstance(content, trans.app.model.HistoryDatasetAssociation):
-                # TODO: remove split
-                if details == 'all' or trans.security.encode_id(content.id) in details:
-                    rval.append(self.hda_serializer.serialize_to_view(content,
-                        user=trans.user, trans=trans, view='detailed', **serialization_params))
-                else:
-                    rval.append(self.hda_serializer.serialize_to_view(content,
-                        user=trans.user, trans=trans, view=view, **serialization_params))
-
-            elif isinstance(content, trans.app.model.HistoryDatasetCollectionAssociation):
-                collection = self.hdca_serializer.serialize_to_view(content,
-                    user=trans.user, trans=trans, view=view, **serialization_params)
-                rval.append(collection)
-
-        return rval
 
     def encode_type_id(self, type_id):
         TYPE_ID_SEP = '-'
