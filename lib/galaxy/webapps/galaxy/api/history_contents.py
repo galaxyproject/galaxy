@@ -9,13 +9,13 @@ import re
 from typing import (
     Any,
     List,
-    Literal,
     Optional,
     Set,
     Union,
 )
 
 import dateutil.parser
+from typing_extensions import Literal
 
 from galaxy import (
     exceptions,
