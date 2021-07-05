@@ -32,6 +32,7 @@ from galaxy.managers.base import (
     ModelSerializer,
     ServiceBase,
 )
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
@@ -168,6 +169,8 @@ class HistoriesContentsService(ServiceBase):
         security: IdEncodingHelper,
         history_manager: histories.HistoryManager,
         history_contents_manager: history_contents.HistoryContentsManager,
+        hda_manager: hdas.HDAManager,
+        dataset_collection_manager: DatasetCollectionManager,
         hda_serializer: hdas.HDASerializer,
         hdca_serializer: hdcas.HDCASerializer,
         history_contents_filters: history_contents.HistoryContentsFilters,
@@ -175,6 +178,8 @@ class HistoriesContentsService(ServiceBase):
         super().__init__(security)
         self.history_manager = history_manager
         self.history_contents_manager = history_contents_manager
+        self.hda_manager = hda_manager
+        self.dataset_collection_manager = dataset_collection_manager
         self.hda_serializer = hda_serializer
         self.hdca_serializer = hdca_serializer
         self.history_contents_filters = history_contents_filters
@@ -197,6 +202,55 @@ class HistoriesContentsService(ServiceBase):
                 trans, history_id, legacy_params, serialization_params, filter_query_params
             )
         return self.__index_legacy(trans, history_id, legacy_params)
+
+    def show(
+        self,
+        trans,
+        id: EncodedDatabaseIdField,
+        serialization_params: SerializationParams,
+        contents_type: HistoryContentType = HistoryContentType.dataset,
+        fuzzy_count: Optional[int] = None,
+    ) -> AnyHistoryContentItem:
+        """
+        Return detailed information about an HDA or HDCA within a history
+
+        .. note:: Anonymous users are allowed to get their current history contents
+
+        :type   id:                         str
+        :param  id:                         the encoded id of the HDA or HDCA to return
+        :type   contents_type:              str
+        :param  id:                         'dataset' or 'dataset_collection'
+        :type   serialization_params.view:  str
+        :param  serialization_params.view:  if fetching a dataset collection - the view style of
+                                            the dataset collection to produce.
+                                            'collection' returns no element information, 'element'
+                                            returns detailed element information for all datasets,
+                                            'element-reference' returns a minimal set of information
+                                            about datasets (for instance id, type, and state but not
+                                            metadata, peek, info, or name). The default is 'element'.
+        :type  fuzzy_count: int
+        :param fuzzy_count: this value can be used to broadly restrict the magnitude
+                            of the number of elements returned via the API for large
+                            collections. The number of actual elements returned may
+                            be "a bit" more than this number or "a lot" less - varying
+                            on the depth of nesting, balance of nesting at each level,
+                            and size of target collection. The consumer of this API should
+                            not expect a stable number or pre-calculable number of
+                            elements to be produced given this parameter - the only
+                            promise is that this API will not respond with an order
+                            of magnitude more elements estimated with this value.
+                            The UI uses this parameter to fetch a "balanced" concept of
+                            the "start" of large collections at every depth of the
+                            collection.
+
+        :rtype:     dict
+        :returns:   dictionary containing detailed HDA or HDCA information
+        """
+        if contents_type == HistoryContentType.dataset:
+            return self.__show_dataset(trans, id, serialization_params)
+        elif contents_type == HistoryContentType.dataset_collection:
+            return self.__show_dataset_collection(trans, id, serialization_params, fuzzy_count)
+        raise exceptions.UnknownContentsType(f'Unknown contents type: {contents_type}')
 
     def __index_legacy(
         self, trans,
@@ -326,6 +380,32 @@ class HistoriesContentsService(ServiceBase):
         history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
         return history
 
+    def __show_dataset(
+        self, trans,
+        id: EncodedDatabaseIdField,
+        serialization_params: SerializationParams,
+    ):
+        serialization_params["default_view"] = "detailed"
+        hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
+        return self.hda_serializer.serialize_to_view(
+            hda, user=trans.user, trans=trans, **serialization_params
+        )
+
+    def __show_dataset_collection(
+        self, trans,
+        id: EncodedDatabaseIdField,
+        serialization_params: SerializationParams,
+        fuzzy_count: Optional[int] = None,
+    ):
+        dataset_collection_instance = self.__get_accessible_collection(trans, id)
+        view = serialization_params.get("view") or "element"
+        return self.__collection_dict(trans, dataset_collection_instance, view=view, fuzzy_count=fuzzy_count)
+
+    def __get_accessible_collection(self, trans, id: EncodedDatabaseIdField):
+        return self.dataset_collection_manager.get_dataset_collection_instance(
+            trans=trans, instance_type="history", id=id,
+        )
+
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
@@ -420,11 +500,10 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :rtype:     dict
         :returns:   dictionary containing detailed HDA or HDCA information
         """
+        serialization_params = parse_serialization_params(**kwd)
         contents_type = self.__get_contents_type(trans, kwd)
-        if contents_type == 'dataset':
-            return self.__show_dataset(trans, id, **kwd)
-        elif contents_type == 'dataset_collection':
-            return self.__show_dataset_collection(trans, id, history_id, **kwd)
+        fuzzy_count = kwd.get("fuzzy_count")
+        return self.service.show(trans, id, serialization_params, contents_type, fuzzy_count)
 
     @expose_api_anonymous
     def index_jobs_summary(self, trans, history_id, **kwd):
