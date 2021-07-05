@@ -253,12 +253,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 message = 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
                 status = 'warning'
             # datatype conversion
-            conversion_options = [(convert_name, convert_id) for convert_id, convert_name in converters_collection]
+            conversion_options = [(f"{convert_id} (using '{convert_name}')", convert_id) for convert_id, convert_name in converters_collection]
             conversion_disable = len(conversion_options) == 0
             conversion_inputs = [{
                 'type': 'select',
                 'name': 'target_type',
-                'label': 'Name',
+                'label': 'Target datatype',
                 'help': 'This will create a new dataset with the contents of this dataset converted to a new format.',
                 'options': conversion_options
             }]
