@@ -1683,7 +1683,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @skip_without_tool("identifier_in_conditional")
     @uses_test_history(require_new=False)
     def test_identifier_map_over_input_in_conditional(self, history_id):
-        hdca_id = self._build_pair(history_id, ["123", "456"])
+        # Run cat tool, so HDA names are different from element identifiers
+        hdca_id = self._build_pair(history_id, ["123", "456"], run_cat=True)
         inputs = {
             "outer_cond|input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
             "outer_cond|multi_input": False,
@@ -2519,9 +2520,15 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         hdca_list_id = response.json()["outputs"][0]["id"]
         return hdca_list_id
 
-    def _build_pair(self, history_id, contents):
+    def _build_pair(self, history_id, contents, run_cat=False):
         create_response = self.dataset_collection_populator.create_pair_in_history(history_id, contents=contents, direct_upload=True)
-        hdca_id = create_response.json()["outputs"][0]["id"]
+        hdca_id = create_response.json()["output_collections"][0]["id"]
+        inputs = {
+            "input1": {'batch': True, 'values': [dict(src="hdca", id=hdca_id)]},
+        }
+        if run_cat:
+            outputs = self._run_cat(history_id, inputs=inputs, assert_ok=True)
+            hdca_id = outputs['implicit_collections'][0]['id']
         return hdca_id
 
     def _assert_dataset_permission_denied_response(self, response):
