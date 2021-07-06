@@ -413,6 +413,24 @@ def test_GroupRoleAssociation(model, session, group, role):
         assert stored_obj.role.id == role.id
 
 
+def test_HistoryUserShareAssociation(model, session, history, user):
+    cls = model.HistoryUserShareAssociation
+    assert cls.__tablename__ == 'history_user_share_association'
+    with dbcleanup(session, cls):
+        obj = cls()
+        obj.history = history
+        obj.user = user
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.history_id == history.id
+        assert stored_obj.user_id == user.id
+        # test mapped relationships
+        assert stored_obj.history_id == history.id
+        assert stored_obj.user_id == user.id
+
+
 def test_HistoryAudit(model, session, history):
     cls = model.HistoryAudit
     assert cls.__tablename__ == 'history_audit'

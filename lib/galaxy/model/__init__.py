@@ -2529,7 +2529,15 @@ class UserShareAssociation(RepresentById):
     user: Optional[User]
 
 
-class HistoryUserShareAssociation(UserShareAssociation):
+class HistoryUserShareAssociation(Base, UserShareAssociation):
+    __tablename__ = 'history_user_share_association'
+
+    id = Column('id', Integer, primary_key=True)
+    history_id = Column('history_id', Integer, ForeignKey('history.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    user = relationship('User', back_populates='histories_shared_by_others')
+    history = relationship('History', back_populates='users_shared_with')
+
     def __init__(self):
         self.history = None
         self.user = None
