@@ -1609,6 +1609,78 @@ def test_Tag(
         assert stored_obj.tagged_tools == [tool_tag_association]
 
 
+def test_Task(model, session, job, task_metric_numeric, task_metric_text):
+    cls = model.Task
+    assert cls.__tablename__ == 'task'
+    with dbcleanup(session, cls):
+        create_time = datetime.now()
+        execution_time = create_time + timedelta(hours=1)
+        update_time = execution_time + timedelta(hours=1)
+        state = model.Task.states.WAITING
+        command_line = 'a'
+        param_filename = 'b'
+        runner_name = 'c'
+        job_stdout = 'd'
+        job_stderr = 'e'
+        tool_stdout = 'f'
+        tool_stderr = 'g'
+        exit_code = 9
+        job_messages = 'h'
+        info = 'i'
+        traceback = 'j'
+        working_directory = 'k'
+        task_runner_name = 'l'
+        task_runner_external_id = 'm'
+        prepare_input_files_cmd = 'n'
+
+        obj = cls(job, working_directory, prepare_input_files_cmd)
+        obj.create_time = create_time
+        obj.execution_time = execution_time
+        obj.update_time = update_time
+        obj.state = state
+        obj.command_line = command_line
+        obj.param_filename = param_filename
+        obj.runner_name = runner_name
+        obj.job_stdout = job_stdout
+        obj.job_stderr = job_stderr
+        obj.tool_stdout = tool_stdout
+        obj.tool_stderr = tool_stderr
+        obj.exit_code = exit_code
+        obj.job_messages = job_messages
+        obj.info = info
+        obj.traceback = traceback
+        obj.task_runner_name = task_runner_name
+        obj.task_runner_external_id = task_runner_external_id
+        obj.numeric_metrics.append(task_metric_numeric)
+        obj.text_metrics.append(task_metric_text)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        # test mapped columns
+        assert stored_obj.id == obj_id
+        assert stored_obj.create_time == create_time
+        assert stored_obj.execution_time == execution_time
+        assert stored_obj.update_time == update_time
+        assert stored_obj.state == state
+        assert stored_obj.command_line == command_line
+        assert stored_obj.param_filename == param_filename
+        assert stored_obj.runner_name == runner_name
+        assert stored_obj.job_stdout == job_stdout
+        assert stored_obj.job_stderr == job_stderr
+        assert stored_obj.tool_stdout == tool_stdout
+        assert stored_obj.tool_stderr == tool_stderr
+        assert stored_obj.exit_code == exit_code
+        assert stored_obj.job_messages == job_messages
+        assert stored_obj.info == info
+        assert stored_obj.traceback == traceback
+        assert stored_obj.task_runner_name == task_runner_name
+        assert stored_obj.task_runner_external_id == task_runner_external_id
+        # test mapped relationships
+        assert stored_obj.job.id == job.id
+        assert stored_obj.numeric_metrics == [task_metric_numeric]
+        assert stored_obj.text_metrics == [task_metric_text]
+
+
 def test_TaskMetricNumeric(model, session, task):
     cls = model.TaskMetricNumeric
     assert cls.__tablename__ == 'task_metric_numeric'
@@ -2262,6 +2334,18 @@ def tag(model, session):
 def task(model, session, job):
     t = model.Task(job, 'a', 'b')
     yield from dbcleanup_wrapper(session, t)
+
+
+@pytest.fixture
+def task_metric_numeric(model, session):
+    tmn = model. TaskMetricNumeric('a', 'b', 9)
+    yield from dbcleanup_wrapper(session, tmn)
+
+
+@pytest.fixture
+def task_metric_text(model, session):
+    tmt = model. TaskMetricText('a', 'b', 'c')
+    yield from dbcleanup_wrapper(session, tmt)
 
 
 @pytest.fixture
