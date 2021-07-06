@@ -14,14 +14,14 @@
                         :tool-name="toolName"
                     />
                     <Webhook v-if="showSuccess" type="tool" :tool-id="jobDef.tool_id" />
-                    <div v-if="showError" class="errormessagelarge">
+                    <b-alert v-if="showError" show variant="danger">
+                        <h4>{{ errorTitle | l }}</h4>
                         <p>
                             The server could not complete the request. Please contact the Galaxy Team if this error
                             persists.
-                            {{ errorTitle | l }}
                         </p>
                         <pre>{{ errorContentPretty }}</pre>
-                    </div>
+                    </b-alert>
                     <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
                     <ToolCard
                         v-if="showForm"
@@ -150,7 +150,7 @@ export default {
             error: null,
             formConfig: {},
             formData: {},
-            errorTitle: "",
+            errorTitle: null,
             errorContent: null,
             messageVariant: "",
             messageText: "",
