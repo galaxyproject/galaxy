@@ -1431,10 +1431,37 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return False
 
 
-class Task(JobLike, RepresentById):
+class Task(Base, JobLike, RepresentById):
     """
     A task represents a single component of a job.
     """
+    __tablename__ = 'task'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    execution_time = Column('execution_time', DateTime)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    state = Column('state', String(64), index=True)
+    command_line = Column('command_line', TEXT)
+    param_filename = Column('param_filename', String(1024))
+    runner_name = Column('runner_name', String(255))
+    job_stdout = Column('job_stdout', TEXT)  # job_stdout makes sense here because it is short for job script standard out
+    job_stderr = Column('job_stderr', TEXT)
+    tool_stdout = Column('tool_stdout', TEXT)
+    tool_stderr = Column('tool_stderr', TEXT)
+    exit_code = Column('exit_code', Integer, nullable=True)
+    job_messages = Column('job_messages', MutableJSONType, nullable=True)
+    info = Column('info', TrimmedString(255))
+    traceback = Column('traceback', TEXT)
+    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True, nullable=False)
+    working_directory = Column('working_directory', String(1024))
+    task_runner_name = Column('task_runner_name', String(255))
+    task_runner_external_id = Column('task_runner_external_id', String(255))
+    prepare_input_files_cmd = Column('prepare_input_files_cmd', TEXT)
+    job = relationship('Job', back_populates='tasks')
+    text_metrics = relationship('TaskMetricText', back_populates='task')
+    numeric_metrics = relationship('TaskMetricNumeric', back_populates='task')
+
     _numeric_metric = TaskMetricNumeric
     _text_metric = TaskMetricText
 

@@ -439,30 +439,6 @@ model.JobContainerAssociation.table = Table(
     Column("created_time", DateTime, default=now),
     Column("modified_time", DateTime, default=now, onupdate=now))
 
-model.Task.table = Table(
-    "task", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("execution_time", DateTime),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("state", String(64), index=True),
-    Column("command_line", TEXT),
-    Column("param_filename", String(1024)),
-    Column("runner_name", String(255)),
-    Column("job_stdout", TEXT),  # job_stdout makes sense here because it is short for job script standard out.
-    Column("job_stderr", TEXT),
-    Column("tool_stdout", TEXT),
-    Column("tool_stderr", TEXT),
-    Column("exit_code", Integer, nullable=True),
-    Column("job_messages", MutableJSONType, nullable=True),
-    Column("info", TrimmedString(255)),
-    Column("traceback", TEXT),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
-    Column("working_directory", String(1024)),
-    Column("task_runner_name", String(255)),
-    Column("task_runner_external_id", String(255)),
-    Column("prepare_input_files_cmd", TEXT))
-
 model.PostJobAction.table = Table(
     "post_job_action", metadata,
     Column("id", Integer, primary_key=True),
@@ -1361,11 +1337,6 @@ mapper_registry.map_imperatively(model.PostJobActionAssociation, model.PostJobAc
     post_job_action=relation(model.PostJobAction)
 ))
 
-mapper_registry.map_imperatively(model.Task, model.Task.table, properties=dict(
-    text_metrics=relation(model.TaskMetricText, back_populates='task'),
-    numeric_metrics=relation(model.TaskMetricNumeric, back_populates='task'),
-))
-
 mapper_registry.map_imperatively(model.DeferredJob, model.DeferredJob.table, properties={})
 
 mapper_registry.map_imperatively(model.TransferJob, model.TransferJob.table, properties={})
@@ -1745,7 +1716,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation,
         back_populates="job", lazy=True),
     external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True, backref='job'),
-    tasks=relation(model.Task, backref='job'),
+    tasks=relation(model.Task, back_populates='job'),
     output_datasets=relation(model.JobToOutputDatasetAssociation, back_populates='job'),
     state_history=relation(model.JobStateHistory, back_populates='job'),
     text_metrics=relation(model.JobMetricText, back_populates='job'),
