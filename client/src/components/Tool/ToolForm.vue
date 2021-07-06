@@ -168,6 +168,12 @@ export default {
     },
     created() {
         this.requestTool();
+        const Galaxy = getGalaxyInstance();
+        if (Galaxy.currHistoryPanel) {
+            Galaxy.currHistoryPanel.collection.on("change", () => {
+                this.onUpdate();
+            });
+        }
     },
     computed: {
         toolName() {
