@@ -25,7 +25,7 @@ class JobPortsView:
     def __authorize_job_access(self, encoded_job_id, **kwargs):
         key = "job_key"
         if key not in kwargs:
-            error_message = "Job files action requires a valid '%s'." % key
+            error_message = f"Job files action requires a valid '{key}'."
             raise ObjectAttributeMissingException(error_message)
 
         job_id = self._security.decode_id(encoded_job_id)

@@ -116,7 +116,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
     def __authorize_job_access(self, trans, encoded_job_id, **kwargs):
         for key in ["path", "job_key"]:
             if key not in kwargs:
-                error_message = "Job files action requires a valid '%s'." % key
+                error_message = f"Job files action requires a valid '{key}'."
                 raise exceptions.ObjectAttributeMissingException(error_message)
 
         job_id = trans.security.decode_id(encoded_job_id)

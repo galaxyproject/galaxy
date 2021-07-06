@@ -260,7 +260,7 @@ class ToolSource(metaclass=ABCMeta):
         if source_path:
             as_str = f'{self.__class__.__name__}[{source_path}]'
         else:
-            as_str = '%s[In-memory]' % (self.__class__.__name__)
+            as_str = f'{self.__class__.__name__}[In-memory]'
         return as_str
 
 
@@ -373,6 +373,7 @@ class InputSource(metaclass=ABCMeta):
 
 
 class TestCollectionDef:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, attrib, name, collection_type, elements):
         self.attrib = attrib
@@ -427,7 +428,7 @@ class TestCollectionDef:
 
         def element_from_dict(element_dict):
             if "element_definition" not in element_dict:
-                raise Exception("Invalid element_dict %s" % element_dict)
+                raise Exception(f"Invalid element_dict {element_dict}")
             element_def = element_dict["element_definition"]
             if element_def.get("model_class", None) == "TestCollectionDef":
                 element_def = TestCollectionDef.from_dict(element_def)
@@ -452,6 +453,7 @@ class TestCollectionDef:
 
 
 class TestCollectionOutputDef:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, name, attrib, element_tests):
         self.name = name

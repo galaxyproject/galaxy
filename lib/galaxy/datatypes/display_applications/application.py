@@ -38,7 +38,7 @@ class DisplayApplicationLink:
         rval.filters = elem.findall('filter')
         for param_elem in elem.findall('param'):
             param = DisplayApplicationParameter.from_elem(param_elem, rval)
-            assert param, 'Unable to load parameter from element: %s' % param_elem
+            assert param, f'Unable to load parameter from element: {param_elem}'
             rval.parameters[param.name] = param
             rval.url_param_name_map[param.url] = param.name
         return rval
@@ -79,7 +79,7 @@ class DisplayApplicationLink:
         other_values['USER_HASH'] = user_hash
         ready = True
         for name, param in self.parameters.items():
-            assert name not in other_values, "The display parameter '%s' has been defined more than once." % name
+            assert name not in other_values, f"The display parameter '{name}' has been defined more than once."
             if param.ready(other_values):
                 if name in app_kwds and param.allow_override:
                     other_values[name] = app_kwds[name]
@@ -114,7 +114,7 @@ class DynamicDisplayApplicationBuilder:
             data_table_name = elem.get('from_data_table', None)
             if data_table_name:
                 data_table = display_application.app.tool_data_tables.get(data_table_name, None)
-                assert data_table is not None, 'Unable to find data table named "%s".' % data_table_name
+                assert data_table is not None, f'Unable to find data table named "{data_table_name}".'
 
         assert filename is not None or data_table is not None, 'Filename or data Table is required for dynamic_links.'
         skip_startswith = elem.get('skip_startswith', None)
@@ -254,7 +254,7 @@ class PopulatedDisplayApplicationLink:
         for name, parameter in self.link.parameters.items():
             if parameter.build_url(self.parameters) == url:
                 return name
-        raise ValueError("Unknown URL parameter name provided: %s" % url)
+        raise ValueError(f"Unknown URL parameter name provided: {url}")
 
     @property
     def allow_cors(self):
@@ -324,7 +324,7 @@ class DisplayApplication:
         elif self._elem:
             elem = self._elem
         else:
-            raise Exception("Unable to reload DisplayApplication %s." % (self.name))
+            raise Exception(f"Unable to reload DisplayApplication {self.name}.")
         # All toolshed-specific attributes added by e.g the registry will remain
         attr_dict = self._get_attributes_from_elem(elem)
         # We will not allow changing the id at this time (we'll need to fix several mappings upstream to handle this case)

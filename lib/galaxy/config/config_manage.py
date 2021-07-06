@@ -201,29 +201,29 @@ class _OptionAction:
 class _DeprecatedAction(_OptionAction):
 
     def lint(self, args, app_desc, key, value):
-        print("Option [%s] has been deprecated, this will likely be dropped in future releases of Galaxy." % key)
+        print(f"Option [{key}] has been deprecated, this will likely be dropped in future releases of Galaxy.")
 
 
 class _DeprecatedAndDroppedAction(_OptionAction):
 
     def converted(self, args, app_desc, key, value):
-        print("Option [%s] has been deprecated and dropped. It is not included in converted configuration." % key)
+        print(f"Option [{key}] has been deprecated and dropped. It is not included in converted configuration.")
         return DROP_OPTION_VALUE
 
     def lint(self, args, app_desc, key, value):
-        print("Option [%s] has been deprecated. Option should be dropped without replacement." % key)
+        print(f"Option [{key}] has been deprecated. Option should be dropped without replacement.")
 
 
 class _PasteAppFactoryAction(_OptionAction):
 
     def converted(self, args, app_desc, key, value):
         if value not in app_desc.expected_app_factories:
-            raise Exception("Ending convert process - unknown paste factory encountered [%s]" % value)
+            raise Exception(f"Ending convert process - unknown paste factory encountered [{value}]")
         return DROP_OPTION_VALUE
 
     def lint(self, args, app_desc, key, value):
         if value not in app_desc.expected_app_factories:
-            print("Problem - unknown paste app factory encountered [%s]" % value)
+            print(f"Problem - unknown paste app factory encountered [{value}]")
 
 
 class _ProductionUnsafe(_OptionAction):
@@ -409,7 +409,7 @@ def _to_rst(args, app_desc, heading_level="~"):
 
 
 def _write_option_rst(args, rst, key, heading_level, option_value):
-    title = "``%s``" % key
+    title = f"``{key}``"
     heading = heading_level * len(title)
     rst.write(f"{heading}\n{title}\n{heading}\n\n")
     option, value = _parse_option_value(option_value)
@@ -426,9 +426,9 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
         default = "false"
     elif default == "":
         default = '""'
-    rst.write(":Default: ``%s``\n" % default)
+    rst.write(f":Default: ``{default}``\n")
     if type:
-        rst.write(":Type: %s\n" % type)
+        rst.write(f":Type: {type}\n")
     rst.write("\n\n")
 
 
@@ -513,7 +513,7 @@ def _find_app_options_from_config_parser(p):
 def _lint(args, app_desc):
     path = _find_config(args, app_desc)
     if not os.path.exists(path):
-        raise Exception("Expected configuration file [%s] not found." % path)
+        raise Exception(f"Expected configuration file [{path}] not found.")
     app_items = _find_app_options(app_desc, path)
     for key, value in app_items.items():
         option_action = OPTION_ACTIONS.get(key)
@@ -564,7 +564,7 @@ class GzipFilter:
 def _run_conversion(args, app_desc):
     ini_config = _find_config(args, app_desc)
     if ini_config and not _is_ini(ini_config):
-        _warn("Cannot convert YAML file %s, this option is only for ini config files." % ini_config)
+        _warn(f"Cannot convert YAML file {ini_config}, this option is only for ini config files.")
         sys.exit(1)
     elif not ini_config:
         _warn("Failed to find a config to convert - exiting without changes.")
@@ -613,7 +613,7 @@ def _run_conversion(args, app_desc):
                 if value in filters:
                     applied_filters.append(filters[value])
                 else:
-                    _warn("Unknown filter found [%s], exiting..." % value)
+                    _warn(f"Unknown filter found [{value}], exiting...")
                     sys.exit(1)
 
     uwsgi_dict = _server_paste_to_uwsgi(app_desc, server_config, applied_filters)
@@ -656,7 +656,7 @@ def _is_ini(path):
 
 def _replace_file(args, f, app_desc, from_path, to_path):
     _write_to_file(args, f, to_path)
-    backup_path = "%s.backup" % from_path
+    backup_path = f"{from_path}.backup"
     print(f"Moving [{from_path}] to [{backup_path}]")
     if args.dry_run:
         print("... skipping because --dry-run is enabled.")
@@ -704,7 +704,7 @@ def _write_to_file(args, f, path):
         print(f"Overwriting {path} with the following contents:\n{contents_indented}")
         print("... skipping because --dry-run is enabled.")
     else:
-        print("Overwriting %s" % path)
+        print(f"Overwriting {path}")
         safe_makedirs(os.path.dirname(path))
         with open(path, "w") as to_f:
             to_f.write(contents)
@@ -736,7 +736,7 @@ def _write_section(args, f, section_header, section_dict, uwsgi_hack=False):
 
 
 def _write_header(f, section_header):
-    f.write("%s:\n\n" % section_header)
+    f.write(f"{section_header}:\n\n")
 
 
 def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False):
@@ -756,7 +756,7 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
         key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
     lines = f"{comment}{as_comment_str}{key_val_str}"
     lines_idented = "\n".join(f"  {line}" for line in lines.split("\n"))
-    f.write("%s\n\n" % lines_idented)
+    f.write(f"{lines_idented}\n\n")
 
 
 def _parse_option_value(option_value):
@@ -807,7 +807,7 @@ def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
 
 
 def _warn(message):
-    print("WARNING: %s" % message)
+    print(f"WARNING: {message}")
 
 
 def _get_option_desc(option):

@@ -14,12 +14,12 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="trr" value="traj.trr"/>
-            <output name="output1" format="xtc" value="traj.xtc"/>
+            <param name="input1" ftype="trr" value="traj.trr"/>
+            <output name="output1" ftype="xtc" value="traj.xtc"/>
         </test>
         <test>
-            <param name="input1" format="dcd" value="traj.dcd"/>
-            <output name="output1" format="xtc" value="traj.xtc"/>
+            <param name="input1" ftype="dcd" value="traj.dcd"/>
+            <output name="output1" ftype="xtc" value="traj.xtc"/>
         </test>
     </tests>
     <help>

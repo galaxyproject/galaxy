@@ -186,7 +186,7 @@ class VisualizationsConfigParser:
         entry_point_attrib = dict(entry_point.attrib)
         entry_point_type = entry_point_attrib.pop('entry_point_type', 'mako')
         if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
-            raise ParsingException('Unknown entry_point type: ' + entry_point_type)
+            raise ParsingException(f"Unknown entry_point type: {entry_point_type}")
         return {
             'type': entry_point_type,
             'file': entry_point.text,
@@ -255,7 +255,7 @@ class DataSourceParser:
 
         if xml_tree.text not in self.ALLOWED_MODEL_CLASSES:
             # log.debug( 'available data_source model_classes: %s' %( str( self.ALLOWED_MODEL_CLASSES ) ) )
-            raise ParsingException('Invalid data_source model_class: %s' % (xml_tree.text))
+            raise ParsingException(f'Invalid data_source model_class: {xml_tree.text}')
 
         # look up the model from the model module returning an empty data_source if not found
         model_class = getattr(galaxy.model, xml_tree.text, None)

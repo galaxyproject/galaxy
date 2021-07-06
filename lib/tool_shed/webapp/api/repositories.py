@@ -81,7 +81,7 @@ class RepositoriesController(BaseAPIController):
             raise HTTPBadRequest(detail="Missing required parameter 'owner'.")
         repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
         if repository is None:
-            error_message = 'Cannot locate repository with name {} and owner {},'.format(str(name), str(owner))
+            error_message = f'Cannot locate repository with name {str(name)} and owner {str(owner)},'
             log.debug(error_message)
             response_dict['status'] = 'error'
             response_dict['message'] = error_message
@@ -206,7 +206,7 @@ class RepositoriesController(BaseAPIController):
             # Get the repository information.
             repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner, eagerload_columns=['downloadable_revisions'])
             if repository is None:
-                log.debug('Cannot locate repository {} owned by {}'.format(str(name), str(owner)))
+                log.debug(f'Cannot locate repository {str(name)} owned by {str(owner)}')
                 return {}, {}, {}
             encoded_repository_id = trans.security.encode_id(repository.id)
             repository_dict = repository.to_dict(view='element',
@@ -339,7 +339,7 @@ class RepositoriesController(BaseAPIController):
             callback = kwd.get('callback', 'callback')
             search_results = self._search(trans, q, page, page_size)
             if return_jsonp:
-                response = str('{}({});'.format(callback, json.dumps(search_results)))
+                response = str(f'{callback}({json.dumps(search_results)});')
             else:
                 response = json.dumps(search_results)
             return response
@@ -378,7 +378,7 @@ class RepositoriesController(BaseAPIController):
                         metadata_dict['tool_dependencies'] = {}
                     if metadata.includes_tools:
                         metadata_dict['tools'] = metadata.metadata['tools']
-                    all_metadata['{}:{}'.format(int(changeset), changehash)] = metadata_dict
+                    all_metadata[f'{int(changeset)}:{changehash}'] = metadata_dict
             if repository_found is not None:
                 all_metadata['current_changeset'] = repository_found[0]
                 # all_metadata[ 'found_changesets' ] = repository_found
@@ -474,7 +474,7 @@ class RepositoriesController(BaseAPIController):
             raise HTTPBadRequest(detail="Missing required parameter 'owner'.")
         repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
         if repository is None:
-            error_message = 'Cannot locate repository with name {} and owner {},'.format(str(name), str(owner))
+            error_message = f'Cannot locate repository with name {str(name)} and owner {str(owner)},'
             log.debug(error_message)
             response_dict['status'] = 'error'
             response_dict['message'] = error_message
@@ -543,7 +543,7 @@ class RepositoriesController(BaseAPIController):
         """
 
         def handle_repository(trans, rmm, repository, results):
-            log.debug("Resetting metadata on repository %s" % str(repository.name))
+            log.debug(f"Resetting metadata on repository {str(repository.name)}")
             try:
                 rmm.set_repository(repository)
                 rmm.reset_all_metadata_on_repository_in_tool_shed()
@@ -563,7 +563,7 @@ class RepositoriesController(BaseAPIController):
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     (str(repository.name), str(repository.user.username), util.unicodify(e))
                 results['unsuccessful_count'] += 1
-            status = '{} : {}'.format(str(repository.name), message)
+            status = f'{str(repository.name)} : {message}'
             results['repository_status'].append(status)
             return results
         rmm = repository_metadata_manager.RepositoryMetadataManager(app=self.app,
@@ -653,7 +653,7 @@ class RepositoriesController(BaseAPIController):
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     (str(repository.name), str(repository.user.username), util.unicodify(e))
                 results['status'] = 'error'
-            status = '{} : {}'.format(str(repository.name), message)
+            status = f'{str(repository.name)} : {message}'
             results['repository_status'].append(status)
             return results
 
@@ -661,7 +661,7 @@ class RepositoriesController(BaseAPIController):
         if repository_id is not None:
             repository = repository_util.get_repository_in_tool_shed(self.app, repository_id)
             start_time = strftime("%Y-%m-%d %H:%M:%S")
-            log.debug("{}...resetting metadata on repository {}".format(start_time, str(repository.name)))
+            log.debug(f"{start_time}...resetting metadata on repository {str(repository.name)}")
             results = handle_repository(trans, start_time, repository)
             stop_time = strftime("%Y-%m-%d %H:%M:%S")
             results['stop_time'] = stop_time
@@ -819,7 +819,7 @@ class RepositoriesController(BaseAPIController):
                 metadata_dict['tool_dependencies'] = {}
             if metadata.includes_tools:
                 metadata_dict['tools'] = metadata.metadata['tools']
-            all_metadata['{}:{}'.format(int(changeset), changehash)] = metadata_dict
+            all_metadata[f'{int(changeset)}:{changehash}'] = metadata_dict
         return all_metadata
 
     @expose_api

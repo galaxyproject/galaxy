@@ -80,7 +80,7 @@ class User(Dictifiable, _HasTable):
     def set_password_cleartext(self, cleartext):
         message = validate_password_str(cleartext)
         if message:
-            raise Exception("Invalid password: %s" % message)
+            raise Exception(f"Invalid password: {message}")
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = new_secure_hash(text_type=cleartext)
 
@@ -221,7 +221,7 @@ class Repository(Dictifiable, _HasTable):
 
     @property
     def admin_role(self):
-        admin_role_name = '{}_{}_admin'.format(str(self.name), str(self.user.username))
+        admin_role_name = f'{str(self.name)}_{str(self.user.username)}_admin'
         for rra in self.roles:
             role = rra.role
             if str(role.name) == admin_role_name:
@@ -303,7 +303,7 @@ class Repository(Dictifiable, _HasTable):
     def revision(self):
         repo = self.hg_repo
         tip_ctx = repo[repo.changelog.tip()]
-        return "{}:{}".format(str(tip_ctx.rev()), str(tip_ctx))
+        return f"{str(tip_ctx.rev())}:{str(tip_ctx)}"
 
     def set_allow_push(self, usernames, remove_auth=''):
         allow_push = util.listify(self.allow_push())
@@ -313,7 +313,7 @@ class Repository(Dictifiable, _HasTable):
             for username in util.listify(usernames):
                 if username not in allow_push:
                     allow_push.append(username)
-        allow_push = '%s\n' % ','.join(allow_push)
+        allow_push = f"{','.join(allow_push)}\n"
         # Why doesn't the following work?
         # repo.ui.setconfig('web', 'allow_push', allow_push)
         repo_dir = self.repo_path()
@@ -323,7 +323,7 @@ class Repository(Dictifiable, _HasTable):
         with open(hgrc_file, 'w') as fh:
             for line in lines:
                 if line.startswith('allow_push'):
-                    fh.write('allow_push = %s' % allow_push)
+                    fh.write(f'allow_push = {allow_push}')
                 else:
                     fh.write(line)
 

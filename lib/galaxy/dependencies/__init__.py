@@ -161,7 +161,7 @@ class ConditionalDependencies:
     def check(self, name):
         try:
             name = name.replace('-', '_').replace('.', '_')
-            return getattr(self, 'check_' + name)()
+            return getattr(self, f"check_{name}")()
         except Exception:
             return False
 

@@ -187,7 +187,7 @@ class WorkflowsManager:
         workflow_invocation = q.get(decoded_invocation_id)
         if not workflow_invocation:
             encoded_wfi_id = trans.security.encode_id(decoded_invocation_id)
-            message = "'%s' is not a valid workflow invocation id" % encoded_wfi_id
+            message = f"'{encoded_wfi_id}' is not a valid workflow invocation id"
             raise exceptions.ObjectNotFound(message)
         self.check_security(trans, workflow_invocation, check_ownership=True, check_accessible=False)
         return workflow_invocation
@@ -625,7 +625,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     errors[step.id] = step_errors
         if missing_tools:
             workflow.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, workflow)
-            raise exceptions.MessageException('Following tools missing: %s' % ', '.join(missing_tools))
+            raise exceptions.MessageException(f"Following tools missing: {', '.join(missing_tools)}")
         workflow.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, workflow)
         step_order_indices = {}
         for step in workflow.steps:
@@ -721,17 +721,17 @@ class WorkflowContentsManager(UsesAnnotations):
                             nested_input_dict = {}
                             index = repeat_values[i]['__index__']
                             nested_input_dict["title"] = "%i. %s" % (i + 1, input.title)
-                            nested_input_dict["inputs"] = do_inputs(input.inputs, repeat_values[i], prefix + input.name + "_" + str(index) + "|", step, other_values)
+                            nested_input_dict["inputs"] = do_inputs(input.inputs, repeat_values[i], f"{prefix + input.name}_{str(index)}|", step, other_values)
                             nested_input_dicts.append(nested_input_dict)
                         input_dict["inputs"] = nested_input_dicts
                 elif input.type == "conditional":
                     group_values = values[input.name]
                     current_case = group_values['__current_case__']
-                    new_prefix = prefix + input.name + "|"
+                    new_prefix = f"{prefix + input.name}|"
                     row_for_param(input_dict, input.test_param, group_values[input.test_param.name], other_values, prefix, step)
                     input_dict["inputs"] = do_inputs(input.cases[current_case].inputs, group_values, new_prefix, step, other_values)
                 elif input.type == "section":
-                    new_prefix = prefix + input.name + "|"
+                    new_prefix = f"{prefix + input.name}|"
                     group_values = values[input.name]
                     input_dict["title"] = input.title
                     input_dict["inputs"] = do_inputs(input.inputs, group_values, new_prefix, step, other_values)
@@ -750,7 +750,7 @@ class WorkflowContentsManager(UsesAnnotations):
             try:
                 module_injector.inject(step, steps=workflow.steps, exact_tools=False)
             except exceptions.ToolMissingException as e:
-                step_dict["label"] = "Unknown Tool with id '%s'" % e.tool_id
+                step_dict["label"] = f"Unknown Tool with id '{e.tool_id}'"
                 step_dicts.append(step_dict)
                 continue
             if step.type == 'tool' or step.type is None:
@@ -758,7 +758,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 if tool:
                     step_dict["label"] = step.label or tool.name
                 else:
-                    step_dict["label"] = "Unknown Tool with id '%s'" % step.tool_id
+                    step_dict["label"] = f"Unknown Tool with id '{step.tool_id}'"
                 step_dict["inputs"] = do_inputs(tool.inputs, step.state.inputs, "", step)
             elif step.type == 'subworkflow':
                 step_dict["label"] = step.label or (step.subworkflow.name if step.subworkflow else "Missing workflow.")
@@ -799,7 +799,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Load from database representation
             module = module_factory.from_workflow_step(trans, step, exact_tools=False)
             if not module:
-                raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
+                raise exceptions.MessageException(f'Unrecognized step type: {step.type}')
             # Load label from state of data input modules, necessary for backward compatibility
             self.__set_default_label(step, module, step.tool_inputs)
             # Fix any missing parameters
@@ -875,7 +875,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict['workflow_outputs'] = outputs
             if len(output_label_duplicate) > 0:
                 output_label_duplicate_string = ", ".join(output_label_duplicate)
-                upgrade_message_dict['output_label_duplicate'] = "Ignoring duplicate labels: %s." % output_label_duplicate_string
+                upgrade_message_dict['output_label_duplicate'] = f"Ignoring duplicate labels: {output_label_duplicate_string}."
             if upgrade_message_dict:
                 data['upgrade_messages'][step.order_index] = upgrade_message_dict
 
@@ -989,7 +989,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         collection_type = map_over
                         step_data_output['collection'] = True
                         if step_data_output.get('collection_type'):
-                            collection_type = "{}:{}".format(map_over, step_data_output['collection_type'])
+                            collection_type = f"{map_over}:{step_data_output['collection_type']}"
                         step_data_output['collection_type'] = collection_type
         return steps
 
@@ -1031,7 +1031,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Load from database representation
             module = module_factory.from_workflow_step(trans, step)
             if not module:
-                raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
+                raise exceptions.MessageException(f'Unrecognized step type: {step.type}')
             # Get user annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             content_id = module.get_content_id()
@@ -1102,12 +1102,12 @@ class WorkflowContentsManager(UsesAnnotations):
             for name, val in step_state.items():
                 input_type = type(val)
                 if input_type == RuntimeValue:
-                    input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
+                    input_dicts.append({"name": name, "description": f"runtime parameter for tool {module.get_name()}"})
                 elif input_type == dict:
                     # Input type is described by a dict, e.g. indexed parameters.
                     for partval in val.values():
                         if type(partval) == RuntimeValue:
-                            input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
+                            input_dicts.append({"name": name, "description": f"runtime parameter for tool {module.get_name()}"})
             step_dict['inputs'] = input_dicts
 
             # User outputs
@@ -1209,7 +1209,7 @@ class WorkflowContentsManager(UsesAnnotations):
             elif step_type == 'parameter_input':
                 label = "Input Parameter"
             else:
-                raise ValueError("Invalid step_type %s" % step_type)
+                raise ValueError(f"Invalid step_type {step_type}")
             if legacy:
                 index = step.id
             else:
@@ -1354,7 +1354,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     workflow_output = {"output_name": workflow_output}
                 output_name = workflow_output["output_name"]
                 if output_name in found_output_names:
-                    raise exceptions.ObjectAttributeInvalidException("Duplicate workflow outputs with name [%s] found." % output_name)
+                    raise exceptions.ObjectAttributeInvalidException(f"Duplicate workflow outputs with name [{output_name}] found.")
                 if not output_name:
                     raise exceptions.ObjectAttributeInvalidException("Workflow output with empty name encountered.")
                 found_output_names.add(output_name)

@@ -77,10 +77,10 @@ class ConfiguredFileSources:
     def get_file_source_path(self, uri):
         """Parse uri into a FileSource object and a path relative to its base."""
         if "://" not in uri:
-            raise exceptions.RequestParameterInvalidException("Invalid uri [%s]" % uri)
+            raise exceptions.RequestParameterInvalidException(f"Invalid uri [{uri}]")
         scheme, rest = uri.split("://", 1)
         if scheme not in self.get_schemes():
-            raise exceptions.RequestParameterInvalidException("Unsupported URI scheme [%s]" % scheme)
+            raise exceptions.RequestParameterInvalidException(f"Unsupported URI scheme [{scheme}]")
 
         if scheme != "gxfiles":
             # prefix unused
@@ -132,7 +132,7 @@ class ConfiguredFileSources:
         # is this string a URI this object understands how to realize
         if path_or_uri.startswith("gx") and "://" in path_or_uri:
             for scheme in self.get_schemes():
-                if path_or_uri.startswith("%s://" % scheme):
+                if path_or_uri.startswith(f"{scheme}://"):
                     return True
 
         return False

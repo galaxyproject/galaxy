@@ -272,7 +272,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         return self.__collection_dict(trans, dataset_collection_instance, view=view, fuzzy_count=fuzzy_count)
 
     def __get_accessible_collection(self, trans, id, history_id):
-        return trans.app.dataset_collections_service.get_dataset_collection_instance(
+        return trans.app.dataset_collection_manager.get_dataset_collection_instance(
             trans=trans,
             instance_type="history",
             id=id
@@ -405,7 +405,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         source = payload.get('source', None)
         if source not in ('library', 'hda'):
             raise exceptions.RequestParameterInvalidException(
-                "'source' must be either 'library' or 'hda': %s" % (source))
+                f"'source' must be either 'library' or 'hda': {source}")
         content = payload.get('content', None)
         if content is None:
             raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
@@ -433,7 +433,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         ld = self.get_library_dataset(trans, content)
         if type(ld) is not trans.app.model.LibraryDataset:
             raise exceptions.RequestParameterInvalidException(
-                "Library content id ( %s ) is not a dataset" % content)
+                f"Library content id ( {content} ) is not a dataset")
         hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
         return hda
 
@@ -475,7 +475,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
                     user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
                 rval.append(hda_dict)
         else:
-            message = "Invalid 'source' parameter in request %s" % source
+            message = f"Invalid 'source' parameter in request {source}"
             raise exceptions.RequestParameterInvalidException(message)
 
         trans.sa_session.flush()
@@ -520,7 +520,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         """
         source = kwd.get("source", payload.get("source", "new_collection"))
 
-        service = trans.app.dataset_collections_service
+        service = trans.app.dataset_collection_manager
         if source == "new_collection":
             create_params = api_payload_to_create_params(payload)
             dataset_collection_instance = service.create(
@@ -550,7 +550,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
                 dataset_instance_attributes=dataset_instance_attributes,
             )
         else:
-            message = "Invalid 'source' parameter in request %s" % source
+            message = f"Invalid 'source' parameter in request {source}"
             raise exceptions.RequestParameterInvalidException(message)
 
         # if the consumer specified keys or view, use the secondary serializer
@@ -751,7 +751,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             self.hda_manager.stop_creating_job(hda)
 
     def __update_dataset_collection(self, trans, history_id, id, payload, **kwd):
-        return trans.app.dataset_collections_service.update(trans, "history", id, payload)
+        return trans.app.dataset_collection_manager.update(trans, "history", id, payload)
 
     # TODO: allow anonymous del/purge and test security on this
     @expose_api
@@ -797,7 +797,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
                 purge = util.string_as_bool(kwd['payload'].get('purge', purge))
                 recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
 
-            trans.app.dataset_collections_service.delete(trans, "history", id, recursive=recursive, purge=purge)
+            trans.app.dataset_collection_manager.delete(trans, "history", id, recursive=recursive, purge=purge)
             return {'id': id, "deleted": True}
         else:
             return self.__handle_unknown_contents_type(trans, contents_type)
@@ -820,7 +820,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
                                                      user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     def __handle_unknown_contents_type(self, trans, contents_type):
-        raise exceptions.UnknownContentsType('Unknown contents type: %s' % type)
+        raise exceptions.UnknownContentsType(f'Unknown contents type: {type}')
 
     def __index_v2(self, trans, history_id, **kwd):
         """
@@ -1025,7 +1025,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             # ---- for composite files, we use id and name for a directory and, inside that, ...
             if self.hda_manager.is_composite(content):
                 # ...save the 'main' composite file (gen. html)
-                paths_and_files.append((content.file_name, os.path.join(archive_path, content.name + '.html')))
+                paths_and_files.append((content.file_name, os.path.join(archive_path, f"{content.name}.html")))
                 for extra_file in self.hda_manager.extra_files(content):
                     extra_file_basename = os.path.basename(extra_file)
                     archive_extra_file_path = os.path.join(archive_path, extra_file_basename)
@@ -1035,8 +1035,8 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             # ---- for single files, we add the true extension to id and name and store that single filename
             else:
                 # some dataset names can contain their original file extensions, don't repeat
-                if not archive_path.endswith('.' + content.extension):
-                    archive_path += '.' + content.extension
+                if not archive_path.endswith(f".{content.extension}"):
+                    archive_path += f".{content.extension}"
                 paths_and_files.append((content.file_name, archive_path))
 
         # filter the contents that contain datasets using any filters possible from index above and map the datasets

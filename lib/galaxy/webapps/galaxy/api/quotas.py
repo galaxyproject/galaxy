@@ -40,10 +40,10 @@ class QuotaAPIController(BaseGalaxyAPIController, AdminActions, UsesQuotaMixin, 
         query = trans.sa_session.query(trans.app.model.Quota)
         if deleted:
             route = 'deleted_quota'
-            query = query.filter(trans.app.model.Quota.table.c.deleted == true())
+            query = query.filter(trans.app.model.Quota.deleted == true())
         else:
             route = 'quota'
-            query = query.filter(trans.app.model.Quota.table.c.deleted == false())
+            query = query.filter(trans.app.model.Quota.deleted == false())
         for quota in query:
             item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(quota.id)

@@ -113,7 +113,7 @@ class YamlToolSource(ToolSource):
             elif output_type == "collection":
                 output_collection_defs.append(self._parse_output_collection(tool, name, output_dict))
             else:
-                message = "Unknown output_type [%s] encountered." % output_type
+                message = f"Unknown output_type [{output_type}] encountered."
                 raise Exception(message)
         outputs = {}
         for output in output_defs:

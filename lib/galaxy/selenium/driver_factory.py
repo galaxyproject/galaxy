@@ -152,8 +152,8 @@ class NoopDisplay:
 def _which(file):
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
-        if os.path.exists(path + "/" + file):
-            return path + "/" + file
+        if os.path.exists(f"{path}/{file}"):
+            return f"{path}/{file}"
 
     return None
 

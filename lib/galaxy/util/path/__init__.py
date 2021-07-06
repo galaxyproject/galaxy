@@ -358,11 +358,11 @@ def external_chown(path, pwent, external_chown_script, description="file"):
 
         cmd = shlex.split(external_chown_script)
         cmd.extend([path, pwent[0], str(pwent[3])])
-        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(map(shlex.quote, cmd))))
+        log.debug(f"Changing ownership of {path} with: {' '.join(map(shlex.quote, cmd))}")
         galaxy.util.commands.execute(cmd)
         return True
     except galaxy.util.commands.CommandLineException as e:
-        log.warning('Changing ownership of {} {} failed: {}'.format(description, path, galaxy.util.unicodify(e)))
+        log.warning(f'Changing ownership of {description} {path} failed: {galaxy.util.unicodify(e)}')
         return False
 
 

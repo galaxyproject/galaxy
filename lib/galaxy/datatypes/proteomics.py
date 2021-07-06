@@ -46,7 +46,7 @@ class Wiff(Binary):
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
+                rval.append(f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>")
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
@@ -835,7 +835,7 @@ class ThermoRAW(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Thermo Finnigan RAW file (%s)" % (nice_size(dataset.get_size()))
+            return f"Thermo Finnigan RAW file ({nice_size(dataset.get_size())})"
 
 
 @build_sniff_from_prefix
@@ -898,7 +898,7 @@ class SPLib(Msp):
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
+                rval.append(f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>")
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
@@ -942,7 +942,7 @@ class Ms2(Text):
         for header_field in ['CreationDate', 'Extractor', 'ExtractorVersion', 'ExtractorOptions']:
             found_header = False
             for header_line in header_lines:
-                if header_line.startswith('H\t%s' % (header_field)):
+                if header_line.startswith(f'H\t{header_field}'):
                     found_header = True
                     break
             if not found_header:
@@ -993,7 +993,7 @@ class ImzML(Binary):
             fn = composite_name
             opt_text = ''
             if composite_file.get('description'):
-                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
+                rval.append(f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>")
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')

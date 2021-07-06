@@ -98,7 +98,7 @@ def managed_history(f):
                 try:
                     current_history_id = self.current_history_id()
                     self.dataset_populator.cancel_history_jobs(current_history_id)
-                    self.api_delete("histories/%s" % current_history_id)
+                    self.api_delete(f"histories/{current_history_id}")
                 except Exception:
                     print("Faild to cleanup managed history, selenium connection corrupted somehow?")
     return func_wrapper
@@ -134,8 +134,8 @@ def dump_test_information(self, name_prefix):
             try:
                 full_log = self.driver.get_log(log_type)
                 trimmed_log = [entry for entry in full_log if entry["level"] not in ["DEBUG", "INFO"]]
-                write_file("%s.log.json" % log_type, json.dumps(trimmed_log, indent=True))
-                write_file("%s.log.verbose.json" % log_type, json.dumps(full_log, indent=True))
+                write_file(f"{log_type}.log.json", json.dumps(trimmed_log, indent=True))
+                write_file(f"{log_type}.log.verbose.json", json.dumps(full_log, indent=True))
             except Exception:
                 continue
 
@@ -171,6 +171,7 @@ retry_assertion_during_transitions = partial(retry_during_transitions, exception
 
 
 class TestSnapshot:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, driver, index, description):
         self.screenshot_binary = driver.get_screenshot_as_png()
@@ -181,9 +182,9 @@ class TestSnapshot:
 
     def write_to_error_directory(self, write_file_func):
         prefix = "%d-%s" % (self.index, self.description)
-        write_file_func("%s-screenshot.png" % prefix, self.screenshot_binary, raw=True)
-        write_file_func("%s-traceback.txt" % prefix, self.exc)
-        write_file_func("%s-stack.txt" % prefix, str(self.stack))
+        write_file_func(f"{prefix}-screenshot.png", self.screenshot_binary, raw=True)
+        write_file_func(f"{prefix}-traceback.txt", self.exc)
+        write_file_func(f"{prefix}-stack.txt", str(self.stack))
 
 
 class GalaxyTestSeleniumContext(GalaxySeleniumContext):
@@ -244,7 +245,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         try:
             self.setup_with_driver()
         except Exception:
-            dump_test_information(self, self.__class__.__name__ + "_setup")
+            dump_test_information(self, f"{self.__class__.__name__}_setup")
             raise
 
     def setup_with_driver(self):
@@ -331,7 +332,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
             self.driver.close()
         except Exception as e:
             if "cannot kill Chrome" in str(e):
-                print("Ignoring likely harmless error in Selenium shutdown %s" % e)
+                print(f"Ignoring likely harmless error in Selenium shutdown {e}")
             else:
                 exception = e
 
@@ -389,7 +390,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         """
         visualization_names = self.history_panel_item_available_visualizations(hid)
         if visualization_name not in visualization_names:
-            raise unittest.SkipTest("Skipping test, visualization [%s] doesn't appear to be configured." % visualization_name)
+            raise unittest.SkipTest(f"Skipping test, visualization [{visualization_name}] doesn't appear to be configured.")
 
 
 class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
@@ -548,7 +549,7 @@ class SeleniumSessionGetPostMixin:
 
     def _get(self, route, data=None, headers=None, admin=False) -> Response:
         data = data or {}
-        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
@@ -558,7 +559,7 @@ class SeleniumSessionGetPostMixin:
         return response
 
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
-        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         if data is None:
             data = {}
 
@@ -575,9 +576,9 @@ class SeleniumSessionGetPostMixin:
         response = requests.post(full_url, data=data, cookies=cookies, files=files, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
-    def _delete(self, route, data=None, headers=None, admin=False) -> Response:
+    def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         data = data or {}
-        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
@@ -586,9 +587,9 @@ class SeleniumSessionGetPostMixin:
         response = requests.delete(full_url, data=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
-    def _put(self, route, data=None, headers=None, admin=False) -> Response:
+    def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         data = data or {}
-        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"

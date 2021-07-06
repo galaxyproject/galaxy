@@ -27,7 +27,7 @@ def evaluate(config, input):
                           close_fds=True,
                           stdin=subprocess.PIPE,
                           stdout=subprocess.PIPE)
-    input_str = json.dumps(new_input) + "\n\n"
+    input_str = f"{json.dumps(new_input)}\n\n"
     input_bytes = input_str.encode("utf-8")
     (stdoutdata, stderrdata) = sp.communicate(input_bytes)
     if sp.returncode != 0:

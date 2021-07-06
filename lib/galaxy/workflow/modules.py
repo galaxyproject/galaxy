@@ -337,7 +337,7 @@ class WorkflowModule:
         )
         # Have implicit collections...
         if collections_to_match.has_collections():
-            collection_info = self.trans.app.dataset_collections_service.match_collections(
+            collection_info = self.trans.app.dataset_collection_manager.match_collections(
                 collections_to_match
             )
         else:
@@ -347,7 +347,7 @@ class WorkflowModule:
 
     def _find_collections_to_match(self, progress, step, all_inputs):
         collections_to_match = matching.CollectionsToMatch()
-        dataset_collection_type_descriptions = self.trans.app.dataset_collections_service.collection_type_descriptions
+        dataset_collection_type_descriptions = self.trans.app.dataset_collection_manager.collection_type_descriptions
 
         for input_dict in all_inputs:
             name = input_dict["name"]
@@ -496,7 +496,7 @@ class SubWorkflowModule(WorkflowModule):
                 for workflow_output in step['workflow_outputs']:
                     label = workflow_output['label']
                     if not label:
-                        label = "{}:{}".format(order_index, workflow_output['output_name'])
+                        label = f"{order_index}:{workflow_output['output_name']}"
                     workflow_output_uuid = workflow_output.get('uuid') or object()
                     for data_output in data_outputs:
                         data_output_uuid = data_output.get('uuid') or object()
@@ -508,7 +508,7 @@ class SubWorkflowModule(WorkflowModule):
                         # This can happen when importing workflows with missing tools.
                         # We can't raise an exception here, as that would prevent loading
                         # the workflow.
-                        log.error("Workflow output '%s' defined, but not listed among data outputs" % workflow_output['output_name'])
+                        log.error(f"Workflow output '{workflow_output['output_name']}' defined, but not listed among data outputs")
                         continue
                     outputs.append(data_output)
         return outputs
@@ -1138,7 +1138,7 @@ class InputParameterModule(WorkflowModule):
         return state
 
     def _parameter_option_def_to_tool_form_str(self, parameter_def):
-        return ",".join("{}:{}".format(o["value"], o["label"]) if isinstance(o, dict) else o for o in parameter_def)
+        return ",".join(f"{o['value']}:{o['label']}" if isinstance(o, dict) else o for o in parameter_def)
 
     def get_export_state(self):
         export_state = self._parse_state_into_dict()
@@ -1300,7 +1300,7 @@ class ToolModule(WorkflowModule):
                 )
                 tool_uuid = dynamic_tool.uuid
         if tool_id is None and tool_uuid is None:
-            raise exceptions.RequestParameterInvalidException("No content id could be located for for step [%s]" % d)
+            raise exceptions.RequestParameterInvalidException(f"No content id could be located for for step [{d}]")
         module = super().from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
         module.post_job_actions = d.get('post_job_actions', {})
         module.workflow_outputs = d.get('workflow_outputs', [])
@@ -1309,7 +1309,7 @@ class ToolModule(WorkflowModule):
             if tool_id != module.tool_id:
                 message += f"The tool (id '{tool_id}') specified in this step is not available. Using the tool with id {module.tool_id} instead."
             if d.get('tool_version', 'Unspecified') != module.get_version():
-                message += "{}: using version '{}' instead of version '{}' specified in this workflow.".format(tool_id, module.get_version(), d.get('tool_version', 'Unspecified'))
+                message += f"{tool_id}: using version '{module.get_version()}' instead of version '{d.get('tool_version', 'Unspecified')}' specified in this workflow."
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
@@ -1332,9 +1332,9 @@ class ToolModule(WorkflowModule):
                 if old_tool_shed not in module.tool.id:  # Only display the following warning if the tool comes from a different tool shed
                     old_tool_shed_url = get_tool_shed_url_from_tool_shed_registry(trans.app, old_tool_shed)
                     if not old_tool_shed_url:  # a tool from a different tool_shed has been found, but the original tool shed has been deactivated
-                        old_tool_shed_url = "http://" + old_tool_shed  # let's just assume it's either http, or a http is forwarded to https.
-                    old_url = old_tool_shed_url + f"/view/{module.tool.repository_owner}/{module.tool.repository_name}/"
-                    new_url = module.tool.sharable_url + '/%s/' % module.tool.changeset_revision
+                        old_tool_shed_url = f"http://{old_tool_shed}"  # let's just assume it's either http, or a http is forwarded to https.
+                    old_url = f"{old_tool_shed_url}/view/{module.tool.repository_owner}/{module.tool.repository_name}/"
+                    new_url = f"{module.tool.sharable_url}/{module.tool.changeset_revision}/"
                     new_tool_shed_url = new_url.split("/view")[0]
                     message += f"The tool \'{module.tool.name}\', version {tool_version} by the owner {module.tool.repository_owner} installed from <a href=\"{old_url}\" target=\"_blank\">{old_tool_shed_url}</a> is not available. "
                     message += f"A derivation of this tool installed from <a href=\"{new_url}\" target=\"_blank\">{new_tool_shed_url}</a> will be used instead. "
@@ -1344,7 +1344,7 @@ class ToolModule(WorkflowModule):
                 log.debug(message)
                 module.version_changes.append(message)
         else:
-            log.warning("The tool '%s' is missing. Cannot build workflow module." % step.tool_id)
+            log.warning(f"The tool '{step.tool_id}' is missing. Cannot build workflow module.")
         return module
 
     # ---- Saving in various forms ------------------------------------------
@@ -1384,7 +1384,7 @@ class ToolModule(WorkflowModule):
     def get_errors(self, include_tool_id=False, **kwargs):
         if not self.tool:
             if include_tool_id:
-                return "%s is not installed" % self.tool_id
+                return f"{self.tool_id} is not installed"
             else:
                 return "Tool is not installed"
 
@@ -1537,7 +1537,7 @@ class ToolModule(WorkflowModule):
                     return ConnectedValue()
             visit_input_values(self.tool.inputs, self.state.inputs, callback)
         else:
-            raise ToolMissingException("Tool %s missing. Cannot add dummy datasets." % self.tool_id,
+            raise ToolMissingException(f"Tool {self.tool_id} missing. Cannot add dummy datasets.",
                                        tool_id=self.tool_id)
 
     def get_post_job_actions(self, incoming):
@@ -1638,7 +1638,7 @@ class ToolModule(WorkflowModule):
                     state.inputs[RUNTIME_STEP_META_STATE_KEY] = step_metadata_runtime_state
             return state, step_errors
         else:
-            raise ToolMissingException("Tool %s missing. Cannot compute runtime state." % self.tool_id,
+            raise ToolMissingException(f"Tool {self.tool_id} missing. Cannot compute runtime state.",
                                        tool_id=self.tool_id)
 
     def decode_runtime_state(self, runtime_state):
@@ -1651,7 +1651,7 @@ class ToolModule(WorkflowModule):
                 self.__restore_step_meta_runtime_state(json.loads(runtime_state[RUNTIME_STEP_META_STATE_KEY]))
             return state
         else:
-            raise ToolMissingException("Tool %s missing. Cannot recover runtime state." % self.tool_id,
+            raise ToolMissingException(f"Tool {self.tool_id} missing. Cannot recover runtime state.",
                                        tool_id=self.tool_id)
 
     def execute(self, trans, progress, invocation_step, use_cached_job=False):
@@ -1659,7 +1659,7 @@ class ToolModule(WorkflowModule):
         step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
         if not tool.is_workflow_compatible:
-            message = "Specified tool [%s] in workflow is not workflow-compatible." % tool.id
+            message = f"Specified tool [{tool.id}] in workflow is not workflow-compatible."
             raise Exception(message)
         tool_state = step.state
         # Not strictly needed - but keep Tool state clean by stripping runtime
@@ -1729,7 +1729,7 @@ class ToolModule(WorkflowModule):
 
             unmatched_input_connections = expected_replacement_keys - found_replacement_keys
             if unmatched_input_connections:
-                log.warning("Failed to use input connections for inputs [%s]" % unmatched_input_connections)
+                log.warning(f"Failed to use input connections for inputs [{unmatched_input_connections}]")
 
             param_combinations.append(execution_state.inputs)
 
@@ -1775,7 +1775,7 @@ class ToolModule(WorkflowModule):
             execution_tracker = pje.execution_tracker
 
         except ToolInputsNotReadyException:
-            delayed_why = "tool [%s] inputs are not ready, this special tool requires inputs to be ready" % tool.id
+            delayed_why = f"tool [{tool.id}] inputs are not ready, this special tool requires inputs to be ready"
             raise DelayedWorkflowEvaluation(why=delayed_why)
 
         progress.record_executed_job_count(len(execution_tracker.successful_jobs))

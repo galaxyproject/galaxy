@@ -31,7 +31,7 @@ const HistoryPanel = Backbone.View.extend({
             id: "history-refresh-button",
             title: _l("Refresh history"),
             cls: "panel-header-button",
-            icon: "fa fa-refresh",
+            icon: "fa fa-sync",
             onclick: () => {
                 this.historyView.loadCurrentHistory();
             },

@@ -113,7 +113,7 @@ class Sequence(data.Text):
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
-                dataset.blurb = "%s sequences" % util.commaify(str(dataset.metadata.sequences))
+                dataset.blurb = f"{util.commaify(str(dataset.metadata.sequences))} sequences"
             else:
                 dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -137,7 +137,7 @@ class Sequence(data.Text):
             if rem > 0:
                 sequences_per_file.append(rem)
         else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+            raise Exception(f"Unsupported split mode {split_params['split_mode']}")
         return sequences_per_file
 
     @classmethod
@@ -192,7 +192,7 @@ class Sequence(data.Text):
                 if toc_file_datasets is not None:
                     toc = toc_file_datasets[ds_no]
                     split_data['args']['toc_file'] = toc.file_name
-                with open(os.path.join(dir, 'split_info_%s.json' % base_name), 'w') as f:
+                with open(os.path.join(dir, f'split_info_{base_name}.json'), 'w') as f:
                     json.dump(split_data, f)
             start_sequence += sequences_per_file[part_no]
         return directories
@@ -232,7 +232,7 @@ class Sequence(data.Text):
             current_sequence += int(sections[i]['sequences'])
             i += 1
         if i == len(sections):  # bad input data!
-            raise Exception('No FQTOC section contains starting sequence %s' % start_sequence)
+            raise Exception(f'No FQTOC section contains starting sequence {start_sequence}')
 
         # These two variables act as an accumulator for consecutive entire blocks that
         # can be copied verbatim (without decompressing)
@@ -268,7 +268,7 @@ class Sequence(data.Text):
             result.append(copy_chunk_cmd % (start_chunk, end_chunk - start_chunk, input_name, output_name))
 
         if sequence_count > 0:
-            raise Exception('%s sequences not found in file' % sequence_count)
+            raise Exception(f'{sequence_count} sequences not found in file')
 
         return result
 
@@ -285,10 +285,10 @@ class Sequence(data.Text):
         line_count = sequence_count * 4
         # TODO: verify that tail can handle 64-bit numbers
         if is_compressed:
-            cmd = 'zcat "{}" | ( tail -n +{} 2> /dev/null) | head -{} | gzip -c'.format(input_name, start_line + 1, line_count)
+            cmd = f'zcat "{input_name}" | ( tail -n +{start_line + 1} 2> /dev/null) | head -{line_count} | gzip -c'
         else:
-            cmd = 'tail -n +{} "{}" 2> /dev/null | head -{}'.format(start_line + 1, input_name, line_count)
-        cmd += ' > "%s"' % output_name
+            cmd = f'tail -n +{start_line + 1} "{input_name}" 2> /dev/null | head -{line_count}'
+        cmd += f' > "{output_name}"'
 
         return [cmd]
 
@@ -412,7 +412,7 @@ class Fasta(Sequence):
             log.debug("Split %s into batches of %i records..." % (input_file, batch_size))
             cls._count_split(input_file, batch_size, subdir_generator_function)
         else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+            raise Exception(f"Unsupported split mode {split_params['split_mode']}")
 
     @classmethod
     def _size_split(cls, input_file, chunk_size, subdir_generator_function):
@@ -625,10 +625,10 @@ class Fastg(Sequence):
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
-                dataset.blurb = "%s sequences" % util.commaify(str(dataset.metadata.sequences))
+                dataset.blurb = f"{util.commaify(str(dataset.metadata.sequences))} sequences"
             else:
                 dataset.blurb = nice_size(dataset.get_size())
-            dataset.blurb += '\nversion=%s' % dataset.metadata.version
+            dataset.blurb += f'\nversion={dataset.metadata.version}'
             for k, v in dataset.metadata.properties.items():
                 if k != 'version':
                     dataset.blurb += f'\n{k}={v}'
@@ -908,7 +908,7 @@ class Maf(Alignment):
             # The file must exist on disk for the get_file_peek() method
             dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.blocks:
-                dataset.blurb = "%s blocks" % util.commaify(str(dataset.metadata.blocks))
+                dataset.blurb = f"{util.commaify(str(dataset.metadata.blocks))} blocks"
             else:
                 # Number of blocks is not known ( this should not happen ), and auto-detect is
                 # needed to set metadata
@@ -928,7 +928,7 @@ class Maf(Alignment):
         try:
             out.append('<tr><th>Species:&nbsp;')
             for species in dataset.metadata.species:
-                out.append('%s&nbsp;' % species)
+                out.append(f'{species}&nbsp;')
             out.append('</th></tr>')
             if not dataset.peek:
                 dataset.set_peek()
@@ -938,11 +938,11 @@ class Maf(Alignment):
                 line = line.strip()
                 if not line:
                     continue
-                out.append('<tr><td>%s</td></tr>' % escape(line))
+                out.append(f'<tr><td>{escape(line)}</td></tr>')
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek %s" % exc
+            out = f"Can't create peek {exc}"
         return out
 
     def sniff_prefix(self, file_prefix):

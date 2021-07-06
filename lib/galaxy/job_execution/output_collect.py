@@ -250,8 +250,8 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
     def create_hdca(self, name, structure):
         history = self.job.history
         trans = self.work_context
-        collections_service = self.app.dataset_collections_service
-        hdca = collections_service.precreate_dataset_collection_instance(
+        collection_manager = self.app.dataset_collection_manager
+        hdca = collection_manager.precreate_dataset_collection_instance(
             trans, history, name, structure=structure
         )
         return hdca
@@ -401,7 +401,7 @@ def collect_primary_datasets(job_context, output, input_ext):
             fields_match = discovered_file.match
             if not fields_match:
                 # Before I guess pop() would just have thrown an IndexError
-                raise Exception("Problem parsing metadata fields for file %s" % filename)
+                raise Exception(f"Problem parsing metadata fields for file {filename}")
             designation = fields_match.designation
             ext = fields_match.ext
             if ext == "input":
@@ -610,7 +610,7 @@ def read_exit_code_from(exit_code_file, id_tag):
 
 
 def default_exit_code_file(files_dir, id_tag):
-    return os.path.join(files_dir, 'galaxy_%s.ec' % id_tag)
+    return os.path.join(files_dir, f'galaxy_{id_tag}.ec')
 
 
 def collect_extra_files(object_store, dataset, job_working_directory):

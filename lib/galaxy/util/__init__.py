@@ -299,7 +299,7 @@ def xml_to_string(elem, pretty=False):
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, 'text'):
-            return "<!-- %s -->\n" % elem.text
+            return f"<!-- {elem.text} -->\n"
         else:
             raise e
     if xml_str and pretty:
@@ -342,7 +342,7 @@ def xml_element_to_dict(elem):
                 rval[elem.tag][key] = value
     if elem.attrib:
         for key, value in elem.attrib.items():
-            rval[elem.tag]["@%s" % key] = value
+            rval[elem.tag][f"@{key}"] = value
 
     if elem.text:
         text = elem.text.strip()
@@ -462,7 +462,7 @@ def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning
                 left_index += 1
             else:
                 right_index += 1
-        value = "{}{}{}".format(value[:left_index], join_by, value[-right_index:])
+        value = f"{value[:left_index]}{join_by}{value[-right_index:]}"
     return value
 
 
@@ -614,7 +614,7 @@ def sanitize_param(value, valid_characters=valid_chars, character_map=mapped_cha
     elif isinstance(value, list):
         return [sanitize_text(x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character) for x in value]
     else:
-        raise Exception('Unknown parameter type (%s)' % (type(value)))
+        raise Exception(f'Unknown parameter type ({type(value)})')
 
 
 valid_filename_chars = set(string.ascii_letters + string.digits + '_.')
@@ -686,7 +686,7 @@ def mask_password_from_url(url):
             # This can manipulate the input other than just masking password,
             # so the previous string replace method is preferred when the
             # password doesn't appear twice in the url
-            split = split._replace(netloc=split.netloc.replace(f"{split.username}:{split.password}", '%s:********' % split.username))
+            split = split._replace(netloc=split.netloc.replace(f"{split.username}:{split.password}", f'{split.username}:********'))
             url = urlunsplit(split)
     return url
 
@@ -749,7 +749,7 @@ def in_directory(file, directory, local_path_module=os.path):
     False
     """
     if local_path_module != os.path:
-        _safe_contains = importlib.import_module('galaxy.util.path.%s' % local_path_module.__name__).safe_contains
+        _safe_contains = importlib.import_module(f'galaxy.util.path.{local_path_module.__name__}').safe_contains
     else:
         directory = os.path.realpath(directory)
         _safe_contains = safe_contains
@@ -839,7 +839,7 @@ class Params:
                 # changed to not require this and NEVER_SANITIZE should be
                 # removed.
                 if (value is not None and key not in self.NEVER_SANITIZE
-                        and True not in [key.endswith("|%s" % nonsanitize_parameter) for
+                        and True not in [key.endswith(f"|{nonsanitize_parameter}") for
                                          nonsanitize_parameter in self.NEVER_SANITIZE]):
                     self.__dict__[key] = sanitize_param(value)
                 else:
@@ -868,7 +868,7 @@ class Params:
         return self.__dict__.get(key, default)
 
     def __str__(self):
-        return '%s' % self.__dict__
+        return f'{self.__dict__}'
 
     def __len__(self):
         return len(self.__dict__)
@@ -954,7 +954,7 @@ def asbool(obj):
         elif obj in falsy:
             return False
         else:
-            raise ValueError("String is not true/false: %r" % obj)
+            raise ValueError(f"String is not true/false: {obj!r}")
     return bool(obj)
 
 
@@ -1062,12 +1062,31 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
             value = str(value, encoding, error)
     except Exception as e:
         if log_exception:
-            msg = "Value '{}' could not be coerced to Unicode: {}('{}')".format(repr(value), type(e).__name__, e)
+            msg = f"Value '{repr(value)}' could not be coerced to Unicode: {type(e).__name__}('{e}')"
             log.exception(msg)
         raise
     if strip_null:
         return value.replace('\0', '')
     return value
+
+
+def filesystem_safe_string(s, max_len, truncation_chars='..', strip_leading_dot=True, invalid_chars=('/',), replacement_char='_'):
+    """
+    Strip unicode null chars, truncate at 255 characters.
+    Optionally replace additional ``invalid_chars`` with `replacement_char` .
+
+    Defaults are probably only safe on linux / osx.
+    Needs further escaping if used in shell commands
+    """
+    sanitized_string = unicodify(s, strip_null=True)
+    if strip_leading_dot:
+        sanitized_string = sanitized_string.lstrip('.')
+    for invalid_char in invalid_chars:
+        sanitized_string = sanitized_string.replace(invalid_char, replacement_char)
+    if len(sanitized_string) > max_len:
+        sanitized_string = sanitized_string[:max_len - len(truncation_chars)]
+        sanitized_string = f"{sanitized_string}{truncation_chars}"
+    return sanitized_string
 
 
 def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict'):
@@ -1370,7 +1389,7 @@ def size_to_bytes(size):
     size_re = re.compile(r'(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
     size_match = size_re.match(size.lower())
     if size_match is None:
-        raise ValueError("Could not parse string '%s'" % size)
+        raise ValueError(f"Could not parse string '{size}'")
     number = float(size_match.group("number"))
     multiple = size_match.group("multiple")
     if multiple == "" or multiple.startswith('b'):
@@ -1603,19 +1622,19 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
     parsed_url = urlparse(base_url)
     if scheme != 'http':
         parsed_url.scheme = scheme
-    assert parsed_url.scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
+    assert parsed_url.scheme in ('http', 'https', 'ftp'), f'Invalid URL scheme: {scheme}'
     if port != 80:
         url = '%s://%s:%d/%s' % (parsed_url.scheme, parsed_url.netloc.rstrip('/'), int(port), parsed_url.path)
     else:
-        url = '{}://{}/{}'.format(parsed_url.scheme, parsed_url.netloc.rstrip('/'), parsed_url.path.lstrip('/'))
+        url = f"{parsed_url.scheme}://{parsed_url.netloc.rstrip('/')}/{parsed_url.path.lstrip('/')}"
     if len(pathspec) > 0:
-        url = '{}/{}'.format(url.rstrip('/'), '/'.join(pathspec))
+        url = f"{url.rstrip('/')}/{'/'.join(pathspec)}"
     if parsed_url.query:
         for query_parameter in parsed_url.query.split('&'):
             key, value = query_parameter.split('=')
             params[key] = value
     if params:
-        url += '?%s' % urlencode(params, doseq=doseq)
+        url += f'?{urlencode(params, doseq=doseq)}'
     return url
 
 
@@ -1690,7 +1709,7 @@ class ExecutionTimer:
         self.begin = time.time()
 
     def __str__(self):
-        return "(%0.3f ms)" % (self.elapsed * 1000)
+        return f"({self.elapsed * 1000:0.3f} ms)"
 
     @property
     def elapsed(self):
@@ -1713,7 +1732,7 @@ class StructuredExecutionTimer:
             message = string.Template(self.template).safe_substitute(kwd)
         else:
             message = self.template
-        log_message = message + " (%0.3f ms)" % (self.elapsed * 1000)
+        log_message = message + f" ({self.elapsed * 1000:0.3f} ms)"
         return log_message
 
     @property

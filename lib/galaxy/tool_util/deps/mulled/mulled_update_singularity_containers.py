@@ -22,7 +22,7 @@ def docker_to_singularity(container, installation, filepath, no_sudo=False):
     """
     Convert docker to singularity container.
     """
-    cmd = [installation, 'build', '/'.join((filepath, container)), 'docker://quay.io/biocontainers/' + container]
+    cmd = [installation, 'build', '/'.join((filepath, container)), f"docker://quay.io/biocontainers/{container}"]
     try:
         if no_sudo:
             check_output(cmd, stderr=subprocess.STDOUT)
@@ -30,7 +30,7 @@ def docker_to_singularity(container, installation, filepath, no_sudo=False):
             check_output(cmd.insert(0, 'sudo'), stderr=subprocess.STDOUT)
             check_output(['sudo', 'rm', '-rf', '/root/.singularity/docker/'], stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        raise Exception("Docker to Singularity conversion failed.\nOutput was:\n%s" % unicodify(e.output))
+        raise Exception(f"Docker to Singularity conversion failed.\nOutput was:\n{unicodify(e.output)}")
 
 
 def singularity_container_test(tests, installation, filepath):
@@ -68,7 +68,7 @@ def singularity_container_test(tests, installation, filepath):
                 if test.get('imports', False):
                     for imp in test['imports']:
                         try:
-                            check_output(exec_command.extend([test['import_lang'], 'import ' + imp]), stderr=subprocess.STDOUT)
+                            check_output(exec_command.extend([test['import_lang'], f"import {imp}"]), stderr=subprocess.STDOUT)
                         except subprocess.CalledProcessError as e:
                             errors.append({'import': imp, 'output': unicodify(e.output)})
                             test_passed = False
@@ -145,7 +145,7 @@ def container_testing(args=None):
         containers = get_list_from_file(args['container_list'])
     else:  # if no containers are specified, test everything in the filepath
         containers = [n.split(args['filepath'])[1]
-                      for n in glob('%s*' % args['filepath'])]
+                      for n in glob(f"{args['filepath']}*")]
 
     with open(args['logfile'], 'w') as f:
         f.write("SINGULARITY CONTAINERS GENERATED:")
@@ -162,16 +162,16 @@ def container_testing(args=None):
 
         f.write('\n\tTEST PASSED:')
         for container in test_results['passed']:
-            f.write('\n\t\t%s' % container)
+            f.write(f'\n\t\t{container}')
         f.write('\n\tTEST FAILED:')
         for container in test_results['failed']:
-            f.write('\n\t\t%s' % container['container'])
+            f.write(f"\n\t\t{container['container']}")
             for error in container['errors']:
                 f.write('\n\t\t\tCOMMAND: {}\n\t\t\t\tERROR:{}'.format(error.get(
-                    'command', 'import' + error.get('import', 'nothing found')), error['output']))
+                    'command', f"import{error.get('import', 'nothing found')}"), error['output']))
         f.write('\n\tNO TEST AVAILABLE:')
         for container in test_results['notest']:
-            f.write('\n\t\t%s' % container)
+            f.write(f'\n\t\t{container}')
 
 
 if __name__ == "__main__":

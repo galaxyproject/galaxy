@@ -186,8 +186,7 @@ export function test_ie_availability(url, success_callback) {
         waiting: "Interactive environment container is running, attempting to connect to the IE. Please wait...",
         wait_warn:
             "It is taking an usually long time to connect to the interactive environment. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
-        error:
-            "An error was encountered while attempting to connect to the interactive environment, contact your administrator.",
+        error: "An error was encountered while attempting to connect to the interactive environment, contact your administrator.",
     };
     var spin_state = make_spin_state("IE availability");
     spin_until(url, false, messages, success_callback, spin_state);
@@ -209,8 +208,7 @@ export function load_when_ready(url, success_callback) {
         waiting: "Galaxy is launching a container in which to run this interactive environment. Please wait...",
         wait_warn:
             "It is taking an usually long time to start a container. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
-        error:
-            "Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact a Galaxy administrator.",
+        error: "Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact a Galaxy administrator.",
     };
     var spin_state = make_spin_state("IE container readiness");
     spin_until(url, true, messages, success_callback, spin_state);

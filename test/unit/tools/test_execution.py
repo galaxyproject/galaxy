@@ -35,7 +35,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesApp, tools_support.UsesT
         self.setup_app()
         self.history = galaxy.model.History()
         self.trans = MockTrans(self.app, self.history)
-        self.app.dataset_collections_service = MockCollectionService()
+        self.app.dataset_collection_manager = MockCollectionService()
         self.tool_action = MockAction(self.trans)
 
     def tearDown(self):

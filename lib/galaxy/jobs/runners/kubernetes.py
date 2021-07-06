@@ -27,6 +27,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     find_pod_object_by_name,
     find_service_object_by_name,
     galaxy_instance_id,
+    HTTPError,
     Ingress,
     ingress_object_dict,
     is_pod_unschedulable,
@@ -129,7 +130,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # prepare the job
         # We currently don't need to include_metadata or include_work_dir_outputs, as working directory is the same
         # where galaxy will expect results.
-        log.debug("Starting queue_job for job " + job_wrapper.get_id_tag())
+        log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory,
                                    job_wrapper=job_wrapper,
                                    job_destination=job_wrapper.job_destination)
@@ -146,7 +147,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             self.write_executable_script(ajs.job_file, script)
         except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
-            log.exception("(%s) failure writing job script" % job_wrapper.get_id_tag())
+            log.exception(f"({job_wrapper.get_id_tag()}) failure writing job script")
             return
 
         # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
@@ -182,15 +183,24 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job = Job(self._pykube_api, k8s_job_obj)
         try:
             job.create()
-            job_id = job.metadata.get('name')
-            # define job attributes in the AsyncronousJobState for follow-up
-            ajs.job_id = job_id
-            # store runner information for tracking if Galaxy restarts
-            job_wrapper.set_external_id(job_id)
-        except Exception as e:
-            log.exception("Error occurred while creating kubernetes job object")
-            raise e
+        except HTTPError:
+            log.exception("Kubernetes failed to create job, HTTP exception encountered")
+            ajs.runner_state = JobState.runner_states.UNKNOWN_ERROR
+            ajs.fail_message = "Kubernetes failed to create job."
+            self.mark_as_failed(ajs)
+            return
+        if not job.name:
+            log.exception(f"Kubernetes failed to create job, empty name encountered: [{job.obj}]")
+            ajs.runner_state = JobState.runner_states.UNKNOWN_ERROR
+            ajs.fail_message = "Kubernetes failed to create job."
+            self.mark_as_failed(ajs)
+            return
+        job_id = job.name
 
+        # define job attributes in the AsyncronousJobState for follow-up
+        ajs.job_id = job_id
+        # store runner information for tracking if Galaxy restarts
+        job_wrapper.set_external_id(job_id)
         self.monitor_queue.put(ajs)
 
     def __get_overridable_params(self, job_wrapper, param_key):
@@ -274,7 +284,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """
         label_val = self.LABEL_REGEX.sub("_", value)
         if not self.LABEL_START.search(label_val):
-            label_val = 'x' + label_val
+            label_val = f"x{label_val}"
         if not self.LABEL_END.search(label_val):
             label_val += 'x'
         return label_val
@@ -569,14 +579,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         repo = ""
         owner = ""
         if 'repo' in job_destination.params:
-            repo = job_destination.params['repo'] + "/"
+            repo = f"{job_destination.params['repo']}/"
         if 'owner' in job_destination.params:
-            owner = job_destination.params['owner'] + "/"
+            owner = f"{job_destination.params['owner']}/"
 
         k8s_cont_image = repo + owner + job_destination.params['image']
 
         if 'tag' in job_destination.params:
-            k8s_cont_image += ":" + job_destination.params['tag']
+            k8s_cont_image += f":{job_destination.params['tag']}"
 
         return k8s_cont_image
 
@@ -586,12 +596,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if isinstance(raw_id, str):
             cleaned_id = re.sub("[^-a-z0-9]", "-", raw_id)
             if cleaned_id.startswith("-") or cleaned_id.endswith("-"):
-                cleaned_id = "x%sx" % cleaned_id
+                cleaned_id = f"x{cleaned_id}x"
             return cleaned_id
         return "job-container"
 
     def __get_k8s_job_name(self, prefix, job_wrapper):
-        return "{}-{}".format(prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
+        return f"{prefix}-{self.__force_label_conformity(job_wrapper.get_id_tag())}"
 
     def __get_destination_params(self, job_wrapper):
         """Obtains allowable runner param overrides from the destination"""
@@ -737,7 +747,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return any(True for c in conditions if c['type'] == 'Failed' and c['reason'] == 'DeadlineExceeded')
 
     def _get_pod_for_job(self, job_state):
-        pods = Pod.objects(self._pykube_api).filter(selector="app=%s" % job_state.job_id,
+        pods = Pod.objects(self._pykube_api).filter(selector=f"app={job_state.job_id}",
                                                     namespace=self.runner_params['k8s_namespace'])
         if not pods.response['items']:
             return None
@@ -809,7 +819,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         job_id = job.get_job_runner_external_id()
-        log.debug("k8s trying to recover job: " + job_id)
+        log.debug(f"k8s trying to recover job: {job_id}")
         if job_id is None:
             self.put(job_wrapper)
             return

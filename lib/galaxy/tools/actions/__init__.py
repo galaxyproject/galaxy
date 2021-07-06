@@ -104,7 +104,7 @@ class DefaultToolAction:
                         record_permission(action, role_id)
                 else:
                     if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
-                        raise ItemAccessibilityException("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                        raise ItemAccessibilityException(f"User does not have permission to use a dataset ({data.id}) provided for input.")
                     permissions = trans.app.security_agent.get_permissions(data.dataset)
                     for action, roles in permissions.items():
                         for role in roles:
@@ -127,7 +127,7 @@ class DefaultToolAction:
                                 input_datasets[prefix + conversion_name + str(i + 1)] = new_data
                                 conversions.append((conversion_name, new_data))
                             else:
-                                raise Exception('A path for explicit datatype conversion has not been found: {} --/--> {}'.format(input_datasets[prefix + input.name + str(i + 1)].extension, conversion_extensions))
+                                raise Exception(f'A path for explicit datatype conversion has not been found: {input_datasets[prefix + input.name + str(i + 1)].extension} --/--> {conversion_extensions}')
                         if parent:
                             parent[input.name][i] = input_datasets[prefix + input.name + str(i + 1)]
                             for conversion_name, conversion_data in conversions:
@@ -147,7 +147,7 @@ class DefaultToolAction:
                             input_datasets[prefix + conversion_name] = new_data
                             conversions.append((conversion_name, new_data))
                         else:
-                            raise Exception('A path for explicit datatype conversion has not been found: {} --/--> {}'.format(input_datasets[prefix + input.name].extension, conversion_extensions))
+                            raise Exception(f'A path for explicit datatype conversion has not been found: {input_datasets[prefix + input.name].extension} --/--> {conversion_extensions}')
                     target_dict = parent
                     if not target_dict:
                         target_dict = param_values
@@ -192,7 +192,7 @@ class DefaultToolAction:
                             processed_dataset_dict[v] = processed_dataset
                     input_datasets[prefix + input.name + str(i + 1)] = processed_dataset or v
                 if conversion_required:
-                    collection_type_description = trans.app.dataset_collections_service.collection_type_descriptions.for_collection_type(collection.collection_type)
+                    collection_type_description = trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(collection.collection_type)
                     collection_builder = CollectionBuilder(collection_type_description)
                     collection_builder.replace_elements_in_collection(
                         template_collection=collection,
@@ -246,7 +246,7 @@ class DefaultToolAction:
         return input_dataset_collections
 
     def _check_access(self, tool, trans):
-        assert tool.allow_user_access(trans.user), "User (%s) is not allowed to access this tool." % (trans.user)
+        assert tool.allow_user_access(trans.user), f"User ({trans.user}) is not allowed to access this tool."
 
     def _collect_inputs(self, tool, trans, incoming, history, current_user_roles, collection_info):
         """ Collect history as well as input datasets and collections. """
@@ -260,23 +260,24 @@ class DefaultToolAction:
         # Collect any input datasets from the incoming parameters
         inp_data, all_permissions = self._collect_input_datasets(tool, incoming, trans, history=history, current_user_roles=current_user_roles, collection_info=collection_info)
 
-        # grap tags from incoming HDAs
         preserved_tags = {}
+        preserved_hdca_tags = {}
+        # grab tags from incoming HDAs
         for data in inp_data.values():
             if not data:
                 continue
             for tag in data.auto_propagated_tags:
                 preserved_tags[tag.value] = tag
-
-        # grap tags from incoming HDCAs
+        # grab tags from incoming HDCAs
         for collection_pairs in inp_dataset_collections.values():
             for collection, _ in collection_pairs:
                 # if sub-collection mapping, this will be an DC not an HDCA
                 # (e.g. part of collection not a collection instance) and thus won't have tags.
                 if hasattr(collection, "tags"):
                     for tag in collection.auto_propagated_tags:
-                        preserved_tags[tag.value] = tag
-        return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
+                        preserved_hdca_tags[tag.value] = tag
+        preserved_tags.update(preserved_hdca_tags)
+        return history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions
 
     def execute(self,
                 tool,
@@ -306,7 +307,7 @@ class DefaultToolAction:
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
+        history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
 
@@ -333,7 +334,7 @@ class DefaultToolAction:
 
             identifier = getattr(data, "element_identifier", None)
             if identifier is not None:
-                incoming["%s|__identifier__" % name] = identifier
+                incoming[f"{name}|__identifier__"] = identifier
 
         # Collect chromInfo dataset and add as parameters to incoming
         (chrom_info, db_dataset) = execution_cache.get_chrom_info(tool.id, input_dbkey)
@@ -370,6 +371,7 @@ class DefaultToolAction:
             params=wrapped_params.params,
             job_params=job_params,
             tags=preserved_tags,
+            hdca_tags=preserved_hdca_tags,
         )
 
         # Keep track of parent / child relationships, we'll create all the
@@ -472,7 +474,7 @@ class DefaultToolAction:
                     if completed_job and dataset_collection_elements and name in dataset_collection_elements:
                         # Output collection is mapped over and has already been copied from original job
                         continue
-                    collections_manager = app.dataset_collections_service
+                    collections_manager = app.dataset_collection_manager
                     element_identifiers = []
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
                     # Just to echo TODO elsewhere - this should be restructured to allow
@@ -585,10 +587,10 @@ class DefaultToolAction:
             # to send back to the current Galaxy instance
             GALAXY_URL = incoming.get('GALAXY_URL', None)
             assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
-            redirect_url += "&GALAXY_URL=%s" % GALAXY_URL
+            redirect_url += f"&GALAXY_URL={GALAXY_URL}"
             # Job should not be queued, so set state to ok
             job.set_state(app.model.Job.states.OK)
-            job.info = "Redirected to: %s" % redirect_url
+            job.info = f"Redirected to: {redirect_url}"
             trans.sa_session.add(job)
             trans.sa_session.flush()
             trans.response.send_redirect(url_for(controller='tool_runner', action='redirect', redirect_url=redirect_url))
@@ -602,7 +604,7 @@ class DefaultToolAction:
 
                 # Dispatch to a job handler. enqueue() is responsible for flushing the job
                 app.job_manager.enqueue(job, tool=tool)
-                trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+                trans.log_event(f"Added job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
             return job, out_data, history
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
@@ -688,7 +690,7 @@ class DefaultToolAction:
         input_names = []
         for data in reversed(list(inp_data.values())):
             if getattr(data, "hid", None):
-                input_names.append('data %s' % data.hid)
+                input_names.append(f'data {data.hid}')
 
         return on_text_for_names(input_names)
 
@@ -801,7 +803,7 @@ class DefaultToolAction:
     def _get_default_data_name(self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd):
         name = tool.name
         if on_text:
-            name += (" on " + on_text)
+            name += f" on {on_text}"
         return name
 
 
@@ -813,7 +815,7 @@ class OutputCollections:
     parameter).
     """
 
-    def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags):
+    def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags, hdca_tags):
         self.trans = trans
         self.history = history
         self.tool = tool
@@ -826,11 +828,12 @@ class OutputCollections:
         self.job_params = job_params
         self.out_collections = {}
         self.out_collection_instances = {}
-        self.tags = tags
+        self.tags = tags  # all inherited tags
+        self.hdca_tags = hdca_tags  # only tags inherited from input HDCAs
 
-    def create_collection(self, output, name, collection_type=None, completed_job=None, **element_kwds):
+    def create_collection(self, output, name, collection_type=None, completed_job=None, propagate_hda_tags=True, **element_kwds):
         input_collections = self.input_collections
-        collections_manager = self.trans.app.dataset_collections_service
+        collections_manager = self.trans.app.dataset_collection_manager
         collection_type = collection_type or output.structure.collection_type
         if collection_type is None:
             collection_type_source = output.structure.collection_type_source
@@ -839,7 +842,7 @@ class OutputCollections:
                 # sooner.
                 raise Exception("Could not determine collection type to create.")
             if collection_type_source not in input_collections:
-                raise Exception("Could not find collection type source with name [%s]." % collection_type_source)
+                raise Exception(f"Could not find collection type source with name [{collection_type_source}].")
 
             # Using the collection_type_source string we get the DataCollectionToolParameter
             data_param = self.tool.inputs
@@ -906,7 +909,7 @@ class OutputCollections:
                 name=hdca_name,
                 collection_type=collection_type,
                 trusted_identifiers=True,
-                tags=self.tags,
+                tags=self.tags if propagate_hda_tags else self.hdca_tags,
                 set_hid=False,
                 flush=False,
                 completed_job=completed_job,
@@ -949,7 +952,7 @@ def filter_output(tool, output, incoming):
             if not eval(filter.text.strip(), globals(), incoming):
                 return True  # do not create this dataset
         except Exception as e:
-            log.debug('Tool %s output %s: dataset output filter (%s) failed: %s' % (tool.id, output.name, filter.text, e))
+            log.debug(f'Tool {tool.id} output {output.name}: dataset output filter ({filter.text}) failed: {e}')
     return False
 
 

@@ -47,7 +47,7 @@ class DoiCache:
         self._cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('doi')
 
     def _raw_get_bibtex(self, doi):
-        doi_url = "https://doi.org/" + doi
+        doi_url = f"https://doi.org/{doi}"
         headers = {'Accept': 'application/x-bibtex'}
         req = requests.get(doi_url, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         req.encoding = req.apparent_encoding
@@ -65,7 +65,7 @@ def parse_citation(elem, citation_manager):
     citation_type = elem.attrib.get('type', None)
     citation_class = CITATION_CLASSES.get(citation_type, None)
     if not citation_class:
-        log.warning("Unknown or unspecified citation type: %s" % citation_type)
+        log.warning(f"Unknown or unspecified citation type: {citation_type}")
         return None
     try:
         citation = citation_class(elem, citation_manager)
@@ -105,7 +105,7 @@ class BaseCitation:
                 content=self.to_bibtex(),
             )
         else:
-            raise Exception("Unknown citation format %s" % citation_format)
+            raise Exception(f"Unknown citation format {citation_format}")
 
     def equals(self, other_citation):
         if self.has_doi() and other_citation.has_doi():

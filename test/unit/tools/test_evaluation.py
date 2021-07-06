@@ -9,7 +9,8 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     Job,
     JobParameter,
-    JobToInputDatasetAssociation
+    JobToInputDatasetAssociation,
+    JobToOutputDatasetAssociation,
 )
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.evaluation import ToolEvaluator
@@ -203,21 +204,23 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
             kwds["working_directory"] = self.test_directory
         if "new_file_path" not in kwds:
             kwds["new_file_path"] = self.app.config.new_file_path
-        self.evaluator.set_compute_environment(TestComputeEnvironment(**kwds))
+        self.evaluator.set_compute_environment(ComputeEnvironment(**kwds))
         assert "exec_before_job" in self.tool.hooks_called
 
     def _setup_test_bwa_job(self):
-        self.job.input_datasets = [self._job_dataset('input1', '/galaxy/files/dataset_1.dat')]
-        self.job.output_datasets = [self._job_dataset('output1', '/galaxy/files/dataset_2.dat')]
 
-    def _job_dataset(self, name, path):
-        metadata = dict()
-        hda = HistoryDatasetAssociation(name=name, metadata=metadata)
-        hda.dataset = Dataset(id=123, external_filename=path)
-        hda.dataset.metadata = dict()
-        hda.children = []
-        jida = JobToInputDatasetAssociation(name=name, dataset=hda)
-        return jida
+        def hda(id, name, path):
+            hda = HistoryDatasetAssociation(name=name, metadata=dict())
+            hda.dataset = Dataset(id=id, external_filename=path)
+            hda.dataset.metadata = dict()
+            hda.children = []
+            return hda
+
+        id, name, path = 111, 'input1', '/galaxy/files/dataset_1.dat'
+        self.job.input_datasets = [JobToInputDatasetAssociation(name=name, dataset=hda(id, name, path))]
+
+        id, name, path = 112, 'output1', '/galaxy/files/dataset_2.dat'
+        self.job.output_datasets = [JobToOutputDatasetAssociation(name=name, dataset=hda(id, name, path))]
 
 
 class MockHistoryDatasetAssociation(HistoryDatasetAssociation):
@@ -227,7 +230,7 @@ class MockHistoryDatasetAssociation(HistoryDatasetAssociation):
         super().__init__(**kwds)
 
 
-class TestComputeEnvironment(SimpleComputeEnvironment):
+class ComputeEnvironment(SimpleComputeEnvironment):
 
     def __init__(
         self,

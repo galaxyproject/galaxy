@@ -76,7 +76,7 @@ class JobManager:
             tool_id = tool.id
             configured_handler = tool.get_configured_job_handler(job.params)
             if configured_handler is not None:
-                p = " (with job params: %s)" % str(job.params) if job.params else ""
+                p = f" (with job params: {str(job.params)})" if job.params else ""
                 log.debug("(%s) Configured job handler for tool '%s'%s is: %s", job.log_str(), tool_id, p, configured_handler)
         queue_callback = partial(self._queue_callback, job, tool_id)
         message_callback = partial(self._message_callback, job)

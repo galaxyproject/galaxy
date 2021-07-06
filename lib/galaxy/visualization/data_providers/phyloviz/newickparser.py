@@ -43,7 +43,7 @@ class Newick_Parser(Base_Parser):
         """elements separated by comma could be empty"""
 
         if string.find("(") != -1:
-            raise Exception("Tree is not well form, location: " + string)
+            raise Exception(f"Tree is not well form, location: {string}")
 
         childrenString = string.split(",")
         childrenNodes = []

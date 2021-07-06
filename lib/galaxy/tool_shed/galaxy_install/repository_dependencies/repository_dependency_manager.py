@@ -215,7 +215,7 @@ class RepositoryDependencyInstallManager:
                             elif repository_db_record.status in [install_model.ToolShedRepository.installation_status.DEACTIVATED]:
                                 # The current tool shed repository is deactivated, so updating its database record
                                 # is not necessary - just activate it.
-                                log.info("Reactivating deactivated tool_shed_repository '%s'." % str(repository_db_record.name))
+                                log.info(f"Reactivating deactivated tool_shed_repository '{str(repository_db_record.name)}'.")
                                 self.app.installed_repository_manager.activate_repository(repository_db_record)
                                 # No additional updates to the database record are necessary.
                                 can_update_db_record = False
@@ -483,13 +483,13 @@ class RepositoryDependencyInstallManager:
         will be set to the default NEW state.  This will enable the repository to be
         freshly installed.
         """
-        debug_msg = "Resetting tool_shed_repository '%s' for installation.\n" % repository.name
+        debug_msg = f"Resetting tool_shed_repository '{repository.name}' for installation.\n"
         debug_msg += "The current state of the tool_shed_repository is:\n"
-        debug_msg += "deleted: %s\n" % repository.deleted
-        debug_msg += "tool_shed_status: %s\n" % repository.tool_shed_status
-        debug_msg += "uninstalled: %s\n" % repository.uninstalled
-        debug_msg += "status: %s\n" % repository.status
-        debug_msg += "error_message: %s\n" % repository.error_message
+        debug_msg += f"deleted: {repository.deleted}\n"
+        debug_msg += f"tool_shed_status: {repository.tool_shed_status}\n"
+        debug_msg += f"uninstalled: {repository.uninstalled}\n"
+        debug_msg += f"status: {repository.status}\n"
+        debug_msg += f"error_message: {repository.error_message}\n"
         log.debug(debug_msg)
         repository.deleted = False
         repository.tool_shed_status = None
@@ -502,7 +502,7 @@ class RepositoryDependencyInstallManager:
 
 def _urlopen(url, data=None):
     scheme = urlparse(url).scheme
-    assert scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
+    assert scheme in ('http', 'https', 'ftp'), f'Invalid URL scheme: {scheme}'
     if data is not None:
         data = smart_str(data)
     return urlopen(Request(url, data), timeout=DEFAULT_SOCKET_TIMEOUT)

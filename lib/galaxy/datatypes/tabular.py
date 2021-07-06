@@ -55,7 +55,7 @@ class TabularData(data.Text):
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=False, **kwd):
         super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
         if dataset.metadata.comment_lines:
-            dataset.blurb = "{}, {} comments".format(dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
+            dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 
     def displayable(self, dataset):
         try:
@@ -137,7 +137,7 @@ class TabularData(data.Text):
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek: %s" % util.unicodify(exc)
+            out = f"Can't create peek: {util.unicodify(exc)}"
         return out
 
     def make_html_peek_header(self, dataset, skipchars=None, column_names=None, column_number_format='%s', column_parameter_alias=None, **kwargs):
@@ -179,12 +179,12 @@ class TabularData(data.Text):
                 if header is None:
                     out.append(column_number_format % str(i + 1))
                 else:
-                    out.append('{}.{}'.format(str(i + 1), escape(header)))
+                    out.append(f'{str(i + 1)}.{escape(header)}')
                 out.append('</th>')
             out.append('</tr>')
         except Exception as exc:
             log.exception('make_html_peek_header failed on HDA %s', dataset.id)
-            raise Exception("Can't create peek header: %s" % util.unicodify(exc))
+            raise Exception(f"Can't create peek header: {util.unicodify(exc)}")
         return "".join(out)
 
     def make_html_peek_rows(self, dataset, skipchars=None, **kwargs):
@@ -204,7 +204,7 @@ class TabularData(data.Text):
             for i, line in enumerate(peek.splitlines()):
                 if i >= self.data_line_offset:
                     if line.startswith(tuple(skipchars)):
-                        out.append('<tr><td colspan="100%%">%s</td></tr>' % escape(line))
+                        out.append(f'<tr><td colspan="100%">{escape(line)}</td></tr>')
                     elif line:
                         elems = line.split(dataset.metadata.delimiter)
                         elems = elems[:min(len(elems), self.max_peek_columns)]
@@ -213,15 +213,15 @@ class TabularData(data.Text):
                             elems.extend([''] * (columns - len(elems)))
                         # we may have an invalid comment line or invalid data
                         if len(elems) != columns:
-                            out.append('<tr><td colspan="100%%">%s</td></tr>' % escape(line))
+                            out.append(f'<tr><td colspan="100%">{escape(line)}</td></tr>')
                         else:
                             out.append('<tr>')
                             for elem in elems:
-                                out.append('<td>%s</td>' % escape(elem))
+                                out.append(f'<td>{escape(elem)}</td>')
                             out.append('</tr>')
         except Exception as exc:
             log.exception('make_html_peek_rows failed on HDA %s', dataset.id)
-            raise Exception("Can't create peek rows: %s" % util.unicodify(exc))
+            raise Exception(f"Can't create peek rows: {util.unicodify(exc)}")
         return "".join(out)
 
     def display_peek(self, dataset):
@@ -344,7 +344,7 @@ class Tabular(TabularData):
 
         is_column_type = {}  # Dict to store column type string to checking function
         for column_type in column_type_set_order:
-            is_column_type[column_type] = locals()["is_%s" % (column_type)]
+            is_column_type[column_type] = locals()[f"is_{column_type}"]
 
         def guess_column_type(column_text):
             for column_type in column_type_set_order:
@@ -764,13 +764,13 @@ class BaseVcf(Tabular):
         stderr_f = tempfile.NamedTemporaryFile(prefix="bam_merge_stderr")
         stderr_name = stderr_f.name
         command = ["bcftools", "concat"] + split_files + ["-o", output_file]
-        log.info("Merging vcf files with command [%s]" % " ".join(command))
+        log.info(f"Merging vcf files with command [{' '.join(command)}]")
         exit_code = subprocess.call(args=command, stderr=open(stderr_name, 'wb'))
         with open(stderr_name, "rb") as f:
             stderr = f.read().strip()
         # Did merge succeed?
         if exit_code != 0:
-            raise Exception("Error merging VCF files: %s" % stderr)
+            raise Exception(f"Error merging VCF files: {stderr}")
 
     def validate(self, dataset, **kwd):
         def validate_row(row):
@@ -802,6 +802,7 @@ class Vcf(BaseVcf):
 class VcfGz(BaseVcf, binary.Binary):
     # This class name is a misnomer, should be VcfBgzip
     file_ext = 'vcf_bgzip'
+    file_ext_export_alias = 'vcf.gz'
     compressed = True
     compressed_format = "gzip"
 
@@ -829,7 +830,7 @@ class VcfGz(BaseVcf, binary.Binary):
         try:
             pysam.tabix_index(dataset.file_name, index=index_file.file_name, preset='vcf', keep_original=True, force=True)
         except Exception as e:
-            raise Exception('Error setting VCF.gz metadata: %s' % (util.unicodify(e)))
+            raise Exception(f'Error setting VCF.gz metadata: {util.unicodify(e)}')
         dataset.metadata.tabix_index = index_file
 
 
@@ -865,17 +866,17 @@ class Eland(Tabular):
             # Generate column header
             out.append('<tr>')
             for i, name in enumerate(self.column_names):
-                out.append('<th>{}.{}</th>'.format(str(i + 1), name))
+                out.append(f'<th>{str(i + 1)}.{name}</th>')
             # This data type requires at least 11 columns in the data
             if dataset.metadata.columns - len(self.column_names) > 0:
                 for i in range(len(self.column_names), max(dataset.metadata.columns, self.max_peek_columns)):
-                    out.append('<th>%s</th>' % str(i + 1))
+                    out.append(f'<th>{str(i + 1)}</th>')
                 out.append('</tr>')
             out.append(self.make_html_peek_rows(dataset, skipchars=skipchars, peek=peek))
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek %s" % exc
+            out = f"Can't create peek {exc}"
         return out
 
     def sniff_prefix(self, file_prefix):
@@ -1132,8 +1133,8 @@ class ConnectivityTable(Tabular):
     edam_format = "format_3309"
     file_ext = "ct"
 
-    header_regexp = re.compile("^[0-9]+" + "(?:\t|[ ]+)" + ".*?" + "(?:ENERGY|energy|dG)" + "[ \t].*?=")
-    structure_regexp = re.compile("^[0-9]+" + "(?:\t|[ ]+)" + "[ACGTURYKMSWBDHVN]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+")
+    header_regexp = re.compile("^[0-9]+(?:	|[ ]+).*?(?:ENERGY|energy|dG)[ 	].*?=")
+    structure_regexp = re.compile("^[0-9]+(?:	|[ ]+)[ACGTURYKMSWBDHVN]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+")
 
     def __init__(self, **kwd):
         super().__init__(**kwd)
@@ -1201,7 +1202,7 @@ class ConnectivityTable(Tabular):
                     else:
                         if j != int(re.split(r'\W+', line, 1)[0]):
                             return False
-                        elif j == length:  # Last line of first sequence has been recheached
+                        elif j == length:  # Last line of first sequence has been reached
                             return True
                         else:
                             j += 1
@@ -1230,7 +1231,7 @@ class ConnectivityTable(Tabular):
         ck_data_body = re.sub('\n[ \t]+', '\n', ck_data_body)
         ck_data_body = re.sub('[ ]+', '\t', ck_data_body)
 
-        return dumps({'ck_data': util.unicodify(ck_data_header + "\n" + ck_data_body), 'ck_index': ck_index + 1})
+        return dumps({'ck_data': util.unicodify(f"{ck_data_header}\n{ck_data_body}"), 'ck_index': ck_index + 1})
 
 
 @build_sniff_from_prefix

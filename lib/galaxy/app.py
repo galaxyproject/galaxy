@@ -168,7 +168,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.hda_manager = self._register_singleton(HDAManager)
         self.history_manager = self._register_singleton(HistoryManager)
         self.job_search = self._register_singleton(JobSearch)
-        self.dataset_collections_service = self._register_singleton(DatasetCollectionManager)
+        self.dataset_collection_manager = self._register_singleton(DatasetCollectionManager)
         self.workflow_manager = self._register_singleton(WorkflowsManager)
         self.workflow_contents_manager = self._register_singleton(WorkflowContentsManager)
         self.library_folder_manager = self._register_singleton(FolderManager)
@@ -364,7 +364,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.url_for = url_for
 
         self.server_starttime = int(time.time())  # used for cachebusting
-        log.info("Galaxy app startup finished %s" % startup_timer)
+        log.info(f"Galaxy app startup finished {startup_timer}")
 
     def _shutdown_queue_worker(self):
         self.queue_worker.shutdown()

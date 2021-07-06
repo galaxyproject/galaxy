@@ -15,6 +15,17 @@
     <outputs>
         <data name="output" format="mol2"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="sdf" value="drugbank_drugs.sdf"/>
+            <output name="output" ftype="mol2">
+                <assert_contents>
+                    <has_text text="Goserelin"/>
+                    <has_text text="BOND"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
     <help>
 <![CDATA[
 ]]>

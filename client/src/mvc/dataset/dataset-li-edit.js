@@ -249,7 +249,7 @@ var DatasetListItemEdit = _super.extend(
                     href: this.model.urls.rerun,
                     classes: "rerun-btn",
                     target: this.linkTarget,
-                    faIcon: "fa-refresh",
+                    faIcon: "fa-redo",
                     onclick: function (ev) {
                         const Galaxy = getGalaxyInstance();
                         if (Galaxy.router) {

@@ -160,7 +160,7 @@ class DataProvider(metaclass=HasSettings):
         """
         # we need to protect against recursion (in __getattr__) if self.source hasn't been set
         source_str = str(self.source) if hasattr(self, 'source') else ''
-        return '{}({})'.format(self.__class__.__name__, str(source_str))
+        return f'{self.__class__.__name__}({str(source_str)})'
 
 
 class FilteredDataProvider(DataProvider):

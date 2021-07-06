@@ -2029,7 +2029,7 @@ module.
       </xs:element>
       <xs:element name="has_size" type="xs:anyType">
         <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the output has a size (in bytes) of the specified ``value``; if the size is allowed to deviate from this value, the maximum difference can be optionally specified with ``delta`` (e.g. ``<has_size value="10000" delta="100">``).]]>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the output has a size (in bytes) of the specified ``value``; if the size is allowed to deviate from this value, the maximum difference can be optionally specified with ``delta`` (e.g. ``<has_size value="10000" delta="100" />``).]]>
           </xs:documentation>
         </xs:annotation>
       </xs:element>
@@ -3162,10 +3162,15 @@ Name | Description
 ``$__user_id__`` | Email's numeric ID (id column of ``galaxy_user`` table in the database)
 ``$__user_email__`` | User's email address
 ``$__app__`` | The ``galaxy.app.UniverseApplication`` instance, gives access to all other configuration file variables (e.g. $__app__.config.output_size_limit). Should be used as a last resort, may go away in future releases.
+``$__target_datatype__`` | Only available in converter tools when run internally by Galaxy. Contains the target datatype of the conversion
 
 Additional runtime properties are available as environment variables. Since these
 are not Cheetah variables (the values aren't available until runtime) these should likely
 be escaped with a backslash (``\``) when appearing in ``command`` or ``configfile`` elements.
+
+For internal converter tools using ``$__target_datatype__`` it is recommended to add a select
+input parameter with name ``__target_datatype__`` in order to make the tool testable, see
+for instance the [biom converter](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/datatypes/converters/biom.xml).
 
 Name | Description
 ---- | -----------
@@ -3659,9 +3664,9 @@ Useful for parameters with dynamically defined options.
 
 For ``text`` inputs the following validators are useful:
 
-``length``: Check if the length of the value is within a range.
-``empty_field``: Check if the sting is not empty
-``value_in_data_table`` (``value_not_in_data_table``): Check if the value is
+- ``length``: Check if the length of the value is within a range.
+- ``empty_field``: Check if the string is not empty
+- ``value_in_data_table`` (``value_not_in_data_table``): Check if the value is
 contained in a column of a given data table.
 
 ### Validators for numeric inputs (``integer``, ``float``)
@@ -5307,7 +5312,9 @@ A contrived example of a tool that uses this is the test tool
 [inputs_as_json.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json.xml).
 
 By default this file will not contain paths for data or collection inputs. To include simple
-paths for data parameters set the ``data_style`` attribute to ``paths`` (see [inputs_as_json_with_paths.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_paths.xml) for an example).
+paths for data or collection inputs set the ``data_style`` attribute to ``paths`` (see [inputs_as_json_with_paths.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_paths.xml) for an example).
+To include a dictionary with staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path``.
+An example tool that uses ``staging_path_and_source_path`` is [inputs_as_json_with_staging_path_and_source_path.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_staging_path_and_source_path.xml)
 
 For tools with profile >= 20.05 a select with ``multiple="true"`` is rendered as an array which is empty if nothing is selected. For older profile versions select lists are rendered as comma separated strings or a literal ``null`` in case nothing is selected.
 ]]></xs:documentation>
@@ -5329,7 +5336,7 @@ response to this directive.
         </xs:attribute>
         <xs:attribute name="data_style" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file.</xs:documentation>
+            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file. Set to 'staging_path_and_source_path' to include a staging path, a source path and all metadata files.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>

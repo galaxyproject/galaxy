@@ -80,10 +80,10 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
             # ensure old tooltip expired,
             # no tooltip appeared before the 1st element
             if i > 0:
-                previous_button = item_button["%s_button" % expected_buttons[i - 1]].wait_for_visible()
+                previous_button = item_button[f"{expected_buttons[i - 1]}_button"].wait_for_visible()
                 if previous_button.get_attribute("aria-describedby") is not None:
                     # wait for tooltip to disappear
                     self.components._.tooltip_balloon.wait_for_absent()
 
-            button = item_button["%s_button" % expected_button]
+            button = item_button[f"{expected_button}_button"]
             self.assert_tooltip_text(button.wait_for_visible(), BUTTON_TOOLTIPS[expected_button])

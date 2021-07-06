@@ -91,7 +91,7 @@ def fill_template(template_text,
                 # list comprehensions, as this has never worked for dict or set comprehensions or
                 # generator expressions in Cheetah.
                 var_not_found = e.args[0].split("'")[1]
-                replace_str = 'VFFSL(SL,"%s",True)' % var_not_found
+                replace_str = f'VFFSL(SL,"{var_not_found}",True)'
                 lineno = last_stack.lineno - 1
                 module_code = t._CHEETAH_generatedModuleCode.splitlines()
                 module_code[lineno] = module_code[lineno].replace(replace_str, var_not_found)
