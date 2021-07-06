@@ -502,7 +502,9 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         """
         serialization_params = parse_serialization_params(**kwd)
         contents_type = self.__get_contents_type(trans, kwd)
-        fuzzy_count = kwd.get("fuzzy_count")
+        fuzzy_count = kwd.get("fuzzy_count", None)
+        if fuzzy_count:
+            fuzzy_count = int(fuzzy_count)
         return self.service.show(trans, id, serialization_params, contents_type, fuzzy_count)
 
     @expose_api_anonymous
