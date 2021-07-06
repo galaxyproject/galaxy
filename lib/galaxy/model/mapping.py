@@ -91,12 +91,6 @@ model.History.table = Table(
     Index('ix_history_slug', 'slug', mysql_length=200),
 )
 
-model.HistoryUserShareAssociation.table = Table(
-    "history_user_share_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
-
 model.HistoryDatasetAssociation.table = Table(
     "history_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1045,24 +1039,20 @@ mapper_registry.map_imperatively(model.History, model.History.table, properties=
         deferred=True
     ),
     users_shared_with_count=column_property(
-        select(func.count(model.HistoryUserShareAssociation.table.c.id)).where(model.History.table.c.id == model.HistoryUserShareAssociation.table.c.history_id).scalar_subquery(),
+        select(func.count(model.HistoryUserShareAssociation.id)).where(model.History.table.c.id == model.HistoryUserShareAssociation.history_id).scalar_subquery(),
         deferred=True
     ),
     update_time=column_property(
         select(func.max(model.HistoryAudit.update_time)).where(model.HistoryAudit.history_id == model.History.table.c.id).scalar_subquery(),
     ),
     default_permissions=relation(model.DefaultHistoryPermissions, back_populates='history'),
+    users_shared_with=relation(model.HistoryUserShareAssociation, back_populates='history'),
 ))
 
 # Set up proxy so that
 #   History.users_shared_with
 # returns a list of users that history is shared with.
 model.History.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-mapper_registry.map_imperatively(model.HistoryUserShareAssociation, model.HistoryUserShareAssociation.table, properties=dict(
-    user=relation(model.User, backref='histories_shared_by_others'),
-    history=relation(model.History, backref='users_shared_with')
-))
 
 mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     addresses=relation(model.UserAddress,
@@ -1107,6 +1097,8 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
         order_by=desc(model.APIKeys.create_time)),
     pages=relation(model.Page, back_populates='user'),
     reset_tokens=relation(model.PasswordResetToken, back_populates='user'),
+    histories_shared_by_others=relation(
+        model.HistoryUserShareAssociation, back_populates='user'),
 ))
 
 # Set up proxy so that this syntax is possible:
