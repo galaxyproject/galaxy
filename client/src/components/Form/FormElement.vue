@@ -28,15 +28,15 @@ export default {
         },
         value: {
             type: [String, Boolean],
-            default: "",
+            default: null,
         },
         title: {
             type: String,
-            default: "",
+            default: null,
         },
         help: {
             type: String,
-            default: "",
+            default: null,
         },
         area: {
             type: Boolean,
@@ -54,11 +54,7 @@ export default {
     computed: {
         currentValue: {
             get() {
-                if (this.type === "boolean") {
-                    return typeof this.value == "boolean" ? this.value : this.value === "true";
-                } else {
-                    return this.value;
-                }
+                return this.value;
             },
             set(val) {
                 this.$emit("input", val);

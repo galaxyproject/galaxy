@@ -191,7 +191,7 @@ export default {
         remapAllowed() {
             return this.job_id && this.formConfig.job_remap;
         },
-        remapLabel() {
+        remapTitle() {
             if (this.formConfig.job_remap === "job_produced_collection_elements") {
                 return "Replace elements in collection ?";
             } else {
