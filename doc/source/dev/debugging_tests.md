@@ -5,7 +5,7 @@
 The following instructions assume that you have cloned your Galaxy fork into ~/galaxy directory.
 
 1. Start VS Code
-2. Install the Python extension for VS Code: select Extensions on Activity Bar, on the far left hand side
+2. Install the Python extension for VS Code: select Extensions on Activity Bar, on the far left-hand side
 2. Create a VS Code workspace by selecting 'File -> Add Folder to Workspace...' from menu and adding the `~/galaxy` directory
 3. Optionally, save the workspace by selecting 'File -> Save Workspace As...' and save as 'galaxy.code-workspace' in the `~/galaxy` directory 
 2. Add the following snippet to `~/galaxy/.vscode/settings.json` (create the file if it does not already exist)
