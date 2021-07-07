@@ -12,7 +12,7 @@ function add_amp_paths() {
 }
 function setup_amp_metrics(){
     # Build the UWSGI module needed for the config
-    mkdir logs
+    [ ! -d "logs" ] && mkdir logs
     pushd amp_metrics
     make || (
         echo "NOTICE: Cannot build the uwsg system_metrics.so file"
