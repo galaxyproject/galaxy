@@ -174,11 +174,8 @@ galaxy:
     formatters: 
       stack: 
         (): galaxy.web_stack.application_stack_log_formatter  
-        format: '%(name)s %(levelname)s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s'
-    
-    root: 
-      handlers: [galaxylog]
-      level: DEBUG
+#      default:  
+#        format: '%(name)s %(levelname)s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s'
     
     handlers: 
       console: 
@@ -188,12 +185,20 @@ galaxy:
         filters: [stack]
         formatter: stack      
 
+      rootlog:
+        class: logging.handlers.TimedRotatingFileHandler
+        when: midnight
+        level: DEBUG
+        filename: logs/root.log
+        filters: [stack]
+        formatter: stack
+
       galaxylog:
         class: logging.handlers.TimedRotatingFileHandler
         when: midnight
         level: DEBUG
         filename: logs/galaxy.log
-        filename_template: logs/galaxy_{pool_name}_{server_id}.log
+#        filename_template: logs/galaxy_{pool_name}_{server_id}.log
         filters: [stack]
         formatter: stack
 
@@ -202,6 +207,10 @@ galaxy:
         level: DEBUG
         filename: logs/performance.log
 
+    root: 
+      handlers: [rootlog]
+      level: DEBUG
+    
     loggers: 
       paste.httpserver.ThreadPool: 
         level: WARN
@@ -231,6 +240,12 @@ galaxy:
         level: INFO
         qualname: botocore
 
+      galaxy:
+        handlers: [galaxylog]
+        level: DEBUG
+        propagate: False
+        qualname: galaxy
+        
       performance:  
         handlers: [perflog]
         level: DEBUG
