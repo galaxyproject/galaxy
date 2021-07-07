@@ -3889,6 +3889,12 @@ if the corresponding option is selected by default (the default is ``false``).
 </xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Only for parameters of type ``drill_down`` which specify ``name`` and ``value`` instead of ``value`` and tag text as for ``select`` parameters.
+</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
     <xs:group name="OptionElement">
