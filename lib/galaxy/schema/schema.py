@@ -1028,6 +1028,27 @@ class JobImportHistoryResponse(JobBaseModel):
     )
 
 
+class JobStateSummary(Model):
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    model: str = ModelClassField("Job")
+    populated_state: DatasetCollection.populated_states = PopulatedStateField
+    states: Dict[Job.states, int] = Field(
+        {},
+        title="States",
+        description=(
+            "A dictionary of job states and the number of jobs in that state."
+        )
+    )
+
+
+class ImplicitCollectionJobsStateSummary(JobStateSummary):
+    model: str = ModelClassField("ImplicitCollectionJobs")
+
+
+class WorkflowInvocationStateSummary(JobStateSummary):
+    model: str = ModelClassField("WorkflowInvocation")
+
+
 class JobSummary(JobBaseModel):
     """Basic information about a job."""
     external_id: Optional[str] = Field(

@@ -1219,6 +1219,14 @@ class ServiceBase:
         """Decodes a previously encoded database ID."""
         return encode_with_security(self.security, id)
 
+    def encode_all_ids(self, rval, recursive=False):
+        """
+        Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
+
+        It might be useful to turn this in to a decorator
+        """
+        return self.security.encode_all_ids(rval, recursive=recursive)
+
     def build_order_by(self, manager: SortableManager, order_by_query: Optional[str] = None):
         """Returns an ORM compatible order_by clause using the order attribute and the given manager.
 

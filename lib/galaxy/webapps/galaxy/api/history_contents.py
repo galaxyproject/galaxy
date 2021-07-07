@@ -57,7 +57,11 @@ from galaxy.schema.schema import (
     HDCADetailed,
     HDCASummary,
     HistoryContentType,
+    ImplicitCollectionJobsStateSummary,
+    JobSourceType,
+    JobStateSummary,
     Model,
+    WorkflowInvocationStateSummary,
 )
 from galaxy.schema.types import SerializationParams
 from galaxy.security.idencoding import IdEncodingHelper
@@ -79,9 +83,16 @@ from . import BaseGalaxyAPIController, depends
 log = logging.getLogger(__name__)
 
 DatasetDetailsType = Union[Set[EncodedDatabaseIdField], Literal['all']]
+
 AnyHistoryContentItem = Union[
     HDASummary, HDADetailed, HDABeta,
     HDCASummary, HDCADetailed, HDCABeta
+]
+
+AnyJobStateSummary = Union[
+    JobStateSummary,
+    ImplicitCollectionJobsStateSummary,
+    WorkflowInvocationStateSummary,
 ]
 
 
@@ -251,6 +262,28 @@ class HistoriesContentsService(ServiceBase):
         elif contents_type == HistoryContentType.dataset_collection:
             return self.__show_dataset_collection(trans, id, serialization_params, fuzzy_count)
         raise exceptions.UnknownContentsType(f'Unknown contents type: {contents_type}')
+
+    def index_jobs_summary(
+        self, trans,
+        ids: List[EncodedDatabaseIdField],
+        types: List[JobSourceType],
+    ) -> List[AnyJobStateSummary]:
+        """
+        Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :param  ids:    the encoded ids of job summary objects to return - if ids
+                        is specified types must also be specified and have same length.
+        :param  types:  type of object represented by elements in the ids array - any of
+                        Job, ImplicitCollectionJob, or WorkflowInvocation.
+
+        :returns:   an array of job summary object dictionaries.
+        """
+        return [self.encode_all_ids(trans, job_state) for job_state in fetch_job_states(trans.sa_session, ids, types)]
 
     def __index_legacy(
         self, trans,
@@ -530,15 +563,9 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :rtype:     dict[]
         :returns:   an array of job summary object dictionaries.
         """
-        ids = kwd.get("ids", None)
-        types = kwd.get("types", None)
-        if ids is None:
-            assert types is None
-            # TODO: ...
-        else:
-            ids = [self.app.security.decode_id(i) for i in util.listify(ids)]
-            types = util.listify(types)
-        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)]
+        ids = util.listify(kwd.get("ids", None))
+        types = util.listify(kwd.get("types", None))
+        return self.service.index_jobs_summary(trans, ids, types)
 
     @expose_api_anonymous
     def show_jobs_summary(self, trans, id, history_id, **kwd):
