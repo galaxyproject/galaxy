@@ -258,22 +258,6 @@ model.ExtendedMetadataIndex.table = Table(
     Column("path", String(255)),
     Column("value", TEXT))
 
-model.LibraryFolder.table = Table(
-    "library_folder", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("parent_id", Integer, ForeignKey("library_folder.id"), nullable=True, index=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TEXT),
-    Column("description", TEXT),
-    Column("order_id", Integer),  # not currently being used, but for possible future use
-    Column("item_count", Integer),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("purged", Boolean, index=True, default=False),
-    Column("genome_build", TrimmedString(40)),
-    Index('ix_library_folder_name', 'name', mysql_length=200),
-)
-
 model.LibraryInfoAssociation.table = Table(
     "library_info_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1138,45 +1122,10 @@ mapper_registry.map_imperatively(model.LibraryInfoAssociation, model.LibraryInfo
         primaryjoin=(model.LibraryInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
-mapper_registry.map_imperatively(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
-    folders=relation(model.LibraryFolder,
-        primaryjoin=(model.LibraryFolder.table.c.parent_id == model.LibraryFolder.table.c.id),
-        order_by=asc(model.LibraryFolder.table.c.name),
-        backref=backref("parent",
-            primaryjoin=(model.LibraryFolder.table.c.parent_id == model.LibraryFolder.table.c.id),
-            remote_side=[model.LibraryFolder.table.c.id])),
-    active_folders=relation(model.LibraryFolder,
-        primaryjoin=(
-            (model.LibraryFolder.table.c.parent_id == model.LibraryFolder.table.c.id)
-            & (not_(model.LibraryFolder.table.c.deleted))
-        ),
-        order_by=asc(model.LibraryFolder.table.c.name),
-        # """sqlalchemy.exc.ArgumentError: Error creating eager relationship 'active_folders'
-        # on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>':
-        # Cant use eager loading on a self referential relationship."""
-        lazy=True,
-        viewonly=True),
-    datasets=relation(model.LibraryDataset,
-        primaryjoin=(model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id),
-        order_by=asc(model.LibraryDataset.table.c._name),
-        lazy=True,
-        viewonly=True),
-    active_datasets=relation(model.LibraryDataset,
-        primaryjoin=(
-            (model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id)
-            & (not_(model.LibraryDataset.table.c.deleted))
-        ),
-        order_by=asc(model.LibraryDataset.table.c._name),
-        lazy=True,
-        viewonly=True),
-    library_root=relation(model.Library, back_populates='root_folder'),
-    actions=relation(model.LibraryFolderPermissions, back_populates='folder'),
-))
-
 mapper_registry.map_imperatively(model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.table, properties=dict(
     folder=relation(model.LibraryFolder,
         primaryjoin=(
-            (model.LibraryFolderInfoAssociation.table.c.library_folder_id == model.LibraryFolder.table.c.id)
+            (model.LibraryFolderInfoAssociation.table.c.library_folder_id == model.LibraryFolder.id)
             & (not_(model.LibraryFolderInfoAssociation.table.c.deleted))
         ),
         backref="info_association"),
