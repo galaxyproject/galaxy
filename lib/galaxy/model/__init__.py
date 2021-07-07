@@ -34,6 +34,7 @@ from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, Partial
 from sqlalchemy import (
     alias,
     and_,
+    asc,
     BigInteger,
     Boolean,
     Column,
@@ -4169,7 +4170,57 @@ class Library(Base, Dictifiable, HasName, RepresentById):
         return roles
 
 
-class LibraryFolder(Dictifiable, HasName, RepresentById):
+class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
+    __tablename__ = 'library_folder'
+    __table_args__ = (
+        Index('ix_library_folder_name', 'name', mysql_length=200),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    parent_id = Column('parent_id', Integer, ForeignKey('library_folder.id'), nullable=True, index=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    name = Column('name', TEXT)
+    description = Column('description', TEXT)
+    order_id = Column('order_id', Integer)  # not currently being used, but for possible future use
+    item_count = Column('item_count', Integer)
+    deleted = Column('deleted', Boolean, index=True, default=False)
+    purged = Column('purged', Boolean, index=True, default=False)
+    genome_build = Column('genome_build', TrimmedString(40))
+
+    folders = relationship('LibraryFolder',
+        primaryjoin=('LibraryFolder.id == LibraryFolder.parent_id'),
+        order_by=asc(name),
+        back_populates='parent')
+    parent = relationship('LibraryFolder', back_populates='folders', remote_side=[id])
+
+    active_folders = relationship('LibraryFolder',
+        primaryjoin=(
+            'and_(LibraryFolder.parent_id == LibraryFolder.id, not_(LibraryFolder.deleted))'),
+        order_by=asc(name),
+        # """sqlalchemy.exc.ArgumentError: Error creating eager relationship 'active_folders'
+        # on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>':
+        # Cant use eager loading on a self referential relationship."""
+        # TODO: This is no longer the case. Fix this: https://docs.sqlalchemy.org/en/14/orm/self_referential.html#configuring-self-referential-eager-loading
+        lazy=True,
+        viewonly=True)
+
+    datasets = relationship('LibraryDataset',
+        primaryjoin=('LibraryDataset.folder_id == LibraryFolder.id'),
+        # order_by=asc(text('LibraryDataset._name')),  # TODO: uncomment after mapping LibraryDataset
+        lazy=True,
+        viewonly=True)
+
+    active_datasets = relationship('LibraryDataset',
+        primaryjoin=(
+            'and_(LibraryDataset.folder_id == LibraryFolder.id, not_(LibraryDataset.deleted))'),
+        # order_by=asc(text('LibraryDataset._name')),  # TODO: uncomment after mapping LibraryDataset
+        lazy=True,
+        viewonly=True)
+
+    library_root = relationship('Library', back_populates='root_folder')
+    actions = relationship('LibraryFolderPermissions', back_populates='folder')
+
     dict_element_visible_keys = ['id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted']
 
     def __init__(self, name=None, description=None, item_count=0, order_id=None, genome_build=None):
