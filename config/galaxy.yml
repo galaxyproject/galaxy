@@ -217,11 +217,11 @@ galaxy:
         qualname: paste.httpserver.ThreadPool
         
       sqlalchemy:
-        level: TRACE  # turn on TRACE temporarily to troubleshoot ORM exception
+        level: INFO  # turn on/off DEBUG temporarily to troubleshoot ORM exception
         qualname: sqlalchemy
 
       sqlalchemy_json.track:
-        level: TRACE  # turn on TRACE temporarily to troubleshoot ORM exception
+        level: WARN  # turn on/off DEBUG temporarily to troubleshoot ORM exception
         qualname: sqlalchemy_json.track
 
       urllib3.connectionpool: 
