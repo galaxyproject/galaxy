@@ -1083,69 +1083,81 @@ def test_LibraryDatasetPermissions(model, session, library_dataset, role):
         assert stored_obj.role.id == role.id
 
 
-def test_LibraryFolder(
-        model, session, library_folder, library_dataset, library, library_folder_permission):
-    cls = model.LibraryFolder
-    assert cls.__tablename__ == 'library_folder'
-    assert has_index(cls.__table__, ('name',))
-    with dbcleanup(session, cls):
-        name = 'a'
-        description = 'b'
-        order_id = 9
-        item_count = 1
-        deleted = False
-        purged = False
-        genome_build = 'c'
-        create_time = datetime.now()
-        update_time = create_time + timedelta(hours=1)
-        folder1 = model.LibraryFolder()
+class TestLibraryFolder:
 
-        obj = cls()
-        obj.create_time = create_time
-        obj.update_time = update_time
-        obj.parent = library_folder
-        obj.create_time = create_time
-        obj.update_time = update_time
-        obj.name = name
-        obj.description = description
-        obj.order_id = order_id
-        obj.item_count = item_count
-        obj.deleted = deleted
-        obj.purged = purged
-        obj.genome_build = genome_build
-        obj.folders.append(folder1)
+    @pytest.fixture
+    def cls_(self, model):
+        return model.LibraryFolder
 
-        # No back reference, so dataset does not update folder; so we have to flush to the db
-        # TODO: ..But why is there no back reference?
-        library_dataset.folder = obj
-        persist(session, library_dataset)
+    def test_table(self, cls_, model):
+        assert cls_.__tablename__ == 'library_folder'
+        assert has_index(cls_.__table__, ('name',))
 
-        obj.library_root.append(library)
-        obj.actions.append(library_folder_permission)
-        obj_id = persist(session, obj)
+    def test_columns(self, cls_, model, session, library_folder):
+        with dbcleanup(session, cls_):
+            parent = library_folder
+            create_time = datetime.now()
+            update_time = create_time + timedelta(hours=1)
+            name = 'a'
+            description = 'b'
+            order_id = 9
+            item_count = 1
+            deleted = False
+            purged = False
+            genome_build = 'c'
 
-        stored_obj = get_stored_obj(session, cls, obj_id)
-        # test mapped columns
-        assert stored_obj.id == obj_id
-        assert stored_obj.parent_id == library_folder.id
-        assert stored_obj.create_time == create_time
-        assert stored_obj.update_time == update_time
-        assert stored_obj.name == name
-        assert stored_obj.description == description
-        assert stored_obj.order_id == order_id
-        assert stored_obj.item_count == item_count
-        assert stored_obj.deleted == deleted
-        assert stored_obj.purged == purged
-        assert stored_obj.genome_build == genome_build
-        # test mapped relationships
-        assert stored_obj.parent.id == library_folder.id
-        assert stored_obj.folders == [folder1]
-        assert stored_obj.active_folders == [folder1]
-        assert stored_obj.library_root == [library]
-        assert stored_obj.actions == [library_folder_permission]
-        # Use identity equality instread of object equality.
-        assert stored_obj.datasets[0].id == library_dataset.id
-        assert stored_obj.active_datasets[0].id == library_dataset.id
+            obj = cls_()
+            obj.parent = parent
+            obj.create_time = create_time
+            obj.update_time = update_time
+            obj.name = name
+            obj.description = description
+            obj.order_id = order_id
+            obj.item_count = item_count
+            obj.deleted = deleted
+            obj.purged = purged
+            obj.genome_build = genome_build
+            obj_id = persist(session, obj)
+
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.parent_id == parent.id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.name == name
+            assert stored_obj.description == description
+            assert stored_obj.order_id == order_id
+            assert stored_obj.item_count == item_count
+            assert stored_obj.deleted == deleted
+            assert stored_obj.purged == purged
+            assert stored_obj.genome_build == genome_build
+
+    def test_relationships(
+            self, cls_, model, session, library_folder, library_dataset, library, library_folder_permission):
+        with dbcleanup(session, cls_):
+            folder1 = model.LibraryFolder()
+
+            obj = cls_()
+            # no back reference, so dataset does not update folder; so we have to flush to the db
+            # todo: ..but why is there no back reference?
+            library_dataset.folder = obj
+            persist(session, library_dataset)
+
+            obj.parent = library_folder
+            obj.folders.append(folder1)
+            obj.library_root.append(library)
+            obj.actions.append(library_folder_permission)
+            obj_id = persist(session, obj)
+
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.parent.id == library_folder.id
+            assert stored_obj.folders == [folder1]
+            assert stored_obj.active_folders == [folder1]
+            assert stored_obj.library_root == [library]
+            assert stored_obj.actions == [library_folder_permission]
+            # use identity equality instread of object equality.
+            assert stored_obj.datasets[0].id == library_dataset.id
+            assert stored_obj.active_datasets[0].id == library_dataset.id
 
 
 def test_LibraryFolderPermissions(model, session, library_folder, role):
