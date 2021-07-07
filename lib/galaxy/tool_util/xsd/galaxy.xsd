@@ -3869,6 +3869,9 @@ defined in a macro and different default value(s) are used.
 ]]>
 </xs:documentation>
     </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="OptionElement" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="value" type="xs:string">
@@ -3888,6 +3891,11 @@ if the corresponding option is selected by default (the default is ``false``).
         </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
+    <xs:group name="OptionElement">
+      <xs:choice>
+        <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:choice>
+    </xs:group>
   </xs:complexType>
 
   <xs:complexType name="ParamConversion">
@@ -3924,7 +3932,7 @@ dataset for the contained input of the type specified using the ``type`` tag.
 See [/tools/extract/liftOver_wrapper.xml](https://github.com/galaxyproject/galaxy/blob/master/tools/extract/liftOver_wrapper.xml)
 for an example of how to use this tag set. This tag set is optionally contained
 within the ``<param>`` tag when the ``type`` attribute value is ``select`` or
-``data`` and used to dynamically generated lists of options. This tag set
+``data`` and used to dynamically generated lists of options (it can also be used for parameters of type ``drill_down`` to define static options). This tag set
 dynamically creates a list of options whose values can be
 obtained from a predefined file stored locally or a dataset selected from the
 current history.
