@@ -10,11 +10,11 @@
         <edam_operation>operation_3096</edam_operation>
     </edam_operations>
     <inputs>
-        <param type="data_collection" name="input" label="Input Collection" help="A list whose identifiers will be relabelled."/>
+        <param type="data_collection" name="input" label="Input Collection" help="collection to change identifiers in"/>
         <conditional name="how">
             <param type="select" name="how_select" label="How should the new labels be specified?">
-                <option value="txt">Using lines in a simple text file.</option>
-                <option value="tabular">Map original identifiers to new ones using a two column table.</option>
+                <option value="txt">Simple list</option>
+                <option value="tabular">Old-new map</option>
             </param>
             <when value="txt">
                 <param type="data" name="labels" format="txt" label="New Identifiers" />
@@ -22,7 +22,7 @@
             </when>
             <when value="tabular">
                 <param type="data" name="labels" format="tabular" label="New Identifiers" />
-                <param name="strict" type="boolean" label="Ensure strict mapping" help="If selected, the target file must contain exactly the correct number of lines and each input identifier must match exactly one element of the input collection." truevalue="true" falsevalue="false" />
+                <param name="strict" type="boolean" label="Ensure strict mapping" help="If YES, the target file must contain exactly the correct number of lines and each input identifier must match exactly one element of the input collection." truevalue="true" falsevalue="false" />
             </when>
         </conditional>
     </inputs>
@@ -137,23 +137,75 @@
     </tests>
     <help><![CDATA[
 
+============
+What it does
+============
+
+This tool changes names of datasets within a collection using identifiers from a supplied file. 
+
 .. class:: infomark
 
-        This tool will take an input list and a text file with new identifiers
-        and build a new list with the same datasets but these new identifiers.
-        The order and number of entries in the text file must match the order
-        of the items you want to rename in your dataset collection.
+This document uses terms *name*, *label*, and *identifier* interchangeably: they all mean the same thing - name of individual datasets inside a collection. 
 
-        Alternatively a tabular file may be supplied, where the first column
-        if the current identifier that should be renamed, and the second column
-        contains the new label. This file may contain less entries than items
-        in the collection. In that case only matching list identifiers will be
-        relabeled.
+===================
+Supplying new names
+===================
 
-        Valid identifiers must contain only characters (a-z, A-Z), numbers (0-9),
-        dash and underscore (-, _). Punctuation or whitespace are not allowed.
+New names can be supplied as either a simple list or a tab-delimited file mapping old names to the new ones. This is controlled using **How should the new labels be specified?** drop-down:
 
-        This tool will create new history datasets from your collection
-        but your quota usage will not increase.
+**Simple list**
+
+Given a collection::
+
+ Collection: [Dataset A] 
+             [Dataset B] 
+             [Dataset X]
+
+and a simple text file::
+
+             Alpha
+             Beta
+             Gamma
+
+the tool will return::
+
+ Collection: [Dataset Alpha] 
+             [Dataset Beta] 
+             [Dataset Gamma]
+
+.. class:: infomark
+
+**Note** that the order and number of entries in the text file must match the order of the items you want to rename in your dataset collection.
+
+-------
+
+**Old-new map**
+
+Given a collection::
+
+ Collection: [Dataset A] 
+             [Dataset B] 
+             [Dataset X]
+
+and a simple text file (you can see that entries do not have to be in order here)::
+
+             B Beta
+             X Gamma
+             A Alpha
+
+the tool will return::
+
+ Collection: [Dataset Alpha] 
+             [Dataset Beta] 
+             [Dataset Gamma]
+
+
+.. class:: warningmark
+
+Valid identifiers must contain only characters (a-z, A-Z), numbers (0-9), dash and underscore (-, _). Punctuation or whitespace are not allowed.
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
     ]]></help>
 </tool>
