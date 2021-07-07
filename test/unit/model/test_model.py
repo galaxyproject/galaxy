@@ -12,6 +12,19 @@ from sqlalchemy import (
 import galaxy.model.mapping as mapping
 
 
+class BaseTest:
+    @pytest.fixture
+    def cls_(self, model):
+        """
+        Return class under test.
+        Assumptions: if the class under test is Foo, then the class grouping
+        the tests should be a subclass of BaseTest, named TestFoo.
+        """
+        prefix = len('Test')
+        class_name = self.__class__.__name__[prefix:]
+        return getattr(model, class_name)
+
+
 def test_APIKeys(model, session, user):
     cls = model.APIKeys
     assert cls.__tablename__ == 'api_keys'
@@ -1083,16 +1096,14 @@ def test_LibraryDatasetPermissions(model, session, library_dataset, role):
         assert stored_obj.role.id == role.id
 
 
-class TestLibraryFolder:
+class TestLibraryFolder(BaseTest):
 
-    def test_table(self, model):
-        cls = get_class(model, self)
-        assert cls.__tablename__ == 'library_folder'
-        assert has_index(cls.__table__, ('name',))
+    def test_table(self, cls_, model):
+        assert cls_.__tablename__ == 'library_folder'
+        assert has_index(cls_.__table__, ('name',))
 
-    def test_columns(self, model, session, library_folder):
-        cls = get_class(model, self)
-        with dbcleanup(session, cls):
+    def test_columns(self, cls_, model, session, library_folder):
+        with dbcleanup(session, cls_):
             parent = library_folder
             create_time = datetime.now()
             update_time = create_time + timedelta(hours=1)
@@ -1104,7 +1115,7 @@ class TestLibraryFolder:
             purged = False
             genome_build = 'c'
 
-            obj = cls()
+            obj = cls_()
             obj.parent = parent
             obj.create_time = create_time
             obj.update_time = update_time
@@ -1117,7 +1128,7 @@ class TestLibraryFolder:
             obj.genome_build = genome_build
             obj_id = persist(session, obj)
 
-            stored_obj = get_stored_obj(session, cls, obj_id)
+            stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
             assert stored_obj.parent_id == parent.id
             assert stored_obj.create_time == create_time
@@ -1131,12 +1142,11 @@ class TestLibraryFolder:
             assert stored_obj.genome_build == genome_build
 
     def test_relationships(
-            self, model, session, library_folder, library_dataset, library, library_folder_permission):
-        cls = get_class(model, self)
-        with dbcleanup(session, cls):
+            self, cls_, model, session, library_folder, library_dataset, library, library_folder_permission):
+        with dbcleanup(session, cls_):
             folder1 = model.LibraryFolder()
 
-            obj = cls()
+            obj = cls_()
             # no back reference, so dataset does not update folder; so we have to flush to the db
             # todo: ..but why is there no back reference?
             library_dataset.folder = obj
@@ -1148,7 +1158,7 @@ class TestLibraryFolder:
             obj.actions.append(library_folder_permission)
             obj_id = persist(session, obj)
 
-            stored_obj = get_stored_obj(session, cls, obj_id)
+            stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.parent.id == library_folder.id
             assert stored_obj.folders == [folder1]
             assert stored_obj.active_folders == [folder1]
@@ -2557,9 +2567,3 @@ def get_stored_obj(session, cls, obj_id=None, stmt=None):
 def get_random_string():
     """Generate unique values to accommodate unique constraints."""
     return str(random.random())
-
-
-def get_class(model, test_class_instance):
-    prefix = len('Test')
-    class_name = test_class_instance.__class__.__name__[prefix:]
-    return getattr(model, class_name)
