@@ -80,21 +80,28 @@
     </tests>
     <help><![CDATA[
 
-.. class:: infomark
+========
+Synopsis
+========
 
-        This tool will take an input collection and a tabular file,
-        where the first column indicates an element identifier and the
-        remaining columns contains the new tags. This file may contain
-        less entries than elements in the collection.
-        In that case only matching list identifiers will be tagged.
+This tool allows to add tags (including name: and group: tags) to collection elements.
 
-        This tool will create new history datasets from your collection
-        but your quota usage will not increase.
+===========
+Description
+===========
 
-        In order to create
-        
-        - name tags prefix the tag name with "#" or "name:"
-        - group tags prefix the tag name with "group:"
+The relationship between element names and tags is specified in a two column tab-delimited file. This file may contain less entries than elements in the collection. In that case only matching list identifiers will be tagged.
+
+To create name: or group: tags prepend them with ``#`` (you can also use ``name:``) or ``group:``, respectively. 
+
+===============
+More about tags
+===============
+
+Galaxy allows tagging datasets to facilitate analyses. There are several types of tags including simple tags, name tags, and group tags. **Simple** tags allow you to attach an alternative label to a dataset, which will make it easier to find it later. **Name** tags allow you to track propagation of a dataset through the analyses: all datasets derived from the initial dataset labeled with a name tag will inherit it. Finally, **group** tags allow you to label group of datasets. This is useful. for example, for differential expression analysis where you can have two groups of datasets labeled as "treatment" and "control".
+
+To learn mote about tags go to https://training.galaxyproject.org and use **Search** function to look for ``tags``.
+
 
 
     ]]></help>
