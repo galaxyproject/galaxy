@@ -315,6 +315,26 @@ class HistoriesContentsService(ServiceBase):
         assert job is None or implicit_collection_jobs is None
         return self.encode_all_ids(summarize_jobs_to_dict(trans.sa_session, job or implicit_collection_jobs))
 
+    def download_dataset_collection(self, trans, id: EncodedDatabaseIdField):
+        """
+        Download the content of a HistoryDatasetCollection as a tgz archive
+        while maintaining approximate collection structure.
+
+        :param id: encoded HistoryDatasetCollectionAssociation (HDCA) id
+        """
+        try:
+            dataset_collection_instance = self.__get_accessible_collection(trans, id)
+            return self.__stream_dataset_collection(trans, dataset_collection_instance)
+        except Exception as e:
+            log.exception("Error in API while creating dataset collection archive")
+            trans.response.status = 500
+            return {'error': util.unicodify(e)}
+
+    def __stream_dataset_collection(self, trans, dataset_collection_instance):
+        archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_mod_zip=trans.app.config.upstream_mod_zip)
+        trans.response.headers.update(archive.get_headers())
+        return archive.response()
+
     def __index_legacy(
         self, trans,
         history_id: EncodedDatabaseIdField,
@@ -626,21 +646,6 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
 
         return contents_type
 
-    def __show_dataset(self, trans, id, **kwd):
-        hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
-        return self.hda_serializer.serialize_to_view(hda,
-                                                     user=trans.user,
-                                                     trans=trans,
-                                                     **self._parse_serialization_params(kwd, 'detailed'))
-
-    def __show_dataset_collection(self, trans, id, history_id, **kwd):
-        dataset_collection_instance = self.__get_accessible_collection(trans, id, history_id)
-        view = kwd.get("view", "element")
-        fuzzy_count = kwd.get("fuzzy_count", None)
-        if fuzzy_count:
-            fuzzy_count = int(fuzzy_count)
-        return self.__collection_dict(trans, dataset_collection_instance, view=view, fuzzy_count=fuzzy_count)
-
     def __get_accessible_collection(self, trans, id, history_id):
         return trans.app.dataset_collection_manager.get_dataset_collection_instance(
             trans=trans,
@@ -660,18 +665,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :param id: encoded HistoryDatasetCollectionAssociation (HDCA) id
         :param history_id: encoded id string of the HDCA's History
         """
-        try:
-            dataset_collection_instance = self.__get_accessible_collection(trans, id, history_id)
-            return self.__stream_dataset_collection(trans, dataset_collection_instance)
-        except Exception as e:
-            log.exception("Error in API while creating dataset collection archive")
-            trans.response.status = 500
-            return {'error': util.unicodify(e)}
-
-    def __stream_dataset_collection(self, trans, dataset_collection_instance):
-        archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_mod_zip=trans.app.config.upstream_mod_zip)
-        trans.response.headers.update(archive.get_headers())
-        return archive.response()
+        return self.service.download_dataset_collection(trans, id)
 
     @expose_api_anonymous
     def create(self, trans, history_id, payload, **kwd):
