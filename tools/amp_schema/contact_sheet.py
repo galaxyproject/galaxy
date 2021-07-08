@@ -218,7 +218,7 @@ class ContactSheet:
 			return False
 		# give a warning if frame interval is greater than video_length
 		if frame_seconds > video_length:
-			print(f"Warning: the frame interval in seconds {frame_seconds} is greater than the video length {video_length}")
+			print(f"Warning: the frame interval in seconds {frame_seconds} is greater than the video length {video_length}, so only one frame will be extracted.")
 		return True
 
 	def validate_quantity(self, frame_quantity, video_length):
@@ -228,7 +228,7 @@ class ContactSheet:
 			return False
 		# give a warning if frame quantity is greater than video_length
 		if frame_quantity > video_length:
-			print(f"Warning: the frame quantity {frame_quantity} is greater than the video length {video_length}")
+			print(f"Warning: the frame quantity {frame_quantity} is greater than the video length {video_length}, so only {video_length} frames will be extracted.")
 		return True
 
 	def validate_shots(self, amp_shots):
