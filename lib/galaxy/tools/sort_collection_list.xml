@@ -146,23 +146,49 @@
 Synopsis
 ========
 
-The tools sorts dataset collection alphabetically, numerically, or using pretermined order from a supplied file.
+The tool sorts dataset collection alphabetically, numerically, or using predetermined order from a supplied file.
 
 ===========
 Description
 ===========
 
-The tool sort in ascending order. When *numerical* sort is chosen, the tool ignores non-numeric characters. For example, if a collection contains the following elements:
+**Numeric sort**
+
+The tool sort in ascending order. When *numeric* sort is chosen, the tool ignores non-numeric characters. For example, if a collection contains the following elements::
 
  Collection: [Horse123] 
              [Donkey543] 
              [Mule176]
 
-The tool 
+The tool will output::
 
+ Collection: [Horse123]
+             [Mule176] 
+             [Donkey543] 
 
+-------
 
+**Sorting from file**
 
+Alternative, one can supply a single column text file containing elements names in the desired sort order. For example, suppose there a collection::
+
+ Collection: [Horse123] 
+             [Donkey543] 
+             [Mule176]
+
+and a file specifying sort order::
+
+ Donkey543
+ Horse123 
+ Mule176
+ 
+the output will predictably look like this::
+
+ Collection: [Donkey543] 
+             [Horse123] 
+             [Mule176]
+
+-------
 
 .. class:: infomark
 
