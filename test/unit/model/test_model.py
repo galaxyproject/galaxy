@@ -899,6 +899,67 @@ def test_JobToOutputDatasetCollectionAssociation(
         assert stored_obj.dataset_collection_instance.id == history_dataset_collection_association.id
 
 
+class TestLibraryDataset(BaseTest):
+
+    def test_table(self, cls_, model):
+        assert cls_.__tablename__ == 'library_dataset'
+
+    def test_columns(
+            self, cls_, model, session, library_dataset_dataset_association, library_folder):
+        with dbcleanup(session, cls_):
+            folder = library_folder
+            order_id = 9
+            create_time = datetime.now()
+            update_time = create_time + timedelta(hours=1)
+            name = 'a'
+            info = 'b'
+            deleted = False
+            purged = False
+
+            obj = cls_()
+            obj.folder = folder
+            obj.order_id = order_id
+            obj.create_time = create_time
+            obj.update_time = update_time
+            obj.name = name
+            obj.info = info
+            obj.deleted = deleted
+            obj.purged = purged
+            obj_id = persist(session, obj)
+
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.folder_id == folder.id
+            assert stored_obj.order_id == order_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.name == name
+            assert stored_obj.info == info
+            assert stored_obj.deleted == deleted
+            assert stored_obj.purged == purged
+
+    def test_relationships(self, cls_, model, session, library_dataset_dataset_association,
+            library_folder, library_dataset_permission):
+        with dbcleanup(session, cls_):
+            folder = library_folder
+            obj = cls_()
+            obj.library_dataset_dataset_association = library_dataset_dataset_association
+            obj.folder = folder
+
+            ldda = model.LibraryDatasetDatasetAssociation()
+            ldda.library_dataset = obj
+            persist(session, ldda)
+
+            obj.actions.append(library_dataset_permission)
+            obj_id = persist(session, obj)
+
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.library_dataset_dataset_association.id == library_dataset_dataset_association.id
+            assert stored_obj.folder.id == folder.id
+            assert stored_obj.expired_datasets[0].id == ldda.id
+            assert stored_obj.actions == [library_dataset_permission]
+
+
 def test_JobToOutputLibraryDatasetAssociation(model, session, library_dataset_dataset_association, job):
     cls = model.JobToOutputLibraryDatasetAssociation
     assert cls.__tablename__ == 'job_to_output_library_dataset'

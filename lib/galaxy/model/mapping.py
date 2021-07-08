@@ -193,25 +193,6 @@ model.UserRoleAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
-model.LibraryDataset.table = Table(
-    "library_dataset", metadata,
-    Column("id", Integer, primary_key=True),
-    # current version of dataset, if null, there is not a current version selected
-    Column("library_dataset_dataset_association_id", Integer,
-        ForeignKey("library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk"),
-        nullable=True, index=True),
-    Column("folder_id", Integer, ForeignKey("library_folder.id"), index=True),
-    # not currently being used, but for possible future use
-    Column("order_id", Integer),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    # when not None/null this will supercede display in library (but not when imported into user's history?)
-    Column("name", TrimmedString(255), key="_name", index=True),
-    # when not None/null this will supercede display in library (but not when imported into user's history?)
-    Column("info", TrimmedString(255), key="_info"),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("purged", Boolean, index=True, default=False))
-
 model.LibraryDatasetDatasetAssociation.table = Table(
     "library_dataset_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1133,23 +1114,6 @@ mapper_registry.map_imperatively(model.LibraryFolderInfoAssociation, model.Libra
         primaryjoin=(model.LibraryFolderInfoAssociation.table.c.form_definition_id == model.FormDefinition.id)),
     info=relation(model.FormValues,
         primaryjoin=(model.LibraryFolderInfoAssociation.table.c.form_values_id == model.FormValues.id))
-))
-
-mapper_registry.map_imperatively(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
-    folder=relation(model.LibraryFolder),
-    library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
-        foreign_keys=model.LibraryDataset.table.c.library_dataset_dataset_association_id,
-        post_update=True),
-    expired_datasets=relation(model.LibraryDatasetDatasetAssociation,
-        foreign_keys=[model.LibraryDataset.table.c.id, model.LibraryDataset.table.c.library_dataset_dataset_association_id],
-        primaryjoin=(
-            (model.LibraryDataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id)
-            & (not_(model.LibraryDataset.table.c.library_dataset_dataset_association_id
-                  == model.LibraryDatasetDatasetAssociation.table.c.id))
-        ),
-        viewonly=True,
-        uselist=True),
-    actions=relation(model.LibraryDatasetPermissions, back_populates='library_dataset'),
 ))
 
 mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
