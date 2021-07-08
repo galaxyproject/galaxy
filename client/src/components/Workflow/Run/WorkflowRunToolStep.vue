@@ -3,7 +3,7 @@
         <FormCard :title="title" icon="fa-wrench" :collapsible="true" :initial-collapse="model.collapsed">
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
-                <Form
+                <FormDisplay
                     :inputs="model.inputs"
                     :form-config="formConfig"
                     :replace-params="replaceParams"
@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 import FormMessage from "components/Form/FormMessage";
 import FormCard from "components/Form/FormCard";
 import { visitInputs } from "components/Form/utilities";
@@ -24,7 +24,7 @@ import { getTool } from "./services";
 
 export default {
     components: {
-        Form,
+        FormDisplay,
         FormCard,
         FormMessage,
     },
@@ -52,7 +52,6 @@ export default {
     },
     watch: {
         stepData() {
-            console.log(this.model.id);
             this.onReplaceParams();
         },
         wpData() {

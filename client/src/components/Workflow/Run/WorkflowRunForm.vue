@@ -6,22 +6,22 @@
         </div>
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
-                <Form :inputs="wpInputs" @onChange="onWpInputs" />
+                <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
             </template>
         </FormCard>
         <FormCard title="History Options">
             <template v-slot:body>
-                <Form :inputs="historyInputs" @onChange="onHistoryInputs" />
+                <FormDisplay :inputs="historyInputs" @onChange="onHistoryInputs" />
             </template>
         </FormCard>
         <FormCard v-if="cacheInputsAvailable" title="Job re-use Options">
             <template v-slot:body>
-                <Form :inputs="cacheInputs" @onChange="onCacheInputs" />
+                <FormDisplay :inputs="cacheInputs" @onChange="onCacheInputs" />
             </template>
         </FormCard>
         <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
             <template v-slot:body>
-                <Form :inputs="resourceInputs" @onChange="onResourceInputs" />
+                <FormDisplay :inputs="resourceInputs" @onChange="onResourceInputs" />
             </template>
         </FormCard>
         <div v-for="step in model.steps">
@@ -39,7 +39,7 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
@@ -47,7 +47,7 @@ import WorkflowRunToolStep from "./WorkflowRunToolStep";
 
 export default {
     components: {
-        Form,
+        FormDisplay,
         FormCard,
         ButtonSpinner,
         WorkflowRunDefaultStep,

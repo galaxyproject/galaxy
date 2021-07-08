@@ -7,14 +7,14 @@
         <b-alert v-if="errorText" class="mt-2" variant="danger" show>
             {{ errorText | l }}
         </b-alert>
-        <Form :inputs="formInputs" @onChange="onChange" />
+        <FormDisplay :inputs="formInputs" @onChange="onChange" />
         <!-- Options to default one way or the other, disable if admins want, etc.. -->
         <a href="#" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
     </div>
 </template>
 
 <script>
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import { invokeWorkflow } from "./services";
 import { isWorkflowInput } from "components/Workflow/constants";
@@ -23,7 +23,7 @@ import { errorMessageAsString } from "utils/simple-error";
 export default {
     components: {
         ButtonSpinner,
-        Form,
+        FormDisplay,
     },
     props: {
         model: {

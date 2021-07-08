@@ -2,7 +2,7 @@
     <div>
         <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :initial-collapse="false">
             <template v-slot:body>
-                <Form :inputs="inputs" @onChange="onChange" />
+                <FormDisplay :inputs="inputs" @onChange="onChange" />
             </template>
         </FormCard>
     </div>
@@ -11,12 +11,12 @@
 <script>
 import { getGalaxyInstance } from "app";
 import WorkflowIcons from "components/Workflow/icons";
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 
 export default {
     components: {
-        Form,
+        FormDisplay,
         FormCard,
     },
     props: {
