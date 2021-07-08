@@ -3,6 +3,14 @@
         <PriorityMenu :starting-height="27">
             <PriorityMenuItem
                 v-if="notIn(STATES.DISCARDED)"
+                key="restructure-collection"
+                :title="restructureButtonTitle"
+                icon="fas fa-project-diagram"
+                @click.stop="restructureShow = !restructureShow"
+            >
+            </PriorityMenuItem>
+            <PriorityMenuItem
+                v-if="notIn(STATES.DISCARDED)"
                 key="edit-collection"
                 :title="deleteCollectionButtonTitle"
                 @click.stop="deleteCollectionModalShow = !deleteCollectionModalShow"
@@ -23,10 +31,14 @@
                 >
             </b-form-group>
         </b-modal>
+        <b-modal v-model="restructureShow" hide-footer :title="restructureTitle">
+            <Restructure v-if="restructureShow" :collection="collection" />
+        </b-modal>
     </div>
 </template>
 
 <script>
+import Restructure from "./Restructure";
 import { DatasetCollection } from "../../model";
 import { PriorityMenu, PriorityMenuItem } from "components/PriorityMenu";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
@@ -39,11 +51,13 @@ export default {
         return {
             deleteSelected: null,
             deleteCollectionModalShow: false,
+            restructureShow: false,
         };
     },
     components: {
         PriorityMenu,
         PriorityMenuItem,
+        Restructure,
     },
     mixins: [legacyNavigationMixin],
     inject: ["STATES"],
@@ -53,6 +67,12 @@ export default {
     computed: {
         deleteCollectionButtonTitle() {
             return "Delete Collection";
+        },
+        restructureButtonTitle() {
+            return "Restructure Collection";
+        },
+        restructureTitle() {
+            return `Restructure ${this.collection.name}`;
         },
     },
     methods: {
