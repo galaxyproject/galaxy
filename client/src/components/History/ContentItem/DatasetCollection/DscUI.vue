@@ -60,7 +60,7 @@
 
             <div class="content-item-menu">
                 <slot name="menu">
-                    <DscMenu v-if="!dsc.deleted" v-on="$listeners" />
+                    <DscMenu v-if="!dsc.deleted" v-on="$listeners" :collection="dsc" />
                 </slot>
             </div>
         </nav>
