@@ -164,9 +164,9 @@ class ContactSheet:
 		labels = []
 		for t in times:
 			labels.append(str(timedelta(seconds=round(t))))
-		print("Video length: " + str(videoLength))
-		print("Number of frames: " + len(times))
-		print("Frame interval: " + str(interval))
+		print(f"Video length: {videoLength}")
+		print(f"Number of frames: {len(times)}")
+		print(f"Frame interval: {interval}")
 		return times, labels
 
 	def getTimesQuantity(self, videoLength, numFrames):
