@@ -4294,7 +4294,39 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
         return f.library_root[0]
 
 
-class LibraryDataset(RepresentById):
+class LibraryDataset(Base, RepresentById):
+    __tablename__ = 'library_dataset'
+
+    id = Column('id', Integer, primary_key=True)
+    # current version of dataset, if null, there is not a current version selected
+    library_dataset_dataset_association_id = Column('library_dataset_dataset_association_id', Integer,
+        ForeignKey('library_dataset_dataset_association.id', use_alter=True, name='library_dataset_dataset_association_id_fk'),
+        nullable=True, index=True)
+    folder_id = Column('folder_id', Integer, ForeignKey('library_folder.id'), index=True)
+    # not currently being used, but for possible future use
+    order_id = Column('order_id', Integer)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    # when not None/null this will supercede display in library (but not when imported into user's history?)
+    _name = Column('name', TrimmedString(255), index=True)
+    # when not None/null this will supercede display in library (but not when imported into user's history?)
+    _info = Column('info', TrimmedString(255))
+    deleted = Column('deleted', Boolean, index=True, default=False)
+    purged = Column('purged', Boolean, index=True, default=False)
+    folder = relationship('LibraryFolder')
+    library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation',
+            foreign_keys=library_dataset_dataset_association_id,
+            post_update=True)
+    expired_datasets = relationship('LibraryDatasetDatasetAssociation',
+        foreign_keys=[id, library_dataset_dataset_association_id],
+        primaryjoin=(
+            'and_(LibraryDataset.id == LibraryDatasetDatasetAssociation.library_dataset_id, \
+             not_(LibraryDataset.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.id))'
+        ),
+        viewonly=True,
+        uselist=True)
+    actions = relationship('LibraryDatasetPermissions', back_populates='library_dataset')
+
     # This class acts as a proxy to the currently selected LDDA
     upload_options = [('upload_file', 'Upload files'),
                       ('upload_directory', 'Upload directory of files'),
