@@ -227,11 +227,8 @@ class HistoriesContentsService(ServiceBase):
 
         .. note:: Anonymous users are allowed to get their current history contents
 
-        :type   id:                         str
         :param  id:                         the encoded id of the HDA or HDCA to return
-        :type   contents_type:              str
-        :param  id:                         'dataset' or 'dataset_collection'
-        :type   serialization_params.view:  str
+        :param  contents_type:              'dataset' or 'dataset_collection'
         :param  serialization_params.view:  if fetching a dataset collection - the view style of
                                             the dataset collection to produce.
                                             'collection' returns no element information, 'element'
@@ -239,7 +236,6 @@ class HistoriesContentsService(ServiceBase):
                                             'element-reference' returns a minimal set of information
                                             about datasets (for instance id, type, and state but not
                                             metadata, peek, info, or name). The default is 'element'.
-        :type  fuzzy_count: int
         :param fuzzy_count: this value can be used to broadly restrict the magnitude
                             of the number of elements returned via the API for large
                             collections. The number of actual elements returned may
@@ -254,7 +250,6 @@ class HistoriesContentsService(ServiceBase):
                             the "start" of large collections at every depth of the
                             collection.
 
-        :rtype:     dict
         :returns:   dictionary containing detailed HDA or HDCA information
         """
         if contents_type == HistoryContentType.dataset:
@@ -284,6 +279,41 @@ class HistoriesContentsService(ServiceBase):
         :returns:   an array of job summary object dictionaries.
         """
         return [self.encode_all_ids(trans, job_state) for job_state in fetch_job_states(trans.sa_session, ids, types)]
+
+    def show_jobs_summary(
+        self, trans,
+        id: EncodedDatabaseIdField,
+        contents_type: HistoryContentType = HistoryContentType.dataset,
+    ) -> AnyJobStateSummary:
+        """
+        Return detailed information about an HDA or HDCAs jobs
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :param  id:             the encoded id of the HDA or HDCA to return
+        :param  contents_type:  'dataset' or 'dataset_collection'
+
+        :returns:   dictionary containing jobs summary object
+        """
+        # At most one of job or implicit_collection_jobs should be found.
+        job = None
+        implicit_collection_jobs = None
+        if contents_type == HistoryContentType.dataset:
+            hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
+            job = hda.creating_job
+        elif contents_type == HistoryContentType.dataset_collection:
+            dataset_collection_instance = self.__get_accessible_collection(trans, id)
+            job_source_type = dataset_collection_instance.job_source_type
+            if job_source_type == JobSourceType.Job:
+                job = dataset_collection_instance.job
+            elif job_source_type == JobSourceType.ImplicitCollectionJobs:
+                implicit_collection_jobs = dataset_collection_instance.implicit_collection_jobs
+
+        assert job is None or implicit_collection_jobs is None
+        return self.encode_all_ids(summarize_jobs_to_dict(trans.sa_session, job or implicit_collection_jobs))
 
     def __index_legacy(
         self, trans,
@@ -587,22 +617,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :returns:   dictionary containing jobs summary object
         """
         contents_type = self.__get_contents_type(trans, kwd)
-        # At most one of job or implicit_collection_jobs should be found.
-        job = None
-        implicit_collection_jobs = None
-        if contents_type == 'dataset':
-            hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
-            job = hda.creating_job
-        elif contents_type == 'dataset_collection':
-            dataset_collection_instance = self.__get_accessible_collection(trans, id, history_id)
-            job_source_type = dataset_collection_instance.job_source_type
-            if job_source_type == "Job":
-                job = dataset_collection_instance.job
-            elif job_source_type == "ImplicitCollectionJobs":
-                implicit_collection_jobs = dataset_collection_instance.implicit_collection_jobs
-
-        assert job is None or implicit_collection_jobs is None
-        return self.encode_all_ids(trans, summarize_jobs_to_dict(trans.sa_session, job or implicit_collection_jobs))
+        return self.service.show_jobs_summary(trans, id, contents_type)
 
     def __get_contents_type(self, trans, kwd):
         contents_type = kwd.get('type', 'dataset')
