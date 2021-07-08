@@ -10,7 +10,7 @@
                     variant="link"
                     size="sm"
                     class="float-right py-0"
-                    v-b-tooltip.hover
+                    v-b-tooltip.hover.bottom
                     @click="onCollapse"
                 >
                     <font-awesome-icon v-if="collapsed" icon="eye-slash" class="fa-fw" />
