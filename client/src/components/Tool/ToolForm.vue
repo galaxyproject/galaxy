@@ -64,7 +64,7 @@
                                 :help="remapHelp"
                                 type="boolean"
                                 :value="false"
-                                @input="onChangeRemap"
+                                v-model="remap"
                             />
                             <FormElement
                                 v-if="reuseAllowed(user)"
@@ -235,9 +235,6 @@ export default {
         onChangeVersion(newVersion) {
             this.requestTool(newVersion);
         },
-        onChangeRemap(remap) {
-            this.remap = remap ? this.job_id : null;
-        },
         onUpdateFavorites(user, newFavorites) {
             user.preferences["favorites"] = newFavorites;
         },
@@ -264,8 +261,19 @@ export default {
                 history_id: historyId,
                 tool_id: this.formConfig.id,
                 tool_version: this.formConfig.version,
-                inputs: this.formData,
+                inputs: {
+                    ...this.formData
+                },
             };
+            if (this.email) {
+                jobDef.inputs["send_email_notification"] = true;
+            }
+            if (this.remap) {
+                jobDef.inputs["rerun_remap_job_id"] = this.job_id;
+            }
+            if (this.reuse) {
+                jobDef.inputs["use_cached_job"] = true;
+            }
             console.debug("toolForm::onExecute()", jobDef);
             submitJob(jobDef).then(
                 (jobResponse) => {
