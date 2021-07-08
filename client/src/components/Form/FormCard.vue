@@ -13,8 +13,8 @@
                     v-b-tooltip.hover
                     @click="onCollapse"
                 >
-                    <span v-if="collapsed" class="fa fa-eye" />
-                    <span v-else class="fa fa-eye-slash" />
+                    <font-awesome-icon v-if="collapsed" icon="eye-slash" class="fa-fw" />
+                    <font-awesome-icon v-else icon="eye" class="fa-fw" />
                 </b-button>
             </div>
             <a class="portlet-title" @click="onCollapse" :href="href">
@@ -30,7 +30,17 @@
     </div>
 </template>
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faEye);
+library.add(faEyeSlash);
+
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     props: {
         title: {
             type: String,
