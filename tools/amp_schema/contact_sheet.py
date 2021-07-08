@@ -38,7 +38,7 @@ class ContactSheet:
 		self.create_contact_sheet(filenames, labels)
 
 	def create_quantity(self, frame_quantity):
-		valid_input = self.validate_quantity(frame_quantity)
+		valid_input = self.validate_quantity(frame_quantity, self.video_length)
 		if valid_input == False:
 			exit(1)
 
@@ -52,11 +52,10 @@ class ContactSheet:
 		if valid_input == False:
 			exit(1)
 		
-		times, labels = self.getTimesFacialRecognition(amp_facial_recognition
-		)
+		times, labels = self.getTimesFacialRecognition(amp_facial_recognition)
 		# Get images
 		filenames = self.get_thumbs(self.input_file, times, self.temporary_directory.name)
-		
+		print(filenames)
 		self.create_contact_sheet(filenames, labels)
 
 	def create_shots(self, amp_shots):
@@ -160,18 +159,20 @@ class ContactSheet:
 		return int(len)
 
 	def getTimesInterval(self, videoLength, interval):
-		times = [t for t in range(interval, videoLength, interval)]
+		# extract first frame from time 0 so we have at least 1 frame in result, even if interval > videoLength
+		times = [t for t in range(0, videoLength, interval)]
 		labels = []
 		for t in times:
 			labels.append(str(timedelta(seconds=round(t))))
+		print("Video length: " + str(videoLength))
+		print("Number of frames: " + len(times))
+		print("Frame interval: " + str(interval))
 		return times, labels
 
 	def getTimesQuantity(self, videoLength, numFrames):
-		step = math.floor(videoLength/numFrames)
-		print("Length: " + str(videoLength))
-		print("Frames: " + str(numFrames))
-		print("Step: " + str(step))
-		return self.getTimesInterval(videoLength, step)
+		# use ceil instead of floor to ensure interval > 0, and the right number of frames get extracted starting at time 0
+		interval = math.ceil(videoLength/numFrames)
+		return self.getTimesInterval(videoLength, interval)
 
 	def getTimesFacialRecognition(self, data):
 		times = []
@@ -211,18 +212,23 @@ class ContactSheet:
 		return total_seconds
 
 	def validate_time(self, frame_seconds, video_length):
+		# frame interval should be not empty and greater than 0
 		if frame_seconds is None or frame_seconds <= 0:
-			print("Invalid seconds input for time")
+			print(f"Error: Invalid seconds input for time: {frame_seconds}")
 			return False
+		# give a warning if frame interval is greater than video_length
 		if frame_seconds > video_length:
-			print("Invalid seconds input for time.  Cannot be greater than video length")
-			return False
+			print(f"Warning: the frame interval in seconds {frame_seconds} is greater than the video length {video_length}")
 		return True
 
-	def validate_quantity(self, frame_quantity):
+	def validate_quantity(self, frame_quantity, video_length):
+		# frame quantity should be not empty and greater than 0
 		if frame_quantity is None or frame_quantity <= 0:
-			print("Invalid quantity input for quantity")
+			print(f"Invalid quantity input for quantity: {frame_quantity}")
 			return False
+		# give a warning if frame quantity is greater than video_length
+		if frame_quantity > video_length:
+			print(f"Warning: the frame quantity {frame_quantity} is greater than the video length {video_length}")
 		return True
 
 	def validate_shots(self, amp_shots):
