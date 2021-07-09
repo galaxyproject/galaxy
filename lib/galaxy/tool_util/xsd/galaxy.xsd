@@ -500,7 +500,7 @@ Describes a person. Tries to stay close to [schema.org/Person](https://schema.or
   <xs:complexType name="Organization">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Describes an organization. Tries to stay close to [schema.org/Organisation](https://schema.org/Organization).
+Describes an organization. Tries to stay close to [schema.org/Organization](https://schema.org/Organization).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="Thing"/>
