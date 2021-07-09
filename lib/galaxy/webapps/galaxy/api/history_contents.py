@@ -278,7 +278,15 @@ class HistoriesContentsService(ServiceBase):
 
         :returns:   an array of job summary object dictionaries.
         """
-        return [self.encode_all_ids(trans, job_state) for job_state in fetch_job_states(trans.sa_session, ids, types)]
+        if len(ids) != len(types):
+            raise exceptions.RequestParameterInvalidException(
+                f"The number of ids ({len(ids)}) and types ({len(types)}) must match."
+            )
+        decoded_ids = self.decode_ids(ids)
+        return [
+            self.encode_all_ids(job_state)
+            for job_state in fetch_job_states(trans.sa_session, decoded_ids, types)
+        ]
 
     def show_jobs_summary(
         self, trans,
