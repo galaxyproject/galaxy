@@ -228,11 +228,11 @@ for the list of behavior changes associated with profile versions.
       <xs:attribute name="license" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">This string specifies any full URI or a
-a short SPDX (https://spdx.org/licenses/) identifier for a license for this tool
+a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool
 wrapper. The tool wrapper version can be indepedent of the underlying tool. This
 license covers the tool XML and associated scripts shipped with the tool.
 
-This is interpreted as a schema.org license attribute (see also https://schema.org/license).
+This is interpreted as [schema.org/license](https://schema.org/license)).
 </xs:documentation>
         </xs:annotation>
       </xs:attribute>
@@ -418,47 +418,47 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
   <xs:attributeGroup name="Thing">
     <xs:attribute name="name" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/name</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/name](https://schema.org/name)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="url" type="xs:string" use="optional">
       <xs:annotation>
-      <xs:documentation xml:lang="en">https://schema.org/url</xs:documentation>
+      <xs:documentation xml:lang="en">[schema.org/url](https://schema.org/url)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="identifier" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/identifier</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/identifier](https://schema.org/identifier)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="image" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/image</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/image](https://schema.org/image)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="address" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/address</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/address](https://schema.org/address)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="email" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/email</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/email](https://schema.org/email)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="telephone" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/telephone</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/telephone](https://schema.org/telephone)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="faxNumber" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/faxNumber</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/faxNumber](https://schema.org/faxNumber)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="alternateName" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/alternateName</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/alternateName](https://schema.org/alternateName)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
@@ -466,33 +466,33 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
   <xs:complexType name="Person">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Describes a person. Tries to stay close to schema.org data model - see https://schema.org/Person.
+Describes a person. Tries to stay close to [schema.org/Person](https://schema.org/Person).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="Thing"/>
     <xs:attribute name="givenName" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/givenName</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/givenName](https://schema.org/givenName)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="familyName" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/familyName</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/familyName](https://schema.org/familyName)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="honorificPrefix" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/honorificPrefix</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/honorificPrefix](https://schema.org/honorificPrefix)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="honorificSuffix" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/honorificSuffix</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/honorificSuffix](https://schema.org/honorificSuffix)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="jobTitle" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">https://schema.org/jobTitle</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/jobTitle](https://schema.org/jobTitle)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -500,7 +500,7 @@ Describes a person. Tries to stay close to schema.org data model - see https://s
   <xs:complexType name="Organization">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Describes an organization. Tries to stay close to schema.org data model - see https://schema.org/Organization.
+Describes an organization. Tries to stay close to [schema.org/Organization](https://schema.org/Organization).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="Thing"/>
@@ -515,7 +515,7 @@ Describes an organization. Tries to stay close to schema.org data model - see ht
 
   <xs:complexType name="Creator">
     <xs:annotation>
-      <xs:documentation xml:lang="en">The creator(s) of this work. See https://schema.org/creator.</xs:documentation>
+      <xs:documentation xml:lang="en">The creator(s) of this work. See [schema.org/creator](https://schema.org/creator).</xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="PersonOrOrganization" minOccurs="0" maxOccurs="unbounded"/>
