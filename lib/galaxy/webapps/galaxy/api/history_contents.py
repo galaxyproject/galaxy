@@ -447,7 +447,7 @@ class HistoriesContentsService(ServiceBase):
         details: Any = params.dataset_details
         ids = None
         if params.ids:
-            ids = [self.decode_id(id) for id in params.ids.split(',')]
+            ids = [self.decode_id(EncodedDatabaseIdField(id)) for id in params.ids.split(',')]
             # If explicit ids given, always used detailed result.
             details = 'all'
         else:

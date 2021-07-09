@@ -47,6 +47,7 @@ from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.schema import FilterQueryParams
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import BasicApp, MinimalManagerApp
 from galaxy.util import namedtuple
@@ -1211,15 +1212,21 @@ class ServiceBase:
     def __init__(self, security: IdEncodingHelper):
         self.security = security
 
-    def decode_id(self, id):
+    def decode_id(self, id: EncodedDatabaseIdField) -> int:
         """Decodes a previously encoded database ID."""
         return decode_with_security(self.security, id)
 
-    def encode_id(self, id):
-        """Decodes a previously encoded database ID."""
+    def encode_id(self, id: int) -> EncodedDatabaseIdField:
+        """Encodes a raw database ID."""
         return encode_with_security(self.security, id)
 
-    def encode_all_ids(self, rval, recursive=False):
+    def decode_ids(self, ids: List[EncodedDatabaseIdField]) -> List[int]:
+        """
+        Decodes all encoded IDs in the given list.
+        """
+        return [self.decode_id(id) for id in ids]
+
+    def encode_all_ids(self, rval, recursive: bool = False):
         """
         Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
 
