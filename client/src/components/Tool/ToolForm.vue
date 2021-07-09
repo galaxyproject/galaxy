@@ -262,7 +262,7 @@ export default {
                 tool_id: this.formConfig.id,
                 tool_version: this.formConfig.version,
                 inputs: {
-                    ...this.formData
+                    ...this.formData,
                 },
             };
             if (this.email) {
