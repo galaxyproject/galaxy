@@ -105,7 +105,7 @@ def main():
                         foundWordPos = None
 
             if start is not None:
-                lastPos = foundWordPos
+                lastPos = foundWordPos + 1
             else:
                 print("Could not find word")
                 print(text)
