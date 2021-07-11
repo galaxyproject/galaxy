@@ -203,7 +203,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         "object_store_id",
                         "total_size",
                         "created_from_basename",
-                        "uuid"
+                        "uuid",
                     ]
 
                     for attribute in dataset_attributes:
@@ -231,10 +231,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     "designation",
                     "visible",
                     "metadata",
+                    "tool_version",
                 ]
                 for attribute in attributes:
                     if attribute in dataset_attrs:
-                        value = dataset_attrs[attribute]
+                        value = dataset_attrs.get(attribute)
                         if attribute == "metadata":
                             def remap_objects(p, k, obj):
                                 if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
@@ -262,6 +263,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                        visible=dataset_attrs['visible'],
                                                                        deleted=dataset_attrs.get('deleted', False),
                                                                        dbkey=metadata['dbkey'],
+                                                                       tool_version=metadata.get('tool_version'),
                                                                        metadata=metadata,
                                                                        history=history,
                                                                        create_dataset=True,
@@ -278,6 +280,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                               visible=dataset_attrs['visible'],
                                                                               deleted=dataset_attrs.get('deleted', False),
                                                                               dbkey=metadata['dbkey'],
+                                                                              tool_version=metadata.get('tool_version'),
                                                                               metadata=metadata,
                                                                               create_dataset=True,
                                                                               sa_session=self.sa_session)
