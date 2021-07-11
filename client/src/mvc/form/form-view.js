@@ -8,7 +8,6 @@ import Portlet from "mvc/ui/ui-portlet";
 import Ui from "mvc/ui/ui-misc";
 import FormSection from "mvc/form/form-section";
 import FormData from "mvc/form/form-data";
-import { getGalaxyInstance } from "app";
 
 export default Backbone.View.extend({
     initialize: function (options) {
@@ -33,8 +32,7 @@ export default Backbone.View.extend({
             if (field.update) {
                 field.update(node);
                 field.trigger("change");
-                const Galaxy = getGalaxyInstance();
-                Galaxy.emit.debug("form-view::update()", `Updating input: ${input_id}`);
+                console.debug("form-view::update()", `Updating input: ${input_id}`);
             }
         });
     },
@@ -157,7 +155,6 @@ export default Backbone.View.extend({
                 message: options.message,
             });
         }
-        const Galaxy = getGalaxyInstance();
-        Galaxy.emit.debug("form-view::initialize()", "Completed");
+        console.debug("form-view::initialize()", "Completed");
     },
 });

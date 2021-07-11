@@ -54,7 +54,6 @@
                                 title="Email notification"
                                 help="Send an email notification when the job completes."
                                 type="boolean"
-                                :value="false"
                                 v-model="email"
                             />
                             <FormElement
@@ -63,7 +62,6 @@
                                 :title="remapTitle"
                                 :help="remapHelp"
                                 type="boolean"
-                                :value="false"
                                 v-model="remap"
                             />
                             <FormElement
@@ -72,7 +70,6 @@
                                 title="Attempt to re-use jobs with identical parameters?"
                                 help="This may skip executing jobs that you have already run."
                                 type="boolean"
-                                :value="false"
                                 v-model="reuse"
                             />
                         </template>
@@ -169,7 +166,7 @@ export default {
     created() {
         this.requestTool();
         const Galaxy = getGalaxyInstance();
-        if (Galaxy.currHistoryPanel) {
+        if (Galaxy && Galaxy.currHistoryPanel) {
             Galaxy.currHistoryPanel.collection.on("change", () => {
                 this.onUpdate();
             });
