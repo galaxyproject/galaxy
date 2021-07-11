@@ -24,7 +24,6 @@ import packaging.version
 import yaml
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
-import galaxy
 from galaxy import (
     model,
     util,
@@ -40,7 +39,10 @@ from galaxy.job_execution.datasets import (
     OutputsToWorkingDirectoryPathRewriter,
     TaskPathRewriter
 )
-from galaxy.job_execution.output_collect import collect_extra_files
+from galaxy.job_execution.output_collect import (
+    collect_extra_files,
+    collect_shrinked_content_from_path,
+)
 from galaxy.job_execution.setup import (  # noqa: F401
     create_working_directory_for_job,
     ensure_configs_directory,
@@ -1648,16 +1650,6 @@ class JobWrapper(HasResourceParameters):
         else:
             final_job_state = job.states.ERROR
 
-        if self.tool.version_string_cmd:
-            version_filename = self.get_version_string_path()
-            # TODO: Remove in Galaxy 20.XX, for running jobs at GX upgrade
-            if not os.path.exists(version_filename):
-                version_filename = self.get_version_string_path_legacy()
-            if os.path.exists(version_filename):
-                with open(version_filename, 'rb') as fh:
-                    self.version_string = galaxy.util.shrink_and_unicodify(fh.read())
-                os.unlink(version_filename)
-
         outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
         if not extended_metadata and outputs_to_working_directory and not self.__link_file_check():
             # output will be moved by job if metadata_strategy is extended_metadata, so skip moving here
@@ -1686,6 +1678,11 @@ class JobWrapper(HasResourceParameters):
             except Exception:
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
                 raise
+        else:
+            if self.tool.version_string_cmd:
+                version_filename = self.get_version_string_path()
+                self.version_string = collect_shrinked_content_from_path(version_filename)
+
         output_dataset_associations = job.output_datasets + job.output_library_datasets
         for dataset_assoc in output_dataset_associations:
             context = self.get_dataset_finish_context(job_context, dataset_assoc)

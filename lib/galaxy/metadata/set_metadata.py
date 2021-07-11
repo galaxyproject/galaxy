@@ -30,6 +30,7 @@ from galaxy.job_execution.output_collect import (
     collect_dynamic_outputs,
     collect_extra_files,
     collect_primary_datasets,
+    collect_shrinked_content_from_path,
     default_exit_code_file,
     read_exit_code_from,
     SessionlessJobContext,
@@ -196,8 +197,7 @@ def set_metadata_portable():
             final_job_state = Job.states.ERROR
 
         version_string_path = os.path.join('outputs', COMMAND_VERSION_FILENAME)
-        if os.path.exists(version_string_path):
-            version_string = open(version_string_path).read().strip()
+        version_string = collect_shrinked_content_from_path(version_string_path)
 
         expression_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
 
