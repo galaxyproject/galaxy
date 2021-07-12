@@ -208,6 +208,21 @@ class DatasetSourceType(str, Enum):
     ldda = "ldda"
 
 
+class ColletionSourceType(str, Enum):
+    hda = "hda"
+    ldda = "ldda"
+    hdca = "hdca"
+    new_collection = "new_collection"
+
+
+class HistoryContentSource(str, Enum):
+    hda = "hda"
+    hdca = "hdca"
+    library = "library"
+    library_folder = "library_folder"
+    new_collection = "new_collection"
+
+
 class TagCollection(Model):
     """Represents the collection of tags associated with an item."""
     __root__: List[str] = Field(

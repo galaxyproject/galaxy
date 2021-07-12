@@ -15,6 +15,7 @@ from typing import (
 )
 
 import dateutil.parser
+from pydantic import Extra
 from typing_extensions import Literal
 
 from galaxy import (
@@ -38,11 +39,14 @@ from galaxy.managers.collections_util import (
     dictify_dataset_collection_instance,
 )
 from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
+from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.model import (
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    LibraryDataset,
 )
+from galaxy.model.security import GalaxyRBACAgent
 from galaxy.schema import FilterQueryParams
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
@@ -50,12 +54,14 @@ from galaxy.schema.fields import (
     OrderParamField,
 )
 from galaxy.schema.schema import (
+    ColletionSourceType,
     HDABeta,
     HDADetailed,
     HDASummary,
     HDCABeta,
     HDCADetailed,
     HDCASummary,
+    HistoryContentSource,
     HistoryContentType,
     ImplicitCollectionJobsStateSummary,
     JobSourceType,
@@ -168,6 +174,101 @@ class ParsedHistoryContentsLegacyParams(HistoryContentsIndexLegacyParamsBase):
     )
 
 
+class CreateHistoryContentPayloadBase(Model):
+    type: Optional[HistoryContentType] = Field(
+        HistoryContentType.dataset,
+        title="Type",
+        description="The type of content to be created in the history.",
+    )
+
+
+class CreateHistoryContentPayloadFromCopy(CreateHistoryContentPayloadBase):
+    source: Optional[HistoryContentSource] = Field(
+        None,
+        title="Source",
+        description="The source of the content. Can be other history element to be copied or library elements.",
+    )
+    content: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Content",
+        description=(
+            "Depending on the `source` it can be:\n"
+            "- The encoded id from the library dataset\n"
+            "- The encoded id from the library folder\n"
+            "- The encoded id from the HDA\n"
+            "- The encoded id from the HDCA\n"
+        ),
+    )
+
+
+class CollectionElementIdentifier(Model):
+    name: Optional[str] = Field(
+        None,
+        title="Name",
+        description="The name of the element.",
+    )
+    src: ColletionSourceType = Field(
+        ...,
+        title="Source",
+        description="The source of the element.",
+    )
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="The encoded ID of the element.",
+    )
+    tags: List[str] = Field(
+        default=[],
+        title="Tags",
+        description="The list of tags associated with the element.",
+    )
+
+
+class CreateNewCollectionPayload(Model):
+    collection_type: str = Field(
+        ...,
+        title="Collection Type",
+        description="The type of the collection. For example, `list`, `paired`, `list:paired`.",
+    )
+    element_identifiers: List[CollectionElementIdentifier] = Field(
+        ...,
+        title="Element Identifiers",
+        description="List of elements that should be in the new collection.",
+    )
+    name: Optional[str] = Field(
+        default=None,
+        title="Name",
+        description="The name of the new collection.",
+    )
+    hide_source_items: Optional[bool] = Field(
+        default=False,
+        title="Hide Source Items",
+        description="Whether to mark the original HDAs as hidden.",
+    )
+
+
+class CreateHistoryContentPayloadFromCollection(CreateHistoryContentPayloadFromCopy):
+    dbkey: Optional[str] = Field(
+        default=None,
+        title="DBKey",
+        description="TODO",
+    )
+    copy_elements: Optional[bool] = Field(
+        default=False,
+        title="Copy Elements",
+        description=(
+            "If the source is a collection, whether to copy child HDAs into the target "
+            "history as well, defaults to False but this is less than ideal and may "
+            "be changed in future releases."
+        ),
+    )
+
+
+class CreateHistoryContentPayload(CreateHistoryContentPayloadFromCollection):
+    class Config:
+        extra = Extra.allow
+
+
 class HistoriesContentsService(ServiceBase):
     """Common interface/service logic for interactions with histories contents in the context of the API.
 
@@ -182,6 +283,8 @@ class HistoriesContentsService(ServiceBase):
         history_contents_manager: history_contents.HistoryContentsManager,
         hda_manager: hdas.HDAManager,
         dataset_collection_manager: DatasetCollectionManager,
+        ldda_manager: LibraryDatasetsManager,
+        folder_manager: folders.FolderManager,
         hda_serializer: hdas.HDASerializer,
         hdca_serializer: hdcas.HDCASerializer,
         history_contents_filters: history_contents.HistoryContentsFilters,
@@ -191,6 +294,8 @@ class HistoriesContentsService(ServiceBase):
         self.history_contents_manager = history_contents_manager
         self.hda_manager = hda_manager
         self.dataset_collection_manager = dataset_collection_manager
+        self.ldda_manager = ldda_manager
+        self.folder_manager = folder_manager
         self.hda_serializer = hda_serializer
         self.hdca_serializer = hdca_serializer
         self.history_contents_filters = history_contents_filters
@@ -342,6 +447,33 @@ class HistoriesContentsService(ServiceBase):
         archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_mod_zip=trans.app.config.upstream_mod_zip)
         trans.response.headers.update(archive.get_headers())
         return archive.response()
+
+    def create(
+        self, trans,
+        history_id: EncodedDatabaseIdField,
+        payload: CreateHistoryContentPayload,
+        serialization_params: SerializationParams,
+    ) -> AnyHistoryContentItem:
+        """
+        Create a new HDA or HDCA.
+
+        ..note:
+            Currently, a user can only copy an HDA from a history that the user owns.
+        """
+        history = self.history_manager.get_owned(
+            self.decode_id(history_id), trans.user, current_history=trans.history
+        )
+
+        type = payload.type
+        if type == HistoryContentType.dataset:
+            source = payload.source
+            if source == HistoryContentSource.library_folder:
+                return self.__create_datasets_from_library_folder(trans, history, payload, serialization_params)
+            else:
+                return self.__create_dataset(trans, history, payload, serialization_params)
+        elif type == HistoryContentType.dataset_collection:
+            return self.__create_dataset_collection(trans, history, payload, serialization_params)
+        raise exceptions.UnknownContentsType(f'Unknown contents type: {payload.type}')
 
     def __index_legacy(
         self, trans,
@@ -496,6 +628,187 @@ class HistoriesContentsService(ServiceBase):
         return self.dataset_collection_manager.get_dataset_collection_instance(
             trans=trans, instance_type="history", id=id,
         )
+
+    def __create_datasets_from_library_folder(
+        self, trans,
+        history: History,
+        payload: CreateHistoryContentPayloadFromCopy,
+        serialization_params: SerializationParams,
+    ):
+        rval = []
+        source = payload.source
+        if source == HistoryContentSource.library_folder:
+            content = payload.content
+            if content is None:
+                raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
+
+            folder_id = self.folder_manager.cut_and_decode(trans, content)
+            folder = self.folder_manager.get(trans, folder_id)
+
+            current_user_roles = trans.get_current_user_roles()
+            security_agent: GalaxyRBACAgent = trans.app.security_agent
+
+            def traverse(folder):
+                admin = trans.user_is_admin
+                rval = []
+                for subfolder in folder.active_folders:
+                    if not admin:
+                        can_access, folder_ids = security_agent.check_folder_contents(trans.user, current_user_roles, subfolder)
+                    if (admin or can_access) and not subfolder.deleted:
+                        rval.extend(traverse(subfolder))
+                for ld in folder.datasets:
+                    if not admin:
+                        can_access = security_agent.can_access_dataset(
+                            current_user_roles,
+                            ld.library_dataset_dataset_association.dataset
+                        )
+                    if (admin or can_access) and not ld.deleted:
+                        rval.append(ld)
+                return rval
+
+            for ld in traverse(folder):
+                hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
+                hda_dict = self.hda_serializer.serialize_to_view(
+                    hda, user=trans.user, trans=trans, default_view='detailed', **serialization_params
+                )
+                rval.append(hda_dict)
+        else:
+            message = f"Invalid 'source' parameter in request: {source}"
+            raise exceptions.RequestParameterInvalidException(message)
+
+        trans.sa_session.flush()
+        return rval
+
+    def __create_dataset(
+        self, trans,
+        history: History,
+        payload: CreateHistoryContentPayloadFromCopy,
+        serialization_params: SerializationParams,
+    ):
+        source = payload.source
+        if source not in (HistoryContentSource.library, HistoryContentSource.hda):
+            raise exceptions.RequestParameterInvalidException(
+                f"'source' must be either 'library' or 'hda': {source}")
+        content = payload.content
+        if content is None:
+            raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
+
+        hda = None
+        if source == HistoryContentSource.library:
+            hda = self.__create_hda_from_ldda(trans, history, content)
+        elif source == HistoryContentSource.hda:
+            hda = self.__create_hda_from_copy(trans, history, content)
+
+        if hda is None:
+            return None
+
+        trans.sa_session.flush()
+        serialization_params["default_view"] = 'detailed'
+        return self.hda_serializer.serialize_to_view(
+            hda, user=trans.user, trans=trans, **serialization_params
+        )
+
+    def __create_hda_from_ldda(self, trans, history: History, ldda_id: EncodedDatabaseIdField):
+        decoded_ldda_id = self.decode_id(ldda_id)
+        ld = self.ldda_manager.get(trans, decoded_ldda_id)
+        if type(ld) is not LibraryDataset:
+            raise exceptions.RequestParameterInvalidException(
+                f"Library content id ( {ldda_id} ) is not a dataset")
+        hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
+        return hda
+
+    def __create_hda_from_copy(self, trans, history: History, original_hda_id: EncodedDatabaseIdField):
+        unencoded_hda_id = self.decode_id(original_hda_id)
+        original = self.hda_manager.get_accessible(unencoded_hda_id, trans.user)
+        # check for access on history that contains the original hda as well
+        self.history_manager.error_unless_accessible(original.history, trans.user, current_history=trans.history)
+        hda = self.hda_manager.copy(original, history=history)
+        return hda
+
+    def __create_dataset_collection(
+        self, trans,
+        history: History,
+        payload: CreateHistoryContentPayloadFromCollection,
+        serialization_params: SerializationParams,
+    ):
+        """Create hdca in a history from the list of element identifiers
+
+        :param history: history the new hdca should be added to
+        :param source: whether to create a new collection or copy existing one
+        :type  source: str
+        :param payload: dictionary structure containing:
+            :param collection_type: type (and depth) of the new collection
+            :type name: str
+            :param element_identifiers: list of elements that should be in the new collection
+                :param element: one member of the collection
+                    :param name: name of the element
+                    :type name: str
+                    :param src: source of the element (hda/ldda)
+                    :type src: str
+                    :param id: identifier
+                    :type id: str
+                    :param id: tags
+                    :type id: list
+                :type element: dict
+            :type name: list
+            :param name: name of the collection
+            :type name: str
+            :param hide_source_items: whether to mark the original hdas as hidden
+            :type name: bool
+            :param copy_elements: whether to copy HDAs when creating collection
+            :type name: bool
+        :type  payload: dict
+
+       .. note:: Elements may be nested depending on the collection_type
+
+        :returns:   dataset collection information
+        :rtype:     dict
+
+        :raises: RequestParameterInvalidException, RequestParameterMissingException
+        """
+        source = payload.source or HistoryContentSource.new_collection
+
+        dataset_collection_manager = self.dataset_collection_manager
+        if source == HistoryContentSource.new_collection:
+            create_params = api_payload_to_create_params(payload.dict())
+            dataset_collection_instance = dataset_collection_manager.create(
+                trans,
+                parent=history,
+                history=history,
+                **create_params
+            )
+        elif source == HistoryContentSource.hdca:
+            content = payload.content
+            if content is None:
+                raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
+            dbkey = payload.dbkey
+            copy_required = dbkey is not None
+            copy_elements = payload.copy_elements or copy_required
+            if copy_required and not copy_elements:
+                raise exceptions.RequestParameterMissingException("copy_elements passed as 'false' but it is required to change specified attributes")
+            dataset_instance_attributes = {}
+            if dbkey is not None:
+                dataset_instance_attributes["dbkey"] = dbkey
+            dataset_collection_instance = dataset_collection_manager.copy(
+                trans=trans,
+                parent=history,
+                source=source,
+                encoded_source_id=content,
+                copy_elements=copy_elements,
+                dataset_instance_attributes=dataset_instance_attributes,
+            )
+        else:
+            message = f"Invalid 'source' parameter in request: {source}"
+            raise exceptions.RequestParameterInvalidException(message)
+
+        # if the consumer specified keys or view, use the secondary serializer
+        if serialization_params.get('view') or serialization_params.get('keys'):
+            serialization_params["default_view"] = 'detailed'
+            return self.hdca_serializer.serialize_to_view(
+                dataset_collection_instance, user=trans.user, trans=trans, **serialization_params
+            )
+
+        return self.__collection_dict(trans, dataset_collection_instance, view="element")
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
@@ -755,182 +1068,9 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :returns:   dictionary containing detailed information for the new HDA
 
         """
-        # TODO: Flush out create new collection documentation above, need some
-        # examples. See also bioblend and API tests for specific examples.
-
-        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user,
-                                                 current_history=trans.history)
-
-        type = payload.get('type', 'dataset')
-        if type == 'dataset':
-            source = payload.get('source', None)
-            if source == 'library_folder':
-                return self.__create_datasets_from_library_folder(trans, history, payload, **kwd)
-            else:
-                return self.__create_dataset(trans, history, payload, **kwd)
-        elif type == 'dataset_collection':
-            return self.__create_dataset_collection(trans, history, payload, **kwd)
-        else:
-            return self.__handle_unknown_contents_type(trans, type)
-
-    def __create_dataset(self, trans, history, payload, **kwd):
-        source = payload.get('source', None)
-        if source not in ('library', 'hda'):
-            raise exceptions.RequestParameterInvalidException(
-                f"'source' must be either 'library' or 'hda': {source}")
-        content = payload.get('content', None)
-        if content is None:
-            raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
-
-        # copy from library dataset
-        hda = None
-        if source == 'library':
-            hda = self.__create_hda_from_ldda(trans, content, history)
-
-        # copy an existing, accessible hda
-        elif source == 'hda':
-            unencoded_hda_id = self.decode_id(content)
-            original = self.hda_manager.get_accessible(unencoded_hda_id, trans.user)
-            # check for access on history that contains the original hda as well
-            self.history_manager.error_unless_accessible(original.history, trans.user, current_history=trans.history)
-            hda = self.hda_manager.copy(original, history=history)
-
-        trans.sa_session.flush()
-        if not hda:
-            return None
-        return self.hda_serializer.serialize_to_view(hda,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
-
-    def __create_hda_from_ldda(self, trans, content, history):
-        ld = self.get_library_dataset(trans, content)
-        if type(ld) is not trans.app.model.LibraryDataset:
-            raise exceptions.RequestParameterInvalidException(
-                f"Library content id ( {content} ) is not a dataset")
-        hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
-        return hda
-
-    def __create_datasets_from_library_folder(self, trans, history, payload, **kwd):
-        rval = []
-
-        source = payload.get('source', None)
-        if source == 'library_folder':
-            content = payload.get('content', None)
-            if content is None:
-                raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
-
-            folder_id = self.folder_manager.cut_and_decode(trans, content)
-            folder = self.folder_manager.get(trans, folder_id)
-
-            current_user_roles = trans.get_current_user_roles()
-
-            def traverse(folder):
-                admin = trans.user_is_admin
-                rval = []
-                for subfolder in folder.active_folders:
-                    if not admin:
-                        can_access, folder_ids = trans.app.security_agent.check_folder_contents(trans.user, current_user_roles, subfolder)
-                    if (admin or can_access) and not subfolder.deleted:
-                        rval.extend(traverse(subfolder))
-                for ld in folder.datasets:
-                    if not admin:
-                        can_access = trans.app.security_agent.can_access_dataset(
-                            current_user_roles,
-                            ld.library_dataset_dataset_association.dataset
-                        )
-                    if (admin or can_access) and not ld.deleted:
-                        rval.append(ld)
-                return rval
-
-            for ld in traverse(folder):
-                hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
-                hda_dict = self.hda_serializer.serialize_to_view(hda,
-                    user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
-                rval.append(hda_dict)
-        else:
-            message = f"Invalid 'source' parameter in request {source}"
-            raise exceptions.RequestParameterInvalidException(message)
-
-        trans.sa_session.flush()
-        return rval
-
-    def __create_dataset_collection(self, trans, history, payload, **kwd):
-        """Create hdca in a history from the list of element identifiers
-
-        :param history: history the new hdca should be added to
-        :type  history: History
-        :param source: whether to create a new collection or copy existing one
-        :type  source: str
-        :param payload: dictionary structure containing:
-            :param collection_type: type (and depth) of the new collection
-            :type name: str
-            :param element_identifiers: list of elements that should be in the new collection
-                :param element: one member of the collection
-                    :param name: name of the element
-                    :type name: str
-                    :param src: source of the element (hda/ldda)
-                    :type src: str
-                    :param id: identifier
-                    :type id: str
-                    :param id: tags
-                    :type id: list
-                :type element: dict
-            :type name: list
-            :param name: name of the collection
-            :type name: str
-            :param hide_source_items: whether to mark the original hdas as hidden
-            :type name: bool
-            :param copy_elements: whether to copy HDAs when creating collection
-            :type name: bool
-        :type  payload: dict
-
-       .. note:: Elements may be nested depending on the collection_type
-
-        :returns:   dataset collection information
-        :rtype:     dict
-
-        :raises: RequestParameterInvalidException, RequestParameterMissingException
-        """
-        source = kwd.get("source", payload.get("source", "new_collection"))
-
-        service = trans.app.dataset_collection_manager
-        if source == "new_collection":
-            create_params = api_payload_to_create_params(payload)
-            dataset_collection_instance = service.create(
-                trans,
-                parent=history,
-                history=history,
-                **create_params
-            )
-        elif source == "hdca":
-            content = payload.get('content', None)
-            if content is None:
-                raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
-            dbkey = payload.get("dbkey")
-            copy_required = dbkey is not None
-            copy_elements = payload.get('copy_elements', copy_required)
-            if copy_required and not copy_elements:
-                raise exceptions.RequestParameterMissingException("copy_elements passed as 'false' but it is required to change specified attributes")
-            dataset_instance_attributes = {}
-            if dbkey is not None:
-                dataset_instance_attributes["dbkey"] = dbkey
-            dataset_collection_instance = service.copy(
-                trans=trans,
-                parent=history,
-                source="hdca",
-                encoded_source_id=content,
-                copy_elements=copy_elements,
-                dataset_instance_attributes=dataset_instance_attributes,
-            )
-        else:
-            message = f"Invalid 'source' parameter in request {source}"
-            raise exceptions.RequestParameterInvalidException(message)
-
-        # if the consumer specified keys or view, use the secondary serializer
-        if 'view' in kwd or 'keys' in kwd:
-            return self.hdca_serializer.serialize_to_view(dataset_collection_instance,
-                user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
-
-        return self.__collection_dict(trans, dataset_collection_instance, view="element")
+        serialization_params = parse_serialization_params(**kwd)
+        create_payload = CreateHistoryContentPayload(**payload)
+        return self.service.create(trans, history_id, create_payload, serialization_params)
 
     @expose_api
     def show_roles(self, trans, encoded_dataset_id, **kwd):
