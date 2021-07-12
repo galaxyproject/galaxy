@@ -1,8 +1,8 @@
 <tool id="__SORTLIST__"
-      name="Sort Collection"
+      name="Sort collection"
       version="1.0.0"
       tool_type="sort_collection">
-    <description>of list of datasets</description>
+    <description></description>
     <type class="SortTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>

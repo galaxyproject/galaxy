@@ -1,8 +1,8 @@
 <tool id="__RELABEL_FROM_FILE__"
-      name="Relabel List Identifiers"
+      name="Relabel collection identifiers"
       version="1.0.0"
       tool_type="relabel_from_file">
-    <description>from contents of a file</description>
+    <description></description>
     <type class="RelabelFromFileTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
@@ -137,9 +137,9 @@
     </tests>
     <help><![CDATA[
 
-============
-What it does
-============
+========
+Synopsis
+========
 
 This tool changes names of datasets within a collection using identifiers from a supplied file. 
 
@@ -147,9 +147,9 @@ This tool changes names of datasets within a collection using identifiers from a
 
 This document uses terms *name*, *label*, and *identifier* interchangeably: they all mean the same thing - name of individual datasets inside a collection. 
 
-===================
-Supplying new names
-===================
+===========
+Description
+===========
 
 New names can be supplied as either a simple list or a tab-delimited file mapping old names to the new ones. This is controlled using **How should the new labels be specified?** drop-down:
 

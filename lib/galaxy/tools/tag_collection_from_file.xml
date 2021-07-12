@@ -1,8 +1,8 @@
 <tool id="__TAG_FROM_FILE__"
-      name="Tag elements from file"
+      name="Tag collection elemnts"
       version="1.0.0"
       tool_type="tag_from_file">
-    <description>from contents of a file</description>
+    <description></description>
     <type class="TagFromFileTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>

@@ -1,8 +1,8 @@
 <tool id="__UNZIP_COLLECTION__"
-      name="Unzip"
+      name="Unzip collection"
       version="1.0.0"
       tool_type="unzip_collection">
-  <description>collection into multiple ones</description>
+  <description></description>
   <type class="UnzipCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
@@ -19,13 +19,15 @@
   <help><![CDATA[
 
 
-**What is does:**
+========
+Synopsis
+========
 
 This tool takes a paired collection and "unzips" it into two simple dataset collections (lists of datasets). 
 
-----
-
-**Example**:
+===========
+Description
+===========
 
 Given a paired collection of forward and reverse reads this tool will "unzip" it into two collections containing forward and reverse reads, respectively:
 

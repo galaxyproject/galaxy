@@ -1,8 +1,8 @@
 <tool id="__FILTER_FROM_FILE__"
-      name="Filter List"
+      name="Filter collection"
       version="1.0.0"
       tool_type="filter_from_file">
-    <description>from contents of a file</description>
+    <description></description>
     <type class="FilterFromFileTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
@@ -82,17 +82,17 @@
     </tests>
     <help><![CDATA[
 
-============
-What it does
-============
+========
+Synopsis
+========
 
-This tools allow filtering elements from a data collection.  It takes an input collection and a text file with names (i.e. identifiers). 
+Filter elements from a collection using a list supplied in a file.
 
-==============
-Using the tool
-==============
+===========
+Description
+===========
 
-The tool behavious is controlled by **How should the elements to remove be determined?** drop-down. It has the following options:
+This tools allow filtering elements from a data collection.  It takes an input collection and a text file with names (i.e. identifiers). The tool behavious is controlled by **How should the elements to remove be determined?** drop-down. It has the following options:
 
 **Remove if identifiers are ABSENT from file**
 
