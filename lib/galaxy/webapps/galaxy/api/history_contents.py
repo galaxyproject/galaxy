@@ -1088,8 +1088,9 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
 
         :raises: InsufficientPermissionsException
         """
-        hda = self.hda_manager.get_owned(self.decode_id(encoded_dataset_id), trans.user, current_history=trans.history, trans=trans)
-        return self.hda_manager.serialize_dataset_association_roles(trans, hda)
+        raise NotImplementedError() # TODO: This endpoint doesn't seem to be in use, remove?
+        # hda = self.hda_manager.get_owned(self.decode_id(encoded_dataset_id), trans.user, current_history=trans.history, trans=trans)
+        # return self.hda_manager.serialize_dataset_association_roles(trans, hda)
 
     @expose_api
     def update_permissions(self, trans, history_id, history_content_id, payload=None, **kwd):
