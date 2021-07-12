@@ -10,7 +10,7 @@
     <edam_operation>operation_2409</edam_operation>
   </edam_operations>
   <inputs>
-    <repeat name="datasets" title="Dataset">
+    <repeat name="datasets" title="Dataset" help="can be dataset or collection. Multiple collection must be of the same length.">
       <param type="data" name="input" optional="true" label="Input Dataset" />
     </repeat>
   </inputs>
@@ -20,7 +20,32 @@
   </outputs>
   <help><![CDATA[
 
+========
+Synopsis
+========
+
+Builds a new collection from individual datasets or collections.
+
+===========
+Description
+===========
+
+This tool combines individual datasets or collections into a new collection. The simplest scenario is building a new colection from individual datasets (case **A** in the image below). You can merge a collection with individual dataset(s). In this case (see **B** in the image below) the individual dataset(s) will be merged with each element of the input collection to create a nested collection. Finally, two or more collection can be merged together creating a nested collection (case **C** in the image below).
+
+.. class:: warningmark 
+
+**Note**. When merging collections (e.g., case **C** below) the inout collection **must** have equal number of elements.
+
+------
+
+.. image:: ${static_path}/images/tools/collection_ops/buildList.png
+  :width: 800
+  :alt: Unzipping operation
+
+-------
+
 .. class:: infomark
+
 
 This tool will create a new collection from your history datasets but your quota usage will not increase.
 
@@ -46,3 +71,6 @@ This tool will create a new collection from your history datasets but your quota
     </test>
   </tests>
 </tool>
+
+
+
