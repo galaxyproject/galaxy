@@ -15,6 +15,7 @@ from galaxy.managers import (
     datasets,
 )
 from galaxy.model import tags
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import validation
 
 log = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
     """Interface/service object for interacting with library datasets."""
     model_class = model.LibraryDatasetDatasetAssociation
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         self.tag_handler = tags.GalaxyTagHandler(app.model.context)
 
