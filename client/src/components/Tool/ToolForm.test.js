@@ -40,7 +40,7 @@ describe("ToolForm", () => {
                 UserHistories: MockCurrentHistory({ id: "fakehistory" }),
                 ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
                 FormDisplay: true,
-            }
+            },
         });
     });
 
