@@ -101,7 +101,7 @@ class ToolBoxSearch:
             for tool_id in tool_ids_to_remove:
                 writer.delete_by_term('id', tool_id)
             for tool_id in tool_cache._new_tool_ids - indexed_tool_ids:
-                tool = tool_cache.get_tool_by_id(tool_id)
+                tool = self.toolbox.get_tool(tool_id)
                 if tool and tool.is_latest_version:
                     if tool.hidden:
                         # we check if there is an older tool we can return
