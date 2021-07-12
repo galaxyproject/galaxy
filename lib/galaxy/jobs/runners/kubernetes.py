@@ -842,6 +842,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             self.monitor_queue.put(ajs)
 
     def finish_job(self, job_state):
+        self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
         super().finish_job(job_state)
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params['k8s_namespace'])
         if len(jobs.response['items']) != 1:
