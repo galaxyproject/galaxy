@@ -1,5 +1,5 @@
 <tool id="__TAG_FROM_FILE__"
-      name="Tag collection elemnts"
+      name="Tag collection elements"
       version="1.0.0"
       tool_type="tag_from_file">
     <description></description>

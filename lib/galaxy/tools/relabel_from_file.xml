@@ -1,5 +1,5 @@
 <tool id="__RELABEL_FROM_FILE__"
-      name="Relabel collection identifiers"
+      name="Relabel identifiers"
       version="1.0.0"
       tool_type="relabel_from_file">
     <description></description>
