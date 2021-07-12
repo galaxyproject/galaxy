@@ -105,6 +105,7 @@ export default {
                 })
                 .catch((error) => {
                     console.log(error);
+                    this.$emit("submissionError", error);
                 });
         },
     },

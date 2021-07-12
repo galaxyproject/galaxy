@@ -2,17 +2,18 @@
 # Retrieves data from external data source applications and stores in a dataset file.
 # Data source application parameters are temporarily stored in the dataset file.
 import os
-import socket
 import sys
 from json import dumps, loads
-
-from six.moves.urllib.parse import urlencode, urlparse
-from six.moves.urllib.request import urlopen
+from urllib.parse import urlencode, urlparse
+from urllib.request import urlopen
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
 from galaxy.jobs import TOOL_PROVIDED_JOB_METADATA_FILE
-from galaxy.util import get_charset_from_http_headers
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    get_charset_from_http_headers
+)
 
 GALAXY_PARAM_PREFIX = 'GALAXY'
 GALAXY_ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
@@ -69,14 +70,6 @@ def __main__():
     URL = params.get('URL', None)  # using exactly URL indicates that only one dataset is being downloaded
     URL_method = params.get('URL_method', None)
 
-    # The Python support for fetching resources from the web is layered. urllib uses the httplib
-    # library, which in turn uses the socket library.  As of Python 2.3 you can specify how long
-    # a socket should wait for a response before timing out. By default the socket module has no
-    # timeout and can hang. Currently, the socket timeout is not exposed at the httplib or urllib2
-    # levels. However, you can set the default timeout ( in seconds ) globally for all sockets by
-    # doing the following.
-    socket.setdefaulttimeout(600)
-
     for data_dict in job_params['output_data']:
         cur_filename = data_dict.get('file_name', filename)
         cur_URL = params.get('%s|%s|URL' % (GALAXY_PARAM_PREFIX, data_dict['out_data_name']), URL)
@@ -87,9 +80,9 @@ def __main__():
         # The following calls to urlopen() will use the above default timeout
         try:
             if not URL_method or URL_method == 'get':
-                page = urlopen(cur_URL)
+                page = urlopen(cur_URL, timeout=DEFAULT_SOCKET_TIMEOUT)
             elif URL_method == 'post':
-                page = urlopen(cur_URL, urlencode(params).encode("utf-8"))
+                page = urlopen(cur_URL, urlencode(params).encode("utf-8"), timeout=DEFAULT_SOCKET_TIMEOUT)
         except Exception as e:
             stop_err('The remote data source application may be off line, please try again later. Error: %s' % str(e))
         if max_file_size:

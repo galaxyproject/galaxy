@@ -83,7 +83,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         history_manager = trans.app.history_manager
         workflow_manager = trans.app.workflow_manager
         job_manager = JobManager(trans.app)
-        collection_manager = trans.app.dataset_collections_service
+        collection_manager = trans.app.dataset_collection_manager
 
         def _check_object(object_id, line):
             if object_id is None:

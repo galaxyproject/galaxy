@@ -67,7 +67,7 @@ preferences:
 
     # Used in file_sources_conf.yml
     dropbox:
-      	description: Your Dropbox account
+        description: Your Dropbox account
         inputs:
             - name: access_token
               label: Dropbox access token
@@ -76,7 +76,7 @@ preferences:
 
     # Used in file_sources_conf.yml
     owncloud:
-      	description: Your External OwnCloud account
+        description: Your External OwnCloud account
         inputs:
             - name: url
               label: Server Domain (e.g. https://myowncloud.org)

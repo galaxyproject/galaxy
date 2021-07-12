@@ -107,6 +107,7 @@ class BaseController:
         """
         return trans.security.encode_all_ids(rval, recursive=recursive)
 
+    # TODO this will be replaced by lib.galaxy.managers.base.ModelFilterParser.build_filter_params
     def parse_filter_params(self, qdict, filter_attr_key='q', filter_value_key='qv', attr_op_split_char='-'):
         """
         """
@@ -231,6 +232,7 @@ class BaseAPIController(BaseController):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 
+    # TODO: this will be replaced by lib.galaxy.schema.FilterQueryParams.build_order_by
     def _parse_order_by(self, manager, order_by_string):
         ORDER_BY_SEP_CHAR = ','
         if ORDER_BY_SEP_CHAR in order_by_string:
@@ -304,7 +306,6 @@ class JSAppLauncher(BaseUIController):
     def _get_extended_config(self, trans):
         config = {
             'active_view': 'analysis',
-            'enable_cloud_launch': trans.app.config.get_bool('enable_cloud_launch', False),
             'enable_webhooks': True if trans.app.webhooks_registry.webhooks else False,
             'toolbox': trans.app.toolbox.to_dict(trans),
             'message_box_visible': trans.app.config.message_box_visible,
@@ -396,58 +397,6 @@ class SharableItemSecurityMixin:
     def security_check(self, trans, item, check_ownership=False, check_accessible=False):
         """ Security checks for an item: checks if (a) user owns item or (b) item is accessible to user. """
         return managers_base.security_check(trans, item, check_ownership=check_ownership, check_accessible=check_accessible)
-
-
-class ExportsHistoryMixin:
-
-    def serve_ready_history_export(self, trans, jeha):
-        assert jeha.ready
-        if jeha.compressed:
-            trans.response.set_content_type('application/x-gzip')
-        else:
-            trans.response.set_content_type('application/x-tar')
-        disposition = f'attachment; filename="{jeha.export_name}"'
-        trans.response.headers["Content-Disposition"] = disposition
-        archive = trans.app.object_store.get_filename(jeha.dataset)
-        return open(archive, mode='rb')
-
-    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None):
-        # Convert options to booleans.
-        if isinstance(gzip, str):
-            gzip = (gzip in ['True', 'true', 'T', 't'])
-        if isinstance(include_hidden, str):
-            include_hidden = (include_hidden in ['True', 'true', 'T', 't'])
-        if isinstance(include_deleted, str):
-            include_deleted = (include_deleted in ['True', 'true', 'T', 't'])
-
-        params = {
-            'history_to_export': history,
-            'compress': gzip,
-            'include_hidden': include_hidden,
-            'include_deleted': include_deleted
-        }
-
-        if directory_uri is None:
-            export_tool_id = '__EXPORT_HISTORY__'
-        else:
-            params['directory_uri'] = directory_uri
-            params['file_name'] = file_name or None
-            export_tool_id = '__EXPORT_HISTORY_TO_URI__'
-
-        # Run job to do export.
-        history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
-        job, _ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
-        return job
-
-
-class ImportsHistoryMixin:
-
-    def queue_history_import(self, trans, archive_type, archive_source):
-        # Run job to do import.
-        history_imp_tool = trans.app.toolbox.get_tool('__IMPORT_HISTORY__')
-        incoming = {'__ARCHIVE_SOURCE__': archive_source, '__ARCHIVE_TYPE__': archive_type}
-        job, _ = history_imp_tool.execute(trans, incoming=incoming)
-        return job
 
 
 class UsesLibraryMixinItems(SharableItemSecurityMixin):

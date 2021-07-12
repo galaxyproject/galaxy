@@ -2954,6 +2954,17 @@ class DatasetInstance:
                 meta_types.append(meta_type)
         return meta_types
 
+    def get_metadata_file_paths_and_extensions(self):
+        metadata = self.metadata
+        metadata_files = []
+        for metadata_name in self.metadata_file_types:
+            file_ext = metadata.spec[metadata_name].file_ext
+            metadata_file = metadata[metadata_name]
+            if metadata_file:
+                path = metadata_file.file_name
+                metadata_files.append((file_ext, path))
+        return metadata_files
+
     # This provide backwards compatibility with using the old dbkey
     # field in the database.  That field now maps to "old_dbkey" (see mapping.py).
 
@@ -4344,6 +4355,30 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         return self._dataset_action_tuples
 
     @property
+    def element_identifiers_extensions_and_paths(self):
+        q = self._get_nested_collection_attributes(
+            element_attributes=('element_identifier',),
+            hda_attributes=('extension',),
+            return_entities=(Dataset,)
+        )
+        return [(row[:-2], row.extension, row.Dataset.file_name) for row in q]
+
+    @property
+    def element_identifiers_extensions_paths_and_metadata_files(self):
+        q = self._get_nested_collection_attributes(
+            element_attributes=('element_identifier',),
+            hda_attributes=('extension',),
+            return_entities=(HistoryDatasetAssociation, Dataset)
+        )
+        results = []
+        for row in q:
+            result = [row[:-3], row.extension, row.Dataset.file_name]
+            hda = row.HistoryDatasetAssociation
+            result.append(hda.get_metadata_file_paths_and_extensions())
+            results.append(result)
+        return results
+
+    @property
     def waiting_for_elements(self):
         top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
         if not top_level_waiting and self.has_subcollections:
@@ -4415,10 +4450,17 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
             raise Exception("Each dataset collection must define a collection type.")
 
     def __getitem__(self, key):
+        if isinstance(key, int):
+            try:
+                return self.elements[key]
+            except IndexError:
+                pass
+        else:
+            # This might be a peformance issue for large collection, but we don't use this a lot
+            for element in self.elements:
+                if element.element_identifier == key:
+                    return element
         get_by_attribute = "element_index" if isinstance(key, int) else "element_identifier"
-        for element in self.elements:
-            if getattr(element, get_by_attribute) == key:
-                return element
         error_message = f"Dataset collection has no {get_by_attribute} with key {key}."
         raise KeyError(error_message)
 
@@ -5679,7 +5721,6 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
     def to_dict(self, view='collection', value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
-        rval['stored_workflow_id'] = self.workflow.stored_workflow.id
         if view == 'element':
             steps = []
             for step in self.steps:
@@ -6000,6 +6041,8 @@ class MetadataFile(StorableObject, RepresentById):
             self.history_dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
             self.library_dataset = dataset
+        self.hda_id = None
+        self.lda_id = None
         self.name = name
 
     @property

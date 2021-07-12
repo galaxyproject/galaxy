@@ -35,7 +35,7 @@ class FoldersApiTestCase(ApiTestCase):
             "manage_ids[]": role_id,  # string-lists also supported
             "modify_ids[]": [role_id]
         }
-        response = self._post(f"folders/{folder_id}/permissions?action={action}", data=data, admin=True)
+        response = self._post(f"folders/{folder_id}/permissions?action={action}", data=data, admin=True, json=True)
         self._assert_status_code_is(response, 200)
         new_permissions = response.json()
 
@@ -52,9 +52,9 @@ class FoldersApiTestCase(ApiTestCase):
             "name": updated_name,
             "description": updated_desc,
         }
-        patch_response = self._patch(f"folders/{folder_id}", data=data, admin=True)
-        self._assert_status_code_is(patch_response, 200)
-        updated_folder = patch_response.json()
+        put_response = self._put(f"folders/{folder_id}", data=data, admin=True, json=True)
+        self._assert_status_code_is(put_response, 200)
+        updated_folder = put_response.json()
         self._assert_valid_folder(updated_folder)
         assert updated_folder["name"] == updated_name
         assert updated_folder["description"] == updated_desc
@@ -89,8 +89,8 @@ class FoldersApiTestCase(ApiTestCase):
         data = {
             "name": "test",
         }
-        patch_response = self._patch(f"folders/{folder_id}", data=data, admin=True)
-        self._assert_status_code_is(patch_response, 403)
+        put_response = self._put(f"folders/{folder_id}", data=data, admin=True, json=True)
+        self._assert_status_code_is(put_response, 403)
 
     def _create_folder(self, name: str):
         root_folder_id = self.library["root_folder_id"]
@@ -98,7 +98,7 @@ class FoldersApiTestCase(ApiTestCase):
             "name": name,
             "description": f"The description of {name}",
         }
-        create_response = self._post(f"folders/{root_folder_id}", data=data, admin=True)
+        create_response = self._post(f"folders/{root_folder_id}", data=data, admin=True, json=True)
         self._assert_status_code_is(create_response, 200)
         folder = create_response.json()
         return folder

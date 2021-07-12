@@ -3,6 +3,7 @@ from urllib.parse import quote
 import requests
 import yaml
 
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from ..locations import (
     ToolLocationResolver,
 )
@@ -32,24 +33,24 @@ class _Ga4ghToolClient:
         self.base_url = base_url
 
     def get_tools(self):
-        return self._requests.get(f"{self.base_url}/ga4gh/v1/tools")
+        return self._requests.get(f"{self.base_url}/ga4gh/v1/tools", timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def get_tool(self, tool_id):
         url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}"
-        return self._requests.get(url)
+        return self._requests.get(url, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def get_tool_version(self, tool_id, version="latest"):
         url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}/versions/{version}"
-        return self._requests.get(url)
+        return self._requests.get(url, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def get_tool_descriptor(self, tool_id, version="latest", tool_type="CWL"):
         url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}/versions/{version}/{tool_type}/descriptor"
-        return self._requests.get(url)
+        return self._requests.get(url, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def get_tool_cwl(self, tool_id, version="latest", as_string=False):
         tool_type = "CWL"
         url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}/versions/{version}/{tool_type}/descriptor"
-        descriptor_response = self._requests.get(url)
+        descriptor_response = self._requests.get(url, timeout=DEFAULT_SOCKET_TIMEOUT)
         descriptor_str = descriptor_response.json()["descriptor"]
         if as_string:
             return descriptor_str

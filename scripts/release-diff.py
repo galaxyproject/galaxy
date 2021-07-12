@@ -44,8 +44,24 @@ def diff_files(old, new):
     old_k = set(old_kv.keys())
     new_k = set(new_kv.keys())
 
-    added = new_k - old_k
-    removed = old_k - new_k
+    added = []
+    for item in (new_k - old_k):
+        parent = '.'.join(item.split('.')[0:-1])
+        if parent in new_k and parent not in old_k:
+            added.append(item)
+        else:
+            added.append(parent)
+    added = set(added)
+
+    removed = []
+    for item in (old_k - new_k):
+        parent = '.'.join(item.split('.')[0:-1])
+        if parent in old_k and parent not in new_k:
+            removed.append(item)
+        else:
+            removed.append(parent)
+    removed = set(removed)
+
     shared = old_k & new_k
     changed = [(k, old_kv[k], new_kv[k]) for k in shared if old_kv[k] != new_kv[k]]
 
@@ -120,13 +136,19 @@ def load_at_time(path, revision=None):
 
 
 def main(old_revision, new_revision=None):
-    files_to_diff = glob.glob("config/*.yml.sample")
+    files_to_diff = glob.glob("config/*.yml.sample") + glob.glob('lib/galaxy/webapps/galaxy/*schema.yml')
     added = {}
     removed = {}
     changed = {}
     new_files = []
 
     for file in files_to_diff:
+        filename = file
+        if 'config_schema.yml' in file:
+            filename = 'config/galaxy.yml.sample:galaxy'
+        elif 'uwsgi_schema.yml' in file:
+            filename = 'config/galaxy.yml.sample:uwsgi'
+
         real_path = Path(file).resolve().relative_to(Path.cwd())
         try:
             old_contents = yaml.load(
@@ -138,13 +160,13 @@ def main(old_revision, new_revision=None):
 
             (a, r, c) = diff_files(old_contents, new_contents)
             if a:
-                added[file] = a
+                added[filename] = sorted(a)
 
             if r:
-                removed[file] = r
+                removed[filename] = sorted(r)
 
             if c:
-                changed[file] = c
+                changed[filename] = sorted(c)
 
         except subprocess.CalledProcessError:
             new_files.append(file)

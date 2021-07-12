@@ -11,6 +11,7 @@ import yaml
 
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from galaxy.workflow.modules import module_factory
 
 log = logging.getLogger(__name__)
@@ -133,7 +134,7 @@ class ToolRecommendations():
         """
         local_dir = os.path.join(os.getcwd(), download_local, 'tool_recommendation_model.hdf5')
         # read model from remote
-        model_binary = requests.get(model_url)
+        model_binary = requests.get(model_url, timeout=DEFAULT_SOCKET_TIMEOUT)
         # save model to a local directory
         with open(local_dir, 'wb') as model_file:
             model_file.write(model_binary.content)

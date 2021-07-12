@@ -385,6 +385,8 @@ tool_form:
     options: '#options [data-toggle="dropdown"]'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
+    parameter_checkbox: 'div.ui-form-element[tour_id="${parameter}"] .ui-switch div'
+    parameter_input: 'div.ui-form-element[tour_id="${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[tour_id="${parameter}"] textarea'
     reference: '.formatted-reference'
     about: '.tool-footer'
@@ -399,6 +401,32 @@ workflows:
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
     search_box: "#workflow-search"
+    workflow_table: "#workflow-table"
+
+trs_search:
+  selectors:
+    search: "#trs-search-query"
+    search_result:
+      type: xpath
+      selector: "//td[contains(text(), '${workflow_name}')]"
+    import_button: ".workflow-import"
+    select_server_button: "#dropdownTrsServer"
+    import_version: '[data-version-name*="${version}"]'
+    select_server:
+      type: xpath
+      selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
+
+trs_import:
+  selectors:
+    input: "#trs-id-input"
+    # *= means attribute value contains "${version}"
+    # needed because dockstore uses branch or git tag, while workflowhub
+    # concatenates name and version
+    import_version: '[data-version-name*="${version}"]'
+    select_server_button: "#dropdownTrsServer"
+    select_server:
+      type: xpath
+      selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
 
 workflow_run:
 
@@ -502,6 +530,12 @@ invocations:
     steps_details: '.workflow-invocation-state-component .invocation-steps-details'
     step_title: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .step-title'
     step_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .portlet-operations'
+    step_output_collection: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details'
+    step_output_collection_toggle: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details .name'
+    step_output_collection_element_identifier:
+      type: xpath
+      selector: '//span[@class="name"][text()="${element_identifier}"]'
+    step_output_collection_element_datatype: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details .datatype .value'
     step_job_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details'
     step_job_table: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table'
     step_job_table_rows: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody tr'

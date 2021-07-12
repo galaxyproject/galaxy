@@ -41,8 +41,6 @@ from galaxy.web.framework.helpers import (
 from galaxy.webapps.base.controller import (
     BaseUIController,
     ERROR,
-    ExportsHistoryMixin,
-    ImportsHistoryMixin,
     INFO,
     SharableMixin,
     SUCCESS,
@@ -236,8 +234,7 @@ class HistoryAllPublishedGrid(grids.Grid):
         return query.filter(self.model_class.published == true()).filter(self.model_class.slug != null()).filter(self.model_class.deleted == false())
 
 
-class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
-                        ExportsHistoryMixin, ImportsHistoryMixin):
+class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings):
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_export_view: histories.HistoryExportView = depends(histories.HistoryExportView)
     history_serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
@@ -1107,7 +1104,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         # Get history to export.
         #
         jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
-        return self.serve_ready_history_export(trans, jeha)
+        return self.history_manager.serve_ready_history_export(trans, jeha)
 
     @web.expose
     @web.json

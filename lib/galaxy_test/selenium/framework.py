@@ -23,7 +23,11 @@ from galaxy.selenium.context import (
 from galaxy.selenium.navigates_galaxy import (
     retry_during_transitions
 )
-from galaxy.util import asbool, classproperty
+from galaxy.util import (
+    asbool,
+    classproperty,
+    DEFAULT_SOCKET_TIMEOUT,
+)
 from galaxy_test.base import populators
 from galaxy_test.base.api import UsesApiTestCaseMixin
 from galaxy_test.base.api_util import get_admin_api_key
@@ -551,7 +555,7 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.get(full_url, params=data, cookies=cookies, headers=headers)
+        response = requests.get(full_url, params=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
@@ -569,10 +573,10 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.post(full_url, data=data, cookies=cookies, files=files, headers=headers)
+        response = requests.post(full_url, data=data, cookies=cookies, files=files, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
-    def _delete(self, route, data=None, headers=None, admin=False) -> Response:
+    def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
@@ -580,10 +584,10 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.delete(full_url, data=data, cookies=cookies, headers=headers)
+        response = requests.delete(full_url, data=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
-    def _put(self, route, data=None, headers=None, admin=False) -> Response:
+    def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
@@ -591,7 +595,7 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.put(full_url, data=data, cookies=cookies, headers=headers)
+        response = requests.put(full_url, data=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
 

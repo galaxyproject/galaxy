@@ -20,7 +20,7 @@ class BaseExportTestCase(BaseTestCase):
         self.app.hda_manager = mock.MagicMock()
         self.app.workflow_manager = mock.MagicMock()
         self.app.history_manager = mock.MagicMock()
-        self.app.dataset_collections_service = mock.MagicMock()
+        self.app.dataset_collection_manager = mock.MagicMock()
 
     def _new_history(self):
         history = model.History()
@@ -223,7 +223,7 @@ history_dataset_type(history_dataset_id=1)
         hdca.collection = self._new_pair_collection()
         hdca.id = 1
 
-        self.trans.app.dataset_collections_service.get_dataset_collection_instance.return_value = hdca
+        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca
         example = """# Example
 ```galaxy
 history_dataset_collection_display(history_dataset_collection_id=1)
@@ -371,7 +371,7 @@ history_dataset_display(history_dataset_id=2)
         hdca.history_id = 1
         hdca.collection_id = hdca.collection.id
 
-        self.trans.app.dataset_collections_service.get_dataset_collection_instance.return_value = hdca
+        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca
         example = """# Example
 ```galaxy
 history_dataset_collection_display(history_dataset_collection_id=1)

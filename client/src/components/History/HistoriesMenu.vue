@@ -27,8 +27,8 @@
             />
             <PriorityMenuItem
                 key="clear-history-cache"
-                title="Clear Cache"
-                icon="fa fa-refresh"
+                title="Refresh History"
+                icon="fa fa-sync"
                 @click.stop="clearCache"
             />
             <PriorityMenuItem

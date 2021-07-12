@@ -107,7 +107,9 @@ def _postgres_install(engine):
         return f"""
             CREATE TRIGGER {trigger_name}
             {when} {operation} ON {source_table}
-            FOR EACH ROW EXECUTE {function_keyword} {fn}();
+            FOR EACH ROW
+            WHEN (NEW.{id_field} IS NOT NULL)
+            EXECUTE {function_keyword} {fn}();
         """
 
     # pick row or statement triggers depending on postgres version

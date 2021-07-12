@@ -25,6 +25,9 @@
                         instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save
                         it.
                     </b-alert>
+                    <b-alert v-if="submissionError" variant="danger" show>
+                        Workflow submission failed: {{ submissionError }}
+                    </b-alert>
                 </div>
                 <!-- h4 as a class here looks odd but it was in the Backbone -->
                 <div class="ui-form-composite-header h4">
@@ -56,6 +59,7 @@
                         :target-history="simpleFormTargetHistory"
                         :use-job-cache="simpleFormUseJobCache"
                         @submissionSuccess="handleInvocations"
+                        @submissionError="handleSubmissionError"
                     />
                     <!-- Options to default one way or the other, disable if admins want, etc.. -->
                     <a href="#" @click="showAdvanced">Expand to full workflow form.</a>
@@ -111,6 +115,7 @@ export default {
             runButtonPercentage: -1,
             invocations: null,
             simpleForm: null,
+            submissionError: null,
             model: null,
         };
     },
@@ -160,6 +165,7 @@ export default {
     methods: {
         execute() {
             this.$refs.runform.execute();
+            this.submissionError = null;
         },
         setRunButtonStatus(enabled, waitText, percentage) {
             this.runButtonEnabled = enabled;
@@ -168,6 +174,9 @@ export default {
         },
         handleInvocations(invocations) {
             this.invocations = invocations;
+        },
+        handleSubmissionError(error) {
+            this.submissionError = errorMessageAsString(error);
         },
         showAdvanced() {
             this.simpleForm = false;

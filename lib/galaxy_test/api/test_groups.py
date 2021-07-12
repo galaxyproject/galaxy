@@ -1,5 +1,3 @@
-import json
-
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
@@ -75,10 +73,10 @@ class GroupsApiTestCase(ApiTestCase):
 
         group_id = group["id"]
         updated_name = "group-test-updated"
-        update_payload = json.dumps({
+        update_payload = {
             "name": updated_name,
-        })
-        update_response = self._put(f"groups/{group_id}", data=update_payload, admin=True)
+        }
+        update_response = self._put(f"groups/{group_id}", data=update_payload, admin=True, json=True)
         self._assert_status_code_is_ok(update_response)
 
     def test_update_only_admin(self):
@@ -94,10 +92,10 @@ class GroupsApiTestCase(ApiTestCase):
         # Update group_b with the same name as group_a
         group_b_id = group_b["id"]
         updated_name = group_a["name"]
-        update_payload = json.dumps({
+        update_payload = {
             "name": updated_name,
-        })
-        update_response = self._put(f"groups/{group_b_id}", data=update_payload, admin=True)
+        }
+        update_response = self._put(f"groups/{group_b_id}", data=update_payload, admin=True, json=True)
         self._assert_status_code_is(update_response, 409)
 
     def _assert_valid_group(self, group, assert_id=None):

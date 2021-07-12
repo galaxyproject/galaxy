@@ -307,13 +307,10 @@ galaxy:
   # <data_dir>.
   #tool_dependency_dir: dependencies
 
-  # The dependency resolvers config file specifies an ordering and
-  # options for how Galaxy resolves tool dependencies (requirement tags
-  # in Tool XML). The default ordering is to the use the Tool Shed for
-  # tools installed that way, use local Galaxy packages, and then use
-  # Conda if available. See
-  # https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
-  # for more information on these options.
+  # Specifies the path to the standalone dependency resolvers
+  # configuration file. This configuration can now be specified directly
+  # in the Galaxy configuration, see the description of the
+  # 'dependency_resolvers' option for details.
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #dependency_resolvers_config_file: dependency_resolvers_conf.xml
@@ -812,6 +809,10 @@ galaxy:
   # 0 to disable password expiration.
   #password_expiration_period: 0
 
+  # Allow users to manage their account data, change passwords or delete
+  # their accounts.
+  #enable_account_interface: true
+
   # Galaxy Session Timeout This provides a timeout (in minutes) after
   # which a user will have to log back in. A duration of 0 disables this
   # feature.
@@ -876,6 +877,10 @@ galaxy:
   # Proxy host - assumed to just be hosted on the same hostname and port
   # as Galaxy by default.
   #interactivetools_proxy_host: null
+
+  # Base path for interactive tools running at a subpath without a
+  # subdomain. Defaults to "/".
+  #interactivetools_base_path: /
 
   # Map for interactivetool proxy.
   # The value of this option will be resolved with respect to
@@ -1809,14 +1814,15 @@ galaxy:
   # Enable Galaxy's "Upload via FTP" interface.  You'll need to install
   # and configure an FTP server (we've used ProFTPd since it can use
   # Galaxy's database for authentication) and set the following two
-  # options. This should point to a directory containing subdirectories
-  # matching users' identifier (defaults to e-mail), where Galaxy will
-  # look for files.
-  #ftp_upload_dir: null
-
-  # This should be the hostname of your FTP server, which will be
-  # provided to users in the help text.
+  # options. This will be provided to users in the help text as 'log in
+  # to the FTP server at '. Thus, it should be the hostname of your FTP
+  # server.
   #ftp_upload_site: null
+
+  # This should point to a directory containing subdirectories matching
+  # users' identifier (defaults to e-mail), where Galaxy will look for
+  # files.
+  #ftp_upload_dir: null
 
   # User attribute to use as subdirectory in calculating default
   # ftp_upload_dir pattern. By default this will be email so a user's
@@ -1898,6 +1904,9 @@ galaxy:
   # definition of the resolvers to enable can be embedded into Galaxy's
   # config with this option. This has no effect if a
   # dependency_resolvers_config_file is used.
+  # The syntax, available resolvers, and documentation of their options
+  # is explained in detail in the documentation:
+  # https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
   #dependency_resolvers: null
 
   # Alternative representation of various dependency resolution

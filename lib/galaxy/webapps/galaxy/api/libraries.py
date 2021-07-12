@@ -17,11 +17,12 @@ from fastapi import (
 
 from galaxy import util
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.libraries import (
+from galaxy.managers.libraries import LibrariesService
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import (
     CreateLibraryPayload,
     DeleteLibraryPayload,
     LegacyLibraryPermissionsPayload,
-    LibrariesService,
     LibraryAvailablePermissions,
     LibraryCurrentPermissions,
     LibraryLegacySummary,
@@ -32,7 +33,6 @@ from galaxy.managers.libraries import (
     LibrarySummaryList,
     UpdateLibraryPayload,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,

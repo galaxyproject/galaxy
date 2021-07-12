@@ -930,6 +930,7 @@ class SelectToolParameter(ToolParameter):
             if self.optional and self.tool.profile < 18.09:
                 # Covers optional parameters with default values that reference other optional parameters.
                 # These will have a value but no legal_values.
+                # See https://github.com/galaxyproject/tools-iuc/pull/1842#issuecomment-394083768 for context.
                 return None
             raise ParameterValueError("requires a value, but no legal values defined", self.name, is_dynamic=self.is_dynamic)
         if isinstance(value, list):
@@ -1899,13 +1900,12 @@ class DataToolParameter(BaseDataToolParameter):
                         rval.append(trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(decoded_id))
                     else:
                         raise ValueError(f"Unknown input source {single_value['src']} passed to job submission API.")
-                elif isinstance(single_value, trans.app.model.HistoryDatasetCollectionAssociation):
-                    rval.append(single_value)
-                elif isinstance(single_value, trans.app.model.DatasetCollectionElement):
-                    rval.append(single_value)
-                elif isinstance(single_value, trans.app.model.HistoryDatasetAssociation):
-                    rval.append(single_value)
-                elif isinstance(single_value, trans.app.model.LibraryDatasetDatasetAssociation):
+                elif isinstance(single_value, (
+                        trans.app.model.HistoryDatasetCollectionAssociation,
+                        trans.app.model.DatasetCollectionElement,
+                        trans.app.model.HistoryDatasetAssociation,
+                        trans.app.model.LibraryDatasetDatasetAssociation
+                )):
                     rval.append(single_value)
                 else:
                     if len(str(single_value)) == 16:
@@ -1918,7 +1918,7 @@ class DataToolParameter(BaseDataToolParameter):
                 for val in rval:
                     if not isinstance(val, trans.app.model.HistoryDatasetCollectionAssociation):
                         raise ParameterValueError("if collections are supplied to multiple data input parameter, only collections may be used", self.name)
-        elif isinstance(value, trans.app.model.HistoryDatasetAssociation):
+        elif isinstance(value, (trans.app.model.HistoryDatasetAssociation, trans.app.model.LibraryDatasetDatasetAssociation)):
             rval = value
         elif isinstance(value, dict) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
@@ -2102,15 +2102,15 @@ class DataToolParameter(BaseDataToolParameter):
                 continue
 
         # sort both lists
-        d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k['hid'], reverse=True)
-        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k['hid'], reverse=True)
+        d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k.get('hid', -1), reverse=True)
+        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k.get('hid', -1), reverse=True)
 
         # return final dictionary
         return d
 
     def _history_query(self, trans):
         assert self.multiple
-        dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
+        dataset_collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
         # If multiple data parameter, treat like a list parameter.
         return history_query.HistoryQuery.from_collection_type("list", dataset_collection_type_descriptions)
 
@@ -2136,11 +2136,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         return self._collection_types
 
     def _history_query(self, trans):
-        dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
+        dataset_collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
         return history_query.HistoryQuery.from_parameter(self, dataset_collection_type_descriptions)
 
     def match_collections(self, trans, history, dataset_collection_matcher):
-        dataset_collections = trans.app.dataset_collections_service.history_dataset_collections(history, self._history_query(trans))
+        dataset_collections = trans.app.dataset_collection_manager.history_dataset_collections(history, self._history_query(trans))
 
         for dataset_collection_instance in dataset_collections:
             match = dataset_collection_matcher.hdca_match(dataset_collection_instance)
@@ -2269,7 +2269,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             })
 
         # sort both lists
-        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k['hid'], reverse=True)
+        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k.get('hid', -1), reverse=True)
 
         # return final dictionary
         return d

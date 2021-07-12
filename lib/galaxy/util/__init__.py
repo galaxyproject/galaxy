@@ -84,6 +84,8 @@ CHUNK_SIZE = 65536  # 64k
 DATABASE_MAX_STRING_SIZE = 32768
 DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
+DEFAULT_SOCKET_TIMEOUT = 600
+
 gzip_magic = b'\x1f\x8b'
 bz2_magic = b'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
@@ -638,20 +640,21 @@ def sanitize_for_filename(text, default=None):
     return out
 
 
-def find_instance_nested(item, instances, match_key=None):
+def find_instance_nested(item, instances):
     """
     Recursively find instances from lists, dicts, tuples.
 
-    `instances` should be a tuple of valid instances
-    If match_key is given the key must match for an instance to be added to the list of found instances.
+    `instances` should be a tuple of valid instances.
+    Returns a dictionary, where keys are the deepest key at which an instance has been found,
+    and the value is the matched instance.
     """
 
-    matches = []
+    matches = {}
 
     def visit(path, key, value):
         if isinstance(value, instances):
-            if match_key is None or match_key == key:
-                matches.append(value)
+            if key not in matches:
+                matches[key] = value
         return key, value
 
     def enter(path, key, value):
@@ -1065,6 +1068,25 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
     if strip_null:
         return value.replace('\0', '')
     return value
+
+
+def filesystem_safe_string(s, max_len, truncation_chars='..', strip_leading_dot=True, invalid_chars=('/',), replacement_char='_'):
+    """
+    Strip unicode null chars, truncate at 255 characters.
+    Optionally replace additional ``invalid_chars`` with `replacement_char` .
+
+    Defaults are probably only safe on linux / osx.
+    Needs further escaping if used in shell commands
+    """
+    sanitized_string = unicodify(s, strip_null=True)
+    if strip_leading_dot:
+        sanitized_string = sanitized_string.lstrip('.')
+    for invalid_char in invalid_chars:
+        sanitized_string = sanitized_string.replace(invalid_char, replacement_char)
+    if len(sanitized_string) > max_len:
+        sanitized_string = sanitized_string[:max_len - len(truncation_chars)]
+        sanitized_string = f"{sanitized_string}{truncation_chars}"
+    return sanitized_string
 
 
 def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict'):
