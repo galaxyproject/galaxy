@@ -1,7 +1,7 @@
 import pytest
 
 from galaxy.tool_util.lint import LintContext
-from galaxy.tool_util.linters import inputs, general
+from galaxy.tool_util.linters import general, inputs
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
 
