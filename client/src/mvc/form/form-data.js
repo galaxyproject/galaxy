@@ -1,7 +1,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { visitInputs } from "components/Form/utilities";
+import { matchCase, visitInputs } from "components/Form/utilities";
 
 /* This class maps the form dom to an api compatible javascript dictionary. */
 export var Manager = Backbone.Model.extend({
@@ -182,27 +182,8 @@ export var Manager = Backbone.Model.extend({
     },
 });
 
-/** Match conditional values to selected cases
- * @param{dict}   input     - Definition of conditional input parameter
- * @param{dict}   value     - Current value
- */
-export var matchCase = (input, value) => {
-    if (input.test_param.type == "boolean") {
-        if (value == "true") {
-            value = input.test_param.truevalue || "true";
-        } else {
-            value = input.test_param.falsevalue || "false";
-        }
-    }
-    for (var i in input.cases) {
-        if (input.cases[i].value == value) {
-            return i;
-        }
-    }
-    return -1;
-};
-
 export default {
     Manager: Manager,
+    matchCase: matchCase,
     visitInputs: visitInputs,
 };

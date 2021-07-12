@@ -40,3 +40,23 @@ export var visitInputs = (inputs, callback, prefix, context) => {
         }
     }
 };
+
+/** Match conditional values to selected cases
+ * @param{dict}   input     - Definition of conditional input parameter
+ * @param{dict}   value     - Current value
+ */
+export var matchCase = (input, value) => {
+    if (input.test_param.type == "boolean") {
+        if (value == "true") {
+            value = input.test_param.truevalue || "true";
+        } else {
+            value = input.test_param.falsevalue || "false";
+        }
+    }
+    for (var i in input.cases) {
+        if (input.cases[i].value == value) {
+            return i;
+        }
+    }
+    return -1;
+};
