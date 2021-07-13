@@ -24,7 +24,7 @@
 Synopsis
 ========
 
-Builds a new collection from individual datasets or collections.
+Builds a new list collection from individual datasets or collections.
 
 ===========
 Description
@@ -71,5 +71,4 @@ This tool will create a new collection from your history datasets but your quota
     </test>
   </tests>
 </tool>
-
 
