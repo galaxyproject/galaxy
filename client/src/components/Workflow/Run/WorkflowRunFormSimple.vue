@@ -4,9 +4,6 @@
             <b>Workflow: {{ model.name }}</b>
             <ButtonSpinner class="float-right" title="Run Workflow" id="run-workflow" @onClick="onExecute" />
         </div>
-        <b-alert v-if="errorText" class="mt-2" variant="danger" show>
-            {{ errorText | l }}
-        </b-alert>
         <FormDisplay :inputs="formInputs" @onChange="onChange" />
         <!-- Options to default one way or the other, disable if admins want, etc.. -->
         <a href="#" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
@@ -43,7 +40,6 @@ export default {
         return {
             formData: {},
             inputTypes: {},
-            errorText: null,
         };
     },
     computed: {
@@ -108,7 +104,7 @@ export default {
                     this.$emit("submissionSuccess", invocations);
                 })
                 .catch((error) => {
-                    this.errorText = errorMessageAsString(error);
+                    this.$emit("submissionError", errorMessageAsString(error));
                 });
         },
     },

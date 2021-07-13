@@ -31,9 +31,15 @@
                     :target-history="simpleFormTargetHistory"
                     :use-job-cache="simpleFormUseJobCache"
                     @submissionSuccess="handleInvocations"
+                    @submissionError="handleSubmissionError"
                     @showAdvanced="showAdvanced"
                 />
-                <workflow-run-form v-else :model="model" @submissionSuccess="handleInvocations" />
+                <workflow-run-form
+                    v-else
+                    :model="model"
+                    @submissionSuccess="handleInvocations"
+                    @submissionError="handleSubmissionError"
+                />
             </div>
         </span>
     </span>
