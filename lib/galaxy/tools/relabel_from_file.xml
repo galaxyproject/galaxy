@@ -151,7 +151,7 @@ This document uses terms *name*, *label*, and *identifier* interchangeably: they
 Description
 ===========
 
-New names can be supplied as either a simple list or a tab-delimited file mapping old names to the new ones. This is controlled using **How should the new labels be specified?** drop-down:
+New identifiers can be supplied as either a simple list or a tab-delimited file mapping old identifier to the new ones. This is controlled using **How should the new identifiers be specified?** drop-down:
 
 **Using lines in a simple text file**
 
