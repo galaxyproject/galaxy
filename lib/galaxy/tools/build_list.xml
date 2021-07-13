@@ -34,7 +34,7 @@ This tool combines individual datasets or collections into a new collection. The
 
 .. class:: warningmark 
 
-**Note**: When merging collections (e.g., case **C** below) the inout collection **must** have equal number of elements.
+**Note**: When merging collections (e.g., case **C** below) the input collection **must** have equal number of elements.
 
 ------
 
@@ -71,4 +71,3 @@ This tool will create a new collection from your history datasets but your quota
     </test>
   </tests>
 </tool>
-
