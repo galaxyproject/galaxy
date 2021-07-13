@@ -153,7 +153,7 @@ Description
 
 New names can be supplied as either a simple list or a tab-delimited file mapping old names to the new ones. This is controlled using **How should the new labels be specified?** drop-down:
 
-**Simple list**
+**Using lines in a simple text file**
 
 Given a collection::
 
