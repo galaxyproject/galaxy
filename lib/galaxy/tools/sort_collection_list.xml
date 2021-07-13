@@ -170,7 +170,7 @@ The tool will output::
 
 **Sorting from file**
 
-Alternative, one can supply a single column text file containing elements names in the desired sort order. For example, suppose there a collection::
+Alternative, one can supply a single column text file containing elements identifiers in the desired sort order. For example, suppose there a collection::
 
  Collection: [Horse123] 
              [Donkey543] 
