@@ -11,7 +11,7 @@
   </edam_operations>
   <inputs>
     <repeat name="datasets" title="Dataset" help="If collections are provided they should contain the same number of items.">
-      <param type="data" name="input" optional="true" label="Input Dataset" />
+      <param type="data" name="input" optional="true" label="Input Dataset" help="If providing a collection here the tool will be run in batch and one collection per element is created."/>
     </repeat>
   </inputs>
   <outputs>
