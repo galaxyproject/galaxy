@@ -141,11 +141,7 @@
 Synopsis
 ========
 
-This tool changes identifiers of datasets within a collection using identifiers from a supplied file. 
-
-.. class:: infomark
-
-This document uses terms *name*, *label*, and *identifier* interchangeably: they all mean the same thing - name of individual datasets inside a collection. 
+Changes identifiers of datasets within a collection using identifiers from a supplied file. 
 
 ===========
 Description

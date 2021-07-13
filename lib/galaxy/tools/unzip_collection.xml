@@ -23,7 +23,7 @@
 Synopsis
 ========
 
-This tool takes a paired collection and "unzips" it into two simple dataset collections (lists of datasets). 
+Takes a paired collection and "unzips" it into two simple dataset collections (lists of datasets). 
 
 ===========
 Description

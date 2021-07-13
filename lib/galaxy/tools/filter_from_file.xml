@@ -86,7 +86,7 @@
 Synopsis
 ========
 
-Filter elements from a collection using a list supplied in a file.
+Filters elements from a collection using a list supplied in a file.
 
 ===========
 Description

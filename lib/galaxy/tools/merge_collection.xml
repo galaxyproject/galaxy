@@ -279,7 +279,11 @@
 Synopsis
 ========
 
-This tool takes two or more collections and creates a single collection from them. 
+Takes two or more collections and creates a single collection from them. 
+
+===========
+Description
+===========
 
 By default the tool assumes that collections that are being merged have unique dataset names. If it not the case only one (the first) of the datasets with a repeated name will be included in the merged collection. For example, suppose you have two collections. Each has two datasets named "A" and "B"::
 
@@ -296,10 +300,6 @@ Merging them will produce a single collection with only two datasets::
                     [Dataset B] 
                     [Dataset X] 
                     [Dataset Y]
-
-===========
-Description
-===========
 
 This behavior can be changed by clicking on "*Advanced Options*" link. The following options are available:
 
