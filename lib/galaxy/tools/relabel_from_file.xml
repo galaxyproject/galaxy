@@ -22,7 +22,7 @@
             </when>
             <when value="tabular">
                 <param type="data" name="labels" format="tabular" label="New Identifiers" />
-                <param name="strict" type="boolean" label="Ensure strict mapping" help="If YES, the target file must contain exactly the correct number of lines and each input identifier must match exactly one element of the input collection." truevalue="true" falsevalue="false" />
+                <param name="strict" type="boolean" label="Ensure strict mapping" help="If checked, the target file must contain exactly the correct number of lines and each input identifier must match exactly one element of the input collection." truevalue="true" falsevalue="false" />
             </when>
         </conditional>
     </inputs>
