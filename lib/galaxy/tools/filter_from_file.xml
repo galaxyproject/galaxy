@@ -10,7 +10,7 @@
         <edam_operation>operation_3695</edam_operation>
     </edam_operations>
     <inputs>
-        <param type="data_collection" name="input" label="Input Collection" help="collection to filter identifiers in"/>
+        <param type="data_collection" name="input" label="Input Collection" help="A collection whose elements will be filtered."/>
         <conditional name="how">
             <param type="select" name="how_filter" label="How should the elements to remove be determined?">
                 <option value="remove_if_absent" selected="true">Remove if identifiers are ABSENT from file</option>
