@@ -8,6 +8,7 @@ import os
 import re
 from typing import (
     Any,
+    Dict,
     List,
     Optional,
     Set,
@@ -55,6 +56,8 @@ from galaxy.schema.fields import (
 )
 from galaxy.schema.schema import (
     ColletionSourceType,
+    DatasetAssociationRoles,
+    DatasetPermissionAction,
     HDABeta,
     HDADetailed,
     HDASummary,
@@ -67,6 +70,7 @@ from galaxy.schema.schema import (
     JobSourceType,
     JobStateSummary,
     Model,
+    UpdateDatasetPermissionsPayload,
     WorkflowInvocationStateSummary,
 )
 from galaxy.schema.types import SerializationParams
@@ -474,6 +478,35 @@ class HistoriesContentsService(ServiceBase):
         elif type == HistoryContentType.dataset_collection:
             return self.__create_dataset_collection(trans, history, payload, serialization_params)
         raise exceptions.UnknownContentsType(f'Unknown contents type: {payload.type}')
+
+    def update_permissions(
+        self, trans,
+        history_content_id: EncodedDatabaseIdField,
+        payload: UpdateDatasetPermissionsPayload,
+    ) -> DatasetAssociationRoles:
+        """
+        Set permissions of the given dataset to the given role ids.
+
+        :param   payload: dictionary structure containing:
+            :param  action:     (required) describes what action should be performed
+                                available actions: make_private, remove_restrictions, set_permissions
+            :type   action:     string
+            :param  access_ids[]:      list of Role.id defining roles that should have access permission on the dataset
+            :type   access_ids[]:      string or list
+            :param  manage_ids[]:      list of Role.id defining roles that should have manage permission on the dataset
+            :type   manage_ids[]:      string or list
+            :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library dataset item
+            :type   modify_ids[]:      string or list
+
+        :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
+                    RequestParameterMissingException
+        """
+        payload_dict = payload.dict(by_alias=True)
+        hda = self.hda_manager.get_owned(self.decode_id(history_content_id), trans.user, current_history=trans.history, trans=trans)
+        assert hda is not None
+        self.hda_manager.update_permissions(trans, hda, **payload_dict)
+        roles = self.hda_manager.serialize_dataset_association_roles(trans, hda)
+        return DatasetAssociationRoles.parse_obj(roles)
 
     def __index_legacy(
         self, trans,
@@ -1088,12 +1121,12 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
 
         :raises: InsufficientPermissionsException
         """
-        raise NotImplementedError() # TODO: This endpoint doesn't seem to be in use, remove?
+        raise NotImplementedError()  # TODO: This endpoint doesn't seem to be in use, remove?
         # hda = self.hda_manager.get_owned(self.decode_id(encoded_dataset_id), trans.user, current_history=trans.history, trans=trans)
         # return self.hda_manager.serialize_dataset_association_roles(trans, hda)
 
     @expose_api
-    def update_permissions(self, trans, history_id, history_content_id, payload=None, **kwd):
+    def update_permissions(self, trans, history_id, history_content_id, payload: Dict[str, Any] = None, **kwd):
         """
         Set permissions of the given library dataset to the given role ids.
 
@@ -1123,10 +1156,23 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         """
         if payload:
             kwd.update(payload)
-        hda = self.hda_manager.get_owned(self.decode_id(history_content_id), trans.user, current_history=trans.history, trans=trans)
-        assert hda is not None
-        self.hda_manager.update_permissions(trans, hda, **kwd)
-        return self.hda_manager.serialize_dataset_association_roles(trans, hda)
+        update_payload = self._get_update_permission_payload(kwd)
+        return self.service.update_permissions(trans, history_content_id, update_payload)
+
+    def _get_update_permission_payload(self, payload: Dict[str, Any]) -> UpdateDatasetPermissionsPayload:
+        """Coverts the payload dictionary into a UpdateDatasetPermissionsPayload model with custom parsing.
+
+        This is an attempt on supporting multiple aliases for the permissions params."""
+        # There are several allowed names for the same role list parameter, i.e.: `access`, `access_ids`, `access_ids[]`
+        # The `access_ids[]` name is not pydantic friendly, so this will be modelled as an alias but we can only set one alias
+        # TODO: Maybe we should choose only one way and deprecate the others?
+        payload["access_ids[]"] = payload.get("access_ids[]") or payload.get("access")
+        payload["manage_ids[]"] = payload.get("manage_ids[]") or payload.get("manage")
+        payload["modify_ids[]"] = payload.get("modify_ids[]") or payload.get("modify")
+        # The action is required, so the default will be used if none is specified
+        payload["action"] = payload.get("action", DatasetPermissionAction.set_permissions)
+        update_payload = UpdateDatasetPermissionsPayload(**payload)
+        return update_payload
 
     @expose_api_anonymous
     def update_batch(self, trans, history_id, payload, **kwd):

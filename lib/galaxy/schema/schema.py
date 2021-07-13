@@ -2054,6 +2054,12 @@ class LibraryPermissionAction(str, Enum):
     remove_restrictions = "remove_restrictions"  # name inconsistency? should be `make_public`?
 
 
+class DatasetPermissionAction(str, Enum):
+    set_permissions = "set_permissions"
+    make_private = "make_private"
+    remove_restrictions = "remove_restrictions"
+
+
 class LibraryPermissionsPayloadBase(BaseModel):
     class Config:
         use_enum_values = True  # When using .dict()
@@ -2213,4 +2219,64 @@ class LibraryFolderCurrentPermissions(BaseModel):
         ...,
         title="Add Role List",
         description="A list containing pairs of role names and corresponding encoded IDs which can add items to the Library folder.",
+    )
+
+
+class DatasetAssociationRoles(Model):
+    access_dataset_roles: List[RoleNameIdTuple] = Field(
+        default=[],
+        title="Access Roles",
+        description=(
+            "A list of roles that can access the dataset. "
+            "The user has to **have all these roles** in order to access this dataset. "
+            "Users without access permission **cannot** have other permissions on this dataset. "
+            "If there are no access roles set on the dataset it is considered **unrestricted**."
+        ),
+    )
+    manage_dataset_roles: List[RoleNameIdTuple] = Field(
+        default=[],
+        title="Manage Roles",
+        description=(
+            "A list of roles that can manage permissions on the dataset. "
+            "Users with **any** of these roles can manage permissions of this dataset. "
+            "If you remove yourself you will lose the ability to manage this dataset unless you are an admin."
+        ),
+    )
+    modify_item_roles: List[RoleNameIdTuple] = Field(
+        default=[],
+        title="Modify Roles",
+        description=(
+            "A list of roles that can modify the library item. This is a library related permission. "
+            "User with **any** of these roles can modify name, metadata, and other information about this library item."
+        ),
+    )
+
+
+class UpdateDatasetPermissionsPayload(BaseModel):
+    class Config:
+        use_enum_values = True  # When using .dict()
+        allow_population_by_alias = True
+
+    action: Optional[DatasetPermissionAction] = Field(
+        ...,
+        title="Action",
+        description="Indicates what action should be performed on the dataset.",
+    )
+    access_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="access_ids[]",  # Added for backward compatibility but it looks really ugly...
+        title="Access IDs",
+        description="A list of role encoded IDs defining roles that should have access permission on the dataset.",
+    )
+    manage_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="manage_ids[]",
+        title="Manage IDs",
+        description="A list of role encoded IDs defining roles that should have manage permission on the dataset.",
+    )
+    modify_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="modify_ids[]",
+        title="Modify IDs",
+        description="A list of role encoded IDs defining roles that should have modify permission on the dataset.",
     )
