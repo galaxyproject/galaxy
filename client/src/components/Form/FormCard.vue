@@ -8,7 +8,6 @@
                 <i :class="['portlet-title-icon fa mr-1', icon]" style="display: inline"></i>
                 <span class="portlet-title-text">
                     <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span>
-                    {{ version }}
                 </span>
             </div>
         </div>
@@ -26,11 +25,7 @@ export default {
         },
         description: {
             type: String,
-            required: false,
-        },
-        version: {
-            type: String,
-            required: false,
+            default: null,
         },
         icon: {
             type: String,
