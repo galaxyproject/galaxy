@@ -10,7 +10,7 @@
         <edam_operation>operation_3359</edam_operation>
     </edam_operations>
   <inputs>
-    <param type="data_collection" collection_type="paired" name="input" label="Paired List Collection to unzip" />
+    <param type="data_collection" collection_type="paired" name="input" label="Paired input to unzip" />
   </inputs>
   <outputs>
     <data name="forward" label="${on_string} (forward)" format_source="input"/>

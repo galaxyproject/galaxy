@@ -10,8 +10,8 @@
     <edam_operation>operation_3436</edam_operation>
   </edam_operations>
   <inputs>
-    <param type="data" name="input_forward" label="Input dataset or collection 1" help="Example: forward read(s)"/>
-    <param type="data" name="input_reverse" label="Input dataset or collection 2" help="Example: reverse read(s)"/>
+    <param type="data" name="input_forward" label="Input 1" help="Example: dataset or collection containing forward read(s)"/>
+    <param type="data" name="input_reverse" label="Input 2" help="Example: dataset or collection containing reverse read(s)"/>
   </inputs>
   <outputs>
     <collection name="output" type="paired" label="${on_string} (zipped)">
