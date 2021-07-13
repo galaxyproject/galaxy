@@ -50,7 +50,7 @@ Extracts datasets from a collection based on either position or name.
 Description
 ===========
 
-The tool allow extracting datasets based on position (**The first dataset** and **Select by index** options) or name (**Select by element identifier** option). If collection contains multiple elements with the same name, all of them will be extracted and a new collection will be created. Finally
+The tool allow extracting datasets based on position (**The first dataset** and **Select by index** options) or name (**Select by element identifier** option). This tool effectively collapses the inner-most collection into a dataset. For nested collections (e.g a list of lists of lists: outer:middle:inner, extracting the inner dataset element) a new list is created where the selected element takes the position of the inner-most collection (so outer:middle, where middle is not a collection but the inner dataset element).
 
 .. class:: warningmark 
 
