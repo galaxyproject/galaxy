@@ -1,39 +1,39 @@
 <tool id="multi_output_recurse" name="multi_output_recurse" version="0.1.0" profile="18.01">
-  <command>
-    echo "Hello" &gt; $report;
+  <command><![CDATA[
+    echo "Hello" > '$report';
     mkdir subdir1;
-    echo "This" &gt; subdir1/this.txt;
-    echo "That" &gt; subdir1/that.txt;
+    echo "This" > subdir1/this.txt;
+    echo "That" > subdir1/that.txt;
     mkdir subdir2;
-    echo "1" &gt; subdir2/CUSTOM_1.txt;
-    echo "2" &gt; subdir2/CUSTOM_2.txt;
+    echo "1" > subdir2/CUSTOM_1.txt;
+    echo "2" > subdir2/CUSTOM_2.txt;
     mkdir subdir3;
-    echo "Foo" &gt; subdir3/Foo;
+    echo "Foo" > subdir3/Foo;
     mkdir subdir3/nested1;
-    echo "Bar" &gt; subdir3/nested1/bar.txt;
-    echo "Hello" &gt; subdir3/nested1/hello;
-    echo "1" &gt; sample1.report.txt;
-    echo "2" &gt; sample2.report.txt;
-  </command>
+    echo "Bar" > subdir3/nested1/bar.txt;
+    echo "Hello" > subdir3/nested1/hello;
+    echo "1" > sample1.report.txt;
+    echo "2" > sample2.report.txt;
+    ]]></command>
   <inputs>
-    <param name="num_param" type="integer" value="7"/>
-    <param name="input" type="data"/>
+    <param type="boolean" name="match_relative"/>
   </inputs>
   <outputs>
     <data auto_format="true" name="report">
+      <filter>not bool(match_relative)</filter>
       <discover_datasets pattern="__designation__" directory="." visible="true" recurse="true"/>
     </data>
     <data auto_format="true" name="report_optional">
+      <filter>not bool(match_relative)</filter>
       <discover_datasets pattern="__designation__" directory="i_do_not_exist" visible="true" recurse="true"/>
     </data>
     <data auto_format="true" name="report_match_relative_path">
+      <filter>bool(match_relative)</filter>
       <discover_datasets pattern="__designation__" directory="." visible="true" recurse="true" match_relative_path="true"/>
     </data>
   </outputs>
   <tests>
     <test>
-      <param name="num_param" value="7"/>
-      <param name="input" ftype="txt" value="simple_line.txt"/>
       <output name="report">
         <assert_contents>
           <has_line line="Hello"/>
@@ -84,6 +84,9 @@
           </assert_contents>
         </discovered_dataset>
       </output>
+    </test>
+    <test>
+      <param name="match_relative" value="true"/>
       <output name="report_match_relative_path">
         <discovered_dataset designation="subdir3/nested1/bar.txt">
           <assert_contents>
