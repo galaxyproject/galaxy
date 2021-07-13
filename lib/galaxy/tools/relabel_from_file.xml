@@ -179,7 +179,7 @@ the tool will return::
 
 -------
 
-**Old-new map**
+**Map original identifiers to new ones using a two column table**
 
 Given a collection::
 
