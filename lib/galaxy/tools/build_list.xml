@@ -10,7 +10,7 @@
     <edam_operation>operation_2409</edam_operation>
   </edam_operations>
   <inputs>
-    <repeat name="datasets" title="Dataset" help="can be dataset or collection. Multiple collection must be of the same length.">
+    <repeat name="datasets" title="Dataset" help="If collections are provided they should contain the same number of items.">
       <param type="data" name="input" optional="true" label="Input Dataset" />
     </repeat>
   </inputs>
@@ -71,6 +71,5 @@ This tool will create a new collection from your history datasets but your quota
     </test>
   </tests>
 </tool>
-
 
 
