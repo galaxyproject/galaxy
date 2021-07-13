@@ -13,8 +13,8 @@
         <param type="data_collection" name="input" label="Input Collection" help="collection to change identifiers in"/>
         <conditional name="how">
             <param type="select" name="how_select" label="How should the new labels be specified?">
-                <option value="txt">Simple list</option>
-                <option value="tabular">Old-new map</option>
+                <option value="txt">Using lines in a simple text file.</option>
+                <option value="tabular">Map original identifiers to new ones using a two column table.</option>
             </param>
             <when value="txt">
                 <param type="data" name="labels" format="txt" label="New Identifiers" />
