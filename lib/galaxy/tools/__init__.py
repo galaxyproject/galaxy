@@ -490,6 +490,7 @@ class Tool(Dictifiable):
     requires_setting_metadata = True
     produces_entry_points = False
     default_tool_action = DefaultToolAction
+    tool_type_local = False
     dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
     def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, tool_shed_repository=None, allow_code_files=True, dynamic=False):
@@ -897,7 +898,16 @@ class Tool(Dictifiable):
 
         # In the toolshed context, there is no job config.
         if hasattr(self.app, 'job_config'):
-            self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids)
+            # Order of this list must match documentation in job_conf.sample_advanced.yml
+            tool_classes = []
+            if self.tool_type_local:
+                tool_classes.append("local")
+            elif self.old_id in ['upload1', '__DATA_FETCH__']:
+                tool_classes.append("local")
+            if self.requires_galaxy_python_environment:
+                tool_classes.append("requires_galaxy")
+
+            self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids, tool_classes)
 
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = tool_source.parse_hidden()
@@ -2431,6 +2441,7 @@ class OutputParameterJSONTool(Tool):
 class ExpressionTool(Tool):
     requires_js_runtime = True
     tool_type = 'expression'
+    tool_type_local = True
     EXPRESSION_INPUTS_NAME = "_expression_inputs_.json"
 
     def parse_command(self, tool_source):
@@ -2772,6 +2783,7 @@ class DataManagerTool(OutputParameterJSONTool):
 class DatabaseOperationTool(Tool):
     default_tool_action = ModelOperationToolAction
     require_dataset_ok = True
+    tool_type_local = True
 
     @property
     def valid_input_states(self):
