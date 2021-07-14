@@ -575,7 +575,7 @@ class HistoriesContentsService(ServiceBase):
         hdas = self.__datasets_for_update(trans, history, hda_ids, payload_dict)
         rval = []
         for hda in hdas:
-            self.__deserialize_dataset(hda, payload_dict, trans)
+            self.__deserialize_dataset(trans, hda, payload_dict)
             serialization_params["default_view"] = "summary"
             rval.append(self.hda_serializer.serialize_to_view(
                 hda, user=trans.user, trans=trans, **serialization_params
@@ -681,7 +681,7 @@ class HistoriesContentsService(ServiceBase):
         )
         hda = self.__datasets_for_update(trans, history, [decoded_id], payload_dict)[0]
         if hda:
-            self.__deserialize_dataset(hda, payload_dict, trans)
+            self.__deserialize_dataset(trans, hda, payload_dict)
             serialization_params["default_view"] = 'detailed'
             return self.hda_serializer.serialize_to_view(
                 hda, user=trans.user, trans=trans, **serialization_params
@@ -713,7 +713,7 @@ class HistoriesContentsService(ServiceBase):
 
         return hdas
 
-    def __deserialize_dataset(self, hda, payload, trans):
+    def __deserialize_dataset(self, trans, hda, payload: Dict[str, Any]):
         self.hda_deserializer.deserialize(hda, payload, user=trans.user, trans=trans)
         # TODO: this should be an effect of deleting the hda
         if payload.get('deleted', False):
@@ -1059,9 +1059,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_contents_manager: history_contents.HistoryContentsManager = depends(history_contents.HistoryContentsManager)
-    folder_manager: folders.FolderManager = depends(folders.FolderManager)
     hda_serializer: hdas.HDASerializer = depends(hdas.HDASerializer)
-    hda_deserializer: hdas.HDADeserializer = depends(hdas.HDADeserializer)
     hdca_serializer: hdcas.HDCASerializer = depends(hdcas.HDCASerializer)
     history_contents_filters: history_contents.HistoryContentsFilters = depends(history_contents.HistoryContentsFilters)
 
@@ -1145,7 +1143,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :returns:   dictionary containing detailed HDA or HDCA information
         """
         serialization_params = parse_serialization_params(**kwd)
-        contents_type = self.__get_contents_type(trans, kwd)
+        contents_type = self.__get_contents_type(kwd)
         fuzzy_count = kwd.get("fuzzy_count", None)
         if fuzzy_count:
             fuzzy_count = int(fuzzy_count)
@@ -1197,15 +1195,12 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :rtype:     dict
         :returns:   dictionary containing jobs summary object
         """
-        contents_type = self.__get_contents_type(trans, kwd)
+        contents_type = self.__get_contents_type(kwd)
         return self.service.show_jobs_summary(trans, id, contents_type)
 
-    def __get_contents_type(self, trans, kwd):
+    def __get_contents_type(self, kwd: dict) -> HistoryContentType:
         contents_type = kwd.get('type', 'dataset')
-        if contents_type not in ['dataset', 'dataset_collection']:
-            self.__handle_unknown_contents_type(trans, contents_type)
-
-        return contents_type
+        return HistoryContentType(contents_type)
 
     @expose_api_raw_anonymous
     def download_dataset_collection(self, trans, id, history_id=None, **kwd):
@@ -1417,7 +1412,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             any values that were different from the original and, therefore, updated
         """
         serialization_params = parse_serialization_params(**kwd)
-        contents_type = self.__get_contents_type(trans, kwd)
+        contents_type = self.__get_contents_type(kwd)
         return self.service.update(
             trans, history_id, id, payload, serialization_params, contents_type
         )
@@ -1473,7 +1468,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             * purged:     if the history content was purged
         """
         serialization_params = parse_serialization_params(**kwd)
-        contents_type = self.__get_contents_type(trans, kwd)
+        contents_type = self.__get_contents_type(kwd)
         purge = util.string_as_bool(purge)
         recursive = util.string_as_bool(recursive)
         if kwd.get('payload', None):
@@ -1481,14 +1476,6 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             purge = util.string_as_bool(kwd['payload'].get('purge', purge))
             recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
         return self.service.delete(trans, id, serialization_params, contents_type, purge, recursive)
-
-    def __handle_unknown_contents_type(self, trans, contents_type):
-        raise exceptions.UnknownContentsType(f'Unknown contents type: {type}')
-
-    def encode_type_id(self, type_id):
-        TYPE_ID_SEP = '-'
-        split = type_id.split(TYPE_ID_SEP, 1)
-        return TYPE_ID_SEP.join((split[0], self.app.security.encode_id(split[1])))
 
     @expose_api_raw
     def archive(self, trans, history_id, filename='', format='zip', dry_run=True, **kwd):
