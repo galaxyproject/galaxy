@@ -54,7 +54,7 @@ RelativeUrlField: RelativeUrl = Field(
     deprecated=False  # TODO Should this field be deprecated in FastAPI?
 )
 
-DownloadUrlField: AnyUrl = Field(
+DownloadUrlField: RelativeUrl = Field(
     ...,
     title="Download URL",
     description="The URL to download this item from the server.",
@@ -227,7 +227,7 @@ class HistoryContentSource(str, Enum):
 class TagCollection(Model):
     """Represents the collection of tags associated with an item."""
     __root__: List[str] = Field(
-        [],
+        default=...,
         title="Tags",
         description="The collection of tags associated with an item.",
     )
@@ -240,7 +240,7 @@ class MetadataFile(Model):
         title="File Type",
         description="TODO",
     )
-    download_url: AnyUrl = DownloadUrlField
+    download_url: RelativeUrl = DownloadUrlField
 
 
 class DatasetPermissions(Model):
@@ -479,7 +479,7 @@ class HDADetailed(HDASummary):
         description="The message with details about the datatype validation result for this dataset.",
     )
     annotation: Optional[str] = AnnotationField
-    download_url: AnyUrl = DownloadUrlField
+    download_url: RelativeUrl = DownloadUrlField
     type: str = Field(
         "file",
         const=True,
@@ -888,7 +888,7 @@ class JobExportHistoryArchive(Model):
         title="Up to Date",
         description="False, if a new export archive should be generated for the corresponding history.",
     )
-    download_url: str = Field(
+    download_url: RelativeUrl = Field(
         ...,
         title="Download URL",
         description="Relative API URL to download the exported history archive.",
