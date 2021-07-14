@@ -14,12 +14,14 @@ import mgm_utils
 
 
 def main():
-	(input_audio_file, input_transcript_file, json_file) = sys.argv[1:4]
+	(speech_audio, amp_transcript_unaligned, gentle_transcript, amp_transcript_aligned) = sys.argv[1:5]
 	exception = False
 	try:
 		# Create random temp names
-		tmpAudioName = str(uuid.uuid4())
-		tmpTranscriptName = str(uuid.uuid4())
+		id = str(uuid.uuid4())
+		tmpAudioName = os.path.basename(speech_audio) + "_" + id
+		tmpTranscriptName = os.path.basename(amp_transcript_unaligned) + "_" + id
+		tmpOutputName = os.path.basename(gentle_transcript) + "_" + id
 
 		# Define directory accessible to singularity container
 		tmpdir = '/tmp'
@@ -27,10 +29,10 @@ def main():
 		# Create temp file paths
 		temp_audio_file = f"{tmpdir}/{tmpAudioName}.dat"
 		temp_transcript_file = f"{tmpdir}/{tmpTranscriptName}.dat"
-		temp_output_file = f"{tmpdir}/{tmpAudioName}.json"
+		temp_output_file = f"{tmpdir}/{tmpOutputName}.json"
 
 		# Load the original transcript as input into gentle
-		with open(input_transcript_file, "r") as input_ts_file:
+		with open(amp_transcript_unaligned, "r") as input_ts_file:
 			orig_transcript = json.load(input_ts_file)
 
 			# Write the transcript to an input file into gentle
@@ -38,15 +40,18 @@ def main():
 				text_file.write(orig_transcript["results"]["transcript"])
 
 			# Copy the audio file to a location accessible to the singularity container
-			shutil.copy(input_audio_file, temp_audio_file)
+			shutil.copy(speech_audio, temp_audio_file)
 
 			# Run gentle
-			print("Running gentle")
+			print(f"Running gentle... input audio: {temp_audio_file}, input transcript: {temp_transcript_file}, output json: {temp_output_file}")
 			r = subprocess.run(["singularity", "run", "/srv/amp/gentle-singularity/gentle-singularity.sif", temp_audio_file, temp_transcript_file, "-o", temp_output_file], stdout=subprocess.PIPE)
 			print("Finished running gentle")
 
-			print("Creating amp transcript output")
-			write_amp_json(temp_output_file, orig_transcript, json_file)
+			# Copy the tmp Gentle output file to gentle_transcript
+			shutil.copy(temp_output_file, gentle_transcript)
+
+			print("Creating amp transcript aligned...")
+			gentle_to_amp_transcript(gentle_transcript, orig_transcript, amp_transcript_aligned)
 	except Exception as e:
 		print("Exception")
 		print(e)
@@ -67,22 +72,22 @@ def main():
 
 	print("Return Code: " + str(r.returncode))
 	exit(r.returncode)
+	
 
-def find_next_success(gentle_output, current_index):
-
-	for word_index in range(current_index, len(gentle_output["words"])):
+def find_next_success(gentle_transcript, current_index):
+	for word_index in range(current_index, len(gentle_transcript["words"])):
 		word = gentle_output["words"][word_index]
 		# Make sure we have all the data
 		if word["case"] == 'success':
 			print("Found success at " + str(word_index))
-			return word_index
-		
+			return word_index		
 	return None
 
-def write_amp_json(temp_gentle_output, original_transcript, amp_transcript_output):
+
+def gentle_to_amp_transcript(gentle_transcript, original_transcript, amp_transcript_output):
 	# Create the amp transcript
 	output = dict()
-	with open(temp_gentle_output, "r") as gentle_output_file:
+	with open(gentle_transcript, "r") as gentle_output_file:
 		gentle_output = json.load(gentle_output_file)
 		output["media"] = original_transcript["media"]
 		output["results"] = dict()
@@ -142,7 +147,7 @@ def write_amp_json(temp_gentle_output, original_transcript, amp_transcript_outpu
 							"text": word["word"],
 							"score": {
 									"type": "confidence", 
-									"scoreValue": 1.0
+									"scoreValue": 0.0
 							} 
 						}
 					)

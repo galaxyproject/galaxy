@@ -42,16 +42,19 @@ class SpeechToTextWord:
 	type = ""
 	start = None
 	end = None
+	offset = None # corresponding to the start offset of the word in the transcript, counting punctuations
 	text = ""
 	score = None
-	def __init__(self, type = None, text = None, start = None, end = None, scoreType = None, scoreValue = None):
+	def __init__(self, type = None, text = None, start = None, end = None, offset = None, scoreType = None, scoreValue = None):
 		if scoreValue is not None:
 			self.score = SpeechToTextScore(scoreType, scoreValue)
 		self.type = type
 		if start is not None and float(start) >= 0.00:
 			self.start = start
-		if end is not None and  float(end) >= 0.00:
+		if end is not None and float(end) >= 0.00:
 			self.end = end
+		if offset is not None and int(offset) >= 0:	
+			self.offset = offset
 		self.text = text
 	@classmethod
 	def from_json(cls, json_data: dict):
@@ -63,11 +66,14 @@ class SpeechToTextWord:
 			scoreType = score['type']
 		start = None
 		end = None
+		offset = None
 		if 'start' in json_data.keys():
 			start = json_data['start']
 		if 'end' in json_data.keys():
 			end = json_data['end']
-		return cls(json_data['type'],json_data['text'],start,end, scoreType, scoreValue)
+		if 'offset' in json_data.keys():
+			offset = json_data['offset']
+		return cls(json_data['type'], json_data['text'], start, end, offset, scoreType, scoreValue)
 
 
 class SpeechToTextScore:

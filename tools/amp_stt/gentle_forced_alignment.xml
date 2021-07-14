@@ -5,7 +5,7 @@
     <requirement type="package" version="8.30">coreutils</requirement>
   </requirements>
   <command detect_errors="exit_code">
-  	'$__tool_directory__/gentle_forced_alignment.py' '$speech_audio' '$amp_transcript_unaligned' '$amp_transcript_aligned'
+  	'$__tool_directory__/gentle_forced_alignment.py' '$speech_audio' '$amp_transcript_unaligned' ''$gentle_transcript' '$amp_transcript_aligned'
   </command>
   <inputs>
     <!-- should be wave data type -->
@@ -13,7 +13,8 @@
     <param name="amp_transcript_unaligned" type="data" format="transcript" label="AMP Transcript Unaligned" help="Input AMP transcript to be algined with speech"/>
   </inputs>
   <outputs>
-    <data name="amp_transcript_aligned" format="transcript" label="AMP Transcript Aligned"/>
+    <data name="gentle_transcript" format="json" label="Gentle Transcript" help="Output transcript JSON from Gentle after alignment"/>
+    <data name="amp_transcript_aligned" format="transcript" label="AMP Transcript Aligned" help="AMP Transcript JSON converted from Gentle output"/>
   </outputs>
   <tests>
   </tests>
