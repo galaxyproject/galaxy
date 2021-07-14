@@ -27,6 +27,8 @@ from pulsar.client import (
     submit_job as pulsar_submit_job,
     url_to_destination_params
 )
+# TODO: Perform pulsar release with this included in the client package
+from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
 
 from galaxy import model
 from galaxy.jobs import (
@@ -761,6 +763,10 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # if Pulsar is doing remote metadata and the remote metadata is extended,
             # we only need to recover the final model store.
             dynamic_outputs = EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN
+        else:
+            # otherwise collect everything we might need
+            dynamic_outputs = DEFAULT_DYNAMIC_COLLECTION_PATTERN[:]
+            dynamic_outputs.extend(job_wrapper.tool.output_discover_patterns)
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.tool_working_directory,
             metadata_directory=metadata_directory,

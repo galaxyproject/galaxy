@@ -27,4 +27,5 @@ test_tools = integration_util.integration_tool_runner([
     "output_filter",
     "vcf_bgzip_test",
     "environment_variables",
+    "multi_output_assign_primary_ext_dbkey",
 ])

@@ -1844,6 +1844,14 @@ class Tool(Dictifiable):
         """
         return self._view.get_requirements_status({self.id: self.tool_requirements}, self.installed_tool_dependencies)
 
+    @property
+    def output_discover_patterns(self):
+        # patterns to collect for remote job execution
+        patterns = []
+        for output in self.outputs.values():
+            patterns.extend(output.output_discover_patterns)
+        return patterns
+
     def build_redirect_url_params(self, param_dict):
         """
         Substitute parameter values into self.redirect_url_params
