@@ -7,15 +7,15 @@
         <requirement type="package" version="11.25.1">ncbi-datasets-cli</requirement>
     </requirements>
     <command><![CDATA[
-datasets download genome taxon '$taxon' --refseq --dehydrated --filename '$output'
+cp '$file_param' '$output'
     ]]></command>
     <inputs action="https://www.ncbi.nlm.nih.gov/datasets/" check_values="false" method="get">
         <display>go to SRA server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=ncbi_datasets_source" />
-        <param name="taxon" type="text"/>
+        <param name="file_param" type="file"/>
     </inputs>
     <outputs>
-        <data name="output" format="dehydrated.zip"/>
+        <data name="output" format="data" label="POSTed file"/>
     </outputs>
     <options sanitize="true"/>
     <citations>
