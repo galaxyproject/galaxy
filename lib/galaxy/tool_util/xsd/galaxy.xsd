@@ -4646,6 +4646,11 @@ More information can be found on Planemo's documentation for
         <xs:documentation xml:lang="en">Indicates that the specified directory should be searched recursively for matching files.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="match_relative_path" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indicates that the entire path of the discovered dataset relative to the specified directory should be available for matching patterns.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="format" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``ext``).</xs:documentation>
@@ -4707,6 +4712,11 @@ Galaxy, including:
     <xs:attribute name="recurse" type="xs:boolean" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Indicates that the specified directory should be searched recursively for matching files.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="match_relative_path" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indicates that the entire path of the discovered dataset relative to the specified directory should be available for matching patterns.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format" type="xs:string" use="optional">
