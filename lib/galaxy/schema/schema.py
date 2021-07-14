@@ -2309,3 +2309,16 @@ class UpdateDatasetPermissionsPayload(BaseModel):
         title="Modify IDs",
         description="A list of role encoded IDs defining roles that should have modify permission on the dataset.",
     )
+
+
+class DeleteHDCAResult(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="The encoded ID of the collection.",
+    )
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="True if the collection was successfully deleted.",
+    )

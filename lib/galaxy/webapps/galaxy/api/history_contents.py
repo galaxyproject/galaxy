@@ -58,6 +58,7 @@ from galaxy.schema.schema import (
     ColletionSourceType,
     DatasetAssociationRoles,
     DatasetPermissionAction,
+    DeleteHDCAResult,
     HDABeta,
     HDADetailed,
     HDASummary,
@@ -96,10 +97,8 @@ log = logging.getLogger(__name__)
 
 DatasetDetailsType = Union[Set[EncodedDatabaseIdField], Literal['all']]
 
-AnyHistoryContentItem = Union[
-    HDASummary, HDADetailed, HDABeta,
-    HDCASummary, HDCADetailed, HDCABeta
-]
+AnyHDA = Union[HDASummary, HDADetailed, HDABeta]
+AnyHistoryContentItem = Union[AnyHDA, HDCASummary, HDCADetailed, HDCABeta]
 
 AnyJobStateSummary = Union[
     JobStateSummary,
@@ -611,6 +610,57 @@ class HistoriesContentsService(ServiceBase):
         if hda:
             self.hda_manager.set_metadata(trans, hda, overwrite=True, validate=True)
         return {}
+
+    def delete(
+        self, trans,
+        id,
+        serialization_params: SerializationParams,
+        contents_type: HistoryContentType = HistoryContentType.dataset,
+        purge: bool = False,
+        recursive: bool = False,
+    ) -> Union[AnyHDA, DeleteHDCAResult]:
+        """
+        Delete the history content with the given ``id`` and specified type (defaults to dataset)
+
+        .. note:: Currently does not stop any active jobs for which this dataset is an output.
+
+        :param  id:     the encoded id of the history item to delete
+        :type   recursive:  bool
+        :param  recursive:  if True, and deleted an HDCA also delete containing HDAs
+        :type   purge:  bool
+        :param  purge:  if True, purge the target HDA or child HDAs of the target HDCA
+
+        :rtype:     dict
+        :returns:   an error object if an error occurred or a dictionary containing:
+            * id:         the encoded id of the history,
+            * deleted:    if the history content was marked as deleted,
+            * purged:     if the history content was purged
+        """
+        if contents_type == HistoryContentType.dataset:
+            return self.__delete_dataset(trans, id, purge, serialization_params)
+        elif contents_type == HistoryContentType.dataset_collection:
+            self.dataset_collection_manager.delete(trans, "history", id, recursive=recursive, purge=purge)
+            return DeleteHDCAResult(id=id, deleted=True)
+        else:
+            raise exceptions.UnknownContentsType(f'Unknown contents type: {contents_type}')
+
+    def __delete_dataset(
+        self, trans,
+        id: EncodedDatabaseIdField,
+        purge: bool,
+        serialization_params: SerializationParams
+    ):
+        hda = self.hda_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
+        self.hda_manager.error_if_uploading(hda)
+
+        if purge:
+            self.hda_manager.purge(hda)
+        else:
+            self.hda_manager.delete(hda)
+        serialization_params["default_view"] = 'detailed'
+        return self.hda_serializer.serialize_to_view(
+            hda, user=trans.user, trans=trans, **serialization_params
+        )
 
     def __update_dataset_collection(self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]):
         return self.dataset_collection_manager.update(trans, "history", id, payload)
@@ -1422,38 +1472,15 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             * deleted:    if the history content was marked as deleted,
             * purged:     if the history content was purged
         """
-        contents_type = kwd.get('type', 'dataset')
-        if contents_type == "dataset":
-            return self.__delete_dataset(trans, history_id, id, purge=purge, **kwd)
-        elif contents_type == "dataset_collection":
-            purge = util.string_as_bool(purge)
-            recursive = util.string_as_bool(recursive)
-            if kwd.get('payload', None):
-                # payload takes priority
-                purge = util.string_as_bool(kwd['payload'].get('purge', purge))
-                recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
-
-            trans.app.dataset_collection_manager.delete(trans, "history", id, recursive=recursive, purge=purge)
-            return {'id': id, "deleted": True}
-        else:
-            return self.__handle_unknown_contents_type(trans, contents_type)
-
-    def __delete_dataset(self, trans, history_id, id, purge, **kwd):
-        # get purge from the query or from the request body payload (a request body is optional here)
+        serialization_params = parse_serialization_params(**kwd)
+        contents_type = self.__get_contents_type(trans, kwd)
         purge = util.string_as_bool(purge)
+        recursive = util.string_as_bool(recursive)
         if kwd.get('payload', None):
             # payload takes priority
             purge = util.string_as_bool(kwd['payload'].get('purge', purge))
-
-        hda = self.hda_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
-        self.hda_manager.error_if_uploading(hda)
-
-        if purge:
-            self.hda_manager.purge(hda)
-        else:
-            self.hda_manager.delete(hda)
-        return self.hda_serializer.serialize_to_view(hda,
-                                                     user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+            recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
+        return self.service.delete(trans, id, serialization_params, contents_type, purge, recursive)
 
     def __handle_unknown_contents_type(self, trans, contents_type):
         raise exceptions.UnknownContentsType(f'Unknown contents type: {type}')
