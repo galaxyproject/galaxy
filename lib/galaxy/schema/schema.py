@@ -31,6 +31,7 @@ from galaxy.model import (
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     ModelClassField,
+    optional,
 )
 from galaxy.schema.types import RelativeUrl
 
@@ -524,6 +525,12 @@ class HDABeta(HDADetailed):  # TODO: change HDABeta name to a more appropriate o
     pass
 
 
+@optional
+class UpdateHDAPayload(HDABeta):
+    """Used for updating a particular HDA. All fields are optional."""
+    pass
+
+
 class DCSummary(Model):
     """Dataset Collection summary information."""
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
@@ -602,6 +609,28 @@ class HDCADetailed(HDCASummary):
     """History Dataset Collection Association detailed information."""
     populated: bool = PopulatedField
     elements: List[DCESummary] = ElementsField
+
+
+@optional
+class UpdateHDCAPayload(HDCADetailed):
+    """Used for updating a particular HDCA. All fields are optional."""
+    pass
+
+
+class UpdateHistoryContentsBatchPayload(Model):
+    items: List[Union[UpdateHDAPayload, UpdateHDCAPayload]] = Field(
+        ...,
+        title="Items",
+        description="A list of content items to update with the changes.",
+    )
+    deleted: Optional[bool] = Field(
+        default=False,
+        title="Deleted",
+        description=(
+            "This will check the uploading state if not deleting (i.e: deleted=False), "
+            "otherwise cannot delete uploading files, so it will raise an error."
+        ),
+    )
 
 
 class HistoryBase(BaseModel):

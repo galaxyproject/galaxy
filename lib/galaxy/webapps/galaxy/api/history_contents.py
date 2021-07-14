@@ -71,6 +71,8 @@ from galaxy.schema.schema import (
     JobStateSummary,
     Model,
     UpdateDatasetPermissionsPayload,
+    UpdateHDAPayload,
+    UpdateHistoryContentsBatchPayload,
     WorkflowInvocationStateSummary,
 )
 from galaxy.schema.types import SerializationParams
@@ -290,6 +292,7 @@ class HistoriesContentsService(ServiceBase):
         ldda_manager: LibraryDatasetsManager,
         folder_manager: folders.FolderManager,
         hda_serializer: hdas.HDASerializer,
+        hda_deserializer: hdas.HDADeserializer,
         hdca_serializer: hdcas.HDCASerializer,
         history_contents_filters: history_contents.HistoryContentsFilters,
     ):
@@ -301,6 +304,7 @@ class HistoriesContentsService(ServiceBase):
         self.ldda_manager = ldda_manager
         self.folder_manager = folder_manager
         self.hda_serializer = hda_serializer
+        self.hda_deserializer = hda_deserializer
         self.hdca_serializer = hdca_serializer
         self.history_contents_filters = history_contents_filters
 
@@ -507,6 +511,138 @@ class HistoriesContentsService(ServiceBase):
         self.hda_manager.update_permissions(trans, hda, **payload_dict)
         roles = self.hda_manager.serialize_dataset_association_roles(trans, hda)
         return DatasetAssociationRoles.parse_obj(roles)
+
+    def update(
+        self, trans,
+        history_id: EncodedDatabaseIdField,
+        id: EncodedDatabaseIdField,
+        payload: Dict[str, Any],
+        serialization_params: SerializationParams,
+        contents_type: HistoryContentType = HistoryContentType.dataset,
+    ):
+        """
+        Updates the values for the history content item with the given ``id``
+
+        :param  history_id: encoded id string of the items's History
+        :param  id:         the encoded id of the history item to update
+        :param  payload:    a dictionary containing any or all the fields for
+                            HDA or HDCA with values different than the defaults
+
+        :returns:   an error object if an error occurred or a dictionary containing
+                    any values that were different from the original and, therefore, updated
+        """
+        if contents_type == HistoryContentType.dataset:
+            update_hda_payload = UpdateHDAPayload.parse_obj(payload)
+            return self.__update_dataset(trans, history_id, id, update_hda_payload, serialization_params)
+        elif contents_type == HistoryContentType.dataset_collection:
+            return self.__update_dataset_collection(trans, id, payload)
+        else:
+            raise exceptions.UnknownContentsType(f'Unknown contents type: {contents_type}')
+
+    def update_batch(
+        self, trans,
+        history_id: EncodedDatabaseIdField,
+        payload: UpdateHistoryContentsBatchPayload,
+        serialization_params: SerializationParams,
+    ):
+        """
+        PUT /api/histories/{history_id}/contents
+
+        :type   history_id: str
+        :param  history_id: encoded id string of the history containing supplied items
+        :type   id:         str
+        :param  id:         the encoded id of the history to update
+        :type   payload:    dict
+        :param  payload:    a dictionary containing any or all the
+
+        :rtype:     dict
+        :returns:   an error object if an error occurred or a dictionary containing
+                    any values that were different from the original and, therefore, updated
+        """
+        history = self.history_manager.get_owned(
+            self.decode_id(history_id), trans.user, current_history=trans.history
+        )
+        items = payload.items
+        hda_ids = []
+        hdca_ids = []
+        for item in items:
+            contents_type = item.history_content_type
+            if contents_type == HistoryContentType.dataset:
+                decoded_id = self.decode_id(item.id)
+                hda_ids.append(decoded_id)
+            else:
+                hdca_ids.append(item.id)
+        payload_dict = payload.dict(exclude_defaults=True, exclude_unset=True)
+        hdas = self.__datasets_for_update(trans, history, hda_ids, payload_dict)
+        rval = []
+        for hda in hdas:
+            self.__deserialize_dataset(hda, payload_dict, trans)
+            serialization_params["default_view"] = "summary"
+            rval.append(self.hda_serializer.serialize_to_view(
+                hda, user=trans.user, trans=trans, **serialization_params
+            ))
+        for hdca_id in hdca_ids:
+            self.__update_dataset_collection(trans, hdca_id, payload)
+            dataset_collection_instance = self.__get_accessible_collection(trans, hdca_id)
+            rval.append(self.__collection_dict(trans, dataset_collection_instance, view="summary"))
+        return rval
+
+    def __update_dataset_collection(self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]):
+        return self.dataset_collection_manager.update(trans, "history", id, payload)
+
+    def __update_dataset(
+        self, trans,
+        history_id: EncodedDatabaseIdField,
+        id: EncodedDatabaseIdField,
+        payload: UpdateHDAPayload,
+        serialization_params: SerializationParams
+    ):
+        # anon user: ensure that history ids match up and the history is the current,
+        #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
+        payload_dict = payload.dict(exclude_defaults=True, exclude_unset=True)
+        decoded_id = self.decode_id(id)
+        history = self.history_manager.get_owned(
+            self.decode_id(history_id), trans.user, current_history=trans.history
+        )
+        hda = self.__datasets_for_update(trans, history, [decoded_id], payload_dict)[0]
+        if hda:
+            self.__deserialize_dataset(hda, payload_dict, trans)
+            serialization_params["default_view"] = 'detailed'
+            return self.hda_serializer.serialize_to_view(
+                hda, user=trans.user, trans=trans, **serialization_params
+            )
+        return {}
+
+    def __datasets_for_update(
+        self, trans,
+        history: History,
+        hda_ids: List[int],
+        payload: Dict[str, Any]
+    ):
+        anonymous_user = not trans.user_is_admin and trans.user is None
+        if anonymous_user:
+            anon_allowed_payload = {}
+            if 'deleted' in payload:
+                anon_allowed_payload['deleted'] = payload['deleted']
+            if 'visible' in payload:
+                anon_allowed_payload['visible'] = payload['visible']
+            payload = anon_allowed_payload
+
+        hdas = self.hda_manager.get_owned_ids(hda_ids, history=history)
+
+        # only check_state if not deleting, otherwise cannot delete uploading files
+        check_state = not payload.get('deleted', False)
+        if check_state:
+            for hda in hdas:
+                hda = self.hda_manager.error_if_uploading(hda)
+
+        return hdas
+
+    def __deserialize_dataset(self, hda, payload, trans):
+        self.hda_deserializer.deserialize(hda, payload, user=trans.user, trans=trans)
+        # TODO: this should be an effect of deleting the hda
+        if payload.get('deleted', False):
+            self.hda_manager.stop_creating_job(hda)
 
     def __index_legacy(
         self, trans,
@@ -891,10 +1027,6 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             serialization_params, filter_parameters
         )
 
-    def __collection_dict(self, trans, dataset_collection_instance, **kwds):
-        return dictify_dataset_collection_instance(dataset_collection_instance,
-            security=trans.security, parent=dataset_collection_instance.history, **kwds)
-
     @expose_api_anonymous
     def show(self, trans, id, history_id, **kwd):
         """
@@ -999,13 +1131,6 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             self.__handle_unknown_contents_type(trans, contents_type)
 
         return contents_type
-
-    def __get_accessible_collection(self, trans, id, history_id):
-        return trans.app.dataset_collection_manager.get_dataset_collection_instance(
-            trans=trans,
-            instance_type="history",
-            id=id
-        )
 
     @expose_api_raw_anonymous
     def download_dataset_collection(self, trans, id, history_id=None, **kwd):
@@ -1190,30 +1315,9 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :returns:   an error object if an error occurred or a dictionary containing
                     any values that were different from the original and, therefore, updated
         """
-        items = payload.get("items")
-        hda_ids = []
-        hdca_ids = []
-        for item in items:
-            contents_type = item["history_content_type"]
-            if contents_type == "dataset":
-                decoded_id = self.decode_id(item["id"])
-                hda_ids.append(decoded_id)
-            else:
-                hdca_ids.append(item["id"])
-
-        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user,
-                                                 current_history=trans.history)
-        hdas = self.__datasets_for_update(trans, history, hda_ids, payload)
-        rval = []
-        for hda in hdas:
-            self.__deserialize_dataset(hda, payload, trans)
-            rval.append(self.hda_serializer.serialize_to_view(hda,
-                                                              user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'summary')))
-        for hdca_id in hdca_ids:
-            self.__update_dataset_collection(trans, history_id, hdca_id, payload, **kwd)
-            dataset_collection_instance = self.__get_accessible_collection(trans, hdca_id, history_id)
-            rval.append(self.__collection_dict(trans, dataset_collection_instance, view="summary"))
-        return rval
+        serialization_params = parse_serialization_params(**kwd)
+        update_payload = UpdateHistoryContentsBatchPayload.parse_obj(payload)
+        return self.service.update_batch(trans, history_id, update_payload, serialization_params)
 
     @expose_api_anonymous
     def update(self, trans, history_id, id, payload, **kwd):
@@ -1237,14 +1341,11 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :returns:   an error object if an error occurred or a dictionary containing
             any values that were different from the original and, therefore, updated
         """
-        # TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
-        contents_type = kwd.get('type', 'dataset')
-        if contents_type == "dataset":
-            return self.__update_dataset(trans, history_id, id, payload, **kwd)
-        elif contents_type == "dataset_collection":
-            return self.__update_dataset_collection(trans, history_id, id, payload, **kwd)
-        else:
-            return self.__handle_unknown_contents_type(trans, contents_type)
+        serialization_params = parse_serialization_params(**kwd)
+        contents_type = self.__get_contents_type(trans, kwd)
+        return self.service.update(
+            trans, history_id, id, payload, serialization_params, contents_type
+        )
 
     @expose_api_anonymous
     def validate(self, trans, history_id, history_content_id, payload=None, **kwd):
@@ -1268,49 +1369,6 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         if hda:
             self.hda_manager.set_metadata(trans, hda, overwrite=True, validate=True)
         return {}
-
-    def __update_dataset(self, trans, history_id, id, payload, **kwd):
-        # anon user: ensure that history ids match up and the history is the current,
-        #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
-        decoded_id = self.decode_id(id)
-        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user,
-                                                 current_history=trans.history)
-        hda = self.__datasets_for_update(trans, history, [decoded_id], payload)[0]
-        if hda:
-            self.__deserialize_dataset(hda, payload, trans)
-            return self.hda_serializer.serialize_to_view(hda,
-                                                         user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
-
-        return {}
-
-    def __datasets_for_update(self, trans, history, hda_ids, payload):
-        anonymous_user = not trans.user_is_admin and trans.user is None
-        if anonymous_user:
-            anon_allowed_payload = {}
-            if 'deleted' in payload:
-                anon_allowed_payload['deleted'] = payload['deleted']
-            if 'visible' in payload:
-                anon_allowed_payload['visible'] = payload['visible']
-            payload = anon_allowed_payload
-
-        hdas = self.hda_manager.get_owned_ids(hda_ids, history=history)
-
-        # only check_state if not deleting, otherwise cannot delete uploading files
-        check_state = not payload.get('deleted', False)
-        if check_state:
-            for hda in hdas:
-                hda = self.hda_manager.error_if_uploading(hda)
-
-        return hdas
-
-    def __deserialize_dataset(self, hda, payload, trans):
-        self.hda_deserializer.deserialize(hda, payload, user=trans.user, trans=trans)
-        # TODO: this should be an effect of deleting the hda
-        if payload.get('deleted', False):
-            self.hda_manager.stop_creating_job(hda)
-
-    def __update_dataset_collection(self, trans, history_id, id, payload, **kwd):
-        return trans.app.dataset_collection_manager.update(trans, "history", id, payload)
 
     # TODO: allow anonymous del/purge and test security on this
     @expose_api
