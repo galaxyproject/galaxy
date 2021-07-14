@@ -623,7 +623,7 @@ class FileToolParameter(ToolParameter):
             except KeyError:
                 return None
         elif isinstance(value, cgi_FieldStorage):
-            return value.filename
+            return value.file.name
         raise Exception("FileToolParameter cannot be persisted")
 
     def to_python(self, value, app):
