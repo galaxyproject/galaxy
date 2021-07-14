@@ -143,7 +143,7 @@ class TESJobRunner(AsynchronousJobRunner):
             referenced_files.update(findall(pattern, input_contents))
         return list(referenced_files)
 
-    def __prepare_jobscript(self, job_wrapper):
+    def __prepare_jobscript(self, job_wrapper, metadata_directory, client_args):
         input_files = self.__get_inputs(job_wrapper)
         work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
         output_files = self.get_output_files(job_wrapper)
@@ -166,7 +166,7 @@ class TESJobRunner(AsynchronousJobRunner):
         # for tool_name in tool_names:
         #     execution_script["inputs"].append({"url": tool_dir + tool_name, "path": tool_dir + tool_name})
         remote_container = self._find_container(job_wrapper)
-        remote_image = "galaxy/pulsar-pod-staging:0.14.0"
+        remote_image = "python"
 
         if(hasattr(remote_container, "container_id")):
             remote_image = remote_container.container_id
@@ -193,17 +193,17 @@ class TESJobRunner(AsynchronousJobRunner):
         }
 
         for input in referenced_tool_files:
-            execution_script["inputs"].append({"url": input, "path": input})
+            execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + input, "path": input})
 
         for input in client_inputs_list:
-            execution_script["inputs"].append({"url": input["paths"], "path": input["paths"]})
+            execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + input["paths"], "path": input["paths"]})
 
         for output in output_files:
             # execution_script["inputs"].append({"url": output, "path": output})
             execution_script["outputs"].append({"url": output, "path": output})
 
         for output in other_inputs:
-            execution_script["inputs"].append({"url": output, "path": output})
+            execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + output, "path": output})
             execution_script["outputs"].append({"url": output, "path": output})
 
         return execution_script
@@ -245,7 +245,12 @@ class TESJobRunner(AsynchronousJobRunner):
         master_addr = job_destination.params.get("tes_master_addr")
         working_directory = job_wrapper.working_directory
 
-        execution_script = self.__prepare_jobscript(job_wrapper)
+        if self.app.config.metadata_strategy == "legacy":
+            metadata_directory = job_wrapper.working_directory
+        else:
+            metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
+
+        execution_script = self.__prepare_jobscript(job_wrapper, metadata_directory, client_args)
 
         job_id = self._send_task(master_addr, execution_script)
 
@@ -320,9 +325,9 @@ class TESJobRunner(AsynchronousJobRunner):
 
         if job_complete:
             if job_state.job_wrapper.get_state() != model.Job.states.DELETED:
-                # external_metadata = not asbool( job_state.job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
-                # if external_metadata:
-                # self._handle_metadata_externally( job_state.job_wrapper, resolve_requirements=True )
+                external_metadata = asbool(job_state.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
+                if external_metadata:
+                    self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
                 with open(job_state.output_file, 'w') as fh:
                     fh.write(self._concat_job_log(data, 'stdout'))
 
