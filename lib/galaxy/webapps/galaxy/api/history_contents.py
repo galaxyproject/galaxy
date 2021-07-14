@@ -587,6 +587,31 @@ class HistoriesContentsService(ServiceBase):
             rval.append(self.__collection_dict(trans, dataset_collection_instance, view="summary"))
         return rval
 
+    def validate(
+        self, trans,
+        history_id: EncodedDatabaseIdField,
+        history_content_id: EncodedDatabaseIdField
+    ):
+        """
+        Updates the values for the history content item with the given ``id``
+
+        :type   history_id: str
+        :param  history_id: encoded id string of the items's History
+        :type   id:         str
+        :param  id:         the encoded id of the history item to validate
+
+        :rtype:     dict
+        :returns:   TODO
+        """
+        decoded_id = self.decode_id(history_content_id)
+        history = self.history_manager.get_owned(
+            self.decode_id(history_id), trans.user, current_history=trans.history
+        )
+        hda = self.hda_manager.get_owned_ids([decoded_id], history=history)[0]
+        if hda:
+            self.hda_manager.set_metadata(trans, hda, overwrite=True, validate=True)
+        return {}
+
     def __update_dataset_collection(self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]):
         return self.dataset_collection_manager.update(trans, "history", id, payload)
 
@@ -1362,13 +1387,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :rtype:     dict
         :returns:   TODO
         """
-        decoded_id = self.decode_id(history_content_id)
-        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user,
-                                                 current_history=trans.history)
-        hda = self.hda_manager.get_owned_ids([decoded_id], history=history)[0]
-        if hda:
-            self.hda_manager.set_metadata(trans, hda, overwrite=True, validate=True)
-        return {}
+        return self.service.validate(trans, history_id, history_content_id)
 
     # TODO: allow anonymous del/purge and test security on this
     @expose_api
