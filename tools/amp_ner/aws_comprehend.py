@@ -114,10 +114,10 @@ def main():
             if clean_text(entity_type) not in ignore_cats_list and start is not None:
                 ner.addEntity(entity_type, text, None, None, "relevance", float(entity["Score"]), start, None)  #AMP-636 removed startOffset=endOffset=end=None
 
-    #Write the json file
+    # Write the json file
     mgm_utils.write_json_file(ner, json_file)
 
-    #Cleanup temp files
+    # Cleanup temp files
     safe_delete(uncompressed_file)
     safe_delete(tmpfile.name)
 
@@ -188,16 +188,16 @@ def run_comprehend_job(jobName, inputS3Uri, outputS3Uri, dataAccessRoleArn):
 
     return output_uri
 
-# Read a list of categories to ignore
-def read_ignore_list(ignore_list_filename):
-    print("Reading list")
-    ignore_cats_list = list()
-    f = open(ignore_list_filename, "r")
-    # For each value in the comma separated list.  Standardize text
-    for val in f.read().split(","):
-        ignore_cats_list.append(clean_text(val))
-    print(ignore_cats_list)
-    return ignore_cats_list
+# # Read a list of categories to ignore
+# def read_ignore_list(ignore_list_filename):
+#     print("Reading list")
+#     ignore_cats_list = list()
+#     f = open(ignore_list_filename, "r")
+#     # For each value in the comma separated list.  Standardize text
+#     for val in f.read().split(","):
+#         ignore_cats_list.append(clean_text(val))
+#     print(ignore_cats_list)
+#     return ignore_cats_list
 
 # Split a comma separated string, standardize input, and return list
 def split_ignore_list(ignore_list_string):
