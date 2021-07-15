@@ -110,6 +110,10 @@ class HistoryContentsFilterQueryParams(FilterQueryParams):
     order: Optional[str] = OrderParamField(default_order="hid-asc")
 
 
+HistoryContentFilter = List[Any]  # Lists with [attribute:str, operator:str, value:Any]
+HistoryContentsFilterList = List[HistoryContentFilter]
+
+
 class HistoryContentsIndexLegacyParamsBase(Model):
     deleted: Optional[bool] = Field(
         default=None,
@@ -753,6 +757,145 @@ class HistoriesContentsService(ServiceBase):
 
         trans.response.headers.update(archive.get_headers())
         return archive.response()
+
+    def contents_near(
+        self, trans,
+        history_id: EncodedDatabaseIdField,
+        serialization_params: SerializationParams,
+        filter_params: HistoryContentsFilterList,
+        hid: int,
+        limit: int,
+        since: Optional[datetime.datetime] = None,
+    ):
+        """
+        This endpoint provides random access to a large history without having
+        to know exactly how many pages are in the final query. Pick a target HID
+        and filters, and the endpoint will get LIMIT counts above and below that
+        target regardless of how many gaps may exist in the HID due to
+        filtering.
+
+        It does 2 queries, one up and one down from the target hid with a
+        result size of limit. Additional counts for total matches of both seeks
+        provided in the http headers.
+
+        I've also abandoned the wierd q/qv syntax.
+        """
+        history: History = self.history_manager.get_accessible(
+            self.decode_id(history_id), trans.user, current_history=trans.history
+        )
+
+        # while polling, check to see if the history has changed
+        # if it hasn't then we can short-circuit the poll request
+        if since:
+            # sqlalchemy DateTime columns are not timezone aware, so parse `since` into timezone-aware
+            # datetime and then convert to naive datetime object representing UTC,
+            # assuming history.update_time represents UTC time.
+            since_date = since.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            if history.update_time <= since_date:
+                trans.response.status = 204
+                return
+
+        # parse content params
+        view = serialization_params.pop('view')
+
+        # SEEK UP, contents > hid
+        up_params = filter_params + self._hid_greater_than(hid)
+        up_order = 'hid-asc'
+        contents_up, up_count = self._seek(history, up_params, up_order, limit, serialization_params)
+
+        # SEEK DOWN, contents <= hid
+        down_params = filter_params + self._hid_less_or_equal_than(hid)
+        down_order = 'hid-dsc'
+        contents_down, down_count = self._seek(history, down_params, down_order, limit, serialization_params)
+
+        # min/max hid values
+        min_hid, max_hid = self._get_filtered_extrema(history, filter_params)
+
+        # results
+        up = self._expand_contents(trans, contents_up, serialization_params, view)
+        up.reverse()
+        down = self._expand_contents(trans, contents_down, serialization_params, view)
+        contents = up + down
+
+        # Put stats in http headers
+        trans.response.headers['matches_up'] = len(contents_up)
+        trans.response.headers['matches_down'] = len(contents_down)
+        trans.response.headers['total_matches_up'] = up_count
+        trans.response.headers['total_matches_down'] = down_count
+        trans.response.headers['max_hid'] = max_hid
+        trans.response.headers['min_hid'] = min_hid
+        trans.response.headers['history_size'] = str(history.disk_size)
+        trans.response.headers['history_empty'] = json.dumps(history.empty)  # convert to proper bool
+
+        return json.dumps(contents)
+
+    def _hid_greater_than(self, hid: int) -> HistoryContentsFilterList:
+        return [["hid", "gt", hid]]
+
+    def _hid_less_or_equal_than(self, hid: int) -> HistoryContentsFilterList:
+        return [["hid", "le", hid]]
+
+    # Perform content query and matching count
+    def _seek(self, history, filter_params, order_by_string, limit, serialization_params):
+        filters = self.history_contents_filters.parse_filters(filter_params)
+        order_by = self.build_order_by(self.history_contents_manager, order_by_string)
+
+        # actual contents
+        contents = self.history_contents_manager.contents(history,
+            filters=filters,
+            limit=limit,
+            offset=0,
+            order_by=order_by,
+            serialization_params=serialization_params)
+
+        # count of same query
+        count_filter_params = [f for f in filter_params if f[0] != 'update_time']
+        count_filters = self.history_contents_filters.parse_filters(count_filter_params)
+        contents_count = self.history_contents_manager.contents_count(history, count_filters)
+
+        return contents, contents_count
+
+    # Adds subquery details to initial contents results, perhaps better realized
+    # as a proc or view.
+    def _expand_contents(self, trans, contents, serialization_params, view):
+        rval = []
+        for content in contents:
+            if isinstance(content, HistoryDatasetAssociation):
+                dataset = self.hda_serializer.serialize_to_view(content,
+                    user=trans.user, trans=trans, view=view, **serialization_params)
+                rval.append(dataset)
+            elif isinstance(content, HistoryDatasetCollectionAssociation):
+                collection = self.hdca_serializer.serialize_to_view(content,
+                    user=trans.user, trans=trans, view=view, **serialization_params)
+                rval.append(collection)
+        return rval
+
+    def _get_filtered_extrema(self, history, filter_params):
+        extrema_params = parse_serialization_params(keys='hid', default_view='summary')
+        extrema_filter_params = [f for f in filter_params if f[0] != 'update_time']
+        extrema_filters = self.history_contents_filters.parse_filters(extrema_filter_params)
+
+        order_by_dsc = self.build_order_by(self.history_contents_manager, 'hid-dsc')
+        order_by_asc = self.build_order_by(self.history_contents_manager, 'hid-asc')
+
+        max_row_result = self.history_contents_manager.contents(history,
+            limit=1,
+            filters=extrema_filters,
+            order_by=order_by_dsc,
+            serialization_params=extrema_params)
+        max_row = max_row_result.pop() if len(max_row_result) else None
+
+        min_row_result = self.history_contents_manager.contents(history,
+            limit=1,
+            filters=extrema_filters,
+            order_by=order_by_asc,
+            serialization_params=extrema_params)
+        min_row = min_row_result.pop() if len(min_row_result) else None
+
+        max_hid = max_row.hid if max_row else None
+        min_hid = min_row.hid if min_row else None
+
+        return min_hid, max_hid
 
     def __delete_dataset(
         self, trans,
@@ -1625,93 +1768,20 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
 
         * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
         """
-        history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
-
-        # while polling, check to see if the history has changed
-        # if it hasn't then we can short-circuit the poll request
+        serialization_params = parse_serialization_params(default_view='betawebclient', **kwd)
+        filter_params = self._parse_rest_params(kwd)
+        hid = int(hid)
+        limit = int(limit)
         since = kwd.get('update_time-gt', None)
         if since:
-            # sqlalchemy DateTime columns are not timezone aware, so parse `since` into timezone-aware
-            # datetime and then convert to naive datetime object representing UTC,
-            # assuming history.update_time represents UTC time.
-            since_date = dateutil.parser.isoparse(since).astimezone(datetime.timezone.utc).replace(tzinfo=None)
-            if history.update_time <= since_date:
-                trans.response.status = 204
-                return
+            since = dateutil.parser.isoparse(since)
 
-        # parse content params
-        filter_params = self._parse_rest_params(kwd)
-        serialization_params = self._parse_serialization_params(kwd, 'betawebclient')
-        view = serialization_params.pop('view')
-
-        # SEEK UP, contents > hid
-        up_params = filter_params + self._parse_rest_params({'hid-gt': hid})
-        up_order = 'hid-asc'
-        contents_up, up_count = self._seek(history, up_params, up_order, limit, serialization_params)
-
-        # SEEK DOWN, contents <= hid
-        down_params = filter_params + self._parse_rest_params({'hid-le': hid})
-        down_order = 'hid-dsc'
-        contents_down, down_count = self._seek(history, down_params, down_order, limit, serialization_params)
-
-        # min/max hid values
-        min_hid, max_hid = self._get_filtered_extrema(history, filter_params)
-
-        # results
-        up = self._expand_contents(trans, contents_up, serialization_params, view)
-        up.reverse()
-        down = self._expand_contents(trans, contents_down, serialization_params, view)
-        contents = up + down
-
-        # Put stats in http headers
-        trans.response.headers['matches_up'] = len(contents_up)
-        trans.response.headers['matches_down'] = len(contents_down)
-        trans.response.headers['total_matches_up'] = up_count
-        trans.response.headers['total_matches_down'] = down_count
-        trans.response.headers['max_hid'] = max_hid
-        trans.response.headers['min_hid'] = min_hid
-        trans.response.headers['history_size'] = str(history.disk_size)
-        trans.response.headers['history_empty'] = json.dumps(history.empty)  # convert to proper bool
-
-        return json.dumps(contents)
-
-    # Perform content query and matching count
-    def _seek(self, history, filter_params, order_by_string, limit, serialization_params):
-        filters = self.history_contents_filters.parse_filters(filter_params)
-        order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=order_by_string)
-
-        # actual contents
-        contents = self.history_contents_manager.contents(history,
-            filters=filters,
-            limit=limit,
-            offset=0,
-            order_by=order_by,
-            serialization_params=serialization_params)
-
-        # count of same query
-        count_filter_params = [f for f in filter_params if f[0] != 'update_time']
-        count_filters = self.history_contents_filters.parse_filters(count_filter_params)
-        contents_count = self.history_contents_manager.contents_count(history, count_filters)
-
-        return contents, contents_count
-
-    # Adds subquery details to initial contents results, perhaps better realized
-    # as a proc or view.
-    def _expand_contents(self, trans, contents, serialization_params, view):
-        rval = []
-        for content in contents:
-            if isinstance(content, trans.app.model.HistoryDatasetAssociation):
-                dataset = self.hda_serializer.serialize_to_view(content,
-                    user=trans.user, trans=trans, view=view, **serialization_params)
-                rval.append(dataset)
-            elif isinstance(content, trans.app.model.HistoryDatasetCollectionAssociation):
-                collection = self.hdca_serializer.serialize_to_view(content,
-                    user=trans.user, trans=trans, view=view, **serialization_params)
-                rval.append(collection)
-        return rval
+        return self.service.contents_near(
+            trans, history_id, serialization_params, filter_params, hid, limit, since,
+        )
 
     # Parsing query string according to REST standards.
-    def _parse_rest_params(self, qdict):
+    def _parse_rest_params(self, qdict: Dict[str, Any]) -> HistoryContentsFilterList:
         DEFAULT_OP = 'eq'
         splitchar = '-'
 
@@ -1724,30 +1794,3 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             result.append([attr, op, val])
 
         return result
-
-    def _get_filtered_extrema(self, history, filter_params):
-        extrema_params = self._parse_serialization_params(dict(keys='hid'), 'summary')
-        extrema_filter_params = [f for f in filter_params if f[0] != 'update_time']
-        extrema_filters = self.history_contents_filters.parse_filters(extrema_filter_params)
-
-        order_by_dsc = self._parse_order_by(manager=self.history_contents_manager, order_by_string='hid-dsc')
-        order_by_asc = self._parse_order_by(manager=self.history_contents_manager, order_by_string='hid-asc')
-
-        max_row_result = self.history_contents_manager.contents(history,
-            limit=1,
-            filters=extrema_filters,
-            order_by=order_by_dsc,
-            serialization_params=extrema_params)
-        max_row = max_row_result.pop() if len(max_row_result) else None
-
-        min_row_result = self.history_contents_manager.contents(history,
-            limit=1,
-            filters=extrema_filters,
-            order_by=order_by_asc,
-            serialization_params=extrema_params)
-        min_row = min_row_result.pop() if len(min_row_result) else None
-
-        max_hid = max_row.hid if max_row else None
-        min_hid = min_row.hid if min_row else None
-
-        return min_hid, max_hid
