@@ -32,8 +32,8 @@
 <script>
 import { JobMetrics } from "components/JobMetrics";
 import { JobParameters } from "components/JobParameters";
-import JobInformation from "components/JobInformation/JobInformation";
-import CodeRow from "components/JobInformation/CodeRow.vue";
+import JobInformation from "./JobInformation";
+import CodeRow from "./CodeRow.vue";
 
 export default {
     components: {

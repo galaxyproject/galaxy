@@ -25,7 +25,7 @@ import CustomBuilds from "components/User/CustomBuilds.vue";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
-import JobDetails from "components/admin/JobDetails.vue";
+import JobDetails from "components/JobInformation/JobDetails.vue";
 import WorkflowImport from "components/Workflow/WorkflowImport.vue";
 import TrsImport from "components/Workflow/TrsImport.vue";
 import TrsSearch from "components/Workflow/TrsSearch.vue";
