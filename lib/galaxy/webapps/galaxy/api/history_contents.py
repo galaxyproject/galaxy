@@ -531,8 +531,7 @@ class HistoriesContentsService(ServiceBase):
                     any values that were different from the original and, therefore, updated
         """
         if contents_type == HistoryContentType.dataset:
-            update_hda_payload = UpdateHDAPayload.parse_obj(payload)
-            return self.__update_dataset(trans, history_id, id, update_hda_payload, serialization_params)
+            return self.__update_dataset(trans, history_id, id, payload, serialization_params)
         elif contents_type == HistoryContentType.dataset_collection:
             return self.__update_dataset_collection(trans, id, payload)
         else:
@@ -571,7 +570,7 @@ class HistoriesContentsService(ServiceBase):
                 hda_ids.append(decoded_id)
             else:
                 hdca_ids.append(item.id)
-        payload_dict = payload.dict(exclude_defaults=True, exclude_unset=True)
+        payload_dict = payload.dict(exclude_unset=True)
         hdas = self.__datasets_for_update(trans, history, hda_ids, payload_dict)
         rval = []
         for hda in hdas:
@@ -674,14 +673,13 @@ class HistoriesContentsService(ServiceBase):
     ):
         # anon user: ensure that history ids match up and the history is the current,
         #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
-        payload_dict = payload.dict(exclude_defaults=True, exclude_unset=True)
         decoded_id = self.decode_id(id)
         history = self.history_manager.get_owned(
             self.decode_id(history_id), trans.user, current_history=trans.history
         )
-        hda = self.__datasets_for_update(trans, history, [decoded_id], payload_dict)[0]
+        hda = self.__datasets_for_update(trans, history, [decoded_id], payload)[0]
         if hda:
-            self.__deserialize_dataset(trans, hda, payload_dict)
+            self.__deserialize_dataset(trans, hda, payload)
             serialization_params["default_view"] = 'detailed'
             return self.hda_serializer.serialize_to_view(
                 hda, user=trans.user, trans=trans, **serialization_params
