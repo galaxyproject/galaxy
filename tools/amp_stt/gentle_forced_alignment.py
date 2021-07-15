@@ -10,6 +10,9 @@ import tempfile
 import uuid
 
 import mgm_utils
+import gi
+from lib2to3.tests.data.infinite_recursion import gid_t
+from builtins import None
 
 
 def main():
@@ -30,7 +33,7 @@ def main():
 		tmp_amp_transcript_unaligned = f"{tmpdir}/{tmp_amp_transcript_unaligned_name}"
 		tmp_gentle_transcript = f"{tmpdir}/{tmp_gentle_transcript_name}"
 
-		# Load the amp_transcript_unaligned as input into gentle
+		# Load the audio and transcript inputs into tmp dir and run gentle
 		with open(amp_transcript_unaligned, "r") as amp_transcript_unaligned_file:
 			amp_transcript_unaligned_json = json.load(amp_transcript_unaligned_file)
 
@@ -59,29 +62,6 @@ def main():
 		traceback.print_exc()
 		exit(1)
 
-# 	if os.path.exists(tmp_speech_audio):
-# 	 	os.remove(tmp_speech_audio)
-# 
-# 	if os.path.exists(tmp_amp_transcript_unaligned):
-# 		os.remove(tmp_amp_transcript_unaligned)
-# 
-# 	if os.path.exists(tmp_gentle_transcript):
-# 		os.remove(tmp_gentle_transcript)
-# 	
-# 	if exception == True:
-# 		print("Existing due to exception")
-# 		exit(1)
-
-	
-
-def find_next_success(gentle_transcript_json, current_index):
-	for word_index in range(current_index, len(gentle_transcript_json["words"])):
-		word = gentle_transcript_json["words"][word_index]
-		# Make sure we have all the data
-		if word["case"] == 'success':
-			print("Found success at " + str(word_index))
-			return word_index		
-	return None
 
 
 def gentle_transcript_to_amp_transcript(gentle_transcript, amp_transcript_unaligned_json, amp_transcript_aligned):
@@ -93,68 +73,117 @@ def gentle_transcript_to_amp_transcript(gentle_transcript, amp_transcript_unalig
 		amp_transcript_aligned_json["results"] = dict()
 		amp_transcript_aligned_json["results"]["transcript"] = amp_transcript_unaligned_json["results"]["transcript"]
 		amp_transcript_aligned_json["results"]["words"] = list()
-		previous_end = 0
-		last_success_index = 0
+		
 		if "words" in gentle_transcript_json.keys():
-			for word in gentle_transcript_json["words"]:
-				# Make sure we have all the data
-				if word["case"] == 'success':
-					previous_end = word["end"]
-					amp_transcript_aligned_json["results"]["words"].append(
-							{
-								"type": "pronunciation", 
-								"start": word["start"], 
-								"end": word["end"], 
-								"text": word["word"],
-								"score": {
-										"type": "confidence", 
-										"scoreValue": 1.0
-								} 
-							}
-						)
+			gwords = gentle_transcript_json["words"]
+			uwords = amp_transcript_unaligned_json["results"]["words"]
+			words = amp_transcript_aligned_json["results"]["words"]
+			duration = amp_transcript_unaligned_json["media"]["duration"]
+			gi = ui = 0	
+			next = None
+			
+			while gi < len(gwords):
+				# find the next successful alignment and the interval between previous alignment
+				[next, interval] = find_next_success(words, gi, duration)
+										
+				# if current word is a success match, use the aligned timestamp
+				if gwords[gi]["case"] == 'success':
+					start = gwords[gi]["start"]
+					end = gwords[gi]["end"]
+				# otherwise, distribute timestamp evenly between the previous and next matched words
 				else:
-					word_index = gentle_transcript_json["words"].index(word)
-					next_success_index = find_next_success(gentle_transcript_json, word_index)
-					avg_time = 0
-					# If we found another success
-					if(next_success_index is not None and next_success_index > word_index):
-						# Average the times based on how many words in between
-						next_success_word = gentle_transcript_json["words"][next_success_index]
-						skips_ahead = (next_success_index - last_success_index)
-						avg_time = (next_success_word["start"] - previous_end)/skips_ahead
-						print("Averaging time from next success")
-					else:
-						duration = amp_transcript_unaligned_json["media"]["duration"]
-						skips_ahead = (len(gentle_transcript_json["words"]) - word_index) + 1
-						avg_time = (duration - previous_end)/skips_ahead
-						print("Averaging time from end of file")
-
-					if avg_time < 0:
-						avg_time = 0
-
-					# From the previous words end (last recorded), skip time ahead
-					time = previous_end + avg_time
-					previous_end = time
-					print(word["word"]  + " at index " + str(word_index))
-					print("Avg_time " + str(avg_time)  + " Skips ahead " + str(skips_ahead))
-
-					# Add the word to the results
-					amp_transcript_aligned_json["results"]["words"].append(
-						{
-							"type": "pronunciation", 
-							"start": time, 
-							"end": time, 
-							"text": word["word"],
-							"score": {
-									"type": "confidence", 
-									"scoreValue": 0.0
-							} 
-						}
-					)
-				last_success_index = gentle_transcript_json["words"].index(word)
+					
+					
+			
 								
 		mgm_utils.write_json_file(amp_transcript_aligned_json, amp_transcript_aligned)
 		
+# Compute the average time interval for unmatched words in the given words list, starting from the given current index 
+# (next to the previous match), and return a list containing the next match index and the average time interval in between.
+# If the current index is 0, use 0 as the previous match end timestamp;
+# if no next match can be found, use the given duration as the next match start timestamp. 
+def find_next_success(words, current, duration):	
+	if current = 0:
+		end = 0.0
+	else:
+		end = words[current-1]["end"]						
+	for next in range(current, len(["words"])):
+		if words[next]["case"] == "success":
+			if next == current:
+				interval = None
+			else:
+				interval = (words[next]["start"] - end) / (next - current)
+			break;		
+	if next == len(["words"]:
+		interval = (duration - end) / (next - current)				
+	return [next, interval]
+		
+
+# def find_next_success(gentle_transcript_json, current_index):
+# 			previous_end = 0
+# 			last_success_index = 0
+
+# 	for word_index in range(current_index, len(gentle_transcript_json["words"])):
+# 		word = gentle_transcript_json["words"][word_index]
+# 		# Make sure we have all the data
+# 		if word["case"] == 'success':
+# 			print("Found success at " + str(word_index))
+# 			return word_index		
+# 	return None		
+		
+# 					words.append(
+# 							{
+# 								"type": "pronunciation", 
+# 								"start": gword["start"], 
+# 								"end": gword["end"], 
+# 								"text": gword["gword"],
+# 								"score": {
+# 										"type": "confidence", 
+# 										"scoreValue": 1.0
+# 								} 
+# 							}
+# 						)
+# 				# for not-found words, distribute timestamp evenly between the previous and next matched words
+# 				else:
+# 					next_success_index = find_next_success(gentle_transcript_json, gi)
+# 					avg_time = 0
+# 					# If we found another success
+# 					if(next_success_index is not None and next_success_index > gi):
+# 						# Average the times based on how many words in between
+# 						next_success_word = gentle_transcript_json["words"][next_success_index]
+# 						skips_ahead = (next_success_index - last_success_index)
+# 						avg_time = (next_success_word["start"] - previous_end)/skips_ahead
+# 						print("Averaging time from next success")
+# 					else:
+# 						duration = amp_transcript_unaligned_json["media"]["duration"]
+# 						skips_ahead = (len(gentle_transcript_json["words"]) - gi) + 1
+# 						avg_time = (duration - previous_end)/skips_ahead
+# 						print("Averaging time from end of file")
+# 
+# 					if avg_time < 0:
+# 						avg_time = 0
+# 
+# 					# From the previous words end (last recorded), skip time ahead
+# 					time = previous_end + avg_time
+# 					previous_end = time
+# 					print(gword["gword"]  + " at index " + str(gi))
+# 					print("Avg_time " + str(avg_time)  + " Skips ahead " + str(skips_ahead))
+# 
+# 					# Add the gword to the results
+# 					words.append(
+# 						{
+# 							"type": "pronunciation", 
+# 							"start": time, 
+# 							"end": time, 
+# 							"text": gword["gword"],
+# 							"score": {
+# 									"type": "confidence", 
+# 									"scoreValue": 0.0
+# 							} 
+# 						}
+# 					)
+# 				last_success_index = gentle_transcript_json["words"].index(gword)	
+
 		
 if __name__ == "__main__":
 	main()
