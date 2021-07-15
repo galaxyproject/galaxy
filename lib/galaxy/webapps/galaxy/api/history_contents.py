@@ -72,7 +72,6 @@ from galaxy.schema.schema import (
     JobStateSummary,
     Model,
     UpdateDatasetPermissionsPayload,
-    UpdateHDAPayload,
     UpdateHistoryContentsBatchPayload,
     WorkflowInvocationStateSummary,
 )
@@ -780,7 +779,7 @@ class HistoriesContentsService(ServiceBase):
         self, trans,
         history_id: EncodedDatabaseIdField,
         id: EncodedDatabaseIdField,
-        payload: UpdateHDAPayload,
+        payload: Dict[str, Any],
         serialization_params: SerializationParams
     ):
         # anon user: ensure that history ids match up and the history is the current,
