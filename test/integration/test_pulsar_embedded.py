@@ -21,9 +21,11 @@ class EmbeddedPulsarIntegrationInstance(integration_util.IntegrationInstance):
 instance = integration_util.integration_module_instance(EmbeddedPulsarIntegrationInstance)
 
 test_tools = integration_util.integration_tool_runner([
+    "composite",
     "simple_constructs",
     "multi_data_param",
     "output_filter",
     "vcf_bgzip_test",
     "environment_variables",
+    "multi_output_assign_primary_ext_dbkey",
 ])

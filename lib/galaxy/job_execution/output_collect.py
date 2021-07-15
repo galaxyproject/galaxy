@@ -652,3 +652,11 @@ def collect_extra_files(object_store, dataset, job_working_directory):
                 dataset.set_size()
         except Exception as e:
             log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, unicodify(e))
+
+
+def collect_shrinked_content_from_path(path):
+    try:
+        with open(path, 'rb') as fh:
+            return galaxy.util.shrink_and_unicodify(fh.read().strip())
+    except FileNotFoundError:
+        return None

@@ -1,6 +1,7 @@
 """ This module define an abstract class for reasoning about Galaxy's
 dataset collection after jobs are finished.
 """
+from typing import List
 
 from galaxy.util import asbool
 from .util import is_dict
@@ -93,6 +94,10 @@ class DatasetCollectionDescription:
             'recurse': self.recurse,
         }
 
+    @property
+    def discover_patterns(self) -> List[str]:
+        return []
+
 
 class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
 
@@ -140,6 +145,10 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
             "recurse": self.recurse,
         })
         return as_dict
+
+    @property
+    def discover_patterns(self):
+        return [self.pattern]
 
 
 DEFAULT_DATASET_COLLECTOR_DESCRIPTION = FilePatternDatasetCollectionDescription(

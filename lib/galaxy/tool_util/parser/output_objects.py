@@ -1,6 +1,8 @@
+from typing import List
+
 from galaxy.util.dictifiable import Dictifiable
 from .output_actions import ToolOutputActionGroup
-from .output_collection_def import dataset_collector_descriptions_from_output_dict
+from .output_collection_def import dataset_collector_descriptions_from_output_dict, DatasetCollectionDescription
 
 
 class ToolOutputBase(Dictifiable):
@@ -16,6 +18,10 @@ class ToolOutputBase(Dictifiable):
 
     def to_dict(self, view='collection', value_mapper=None, app=None):
         return super().to_dict(view=view, value_mapper=value_mapper)
+
+    @property
+    def output_discover_patterns(self) -> List[str]:
+        return []
 
 
 class ToolOutput(ToolOutputBase):
@@ -44,6 +50,7 @@ class ToolOutput(ToolOutputBase):
         self.change_format = []
         self.implicit = implicit
         self.from_work_dir = None
+        self.dataset_collector_descriptions: List[DatasetCollectionDescription] = []
 
     # Tuple emulation
 
@@ -93,6 +100,10 @@ class ToolOutput(ToolOutputBase):
         output.actions = ToolOutputActionGroup(output, None)
         output.dataset_collector_descriptions = dataset_collector_descriptions_from_output_dict(output_dict)
         return output
+
+    @property
+    def output_discover_patterns(self) -> List[str]:
+        return _merge_dataset_collector_descriptions_patterns(self.dataset_collector_descriptions)
 
 
 class ToolExpressionOutput(ToolOutputBase):
@@ -246,6 +257,10 @@ class ToolOutputCollection(ToolOutputBase):
         )
         return rval
 
+    @property
+    def output_discover_patterns(self) -> List[str]:
+        return self.structure.output_discover_patterns
+
 
 class ToolOutputCollectionStructure:
 
@@ -300,6 +315,20 @@ class ToolOutputCollectionStructure:
             dataset_collector_descriptions=dataset_collector_descriptions_from_output_dict(as_dict),
         )
         return structure
+
+    @property
+    def output_discover_patterns(self) -> List[str]:
+        if not self.dataset_collector_descriptions:
+            return []
+        else:
+            return _merge_dataset_collector_descriptions_patterns(self.dataset_collector_descriptions)
+
+
+def _merge_dataset_collector_descriptions_patterns(dataset_collector_descriptions: List[DatasetCollectionDescription]) -> List[str]:
+    patterns = []
+    for description in dataset_collector_descriptions:
+        patterns.extend(description.discover_patterns)
+    return patterns
 
 
 class ToolOutputCollectionPart:

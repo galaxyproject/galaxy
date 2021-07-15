@@ -84,7 +84,7 @@
                     key="export-history-to-file"
                     title="Export History to File"
                     icon="fas fa-file-archive"
-                    @click="iframeRedirect('/history/export_archive?preview=True')"
+                    @click="backboneRoute(exportLink)"
                 />
             </PriorityMenu>
         </div>
@@ -183,6 +183,9 @@ export default {
                     this.updateFields({ name });
                 }
             },
+        },
+        exportLink() {
+            return `histories/${this.history.id}/export`;
         },
     },
     methods: {
