@@ -68,7 +68,7 @@
 
             <div class="d-flex" v-if="writable">
                 <slot name="menu">
-                    <DscMenu v-if="!dsc.deleted" v-on="$listeners" />
+                    <DscMenu v-if="!dsc.deleted" v-on="$listeners" :dsc="dsc" />
                 </slot>
             </div>
         </nav>

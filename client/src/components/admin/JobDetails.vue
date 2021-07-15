@@ -1,19 +1,19 @@
 <template>
     <b-card>
-        <job-information :job_id="job.id" :include-times="true">
-            <tr v-if="job.traceback">
+        <job-information :job_id="id" :include-times="true">
+            <tr v-if="hasTraceback">
                 <td>Traceback</td>
                 <td>
                     <code-row :code-label="'Traceback'" :code-item="job.traceback" />
                 </td>
             </tr>
-            <tr v-if="job.info">
+            <tr v-if="hasInfo">
                 <td>Info</td>
                 <td>
-                    <code-row :code-label="'Traceback'" :code-item="job.traceback" />
+                    <code-row :code-label="'Info'" :code-item="job.info" />
                 </td>
             </tr>
-            <tr v-if="job.remote_host">
+            <tr v-if="hasRemoteHost">
                 <td>Remote Host</td>
                 <td>
                     {{ job.remote_host }}
@@ -22,10 +22,10 @@
         </job-information>
         <br />
         <h3>Job Parameters</h3>
-        <job-parameters :job-id="job.id" :include-title="false" />
+        <job-parameters :job-id="id" :include-title="false" />
         <br />
         <h3>Job Metrics</h3>
-        <job-metrics :job-id="job.id" :include-title="false" />
+        <job-metrics :job-id="id" :include-title="false" />
     </b-card>
 </template>
 
@@ -45,7 +45,25 @@ export default {
     props: {
         job: {
             type: Object,
-            required: true,
+            required: false,
+        },
+        jobId: {
+            type: String,
+            required: false,
+        },
+    },
+    computed: {
+        id() {
+            return this.job?.id || this.jobId;
+        },
+        hasTraceback() {
+            return this.job?.traceback;
+        },
+        hasInfo() {
+            return this.job?.info;
+        },
+        hasRemoteHost() {
+            return this.job?.remote_host;
         },
     },
 };
