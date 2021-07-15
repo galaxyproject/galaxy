@@ -12,7 +12,6 @@ import uuid
 import mgm_utils
 import gi
 from lib2to3.tests.data.infinite_recursion import gid_t
-from builtins import None
 
 
 def main():
@@ -113,11 +112,11 @@ def gentle_transcript_to_amp_transcript(gentle_transcript, amp_transcript_unalig
 				if text != ' ':
 					words.append({
 						"type": "punctuation",
-						"text": text
-						"offset": i
+						"text": text,
+						"offset": i,
 						"score": {
 							"type": "confidence",
-							"scoreValue": 0.0
+							"scoreValue": 0.0,
 						},
 					})
 			preoffset = gwords[gi]["endOffset"]
@@ -128,11 +127,11 @@ def gentle_transcript_to_amp_transcript(gentle_transcript, amp_transcript_unalig
 				"start": start, 
 				"end": end, 
 				"text": gwords[gi]["word"],
-				"offset": curoffset
+				"offset": curoffset,
 				"score": {
 					"type": "confidence", 
-					"scoreValue": confidence
-				} 
+					"scoreValue": confidence,
+				},
 			})							
 			gi = gi + 1	
 			
@@ -149,7 +148,7 @@ def gentle_transcript_to_amp_transcript(gentle_transcript, amp_transcript_unalig
 # If the current index is 0, use 0 as the previous match end timestamp;
 # if no next match is found, use the given duration as the next match start timestamp. 
 def find_next_success(words, current, duration):	
-	if current = 0:
+	if current == 0:
 		end = 0.0
 	else:
 		end = words[current-1]["end"]						
@@ -160,7 +159,7 @@ def find_next_success(words, current, duration):
 			else:
 				interval = (words[next]["start"] - end) / (next - current)
 			break;		
-	if next == len(["words"]:
+	if next == len(words):
 		interval = (duration - end) / (next - current)				
 	return [next, interval]
 		
@@ -183,7 +182,7 @@ def update_confidence(words, uwords):
 			type = uwords[ui]["type"]
 			stext = uwords["text"]
 			# for pronunciation, split by space
-			if (type == "pronunciation")
+			if (type == "pronunciation"):
 				stexts = text.split()
 			# for punctuation, split into each char
 			else:
