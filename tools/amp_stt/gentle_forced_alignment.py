@@ -44,17 +44,18 @@ def main():
 			shutil.copy(speech_audio, tmp_speech_audio)
 
 			# Run gentle
-			print(f"Running Gentle... tmp_speech_audio: {tmp_speech_audio}, input tmp_amp_transcript_unaligned: {tmp_amp_transcript_unaligned}, tmp_gentle_transcript: {tmp_gentle_transcript}")
+			print(f"Running Gentle... tmp_speech_audio: {tmp_speech_audio}, tmp_amp_transcript_unaligned: {tmp_amp_transcript_unaligned}, tmp_gentle_transcript: {tmp_gentle_transcript}")
 			r = subprocess.run(["singularity", "run", "/srv/amp/gentle-singularity/gentle-singularity.sif", tmp_speech_audio, tmp_amp_transcript_unaligned, "-o", tmp_gentle_transcript], stdout=subprocess.PIPE)
-			print("Finished running Gentle")
+			print(f"Finished running Gentle with return Code: {r.returncode}")
 
-			# Copy the tmp Gentle output file to gentle_transcript
-			shutil.copy(tmp_gentle_transcript, gentle_transcript)
+			# if Gentle completed in success, continue with transcript conversion
+			if r.returncode == 0:
+				# Copy the tmp Gentle output file to gentle_transcript
+				shutil.copy(tmp_gentle_transcript, gentle_transcript)
+	
+				print("Creating AMP transcript aligned...")
+				gentle_transcript_to_amp_transcript(gentle_transcript, amp_transcript_unaligned_json, amp_transcript_aligned)
 
-			print("Creating amp transcript aligned...")
-			gentle_transcript_to_amp_transcript(gentle_transcript, amp_transcript_unaligned_json, amp_transcript_aligned)
-			
-			print(f"Gentle return Code: {r.returncode}")
 			exit(r.returncode)
 	except Exception as e:
 		print("Exception while running Gentle:")
@@ -65,61 +66,45 @@ def main():
 # Convert Gentle output transcript JSON file to AMP Transcript JSON file.
 def gentle_transcript_to_amp_transcript(gentle_transcript, amp_transcript_unaligned_json, amp_transcript_aligned):
 	with open(gentle_transcript, "r") as gentle_transcript_file:		
+		# read gentle_transcript and initialize pointers
 		gentle_transcript_json = json.load(gentle_transcript_file)
 		transcript = gentle_transcript_json["transcript"]
+		gwords = gentle_transcript_json["words"]
+		uwords = amp_transcript_unaligned_json["results"]["words"]
+		duration = amp_transcript_unaligned_json["media"]["duration"]
+		words = list()
+		preoffset = -1	# end offset of previous word
 
 		# initialize amp_transcript_aligned_json
 		amp_transcript_aligned_json = dict()
 		amp_transcript_aligned_json["media"] = amp_transcript_unaligned_json["media"]
 		amp_transcript_aligned_json["results"] = dict()
 		amp_transcript_aligned_json["results"]["transcript"] = transcript
-		amp_transcript_aligned_json["results"]["words"] = list()
-		
-		gwords = gentle_transcript_json["words"]
-		uwords = amp_transcript_unaligned_json["results"]["words"]
-		words = amp_transcript_aligned_json["results"]["words"]
-		duration = amp_transcript_unaligned_json["media"]["duration"]
-		next = None
-		preoffset = 0;
+		amp_transcript_aligned_json["results"]["words"] = words	
 		
 		# populate amp_transcript_aligned_json words list, based on gentle_transcript words list
 		for gi in range(0, len(gwords)):
-			# find the next successful alignment and the interval between previous alignment
-			[next, interval] = find_next_success(words, gi, duration)
+			# find the next successful alignment and the interval between previous successful alignment
+			[next, interval] = find_next_success(gwords, gi, duration)
 									
 			# if current word is the next success, use the aligned timestamp, and default confidence 1.0
 			if gi == next:
 				start = gwords[gi]["start"]
 				end = gwords[gi]["end"]
 				confidence = 1.0
-			# otherwise if current word is the first one in the list, start from time 0
-			elif gi == 0:
-				start = end = 0
+			# otherwise current word is unmatched, use same start/end timestamp with default confidence 0.0
+			# if it's the first word in the list, set timestamp to 0
+			elif gi == 0:	# 0 == gi < next
+				start = end = 0.0
 				confidence = 0.0
 			# otherwise, accumulate the timestamp with the interval between previous and next alignment
-			else:
-				start = gwords[gi-1]["start"] + interval					
-				end = start	
+			else:	# 0 < gi < next
+				start = end = gwords[gi-1]["start"] + interval					
 				confidence = 0.0
-			# Note: same start/end timestamp with default confidence 0.0 indicates an unmatched word,
 			
-			# insert punctuations in between the current and previous word if any, based on their offsets;
+			# insert punctuations between the current and previous word if any, based on their offsets;
 			# this is needed as Gentle doen't include punctuations in the words list, but the transcript does
-			curoffset = gwords[gi]["startOffset"]
-			for i in range(preoffset, curoffset):
-				text = transcript[i]
-				# only insert non-space chars
-				if text != ' ':
-					words.append({
-						"type": "punctuation",
-						"text": text,
-						"offset": i,
-						"score": {
-							"type": "confidence",
-							"scoreValue": 0.0,
-						},
-					})
-			preoffset = gwords[gi]["endOffset"]
+			[preoffset, curoffset] = insert_punctuations(words, gwords, gi, preoffset, transcript)
 				
 			# append the current Gentle word to the AMP words list
 			words.append({
@@ -133,10 +118,14 @@ def gentle_transcript_to_amp_transcript(gentle_transcript, amp_transcript_unalig
 					"scoreValue": confidence,
 				},
 			})							
-			gi = gi + 1	
 			
-		# update words confidence in amp_transcript_aligned_json, based on amp_transcript_unaligned_json words list
-		update_confidence(gwords, uwords, words)
+		# append punctuations after the last word if any text left
+		[preoffset, curoffset] = insert_punctuations(words, gwords, gi, preoffset, transcript)
+		print(f"Successfully added {len(words)} words into AMP aligned transcript.")
+		 	
+		# update words confidence in amp_transcript_aligned_json, based on amp_transcript_unaligned_json words
+		updated = update_confidence(words, uwords)
+		print(f"Successfully updated confidence for {updated} words in AMP aligned transcript.")
 		
 		# write final amp_transcript_aligned_json to file
 		mgm_utils.write_json_file(amp_transcript_aligned_json, amp_transcript_aligned)
@@ -163,41 +152,85 @@ def find_next_success(words, current, duration):
 		interval = (duration - end) / (next - current)				
 	return [next, interval]
 		
+		
+# Insert punctuations to the given AMP words list, if there is any in the given transcript between the word 
+# at the given current index and the given previous word offset in the given Gentle words list.
+def insert_punctuations(words, gwords, gi, preoffset, transcript):	
+	# if current word is not the last one, offset boundary is the start of the current word
+	if gi < len(gwords):		
+		curoffset = len(transcript)
+	# otherwise offset boundary is the end of transcript
+	else:
+		curoffset = gwords[gi]["startOffset"]
+			
+	# scan transcript between end of previous word and start of current word		
+	for i in range(preoffset+1, curoffset):
+		text = transcript[i]
+		# only insert non-space chars, which should be punctuations
+		if text != ' ':
+			words.append({
+				"type": "punctuation",
+				"text": text,
+				"offset": i,
+				"score": {
+					"type": "confidence",
+					"scoreValue": 0.0,
+				},
+			})
+
+	# if current word is not the last one, offset boundary is the start of the current word
+	if gi < len(gwords):		
+		preoffset = gwords[gi]["endOffset"]
+	# otherwise offset boundary is the end of transcript
+	else:
+		preoffset = len(transcript)
+
+	return [preoffset, curoffset]
+
 
 # Update word confidence in the given aligned words list, based on the given unaligned words list.
 def update_confidence(words, uwords):
 	len = len(words)
 	ulen = len(uwords)
 	if len != ulen:
-		print (f"Warning: algined words list length = {len} does not match unaligned words list length {ulen}.")	
+		print (f"Warning: The algined words list length = {len} does not equal the unaligned words list length {ulen}.")	
 	
 	ui = -1
 	i = si = 0
 	swords = list()
+	updated = 0
 	
 	for word in words:
+		# AMP transcript words list is supposed to contain one word in each element, 
+		# but it's currently not the case for HMGM corrected transcript; thus we need to split multi-words text
+		# if we reach the end of the last split multi-words sublist, try splitting the current word
 		if si == len(swords):	
-			# AMP transcript words list is supposed to contain one word in each element, 
-			# but it's currently not the case for HMGM corrected transcript; thus we need to split word 
+			# reset si and increment ui	
+			si = 0
+			ui = ui + 1
+			# check current word
 			type = uwords[ui]["type"]
-			stext = uwords["text"]
+			stext = uwords[ui]["text"]
 			# for pronunciation, split by space
 			if (type == "pronunciation"):
 				stexts = text.split()
 			# for punctuation, split into each char
 			else:
 				stexts = list(text)
-			# reset si and increment ui	
-			si = 0
-			ui = ui + 1
 		
 		# compare aligned/unaligned words and update confidence
 		text = word["text"]
 		if text != stexts[si]:
-			print (f"Warning: algined words[{i}] = {text} does not match unaligned words[{ui}][{si}] = {stexts[si]}, will use default confidence")
+			print (f"Warning: Algined words[{i}] = {text} does not match unaligned words[{ui}][{si}] = {stexts[si]}, will use default confidence for it.")
 		else:
 			word["confidence"] = uwords[ui]["confidence"]
+			updated = updated + 1
+			
+		# move on to the next word in both the unaligned multi-word sublist and the aligned words list
+		si = si + 1	
 		i = i + 1
+
+	return updated
 
 
 # def find_next_success(gentle_transcript_json, current_index):
