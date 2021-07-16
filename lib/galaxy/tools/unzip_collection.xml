@@ -31,8 +31,8 @@ Description
 
 Given a paired collection of forward and reverse reads this tool will "unzip" it into two collections containing forward and reverse reads, respectively:
 
-.. image:: ${static_path}/images/tools/collection_ops/unzip.png
-  :width: 400
+.. image:: ${static_path}/images/tools/collection_ops/unzip.svg
+  :width: 500
   :alt: Unzipping operation
 
 -----

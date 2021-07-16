@@ -42,8 +42,8 @@ Removes empty elements from a collection.
 
 This tool takes a dataset collection and filters out (removes) empty datasets. This is useful for continuing a multi-sample analysis when downstream tools require datasets to have content.
 
-.. image:: ${static_path}/images/tools/collection_ops/filter_empty.png
-  :width: 400
+.. image:: ${static_path}/images/tools/collection_ops/filter_empty.svg
+  :width: 500
   :alt: Filtering empty datasets
 
 -----

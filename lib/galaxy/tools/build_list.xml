@@ -38,7 +38,7 @@ This tool combines individual datasets or collections into a new collection. The
 
 ------
 
-.. image:: ${static_path}/images/tools/collection_ops/buildList.png
+.. image:: ${static_path}/images/tools/collection_ops/build_list.svg
   :width: 800
   :alt: Unzipping operation
 

@@ -61,8 +61,8 @@ Description
 
 This tool takes nested collections such as a list of lists or a list of dataset pairs and produces a flat list from the inputs. It effectively "flattens" the hierarchy. The collection identifiers are merged together (using "_" as default) to create new collection identifiers in the flattened result:
 
-.. image:: ${static_path}/images/tools/collection_ops/flatten.png
-  :width: 400
+.. image:: ${static_path}/images/tools/collection_ops/flatten.svg
+  :width: 500
   :alt: Flattening operation
 
 ----
