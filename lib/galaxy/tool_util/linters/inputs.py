@@ -17,6 +17,33 @@ FILTER_TYPES = [
     'sort_by',
 ]
 
+ATTRIB_VALIDATOR_COMPATIBILITY = {
+    "check": ["metadata"],
+    "expression": ["regex"],
+    "table_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table"],
+    "filename": ["dataset_metadata_in_file"],
+    "metadata_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "dataset_metadata_in_file"],
+    "metadata_column": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_file options"],
+    "line_startswith": ["dataset_metadata_in_file", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table"],
+    "min": ["in_range"],
+    "max": ["in_range"],
+    "exclude_min": ["in_range"],
+    "exclude_max": ["in_range"],
+    "split": ["dataset_metadata_in_file"],
+    "skip": ["metadata"]
+}
+
+PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
+    "integer": ["in_range", "expression"],
+    "float": ["in_range", "expression"],
+    "data": ["metadata", "unspecified_build", "dataset_ok_validator", "dataset_metadata_in_range", "dataset_metadata_in_file", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "expression"],
+    "data_collection": ["metadata", "unspecified_build", "dataset_ok_validator", "dataset_metadata_in_range", "dataset_metadata_in_file", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "expression"],
+    "text": ["regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"],
+    "select": ["no_options", "regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"],
+    "drill_down": ["no_options", "regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"],
+    "data_column": ["no_options", "regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"]
+}
+
 
 def lint_inputs(tool_xml, lint_ctx):
     """Lint parameters in a tool's inputs block."""
@@ -120,8 +147,22 @@ def lint_inputs(tool_xml, lint_ctx):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with multiple="true"')
                 if string_as_bool(param_attrib.get("optional", "false")):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with optional="true"')
-
         # TODO: Validate type, much more...
+
+        # validate validators :)
+        validators = param.findall("./validator")
+        for validator in validators:
+            vtype = validator.attrib['type']
+            if vtype == "expression" and validator.text == "":
+                lint_ctx.error(f"Parameter [{param_name}]: expression validator without content")
+            if vtype != "expression" and validator.text != "":
+                lint_ctx.warn(f"Parameter [{param_name}]: '{vtype}' validators are not expected to contain text")
+            if param_type in PARAMETER_VALIDATOR_TYPE_COMPATIBILITY:
+                if vtype not in PARAMETER_VALIDATOR_TYPE_COMPATIBILITY[param_type]:
+                    lint_ctx.error(f"Parameter [{param_name}]: validator with an incompatible type '{vtype}'")
+            for attrib in ATTRIB_VALIDATOR_COMPATIBILITY:
+                if attrib in validator.attrib and vtype not in ATTRIB_VALIDATOR_COMPATIBILITY[attrib]:
+                    lint_ctx.error(f"Parameter [{param_name}]: attribute '{attrib}' is in compatible with validator of type '{vtype}'")
 
     conditional_selects = tool_xml.findall("./inputs//conditional")
     for conditional in conditional_selects:

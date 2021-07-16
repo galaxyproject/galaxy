@@ -612,7 +612,7 @@ validator_types = dict(
     dataset_metadata_not_in_data_table=MetadataNotInDataTableColumnValidator,
     dataset_metadata_in_range=MetadataInRangeValidator,
     value_in_data_table=ValueInDataTableColumnValidator,
-    value_not_in_data_table=ValueInDataTableColumnValidator,
+    value_not_in_data_table=ValueNotInDataTableColumnValidator,
     dataset_ok_validator=DatasetOkValidator,
 )
 

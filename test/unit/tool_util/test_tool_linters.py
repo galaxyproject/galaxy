@@ -121,6 +121,19 @@ WHITESPACE_IN_VERSIONS_AND_NAMES = """
 </tool>
 """
 
+VALIDATOR_INCOMPATIBILITIES = """
+<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <inputs>
+        <param name="param_name" type="text">
+            <validator type="in_range">TEXT</validator>
+            <validator type="regex" filename="blah"/>
+        </param>
+    </inputs>
+</tool>
+"""
+
 TESTS = [
     (
         NO_SECTIONS_XML, inputs.lint_inputs,
@@ -179,6 +192,14 @@ TESTS = [
             and "Tool ID contains whitespace - this is discouraged: [bwa tool]."
             and len(x.warn_messages) == 4 and len(x.error_messages) == 0
     ),
+    (
+        VALIDATOR_INCOMPATIBILITIES, inputs.lint_inputs,
+        lambda x:
+            "Parameter [param_name]: validator with an incompatible type 'in_range'" in x.error_messages
+            and "Parameter [param_name]: attribute 'filename' is in compatible with validator of type 'regex'" in x.error_messages
+            and "Parameter [param_name]: 'in_range' validators are not expected to contain text" in x.warn_messages
+            and len(x.warn_messages) == 0 and len(x.error_messages) == 2
+    ),
 ]
 
 TEST_IDS = [
@@ -189,6 +210,7 @@ TEST_IDS = [
     'select deprecations',
     'select option definitions',
     'hazardous whitespace',
+    'validator imcompatibilities'
 ]
 
 
