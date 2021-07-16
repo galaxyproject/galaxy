@@ -188,7 +188,7 @@ galaxy:
       rootlog:
         class: logging.handlers.TimedRotatingFileHandler
         when: midnight
-        level: DEBUG
+        level: INFO
         filename: logs/root.log
         filters: [stack]
         formatter: stack
@@ -209,7 +209,7 @@ galaxy:
 
     root: 
       handlers: [rootlog]
-      level: DEBUG
+      level: INFO
     
     loggers: 
       paste.httpserver.ThreadPool: 
@@ -217,7 +217,7 @@ galaxy:
         qualname: paste.httpserver.ThreadPool
         
       sqlalchemy:
-        level: INFO  # turn on/off DEBUG temporarily to troubleshoot ORM exception
+        level: WARN  # turn on/off DEBUG temporarily to troubleshoot ORM exception
         qualname: sqlalchemy
 
       sqlalchemy_json.track:
