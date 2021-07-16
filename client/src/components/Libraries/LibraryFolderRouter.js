@@ -25,10 +25,17 @@ export default new VueRouter({
             props: true,
         },
         {
-            path: "/folders/:folder_id",
+            path: "/folders/:folder_id/(page/)?:page?",
+            // path: "/folders/:folder_id(/?)(page/)?:page?",
             name: "LibraryFolder",
             component: LibraryFolder,
-            props: true,
+            props(route) {
+                const props = { ...route.params };
+                if (props.page) {
+                    props.page = +props.page;
+                }
+                return props;
+            },
         },
         {
             path: "/folders/:folder_id/permissions",

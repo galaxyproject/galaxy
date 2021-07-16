@@ -220,10 +220,10 @@
                         </b-button>
                         <b-button
                             v-if="row.item.can_manage && !row.item.deleted"
-                            @click="navigateToPermission(row.item)"
                             size="sm"
                             class="lib-btn permission_lib_btn"
                             :title="`Permissions of ${row.item.name}`"
+                            :to="{ path: `${navigateToPermission(row.item)}` }"
                         >
                             <font-awesome-icon icon="users" />
                             Manage
@@ -241,10 +241,17 @@
                     </div>
                 </template>
             </b-table>
+            <!-- hide pagination if the table is loading-->
             <b-container>
-                <b-row class="justify-content-md-center">
+                <b-row align-v="center" class="justify-content-md-center">
                     <b-col md="auto">
+                        <div v-if="isBusy">
+                            <b-spinner small type="grow"></b-spinner>
+                            <b-spinner small type="grow"></b-spinner>
+                            <b-spinner small type="grow"></b-spinner>
+                        </div>
                         <b-pagination
+                            v-else
                             v-model="currentPage"
                             :total-rows="total_rows"
                             :per-page="perPage"
@@ -252,6 +259,7 @@
                         >
                         </b-pagination>
                     </b-col>
+
                     <b-col cols="1.5">
                         <table>
                             <tr>
@@ -304,7 +312,6 @@ function initialFolderState() {
         include_deleted: false,
         search_text: "",
         isAllSelectedMode: false,
-        currentPage: 1,
     };
 }
 export default {
@@ -312,6 +319,11 @@ export default {
         folder_id: {
             type: String,
             required: true,
+        },
+        page: {
+            type: Number,
+            default: 1,
+            required: false,
         },
     },
     components: {
@@ -323,6 +335,7 @@ export default {
         return {
             ...initialFolderState(),
             ...{
+                currentPage: this.page,
                 current_folder_id: null,
                 error: null,
                 isBusy: false,
@@ -486,9 +499,9 @@ export default {
         },
         navigateToPermission(element) {
             if (element.type === "file") {
-                this.$router.push({ path: `${this.folder_id}/dataset/${element.id}/permissions` });
+                return `/folders/${this.folder_id}/dataset/${element.id}/permissions`;
             } else if (element.type === "folder") {
-                this.$router.push({ path: `${element.id}/permissions` });
+                return `/folders/${element.id}/permissions`;
             }
         },
         getMessage(element) {
