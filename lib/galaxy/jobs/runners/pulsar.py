@@ -767,6 +767,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # otherwise collect everything we might need
             dynamic_outputs = DEFAULT_DYNAMIC_COLLECTION_PATTERN[:]
             dynamic_outputs.extend(job_wrapper.tool.output_discover_patterns)
+        tool = job_wrapper.tool
+        tool_provided_metadata_file_path = tool.provided_metadata_file
+        tool_provided_metadata_style = tool.provided_metadata_style
+        dynamic_file_sources = [
+            {"path": tool_provided_metadata_file_path, "type": "galaxy" if tool_provided_metadata_style == "default" else "legacy_galaxy"}
+        ]
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.tool_working_directory,
             metadata_directory=metadata_directory,
@@ -774,6 +780,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             output_files=output_files,
             version_file=job_wrapper.get_version_string_path(),
             dynamic_outputs=dynamic_outputs,
+            dynamic_file_sources=dynamic_file_sources,
         )
         return client_outputs
 
