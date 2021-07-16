@@ -466,7 +466,7 @@ class ValueInDataTableColumnValidator(Validator):
         if not value:
             return
         if not self._tool_data_table.is_current_version(self._data_table_content_version):
-            log.debug('MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
+            log.debug('ValueInDataTableColumnValidator: values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
             self._load_values()
         if value in self.valid_values:
             return

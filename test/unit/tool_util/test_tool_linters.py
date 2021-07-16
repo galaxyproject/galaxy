@@ -195,10 +195,12 @@ TESTS = [
     (
         VALIDATOR_INCOMPATIBILITIES, inputs.lint_inputs,
         lambda x:
-            "Parameter [param_name]: validator with an incompatible type 'in_range'" in x.error_messages
-            and "Parameter [param_name]: attribute 'filename' is in compatible with validator of type 'regex'" in x.error_messages
-            and "Parameter [param_name]: 'in_range' validators are not expected to contain text" in x.warn_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 2
+            "Parameter [param_name]: 'in_range' validators are not expected to contain text (found 'TEXT')" in x.warn_messages
+            and "Parameter [param_name]: validator with an incompatible type 'in_range'" in x.error_messages
+            and "Parameter [param_name]: 'in_range' validators need to define the 'min' or 'max' attribute(s)" in x.error_messages
+            and "Parameter [param_name]: attribute 'filename' is incompatible with validator of type 'regex'" in x.error_messages
+            and "Parameter [param_name]: 'regex' validators need to define an 'expression' attribute" in x.error_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 4
     ),
 ]
 
