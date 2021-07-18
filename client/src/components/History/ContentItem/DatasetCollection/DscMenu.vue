@@ -47,9 +47,7 @@ export default {
             return this.dsc?.job_source_type == "Job";
         },
         path() {
-            const p = `jobs/${this.dsc.job_source_id}/view`;
-            console.log(p);
-            return p;
+            return `jobs/${this.dsc.job_source_id}/view`;
         },
     },
 };
