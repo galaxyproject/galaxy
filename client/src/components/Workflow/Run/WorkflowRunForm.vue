@@ -29,10 +29,18 @@
                 v-if="step.step_type == 'tool'"
                 :model="step"
                 :step-data="stepData"
+                :step-scroll-to="stepScrollTo"
                 :wp-data="wpData"
                 @onChange="onToolStepInputs"
+                @onValidation="onValidation"
             />
-            <WorkflowRunDefaultStep v-else :model="step" @onChange="onDefaultStepInputs" />
+            <WorkflowRunDefaultStep
+                v-else
+                :model="step"
+                :step-scroll-to="stepScrollTo"
+                @onChange="onDefaultStepInputs"
+                @onValidation="onValidation"
+            />
         </div>
     </div>
 </template>
@@ -62,6 +70,8 @@ export default {
     data() {
         return {
             stepData: {},
+            stepValidation: {},
+            stepScrollTo: {},
             wpData: {},
             historyData: {},
             cacheData: {},
@@ -153,7 +163,20 @@ export default {
         onCacheInputs(data) {
             this.cacheData = data;
         },
+        onValidation(stepId, validation) {
+            this.stepValidation[stepId] = validation;
+        },
         onExecute() {
+            for (const [stepId, stepValidation] of Object.entries(this.stepValidation)) {
+                if (stepValidation) {
+                    const validation = stepValidation.slice();
+                    this.stepScrollTo = {
+                        stepId,
+                        validation,
+                    };
+                    return;
+                }
+            }
             const Galaxy = getGalaxyInstance();
             const job_def = {
                 new_history_name: this.historyData["new_history|name"] ? this.historyData["new_history|name"] : null,
@@ -170,6 +193,7 @@ export default {
                 // so that inputs can be batched.
                 batch: true,
             };
+
             var validated = true;
             /*for (var i in this.forms) {
                 var form = this.forms[i];

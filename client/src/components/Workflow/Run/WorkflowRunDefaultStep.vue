@@ -2,7 +2,12 @@
     <div>
         <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :initial-collapse="false">
             <template v-slot:body>
-                <FormDisplay :inputs="inputs" @onChange="onChange" />
+                <FormDisplay
+                    :inputs="inputs"
+                    :validation-scroll-to="validationScrollTo"
+                    @onChange="onChange"
+                    @onValidation="onValidation"
+                />
             </template>
         </FormCard>
     </div>
@@ -24,9 +29,22 @@ export default {
             type: Object,
             required: true,
         },
+        stepScrollTo: {
+            type: Object,
+            required: true,
+        },
     },
     data() {
-        return {};
+        return {
+            validationScrollTo: [],
+        };
+    },
+    watch: {
+        stepScrollTo() {
+            if (this.stepScrollTo && this.stepScrollTo.stepId == this.model.index) {
+                this.validationScrollTo = this.stepScrollTo.validation;
+            }
+        },
     },
     computed: {
         icon() {
@@ -59,6 +77,9 @@ export default {
     methods: {
         onChange(data) {
             this.$emit("onChange", this.model.index, data);
+        },
+        onValidation(validation) {
+            this.$emit("onValidation", this.model.index, validation);
         },
     },
 };

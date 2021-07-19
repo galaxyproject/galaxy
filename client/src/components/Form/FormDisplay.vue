@@ -94,10 +94,13 @@ export default {
                 const input_id = this.form.data.match(job_input_id);
                 const input_field = this.form.field_list[input_id];
                 const input_def = this.form.input_list[input_id];
-                if (!input_id || !input_def || !input_field) {
+                if (!input_id || !input_def || !input_field || input_def.step_linked) {
                     continue;
                 }
-                if (!input_def.optional && input_value == null && input_def.type != "hidden") {
+                if (input_value && input_value.values && input_value.values.length == 0 && !input_def.optional) {
+                    return [input_id, "Please provide data for this input."];
+                }
+                if (!input_value && !input_def.optional && input_def.type != "hidden") {
                     return [input_id, "Please provide a value for this option."];
                 }
                 if (input_field.validate) {

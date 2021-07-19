@@ -7,7 +7,9 @@
                     :inputs="model.inputs"
                     :form-config="formConfig"
                     :replace-params="replaceParams"
+                    :validation-scroll-to="validationScrollTo"
                     @onChange="onChange"
+                    @onValidation="onValidation"
                 />
             </template>
         </FormCard>
@@ -41,6 +43,10 @@ export default {
             type: Object,
             default: null,
         },
+        stepScrollTo: {
+            type: Object,
+            required: true,
+        },
     },
     data() {
         return {
@@ -48,9 +54,15 @@ export default {
             formData: {},
             replaceParams: {},
             errorText: null,
+            validationScrollTo: [],
         };
     },
     watch: {
+        stepScrollTo() {
+            if (this.stepScrollTo && this.stepScrollTo.stepId == this.model.index) {
+                this.validationScrollTo = this.stepScrollTo.validation;
+            }
+        },
         stepData() {
             this.onReplaceParams();
         },
@@ -121,6 +133,9 @@ export default {
             );
             this.formData = data;
             this.$emit("onChange", this.model.index, data);
+        },
+        onValidation(validation) {
+            this.$emit("onValidation", this.model.index, validation);
         },
     },
 };
