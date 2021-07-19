@@ -1,6 +1,6 @@
 <template>
     <div>
-        <PermissionsHeader v-if="library" :name="library.name"/>
+        <PermissionsHeader v-if="library" :name="library.name" />
         <h2 class="text-center">Library permissions</h2>
         <PermissionsInputField
             v-if="access_library_role_list"
