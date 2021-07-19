@@ -2,7 +2,13 @@
     <div>
         <div class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b>
-            <ButtonSpinner class="float-right" title="Run Workflow" id="run-workflow" @onClick="onExecute" />
+            <ButtonSpinner
+                id="run-workflow"
+                class="float-right"
+                title="Run Workflow"
+                :wait="disableExecution"
+                @onClick="onExecute"
+            />
         </div>
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
@@ -52,6 +58,7 @@ import FormCard from "components/Form/FormCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunToolStep from "./WorkflowRunToolStep";
+import { invokeWorkflow } from "./services";
 
 export default {
     components: {
@@ -69,6 +76,7 @@ export default {
     },
     data() {
         return {
+            disableExecution: false,
             stepData: {},
             stepValidation: {},
             stepScrollTo: {},
@@ -177,14 +185,14 @@ export default {
                     return;
                 }
             }
-            const Galaxy = getGalaxyInstance();
-            const job_def = {
+
+            const jobDef = {
                 new_history_name: this.historyData["new_history|name"] ? this.historyData["new_history|name"] : null,
                 history_id: !this.historyData["new_history|name"] ? this.model.historyId : null,
                 resource_params: this.resourceData,
                 replacement_params: this.wpData,
                 use_cached_job: this.cacheData["use_cached_job|check"] === "true",
-                parameters: {},
+                parameters: this.stepData,
                 // Tool form will submit flat maps for each parameter
                 // (e.g. "repeat_0|cond|param": "foo" instead of nested
                 // data structures).
@@ -194,96 +202,39 @@ export default {
                 batch: true,
             };
 
-            var validated = true;
-            /*for (var i in this.forms) {
-                var form = this.forms[i];
-                var job_inputs = form.data.create();
-                var step = this.steps[i];
-                var step_index = step.step_index;
-                form.trigger("reset");
-                for (var job_input_id in job_inputs) {
-                    var input_value = job_inputs[job_input_id];
-                    var input_id = form.data.match(job_input_id);
-                    var input_def = form.input_list[input_id];
-                    if (!input_def.step_linked) {
-                        if (isDataStep(step)) {
-                            validated = input_value && input_value.values && input_value.values.length > 0;
-                            if (!validated && input_def.optional) {
-                                validated = true;
-                            }
-                        } else {
-                            validated =
-                                input_def.optional ||
-                                (input_def.is_workflow && input_value !== "") ||
-                                (!input_def.is_workflow && input_value !== null);
-                        }
-                        if (!validated) {
-                            if (input_def.type == "hidden") {
-                                this.modal.show({
-                                    title: _l("Workflow submission failed"),
-                                    body: `Step ${step_index}: ${
-                                        step.step_label || step.step_name
-                                    } is in an invalid state. Please remove and re-add this step in the Workflow Editor.`,
-                                    buttons: {
-                                        Close: () => {
-                                            this.modal.hide();
-                                        },
-                                    },
-                                });
-                            }
-                            form.highlight(input_id);
-                            break;
-                        }
-                        job_def.parameters[step_index] = job_def.parameters[step_index] || {};
-                        job_def.parameters[step_index][job_input_id] = job_inputs[job_input_id];
-                    }
-                }
-                if (!validated) {
-                    break;
-                }
-            }
-            if (!validated) {
-                this._enabled(true);
-                Galaxy.emit.debug("tool-form-composite::submit()", "Validation failed.", job_def);
-            } else {
-                Galaxy.emit.debug("tool-form-composite::submit()", "Validation complete.", job_def);
-                invokeWorkflow(this.runWorkflowModel.workflowId, job_def)
-                    .then((invocations) => {
-                        Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", invocations);
-                        if (Array.isArray(invocations) && invocations.length > 0) {
-                            this.handleInvocations(invocations);
-                        } else {
-                            this.submissionErrorModal(job_def, invocations);
-                        }
-                        this._enabled(true);
-                    })
-                    .catch((response) => {
-                        // TODO: Is this the same response as the Utils post would
-                        // have had?
-                        Galaxy.emit.debug("tool-form-composite::submit", "Submission failed.", response);
-                        var input_found = false;
-                        if (response && response.err_data) {
-                            for (var i in this.forms) {
-                                var form = this.forms[i];
-                                var step_related_errors = response.err_data[form.model.get("step_index")];
-                                if (step_related_errors) {
-                                    var error_messages = form.data.matchResponse(step_related_errors);
-                                    for (var input_id in error_messages) {
-                                        form.highlight(input_id, error_messages[input_id]);
-                                        input_found = true;
-                                        break;
-                                    }
+            console.debug("WorkflowRunForm::onExecute()", "Ready for submission.", jobDef);
+            this.disableExecution = true;
+            invokeWorkflow(this.model.workflowId, jobDef)
+                .then((invocations) => {
+                    console.debug("WorkflowRunForm::onExecute()", "Submission successful.", invocations);
+                    this.disableExecution = false;
+                    this.$emit("submissionSuccess", invocations);
+                })
+                .catch((response) => {
+                    // TODO: Is this the same response as the Utils post would
+                    // have had?
+                    console.debug("WorkflowRunForm::onExecute()", "Submission failed.", response);
+                    /*var input_found = false;
+                    if (response && response.err_data) {
+                        for (var i in this.forms) {
+                            var form = this.forms[i];
+                            var step_related_errors = response.err_data[form.model.get("step_index")];
+                            if (step_related_errors) {
+                                var error_messages = form.data.matchResponse(step_related_errors);
+                                for (var input_id in error_messages) {
+                                    form.highlight(input_id, error_messages[input_id]);
+                                    input_found = true;
+                                    break;
                                 }
                             }
                         }
-                        if (!input_found) {
-                            this.submissionErrorModal(job_def, response);
-                        }
-                        this._enabled(true);
-                    });*/
-        },
-        handleInvocations(invocations) {
-            this.$emit("submissionSuccess", invocations);
+                    }
+                    if (!input_found) {
+                        this.submissionErrorModal(jobDef, response);
+                    }*/
+                    this.$emit("submissionError", response);
+                    this.disableExecution = false;
+                });
         },
         toArray(obj) {
             return obj ? Object.keys(obj).map((k) => obj[k]) : [];
