@@ -3869,9 +3869,9 @@ defined in a macro and different default value(s) are used.
 ]]>
 </xs:documentation>
     </xs:annotation>
-    <xs:sequence>
+    <!-- <xs:sequence>
       <xs:group ref="OptionElement" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
+    </xs:sequence> -->
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="value" type="xs:string">
