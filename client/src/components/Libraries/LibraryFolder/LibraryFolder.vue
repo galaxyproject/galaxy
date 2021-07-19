@@ -252,9 +252,10 @@
                         </div>
                         <b-pagination
                             v-else
-                            v-model="currentPage"
+                            :value="currentPage"
                             :total-rows="total_rows"
                             :per-page="perPage"
+                            @input="changePage"
                             aria-controls="folder_list_body"
                         >
                         </b-pagination>
@@ -335,7 +336,7 @@ export default {
         return {
             ...initialFolderState(),
             ...{
-                currentPage: this.page,
+                currentPage: null,
                 current_folder_id: null,
                 error: null,
                 isBusy: false,
@@ -351,11 +352,12 @@ export default {
     },
     created() {
         this.services = new Services({ root: this.root });
-        this.initFolder(this.folder_id);
+        this.getFolder(this.folder_id, this.page);
     },
     methods: {
-        initFolder(folder_id) {
+        getFolder(folder_id, page) {
             this.current_folder_id = folder_id;
+            this.currentPage = page;
             this.resetData();
             this.fetchFolderContents(this.include_deleted);
         },
@@ -594,6 +596,9 @@ export default {
                 );
             }
         },
+        changePage(page) {
+            this.$router.push({ name: `LibraryFolder`, params: { folder_id: this.folder_id, page: page } });
+        },
 
         /*
          Former Backbone code, adopted to work with Vue
@@ -637,11 +642,6 @@ export default {
         },
     },
     watch: {
-        currentPage: {
-            handler: function (value) {
-                this.fetchFolderContents(this.include_deleted);
-            },
-        },
         perPage: {
             handler: function (value) {
                 this.fetchFolderContents(this.include_deleted);
@@ -649,7 +649,7 @@ export default {
         },
     },
     beforeRouteUpdate(to, from, next) {
-        this.initFolder(to.params.folder_id);
+        this.getFolder(to.params.folder_id, to.params.page);
         next();
     },
 };
