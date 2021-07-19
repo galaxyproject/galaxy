@@ -3897,11 +3897,11 @@ if the corresponding option is selected by default (the default is ``false``).
         </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
-    <xs:group name="OptionElement">
+    <!-- <xs:group name="OptionElement">
       <xs:choice>
         <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded"/>
       </xs:choice>
-    </xs:group>
+    </xs:group> -->
   </xs:complexType>
 
   <xs:complexType name="ParamConversion">
