@@ -93,7 +93,7 @@ export default {
     methods: {
         allowHTML(tool_id) {
             axios
-                .put(`${getAppRoot()}api/sanitize_allowlist?tool_id=${tool_id}`, {
+                .put(`${getAppRoot()}api/sanitize_allow?tool_id=${tool_id}`, {
                     params: {
                         tool_id: tool_id,
                     },
@@ -110,7 +110,7 @@ export default {
         },
         sanitizeHTML(tool_id) {
             axios
-                .delete(`${getAppRoot()}api/sanitize_allowlist`, {
+                .delete(`${getAppRoot()}api/sanitize_allow`, {
                     params: {
                         tool_id: tool_id,
                     },

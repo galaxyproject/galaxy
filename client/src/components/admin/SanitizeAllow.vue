@@ -40,8 +40,8 @@ export default {
             if (this.currentView === "sanitize-allow-grid") {
                 props = {
                     isLoaded: this.isLoaded,
-                    allow: this.allowList,
-                    sanitize: this.blockList,
+                    allowList: this.allowList,
+                    blockList: this.blockList,
                 };
             }
 
@@ -51,11 +51,11 @@ export default {
 
     created() {
         axios
-            .get(`${getAppRoot()}api/sanitize_allowlist`)
+            .get(`${getAppRoot()}api/sanitize_allow`)
             .then((response) => {
                 this.isLoaded = true;
-                this.allowList = response.data.data.allow;
-                this.blockList = response.data.data.sanitize;
+                this.allowList = response.data.data.allowList;
+                this.blockList = response.data.data.blockList;
                 this.message = response.data.message;
                 this.status = response.data.status;
             })

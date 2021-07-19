@@ -11,13 +11,13 @@ from galaxy.webapps.base.controller import BaseAPIController
 log = logging.getLogger(__name__)
 
 
-class SanitizeAllowlistController(BaseAPIController):
+class SanitizeAllowController(BaseAPIController):
 
     @web.require_admin
     @web.legacy_expose_api
     def index(self, trans, **kwd):
         """
-        GET /api/sanitize_allowlist
+        GET /api/sanitize_allow
         Return an object showing the current state of the toolbox and allow list.
         """
         return {'status': 'done', 'message': 'Tool allow list loaded.', 'data': self._generate_allowlist(trans)}
@@ -26,7 +26,7 @@ class SanitizeAllowlistController(BaseAPIController):
     @web.legacy_expose_api
     def create(self, trans, tool_id, **kwd):
         """
-        PUT /api/sanitize_allowlist
+        PUT /api/sanitize_allow
         Add a new tool specification to the allow list.
         """
         if tool_id not in trans.app.config.sanitize_allowlist:
@@ -38,7 +38,7 @@ class SanitizeAllowlistController(BaseAPIController):
     @web.legacy_expose_api
     def delete(self, trans, tool_id, **kwd):
         """
-        DELETE /api/sanitize_allowlist
+        DELETE /api/sanitize_allow
         Add a new tool specification to the allow list.
         """
         if tool_id in trans.app.config.sanitize_allowlist:

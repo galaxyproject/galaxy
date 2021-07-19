@@ -430,9 +430,9 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('tool', 'tools', path_prefix='/api')
     webapp.mapper.resource('dynamic_tools', 'dynamic_tools', path_prefix='/api')
 
-    webapp.mapper.connect('/api/sanitize_allowlist', action='index', controller='sanitize_allowlist', conditions=dict(method=["GET"]))
-    webapp.mapper.connect('/api/sanitize_allowlist', action='create', controller='sanitize_allowlist', conditions=dict(method=["PUT"]))
-    webapp.mapper.connect('/api/sanitize_allowlist', action='delete', controller='sanitize_allowlist', conditions=dict(method=["DELETE"]))
+    webapp.mapper.connect('/api/sanitize_allow', action='index', controller='sanitize_allow', conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/sanitize_allow', action='create', controller='sanitize_allow', conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/sanitize_allow', action='delete', controller='sanitize_allow', conditions=dict(method=["DELETE"]))
 
     webapp.mapper.connect('/api/entry_points', action='index', controller="tool_entry_points")
     webapp.mapper.connect('/api/entry_points/{id:.+?}/access', action='access_entry_point', controller="tool_entry_points")
