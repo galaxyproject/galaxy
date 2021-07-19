@@ -108,6 +108,10 @@ class GalaxyRBACAgent(RBACAgent):
         else:
             search_query = None
         # Limit the query only to get the page needed
+        if isinstance(page, str):
+            page = int(page)
+        if isinstance(page_limit, str):
+            page_limit = int(page_limit)
         if page is not None and page_limit is not None:
             limit = page * page_limit
         else:
