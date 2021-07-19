@@ -110,7 +110,7 @@ const AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: _l("Manage Allowlist"),
-                        url: "admin/sanitize_allowlist",
+                        url: "admin/sanitize_allow",
                         id: "admin-link-allowlist",
                     },
                     {

@@ -143,7 +143,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')
     webapp.add_client_route('/admin/repositories', 'admin')
-    webapp.add_client_route('/admin/sanitize_allowlist', 'admin')
+    webapp.add_client_route('/admin/sanitize_allow', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
     webapp.add_client_route('/admin/toolshed', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')

@@ -54,7 +54,7 @@ class SanitizeAllowlistController(BaseAPIController):
 
     def _generate_allowlist(self, trans):
         allow_list = []
-        sanitize_list = []
+        block_list = []
         ids = None
         for tool_id in trans.app.config.sanitize_allowlist:
             for toolbox_id in trans.app.toolbox.tools_by_id:
@@ -78,6 +78,6 @@ class SanitizeAllowlistController(BaseAPIController):
                        'repository': '/'.join(tool_id.split('/')[:4]),
                        'tool': '/'.join(tool_id.split('/')[:5])}
                 tool_status = dict(tool_name=tool.name, tool_id=tool_id.split('/'), ids=ids, allowed=False, toolshed='/' in tool_id)
-                sanitize_list.append(tool_status)
-        return {'sanitize': sanitize_list, 'allow': allow_list}
-    
+                block_list.append(tool_status)
+        return {'blockList': block_list, 'allowList': allow_list}
+

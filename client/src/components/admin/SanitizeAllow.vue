@@ -58,6 +58,7 @@ export default {
                 this.blockList = response.data.data.sanitize;
                 this.message = response.data.message;
                 this.status = response.data.status;
+                console.log(this.allowList);
             })
             .catch((error) => {
                 console.error(error);
