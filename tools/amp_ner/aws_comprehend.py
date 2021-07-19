@@ -18,14 +18,14 @@ from speech_to_text import SpeechToText
 import mgm_utils
 
 def main():
-    (input_file, json_file, bucketName, dataAccessRoleArn) = sys.argv[1:5]
+    (amp_transcript, aws_entities, amp_entities, bucketName, dataAccessRoleArn) = sys.argv[1:6]
 
     # Read a list of categories to ignore when outputting entity list
     ignore_cats_list = list()
 
-    if len(sys.argv) > 5:
-        print("ignore cats:" + sys.argv[5])
-        ignore_cats_list = split_ignore_list(sys.argv[5])
+    if len(sys.argv) > 6:
+        print("ignore cats:" + sys.argv[6])
+        ignore_cats_list = split_ignore_list(sys.argv[6])
 
     # Variable declaration
     outputS3Uri = 's3://' + bucketName + '/'
@@ -34,7 +34,7 @@ def main():
     inputS3Uri = outputS3Uri + jobName
 
     # Get the transcript text from the input file
-    with open(input_file, 'r') as file:
+    with open(amp_transcript, 'r') as file:
         stt = SpeechToText().from_json(json.load(file))
 
     # Create the ner object
@@ -45,11 +45,12 @@ def main():
         mediaLength = 0
     else:
         mediaLength = len(stt.results.transcript)
+    ner.media = EntityExtractionMedia(mediaLength, amp_transcript)
 
-    # If we have a blank file, don't error.  Create another blank json file to pass to the next process
+    # If input transcript is empty, don't error, create an output json file with empty entity list to pass to the next process
     if mediaLength == 0:
-        ner.media = EntityExtractionMedia(mediaLength, input_file)
-        mgm_utils.write_json_file(ner, json_file)
+        print(f"Input AMP Transcript Json file has empty transcript, output AMP NER Json will have empty emtities as well.")
+        mgm_utils.write_json_file(ner, amp_entities)
         exit(0)
 
     # Create a temp file to upload to S3
@@ -61,21 +62,20 @@ def main():
     # Make call to aws comprehend
     output_uri = run_comprehend_job(jobName, inputS3Uri, outputS3Uri, dataAccessRoleArn)
 
-    uncompressed_file = download_from_s3(output_uri, outputS3Uri, bucketName)
-
+    # download and decompress Comprehend output
+    aws_entities = download_from_s3(output_uri, outputS3Uri, bucketName)
     if uncompressed_file is None:
+        print(f"AWS Comprehend output downloaded and decompressed from {output_uri} doesn't exist.")
         exit(1)
 
-    comprehend_data = read_comprehend_response(uncompressed_file)
-
-    ner.media = EntityExtractionMedia(mediaLength, input_file)
+    aws_entities_json = read_aws_entities(aws_entities)
 
     # Variables for filling time offsets based on speech to text
     lastPos = 0  # Iterator to keep track of location in STT word
     sttWords = len(stt.results.words) # Number of STT words
 
-    if 'Entities' in comprehend_data.keys():
-        for entity in comprehend_data["Entities"]:
+    if 'Entities' in aws_entities_json.keys():
+        for entity in aws_entities_json["Entities"]:
             entity_type = entity["Type"]
             # Start and end time offsets
             start = None
@@ -115,11 +115,11 @@ def main():
                 ner.addEntity(entity_type, text, None, None, "relevance", float(entity["Score"]), start, None)  #AMP-636 removed startOffset=endOffset=end=None
 
     # Write the json file
-    mgm_utils.write_json_file(ner, json_file)
+    mgm_utils.write_json_file(ner, amp_entities)
 
     # Cleanup temp files
-    safe_delete(uncompressed_file)
     safe_delete(tmpfile.name)
+    
 
 def create_temp_transcript_file(jobName, transcript):
     # Dump the transcript text to a text file so it can be uploaded to S3
@@ -128,11 +128,16 @@ def create_temp_transcript_file(jobName, transcript):
         tmpfile.write(transcript)
     return tmpfile
 
-def clean_entity_word(entity_word):
-    cleaned_word = entity_word
-    if(entity_word.endswith('\'s')):
-       cleaned_word = entity_word.replace('\'s', '')
-    return cleaned_word.translate(str.maketrans('', '', string.punctuation))
+def copy_to_s3(amp_transcript, bucket, jobname):
+    s3_client = boto3.client('s3')
+    try:
+        response = s3_client.upload_file(amp_transcript, bucket, jobname)
+        print("Uploaded file " + amp_transcript + " to S3 bucket " + bucket + " for job " + jobname)
+    except Exception as e:
+        print("Failed to upload file " + amp_transcript + " to S3 bucket " + bucket + " for job " + jobname, e)
+        traceback.print_exc()
+        return False
+    return True
 
 def download_from_s3(output_uri, base_uri, bucket_name):
     tarFileName = "comprehend_output.tar.gz"
@@ -188,17 +193,6 @@ def run_comprehend_job(jobName, inputS3Uri, outputS3Uri, dataAccessRoleArn):
 
     return output_uri
 
-# # Read a list of categories to ignore
-# def read_ignore_list(ignore_list_filename):
-#     print("Reading list")
-#     ignore_cats_list = list()
-#     f = open(ignore_list_filename, "r")
-#     # For each value in the comma separated list.  Standardize text
-#     for val in f.read().split(","):
-#         ignore_cats_list.append(clean_text(val))
-#     print(ignore_cats_list)
-#     return ignore_cats_list
-
 # Split a comma separated string, standardize input, and return list
 def split_ignore_list(ignore_list_string):
     to_return = list()
@@ -207,13 +201,19 @@ def split_ignore_list(ignore_list_string):
         to_return.append(clean_text(cat))
     return to_return
 
+def clean_entity_word(entity_word):
+    cleaned_word = entity_word
+    if(entity_word.endswith('\'s')):
+       cleaned_word = entity_word.replace('\'s', '')
+    return cleaned_word.translate(str.maketrans('', '', string.punctuation))
+
 def clean_text(text):
     return text.lower().strip()
 
-def read_comprehend_response(reponse_filename):
-    with open(reponse_filename) as json_file:
-        data = json.load(json_file)
-    return data
+def read_aws_entities(aws_entities):
+    with open(aws_entities) as aws_entities_file:
+        aws_entities_json = json.load(aws_entities_file)
+    return aws_entities_json
 
 def safe_delete(filename):
     try:
@@ -222,17 +222,6 @@ def safe_delete(filename):
             print("Deleted file " + filename)
     except Exception as e:
         print("Failed to delete file " + filename, e)
-        traceback.print_exc()
-        return False
-    return True
-
-def copy_to_s3(input_file, bucket, jobname):
-    s3_client = boto3.client('s3')
-    try:
-        response = s3_client.upload_file(input_file, bucket, jobname)
-        print("Uploaded file " + input_file + " to S3 bucket " + bucket + " for job " + jobname)
-    except Exception as e:
-        print("Failed to upload file " + input_file + " to S3 bucket " + bucket + " for job " + jobname, e)
         traceback.print_exc()
         return False
     return True
