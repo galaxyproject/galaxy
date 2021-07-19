@@ -663,17 +663,43 @@ class NoOptionsValidator(Validator):
 class EmptyTextfieldValidator(Validator):
     """
     Validator that checks for empty text field
+
+    >>> from galaxy.util import XML
+    >>> from galaxy.tools.parameters.basic import ToolParameter
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="text" value="">
+    ...     <validator type="empty_field"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate("")
+    Traceback (most recent call last):
+        ...
+    ValueError: Field requires a value
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="text" value="">
+    ...     <validator type="empty_field" negate="true"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate("foo")
+    Traceback (most recent call last):
+        ...
+    ValueError: Field must not set a value
+    >>> t = p.validate("")
     """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', "Field requires a value"))
+        negate = elem.get('negate', 'false')
+        if negate == 'false':
+            message = elem.get('message', "Field requires a value")
+        else:
+            message = elem.get('message', "Field must not set a value")
+        return cls(message, negate)
 
     def validate(self, value, trans=None):
-        if value == '':
-            if self.message is None:
-                self.message = ""
-            raise ValueError(self.message)
+        if self.message is None:
+            self.message = ""
+        super().validate(value != '')
 
 
 class MetadataInFileColumnValidator(Validator):
