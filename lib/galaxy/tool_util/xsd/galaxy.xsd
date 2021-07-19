@@ -89,6 +89,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="xrefs" type="xrefs" minOccurs="0" />
         <xs:element name="creator" type="Creator" minOccurs="0" />
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
+        <xs:element name="required_files" type="RequiredFiles" minOccurs="0"/>
         <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1" />
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="tool-descriptions">
@@ -520,6 +521,77 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
     <xs:sequence>
       <xs:group ref="PersonOrOrganization" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="RequiredFiles">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This declaration is used to define files that must be shipped from the tool directory
+for the tool to function properly in remote environments where the tool directory
+is not available to the job.
+
+All includes should be list before excludes. By default, the exclude list includes
+the tool-data/**, test-data/**, and .hg/** glob patterns.
+
+Pulsar hacks to implicitly find referenced files from the tool directory will be disabled
+when this block is used. A future Galaxy tool profile version may disable these hacks
+altogether and specifying this block for all referenced files should be considered a best
+practice.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="include" type="RequiredFileInclude" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="exclude" type="RequiredFileExclude" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="extend_default_excludes" type="xs:boolean" default="true">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Set this to `false` to override the default excludes for mercurial, reference, and test data.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:simpleType name="RequiredFileReferenceType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">How are files referenced in RequiredFileIncludes and RequiredFileExcludes. Paths are matched relative to the tool directory. `literal` must match the filename exactly. `prefix` will match paths based on their start. `glob` and `regex` use patterns to match files.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="literal"/>
+      <xs:enumeration value="prefix"/>
+      <xs:enumeration value="glob"/>
+      <xs:enumeration value="regex"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="RequiredFileInclude">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Describe files to include when relocating tool directory for remote execution.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="type" type="RequiredFileReferenceType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Type of file reference `path` is.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="path" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Path to referenced files - this should be relative to the tool's directory (this is the file the tool is located in not the repository directory if these conflict).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="RequiredFileExclude">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Describe files to exclude when relocating tool directory for remote execution.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="type" type="RequiredFileReferenceType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Type of file reference `path` is.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="path" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Path to referenced files - this should be relative to the tool's directory (this is the file the tool is located in not the repository directory if these conflict).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="Requirements">
