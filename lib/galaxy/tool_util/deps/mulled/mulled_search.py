@@ -160,10 +160,8 @@ class GitHubSearch():
         """
         Check if a recipe exists in bioconda-recipes which matches search_string exactly
         """
-        if requests.get(f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{search_string}", timeout=MULLED_SOCKET_TIMEOUT).status_code == 200:
-            return True
-        else:
-            return False
+        response = requests.get(f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{search_string}", timeout=MULLED_SOCKET_TIMEOUT)
+        return response.status_code == 200
 
 
 def get_package_hash(packages, versions):
