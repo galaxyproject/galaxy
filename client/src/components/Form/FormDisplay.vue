@@ -3,6 +3,7 @@
 </template>
 
 <script>
+import _ from "underscore";
 import Form from "mvc/form/form-view";
 import { visitInputs } from "components/Form/utilities";
 

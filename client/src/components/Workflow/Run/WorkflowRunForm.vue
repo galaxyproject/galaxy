@@ -181,7 +181,7 @@ export default {
                 history_id: !this.historyData["new_history|name"] ? this.model.historyId : null,
                 resource_params: this.resourceData,
                 replacement_params: this.wpData,
-                use_cached_job: useCachedJobs,
+                use_cached_job: this.useCachedJobs,
                 parameters: this.stepData,
                 // Tool form will submit flat maps for each parameter
                 // (e.g. "repeat_0|cond|param": "foo" instead of nested
