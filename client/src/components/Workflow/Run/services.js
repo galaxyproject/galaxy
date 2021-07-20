@@ -41,7 +41,7 @@ export async function getTool(toolId, toolVersion, toolInputs) {
     const requestData = {
         tool_id: toolId,
         tool_version: toolVersion,
-        inputs: $.extend(true, {}, toolInputs),
+        inputs: JSON.parse(JSON.stringify(toolInputs)),
     };
     try {
         const { data } = await axios.post(`${getAppRoot()}api/tools/${toolId}/build`, requestData);

@@ -1,6 +1,6 @@
 import _ from "underscore";
 
-import FormData from "mvc/form/form-data";
+import { visitInputs } from "components/Form/utilities";
 import WorkflowIcons from "components/Workflow/icons";
 import Utils from "utils/utils";
 
@@ -73,7 +73,7 @@ export class WorkflowRunModel {
 
         // build linear index of step input pairs
         _.each(this.steps, (step, i) => {
-            FormData.visitInputs(step.inputs, (input, name) => {
+            visitInputs(step.inputs, (input, name) => {
                 this.parms[i][name] = input;
             });
         });
@@ -159,7 +159,7 @@ export class WorkflowRunModel {
         _.each(this.steps, (step, i) => {
             if (step.step_type == "tool") {
                 var data_resolved = true;
-                FormData.visitInputs(step.inputs, (input, name, context) => {
+                visitInputs(step.inputs, (input, name, context) => {
                     var is_runtime_value = input.value && input.value.__class__ == "RuntimeValue";
                     var is_data_input = ["data", "data_collection"].indexOf(input.type) != -1;
                     var data_ref = context[input.data_ref];
