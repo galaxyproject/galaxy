@@ -1,4 +1,3 @@
-import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { matchCase, visitInputs } from "components/Form/utilities";

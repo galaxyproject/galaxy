@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div :step-label="model.step_label">
         <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :collapsed.sync="collapsed">
             <template v-slot:body>
                 <FormDisplay

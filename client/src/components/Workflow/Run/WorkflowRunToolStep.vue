@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div :step-label="model.step_label">
         <FormCard :title="title" icon="fa-wrench" :collapsible="true" :collapsed.sync="collapsed">
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
