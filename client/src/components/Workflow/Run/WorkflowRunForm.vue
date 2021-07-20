@@ -226,17 +226,17 @@ export default {
                                 stepId: errorEntries[0][0],
                                 stepError: Object.entries(errorEntries[0][1])[0],
                             };
-                        } catch (e) {
+                        } catch (errorFormatting) {
                             console.debug(
-                                e,
+                                errorFormatting,
                                 "WorkflowRunForm::onExecute()",
-                                "Invalid server error response.",
+                                "Invalid server error response format.",
                                 errorData
                             );
-                            this.$emit("submissionError", response);
+                            this.$emit("submissionError", e);
                         }
                     } else {
-                        this.$emit("submissionError", response);
+                        this.$emit("submissionError", e);
                     }
                 });
         },
