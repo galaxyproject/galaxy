@@ -526,6 +526,7 @@ class Edta(TabularData):
     def set_meta(self, dataset, **kwd):
         data_lines = 0
         delim = None
+        tpe = None
         if dataset.has_data():
             with open(dataset.file_name) as dtafile:
                 for idx, line in enumerate(dtafile):
@@ -550,7 +551,7 @@ class Edta(TabularData):
         dataset.metadata.data_lines = data_lines
         dataset.metadata.comment_lines = 0
         dataset.metadata.columns = len(dataset.metadata.column_names)
-        if tpe > 0:
+        if tpe is not None and tpe > 0:
             dataset.metadata.comment_lines += 1
             dataset.metadata.data_lines -= 1
 
