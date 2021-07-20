@@ -9,6 +9,8 @@ import tempfile
 import string
 import time
 import tarfile
+import socket
+import shutil
 from datetime import datetime
 import boto3
 
@@ -18,7 +20,7 @@ from speech_to_text import SpeechToText
 import mgm_utils
 
 def main():
-    (amp_transcript, aws_entities, amp_entities, bucketName, dataAccessRoleArn) = sys.argv[1:6]
+    (amp_transcript, aws_entities, amp_entities, bucket, dataAccessRoleArn) = sys.argv[1:6]
 
     # get a list of categories to ignore when outputting entity list
     ignore_categories = list()
@@ -26,7 +28,7 @@ def main():
         ignore_categories = get_ignore_categories(sys.argv[6])
         print(f"Ignore categories: {ignore_categories}")
 
-    # parse input AMP Transcript JSON file
+    # parse input AMP Transcript JSON file into amp_entities object
     try:
         with open(amp_transcript, 'r') as amp_transcript_file:
             amp_transcript_obj = SpeechToText().from_json(json.load(amp_transcript_file))
@@ -40,32 +42,29 @@ def main():
     mediaLength = len(amp_transcript_obj.results.transcript)
     amp_entities_obj.media = EntityExtractionMedia(mediaLength, amp_transcript)
 
-    # If input AMP transcript is empty, don't error, output AMP Entity JSON with empty entity list and complete the process
+    # If input AMP transcript is empty, don't error, instead, output AMP Entity JSON with empty entity list and complete the process
     if mediaLength == 0:
         print(f"Warning: Input AMP Transcript Json file has empty transcript, will output AMP NER Json with empty entities list.")
         mgm_utils.write_json_file(amp_entities_obj, amp_entities)
         exit(0)
 
-    # otherwise, continue with preparation for AWS Comprehend job
-    outputS3Uri = 's3://' + bucketName + '/'
+    # otherwise, continue with preparation for AWS Comprehend job 
+    s3uri = 's3://' + bucket + '/'
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    jobName = 'AwsComprehend-' + timestamp + ".json"
-    inputS3Uri = outputS3Uri + jobName
+    # hostname + timestamp should ensure unique job name
+    jobname = 'AwsComprehend-' + socket.gethostname + "-" + timestamp 
 
-    # Create a temp file to upload to S3
-    tmpfile = create_temp_transcript_file(jobName, amp_transcript_obj.results.transcript)
+    # write AMP Transcript text into the input file in a temp directory and upload it to S3
+    tmpdir = tempfile.gettempdir()
+    inkey = jobname + "-input"
+    upload_input_to_s3(amp_transcript_obj, tmpdir, inkey, bucket, jobname)
 
-    # Copy the temporary text file to S3
-    copy_to_s3(tmpfile.name, bucketName, jobName)
+    # Make call to AWS Comprehend
+    outputuri = run_comprehend_job(jobname, s3uri, inkey, dataAccessRoleArn)
 
-    # Make call to aws comprehend
-    output_uri = run_comprehend_job(jobName, inputS3Uri, outputS3Uri, dataAccessRoleArn)
-
-    # download and uncompress Comprehend output
-    aws_entities = download_from_s3(output_uri, outputS3Uri, bucketName)
-    if uncompressed_file is None:
-        print(f"Error: AWS Comprehend output downloaded/uncompressed from {output_uri} doesn't exist.")
-        exit(1)
+    # download AWS Comprehend output from s3 to the tmp directory, uncompress and copy it to output aws_entities output file
+    outkey = jobname + "-output"
+    download_output_from_s3(outputuri, s3uri, bucket, tmpdir, outkey, aws_entities)
 
     # populate AMP Entities list based on input AMP transcript words list and output AWS Entities list  
     aws_entities_json = read_aws_entities(aws_entities)
@@ -73,81 +72,111 @@ def main():
 
     # Write the output AMP Entity JSON file
     mgm_utils.write_json_file(amp_entities_obj, amp_entities)
-
-    # Cleanup temp files
-    safe_delete(tmpfile.name)
     
 
-def create_temp_transcript_file(jobName, transcript):
-    # Dump the transcript text to a text file so it can be uploaded to S3
-    tempdir = tempfile.gettempdir()
-    with open(tempdir + jobName, 'w') as tmpfile:
-        tmpfile.write(transcript)
-    return tmpfile
-
-def copy_to_s3(amp_transcript, bucket, jobname):
-    s3_client = boto3.client('s3')
+def upload_input_to_s3(amp_transcript_obj, tmpdir, inkey, bucket):
+    # write the transcript text into the input file
     try:
-        response = s3_client.upload_file(amp_transcript, bucket, jobname)
-        print("Uploaded file " + amp_transcript + " to S3 bucket " + bucket + " for job " + jobname)
+        input = tmpdir + inkey
+        with open(input, 'w') as infile:
+            infile.write(amp_transcript_obj.results.transcript)
+            print(f"Successfully created input file {input} containing transcript for AWS Comprehend job.")
     except Exception as e:
-        print("Failed to upload file " + amp_transcript + " to S3 bucket " + bucket + " for job " + jobname, e)
+        print(f"Error: Exception while creating input file {input} containing transcript for AWS Comprehend job.")
+        traceback.print_exc()
+        eixt(1)
+    
+    # upload the tmp file to s3
+    try:
+        s3_client = boto3.client('s3')
+        response = s3_client.upload_file(input, bucket, inkey)
+        print(f"Successfully uploaded input file {input} to S3 bucket {bucket} for AWS Comprehend job.")
+    except Exception as e:
+        print(f"Error: Exception while uploading input file {input} to S3 bucket {bucket} for AWS Comprehend job.")
         traceback.print_exc()
         eixt(1)
 
-def download_from_s3(output_uri, base_uri, bucket_name):
-    tarFileName = "comprehend_output.tar.gz"
-    output_key = output_uri.replace(base_uri, '')
-    s3_client = boto3.client('s3')
+def download_output_from_s3(outputuri, s3uri, bucket, tmpdir, aws_entities):
+    # get the output file from s3
+    try:
+        outkey = outputuri.replace(s3uri, '')
+        output = tmpdir + outkey
+        s3_client = boto3.client('s3')    
+        s3_client.download_file(bucket, outkey, output)
+        print(f"Successfully downloaded AWS Comprehend output {outputuri} to tmp file {output}.")
+    except Exception as e:
+        print(f"Error: Exception while downloading AWS Comprehend output {outputuri} to {output}.")
+        traceback.print_exc()
+        eixt(1)
+    
+    # extract the contents of the output.tar.gz file and move the uncompressed file to galaxy output
+    try:
+        tar = tarfile.open(output)
+        outputs = tar.getmembers()
+        tar.extractall()
+        tar.close()
+                
+        if len(outputs) > 0:
+            source = outputs[0].name
+            shutil.move(source, aws_entities) 
+            print(f"Successfully uncompressed AWS Comprehend output to {source} and moved it to {aws_entities}.")
+        else:
+            print(f"Error: AWS Comprehend outputs uncompressed from {output} is empty.")
+            exit(1)
+    except Exception as e:
+        print(f"Error: Exception while uncompressing/moving tmp output {output} to {aws_entities}.")
+        traceback.print_exc()
+        eixt(1)        
 
-    # get the file from s3
-    with open(tarFileName, 'wb') as f:
-        s3_client.download_fileobj(bucket_name, output_key, f)
 
-    # extract the contents of the .tar.gz file
-    tar = tarfile.open(tarFileName)
-    test = tar.getmembers()
-    tar.extractall()
-    tar.close()
-
-    safe_delete(tarFileName)
-
-    if len(test) > 0:
-        return test[0].name
-    else:
-        return None
-
-def run_comprehend_job(jobName, inputS3Uri, outputS3Uri, dataAccessRoleArn):
-    comprehend = boto3.client(service_name='comprehend', region_name='us-east-2')
-    print("input uri:" + inputS3Uri)
-    response = comprehend.start_entities_detection_job(
-        InputDataConfig={
-            'S3Uri': inputS3Uri,
-            "InputFormat": "ONE_DOC_PER_FILE"
-        },
-        OutputDataConfig={
-            'S3Uri': outputS3Uri
-        },
-        DataAccessRoleArn=dataAccessRoleArn,
-        JobName=jobName,
-        LanguageCode='en'
-    )
-
-    status = ''
-    output_uri = ''
-
-    while status not in ('COMPLETED','FAILED', 'STOP_REQUESTED','STOPPED'):
-        jobStatusResponse = comprehend.describe_entities_detection_job(
-            JobId=response['JobId']
+def run_comprehend_job(jobname, s3uri, inkey, dataAccessRoleArn):
+    # submit AWS Comprehend job
+    try:
+        # TODO region name should be in MGM config
+        comprehend = boto3.client(service_name='comprehend', region_name='us-east-2')
+        inputs3uri = s3uri + inkey
+        response = comprehend.start_entities_detection_job(
+            InputDataConfig={
+                'S3Uri': inputs3uri,
+                "InputFormat": "ONE_DOC_PER_FILE"
+            },
+            OutputDataConfig={
+                'S3Uri': s3uri
+            },
+            DataAccessRoleArn=dataAccessRoleArn,
+            JobName=jobname,
+            LanguageCode='en'
         )
-        if 'EntitiesDetectionJobProperties' in jobStatusResponse.keys():
-            print(jobStatusResponse)
-            status = jobStatusResponse['EntitiesDetectionJobProperties']['JobStatus']
-            output_uri = jobStatusResponse['EntitiesDetectionJobProperties']['OutputDataConfig']['S3Uri']
-            print(status)
-            time.sleep(20)
+        print(f"Successfully submitted AWS Comprehend job {jobname} with input {inputs3uri}.")
+    except Exception as e:
+        print(f"Error: Exception while submitting AWS Comprehend job {jobname} with input {inputs3uri}")
+        traceback.print_exc()
+        eixt(1)
 
-    return output_uri
+    # wait for AWS Comprehend job to end
+    status = ''
+    outputuri = ''
+    try:
+        # keep checking every 60 seconds while job still in progress
+        while status not in ('COMPLETED','FAILED', 'STOP_REQUESTED','STOPPED'):
+            jobStatusResponse = comprehend.describe_entities_detection_job(JobId=response['JobId'])
+            status = jobStatusResponse['EntitiesDetectionJobProperties']['JobStatus']
+            outputuri = jobStatusResponse['EntitiesDetectionJobProperties']['OutputDataConfig']['S3Uri']
+            print(f"Waiting for AWS Comprehend job to complete: status = {status}.")              
+            time.sleep(60)        
+    except Exception as e:
+        print(f"Error: Exception while checking status of AWS Comprehend job {jobname}")
+        traceback.print_exc()
+        eixt(1)
+   
+    # check status of job upon ending
+    print(jobStatusResponse)     
+    if status == 'COMPLETED':
+        print(f"AWS Comprehend job {jobname} completed in success with output {outputuri}.")  
+        return outputuri
+    else:
+        print(f"Error: AWS Comprehend job {jobname} ended with status {status}.")
+        exit(1)
 
 # Split a comma separated string, standardize input, and return list
 def get_ignore_categories(ignore_categories_string):
@@ -165,16 +194,16 @@ def read_aws_entities(aws_entities):
         aws_entities_json = json.load(aws_entities_file)
     return aws_entities_json
 
-def safe_delete(filename):
-    try:
-        if os.path.exists(filename):
-            os.remove(filename)
-            print("Deleted file " + filename)
-    except Exception as e:
-        print("Failed to delete file " + filename, e)
-        traceback.print_exc()
-        return False
-    return True
+# def safe_delete(filename):
+#     try:
+#         if os.path.exists(filename):
+#             os.remove(filename)
+#             print("Deleted file " + filename)
+#     except Exception as e:
+#         print("Failed to delete file " + filename, e)
+#         traceback.print_exc()
+#         return False
+#     return True
 
 def populateAmpEntities(amp_transcript_obj, aws_entities_json, amp_entities_obj, ignore_categories):
     # AWS Comprehend output should contain entities
