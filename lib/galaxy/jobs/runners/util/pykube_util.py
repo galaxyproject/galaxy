@@ -89,8 +89,8 @@ def find_pod_object_by_name(pykube_api, job_name, namespace=None):
 
 
 def is_pod_unschedulable(pykube_api, pod, namespace=None):
-    is_unschedulable = bool(len([c for c in pod.obj['status']['conditions'] if c.get("reason") == "Unschedulable"]))
-    if pod.obj['status']['phase'] == "Pending" and is_unschedulable:
+    is_unschedulable = bool(len([c for c in pod.obj['status'].get('conditions', []) if c.get("reason") == "Unschedulable"]))
+    if pod.obj['status'].get('phase') == "Pending" and is_unschedulable:
         return True
 
     return False
