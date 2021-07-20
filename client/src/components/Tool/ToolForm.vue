@@ -298,11 +298,16 @@ export default {
                 },
                 (e) => {
                     this.showExecuting = false;
+                    let genericError = true;
                     const errorData = e && e.response && e.response.data && e.response.data.err_data;
                     if (errorData) {
                         const errorEntries = Object.entries(errorData);
-                        this.validationScrollTo = errorEntries[0];
-                    } else {
+                        if (errorEntries.length > 0) {
+                            this.validationScrollTo = errorEntries[0];
+                            genericError = false;
+                        }
+                    }
+                    if (genericError) {
                         this.showError = true;
                         this.showForm = false;
                         this.errorTitle = "Job submission failed";

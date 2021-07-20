@@ -154,7 +154,7 @@ export default {
     methods: {
         getValidationScrollTo(stepId) {
             if (this.stepScrollTo.stepId == stepId) {
-                return this.stepScrollTo.details;
+                return this.stepScrollTo.stepError;
             }
             return [];
         },
@@ -185,7 +185,7 @@ export default {
                 if (stepValidation) {
                     this.stepScrollTo = {
                         stepId: stepId,
-                        details: stepValidation.slice(),
+                        stepError: stepValidation.slice(),
                     };
                     return;
                 }
@@ -220,15 +220,20 @@ export default {
                     this.showExecuting = false;
                     const errorData = e && e.response && e.response.data && e.response.data.err_data;
                     if (errorData) {
-                        for (const [stepId, stepError] of Object.entries(errorData)) {
-                            if (stepError) {
-                                const errorEntries = Object.entries(stepError);
-                                this.stepScrollTo = {
-                                    stepId: stepId,
-                                    details: errorEntries[0],
-                                };
-                                return;
-                            }
+                        try {
+                            const errorEntries = Object.entries(errorData);
+                            this.stepScrollTo = {
+                                stepId: errorEntries[0][0],
+                                stepError: Object.entries(errorEntries[0][1])[0],
+                            };
+                        } catch (e) {
+                            console.debug(
+                                e,
+                                "WorkflowRunForm::onExecute()",
+                                "Invalid server error response.",
+                                errorData
+                            );
+                            this.$emit("submissionError", response);
                         }
                     } else {
                         this.$emit("submissionError", response);
