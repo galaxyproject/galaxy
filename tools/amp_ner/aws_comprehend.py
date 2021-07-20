@@ -20,40 +20,42 @@ import mgm_utils
 def main():
     (amp_transcript, aws_entities, amp_entities, bucketName, dataAccessRoleArn) = sys.argv[1:6]
 
-    # get a list of categories to ignore when outputting entity list
+    # Read a list of categories to ignore when outputting entity list
     ignore_categories = list()
+
     if len(sys.argv) > 6:
+        print("ignore categories:" + sys.argv[6])
         ignore_categories = get_ignore_categories(sys.argv[6])
-        print(f"Ignore categories: {ignore_categories}")
 
-    # parse input AMP Transcript JSON file
-    try:
-        with open(amp_transcript, 'r') as amp_transcript_file:
-            amp_transcript_obj = SpeechToText().from_json(json.load(amp_transcript_file))
-    except Exception:
-        print(f"Error: Exception while parsing AMP Transcript {amp_transcript}:")
-        traceback.print_exc()
-        exit(1)
-        
-    # initialize the amp_entities object with media information
-    amp_entities_obj = EntityExtraction()
-    mediaLength = len(amp_transcript_obj.results.transcript)
-    amp_entities_obj.media = EntityExtractionMedia(mediaLength, amp_transcript)
-
-    # If input AMP transcript is empty, don't error, output AMP Entity JSON with empty entity list and complete the process
-    if mediaLength == 0:
-        print(f"Warning: Input AMP Transcript Json file has empty transcript, will output AMP NER Json with empty entities list.")
-        mgm_utils.write_json_file(amp_entities_obj, amp_entities)
-        exit(0)
-
-    # otherwise, continue with preparation for AWS Comprehend job
+    # Variable declaration
     outputS3Uri = 's3://' + bucketName + '/'
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     jobName = 'AwsComprehend-' + timestamp + ".json"
     inputS3Uri = outputS3Uri + jobName
 
+    # Get the transcript text from the input file
+    with open(amp_transcript, 'r') as amp_transcript_file:
+        amp_transcript_json = SpeechToText().from_json(json.load(amp_transcript_file))
+
+    # Create the amp_entities_json object
+    amp_entities_json = EntityExtraction()
+
+    # Add the media information
+    if amp_transcript_json is None or amp_transcript_json.results is None:
+        print(f"Error: Input AMP Transcript JSON is invalid.")
+        exit(1)
+    else:
+        mediaLength = len(amp_transcript_json.results.transcript)
+    amp_entities_json.media = EntityExtractionMedia(mediaLength, amp_transcript)
+
+    # If input transcript is empty, don't error, create an output json file with empty entity list to pass to the next process
+    if mediaLength == 0:
+        print(f"Warning: Input AMP Transcript Json file has empty transcript, output AMP NER Json will have empty entities as well.")
+        mgm_utils.write_json_file(amp_entities_json, amp_entities)
+        exit(0)
+
     # Create a temp file to upload to S3
-    tmpfile = create_temp_transcript_file(jobName, amp_transcript_obj.results.transcript)
+    tmpfile = create_temp_transcript_file(jobName, amp_transcript_json.results.transcript)
 
     # Copy the temporary text file to S3
     copy_to_s3(tmpfile.name, bucketName, jobName)
@@ -69,10 +71,10 @@ def main():
 
     # populate AMP Entities list based on input AMP transcript words list and output AWS Entities list  
     aws_entities_json = read_aws_entities(aws_entities)
-    populateAmpEntities(amp_transcript_obj, aws_entities_json, amp_entities_obj, ignore_categories)
+    populateAmpEntities(amp_transcript_json, aws_entities_json, amp_entities_json, ignore_categories)
 
-    # Write the output AMP Entity JSON file
-    mgm_utils.write_json_file(amp_entities_obj, amp_entities)
+    # Write the json file
+    mgm_utils.write_json_file(amp_entities_json, amp_entities)
 
     # Cleanup temp files
     safe_delete(tmpfile.name)
@@ -93,7 +95,8 @@ def copy_to_s3(amp_transcript, bucket, jobname):
     except Exception as e:
         print("Failed to upload file " + amp_transcript + " to S3 bucket " + bucket + " for job " + jobname, e)
         traceback.print_exc()
-        eixt(1)
+        return False
+    return True
 
 def download_from_s3(output_uri, base_uri, bucket_name):
     tarFileName = "comprehend_output.tar.gz"
@@ -176,67 +179,60 @@ def safe_delete(filename):
         return False
     return True
 
-def populateAmpEntities(amp_transcript_obj, aws_entities_json, amp_entities_obj, ignore_categories):
-    # AWS Comprehend output should contain entities
+def populateAmpEntities(amp_transcript_json, aws_entities_json, amp_entities_json, ignore_categories):
     if not 'Entities' in aws_entities_json.keys():
-        print(f"Error: AWS Comprehend output does not contain entities list")
-        exit(1)
+        print(f"Warning: AWS Comprehend output does not contain entities list")
+        return
     
-    words = amp_transcript_obj.results.words
+    words = amp_transcript_json["results"]["words"]
     entities = aws_entities_json["Entities"]
     lenw = len(words)
     lene = len(entities)
     last = -1  # index of last matched word in AMP Transcript words list
     ignored = 0; # count of ignored entities
     
-    # go through entities from AWS output
     for entity in entities:
-        try:
-            type = entity["Type"]
-            text = entity["Text"]
-            beginOffset = entity["BeginOffset"]
-            endOffset = entity["EndOffset"]
-            end = None
-            scoreType = "relevance"
-            scoreValue = entity["Score"]
-            
-            # skip entity in the ignore categories
-            if clean_text(type) in ignore_categories:
-                ignored = ignored + 1
-                print(f"Ignoring entity {text} of type {type}.")
-                continue
-    
-            # find the word in words list matching the offset of entity, starting from last matched word, as
-            # we can assume that both AMP Transcript words and AWS Entities are sorted in the time/offset order        
-            for i in range(last+1, lenw):
-                # find a match by offset
-                if words[i].offset == beginOffset:
-                    textamp = words[i].text
-                    # check if text match, note that entity could be multi-words, so we need to check if it starts with the matching word
-                    # if not, something is wrong; will still take it as a match 
-                    if not text.startswith(textamp):
-                        print(f"Warning: AWS Entity {text} does not start with AMP Transcript words[{i}] = {textamp}, even though both start at offset {beginOffset}.")
-                    last = i
-                    break
-            # reached the end of words list, match not found
-            else:
-                last = lenw
-                
-            # if reached end of words list and no matched word is found for current entity, no need to match the rest of entities
-            if last == lenw:
-                print(f"Warning: Reaching the end of AMP Transcript words list with some AWS entities remaining unmatched.")
-                break
-            # otherwise a match is found, add a new entity for it to entities list
-            else:               
-                start = words[last].start
-                amp_entities_obj.addEntity(type, text, beginOffset, endOffset, start, end, scoreType, scoreValue)
-        except Exception:
-            # in case of exception, most likely due to missing fields, skip the entity in error and continue with the rest
-            print("Error: Exception while processing AWS entity {text} at offset {begineOffset}")
-            traceback.print_exc()           
+        type = entity["Type"]
+        text = entity["Text"]
+        beginOffset = entity["BeginOffset"]
+        endOffset = entity["EndOffset"]
+        end = None
+        scoreType = "relevance"
+        scoreValue = entity["Score"]
+        
+        # skip entity in the ignore categories
+        if clean_text(type) in ignore_categories:
+            ignored = ignored + 1
+            print(f"Ignoring entity {text} of type {type}.")
+            continue
 
-    lena = len(amp_entities_obj.entities)
-    print(f"Among all {lene} AWS entities, {lena} are successfully populated into AMP Entities, {ignored} are ignored, {lene-lena-ignored} are unmatched.")
+        # find the word in words list matching the offset of entity, starting from last matched word, as
+        # we can assume that both AMP Transcript words and AWS Entities are sorted in the time/offset order        
+        for i in range(last+1, lenw):
+            # find a match by offset
+            if words[i]["offset"] == beginOffset:
+                textamp = words[i]["text"]
+                # check if text match, note that entity could be multi-words, so we need to check if it starts with the matching word
+                # if not, something is wrong; will still take it as a match 
+                if not text.startswith(textamp):
+                    print(f"Warning: AWS Entity {text} does not start with AMP Transcript words[{i}] = {textamp}, even though both start at offset {beginOffset}.")
+                last = i
+                break
+        # reached the end of words list, match not found
+        else:
+            last = lenw
+            
+        # if reached end of words list and no matched word is found for current entity, no need to match the rest of entities
+        if last == lenw:
+            print(f"Warning: Reaching the end of AMP Transcript words list with some AWS entities remaining unmatched.")
+            break
+        # otherwise a match is found, add a new entity for it to entities list
+        else:               
+            start = words[last]["start"]
+            amp_entities_json.addEntity(type, text, beginOffset, endOffset, start, end, scoreType, scoreValue)
+
+    lena = len(amp_entities_json["entities"])
+    print(f"Successfully added {lena} AMP entities; among all AWS entities, {ignored} are ignored, {lene-lena-ignored} are unmatched.")
 
 
 if __name__ == "__main__":
