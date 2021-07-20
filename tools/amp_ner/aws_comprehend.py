@@ -31,8 +31,7 @@ def main():
             amp_transcript_obj = SpeechToText().from_json(json.load(amp_transcript_file))
     except Exception:
         print(f"Error: Exception while parsing AMP Transcript {amp_transcript}:")
-        traceback.print_exc()
-        exit(1)
+        raise
         
     # initialize the amp_entities object with media information
     amp_entities_obj = EntityExtraction()
@@ -79,8 +78,7 @@ def upload_input_to_s3(amp_transcript_obj, tmpdir, bucket, jobname):
             print(f"Successfully created input file {input} containing transcript for AWS Comprehend job.")
     except Exception as e:
         print(f"Error: Exception while creating input file {input} containing transcript for AWS Comprehend job.")
-        traceback.print_exc()
-        exit(1)
+        raise
     
     # upload the tmp file to s3
     try:
@@ -89,8 +87,7 @@ def upload_input_to_s3(amp_transcript_obj, tmpdir, bucket, jobname):
         print(f"Successfully uploaded input file {input} to S3 bucket {bucket} for AWS Comprehend job.")
     except Exception as e:
         print(f"Error: Exception while uploading input file {input} to S3 bucket {bucket} for AWS Comprehend job.")
-        traceback.print_exc()
-        exit(1)
+        raise
 
 def download_output_from_s3(outputuri, s3uri, bucket, tmpdir, aws_entities):
     # get the output file from s3
@@ -103,8 +100,7 @@ def download_output_from_s3(outputuri, s3uri, bucket, tmpdir, aws_entities):
         print(f"Successfully downloaded AWS Comprehend output {outputuri} to compressed output file {output}.")
     except Exception as e:
         print(f"Error: Exception while downloading AWS Comprehend output {outputuri} to compressed output file {output}.")
-        traceback.print_exc()
-        exit(1)
+        raise
     
     # extract the contents of the output.tar.gz file and move the uncompressed file to galaxy output
     try:
@@ -118,13 +114,10 @@ def download_output_from_s3(outputuri, s3uri, bucket, tmpdir, aws_entities):
             shutil.move(source, aws_entities) 
             print(f"Successfully uncompressed {output} to {source} and moved it to {aws_entities}.")
         else:
-            print(f"Error: Compressed output file {output} does not contain any member.")
-            exit(1)
+            raise Exception(f"Error: Compressed output file {output} does not contain any member.")
     except Exception as e:
         print(f"Error: Exception while uncompressing/moving {output} to {aws_entities}.")
-        traceback.print_exc()
-        exit(1)        
-
+        raise     
 
 def run_comprehend_job(jobname, s3uri, dataAccessRoleArn):
     # submit AWS Comprehend job
@@ -148,8 +141,7 @@ def run_comprehend_job(jobname, s3uri, dataAccessRoleArn):
         print(f"Successfully submitted AWS Comprehend job with input {inputs3uri}.")
     except Exception as e:
         print(f"Error: Exception while submitting AWS Comprehend job with input {inputs3uri}")
-        traceback.print_exc()
-        exit(1)
+        raise
 
     # wait for AWS Comprehend job to end
     status = ''
@@ -164,17 +156,15 @@ def run_comprehend_job(jobname, s3uri, dataAccessRoleArn):
             time.sleep(60)        
     except Exception as e:
         print(f"Error: Exception while running AWS Comprehend job {jobname}")
-        traceback.print_exc()
-        exit(1)
-   
+        raise
+    
     # check status of job upon ending
     print(jobStatusResponse)     
     if status == 'COMPLETED':
         print(f"AWS Comprehend job {jobname} completed in success with output {outputuri}.")  
         return outputuri
     else:
-        print(f"Error: AWS Comprehend job {jobname} ended with status {status}.")
-        exit(1)
+        raise Exception(f"Error: AWS Comprehend job {jobname} ended with status {status}.")
 
 # Split a comma separated string, standardize input, and return list
 def get_ignore_categories(ignore_categories_string):
@@ -195,8 +185,7 @@ def read_aws_entities(aws_entities):
 def populateAmpEntities(amp_transcript_obj, aws_entities_json, amp_entities_obj, ignore_categories):
     # AWS Comprehend output should contain entities
     if not 'Entities' in aws_entities_json.keys():
-        print(f"Error: AWS Comprehend output does not contain entities list")
-        exit(1)
+        raise Exception(f"Error: AWS Comprehend output does not contain entities list")
     
     words = amp_transcript_obj.results.words
     entities = aws_entities_json["Entities"]
