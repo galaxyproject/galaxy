@@ -123,6 +123,7 @@ export class WorkflowRunModel {
                 color: `hsl( ${++wp_count * 100}, 70%, 30% )`,
                 style: "ui-form-wp-source",
                 links: [],
+                optional: true,
             });
         };
 

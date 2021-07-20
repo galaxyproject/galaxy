@@ -103,6 +103,9 @@ export default {
                 if (!input_value && !input_def.optional && input_def.type != "hidden") {
                     return [input_id, "Please provide a value for this option."];
                 }
+                if (input_def.wp_linked && input_def.text_value == input_value) {
+                    return [input_id, "Please provide a value for this workflow parameter."];
+                }
                 if (input_field.validate) {
                     const message = input_field.validate();
                     if (message) {

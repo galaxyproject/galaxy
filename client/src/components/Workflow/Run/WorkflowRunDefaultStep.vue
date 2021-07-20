@@ -1,11 +1,6 @@
 <template>
     <div>
-        <FormCard
-            :title="model.fixed_title"
-            :icon="icon"
-            :collapsible="true"
-            :collapsed.sync="collapsed"
-        >
+        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :collapsed.sync="collapsed">
             <template v-slot:body>
                 <FormDisplay
                     :inputs="inputs"

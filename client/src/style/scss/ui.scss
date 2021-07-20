@@ -195,7 +195,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
         background: $portlet-bg-color;
         border-color: transparent;
         .portlet-title {
-            @extend .my-1;
             .portlet-title-text.collapsible {
                 cursor: pointer;
                 text-decoration: underline;
