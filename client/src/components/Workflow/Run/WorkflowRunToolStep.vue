@@ -8,6 +8,7 @@
                     :form-config="formConfig"
                     :replace-params="replaceParams"
                     :validation-scroll-to="validationScrollTo"
+                    :validation-errors="validationErrors"
                     @onChange="onChange"
                     @onValidation="onValidation"
                 />
@@ -46,6 +47,10 @@ export default {
         validationScrollTo: {
             type: Array,
             required: true,
+        },
+        validationErrors: {
+            type: Object,
+            default: null,
         },
     },
     data() {

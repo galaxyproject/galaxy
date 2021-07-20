@@ -6,7 +6,7 @@
                 id="run-workflow"
                 class="float-right"
                 title="Run Workflow"
-                :wait="disableExecution"
+                :wait="showExecuting"
                 @onClick="onExecute"
             />
         </div>
@@ -36,6 +36,7 @@
                 :model="step"
                 :step-data="stepData"
                 :validation-scroll-to="getValidationScrollTo(step.index)"
+                :validation-errors="getValidationErrors(step.index)"
                 :wp-data="wpData"
                 @onChange="onToolStepInputs"
                 @onValidation="onValidation"
@@ -76,10 +77,11 @@ export default {
     },
     data() {
         return {
-            disableExecution: false,
+            showExecuting: false,
             stepData: {},
-            stepValidation: {},
+            stepValidations: {},
             stepScrollTo: {},
+            stepErrors: {},
             wpData: {},
             historyData: {},
             cacheData: {},
@@ -154,9 +156,15 @@ export default {
     methods: {
         getValidationScrollTo(stepId) {
             if (this.stepScrollTo.stepId == stepId) {
-                return this.stepScrollTo.stepValidation;
+                return this.stepScrollTo.details;
             }
             return [];
+        },
+        getValidationErrors(stepId) {
+            if (this.stepErrors.stepId == stepId) {
+                return this.stepErrors.details;
+            }
+            return {};
         },
         onDefaultStepInputs(stepId, data) {
             this.stepData[stepId] = data;
@@ -178,14 +186,14 @@ export default {
             this.cacheData = data;
         },
         onValidation(stepId, validation) {
-            this.stepValidation[stepId] = validation;
+            this.stepValidations[stepId] = validation;
         },
         onExecute() {
-            for (const [stepId, stepValidation] of Object.entries(this.stepValidation)) {
+            for (const [stepId, stepValidation] of Object.entries(this.stepValidations)) {
                 if (stepValidation) {
                     this.stepScrollTo = {
                         stepId: stepId,
-                        stepValidation: stepValidation.slice(),
+                        details: stepValidation.slice(),
                     };
                     return;
                 }
@@ -208,37 +216,31 @@ export default {
             };
 
             console.debug("WorkflowRunForm::onExecute()", "Ready for submission.", jobDef);
-            this.disableExecution = true;
+            this.showExecuting = true;
             invokeWorkflow(this.model.workflowId, jobDef)
                 .then((invocations) => {
                     console.debug("WorkflowRunForm::onExecute()", "Submission successful.", invocations);
-                    this.disableExecution = false;
+                    this.showExecuting = false;
                     this.$emit("submissionSuccess", invocations);
                 })
-                .catch((response) => {
-                    // TODO: Is this the same response as the Utils post would
-                    // have had?
-                    console.debug("WorkflowRunForm::onExecute()", "Submission failed.", response);
-                    /*var input_found = false;
-                    if (response && response.err_data) {
-                        for (var i in this.forms) {
-                            var form = this.forms[i];
-                            var step_related_errors = response.err_data[form.model.get("step_index")];
-                            if (step_related_errors) {
-                                var error_messages = form.data.matchResponse(step_related_errors);
-                                for (var input_id in error_messages) {
-                                    form.highlight(input_id, error_messages[input_id]);
-                                    input_found = true;
-                                    break;
-                                }
+                .catch((e) => {
+                    console.debug("WorkflowRunForm::onExecute()", "Submission failed.", e);
+                    this.showExecuting = false;
+                    const errorData = e && e.response && e.response.data && e.response.data.err_data;
+                    if (errorData) {
+                        for (const stepId in errorData) {
+                            const stepError = errorData[stepId];
+                            if (stepError) {
+                                this.stepError = {
+                                    stepId: stepId,
+                                    details: stepError,
+                                };
+                                return;
                             }
                         }
+                    } else {
+                        this.$emit("submissionError", response);
                     }
-                    if (!input_found) {
-                        this.submissionErrorModal(jobDef, response);
-                    }*/
-                    this.$emit("submissionError", response);
-                    this.disableExecution = false;
                 });
         },
         toArray(obj) {
