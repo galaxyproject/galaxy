@@ -145,8 +145,9 @@ class GitHubSearch():
         Takes search_string variable and return results from the bioconda-recipes github repository in JSON format
         """
         response = requests.get(
-            f"https://api.github.com/search/code?q={search_string}+in:path+repo:bioconda/bioconda-recipes+path:recipes", timeout=MULLED_SOCKET_TIMEOUT).json()
-        return response
+            f"https://api.github.com/search/code?q={search_string}+in:path+repo:bioconda/bioconda-recipes+path:recipes", timeout=MULLED_SOCKET_TIMEOUT)
+        response.raise_for_status()
+        return response.json()
 
     def process_json(self, json, search_string):
         """
