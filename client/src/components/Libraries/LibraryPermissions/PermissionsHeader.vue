@@ -1,9 +1,6 @@
 <template>
     <div>
         <div v-if="name">
-            <b-button variant="primary" title="back to parent folder" :to="{ path: `${this.path}` }">
-                <font-awesome-icon icon="angle-double-left" />
-            </b-button>
             <div>
                 <div class="header text-center">{{ name }}</div>
             </div>
@@ -15,8 +12,7 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning";
 
 export default {
     props: {
@@ -24,14 +20,9 @@ export default {
             type: String,
             required: true,
         },
-        path: {
-            type: String,
-            required: true,
-        },
     },
     components: {
         LibraryPermissionsWarning,
-        FontAwesomeIcon,
     },
     data() {
         return {

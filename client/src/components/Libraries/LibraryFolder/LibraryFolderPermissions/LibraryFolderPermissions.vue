@@ -1,6 +1,6 @@
 <template>
     <div>
-        <PermissionsHeader v-if="folder" :name="folder.name" :path="`/folders/${this.folder.parent_id}`" />
+        <PermissionsHeader v-if="folder" :name="folder.name" />
         <b-container fluid>
             <div class="dataset_table">
                 <h2 class="text-center">Folder permissions</h2>
