@@ -21,11 +21,11 @@ def main():
     (amp_transcript, aws_entities, amp_entities, bucketName, dataAccessRoleArn) = sys.argv[1:6]
 
     # Read a list of categories to ignore when outputting entity list
-    ignore_cats_list = list()
+    ignore_categories = list()
 
     if len(sys.argv) > 6:
-        print("ignore cats:" + sys.argv[6])
-        ignore_cats_list = split_ignore_list(sys.argv[6])
+        print("ignore categories:" + sys.argv[6])
+        ignore_categories = get_ignore_categories(sys.argv[6])
 
     # Variable declaration
     outputS3Uri = 's3://' + bucketName + '/'
@@ -34,27 +34,28 @@ def main():
     inputS3Uri = outputS3Uri + jobName
 
     # Get the transcript text from the input file
-    with open(amp_transcript, 'r') as file:
-        stt = SpeechToText().from_json(json.load(file))
+    with open(amp_transcript, 'r') as amp_transcript_file:
+        amp_transcript_json = SpeechToText().from_json(json.load(amp_transcript_file))
 
-    # Create the ner object
-    ner = EntityExtraction()
+    # Create the amp_entities_json object
+    amp_entities_json = EntityExtraction()
 
     # Add the media information
-    if stt is None or stt.results is None:
-        mediaLength = 0
+    if amp_transcript_json is None or amp_transcript_json.results is None:
+        print(f"Error: Input AMP Transcript JSON is invalid.")
+        exit(1)
     else:
-        mediaLength = len(stt.results.transcript)
-    ner.media = EntityExtractionMedia(mediaLength, amp_transcript)
+        mediaLength = len(amp_transcript_json.results.transcript)
+    amp_entities_json.media = EntityExtractionMedia(mediaLength, amp_transcript)
 
     # If input transcript is empty, don't error, create an output json file with empty entity list to pass to the next process
     if mediaLength == 0:
-        print(f"Input AMP Transcript Json file has empty transcript, output AMP NER Json will have empty emtities as well.")
-        mgm_utils.write_json_file(ner, amp_entities)
+        print(f"Warning: Input AMP Transcript Json file has empty transcript, output AMP NER Json will have empty entities as well.")
+        mgm_utils.write_json_file(amp_entities_json, amp_entities)
         exit(0)
 
     # Create a temp file to upload to S3
-    tmpfile = create_temp_transcript_file(jobName, stt.results.transcript)
+    tmpfile = create_temp_transcript_file(jobName, amp_transcript_json.results.transcript)
 
     # Copy the temporary text file to S3
     copy_to_s3(tmpfile.name, bucketName, jobName)
@@ -62,60 +63,18 @@ def main():
     # Make call to aws comprehend
     output_uri = run_comprehend_job(jobName, inputS3Uri, outputS3Uri, dataAccessRoleArn)
 
-    # download and decompress Comprehend output
+    # download and uncompress Comprehend output
     aws_entities = download_from_s3(output_uri, outputS3Uri, bucketName)
     if uncompressed_file is None:
-        print(f"AWS Comprehend output downloaded and decompressed from {output_uri} doesn't exist.")
+        print(f"Error: AWS Comprehend output downloaded/uncompressed from {output_uri} doesn't exist.")
         exit(1)
 
+    # populate AMP Entities list based on input AMP transcript words list and output AWS Entities list  
     aws_entities_json = read_aws_entities(aws_entities)
-
-    # Variables for filling time offsets based on speech to text
-    lastPos = 0  # Iterator to keep track of location in STT word
-    sttWords = len(stt.results.words) # Number of STT words
-
-    if 'Entities' in aws_entities_json.keys():
-        for entity in aws_entities_json["Entities"]:
-            entity_type = entity["Type"]
-            # Start and end time offsets
-            start = None
-            end = None
-            text = entity["Text"]
-
-            # Split the entity into an array of words based on whitespace
-            entityParts = text.split()
-
-            # For each word in the entity, find the corresponding word in the STT word list
-            foundWordPos = None
-            for entityPart in entityParts:
-                for wordPos in range(lastPos, sttWords):
-                    # If it matches, set the time offset.
-                    word = stt.results.words[wordPos]
-                    if clean_entity_word(word.text) == clean_entity_word(entityPart):
-                        # Keep track of last position to save iterations
-                        foundWordPos = wordPos
-                        # Set start if we haven't set it yet
-                        if start is None:
-                            start = word.start
-                        end = word.end
-                        break
-                    else:
-                        start = None
-                        end = None
-                        foundWordPos = None
-
-            if start is not None:
-                lastPos = foundWordPos + 1
-            else:
-                print("Could not find word")
-                print(text)
-                print(entityParts)
-                print(lastPos)
-            if clean_text(entity_type) not in ignore_cats_list and start is not None:
-                ner.addEntity(entity_type, text, None, None, "relevance", float(entity["Score"]), start, None)  #AMP-636 removed startOffset=endOffset=end=None
+    populateAmpEntities(amp_transcript_json, aws_entities_json, amp_entities_json, ignore_categories)
 
     # Write the json file
-    mgm_utils.write_json_file(ner, amp_entities)
+    mgm_utils.write_json_file(amp_entities_json, amp_entities)
 
     # Cleanup temp files
     safe_delete(tmpfile.name)
@@ -194,18 +153,12 @@ def run_comprehend_job(jobName, inputS3Uri, outputS3Uri, dataAccessRoleArn):
     return output_uri
 
 # Split a comma separated string, standardize input, and return list
-def split_ignore_list(ignore_list_string):
-    to_return = list()
-    ignore_cats_list = ignore_list_string.split(',')
-    for cat in ignore_cats_list:
-        to_return.append(clean_text(cat))
-    return to_return
-
-def clean_entity_word(entity_word):
-    cleaned_word = entity_word
-    if(entity_word.endswith('\'s')):
-       cleaned_word = entity_word.replace('\'s', '')
-    return cleaned_word.translate(str.maketrans('', '', string.punctuation))
+def get_ignore_categories(ignore_categories_string):
+    ignore_categories = list()
+    ignore_categories_list = ignore_categories_string.split(',')
+    for category in ignore_categories_list:
+        ignore_categories.append(clean_text(category))
+    return ignore_categories
 
 def clean_text(text):
     return text.lower().strip()
@@ -225,6 +178,62 @@ def safe_delete(filename):
         traceback.print_exc()
         return False
     return True
+
+def populateAmpEntities(amp_transcript_json, aws_entities_json, amp_entities_json, ignore_categories):
+    if not 'Entities' in aws_entities_json.keys():
+        print(f"Warning: AWS Comprehend output does not contain entities list")
+        return
+    
+    words = amp_transcript_json["results"]["words"]
+    entities = aws_entities_json["Entities"]
+    lenw = len(words)
+    lene = len(entities)
+    last = -1  # index of last matched word in AMP Transcript words list
+    ignored = 0; # count of ignored entities
+    
+    for entity in entities:
+        type = entity["Type"]
+        text = entity["Text"]
+        beginOffset = entity["BeginOffset"]
+        endOffset = entity["EndOffset"]
+        end = None
+        scoreType = "relevance"
+        scoreValue = entity["Score"]
+        
+        # skip entity in the ignore categories
+        if clean_text(type) in ignore_categories:
+            ignored = ignored + 1
+            print(f"Ignoring entity {text} of type {type}.")
+            continue
+
+        # find the word in words list matching the offset of entity, starting from last matched word, as
+        # we can assume that both AMP Transcript words and AWS Entities are sorted in the time/offset order        
+        for i in range(last+1, lenw):
+            # find a match by offset
+            if words[i]["offset"] == beginOffset:
+                textamp = words[i]["text"]
+                # check if text match, note that entity could be multi-words, so we need to check if it starts with the matching word
+                # if not, something is wrong; will still take it as a match 
+                if not text.startswith(textamp):
+                    print(f"Warning: AWS Entity {text} does not start with AMP Transcript words[{i}] = {textamp}, even though both start at offset {beginOffset}.")
+                last = i
+                break
+        # reached the end of words list, match not found
+        else:
+            last = lenw
+            
+        # if reached end of words list and no matched word is found for current entity, no need to match the rest of entities
+        if last == lenw:
+            print(f"Warning: Reaching the end of AMP Transcript words list with some AWS entities remaining unmatched.")
+            break
+        # otherwise a match is found, add a new entity for it to entities list
+        else:               
+            start = words[last]["start"]
+            amp_entities_json.addEntity(type, text, beginOffset, endOffset, start, end, scoreType, scoreValue)
+
+    lena = len(amp_entities_json["entities"])
+    print(f"Successfully added {lena} AMP entities; among all AWS entities, {ignored} are ignored, {lene-lena-ignored} are unmatched.")
+
 
 if __name__ == "__main__":
     main()

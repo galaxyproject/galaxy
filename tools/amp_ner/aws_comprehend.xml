@@ -18,7 +18,7 @@
     </param>
   </inputs>
   <outputs>
-    <data name="aws_entities" format="ner" label="AWS Comprehend Entities"/>
+    <data name="aws_entities" format="json" label="AWS Comprehend Entities"/>
     <data name="amp_entities" format="ner" label="AMP Entities Extracted"/>
   </outputs>
   <tests>
