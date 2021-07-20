@@ -1,67 +1,71 @@
 <template>
-    <div>
-        <div class="h4 clearfix mb-3">
-            <b>Workflow: {{ model.name }}</b>
-            <ButtonSpinner
-                id="run-workflow"
-                class="float-right"
-                title="Run Workflow"
-                :wait="showExecuting"
-                @onClick="onExecute"
-            />
+    <CurrentUser v-slot="{ user }">
+        <div>
+            <div class="h4 clearfix mb-3">
+                <b>Workflow: {{ model.name }}</b>
+                <ButtonSpinner
+                    id="run-workflow"
+                    class="float-right"
+                    title="Run Workflow"
+                    :wait="showExecuting"
+                    @onClick="onExecute"
+                />
+            </div>
+            <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
+                <template v-slot:body>
+                    <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
+                </template>
+            </FormCard>
+            <FormCard title="History Options">
+                <template v-slot:body>
+                    <FormDisplay :inputs="historyInputs" @onChange="onHistoryInputs" />
+                </template>
+            </FormCard>
+            <FormCard v-if="cacheInputsAvailable(user)" title="Job re-use Options">
+                <template v-slot:body>
+                    <FormDisplay :inputs="cacheInputs" @onChange="onCacheInputs" />
+                </template>
+            </FormCard>
+            <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
+                <template v-slot:body>
+                    <FormDisplay :inputs="resourceInputs" @onChange="onResourceInputs" />
+                </template>
+            </FormCard>
+            <div v-for="step in model.steps" :key="step.index">
+                <WorkflowRunToolStep
+                    v-if="step.step_type == 'tool'"
+                    :model="step"
+                    :step-data="stepData"
+                    :validation-scroll-to="getValidationScrollTo(step.index)"
+                    :wp-data="wpData"
+                    @onChange="onToolStepInputs"
+                    @onValidation="onValidation"
+                />
+                <WorkflowRunDefaultStep
+                    v-else
+                    :model="step"
+                    :validation-scroll-to="getValidationScrollTo(step.index)"
+                    @onChange="onDefaultStepInputs"
+                    @onValidation="onValidation"
+                />
+            </div>
         </div>
-        <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
-            <template v-slot:body>
-                <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
-            </template>
-        </FormCard>
-        <FormCard title="History Options">
-            <template v-slot:body>
-                <FormDisplay :inputs="historyInputs" @onChange="onHistoryInputs" />
-            </template>
-        </FormCard>
-        <FormCard v-if="cacheInputsAvailable" title="Job re-use Options">
-            <template v-slot:body>
-                <FormDisplay :inputs="cacheInputs" @onChange="onCacheInputs" />
-            </template>
-        </FormCard>
-        <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
-            <template v-slot:body>
-                <FormDisplay :inputs="resourceInputs" @onChange="onResourceInputs" />
-            </template>
-        </FormCard>
-        <div v-for="step in model.steps">
-            <WorkflowRunToolStep
-                v-if="step.step_type == 'tool'"
-                :model="step"
-                :step-data="stepData"
-                :validation-scroll-to="getValidationScrollTo(step.index)"
-                :wp-data="wpData"
-                @onChange="onToolStepInputs"
-                @onValidation="onValidation"
-            />
-            <WorkflowRunDefaultStep
-                v-else
-                :model="step"
-                :validation-scroll-to="getValidationScrollTo(step.index)"
-                @onChange="onDefaultStepInputs"
-                @onValidation="onValidation"
-            />
-        </div>
-    </div>
+    </CurrentUser>
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
+import CurrentUser from "components/providers/CurrentUser";
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunToolStep from "./WorkflowRunToolStep";
 import { invokeWorkflow } from "./services";
+import { reuseCachedJobs } from "components/Tool/utilities";
 
 export default {
     components: {
+        CurrentUser,
         FormDisplay,
         FormCard,
         ButtonSpinner,
@@ -112,17 +116,6 @@ export default {
         };
     },
     computed: {
-        cacheInputsAvailable() {
-            const Galaxy = getGalaxyInstance();
-            var extra_user_preferences = {};
-            if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
-                extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
-            }
-            return;
-            "use_cached_job|use_cached_job_checkbox" in extra_user_preferences
-                ? extra_user_preferences["use_cached_job|use_cached_job_checkbox"] === "true"
-                : false;
-        },
         cacheInputs() {
             return [
                 {
@@ -152,6 +145,9 @@ export default {
         },
     },
     methods: {
+        cacheInputsAvailable(user) {
+            return reuseCachedJobs(user.preferences);
+        },
         getValidationScrollTo(stepId) {
             if (this.stepScrollTo.stepId == stepId) {
                 return this.stepScrollTo.stepError;

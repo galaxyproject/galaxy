@@ -17,6 +17,7 @@
 </template>
 
 <script>
+import _ from "underscore";
 import FormDisplay from "components/Form/FormDisplay";
 import FormMessage from "components/Form/FormMessage";
 import FormCard from "components/Form/FormCard";
@@ -81,7 +82,6 @@ export default {
             visitInputs(this.model.inputs, (input, name) => {
                 params[name] = input;
             });
-            const values = this.formData;
             this.replaceParams = {};
             _.each(params, (input, name) => {
                 if (input.wp_linked || input.step_linked) {

@@ -92,6 +92,7 @@
 import Scroller from "vue-scrollto";
 import { getGalaxyInstance } from "app";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
+import { reuseCachedJobs } from "./utilities";
 import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import CurrentUser from "components/providers/CurrentUser";
@@ -207,14 +208,7 @@ export default {
             return config.server_mail_configured && !user.isAnonymous;
         },
         reuseAllowed(user) {
-            if (user.preferences && "extra_user_preferences" in user.preferences) {
-                const extra_user_preferences = JSON.parse(user.preferences.extra_user_preferences);
-                const keyCached = "use_cached_job|use_cached_job_checkbox";
-                const hasCachedJobs = keyCached in extra_user_preferences;
-                return hasCachedJobs ? extra_user_preferences[keyCached] : false;
-            } else {
-                return false;
-            }
+            return reuseCachedJobs(user.preferences);
         },
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
