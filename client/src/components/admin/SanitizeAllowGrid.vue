@@ -1,56 +1,59 @@
 <template>
     <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
-        <template v-slot:title> Tool HTML Allowlist </template>
-        <template v-slot:allow>
-            <template v-for="(row, index) in allow">
-                <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
-                    <td>{{ row.tool_name }}</td>
-                    <td>
-                        <template v-if="row.toolshed">
-                            <template v-for="(part, index) in row.tool_id">
-                                <span>{{ part }}</span>
-                                <strong>/</strong>
-                            </template>
-                        </template>
-                        <template v-else>
-                            <span>{{ row.tool_id[0] }}</span>
-                        </template>
-                    </td>
-                    <td>
-                        <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
-                    </td>
-                </tr>
-            </template>
-        </template>
-        <template v-slot:title> Tool HTML Blocklist </template>
-        <template v-slot:sanitize>
-            <template v-for="(row, index) in sanitize">
-                <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
-                    <td>
-                        <template v-if="row.toolshed">
-                            <span>{{ row.tool_id[0] }}</span>
-                            <strong>/</strong>
-                            <span>{{ row.tool_id[1] }}</span>
-                            <strong>/</strong>
-                            <a @click="allowHTML(row.ids.owner)">{{ row.tool_id[2] }}</a>
-                            <strong>/</strong>
-                            <a @click="allowHTML(row.ids.repository)">{{ row.tool_id[3] }}</a>
-                            <strong>/</strong>
-                            <a @click="allowHTML(row.ids.tool)">{{ row.tool_id[4] }}</a>
-                            <strong>/</strong>
-                            <a @click="allowHTML(row.ids.full)">{{ row.tool_id[5] }}</a>
-                        </template>
-                        <template v-else>
-                            <span>{{ row.tool_id[0] }}</span>
-                        </template>
-                    </td>
-                    <td>
-                        <template v-if="!row.toolshed">
-                            <button @click="allowHTML(row.ids.full)">Allow HTML</button>
-                        </template>
-                    </td>
-                </tr>
-            </template>
+        <template v-slot:title> Tool HTML Sanitization </template>
+        <template v-slot:rows>
+            <b-tabs card>
+                <b-tab title="Allow">
+                    <template v-for="(row, index) in blockList">
+                        <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                            <td>
+                                <template v-if="row.toolshed">
+                                    <span>{{ row.tool_id[0] }}</span>
+                                    <strong>/</strong>
+                                    <span>{{ row.tool_id[1] }}</span>
+                                    <strong>/</strong>
+                                    <a @click="allowHTML(row.ids.owner)">{{ row.tool_id[2] }}</a>
+                                    <strong>/</strong>
+                                    <a @click="allowHTML(row.ids.repository)">{{ row.tool_id[3] }}</a>
+                                    <strong>/</strong>
+                                    <a @click="allowHTML(row.ids.tool)">{{ row.tool_id[4] }}</a>
+                                    <strong>/</strong>
+                                    <a @click="allowHTML(row.ids.full)">{{ row.tool_id[5] }}</a>
+                                </template>
+                                <template v-else>
+                                    <span>{{ row.tool_id[0] }}</span>
+                                </template>
+                            </td>
+                            <td>
+                                <template v-if="!row.toolshed">
+                                    <button @click="allowHTML(row.ids.full)">Allow HTML</button>
+                                </template>
+                            </td>
+                        </tr>
+                    </template>
+                </b-tab>
+                <b-tab title="Block">
+                    <template v-for="(row, index) in allowList">
+                        <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                            <td>{{ row.tool_name }}</td>
+                            <td>
+                                <template v-if="row.toolshed">
+                                    <template v-for="(part, index) in row.tool_id">
+                                        <span>{{ part }}</span>
+                                        <strong>/</strong>
+                                    </template>
+                                </template>
+                                <template v-else>
+                                    <span>{{ row.tool_id[0] }}</span>
+                                </template>
+                            </td>
+                            <td>
+                                <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
+                            </td>
+                        </tr>
+                    </template>
+                </b-tab>
+            </b-tabs>
         </template>
     </base-grid>
 </template>
@@ -66,11 +69,11 @@ export default {
             type: Boolean,
             required: true,
         },
-        sanitize: {
+        blockList: {
             type: Array,
             required: true,
         },
-        allow: {
+        allowList: {
             type: Array,
             required: true,
         },
