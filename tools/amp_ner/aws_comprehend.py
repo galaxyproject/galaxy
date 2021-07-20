@@ -49,10 +49,10 @@ def main():
     s3uri = 's3://' + bucket + '/'
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     # hostname + timestamp should ensure unique job name
-    jobname = 'AwsComprehend-' + socket.gethostname + "-" + timestamp 
+    jobname = 'AwsComprehend-' + socket.gethostname() + "-" + timestamp 
 
     # write AMP Transcript text into the input file in a temp directory and upload it to S3
-    tmpdir = tempfile.gettempdir()
+    tmpdir = tempfile.gettempdir("/tmp")
     upload_input_to_s3(amp_transcript_obj, tmpdir, bucket, jobname)
 
     # Make call to AWS Comprehend
@@ -80,7 +80,7 @@ def upload_input_to_s3(amp_transcript_obj, tmpdir, bucket, jobname):
     except Exception as e:
         print(f"Error: Exception while creating input file {input} containing transcript for AWS Comprehend job.")
         traceback.print_exc()
-        eixt(1)
+        exit(1)
     
     # upload the tmp file to s3
     try:
@@ -90,20 +90,21 @@ def upload_input_to_s3(amp_transcript_obj, tmpdir, bucket, jobname):
     except Exception as e:
         print(f"Error: Exception while uploading input file {input} to S3 bucket {bucket} for AWS Comprehend job.")
         traceback.print_exc()
-        eixt(1)
+        exit(1)
 
 def download_output_from_s3(outputuri, s3uri, bucket, tmpdir, aws_entities):
     # get the output file from s3
     try:
         outkey = outputuri.replace(s3uri, '')
-        output = tmpdir + outkey
+        outname = outkey.rsplit("/", 1)[1]
+        output = tmpdir + outname
         s3_client = boto3.client('s3')    
         s3_client.download_file(bucket, outkey, output)
         print(f"Successfully downloaded AWS Comprehend output {outputuri} to compressed output file {output}.")
     except Exception as e:
         print(f"Error: Exception while downloading AWS Comprehend output {outputuri} to compressed output file {output}.")
         traceback.print_exc()
-        eixt(1)
+        exit(1)
     
     # extract the contents of the output.tar.gz file and move the uncompressed file to galaxy output
     try:
@@ -122,7 +123,7 @@ def download_output_from_s3(outputuri, s3uri, bucket, tmpdir, aws_entities):
     except Exception as e:
         print(f"Error: Exception while uncompressing/moving {output} to {aws_entities}.")
         traceback.print_exc()
-        eixt(1)        
+        exit(1)        
 
 
 def run_comprehend_job(jobname, s3uri, dataAccessRoleArn):
@@ -148,7 +149,7 @@ def run_comprehend_job(jobname, s3uri, dataAccessRoleArn):
     except Exception as e:
         print(f"Error: Exception while submitting AWS Comprehend job with input {inputs3uri}")
         traceback.print_exc()
-        eixt(1)
+        exit(1)
 
     # wait for AWS Comprehend job to end
     status = ''
@@ -164,7 +165,7 @@ def run_comprehend_job(jobname, s3uri, dataAccessRoleArn):
     except Exception as e:
         print(f"Error: Exception while running AWS Comprehend job {jobname}")
         traceback.print_exc()
-        eixt(1)
+        exit(1)
    
     # check status of job upon ending
     print(jobStatusResponse)     
