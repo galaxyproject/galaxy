@@ -405,7 +405,11 @@ class FoldersService:
         is_admin = trans.user_is_admin
         decoded_folder_id = self.folder_manager.cut_and_decode(trans, encoded_folder_id)
         folder = self.folder_manager.get(trans, decoded_folder_id)
-
+        if isinstance(page, str):
+            page = int(page)
+        if isinstance(page_limit, str):
+            page_limit = int(page_limit)
+            
         if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, folder)):
             raise InsufficientPermissionsException('You do not have proper permission to access permissions of this folder.')
 
