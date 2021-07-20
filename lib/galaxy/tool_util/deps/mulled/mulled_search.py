@@ -149,17 +149,12 @@ class GitHubSearch():
         response.raise_for_status()
         return response.json()
 
-    def process_json(self, json, search_string):
+    def process_json(self, json_response, search_string):
         """
         Take JSON input and process it, returning the required data
         """
-        json = json['items'][0:10]  # get top ten results
-
-        results = []
-
-        for result in json:
-            results.append({'name': result['name'], 'path': result['path']})
-        return results
+        top_10_items = json_response['items'][0:10]  # get top ten results
+        return [{'name': result['name'], 'path': result['path']} for result in top_10_items]
 
     def recipe_present(self, search_string):
         """
