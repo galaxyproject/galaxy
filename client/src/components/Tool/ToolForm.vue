@@ -69,7 +69,7 @@
                                 title="Attempt to re-use jobs with identical parameters?"
                                 help="This may skip executing jobs that you have already run."
                                 type="boolean"
-                                v-model="reuse"
+                                v-model="useCachedJobs"
                             />
                         </template>
                         <template v-slot:buttons>
@@ -92,7 +92,7 @@
 import Scroller from "vue-scrollto";
 import { getGalaxyInstance } from "app";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
-import { reuseCachedJobs } from "./utilities";
+import { allowCachedJobs } from "./utilities";
 import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import CurrentUser from "components/providers/CurrentUser";
@@ -151,7 +151,7 @@ export default {
             errorContent: null,
             messageVariant: "",
             messageText: "",
-            reuse: false,
+            useCachedJobs: false,
             email: false,
             remap: false,
             entryPoints: [],
@@ -208,7 +208,7 @@ export default {
             return config.server_mail_configured && !user.isAnonymous;
         },
         reuseAllowed(user) {
-            return reuseCachedJobs(user.preferences);
+            return allowCachedJobs(user.preferences);
         },
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
@@ -261,7 +261,7 @@ export default {
             if (this.remap) {
                 jobDef.inputs["rerun_remap_job_id"] = this.job_id;
             }
-            if (this.reuse) {
+            if (this.useCachedJobs) {
                 jobDef.inputs["use_cached_job"] = true;
             }
             console.debug("toolForm::onExecute()", jobDef);

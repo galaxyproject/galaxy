@@ -13,7 +13,7 @@ export function openLink(url) {
     window.open(url);
 }
 
-export function reuseCachedJobs(userPreferences) {
+export function allowCachedJobs(userPreferences) {
     if (userPreferences && "extra_user_preferences" in userPreferences) {
         const extra_user_preferences = JSON.parse(userPreferences.extra_user_preferences);
         const keyCached = "use_cached_job|use_cached_job_checkbox";

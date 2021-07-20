@@ -21,9 +21,14 @@
                     <FormDisplay :inputs="historyInputs" @onChange="onHistoryInputs" />
                 </template>
             </FormCard>
-            <FormCard v-if="cacheInputsAvailable(user)" title="Job re-use Options">
+            <FormCard v-if="reuseAllowed(user)" title="Job re-use Options">
                 <template v-slot:body>
-                    <FormDisplay :inputs="cacheInputs" @onChange="onCacheInputs" />
+                    <FormElement
+                        title="Attempt to re-use jobs with identical parameters?"
+                        help="This may skip executing jobs that you have already run."
+                        type="boolean"
+                        v-model="useCachedJobs"
+                    />
                 </template>
             </FormCard>
             <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
@@ -57,17 +62,19 @@
 import CurrentUser from "components/providers/CurrentUser";
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
+import FormElement from "components/Form/FormElement";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunToolStep from "./WorkflowRunToolStep";
 import { invokeWorkflow } from "./services";
-import { reuseCachedJobs } from "components/Tool/utilities";
+import { allowCachedJobs } from "components/Tool/utilities";
 
 export default {
     components: {
         CurrentUser,
         FormDisplay,
         FormCard,
+        FormElement,
         ButtonSpinner,
         WorkflowRunDefaultStep,
         WorkflowRunToolStep,
@@ -86,7 +93,7 @@ export default {
             stepScrollTo: {},
             wpData: {},
             historyData: {},
-            cacheData: {},
+            useCachedJobs: false,
             historyInputs: [
                 {
                     type: "conditional",
@@ -116,21 +123,6 @@ export default {
         };
     },
     computed: {
-        cacheInputs() {
-            return [
-                {
-                    type: "conditional",
-                    name: "use_cached_job",
-                    test_param: {
-                        name: "check",
-                        label: "Attempt to reuse jobs with identical parameters?",
-                        type: "boolean",
-                        value: "false",
-                        help: "This may skip executing jobs that you have already run.",
-                    },
-                },
-            ];
-        },
         resourceInputsAvailable() {
             return this.resourceInputs.length > 0;
         },
@@ -145,8 +137,8 @@ export default {
         },
     },
     methods: {
-        cacheInputsAvailable(user) {
-            return reuseCachedJobs(user.preferences);
+        reuseAllowed(user) {
+            return allowCachedJobs(user.preferences);
         },
         getValidationScrollTo(stepId) {
             if (this.stepScrollTo.stepId == stepId) {
@@ -170,9 +162,6 @@ export default {
         onWpInputs(data) {
             this.wpData = data;
         },
-        onCacheInputs(data) {
-            this.cacheData = data;
-        },
         onValidation(stepId, validation) {
             this.stepValidations[stepId] = validation;
         },
@@ -192,7 +181,7 @@ export default {
                 history_id: !this.historyData["new_history|name"] ? this.model.historyId : null,
                 resource_params: this.resourceData,
                 replacement_params: this.wpData,
-                use_cached_job: this.cacheData["use_cached_job|check"] === "true",
+                use_cached_job: useCachedJobs,
                 parameters: this.stepData,
                 // Tool form will submit flat maps for each parameter
                 // (e.g. "repeat_0|cond|param": "foo" instead of nested
