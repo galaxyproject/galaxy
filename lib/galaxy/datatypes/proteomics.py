@@ -551,7 +551,7 @@ class Edta(TabularData):
         dataset.metadata.data_lines = data_lines
         dataset.metadata.comment_lines = 0
         dataset.metadata.columns = len(dataset.metadata.column_names)
-        if tpe in not None and tpe > 0:
+        if tpe is not None and tpe > 0:
             dataset.metadata.comment_lines += 1
             dataset.metadata.data_lines -= 1
 
