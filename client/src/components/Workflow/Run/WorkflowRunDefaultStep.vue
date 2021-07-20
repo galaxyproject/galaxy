@@ -14,7 +14,6 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
 import WorkflowIcons from "components/Workflow/icons";
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
