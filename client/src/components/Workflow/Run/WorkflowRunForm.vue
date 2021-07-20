@@ -36,7 +36,6 @@
                 :model="step"
                 :step-data="stepData"
                 :validation-scroll-to="getValidationScrollTo(step.index)"
-                :validation-errors="getValidationErrors(step.index)"
                 :wp-data="wpData"
                 @onChange="onToolStepInputs"
                 @onValidation="onValidation"
@@ -81,7 +80,6 @@ export default {
             stepData: {},
             stepValidations: {},
             stepScrollTo: {},
-            stepErrors: {},
             wpData: {},
             historyData: {},
             cacheData: {},
@@ -160,12 +158,6 @@ export default {
             }
             return [];
         },
-        getValidationErrors(stepId) {
-            if (this.stepErrors.stepId == stepId) {
-                return this.stepErrors.details;
-            }
-            return {};
-        },
         onDefaultStepInputs(stepId, data) {
             this.stepData[stepId] = data;
             this.stepData = Object.assign({}, this.stepData);
@@ -228,12 +220,12 @@ export default {
                     this.showExecuting = false;
                     const errorData = e && e.response && e.response.data && e.response.data.err_data;
                     if (errorData) {
-                        for (const stepId in errorData) {
-                            const stepError = errorData[stepId];
+                        for (const [stepId, stepError] of Object.entries(errorData)) {
                             if (stepError) {
-                                this.stepError = {
+                                const errorEntries = Object.entries(stepError);
+                                this.stepScrollTo = {
                                     stepId: stepId,
-                                    details: stepError,
+                                    details: errorEntries[0],
                                 };
                                 return;
                             }

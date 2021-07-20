@@ -32,10 +32,6 @@ export default {
             type: Array,
             default: null,
         },
-        validationErrors: {
-            type: Object,
-            default: null,
-        },
         formConfig: {
             type: Object,
             default: null,
@@ -60,12 +56,6 @@ export default {
         validation() {
             this.onHighlight(this.validation, true);
             this.$emit("onValidation", this.validation);
-        },
-        validationErrors() {
-            const matchedErrors = Object.entries(this.form.data.matchResponse(this.validationErrors));
-            if (matchedErrors.length > 0) {
-                this.onHighlight(matchedErrors[0]);
-            }
         },
         formConfig() {
             this.$nextTick(() => {
@@ -103,18 +93,18 @@ export default {
                     input_value.values.length == 0 &&
                     !input_def.optional
                 ) {
-                    return [input_id, "Please provide data for this input."];
+                    return [job_input_id, "Please provide data for this input."];
                 }
                 if (input_value == null && !input_def.optional && input_def.type != "hidden") {
-                    return [input_id, "Please provide a value for this option."];
+                    return [job_input_id, "Please provide a value for this option."];
                 }
                 if (input_def.wp_linked && input_def.text_value == input_value) {
-                    return [input_id, "Please provide a value for this workflow parameter."];
+                    return [job_input_id, "Please provide a value for this workflow parameter."];
                 }
                 if (input_field.validate) {
                     const message = input_field.validate();
                     if (message) {
-                        return [input_id, message];
+                        return [job_input_id, message];
                     }
                 }
                 if (input_value && input_value.batch) {
@@ -125,7 +115,7 @@ export default {
                             batch_src = src;
                         } else if (batch_src !== src) {
                             return [
-                                input_id,
+                                job_input_id,
                                 "Please select either dataset or dataset list fields for all batch mode fields.",
                             ];
                         }
@@ -134,7 +124,7 @@ export default {
                         batch_n = n;
                     } else if (batch_n !== n) {
                         return [
-                            input_id,
+                            job_input_id,
                             `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`,
                         ];
                     }
@@ -183,7 +173,8 @@ export default {
         onHighlight(validation, silent = false) {
             this.form.trigger("reset");
             if (validation && validation.length == 2) {
-                this.form.highlight(validation[0], validation[1], silent);
+                const input_id = this.form.data.match(validation[0]);
+                this.form.highlight(input_id, validation[1], silent);
             }
         },
     },

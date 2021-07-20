@@ -42,7 +42,6 @@
                             <FormDisplay
                                 :id="formConfig.id"
                                 :inputs="inputs"
-                                :validation-errors="validationErrors"
                                 :validation-scroll-to="validationScrollTo"
                                 :form-config="formConfig"
                                 @onChange="onChange"
@@ -301,7 +300,8 @@ export default {
                     this.showExecuting = false;
                     const errorData = e && e.response && e.response.data && e.response.data.err_data;
                     if (errorData) {
-                        this.validationErrors = errorData;
+                        const errorEntries = Object.entries(errorData);
+                        this.validationScrollTo = errorEntries[0];
                     } else {
                         this.showError = true;
                         this.showForm = false;
