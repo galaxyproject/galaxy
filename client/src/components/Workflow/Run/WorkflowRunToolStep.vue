@@ -1,6 +1,6 @@
 <template>
     <div>
-        <FormCard :title="title" icon="fa-wrench" :collapsible="true" :initial-collapse="model.collapsed">
+        <FormCard :title="title" icon="fa-wrench" :collapsible="true" :collapsed.sync="collapsed">
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormDisplay
@@ -43,31 +43,31 @@ export default {
             type: Object,
             default: null,
         },
-        stepScrollTo: {
-            type: Object,
+        validationScrollTo: {
+            type: Array,
             required: true,
         },
     },
     data() {
         return {
+            collapsed: this.model.collapsed,
             formConfig: {},
             formData: {},
             replaceParams: {},
             errorText: null,
-            validationScrollTo: [],
         };
     },
     watch: {
-        stepScrollTo() {
-            if (this.stepScrollTo && this.stepScrollTo.stepId == this.model.index) {
-                this.validationScrollTo = this.stepScrollTo.validation;
-            }
-        },
         stepData() {
             this.onReplaceParams();
         },
         wpData() {
             this.onReplaceParams();
+        },
+        validationScrollTo() {
+            if (this.validationScrollTo.length > 0) {
+                this.collapsed = false;
+            }
         },
     },
     computed: {

@@ -58,15 +58,13 @@ export default {
             type: Boolean,
             default: false,
         },
-        initialCollapse: {
+        collapsed: {
             type: Boolean,
             default: false,
         },
     },
     data() {
-        return {
-            collapsed: this.initialCollapse,
-        };
+        return {};
     },
     computed: {
         href() {
@@ -75,7 +73,7 @@ export default {
     },
     methods: {
         onCollapse() {
-            this.collapsed = this.collapsible && !this.collapsed;
+            this.$emit("update:collapsed", !this.collapsed);
         },
     },
 };

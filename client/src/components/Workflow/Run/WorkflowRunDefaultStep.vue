@@ -1,6 +1,11 @@
 <template>
     <div>
-        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :initial-collapse="false">
+        <FormCard
+            :title="model.fixed_title"
+            :icon="icon"
+            :collapsible="true"
+            :collapsed.sync="collapsed"
+        >
             <template v-slot:body>
                 <FormDisplay
                     :inputs="inputs"
@@ -29,20 +34,20 @@ export default {
             type: Object,
             required: true,
         },
-        stepScrollTo: {
-            type: Object,
+        validationScrollTo: {
+            type: Array,
             required: true,
         },
     },
     data() {
         return {
-            validationScrollTo: [],
+            collapsed: this.model.collapsed,
         };
     },
     watch: {
-        stepScrollTo() {
-            if (this.stepScrollTo && this.stepScrollTo.stepId == this.model.index) {
-                this.validationScrollTo = this.stepScrollTo.validation;
+        validationScrollTo() {
+            if (this.validationScrollTo.length > 0) {
+                this.collapsed = false;
             }
         },
     },

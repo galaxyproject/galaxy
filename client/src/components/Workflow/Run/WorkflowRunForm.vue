@@ -35,7 +35,7 @@
                 v-if="step.step_type == 'tool'"
                 :model="step"
                 :step-data="stepData"
-                :step-scroll-to="stepScrollTo"
+                :validation-scroll-to="getValidationScrollTo(step.index)"
                 :wp-data="wpData"
                 @onChange="onToolStepInputs"
                 @onValidation="onValidation"
@@ -43,7 +43,7 @@
             <WorkflowRunDefaultStep
                 v-else
                 :model="step"
-                :step-scroll-to="stepScrollTo"
+                :validation-scroll-to="getValidationScrollTo(step.index)"
                 @onChange="onDefaultStepInputs"
                 @onValidation="onValidation"
             />
@@ -152,6 +152,12 @@ export default {
         },
     },
     methods: {
+        getValidationScrollTo(stepId) {
+            if (this.stepScrollTo.stepId == stepId) {
+                return this.stepScrollTo.stepValidation;
+            }
+            return [];
+        },
         onDefaultStepInputs(stepId, data) {
             this.stepData[stepId] = data;
             this.stepData = Object.assign({}, this.stepData);
@@ -177,10 +183,9 @@ export default {
         onExecute() {
             for (const [stepId, stepValidation] of Object.entries(this.stepValidation)) {
                 if (stepValidation) {
-                    const validation = stepValidation.slice();
                     this.stepScrollTo = {
-                        stepId,
-                        validation,
+                        stepId: stepId,
+                        stepValidation: stepValidation.slice(),
                     };
                     return;
                 }
