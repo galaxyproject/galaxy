@@ -1,11 +1,12 @@
 <template>
-    <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
-        <template v-slot:title> Tool HTML Sanitization </template>
-        <template v-slot:rows>
-            <b-tabs card>
-                <b-tab title="Allow">
+    <b-tabs>
+        <b-tab title="Block List">
+            <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                <template v-slot:title> Tool HTML Sanitized </template>
+                <template v-slot:rows>
                     <template v-for="(row, index) in blockList">
                         <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                            <td>{{ row.tool_name }}</td>
                             <td>
                                 <template v-if="row.toolshed">
                                     <span>{{ row.tool_id[0] }}</span>
@@ -26,13 +27,18 @@
                             </td>
                             <td>
                                 <template v-if="!row.toolshed">
-                                    <button @click="allowHTML(row.ids.full)">Allow HTML</button>
+                                    <button @click="allowHTML(row.ids.full)">Render HTML</button>
                                 </template>
                             </td>
                         </tr>
                     </template>
-                </b-tab>
-                <b-tab title="Block">
+                </template>
+            </base-grid>
+        </b-tab>
+        <b-tab title="Allow List">
+            <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                <template v-slot:title> Tool HTML Rendered </template>
+                <template v-slot:rows>
                     <template v-for="(row, index) in allowList">
                         <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
                             <td>{{ row.tool_name }}</td>
@@ -52,10 +58,10 @@
                             </td>
                         </tr>
                     </template>
-                </b-tab>
-            </b-tabs>
-        </template>
-    </base-grid>
+                </template>
+            </base-grid>
+        </b-tab>
+    </b-tabs>
 </template>
 
 <script>

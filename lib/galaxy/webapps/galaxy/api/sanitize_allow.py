@@ -55,6 +55,8 @@ class SanitizeAllowController(BaseAPIController):
     def _generate_allowlist(self, trans):
         allow_list = []
         block_list = []
+        toolshed_tools = []
+        local_tools = []
         ids = None
         for tool_id in trans.app.config.sanitize_allowlist:
             for toolbox_id in trans.app.toolbox.tools_by_id:
@@ -69,7 +71,13 @@ class SanitizeAllowController(BaseAPIController):
                            'tool': '/'.join(full_id.split('/')[:5])}
                     break
             tool_dict = dict(tool_name=tool.name, tool_id=tool_id.split('/'), ids=ids, allowed=True, toolshed='/' in tool_id)
-            allow_list.append(tool_dict)
+            if '/' in tool_id:
+                toolshed_tools.append(tool_dict)
+            else:
+                local_tools.append(tool_dict)
+        allow_list = toolshed_tools + local_tools
+        toolshed_tools = []
+        local_tools = []
         for tool_id in sorted(trans.app.toolbox.tools_by_id):
             tool = trans.app.toolbox.tools_by_id[tool_id]
             if not tool_id.startswith(tuple(trans.app.config.sanitize_allowlist)):
@@ -78,6 +86,10 @@ class SanitizeAllowController(BaseAPIController):
                        'repository': '/'.join(tool_id.split('/')[:4]),
                        'tool': '/'.join(tool_id.split('/')[:5])}
                 tool_status = dict(tool_name=tool.name, tool_id=tool_id.split('/'), ids=ids, allowed=False, toolshed='/' in tool_id)
-                block_list.append(tool_status)
+                if '/' in tool_id:
+                    toolshed_tools.append(tool_status)
+                else:
+                    local_tools.append(tool_status)
+        block_list = toolshed_tools + local_tools
         return {'blockList': block_list, 'allowList': allow_list}
 
