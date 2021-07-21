@@ -488,11 +488,11 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.pair.dist' )
         >>> PairwiseDistanceMatrix().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.pair.dist' )
-        >>> PairwiseDistanceMatrix().sniff( fname )
+        >>> fname = get_test_fname('mothur_datatypetest_false.mothur.pair.dist')
+        >>> PairwiseDistanceMatrix().sniff(fname)
         False
-        >>> fname = get_test_fname( '2.tabular' )
-        >>> PairwiseDistanceMatrix().sniff( fname )
+        >>> fname = get_test_fname('2.tabular')
+        >>> PairwiseDistanceMatrix().sniff(fname)
         False
         """
         headers = iter_headers(file_prefix, sep='\t')
