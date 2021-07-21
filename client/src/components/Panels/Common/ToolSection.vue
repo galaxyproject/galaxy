@@ -15,7 +15,7 @@
         </div>
         <transition name="slide">
             <div v-if="opened">
-                <template v-for="[key, el] in category.elems.entries()">
+                <template v-for="[key, el] in sortedElements">
                     <ToolPanelLabel v-if="category.text" :key="key" :definition="el" />
                     <tool
                         v-else
@@ -116,6 +116,9 @@ export default {
         links() {
             return this.category.links || {};
         },
+        sortedElements() {
+            return Object.entries([...this.category.elems].sort((a, b) => a.name > b.name));
+        }
     },
     watch: {
         queryFilter() {
