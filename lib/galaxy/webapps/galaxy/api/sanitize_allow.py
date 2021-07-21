@@ -3,8 +3,6 @@ API operations allowing clients to retrieve and modify the HTML sanitization all
 """
 import logging
 
-from galaxy.datatypes.data import Data
-from galaxy.util import asbool
 from galaxy import web
 from galaxy.webapps.base.controller import BaseAPIController
 
@@ -59,7 +57,6 @@ class SanitizeAllowController(BaseAPIController):
             for toolbox_id in trans.app.toolbox.tools_by_id:
                 tool = trans.app.toolbox.tools_by_id[toolbox_id]
                 if toolbox_id.startswith(tool_id):
-                    tool_name = tool.name
                     full_id = tool.id
                     ids = {'full': full_id,
                            'allowed': tool_id,
@@ -75,7 +72,7 @@ class SanitizeAllowController(BaseAPIController):
         for tool_id in sorted(trans.app.toolbox.tools_by_id):
             tool = trans.app.toolbox.tools_by_id[tool_id]
             if not tool_id.startswith(tuple(trans.app.config.sanitize_allowlist)):
-                ids = {'full': tool_id, 
+                ids = {'full': tool_id,
                        'owner': '/'.join(tool_id.split('/')[:3]),
                        'repository': '/'.join(tool_id.split('/')[:4]),
                        'tool': '/'.join(tool_id.split('/')[:5])}
@@ -85,4 +82,3 @@ class SanitizeAllowController(BaseAPIController):
                 else:
                     sanitize_dict['blocked_local'].append(tool_dict)
         return sanitize_dict
-

@@ -1556,6 +1556,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
 # ---- Utility methods -------------------------------------------------------
 
+
 def build_select_input(name, label, options, value):
     return {'type': 'select',
             'multiple': True,
