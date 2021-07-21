@@ -55,6 +55,7 @@ class Validator(abc.ABC):
         log.error("VAL value %s" % value)
         if message is None:
             message = self.message
+        # TODO allow for a placeholder in message
         log.error("validate %s %s" % (value, self.negate))
         if (not self.negate and value) or (self.negate and not value):
             return
@@ -764,10 +765,11 @@ class ValueInDataTableColumnValidator(Validator):
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
-        return cls(tool_data_table, column, message, line_startswith)
+        negate = elem.get('negate', 'false')
+        return cls(tool_data_table, column, message, line_startswith, negate)
 
-    def __init__(self, tool_data_table, column, message="Value not found.", line_startswith=None):
-        super().__init__(message)
+    def __init__(self, tool_data_table, column, message="Value not found.", line_startswith=None, negate='false'):
+        super().__init__(message, negate)
         self.valid_values = []
         self._data_table_content_version = None
         self._tool_data_table = tool_data_table
@@ -781,17 +783,17 @@ class ValueInDataTableColumnValidator(Validator):
         self.valid_values = []
         for fields in data_fields:
             if self._column < len(fields):
-                self.valid_values.append(fields[self._metadata_column])
+                self.valid_values.append(fields[self._column])
 
     def validate(self, value, trans=None):
+        log.error(f"VALUE {value}")
+        log.error(f"valid_values {self.valid_values}")
         if not value:
             return
         if not self._tool_data_table.is_current_version(self._data_table_content_version):
             log.debug('ValueInDataTableColumnValidator: values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
             self._load_values()
-        if value in self.valid_values:
-            return
-        raise ValueError(self.message)
+        super().validate(value in self.valid_values, trans)
 
 
 class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
@@ -799,12 +801,12 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
     Validator that checks if a value is NOT in a tool data table column.
     """
 
-    def __init__(self, tool_data_table, metadata_column, message="Value already present.", line_startswith=None):
-        super().__init__(tool_data_table, metadata_column, message, line_startswith)
+    def __init__(self, tool_data_table, metadata_column, message="Value already present.", line_startswith=None, negate='false'):
+        super().__init__(tool_data_table, metadata_column, message, line_startswith, negate)
 
     def validate(self, value, trans=None):
         try:
-            super(ValueInDataTableColumnValidator, self).validate(value, trans)
+            super().validate(value, trans)
         except ValueError:
             return
         else:
@@ -887,6 +889,8 @@ class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
 class MetadataInRangeValidator(InRangeValidator):
     """
     validator that ensures metadata is in a specified range
+
+    note: this is covered in a framework test (validation_metadata_in_range)
     """
     requires_dataset_metadata = True
 
