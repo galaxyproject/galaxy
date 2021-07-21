@@ -51,7 +51,7 @@ def main():
     jobname = 'AwsComprehend-' + socket.gethostname() + "-" + timestamp 
 
     # write AMP Transcript text into the input file in a temp directory and upload it to S3
-    tmpdir = tempfile.gettempdir("/tmp")
+    tmpdir = tempfile.mkdtemp(dir="/tmp")
     upload_input_to_s3(amp_transcript_obj, tmpdir, bucket, jobname)
 
     # Make call to AWS Comprehend
