@@ -1,4 +1,4 @@
-<tool id="validation_value_in_datatable" name="validation_value_in_datatable" profile="19.05" version="0.1">
+<tool id="validation_value_in_datatable" name="validation_value_in_datatable" profile="21.09" version="0.1">
     <command><![CDATA[
 echo 'Hello World' > out1
     ]]></command>

@@ -50,6 +50,8 @@ class Validator(abc.ABC):
         """
         validate a value
 
+        TODO assert bool value and document how to implement in derived classes
+
         return None if positive validation, otherwise a ValueError is raised
         """
         log.error("VAL value %s" % value)
@@ -167,7 +169,7 @@ class ExpressionValidator(Validator):
 
     def __init__(self, message, expression, substitute_value_in_message, negate):
         super().__init__(message, negate)
-        # TODO
+        # TODO document substitute_value_in_message and use in all
         self.substitute_value_in_message = substitute_value_in_message
         # Save compiled expression, code objects are thread safe (right?)
         self.expression = compile(expression, '<string>', 'eval')
@@ -708,6 +710,9 @@ class EmptyTextfieldValidator(Validator):
 class MetadataInFileColumnValidator(Validator):
     """
     Validator that checks if the value for a dataset's metadata item exists in a file.
+
+    TODO deprecate
+    note: this is covered in a framework test ()
     """
     requires_dataset_metadata = True
 
@@ -725,10 +730,11 @@ class MetadataInFileColumnValidator(Validator):
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
-        return cls(filename, metadata_name, metadata_column, message, line_startswith, split)
+        negate = elem.get('negate', 'false')
+        return cls(filename, metadata_name, metadata_column, message, line_startswith, split, negate)
 
-    def __init__(self, filename, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None, split="\t"):
-        super().__init__(message)
+    def __init__(self, filename, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None, split="\t", negate="false"):
+        super().__init__(message, negate)
         self.metadata_name = metadata_name
         self.valid_values = []
         for line in open(filename):
@@ -740,15 +746,14 @@ class MetadataInFileColumnValidator(Validator):
     def validate(self, value, trans=None):
         if not value:
             return
-        if hasattr(value, "metadata"):
-            if value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values:
-                return
-        raise ValueError(self.message)
+        super().validate(hasattr(value, "metadata") and value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values)
 
 
 class ValueInDataTableColumnValidator(Validator):
     """
     Validator that checks if a value is in a tool data table column.
+
+    note: this is covered in a framework test (validation_value_in_datatable)
     """
 
     @classmethod
@@ -762,6 +767,7 @@ class ValueInDataTableColumnValidator(Validator):
         except ValueError:
             pass
         message = elem.get("message", f"Value was not found in {table_name}.")
+        # TODO deprecate line_startswith .. not used in all *InDataTableColumnValidator validators
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
@@ -799,6 +805,8 @@ class ValueInDataTableColumnValidator(Validator):
 class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
     """
     Validator that checks if a value is NOT in a tool data table column.
+
+    note: this is covered in a framework test (validation_value_in_datatable)
     """
 
     def __init__(self, tool_data_table, metadata_column, message="Value already present.", line_startswith=None, negate='false'):
@@ -816,6 +824,9 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
 class MetadataInDataTableColumnValidator(Validator):
     """
     Validator that checks if the value for a dataset's metadata item exists in a file.
+
+    TODO Could be derived from ValueInDataTableColumnValidator
+    note: this is covered in a framework test (validation_metadata_in_datatable)
     """
     requires_dataset_metadata = True
 
@@ -827,6 +838,7 @@ class MetadataInDataTableColumnValidator(Validator):
         metadata_name = elem.get("metadata_name", None)
         if metadata_name:
             metadata_name = metadata_name.strip()
+        # TODO rename to column
         metadata_column = elem.get("metadata_column", 0)
         try:
             metadata_column = int(metadata_column)
@@ -836,10 +848,11 @@ class MetadataInDataTableColumnValidator(Validator):
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
-        return cls(tool_data_table, metadata_name, metadata_column, message, line_startswith)
+        negate = elem.get('negate', 'false')
+        return cls(tool_data_table, metadata_name, metadata_column, message, line_startswith, negate)
 
-    def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None):
-        super().__init__(message)
+    def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None, negate="false"):
+        super().__init__(message, negate)
         self.metadata_name = metadata_name
         self.valid_values = []
         self._data_table_content_version = None
@@ -863,23 +876,24 @@ class MetadataInDataTableColumnValidator(Validator):
             if not self._tool_data_table.is_current_version(self._data_table_content_version):
                 log.debug('MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
                 self._load_values()
-            if value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values:
-                return
-        raise ValueError(self.message)
+        # TODO instead of `and` call super().validate 2x using a better error message for the case that there is no metadata
+        super().validate(hasattr(value, "metadata") and value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values, trans)
 
 
 class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
     """
     Validator that checks if the value for a dataset's metadata item doesn't exists in a file.
+
+    note: this is covered in a framework test (validation_metadata_in_datatable)
     """
     requires_dataset_metadata = True
 
-    def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None):
-        super(MetadataInDataTableColumnValidator, self).__init__(tool_data_table, metadata_name, metadata_column, message, line_startswith)
+    def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None, negate="false"):
+        super().__init__(tool_data_table, metadata_name, metadata_column, message, line_startswith, negate)
 
     def validate(self, value, trans=None):
         try:
-            super(MetadataInDataTableColumnValidator, self).validate(value, trans)
+            super().validate(value, trans)
         except ValueError:
             return
         else:
