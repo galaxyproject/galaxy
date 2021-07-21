@@ -79,7 +79,7 @@
                         <span class="fa fa-star" />
                     </b-button>
                 </div>
-                <div class="portlet-title my-1">
+                <div class="portlet-title">
                     <i class="portlet-title-icon fa mr-1 fa-wrench" style="display: inline"></i>
                     <span class="portlet-title-text">
                         <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span> (Galaxy

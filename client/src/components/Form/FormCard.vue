@@ -9,7 +9,7 @@
                     title="Collapse/Expand"
                     variant="link"
                     size="sm"
-                    class="float-right py-0"
+                    class="float-right"
                     v-b-tooltip.hover.bottom
                     @click="onCollapse"
                 >
@@ -73,7 +73,9 @@ export default {
     },
     methods: {
         onCollapse() {
-            this.$emit("update:collapsed", !this.collapsed);
+            if (this.collapsible) {
+                this.$emit("update:collapsed", !this.collapsed);
+            }
         },
     },
 };

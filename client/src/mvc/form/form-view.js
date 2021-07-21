@@ -32,7 +32,6 @@ export default Backbone.View.extend({
             if (field.update) {
                 field.update(node);
                 field.trigger("change");
-                console.debug("form-view::update()", `Updating input: ${input_id}`);
             }
         });
     },

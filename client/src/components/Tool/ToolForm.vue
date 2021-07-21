@@ -53,7 +53,7 @@
                                 title="Email notification"
                                 help="Send an email notification when the job completes."
                                 type="boolean"
-                                v-model="email"
+                                v-model="useEmail"
                             />
                             <FormElement
                                 v-if="remapAllowed"
@@ -61,7 +61,7 @@
                                 :title="remapTitle"
                                 :help="remapHelp"
                                 type="boolean"
-                                v-model="remap"
+                                v-model="useJobRemapping"
                             />
                             <FormElement
                                 v-if="reuseAllowed(user)"
@@ -147,13 +147,14 @@ export default {
             error: null,
             formConfig: {},
             formData: {},
+            remapAllowed: false,
             errorTitle: null,
             errorContent: null,
             messageVariant: "",
             messageText: "",
             useCachedJobs: false,
-            email: false,
-            remap: false,
+            useEmail: false,
+            useJobRemapping: false,
             entryPoints: [],
             jobDef: {},
             jobResponse: {},
@@ -185,18 +186,15 @@ export default {
         inputs() {
             return this.formConfig.inputs;
         },
-        remapAllowed() {
-            return this.job_id && this.formConfig.job_remap;
-        },
         remapTitle() {
-            if (this.formConfig.job_remap === "job_produced_collection_elements") {
-                return "Replace elements in collection ?";
+            if (this.remapAllowed === "job_produced_collection_elements") {
+                return "Replace elements in collection?";
             } else {
-                return "Resume dependencies from this job ?";
+                return "Resume dependencies from this job?";
             }
         },
         remapHelp() {
-            if (this.formConfig.job_remap === "job_produced_collection_elements") {
+            if (this.remapAllowed === "job_produced_collection_elements") {
                 return "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collection that were produced during the previous tool run.";
             } else {
                 return "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
@@ -218,7 +216,7 @@ export default {
             this.onUpdate();
         },
         onUpdate() {
-            updateToolFormData(this.formConfig.id, this.currentVersion, this.formData).then((data) => {
+            updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData).then((data) => {
                 this.formConfig = data;
             });
         },
@@ -232,6 +230,7 @@ export default {
             this.currentVersion = newVersion || this.currentVersion;
             getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
                 this.formConfig = data;
+                this.remapAllowed = this.job_id && data.job_remap;
                 this.showLoading = false;
                 this.showForm = true;
                 if (newVersion) {
@@ -255,10 +254,10 @@ export default {
                     ...this.formData,
                 },
             };
-            if (this.email) {
+            if (this.useEmail) {
                 jobDef.inputs["send_email_notification"] = true;
             }
-            if (this.remap) {
+            if (this.useJobRemapping) {
                 jobDef.inputs["rerun_remap_job_id"] = this.job_id;
             }
             if (this.useCachedJobs) {
