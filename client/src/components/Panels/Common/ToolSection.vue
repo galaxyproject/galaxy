@@ -117,8 +117,10 @@ export default {
             return this.category.links || {};
         },
         sortedElements() {
-            return Object.entries([...this.category.elems].sort((a, b) => a.name > b.name));
-        }
+            return Object.entries(
+                [...this.category.elems].sort((a, b) => a.name.toLowerCase() > b.name.toLowerCase())
+            );
+        },
     },
     watch: {
         queryFilter() {
