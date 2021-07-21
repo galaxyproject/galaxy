@@ -391,7 +391,7 @@ class DatasetEmptyValidator(Validator):
     Validator that checks if a dataset has a positive file size.
 
     >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
-    >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
+    >>> from galaxy.model import Dataset, History, HistoryDatasetAssociation, set_datatypes_registry
     >>> from galaxy.model.mapping import init
     >>> from galaxy.util import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
@@ -401,10 +401,11 @@ class DatasetEmptyValidator(Validator):
     >>> sa_session.add(hist)
     >>> sa_session.flush()
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
-    >>> empty_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
-    >>> empty_hda.dataset.file_size = 0
-    >>> full_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
-    >>> full_hda.dataset.file_size = 1
+    >>> # TODO is there a better way than hardcoding 'test-data/'
+    >>> empty_dataset = Dataset(external_filename="test-data/empty.txt")
+    >>> empty_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', dataset=empty_dataset, sa_session=sa_session))
+    >>> full_dataset = Dataset(external_filename="test-data/1.tabular")
+    >>> full_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', dataset=full_dataset, sa_session=sa_session))
     >>>
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="data">
