@@ -570,7 +570,7 @@ class TestHistoryAudit(BaseTest):
         where_clause = and_(cls_.history_id == history.id, cls_.update_time == update_time)
 
         with dbcleanup(session, obj, where_clause):
-            stored_obj = get_stored_obj2(session, cls_, where_clause=where_clause)
+            stored_obj = get_stored_obj(session, cls_, where_clause=where_clause)
             # test columns
             assert stored_obj.history_id == history.id
             assert stored_obj.update_time == update_time
@@ -1817,7 +1817,7 @@ class TestPasswordResetToken(BaseTest):
         where_clause = cls_.token == token
 
         with dbcleanup(session, obj, where_clause):
-            stored_obj = get_stored_obj2(session, cls_, where_clause=where_clause)
+            stored_obj = get_stored_obj(session, cls_, where_clause=where_clause)
             # test columns
             assert stored_obj.token == token
             assert stored_obj.expiration_time == expiration_time
@@ -3107,6 +3107,20 @@ def delete_from_database(session, objects):
         session.execute(stmt)
 
 
+def get_stored_obj(session, cls, obj_id=None, where_clause=None):
+    # Either obj_id or where_clause must be provided, but not both
+    assert bool(obj_id) ^ (where_clause is not None)
+    if where_clause is None:
+        where_clause = get_default_where_clause(cls, obj_id)
+    stmt = select(cls).where(where_clause)
+    return session.execute(stmt).scalar_one()
+
+
+def get_default_where_clause(cls, obj_id):
+    where_clause = cls.__table__.c.id == obj_id
+    return where_clause
+
+
 def has_unique_constraint(table, fields):
     for constraint in table.constraints:
         if isinstance(constraint, UniqueConstraint):
@@ -3120,29 +3134,6 @@ def has_index(table, fields):
         col_names = {c.name for c in index.columns}
         if set(fields) == col_names:
             return True
-
-
-def get_stored_obj2(session, cls, obj_id=None, where_clause=None):
-    # Either obj_id or where_clause must be provided, but not both
-    assert bool(obj_id) ^ (where_clause is not None)
-
-    if where_clause is None:
-        where_clause = get_default_where_clause(cls, obj_id)
-    stmt = select(cls).where(where_clause)
-    return session.execute(stmt).scalar_one()
-
-
-def get_default_where_clause(cls, obj_id):
-    where_clause = cls.__table__.c.id == obj_id
-    return where_clause
-
-
-def get_stored_obj(session, cls, obj_id=None, stmt=None):
-    # Either obj_id or stmt must be provided, but not both
-    assert bool(obj_id) ^ (stmt is not None)
-    if stmt is None:
-        stmt = select(cls).where(cls.id == obj_id)
-    return session.execute(stmt).scalar_one()
 
 
 def get_random_string():
