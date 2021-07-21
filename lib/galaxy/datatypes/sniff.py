@@ -270,7 +270,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('2.txt')
     >>> guess_ext(fname, sniff_order)
     'txt'
-    >>> fname = get_test_fname('2.tabular')
+    >>> fname = get_test_fname('test_tab2.tabular')
     >>> guess_ext(fname, sniff_order)
     'tabular'
     >>> fname = get_test_fname('3.txt')

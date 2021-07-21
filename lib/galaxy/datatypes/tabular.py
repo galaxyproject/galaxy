@@ -686,7 +686,7 @@ class Pileup(Tabular):
         >>> fname = get_test_fname( '2.txt' )
         >>> Pileup().sniff( fname )  # 2.txt
         False
-        >>> fname = get_test_fname( '2.tabular' )
+        >>> fname = get_test_fname( 'test_tab2.tabular' )
         >>> Pileup().sniff( fname )
         False
         """
