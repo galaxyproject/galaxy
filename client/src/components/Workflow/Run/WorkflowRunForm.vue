@@ -176,13 +176,24 @@ export default {
                 }
             }
 
+            const parameters = {};
+            Object.entries(this.stepData).forEach(([stepId, stepData]) => {
+                const stepDataFiltered = {};
+                Object.entries(stepData).forEach(([inputName, inputValue]) => {
+                    if (typeof inputValue !== "object" || inputValue.__class__ != "ConnectedValue") {
+                        stepDataFiltered[inputName] = inputValue;
+                    }
+                });
+                parameters[stepId] = stepDataFiltered;
+            });
+
             const jobDef = {
                 new_history_name: this.historyData["new_history|name"] ? this.historyData["new_history|name"] : null,
                 history_id: !this.historyData["new_history|name"] ? this.model.historyId : null,
                 resource_params: this.resourceData,
                 replacement_params: this.wpData,
                 use_cached_job: this.useCachedJobs,
-                parameters: this.stepData,
+                parameters: parameters,
                 // Tool form will submit flat maps for each parameter
                 // (e.g. "repeat_0|cond|param": "foo" instead of nested
                 // data structures).
