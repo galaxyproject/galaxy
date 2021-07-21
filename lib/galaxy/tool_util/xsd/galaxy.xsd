@@ -3742,6 +3742,12 @@ Valid values include: ``expression``, ``regex``, ``in_range``, ``length``,
 The error message displayed on the tool form if validation fails.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="negate" type="xs:boolean" default="false">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">
+Negates the result of the validator.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="check" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Comma-seperated list of metadata
