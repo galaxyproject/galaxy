@@ -6,16 +6,16 @@
     <requirement type="package" version="2.2">spacy</requirement>
   </requirements>
   <command detect_errors="exit_code">
-    '$__tool_directory__/spacy_.py' '$amp_transcript' '$amp_entities' '$ignore_categories'
+    python '$__tool_directory__/spacy_.py' '$amp_transcript' '$spacy_entities' '$amp_entities' '$ignore_categories'
   </command>
   <inputs>
     <param name="amp_transcript" type="data" format="transcript" label="AMP Transcript" help="AMP Transcript file from speech-to-text with timestamp adjusted"/>
-    <param name="ignore_categories" type="text" format="csv" label="Categories to ignore" help="Comma separated list of categories to ignore. For instance, 'QUANTITY, ORGANIZATION'.">
-      <sanitizer sanitize="false">
-    </sanitizer>
+    <param name="ignore_categories" type="text" label="Categories to Ignore" help="Comma separated list of categories to ignore. For instance, 'QUANTITY, ORGANIZATION'.">
+      <sanitizer sanitize="false"/>
     </param>
   </inputs>
   <outputs>
+    <data name="spacy_entities" format="json" label="Sapcy Entities"/>
     <data name="amp_entities" format="ner" label="AMP Entities Extracted"/>
   </outputs>
   <tests>
