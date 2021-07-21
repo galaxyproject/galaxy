@@ -180,7 +180,7 @@ export default {
             Object.entries(this.stepData).forEach(([stepId, stepData]) => {
                 const stepDataFiltered = {};
                 Object.entries(stepData).forEach(([inputName, inputValue]) => {
-                    if (JSON.stringify(inputValue) != JSON.stringify({ __class__: "ConnectedValue" })) {
+                    if (!inputValue || typeof inputValue !== "object" || inputValue.__class__ != "ConnectedValue") {
                         stepDataFiltered[inputName] = inputValue;
                     }
                 });
