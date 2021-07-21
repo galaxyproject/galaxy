@@ -266,6 +266,7 @@ class InRangeValidator(Validator):
             maxcmp = self.max.__gt__
         else:
             maxcmp = self.max.__ge__
+        log.error(f"{value} min {mincmp(float(value))} max {maxcmp(float(value))}")
         super().validate(mincmp(float(value)) and maxcmp(float(value)), trans)
 
 
@@ -914,7 +915,6 @@ class MetadataInRangeValidator(InRangeValidator):
             except ValueError:
                 raise ValueError(f'{self.metadata_name} must be a float or an integer')
             super().validate(value_to_check, trans)
-        super().validate(True, trans)
 
 
 validator_types = dict(
