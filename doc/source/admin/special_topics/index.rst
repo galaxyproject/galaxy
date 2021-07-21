@@ -9,7 +9,6 @@ Special Topics
    interactivetools
    interactive_environments
    mulled_containers
-   grt
    gtn
    job_metrics
    webhooks
