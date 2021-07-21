@@ -11,7 +11,7 @@ class EntityExtraction:
 		else:
 			 self.entities = entities
 
-	def addEntity(self, type, text, beginOffset, endOffset, scoreType = None, scoreValue = None, start = None, end = None):
+	def addEntity(self, type, text, beginOffset, endOffset, start = None, end = None, scoreType = None, scoreValue = None):
 		entity = EntityExtractionEntity(type, text, beginOffset, endOffset, start, end)
 		if scoreType is not None and scoreValue is not None:
 			entity.score = EntityExtractionEntityScore(scoreType, scoreValue)

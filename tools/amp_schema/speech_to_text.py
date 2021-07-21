@@ -28,6 +28,7 @@ class SpeechToTextResult:
 	def __init__(self, words=[], transcript=""):
 		self.transcript = transcript
 		self.words = words
+	# TODO add offset to the param list below and update all references	
 	def addWord(self, type, start:float, end:float, text, scoreType, scoreValue):
 		newWord = SpeechToTextWord(type, text, start, end, scoreType, scoreValue)
 		self.words.append(newWord)
