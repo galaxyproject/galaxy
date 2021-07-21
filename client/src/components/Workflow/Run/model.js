@@ -104,7 +104,7 @@ export class WorkflowRunModel {
                     if (connection) {
                         input.type = "hidden";
                         input.help = input.step_linked ? `${input.help}, ` : "";
-                        input.help += `Output dataset '${connection.output_name}' from step ${parseInt(i) + 1}`;
+                        input.help += `Connected to '${connection.output_name}' from Step ${parseInt(i) + 1}`;
                         input.step_linked = input.step_linked || [];
                         input.step_linked.push({ index: step.index, step_type: step.step_type });
                     }
