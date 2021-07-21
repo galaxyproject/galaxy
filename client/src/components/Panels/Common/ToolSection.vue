@@ -117,9 +117,16 @@ export default {
             return this.category.links || {};
         },
         sortedElements() {
-            return Object.entries(
-                [...this.category.elems].sort((a, b) => a.name.toLowerCase() > b.name.toLowerCase())
-            );
+            // This obviously breaks when people have manually inserted labels
+            // into particular spots in the tool section, so if there are any,
+            // just skip the whole section and trust ordering
+            if (this.category.elems.some((el) => el.text !== undefined && el.text !== "")) {
+                return Object.entries(this.category.elems);
+            } else {
+                return Object.entries(
+                    [...this.category.elems].sort((a, b) => a.name.toLowerCase() > b.name.toLowerCase())
+                );
+            }
         },
     },
     watch: {
