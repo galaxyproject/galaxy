@@ -72,7 +72,7 @@ def upload_input_to_s3(amp_transcript_obj, tmpdir, bucket, jobname):
     # write the transcript text into a tmp input file
     try:
         # use jobname as input filename
-        input = tmpdir + jobname
+        input = tmpdir + "/" + jobname
         with open(input, 'w') as infile:
             infile.write(amp_transcript_obj.results.transcript)
             print(f"Successfully created input file {input} containing transcript for AWS Comprehend job.")
@@ -171,17 +171,24 @@ def get_ignore_categories(ignore_categories_string):
     ignore_categories = list()
     ignore_categories_list = ignore_categories_string.split(',')
     for category in ignore_categories_list:
-        ignore_categories.append(clean_text(category))
+        ignore_categories.append(clean_type(category))
     return ignore_categories
 
-def clean_text(text):
-    return text.lower().strip()
+def clean_type(text):
+    return text.upper().strip()
+
+def clean_word(word):
+    cleaned_word = word
+    if(word.endswith('\'s')):
+       cleaned_word = word.replace('\'s', '')
+    return cleaned_word
 
 def read_aws_entities(aws_entities):
     with open(aws_entities) as aws_entities_file:
         aws_entities_json = json.load(aws_entities_file)
     return aws_entities_json
 
+# Populate entities list in AMP entities object, based on AMP transcript object, AWS entities JSON, and ignored categories list.
 def populateAmpEntities(amp_transcript_obj, aws_entities_json, amp_entities_obj, ignore_categories):
     # AWS Comprehend output should contain entities
     if not 'Entities' in aws_entities_json.keys():
@@ -206,7 +213,7 @@ def populateAmpEntities(amp_transcript_obj, aws_entities_json, amp_entities_obj,
             scoreValue = entity["Score"]
             
             # skip entity in the ignore categories
-            if clean_text(type) in ignore_categories:
+            if clean_type(type) in ignore_categories:
                 ignored = ignored + 1
                 print(f"Ignoring entity {text} of type {type}.")
                 continue
@@ -219,7 +226,7 @@ def populateAmpEntities(amp_transcript_obj, aws_entities_json, amp_entities_obj,
                     textamp = words[i].text
                     # check if text match, note that entity could be multi-words, so we need to check if it starts with the matching word
                     # if not, something is wrong; will still take it as a match 
-                    if not text.startswith(textamp):
+                    if not text.startswith(clean_word(textamp)):
                         print(f"Warning: AWS Entity {text} does not start with AMP Transcript words[{i}] = {textamp}, even though both start at offset {beginOffset}.")
                     last = i
                     break
