@@ -1,65 +1,88 @@
 <template>
     <b-tabs>
-        <b-tab title="Block List">
-            <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
-                <template v-slot:title> Tool HTML Sanitized </template>
-                <template v-slot:rows>
-                    <template v-for="(row, index) in blockList">
-                        <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
-                            <td>{{ row.tool_name }}</td>
-                            <td>
-                                <template v-if="row.toolshed">
-                                    <span>{{ row.tool_id[0] }}</span>
-                                    <strong>/</strong>
-                                    <span>{{ row.tool_id[1] }}</span>
-                                    <strong>/</strong>
-                                    <a @click="allowHTML(row.ids.owner)">{{ row.tool_id[2] }}</a>
-                                    <strong>/</strong>
-                                    <a @click="allowHTML(row.ids.repository)">{{ row.tool_id[3] }}</a>
-                                    <strong>/</strong>
-                                    <a @click="allowHTML(row.ids.tool)">{{ row.tool_id[4] }}</a>
-                                    <strong>/</strong>
-                                    <a @click="allowHTML(row.ids.full)">{{ row.tool_id[5] }}</a>
-                                </template>
-                                <template v-else>
-                                    <span>{{ row.tool_id[0] }}</span>
-                                </template>
-                            </td>
-                            <td>
-                                <template v-if="!row.toolshed">
-                                    <button @click="allowHTML(row.ids.full)">Render HTML</button>
-                                </template>
-                            </td>
-                        </tr>
-                    </template>
-                </template>
-            </base-grid>
+        <b-tab title="Toolshed Tools">
+            <b-tabs>
+                <b-tab title="HTML Sanitized">
+                    <base-grid :is-loaded="isLoaded" :columns="toolshedColumns" id="sanitize-allow-grid">
+                        <template v-slot:rows>
+                            <template v-for="(row, index) in toolshedBlocked">
+                                <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                                    <td>{{ row.tool_name }}</td>
+                                    <td>
+                                        <span>{{ row.tool_id[0] }}</span>
+                                    </td>
+                                    <td>
+                                        <button @click="allowHTML(row.ids.owner)">{{ row.tool_id[2] }}</button>
+                                    </td>
+                                    <td>
+                                        <button @click="allowHTML(row.ids.repository)">{{ row.tool_id[3] }}</button>
+                                    </td>
+                                    <td>
+                                        <button @click="allowHTML(row.ids.tool)">{{ row.tool_id[4] }}</button>
+                                    </td>
+                                    <td>
+                                        <button @click="allowHTML(row.ids.full)">{{ row.tool_id[5] }}</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </template>
+                    </base-grid>
+                </b-tab>
+                <b-tab title="HTML Rendered">
+                    <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                        <template v-slot:rows>
+                            <template v-for="(row, index) in toolshedAllowed">
+                                <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                                    <td>{{ row.tool_name }}</td>
+                                    <td>
+                                        <template v-for="(part, index) in row.tool_id">
+                                            <span>{{ part }}</span>
+                                            <strong>/</strong>
+                                        </template>
+                                    </td>
+                                    <td>
+                                        <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </template>
+                    </base-grid>
+                </b-tab>
+            </b-tabs>
         </b-tab>
-        <b-tab title="Allow List">
-            <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
-                <template v-slot:title> Tool HTML Rendered </template>
-                <template v-slot:rows>
-                    <template v-for="(row, index) in allowList">
-                        <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
-                            <td>{{ row.tool_name }}</td>
-                            <td>
-                                <template v-if="row.toolshed">
-                                    <template v-for="(part, index) in row.tool_id">
-                                        <span>{{ part }}</span>
-                                        <strong>/</strong>
-                                    </template>
-                                </template>
-                                <template v-else>
-                                    <span>{{ row.tool_id[0] }}</span>
-                                </template>
-                            </td>
-                            <td>
-                                <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
-                            </td>
-                        </tr>
-                    </template>
-                </template>
-            </base-grid>
+        <b-tab title="Local Tools">
+            <b-tabs>
+                <b-tab title="HTML Sanitized">
+                    <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                        <template v-slot:rows>
+                            <template v-for="(row, index) in localBlocked">
+                                <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                                    <td>{{ row.tool_name }}</td>
+                                    <td>{{ row.tool_id[0] }}</td>
+                                    <td>
+                                        <button @click="allowHTML(row.ids.full)">Render HTML</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </template>
+                    </base-grid>
+                </b-tab>
+                <b-tab title="HTML Rendered">
+                    <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                        <template v-slot:rows>
+                            <template v-for="(row, index) in localAllowed">
+                                <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                                    <td>{{ row.tool_name }}</td>
+                                    <td>{{ row.tool_id[0] }}</td>
+                                    <td>
+                                        <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </template>
+                    </base-grid>
+                </b-tab>
+            </b-tabs>
         </b-tab>
     </b-tabs>
 </template>
@@ -75,11 +98,19 @@ export default {
             type: Boolean,
             required: true,
         },
-        blockList: {
+        localAllowed: {
             type: Array,
             required: true,
         },
-        allowList: {
+        localBlocked: {
+            type: Array,
+            required: true,
+        },
+        toolshedAllowed: {
+            type: Array,
+            required: true,
+        },
+        toolshedBlocked: {
             type: Array,
             required: true,
         },
@@ -91,6 +122,14 @@ export default {
                 { text: "Tool Name", dataIndex: "tool_name" },
                 { text: "Tool ID", dataIndex: "tool_id" },
                 { text: "Action", dataIndex: "action" },
+            ],
+            toolshedColumns: [
+                { text: "Tool Name", dataIndex: "tool_name" },
+                { text: "Toolshed" },
+                { text: "Owner" },
+                { text: "Repository" },
+                { text: "Tool" },
+                { text: "Version" },
             ],
         };
     },
@@ -108,8 +147,10 @@ export default {
                     },
                 })
                 .then((response) => {
-                    this.allowList = response.data.data.allowList;
-                    this.blockList = response.data.data.blockList;
+                    this.localAllowed = response.data.data.allowed_local;
+                    this.localBlocked = response.data.data.blocked_local;
+                    this.toolshedAllowed = response.data.data.allowed_toolshed;
+                    this.toolshedBlocked = response.data.data.blocked_toolshed;
                     this.message = response.data.message;
                     this.status = response.data.status;
                 })
@@ -125,8 +166,10 @@ export default {
                     },
                 })
                 .then((response) => {
-                    this.allowList = response.data.data.allowList;
-                    this.blockList = response.data.data.blockList;
+                    this.localAllowed = response.data.data.allowed_local;
+                    this.localBlocked = response.data.data.blocked_local;
+                    this.toolshedAllowed = response.data.data.allowed_toolshed;
+                    this.toolshedBlocked = response.data.data.blocked_toolshed;
                     this.message = response.data.message;
                     this.status = response.data.status;
                 })

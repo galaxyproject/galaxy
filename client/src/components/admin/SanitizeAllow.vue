@@ -21,8 +21,10 @@ export default {
         return {
             currentView: "sanitize-allow-grid",
             isLoaded: false,
-            allowList: [],
-            blockList: [],
+            localAllowed: [],
+            localBlocked: [],
+            toolshedAllowed: [],
+            toolshedBlocked: [],
             message: "",
             status: "",
         };
@@ -40,8 +42,10 @@ export default {
             if (this.currentView === "sanitize-allow-grid") {
                 props = {
                     isLoaded: this.isLoaded,
-                    allowList: this.allowList,
-                    blockList: this.blockList,
+                    localAllowed: this.localAllowed,
+                    localBlocked: this.localBlocked,
+                    toolshedAllowed: this.toolshedAllowed,
+                    toolshedBlocked: this.toolshedBlocked,
                 };
             }
 
@@ -54,8 +58,10 @@ export default {
             .get(`${getAppRoot()}api/sanitize_allow`)
             .then((response) => {
                 this.isLoaded = true;
-                this.allowList = response.data.data.allowList;
-                this.blockList = response.data.data.blockList;
+                this.localAllowed = response.data.data.allowed_local;
+                this.localBlocked = response.data.data.blocked_local;
+                this.toolshedAllowed = response.data.data.allowed_toolshed;
+                this.toolshedBlocked = response.data.data.blocked_toolshed;
                 this.message = response.data.message;
                 this.status = response.data.status;
             })
