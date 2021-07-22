@@ -14,7 +14,6 @@ jobs:
       matrix:
         python-version: ['3.7']
         chunk: [0, 1, 2]
-    continue-on-error: true
     services:
       postgres:
         image: postgres:13
