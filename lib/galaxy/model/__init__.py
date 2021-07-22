@@ -296,11 +296,11 @@ class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
         UniqueConstraint('server_name', 'hostname'),
     )
 
-    id = Column("id", Integer, primary_key=True)
-    server_name = Column("server_name", String(255), index=True)
-    hostname = Column("hostname", String(255))
-    pid = Column("pid", Integer)
-    update_time = Column("update_time", DateTime, default=now, onupdate=now)
+    id = Column(Integer, primary_key=True)
+    server_name = Column(String(255), index=True)
+    hostname = Column(String(255))
+    pid = Column(Integer)
+    update_time = Column(DateTime, default=now, onupdate=now)
 
     def __init__(self, server_name, hostname):
         self.server_name = server_name
@@ -689,9 +689,9 @@ class User(Dictifiable, RepresentById):
 class PasswordResetToken(Base, _HasTable):
     __tablename__ = 'password_reset_token'
 
-    token = Column('token', String(32), primary_key=True, unique=True, index=True)
-    expiration_time = Column('expiration_time', DateTime)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    token = Column(String(32), primary_key=True, unique=True, index=True)
+    expiration_time = Column(DateTime)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user = relationship('User', back_populates='reset_tokens')
 
     def __init__(self, user, token=None):
@@ -706,18 +706,18 @@ class PasswordResetToken(Base, _HasTable):
 class DynamicTool(Base, Dictifiable, RepresentById):
     __tablename__ = 'dynamic_tool'
 
-    id = Column('id', Integer, primary_key=True)
-    uuid = Column('uuid', UUIDType())
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, index=True, default=now, onupdate=now)
-    tool_id = Column('tool_id', Unicode(255))
-    tool_version = Column('tool_version', Unicode(255))
-    tool_format = Column('tool_format', Unicode(255))
-    tool_path = Column('tool_path', Unicode(255))
-    tool_directory = Column('tool_directory', Unicode(255))
-    hidden = Column('hidden', Boolean, default=True)
-    active = Column('active', Boolean, default=True)
-    value = Column('value', MutableJSONType)
+    id = Column(Integer, primary_key=True)
+    uuid = Column(UUIDType())
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, index=True, default=now, onupdate=now)
+    tool_id = Column(Unicode(255))
+    tool_version = Column(Unicode(255))
+    tool_format = Column(Unicode(255))
+    tool_path = Column(Unicode(255))
+    tool_directory = Column(Unicode(255))
+    hidden = Column(Boolean, default=True)
+    active = Column(Boolean, default=True)
+    value = Column(MutableJSONType)
     workflow_steps = relationship('WorkflowStep', back_populates='dynamic_tool')
 
     dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
@@ -750,44 +750,44 @@ class BaseJobMetric:
 class JobMetricText(Base, BaseJobMetric, RepresentById):
     __tablename__ = 'job_metric_text'
 
-    id = Column('id', Integer, primary_key=True)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    plugin = Column('plugin', Unicode(255))
-    metric_name = Column('metric_name', Unicode(255))
-    metric_value = Column('metric_value', Unicode(JOB_METRIC_MAX_LENGTH))
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    plugin = Column(Unicode(255))
+    metric_name = Column(Unicode(255))
+    metric_value = Column(Unicode(JOB_METRIC_MAX_LENGTH))
     job = relationship('Job', back_populates='text_metrics')
 
 
 class JobMetricNumeric(Base, BaseJobMetric, RepresentById):
     __tablename__ = 'job_metric_numeric'
 
-    id = Column('id', Integer, primary_key=True)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    plugin = Column('plugin', Unicode(255))
-    metric_name = Column('metric_name', Unicode(255))
-    metric_value = Column('metric_value', Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    plugin = Column(Unicode(255))
+    metric_name = Column(Unicode(255))
+    metric_value = Column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
     job = relationship('Job', back_populates='numeric_metrics')
 
 
 class TaskMetricText(Base, BaseJobMetric, RepresentById):
     __tablename__ = 'task_metric_text'
 
-    id = Column('id', Integer, primary_key=True)
-    task_id = Column('task_id', Integer, ForeignKey('task.id'), index=True)
-    plugin = Column('plugin', Unicode(255))
-    metric_name = Column('metric_name', Unicode(255))
-    metric_value = Column('metric_value', Unicode(JOB_METRIC_MAX_LENGTH))
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('task.id'), index=True)
+    plugin = Column(Unicode(255))
+    metric_name = Column(Unicode(255))
+    metric_value = Column(Unicode(JOB_METRIC_MAX_LENGTH))
     task = relationship('Task', back_populates='text_metrics')
 
 
 class TaskMetricNumeric(Base, BaseJobMetric, RepresentById):
     __tablename__ = 'task_metric_numeric'
 
-    id = Column('id', Integer, primary_key=True)
-    task_id = Column('task_id', Integer, ForeignKey('task.id'), index=True)
-    plugin = Column('plugin', Unicode(255))
-    metric_name = Column('metric_name', Unicode(255))
-    metric_value = Column('metric_value', Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('task.id'), index=True)
+    plugin = Column(Unicode(255))
+    metric_name = Column(Unicode(255))
+    metric_value = Column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
     task = relationship('Task', back_populates='numeric_metrics')
 
 
@@ -1438,27 +1438,27 @@ class Task(Base, JobLike, RepresentById):
     """
     __tablename__ = 'task'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    execution_time = Column('execution_time', DateTime)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    state = Column('state', String(64), index=True)
-    command_line = Column('command_line', TEXT)
-    param_filename = Column('param_filename', String(1024))
-    runner_name = Column('runner_name', String(255))
-    job_stdout = Column('job_stdout', TEXT)  # job_stdout makes sense here because it is short for job script standard out
-    job_stderr = Column('job_stderr', TEXT)
-    tool_stdout = Column('tool_stdout', TEXT)
-    tool_stderr = Column('tool_stderr', TEXT)
-    exit_code = Column('exit_code', Integer, nullable=True)
-    job_messages = Column('job_messages', MutableJSONType, nullable=True)
-    info = Column('info', TrimmedString(255))
-    traceback = Column('traceback', TEXT)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True, nullable=False)
-    working_directory = Column('working_directory', String(1024))
-    task_runner_name = Column('task_runner_name', String(255))
-    task_runner_external_id = Column('task_runner_external_id', String(255))
-    prepare_input_files_cmd = Column('prepare_input_files_cmd', TEXT)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    execution_time = Column(DateTime)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    state = Column(String(64), index=True)
+    command_line = Column(TEXT)
+    param_filename = Column(String(1024))
+    runner_name = Column(String(255))
+    job_stdout = Column(TEXT)  # job_stdout makes sense here because it is short for job script standard out
+    job_stderr = Column(TEXT)
+    tool_stdout = Column(TEXT)
+    tool_stderr = Column(TEXT)
+    exit_code = Column(Integer, nullable=True)
+    job_messages = Column(MutableJSONType, nullable=True)
+    info = Column(TrimmedString(255))
+    traceback = Column(TEXT)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True, nullable=False)
+    working_directory = Column(String(1024))
+    task_runner_name = Column(String(255))
+    task_runner_external_id = Column(String(255))
+    prepare_input_files_cmd = Column(TEXT)
     job = relationship('Job', back_populates='tasks')
     text_metrics = relationship('TaskMetricText', back_populates='task')
     numeric_metrics = relationship('TaskMetricNumeric', back_populates='task')
@@ -1613,10 +1613,10 @@ class Task(Base, JobLike, RepresentById):
 class JobParameter(Base, RepresentById):
     __tablename__ = 'job_parameter'
 
-    id = Column('id', Integer, primary_key=True)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    name = Column('name', String(255))
-    value = Column('value', TEXT)
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    name = Column(String(255))
+    value = Column(TEXT)
 
     def __init__(self, name, value):
         self.name = name
@@ -1629,12 +1629,12 @@ class JobParameter(Base, RepresentById):
 class JobToInputDatasetAssociation(Base, RepresentById):
     __tablename__ = 'job_to_input_dataset'
 
-    id = Column('id', Integer, primary_key=True)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    dataset_id = Column('dataset_id', Integer,
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    dataset_id = Column(Integer,
         ForeignKey('history_dataset_association.id'), index=True)
-    dataset_version = Column('dataset_version', Integer)
-    name = Column('name', String(255))
+    dataset_version = Column(Integer)
+    name = Column(String(255))
     dataset = relationship('HistoryDatasetAssociation', lazy=False, back_populates='dependent_jobs')
     job = relationship('Job', back_populates='input_datasets')
 
@@ -1647,11 +1647,10 @@ class JobToInputDatasetAssociation(Base, RepresentById):
 class JobToOutputDatasetAssociation(Base, RepresentById):
     __tablename__ = 'job_to_output_dataset'
 
-    id = Column('id', Integer, primary_key=True)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    dataset_id = Column('dataset_id', Integer,
-        ForeignKey('history_dataset_association.id'), index=True)
-    name = Column('name', String(255))
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    dataset_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    name = Column(String(255))
     dataset = relationship('HistoryDatasetAssociation', lazy=False, back_populates='creating_job_associations')
     job = relationship('Job', back_populates='output_datasets')
 
@@ -1663,12 +1662,11 @@ class JobToOutputDatasetAssociation(Base, RepresentById):
 class JobToInputDatasetCollectionAssociation(Base, RepresentById):
     __tablename__ = 'job_to_input_dataset_collection'
 
-    id = Column('id', Integer, primary_key=True)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    dataset_collection_id = Column('dataset_collection_id', Integer,
-        ForeignKey('history_dataset_collection_association.id'), index=True)
-    dataset_version = Column('dataset_version', Integer)
-    name = Column('name', String(255))
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    dataset_collection_id = Column(Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    dataset_version = Column(Integer)
+    name = Column(String(255))
     dataset_collection = relationship('HistoryDatasetCollectionAssociation', lazy=False)
     job = relationship('Job', back_populates='input_dataset_collections')
 
@@ -1680,10 +1678,10 @@ class JobToInputDatasetCollectionAssociation(Base, RepresentById):
 class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
     __tablename__ = 'job_to_input_dataset_collection_element'
 
-    id = Column('id', Integer, primary_key=True)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    dataset_collection_element_id = Column('dataset_collection_element_id', Integer, ForeignKey('dataset_collection_element.id'), index=True)
-    name = Column('name', Unicode(255))
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    dataset_collection_element_id = Column(Integer, ForeignKey('dataset_collection_element.id'), index=True)
+    name = Column(Unicode(255))
     dataset_collection_element = relationship('DatasetCollectionElement', lazy=False)
     job = relationship('Job', back_populates='input_dataset_collection_elements')
 
@@ -1697,10 +1695,10 @@ class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
 class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
     __tablename__ = 'job_to_output_dataset_collection'
 
-    id = Column('id', Integer, primary_key=True)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    dataset_collection_id = Column('dataset_collection_id', Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
-    name = Column('name', Unicode(255))
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    dataset_collection_id = Column(Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    name = Column(Unicode(255))
     dataset_collection_instance = relationship(
         'HistoryDatasetCollectionAssociation',
         lazy=False,
@@ -1718,11 +1716,10 @@ class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
 class JobToImplicitOutputDatasetCollectionAssociation(Base, RepresentById):
     __tablename__ = 'job_to_implicit_output_dataset_collection'
 
-    id = Column('id', Integer, primary_key=True)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    dataset_collection_id = Column(
-        'dataset_collection_id', Integer, ForeignKey('dataset_collection.id'), index=True)
-    name = Column('name', Unicode(255))
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    dataset_collection_id = Column(Integer, ForeignKey('dataset_collection.id'), index=True)
+    name = Column(Unicode(255))
     dataset_collection = relationship(
         'DatasetCollection', back_populates="output_dataset_collections")
     job = relationship('Job', back_populates='output_dataset_collections')
@@ -1735,10 +1732,10 @@ class JobToImplicitOutputDatasetCollectionAssociation(Base, RepresentById):
 class JobToInputLibraryDatasetAssociation(Base, RepresentById):
     __tablename__ = 'job_to_input_library_dataset'
 
-    id = Column('id', Integer, primary_key=True)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    ldda_id = Column('ldda_id', Integer, ForeignKey('library_dataset_dataset_association.id'), index=True)
-    name = Column('name', Unicode(255))
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    ldda_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True)
+    name = Column(Unicode(255))
     job = relationship('Job', back_populates='input_library_datasets')
     dataset = relationship(
         'LibraryDatasetDatasetAssociation', lazy=False, back_populates='dependent_jobs')
@@ -1751,10 +1748,10 @@ class JobToInputLibraryDatasetAssociation(Base, RepresentById):
 class JobToOutputLibraryDatasetAssociation(Base, RepresentById):
     __tablename__ = 'job_to_output_library_dataset'
 
-    id = Column('id', Integer, primary_key=True)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    ldda_id = Column('ldda_id', Integer, ForeignKey('library_dataset_dataset_association.id'), index=True)
-    name = Column('name', Unicode(255))
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    ldda_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True)
+    name = Column(Unicode(255))
     job = relationship('Job', back_populates='output_library_datasets')
     dataset = relationship(
         'LibraryDatasetDatasetAssociation', lazy=False, back_populates='creating_job_associations')
@@ -1767,12 +1764,12 @@ class JobToOutputLibraryDatasetAssociation(Base, RepresentById):
 class JobStateHistory(Base, RepresentById):
     __tablename__ = 'job_state_history'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    job_id = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    state = Column('state', String(64), index=True)
-    info = Column('info', TrimmedString(255))
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    state = Column(String(64), index=True)
+    info = Column(TrimmedString(255))
     job = relationship('Job', back_populates='state_history')
 
     def __init__(self, job):
@@ -2062,11 +2059,11 @@ class DeferredJob(RepresentById):
 class Group(Base, Dictifiable, RepresentById):
     __tablename__ = 'galaxy_group'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    name = Column('name', String(255), index=True, unique=True)
-    deleted = Column('deleted', Boolean, index=True, default=False)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    name = Column(String(255), index=True, unique=True)
+    deleted = Column(Boolean, index=True, default=False)
     quotas = relationship('GroupQuotaAssociation', back_populates='group')
     roles = relationship('GroupRoleAssociation', back_populates='group')
     users = relationship('UserGroupAssociation', back_populates='group')
@@ -2082,11 +2079,11 @@ class Group(Base, Dictifiable, RepresentById):
 class UserGroupAssociation(Base, RepresentById):
     __tablename__ = 'user_group_association'
 
-    id = Column('id', Integer, primary_key=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    group_id = Column('group_id', Integer, ForeignKey('galaxy_group.id'), index=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    group_id = Column(Integer, ForeignKey('galaxy_group.id'), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
     user = relationship('User', back_populates='groups')
     group = relationship('Group', back_populates='users')
 
@@ -2105,8 +2102,8 @@ class HistoryAudit(Base, RepresentById):
         PrimaryKeyConstraint(sqlite_on_conflict='IGNORE'),
     )
 
-    history_id = Column('history_id', Integer, ForeignKey('history.id'), primary_key=True, nullable=False)
-    update_time = Column('update_time', DateTime, default=now, primary_key=True, nullable=False)
+    history_id = Column(Integer, ForeignKey('history.id'), primary_key=True, nullable=False)
+    update_time = Column(DateTime, default=now, primary_key=True, nullable=False)
     history = relationship('History')
 
     def __init__(self, history, update_time):
@@ -2533,9 +2530,9 @@ class UserShareAssociation(RepresentById):
 class HistoryUserShareAssociation(Base, UserShareAssociation):
     __tablename__ = 'history_user_share_association'
 
-    id = Column('id', Integer, primary_key=True)
-    history_id = Column('history_id', Integer, ForeignKey('history.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    id = Column(Integer, primary_key=True)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user = relationship('User', back_populates='histories_shared_by_others')
     history = relationship('History', back_populates='users_shared_with')
 
@@ -2553,11 +2550,11 @@ class UserRoleAssociation(RepresentById):
 class GroupRoleAssociation(Base, RepresentById):
     __tablename__ = 'group_role_association'
 
-    id = Column('id', Integer, primary_key=True)
-    group_id = Column('group_id', Integer, ForeignKey('galaxy_group.id'), index=True)
-    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    id = Column(Integer, primary_key=True)
+    group_id = Column(Integer, ForeignKey('galaxy_group.id'), index=True)
+    role_id = Column(Integer, ForeignKey('role.id'), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
     group = relationship('Group', back_populates='roles')
     role = relationship('Role', back_populates='groups')
 
@@ -2569,13 +2566,13 @@ class GroupRoleAssociation(Base, RepresentById):
 class Role(Base, Dictifiable, RepresentById):
     __tablename__ = 'role'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    name = Column('name', String(255), index=True, unique=True)
-    description = Column('description', TEXT)
-    type = Column('type', String(40), index=True)
-    deleted = Column('deleted', Boolean, index=True, default=False)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    name = Column(String(255), index=True, unique=True)
+    description = Column(TEXT)
+    type = Column(String(40), index=True)
+    deleted = Column(Boolean, index=True, default=False)
     dataset_actions = relationship('DatasetPermissions', back_populates='role')
     groups = relationship('GroupRoleAssociation', back_populates='role')
     library_actions = relationship('LibraryPermissions', back_populates='role')
@@ -2605,11 +2602,11 @@ class Role(Base, Dictifiable, RepresentById):
 class UserQuotaAssociation(Base, Dictifiable, RepresentById):
     __tablename__ = 'user_quota_association'
 
-    id = Column('id', Integer, primary_key=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    quota_id = Column('quota_id', Integer, ForeignKey('quota.id'), index=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    quota_id = Column(Integer, ForeignKey('quota.id'), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
     user = relationship('User', back_populates='quotas')
     quota = relationship('Quota', back_populates='users')
 
@@ -2623,11 +2620,11 @@ class UserQuotaAssociation(Base, Dictifiable, RepresentById):
 class GroupQuotaAssociation(Base, Dictifiable, RepresentById):
     __tablename__ = 'group_quota_association'
 
-    id = Column('id', Integer, primary_key=True)
-    group_id = Column("group_id", Integer, ForeignKey("galaxy_group.id"), index=True)
-    quota_id = Column('quota_id', Integer, ForeignKey('quota.id'), index=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    id = Column(Integer, primary_key=True)
+    group_id = Column(Integer, ForeignKey("galaxy_group.id"), index=True)
+    quota_id = Column(Integer, ForeignKey('quota.id'), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
     group = relationship('Group', back_populates='quotas')
     quota = relationship('Quota', back_populates='groups')
 
@@ -2641,14 +2638,14 @@ class GroupQuotaAssociation(Base, Dictifiable, RepresentById):
 class Quota(Base, Dictifiable, RepresentById):
     __tablename__ = 'quota'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    name = Column('name', String(255), index=True, unique=True)
-    description = Column('description', TEXT)
-    bytes = Column('bytes', BigInteger)
-    operation = Column('operation', String(8))
-    deleted = Column('deleted', Boolean, index=True, default=False)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    name = Column(String(255), index=True, unique=True)
+    description = Column(TEXT)
+    bytes = Column(BigInteger)
+    operation = Column(String(8))
+    deleted = Column(Boolean, index=True, default=False)
     default = relationship('DefaultQuotaAssociation', back_populates='quota')
     groups = relationship('GroupQuotaAssociation', back_populates='quota')
     users = relationship('UserQuotaAssociation', back_populates='quota')
@@ -2689,11 +2686,11 @@ class Quota(Base, Dictifiable, RepresentById):
 class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
     __tablename__ = 'default_quota_association'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    type = Column('type', String(32), index=True, unique=True)
-    quota_id = Column('quota_id', Integer, ForeignKey('quota.id'), index=True)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    type = Column(String(32), index=True, unique=True)
+    quota_id = Column(Integer, ForeignKey('quota.id'), index=True)
     quota = relationship('Quota', back_populates='default')
 
     dict_element_visible_keys = ['type']
@@ -2711,12 +2708,12 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
 class DatasetPermissions(Base, RepresentById):
     __tablename__ = 'dataset_permissions'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    action = Column('action', TEXT)
-    dataset_id = Column('dataset_id', Integer, ForeignKey('dataset.id'), index=True)
-    role_id = Column('role_id', Integer, ForeignKey("role.id"), index=True)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    action = Column(TEXT)
+    dataset_id = Column(Integer, ForeignKey('dataset.id'), index=True)
+    role_id = Column(Integer, ForeignKey("role.id"), index=True)
     dataset = relationship('Dataset', back_populates='actions')
     role = relationship('Role', back_populates='dataset_actions')
 
@@ -2732,12 +2729,12 @@ class DatasetPermissions(Base, RepresentById):
 class LibraryPermissions(Base, RepresentById):
     __tablename__ = 'library_permissions'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    action = Column('action', TEXT)
-    library_id = Column('library_id', Integer, ForeignKey('library.id'), nullable=True, index=True)
-    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    action = Column(TEXT)
+    library_id = Column(Integer, ForeignKey('library.id'), nullable=True, index=True)
+    role_id = Column(Integer, ForeignKey('role.id'), index=True)
     library = relationship('Library', back_populates='actions')
     role = relationship('Role', back_populates='library_actions')
 
@@ -2753,12 +2750,12 @@ class LibraryPermissions(Base, RepresentById):
 class LibraryFolderPermissions(Base, RepresentById):
     __tablename__ = 'library_folder_permissions'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    action = Column('action', TEXT)
-    library_folder_id = Column('library_folder_id', Integer, ForeignKey('library_folder.id'), nullable=True, index=True)
-    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    action = Column(TEXT)
+    library_folder_id = Column(Integer, ForeignKey('library_folder.id'), nullable=True, index=True)
+    role_id = Column(Integer, ForeignKey('role.id'), index=True)
     folder = relationship('LibraryFolder', back_populates='actions')
     role = relationship('Role', back_populates='library_folder_actions')
 
@@ -2774,13 +2771,12 @@ class LibraryFolderPermissions(Base, RepresentById):
 class LibraryDatasetPermissions(Base, RepresentById):
     __tablename__ = 'library_dataset_permissions'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    action = Column('action', TEXT)
-    library_dataset_id = Column('library_dataset_id', Integer,
-        ForeignKey('library_dataset.id'), nullable=True, index=True)
-    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    action = Column(TEXT)
+    library_dataset_id = Column(Integer, ForeignKey('library_dataset.id'), nullable=True, index=True)
+    role_id = Column(Integer, ForeignKey('role.id'), index=True)
     library_dataset = relationship('LibraryDataset', back_populates='actions')
     role = relationship('Role', back_populates='library_dataset_actions')
 
@@ -2796,13 +2792,13 @@ class LibraryDatasetPermissions(Base, RepresentById):
 class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
     __tablename__ = 'library_dataset_dataset_association_permissions'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    action = Column('action', TEXT)
-    library_dataset_dataset_association_id = Column('library_dataset_dataset_association_id',
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    action = Column(TEXT)
+    library_dataset_dataset_association_id = Column(
         Integer, ForeignKey('library_dataset_dataset_association.id'), nullable=True, index=True)
-    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
+    role_id = Column(Integer, ForeignKey('role.id'), index=True)
     library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation', back_populates='actions')
     role = relationship('Role', back_populates='library_dataset_dataset_actions')
 
@@ -2818,10 +2814,10 @@ class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
 class DefaultUserPermissions(Base, RepresentById):
     __tablename__ = 'default_user_permissions'
 
-    id = Column('id', Integer, primary_key=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    action = Column('action', TEXT)
-    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    action = Column(TEXT)
+    role_id = Column(Integer, ForeignKey('role.id'), index=True)
     user = relationship('User', back_populates='default_permissions')
     role = relationship('Role')
 
@@ -2834,10 +2830,10 @@ class DefaultUserPermissions(Base, RepresentById):
 class DefaultHistoryPermissions(Base, RepresentById):
     __tablename__ = 'default_history_permissions'
 
-    id = Column('id', Integer, primary_key=True)
-    history_id = Column('history_id', Integer, ForeignKey('history.id'), index=True)
-    action = Column('action', TEXT)
-    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
+    id = Column(Integer, primary_key=True)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+    action = Column(TEXT)
+    role_id = Column(Integer, ForeignKey('role.id'), index=True)
     history = relationship('History', back_populates='default_permissions')
     role = relationship('Role')
 
@@ -3135,11 +3131,11 @@ class Dataset(StorableObject, RepresentById, _HasTable):
 class DatasetSource(Base, RepresentById):
     __tablename__ = 'dataset_source'
 
-    id = Column('id', Integer, primary_key=True)
-    dataset_id = Column('dataset_id', Integer, ForeignKey('dataset.id'), index=True)
-    source_uri = Column("source_uri", TEXT)
-    extra_files_path = Column("extra_files_path", TEXT)
-    transform = Column("transform", MutableJSONType)
+    id = Column(Integer, primary_key=True)
+    dataset_id = Column(Integer, ForeignKey('dataset.id'), index=True)
+    source_uri = Column(TEXT)
+    extra_files_path = Column(TEXT)
+    transform = Column(MutableJSONType)
     dataset = relationship('Dataset', back_populates='sources')
     hashes = relationship('DatasetSourceHash', back_populates='source')
 
@@ -3147,21 +3143,21 @@ class DatasetSource(Base, RepresentById):
 class DatasetSourceHash(Base, RepresentById):
     __tablename__ = 'dataset_source_hash'
 
-    id = Column('id', Integer, primary_key=True)
-    dataset_source_id = Column('dataset_source_id', Integer, ForeignKey('dataset_source.id'), index=True)
-    hash_function = Column('hash_function', TEXT)
-    hash_value = Column('hash_value', TEXT)
+    id = Column(Integer, primary_key=True)
+    dataset_source_id = Column(Integer, ForeignKey('dataset_source.id'), index=True)
+    hash_function = Column(TEXT)
+    hash_value = Column(TEXT)
     source = relationship('DatasetSource', back_populates='hashes')
 
 
 class DatasetHash(Base, RepresentById):
     __tablename__ = 'dataset_hash'
 
-    id = Column('id', Integer, primary_key=True)
-    dataset_id = Column('dataset_id', Integer, ForeignKey('dataset.id'), index=True)
-    hash_function = Column('hash_function', TEXT)
-    hash_value = Column('hash_value', TEXT)
-    extra_files_path = Column('extra_files_path', TEXT)
+    id = Column(Integer, primary_key=True)
+    dataset_id = Column(Integer, ForeignKey('dataset.id'), index=True)
+    hash_function = Column(TEXT)
+    hash_value = Column(TEXT)
+    extra_files_path = Column(TEXT)
     dataset = relationship('Dataset', back_populates='hashes')
 
     def serialize(self, id_encoder, serialization_options):
@@ -4095,15 +4091,15 @@ class HistoryDatasetAssociationSubset(RepresentById):
 class Library(Base, Dictifiable, HasName, RepresentById):
     __tablename__ = 'library'
 
-    id = Column("id", Integer, primary_key=True)
-    root_folder_id = Column("root_folder_id", Integer, ForeignKey("library_folder.id"), index=True)
-    create_time = Column("create_time", DateTime, default=now)
-    update_time = Column("update_time", DateTime, default=now, onupdate=now)
-    name = Column("name", String(255), index=True)
-    deleted = Column("deleted", Boolean, index=True, default=False)
-    purged = Column("purged", Boolean, index=True, default=False)
-    description = Column("description", TEXT)
-    synopsis = Column("synopsis", TEXT)
+    id = Column(Integer, primary_key=True)
+    root_folder_id = Column(Integer, ForeignKey("library_folder.id"), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    name = Column(String(255), index=True)
+    deleted = Column(Boolean, index=True, default=False)
+    purged = Column(Boolean, index=True, default=False)
+    description = Column(TEXT)
+    synopsis = Column(TEXT)
     root_folder = relationship('LibraryFolder', back_populates='library_root')
     actions = relationship('LibraryPermissions', back_populates='library')
 
@@ -4176,17 +4172,17 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
         Index('ix_library_folder_name', 'name', mysql_length=200),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    parent_id = Column('parent_id', Integer, ForeignKey('library_folder.id'), nullable=True, index=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    name = Column('name', TEXT)
-    description = Column('description', TEXT)
-    order_id = Column('order_id', Integer)  # not currently being used, but for possible future use
-    item_count = Column('item_count', Integer)
-    deleted = Column('deleted', Boolean, index=True, default=False)
-    purged = Column('purged', Boolean, index=True, default=False)
-    genome_build = Column('genome_build', TrimmedString(40))
+    id = Column(Integer, primary_key=True)
+    parent_id = Column(Integer, ForeignKey('library_folder.id'), nullable=True, index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    name = Column(TEXT)
+    description = Column(TEXT)
+    order_id = Column(Integer)  # not currently being used, but for possible future use
+    item_count = Column(Integer)
+    deleted = Column(Boolean, index=True, default=False)
+    purged = Column(Boolean, index=True, default=False)
+    genome_build = Column(TrimmedString(40))
 
     folders = relationship('LibraryFolder',
         primaryjoin=('LibraryFolder.id == LibraryFolder.parent_id'),
@@ -4297,22 +4293,22 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
 class LibraryDataset(Base, RepresentById):
     __tablename__ = 'library_dataset'
 
-    id = Column('id', Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
     # current version of dataset, if null, there is not a current version selected
-    library_dataset_dataset_association_id = Column('library_dataset_dataset_association_id', Integer,
+    library_dataset_dataset_association_id = Column(Integer,
         ForeignKey('library_dataset_dataset_association.id', use_alter=True, name='library_dataset_dataset_association_id_fk'),
         nullable=True, index=True)
-    folder_id = Column('folder_id', Integer, ForeignKey('library_folder.id'), index=True)
+    folder_id = Column(Integer, ForeignKey('library_folder.id'), index=True)
     # not currently being used, but for possible future use
-    order_id = Column('order_id', Integer)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    order_id = Column(Integer)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
     # when not None/null this will supercede display in library (but not when imported into user's history?)
     _name = Column('name', TrimmedString(255), index=True)
     # when not None/null this will supercede display in library (but not when imported into user's history?)
     _info = Column('info', TrimmedString(255))
-    deleted = Column('deleted', Boolean, index=True, default=False)
-    purged = Column('purged', Boolean, index=True, default=False)
+    deleted = Column(Boolean, index=True, default=False)
+    purged = Column(Boolean, index=True, default=False)
     folder = relationship('LibraryFolder')
     library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation',
             foreign_keys=library_dataset_dataset_association_id,
@@ -6403,12 +6399,12 @@ class WorkflowRequestInputParameter(Base, Dictifiable, RepresentById):
     """
     __tablename__ = 'workflow_request_input_parameters'
 
-    id = Column('id', Integer, primary_key=True)
-    workflow_invocation_id = Column('workflow_invocation_id', Integer,
-        ForeignKey('workflow_invocation.id', onupdate='CASCADE', ondelete='CASCADE'))
-    name = Column('name', Unicode(255))
-    value = Column('value', TEXT)
-    type = Column('type', Unicode(255))
+    id = Column(Integer, primary_key=True)
+    workflow_invocation_id = Column(
+        Integer, ForeignKey('workflow_invocation.id', onupdate='CASCADE', ondelete='CASCADE'))
+    name = Column(Unicode(255))
+    value = Column(TEXT)
+    type = Column(Unicode(255))
     workflow_invocation = relationship('WorkflowInvocation', back_populates='input_parameters')
 
     dict_collection_visible_keys = ['id', 'name', 'value', 'type']
@@ -6537,16 +6533,16 @@ class MetadataFile(StorableObject, RepresentById):
 class FormDefinition(Base, Dictifiable, RepresentById):
     __tablename__ = 'form_definition'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    name = Column('name', TrimmedString(255), nullable=False)
-    desc = Column('desc', TEXT)
-    form_definition_current_id = Column('form_definition_current_id', Integer,
-        ForeignKey('form_definition_current.id', use_alter=True), index=True, nullable=False)
-    fields = Column('fields', MutableJSONType)
-    type = Column('type', TrimmedString(255), index=True)
-    layout = Column('layout', MutableJSONType)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    name = Column(TrimmedString(255), nullable=False)
+    desc = Column(TEXT)
+    form_definition_current_id = Column(
+        Integer, ForeignKey('form_definition_current.id', use_alter=True), index=True, nullable=False)
+    fields = Column(MutableJSONType)
+    type = Column(TrimmedString(255), index=True)
+    layout = Column(MutableJSONType)
     form_definition_current = relationship(
         'FormDefinitionCurrent',
         back_populates='forms',
@@ -6599,11 +6595,11 @@ class FormDefinition(Base, Dictifiable, RepresentById):
 class FormDefinitionCurrent(Base, RepresentById):
     __tablename__ = 'form_definition_current'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    latest_form_id = Column('latest_form_id', Integer, ForeignKey('form_definition.id'), index=True)
-    deleted = Column('deleted', Boolean, index=True, default=False)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    latest_form_id = Column(Integer, ForeignKey('form_definition.id'), index=True)
+    deleted = Column(Boolean, index=True, default=False)
     forms = relationship(
         'FormDefinition',
         back_populates='form_definition_current',
@@ -6621,11 +6617,11 @@ class FormDefinitionCurrent(Base, RepresentById):
 class FormValues(Base, RepresentById):
     __tablename__ = 'form_values'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    form_definition_id = Column('form_definition_id', Integer, ForeignKey('form_definition.id'), index=True)
-    content = Column('content', MutableJSONType)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    form_definition_id = Column(Integer, ForeignKey('form_definition.id'), index=True)
+    content = Column(MutableJSONType)
     form_definition = relationship(
         'FormDefinition',
         primaryjoin=('FormValues.form_definition_id == FormDefinition.id'))
@@ -6638,21 +6634,21 @@ class FormValues(Base, RepresentById):
 class UserAddress(Base, RepresentById):
     __tablename__ = 'user_address'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    desc = Column('desc', TrimmedString(255))
-    name = Column('name', TrimmedString(255), nullable=False)
-    institution = Column('institution', TrimmedString(255))
-    address = Column('address', TrimmedString(255), nullable=False)
-    city = Column('city', TrimmedString(255), nullable=False)
-    state = Column('state', TrimmedString(255), nullable=False)
-    postal_code = Column('postal_code', TrimmedString(255), nullable=False)
-    country = Column('country', TrimmedString(255), nullable=False)
-    phone = Column('phone', TrimmedString(255))
-    deleted = Column('deleted', Boolean, index=True, default=False)
-    purged = Column('purged', Boolean, index=True, default=False)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    desc = Column(TrimmedString(255))
+    name = Column(TrimmedString(255), nullable=False)
+    institution = Column(TrimmedString(255))
+    address = Column(TrimmedString(255), nullable=False)
+    city = Column(TrimmedString(255), nullable=False)
+    state = Column(TrimmedString(255), nullable=False)
+    postal_code = Column(TrimmedString(255), nullable=False)
+    country = Column(TrimmedString(255), nullable=False)
+    phone = Column(TrimmedString(255))
+    deleted = Column(Boolean, index=True, default=False)
+    purged = Column(Boolean, index=True, default=False)
     # `desc` needs to be fully qualified because it is shadowed by `desc` Column defined above
     # TODO: db migration to rename column, then use `desc`
     user = relationship('User', back_populates='addresses', order_by=sqlalchemy.desc('update_time'))
@@ -6687,13 +6683,13 @@ class UserAddress(Base, RepresentById):
 class PSAAssociation(Base, AssociationMixin, RepresentById):
     __tablename__ = 'psa_association'
 
-    id = Column('id', Integer, primary_key=True)
-    server_url = Column('server_url', VARCHAR(255))
-    handle = Column('handle', VARCHAR(255))
-    secret = Column('secret', VARCHAR(255))
-    issued = Column('issued', Integer)
-    lifetime = Column('lifetime', Integer)
-    assoc_type = Column('assoc_type', VARCHAR(64))
+    id = Column(Integer, primary_key=True)
+    server_url = Column(VARCHAR(255))
+    handle = Column(VARCHAR(255))
+    secret = Column(VARCHAR(255))
+    issued = Column(Integer)
+    lifetime = Column(Integer)
+    assoc_type = Column(VARCHAR(64))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -6738,9 +6734,9 @@ class PSACode(Base, CodeMixin, RepresentById):
         UniqueConstraint('code', 'email'),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    email = Column('email', VARCHAR(200))
-    code = Column('code', VARCHAR(32))
+    id = Column(Integer, primary_key=True)
+    email = Column(VARCHAR(200))
+    code = Column(VARCHAR(32))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -6761,10 +6757,10 @@ class PSACode(Base, CodeMixin, RepresentById):
 class PSANonce(Base, NonceMixin, RepresentById):
     __tablename__ = 'psa_nonce'
 
-    id = Column('id', Integer, primary_key=True)
-    server_url = Column('server_url', VARCHAR(255))
-    timestamp = Column('timestamp', Integer)
-    salt = Column('salt', VARCHAR(40))
+    id = Column(Integer, primary_key=True)
+    server_url = Column(VARCHAR(255))
+    timestamp = Column(Integer)
+    salt = Column(VARCHAR(40))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -6792,11 +6788,11 @@ class PSANonce(Base, NonceMixin, RepresentById):
 class PSAPartial(Base, PartialMixin, RepresentById):
     __tablename__ = 'psa_partial'
 
-    id = Column('id', Integer, primary_key=True)
-    token = Column('token', VARCHAR(32))
-    data = Column('data', TEXT)
-    next_step = Column('next_step', Integer)
-    backend = Column('backend', VARCHAR(32))
+    id = Column(Integer, primary_key=True)
+    token = Column(VARCHAR(32))
+    data = Column(TEXT)
+    next_step = Column(Integer)
+    backend = Column(VARCHAR(32))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -6826,13 +6822,13 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     __tablename__ = 'oidc_user_authnz_tokens'
     __table_args__ = (UniqueConstraint('provider', 'uid'),)
 
-    id = Column('id', Integer, primary_key=True)
-    user_id = Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True)
-    uid = Column('uid', VARCHAR(255))
-    provider = Column('provider', VARCHAR(32))
-    extra_data = Column('extra_data', MutableJSONType, nullable=True)
-    lifetime = Column('lifetime', Integer)
-    assoc_type = Column('assoc_type', VARCHAR(64))
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    uid = Column(VARCHAR(255))
+    provider = Column(VARCHAR(32))
+    extra_data = Column(MutableJSONType, nullable=True)
+    lifetime = Column(Integer)
+    assoc_type = Column(VARCHAR(64))
     cloudauthz = relationship('CloudAuthz', back_populates='authn')
     user = relationship('User', back_populates='social_auth')
 
@@ -6946,15 +6942,15 @@ class CustosAuthnzToken(Base, RepresentById):
         UniqueConstraint('external_user_id', 'provider'),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'))
-    external_user_id = Column('external_user_id', String(64))
-    provider = Column('provider', String(255))
-    access_token = Column('access_token', Text)
-    id_token = Column('id_token', Text)
-    refresh_token = Column('refresh_token', Text)
-    expiration_time = Column('expiration_time', DateTime)
-    refresh_expiration_time = Column('refresh_expiration_time', DateTime)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'))
+    external_user_id = Column(String(64))
+    provider = Column(String(255))
+    access_token = Column(Text)
+    id_token = Column(Text)
+    refresh_token = Column(Text)
+    expiration_time = Column(DateTime)
+    refresh_expiration_time = Column(DateTime)
     user = relationship('User', back_populates='custos_auth')
 
     def __init__(self, user, external_user_id, provider, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time):
@@ -6971,16 +6967,16 @@ class CustosAuthnzToken(Base, RepresentById):
 class CloudAuthz(Base, _HasTable):
     __tablename__ = 'cloudauthz'
 
-    id = Column('id', Integer, primary_key=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    provider = Column('provider', String(255))
-    config = Column('config', MutableJSONType)
-    authn_id = Column('authn_id', Integer, ForeignKey('oidc_user_authnz_tokens.id'), index=True)
-    tokens = Column('tokens', MutableJSONType)
-    last_update = Column('last_update', DateTime)
-    last_activity = Column('last_activity', DateTime)
-    description = Column('description', TEXT)
-    create_time = Column('create_time', DateTime, default=now)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    provider = Column(String(255))
+    config = Column(MutableJSONType)
+    authn_id = Column(Integer, ForeignKey('oidc_user_authnz_tokens.id'), index=True)
+    tokens = Column(MutableJSONType)
+    last_update = Column(DateTime)
+    last_activity = Column(DateTime)
+    description = Column(TEXT)
+    create_time = Column(DateTime, default=now)
     user = relationship('User', back_populates='cloudauthz')
     authn = relationship('UserAuthnzToken', back_populates='cloudauthz')
 
@@ -7008,17 +7004,17 @@ class Page(Base, Dictifiable, RepresentById):
         Index('ix_page_slug', 'slug', mysql_length=200),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True, nullable=False)
-    latest_revision_id = Column('latest_revision_id', Integer,
-        ForeignKey('page_revision.id', use_alter=True, name='page_latest_revision_id_fk'), index=True)
-    title = Column('title', TEXT)
-    deleted = Column('deleted', Boolean, index=True, default=False)
-    importable = Column('importable', Boolean, index=True, default=False)
-    slug = Column('slug', TEXT)
-    published = Column('published', Boolean, index=True, default=False)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True, nullable=False)
+    latest_revision_id = Column(
+        Integer, ForeignKey('page_revision.id', use_alter=True, name='page_latest_revision_id_fk'), index=True)
+    title = Column(TEXT)
+    deleted = Column(Boolean, index=True, default=False)
+    importable = Column(Boolean, index=True, default=False)
+    slug = Column(TEXT)
+    published = Column(Boolean, index=True, default=False)
     user = relationship('User', back_populates='pages')
     revisions = relationship(
         'PageRevision',
@@ -7078,13 +7074,13 @@ class Page(Base, Dictifiable, RepresentById):
 class PageRevision(Base, Dictifiable, RepresentById):
     __tablename__ = 'page_revision'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    page_id = Column('page_id', Integer, ForeignKey('page.id'), index=True, nullable=False)
-    title = Column('title', TEXT)
-    content = Column('content', TEXT)
-    content_format = Column('content_format', TrimmedString(32))
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    page_id = Column(Integer, ForeignKey('page.id'), index=True, nullable=False)
+    title = Column(TEXT)
+    content = Column(TEXT)
+    content_format = Column(TrimmedString(32))
     page = relationship(
         'Page',
         primaryjoin=('Page.id == PageRevision.page_id'))
@@ -7104,9 +7100,9 @@ class PageRevision(Base, Dictifiable, RepresentById):
 class PageUserShareAssociation(Base, UserShareAssociation):
     __tablename__ = 'page_user_share_association'
 
-    id = Column("id", Integer, primary_key=True)
-    page_id = Column("page_id", Integer, ForeignKey("page.id"), index=True)
-    user_id = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True)
+    id = Column(Integer, primary_key=True)
+    page_id = Column(Integer, ForeignKey("page.id"), index=True)
+    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
     user = relationship('User', back_populates='pages_shared_by_others')
     page = relationship('Page', back_populates='users_shared_with')
 
@@ -7156,14 +7152,13 @@ class VisualizationRevision(Base, RepresentById):
         Index('ix_visualization_revision_dbkey', 'dbkey', mysql_length=200),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    update_time = Column('update_time', DateTime, default=now, onupdate=now)
-    visualization_id = Column('visualization_id', Integer, ForeignKey('visualization.id'),
-                              index=True, nullable=False)
-    title = Column('title', TEXT)
-    dbkey = Column('dbkey', TEXT)
-    config = Column('config', MutableJSONType)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    visualization_id = Column(Integer, ForeignKey('visualization.id'), index=True, nullable=False)
+    title = Column(TEXT)
+    dbkey = Column(TEXT)
+    config = Column(MutableJSONType)
 
     def __init__(self, visualization=None, title=None, dbkey=None, config=None):
         self.id = None
@@ -7221,10 +7216,10 @@ class Tag(Base, RepresentById):
         UniqueConstraint('name'),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    type = Column('type', Integer)
-    parent_id = Column('parent_id', Integer, ForeignKey('tag.id'))
-    name = Column('name', TrimmedString(255))
+    id = Column(Integer, primary_key=True)
+    type = Column(Integer)
+    parent_id = Column(Integer, ForeignKey('tag.id'))
+    name = Column(TrimmedString(255))
     children = relationship('Tag', back_populates='parent')
     parent = relationship('Tag', back_populates='children', remote_side=[id])
     tagged_histories = relationship('HistoryTagAssociation', back_populates='tag')
@@ -7270,13 +7265,13 @@ class ItemTagAssociation(Dictifiable):
 class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'history_tag_association'
 
-    id = Column('id', Integer, primary_key=True)
-    history_id = Column('history_id', Integer, ForeignKey('history.id'), index=True)
-    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    user_tname = Column('user_tname', TrimmedString(255), index=True)
-    value = Column('value', TrimmedString(255), index=True)
-    user_value = Column('user_value', TrimmedString(255), index=True)
+    id = Column(Integer, primary_key=True)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+    tag_id = Column(Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column(TrimmedString(255), index=True)
+    value = Column(TrimmedString(255), index=True)
+    user_value = Column(TrimmedString(255), index=True)
     history = relationship('History', back_populates='tags')
     tag = relationship('Tag', back_populates='tagged_histories')
     user = relationship('User')
@@ -7285,14 +7280,13 @@ class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
 class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'history_dataset_association_tag_association'
 
-    id = Column('id', Integer, primary_key=True)
-    history_dataset_association_id = Column('history_dataset_association_id', Integer,
-        ForeignKey('history_dataset_association.id'), index=True)
-    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    user_tname = Column('user_tname', TrimmedString(255), index=True)
-    value = Column('value', TrimmedString(255), index=True)
-    user_value = Column('user_value', TrimmedString(255), index=True)
+    id = Column(Integer, primary_key=True)
+    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    tag_id = Column(Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column(TrimmedString(255), index=True)
+    value = Column(TrimmedString(255), index=True)
+    user_value = Column(TrimmedString(255), index=True)
     history_dataset_association = relationship('HistoryDatasetAssociation', back_populates='tags')
     tag = relationship('Tag', back_populates='tagged_history_dataset_associations')
     user = relationship('User')
@@ -7301,14 +7295,14 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
 class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'library_dataset_dataset_association_tag_association'
 
-    id = Column('id', Integer, primary_key=True)
-    library_dataset_dataset_association_id = Column('library_dataset_dataset_association_id',
+    id = Column(Integer, primary_key=True)
+    library_dataset_dataset_association_id = Column(
         Integer, ForeignKey('library_dataset_dataset_association.id'), index=True)
-    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    user_tname = Column('user_tname', TrimmedString(255), index=True)
-    value = Column('value', TrimmedString(255), index=True)
-    user_value = Column('user_value', TrimmedString(255), index=True)
+    tag_id = Column(Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column(TrimmedString(255), index=True)
+    value = Column(TrimmedString(255), index=True)
+    user_value = Column(TrimmedString(255), index=True)
     library_dataset_dataset_association = relationship(
         'LibraryDatasetDatasetAssociation', back_populates='tags')
     tag = relationship('Tag', back_populates='tagged_library_dataset_dataset_associations')
@@ -7318,13 +7312,13 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
 class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'page_tag_association'
 
-    id = Column('id', Integer, primary_key=True)
-    page_id = Column('page_id', Integer, ForeignKey('page.id'), index=True)
-    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    user_tname = Column('user_tname', TrimmedString(255), index=True)
-    value = Column('value', TrimmedString(255), index=True)
-    user_value = Column('user_value', TrimmedString(255), index=True)
+    id = Column(Integer, primary_key=True)
+    page_id = Column(Integer, ForeignKey('page.id'), index=True)
+    tag_id = Column(Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column(TrimmedString(255), index=True)
+    value = Column(TrimmedString(255), index=True)
+    user_value = Column(TrimmedString(255), index=True)
     page = relationship('Page', back_populates='tags')
     tag = relationship('Tag', back_populates='tagged_pages')
     user = relationship('User')
@@ -7333,13 +7327,13 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
 class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'workflow_step_tag_association'
 
-    id = Column('id', Integer, primary_key=True)
-    workflow_step_id = Column('workflow_step_id', Integer, ForeignKey('workflow_step.id'), index=True)
-    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    user_tname = Column('user_tname', TrimmedString(255), index=True)
-    value = Column('value', TrimmedString(255), index=True)
-    user_value = Column('user_value', TrimmedString(255), index=True)
+    id = Column(Integer, primary_key=True)
+    workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'), index=True)
+    tag_id = Column(Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column(TrimmedString(255), index=True)
+    value = Column(TrimmedString(255), index=True)
+    user_value = Column(TrimmedString(255), index=True)
     workflow_step = relationship('WorkflowStep', back_populates='tags')
     tag = relationship('Tag', back_populates='tagged_workflow_steps')
     user = relationship('User')
@@ -7348,13 +7342,13 @@ class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
 class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'stored_workflow_tag_association'
 
-    id = Column('id', Integer, primary_key=True)
-    stored_workflow_id = Column('stored_workflow_id', Integer, ForeignKey('stored_workflow.id'), index=True)
-    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    user_tname = Column('user_tname', TrimmedString(255), index=True)
-    value = Column('value', TrimmedString(255), index=True)
-    user_value = Column('user_value', TrimmedString(255), index=True)
+    id = Column(Integer, primary_key=True)
+    stored_workflow_id = Column(Integer, ForeignKey('stored_workflow.id'), index=True)
+    tag_id = Column(Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column(TrimmedString(255), index=True)
+    value = Column(TrimmedString(255), index=True)
+    user_value = Column(TrimmedString(255), index=True)
     stored_workflow = relationship('StoredWorkflow', back_populates='tags')
     tag = relationship('Tag', back_populates='tagged_stored_workflows')
     user = relationship('User')
@@ -7363,13 +7357,13 @@ class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
 class VisualizationTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'visualization_tag_association'
 
-    id = Column('id', Integer, primary_key=True)
-    visualization_id = Column('visualization_id', Integer, ForeignKey('visualization.id'), index=True)
-    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    user_tname = Column('user_tname', TrimmedString(255), index=True)
-    value = Column('value', TrimmedString(255), index=True)
-    user_value = Column('user_value', TrimmedString(255), index=True)
+    id = Column(Integer, primary_key=True)
+    visualization_id = Column(Integer, ForeignKey('visualization.id'), index=True)
+    tag_id = Column(Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column(TrimmedString(255), index=True)
+    value = Column(TrimmedString(255), index=True)
+    user_value = Column(TrimmedString(255), index=True)
     visualization = relationship('Visualization', back_populates='tags')
     tag = relationship('Tag', back_populates='tagged_visualizations')
     user = relationship('User')
@@ -7378,14 +7372,14 @@ class VisualizationTagAssociation(Base, ItemTagAssociation, RepresentById):
 class HistoryDatasetCollectionTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'history_dataset_collection_tag_association'
 
-    id = Column('id', Integer, primary_key=True)
-    history_dataset_collection_id = Column('history_dataset_collection_id', Integer,
-        ForeignKey('history_dataset_collection_association.id'), index=True)
-    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    user_tname = Column('user_tname', TrimmedString(255), index=True)
-    value = Column('value', TrimmedString(255), index=True)
-    user_value = Column('user_value', TrimmedString(255), index=True)
+    id = Column(Integer, primary_key=True)
+    history_dataset_collection_id = Column(
+        Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    tag_id = Column(Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column(TrimmedString(255), index=True)
+    value = Column(TrimmedString(255), index=True)
+    user_value = Column(TrimmedString(255), index=True)
     dataset_collection = relationship('HistoryDatasetCollectionAssociation', back_populates='tags')
     tag = relationship('Tag', back_populates='tagged_history_dataset_collections')
     user = relationship('User')
@@ -7394,14 +7388,14 @@ class HistoryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
 class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'library_dataset_collection_tag_association'
 
-    id = Column('id', Integer, primary_key=True)
-    library_dataset_collection_id = Column('library_dataset_collection_id', Integer,
-        ForeignKey('library_dataset_collection_association.id'), index=True)
-    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    user_tname = Column('user_tname', TrimmedString(255), index=True)
-    value = Column('value', TrimmedString(255), index=True)
-    user_value = Column('user_value', TrimmedString(255), index=True)
+    id = Column(Integer, primary_key=True)
+    library_dataset_collection_id = Column(
+        Integer, ForeignKey('library_dataset_collection_association.id'), index=True)
+    tag_id = Column(Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column(TrimmedString(255), index=True)
+    value = Column(TrimmedString(255), index=True)
+    user_value = Column(TrimmedString(255), index=True)
     dataset_collection = relationship('LibraryDatasetCollectionAssociation', back_populates='tags')
     tag = relationship('Tag', back_populates='tagged_library_dataset_collections')
     user = relationship('User')
@@ -7410,13 +7404,13 @@ class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
 class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = 'tool_tag_association'
 
-    id = Column('id', Integer, primary_key=True)
-    tool_id = Column('tool_id', TrimmedString(255), index=True)
-    tag_id = Column('tag_id', Integer, ForeignKey('tag.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    user_tname = Column('user_tname', TrimmedString(255), index=True)
-    value = Column('value', TrimmedString(255), index=True)
-    user_value = Column('user_value', TrimmedString(255), index=True)
+    id = Column(Integer, primary_key=True)
+    tool_id = Column(TrimmedString(255), index=True)
+    tag_id = Column(Integer, ForeignKey('tag.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_tname = Column(TrimmedString(255), index=True)
+    value = Column(TrimmedString(255), index=True)
+    user_value = Column(TrimmedString(255), index=True)
     tag = relationship('Tag', back_populates='tagged_tools')
     user = relationship('User')
 
@@ -7428,10 +7422,10 @@ class HistoryAnnotationAssociation(Base, RepresentById):
         Index('ix_history_anno_assoc_annotation', 'annotation', mysql_length=200),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    history_id = Column('history_id', Integer, ForeignKey('history.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    annotation = Column('annotation', TEXT)
+    id = Column(Integer, primary_key=True)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column(TEXT)
     history = relationship('History', back_populates='annotations')
     user = relationship('User')
 
@@ -7442,11 +7436,10 @@ class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
         Index('ix_history_dataset_anno_assoc_annotation', 'annotation', mysql_length=200),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    history_dataset_association_id = Column('history_dataset_association_id', Integer,
-        ForeignKey('history_dataset_association.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    annotation = Column('annotation', TEXT)
+    id = Column(Integer, primary_key=True)
+    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column(TEXT)
     hda = relationship('HistoryDatasetAssociation', back_populates='annotations')
     user = relationship('User')
 
@@ -7457,11 +7450,10 @@ class StoredWorkflowAnnotationAssociation(Base, RepresentById):
         Index('ix_stored_workflow_ann_assoc_annotation', 'annotation', mysql_length=200),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    stored_workflow_id = Column('stored_workflow_id', Integer,
-        ForeignKey('stored_workflow.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    annotation = Column('annotation', TEXT)
+    id = Column(Integer, primary_key=True)
+    stored_workflow_id = Column(Integer, ForeignKey('stored_workflow.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column(TEXT)
     stored_workflow = relationship('StoredWorkflow', back_populates='annotations')
     user = relationship('User')
 
@@ -7472,11 +7464,10 @@ class WorkflowStepAnnotationAssociation(Base, RepresentById):
         Index('ix_workflow_step_ann_assoc_annotation', 'annotation', mysql_length=200),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    workflow_step_id = Column('workflow_step_id', Integer,
-        ForeignKey('workflow_step.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    annotation = Column('annotation', TEXT)
+    id = Column(Integer, primary_key=True)
+    workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column(TEXT)
     workflow_step = relationship('WorkflowStep', back_populates='annotations')
     user = relationship('User')
 
@@ -7487,10 +7478,10 @@ class PageAnnotationAssociation(Base, RepresentById):
         Index('ix_page_annotation_association_annotation', 'annotation', mysql_length=200),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    page_id = Column('page_id', Integer, ForeignKey('page.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    annotation = Column('annotation', TEXT)
+    id = Column(Integer, primary_key=True)
+    page_id = Column(Integer, ForeignKey('page.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column(TEXT)
     page = relationship('Page', back_populates='annotations')
     user = relationship('User')
 
@@ -7501,10 +7492,10 @@ class VisualizationAnnotationAssociation(Base, RepresentById):
         Index('ix_visualization_annotation_association_annotation', 'annotation', mysql_length=200),
     )
 
-    id = Column('id', Integer, primary_key=True)
-    visualization_id = Column('visualization_id', Integer, ForeignKey('visualization.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    annotation = Column('annotation', TEXT)
+    id = Column(Integer, primary_key=True)
+    visualization_id = Column(Integer, ForeignKey('visualization.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column(TEXT)
     visualization = relationship('Visualization', back_populates='annotations')
     user = relationship('User')
 
@@ -7512,11 +7503,11 @@ class VisualizationAnnotationAssociation(Base, RepresentById):
 class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentById):
     __tablename__ = 'history_dataset_collection_annotation_association'
 
-    id = Column('id', Integer, primary_key=True)
-    history_dataset_collection_id = Column('history_dataset_collection_id', Integer,
-        ForeignKey('history_dataset_collection_association.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    annotation = Column('annotation', TEXT)
+    id = Column(Integer, primary_key=True)
+    history_dataset_collection_id = Column(
+        Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column(TEXT)
     history_dataset_collection = relationship('HistoryDatasetCollectionAssociation',
         back_populates='annotations')
     user = relationship('User')
@@ -7525,11 +7516,11 @@ class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentBy
 class LibraryDatasetCollectionAnnotationAssociation(Base, RepresentById):
     __tablename__ = 'library_dataset_collection_annotation_association'
 
-    id = Column('id', Integer, primary_key=True)
-    library_dataset_collection_id = Column('library_dataset_collection_id', Integer,
-        ForeignKey('library_dataset_collection_association.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    annotation = Column('annotation', TEXT)
+    id = Column(Integer, primary_key=True)
+    library_dataset_collection_id = Column(
+        Integer, ForeignKey('library_dataset_collection_association.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column(TEXT)
     dataset_collection = relationship('LibraryDatasetCollectionAssociation',
         back_populates='annotations')
     user = relationship('User')
@@ -7552,10 +7543,10 @@ class ItemRatingAssociation(Base):
 class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = 'history_rating_association'
 
-    id = Column('id', Integer, primary_key=True)
-    history_id = Column('history_id', Integer, ForeignKey('history.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    rating = Column('rating', Integer, index=True)
+    id = Column(Integer, primary_key=True)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column(Integer, index=True)
     history = relationship('History', back_populates='ratings')
     user = relationship('User')
 
@@ -7566,11 +7557,10 @@ class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
 class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = 'history_dataset_association_rating_association'
 
-    id = Column('id', Integer, primary_key=True)
-    history_dataset_association_id = Column('history_dataset_association_id', Integer,
-        ForeignKey('history_dataset_association.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    rating = Column('rating', Integer, index=True)
+    id = Column(Integer, primary_key=True)
+    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column(Integer, index=True)
     history_dataset_association = relationship('HistoryDatasetAssociation', back_populates='ratings')
     user = relationship('User')
 
@@ -7581,10 +7571,10 @@ class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, Represen
 class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = 'stored_workflow_rating_association'
 
-    id = Column('id', Integer, primary_key=True)
-    stored_workflow_id = Column('stored_workflow_id', Integer, ForeignKey('stored_workflow.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    rating = Column('rating', Integer, index=True)
+    id = Column(Integer, primary_key=True)
+    stored_workflow_id = Column(Integer, ForeignKey('stored_workflow.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column(Integer, index=True)
     stored_workflow = relationship('StoredWorkflow', back_populates='ratings')
     user = relationship('User')
 
@@ -7595,10 +7585,10 @@ class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
 class PageRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = 'page_rating_association'
 
-    id = Column('id', Integer, primary_key=True)
-    page_id = Column('page_id', Integer, ForeignKey('page.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    rating = Column('rating', Integer, index=True)
+    id = Column(Integer, primary_key=True)
+    page_id = Column(Integer, ForeignKey('page.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column(Integer, index=True)
     page = relationship('Page', back_populates='ratings')
     user = relationship('User')
 
@@ -7609,10 +7599,10 @@ class PageRatingAssociation(ItemRatingAssociation, RepresentById):
 class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = 'visualization_rating_association'
 
-    id = Column('id', Integer, primary_key=True)
-    visualization_id = Column('visualization_id', Integer, ForeignKey('visualization.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    rating = Column('rating', Integer, index=True)
+    id = Column(Integer, primary_key=True)
+    visualization_id = Column(Integer, ForeignKey('visualization.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column(Integer, index=True)
     visualization = relationship('Visualization', back_populates='ratings')
     user = relationship('User')
 
@@ -7623,11 +7613,11 @@ class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
 class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = 'history_dataset_collection_rating_association'
 
-    id = Column('id', Integer, primary_key=True)
-    history_dataset_collection_id = Column('history_dataset_collection_id', Integer,
-        ForeignKey('history_dataset_collection_association.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    rating = Column('rating', Integer, index=True)
+    id = Column(Integer, primary_key=True)
+    history_dataset_collection_id = Column(
+        Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column(Integer, index=True)
     dataset_collection = relationship('HistoryDatasetCollectionAssociation', back_populates='ratings')
     user = relationship('User')
 
@@ -7638,11 +7628,11 @@ class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
 class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = 'library_dataset_collection_rating_association'
 
-    id = Column('id', Integer, primary_key=True)
-    library_dataset_collection_id = Column('library_dataset_collection_id', Integer,
-        ForeignKey('library_dataset_collection_association.id'), index=True)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    rating = Column('rating', Integer, index=True)
+    id = Column(Integer, primary_key=True)
+    library_dataset_collection_id = Column(
+        Integer, ForeignKey('library_dataset_collection_association.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column(Integer, index=True)
     dataset_collection = relationship('LibraryDatasetCollectionAssociation', back_populates='ratings')
     user = relationship('User')
 
@@ -7674,13 +7664,13 @@ class UserPreference(RepresentById):
 class UserAction(Base, RepresentById):
     __tablename__ = 'user_action'
 
-    id = Column("id", Integer, primary_key=True)
-    create_time = Column("create_time", DateTime, default=now)
-    user_id = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True)
-    session_id = Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True)
-    action = Column("action", Unicode(255))
-    context = Column("context", Unicode(512))
-    params = Column("params", Unicode(1024))
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    session_id = Column(Integer, ForeignKey("galaxy_session.id"), index=True)
+    action = Column(Unicode(255))
+    context = Column(Unicode(512))
+    params = Column(Unicode(1024))
     user = relationship('User')
 
     def __init__(self, user=None, session_id=None, action=None, params=None, context=None):
@@ -7694,10 +7684,10 @@ class UserAction(Base, RepresentById):
 class APIKeys(Base, RepresentById):
     __tablename__ = 'api_keys'
 
-    id = Column('id', Integer, primary_key=True)
-    create_time = Column('create_time', DateTime, default=now)
-    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    key = Column('key', TrimmedString(32), index=True, unique=True)
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    key = Column(TrimmedString(32), index=True, unique=True)
     user = relationship('User', back_populates='api_keys')
 
 
