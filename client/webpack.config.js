@@ -28,7 +28,6 @@ module.exports = (env = {}, argv = {}) => {
             path: path.join(__dirname, "../", "/static/dist"),
             publicPath: "/static/dist/",
             filename: "[name].bundled.js",
-            chunkFilename: "[name].chunk.js",
         },
         resolve: {
             extensions: [".js", ".json", ".vue", ".scss"],
