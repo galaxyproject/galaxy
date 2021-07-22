@@ -58,10 +58,16 @@ class Validator(abc.ABC):
         """
         validate a value
 
-        TODO assert bool value and document how to implement in derived classes
+        needs to be implemented in classes derived from validator.
+        the implementation needs to call `super().validate()`
+        giving value as a bool which should be true if the
+        validation is positive and false otherwise.
+        the Validator.validate function will then negate the value
+        depending on `self.negate`
 
         return None if positive validation, otherwise a ValueError is raised
         """
+        assert isinstance(value, bool), 'value must be boolean'
         log.error("VAL value %s" % value)
         if message is None:
             message = self.message
