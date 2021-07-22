@@ -216,6 +216,18 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             assert galaxy_url.startswith("http")
             assert galaxy_url.endswith("tool_runner?tool_id=ratmine")
 
+    @skip_without_tool("cheetah_problem_unbound_var_input")
+    def test_legacy_biotools_xref_injection(self):
+        url = self._api_url("tools/cheetah_problem_unbound_var_input")
+        get_response = get(url)
+        get_response.raise_for_status()
+        get_json = get_response.json()
+        assert "xrefs" in get_json
+        assert len(get_json["xrefs"]) == 1
+        xref = get_json["xrefs"][0]
+        assert xref["reftype"] == "bio.tools"
+        assert xref["value"] == "bwa"
+
     @skip_without_tool("test_data_source")
     def test_data_source_ok_request(self):
         with self.dataset_populator.test_history() as history_id:
