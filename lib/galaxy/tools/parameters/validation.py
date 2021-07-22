@@ -3,6 +3,7 @@ Classes related to parameter validation.
 """
 import abc
 import logging
+import os.path
 import re
 
 
@@ -12,6 +13,13 @@ from galaxy import (
 )
 
 log = logging.getLogger(__name__)
+
+
+def get_test_fname(fname):
+    """Returns test data filename"""
+    path, name = os.path.split(__file__)
+    full_path = os.path.join(path, 'test', fname)
+    return full_path
 
 
 class Validator(abc.ABC):
@@ -406,9 +414,9 @@ class DatasetEmptyValidator(Validator):
     >>> sa_session.flush()
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> # TODO is there a better way than hardcoding 'test-data/'
-    >>> empty_dataset = Dataset(external_filename="test-data/empty.txt")
+    >>> empty_dataset = Dataset(external_filename=get_test_fname("empty.txt"))
     >>> empty_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', dataset=empty_dataset, sa_session=sa_session))
-    >>> full_dataset = Dataset(external_filename="test-data/1.tabular")
+    >>> full_dataset = Dataset(external_filename=get_test_fname("1.tabular"))
     >>> full_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', dataset=full_dataset, sa_session=sa_session))
     >>>
     >>> p = ToolParameter.build(None, XML('''
