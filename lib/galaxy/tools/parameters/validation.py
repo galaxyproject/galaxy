@@ -54,31 +54,34 @@ class Validator(abc.ABC):
         super().__init__()
 
     @abc.abstractmethod
-    def validate(self, value, trans=None, message=None):
+    def validate(self, value, trans=None, message=None, value_to_show=None):
         """
         validate a value
 
         needs to be implemented in classes derived from validator.
         the implementation needs to call `super().validate()`
-        giving value as a bool which should be true if the
-        validation is positive and false otherwise.
+        giving result as a bool (which should be true if the
+        validation is positive and false otherwise) and the value
+        that is validated.
+
         the Validator.validate function will then negate the value
-        depending on `self.negate`
+        depending on `self.negate` and return None if
+        - value is True and negate is False
+        - value is False and negate is True
+        and raise a ValueError otherwise.
 
         return None if positive validation, otherwise a ValueError is raised
         """
         assert isinstance(value, bool), 'value must be boolean'
-        log.error("VAL value %s" % value)
         if message is None:
             message = self.message
-        # TODO allow for a placeholder in message
-        log.error("validate %s %s" % (value, self.negate))
+        if value_to_show and "%s" in message:
+            message = message % value_to_show
         if (not self.negate and value) or (self.negate and not value):
             return
         else:
             # TODO message often makes not sense if negate=True
             raise ValueError(message)
-        pass
 
 
 class RegexValidator(Validator):
@@ -89,7 +92,7 @@ class RegexValidator(Validator):
     >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="text" value="10">
-    ...     <validator type="regex" message="Not gonna happen">[Ff]oo</validator>
+    ...     <validator type="regex">[Ff]oo</validator>
     ... </param>
     ... '''))
     >>> t = p.validate("Foo")
@@ -97,39 +100,41 @@ class RegexValidator(Validator):
     >>> t = p.validate("Fop")
     Traceback (most recent call last):
         ...
-    ValueError: Not gonna happen
+    ValueError: Value 'Fop' does not match regular expression '[Ff]oo'
     >>> t = p.validate(["Foo", "foo"])
     >>> t = p.validate(["Foo", "Fop"])
     Traceback (most recent call last):
         ...
-    ValueError: Not gonna happen
+    ValueError: Value 'Fop' does not match regular expression '[Ff]oo'
     >>>
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="text" value="10">
-    ...     <validator type="regex" message="Not gonna happen" negate="true">[Ff]oo</validator>
+    ...     <validator type="regex" negate="true">[Ff]oo</validator>
     ... </param>
     ... '''))
     >>> t = p.validate("Foo")
     Traceback (most recent call last):
         ...
-    ValueError: Not gonna happen
+    ValueError: Value 'Foo' does match regular expression '[Ff]oo'
     >>> t = p.validate("foo")
     Traceback (most recent call last):
         ...
-    ValueError: Not gonna happen
+    ValueError: Value 'foo' does match regular expression '[Ff]oo'
     >>> t = p.validate("Fop")
-    >>> t = p.validate(["Foo", "foo"])
+    >>> t = p.validate(["Fop", "foo"])
     Traceback (most recent call last):
         ...
-    ValueError: Not gonna happen
+    ValueError: Value 'foo' does match regular expression '[Ff]oo'
     >>> t = p.validate(["Fop", "Fop"])
     """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message'), elem.text, elem.get('negate', 'false'))
+        return cls(elem.get('message', None), elem.text, elem.get('negate', 'false'))
 
     def __init__(self, message, expression, negate):
+        if message is None:
+            message = f"Value '%s' does {'not ' if negate == 'false' else ''}match regular expression '{expression}'"
         super().__init__(message, negate)
         # Compile later. RE objects used to not be thread safe. Not sure about
         # the sre module.
@@ -140,7 +145,7 @@ class RegexValidator(Validator):
             value = [value]
         for val in value:
             match = re.match(self.expression, val or '')
-            super().validate(match is not None, trans)
+            super().validate(match is not None, value_to_show=val)
 
 
 class ExpressionValidator(Validator):
@@ -179,28 +184,22 @@ class ExpressionValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message'), elem.text, elem.get('substitute_value_in_message'), elem.get('negate', 'false'))
+        return cls(elem.get('message', None), elem.text, elem.get('negate', 'false'))
 
-    def __init__(self, message, expression, substitute_value_in_message, negate):
+    def __init__(self, message, expression, negate):
+        if message is None:
+            message = f"Value '%s' does not evaluate to {'True' if negate == 'false' else 'False'} for '{expression}'"
         super().__init__(message, negate)
-        # TODO document substitute_value_in_message and use in all
-        self.substitute_value_in_message = substitute_value_in_message
         # Save compiled expression, code objects are thread safe (right?)
         self.expression = compile(expression, '<string>', 'eval')
 
     def validate(self, value, trans=None):
-        message = self.message
-        if self.substitute_value_in_message:
-            message = message % value
         try:
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
-            log.debug(f"Validator {self.expression} could not be evaluated on {str(value)}", exc_info=True)
-            super().validate(False, trans, message)
-        if not(evalresult):
-            super().validate(False, trans, message)
-        else:
-            super().validate(True, trans, message)
+            log.debug(f"Validator '{self.expression}' could not be evaluated on '{str(value)}'", exc_info=True)
+            super().validate(False, value, f"Validator '{self.expression}' could not be evaluated on '%s'")
+        super().validate(evalresult, value_to_show=value)
 
 
 # TODO This could be a subclass of ExpressionValidator
@@ -228,18 +227,18 @@ class InRangeValidator(Validator):
     >>>
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="integer" value="10">
-    ...     <validator type="in_range" message="Not gonna happen" min="10" exclude_min="true" max="20" negate="true"/>
+    ...     <validator type="in_range" min="10" exclude_min="true" max="20" negate="true"/>
     ... </param>
     ... '''))
     >>> t = p.validate(10)
     >>> t = p.validate(15)
     Traceback (most recent call last):
         ...
-    ValueError: Not gonna happen
+    ValueError: Value ('15') must not fulfill value > 10 and value <= 20
     >>> t = p.validate(20)
     Traceback (most recent call last):
         ...
-    ValueError: Not gonna happen
+    ValueError: Value ('20') must not fulfill value > 10 and value <= 20
     >>> t = p.validate(21)
     """
 
@@ -272,7 +271,9 @@ class InRangeValidator(Validator):
             op1 = '>'
         if self.exclude_max:
             op2 = '<'
-        super().__init__(message or f"Value must be {op1} {self_min_str} and {op2} {self_max_str}", negate)
+        if message is None:
+            message = f"Value ('%s') must {'not ' if negate == 'true' else ''}fulfill value {op1} {self_min_str} and value {op2} {self_max_str}"
+        super().__init__(message, negate)
 
     def validate(self, value, trans=None):
         if self.exclude_min:
@@ -283,8 +284,7 @@ class InRangeValidator(Validator):
             maxcmp = self.max.__gt__
         else:
             maxcmp = self.max.__ge__
-        log.error(f"{value} min {mincmp(float(value))} max {maxcmp(float(value))}")
-        super().validate(mincmp(float(value)) and maxcmp(float(value)), trans)
+        super().validate(mincmp(float(value)) and maxcmp(float(value)), value_to_show=value)
 
 
 # TODO This could be a subclass of InRangeValidator
@@ -318,11 +318,11 @@ class LengthValidator(Validator):
     >>> t = p.validate("foo")
     Traceback (most recent call last):
         ...
-    ValueError: Must have length of at least 2 and at most 8
+    ValueError: Must not have length of at least 2 and at most 8
     >>> t = p.validate("bar")
     Traceback (most recent call last):
         ...
-    ValueError: Must have length of at least 2 and at most 8
+    ValueError: Must not have length of at least 2 and at most 8
     >>> t = p.validate("f")
     >>> t = p.validate("foobarbaz")
     """
@@ -332,7 +332,6 @@ class LengthValidator(Validator):
         return cls(elem.get('message', None), elem.get('min', None), elem.get('max', None), elem.get('negate', 'false'))
 
     def __init__(self, message, length_min, length_max, negate):
-        super().__init__(message, negate)
         if length_min is not None:
             self.min = int(length_min)
         else:
@@ -341,9 +340,12 @@ class LengthValidator(Validator):
             self.max = int(length_max)
         else:
             self.max = float('inf')
+        if message is None:
+            message = f"Must {'not ' if negate == 'true' else ''}have length of at least {self.min} and at most {self.max}"
+        super().__init__(message, negate)
 
     def validate(self, value, trans=None):
-        super().validate(self.min <= len(value) <= self.max, trans, self.message or ("Must have length of at least %d and at most %s" % (self.min, self.max)))
+        super().validate(self.min <= len(value) <= self.max, trans, value_to_show=value)
 
 
 class DatasetOkValidator(Validator):
@@ -388,19 +390,24 @@ class DatasetOkValidator(Validator):
     >>> t = p.validate(ok_hda)
     Traceback (most recent call last):
         ...
-    ValueError: The selected dataset is still being generated, select another dataset or wait until it is completed
+    ValueError: The selected dataset must not be in state OK
     >>> t = p.validate(notok_hda)
     """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None), elem.get('negate', 'false'))
+        negate = elem.get('negate', 'false')
+        message = elem.get('message', None)
+        if message is None:
+            if negate == 'false':
+                message = "The selected dataset is still being generated, select another dataset or wait until it is completed"
+            else:
+                message = "The selected dataset must not be in state OK"
+        return cls(message, negate)
 
     def validate(self, value, trans=None):
         if value:
             # TODO all Dataset Validators should be able to handle lists, or?
-            if self.message is None:
-                self.message = "The selected dataset is still being generated, select another dataset or wait until it is completed"
             super().validate(value.state == model.Dataset.states.OK)
 
 
@@ -444,13 +451,17 @@ class DatasetEmptyValidator(Validator):
     >>> t = p.validate(full_hda)
     Traceback (most recent call last):
         ...
-    ValueError: The selected dataset is empty, this tool expects non-empty files.
+    ValueError: The selected dataset is non-empty, this tool expects empty files.
     >>> t = p.validate(empty_hda)
     """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', "The selected dataset is empty, this tool expects non-empty files."), elem.get('negate', 'false'))
+        message = elem.get('message', None)
+        negate = elem.get('negate', 'false')
+        if not message:
+            message = f"The selected dataset is {'non-' if negate == 'true' else ''}empty, this tool expects {'non-' if negate=='false' else ''}empty files."
+        return cls(message, negate)
 
     def validate(self, value, trans=None):
         if value:
@@ -498,13 +509,17 @@ class DatasetExtraFilesPathEmptyValidator(Validator):
     >>> t = p.validate(has_extra_hda)
     Traceback (most recent call last):
         ...
-    ValueError: The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input.
+    ValueError: The selected dataset's extra_files_path directory is non-empty or does exist, this tool expects empty extra_files_path directories associated with the selected input.
     >>> t = p.validate(has_no_extra_hda)
     """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', "The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input."), elem.get('negate', 'false'))
+        message = elem.get('message', None)
+        negate = elem.get('negate', 'false')
+        if not message:
+            message = f"The selected dataset's extra_files_path directory is {'non-' if negate == 'true' else ''}empty or does {'not ' if negate == 'false' else ''}exist, this tool expects {'non-' if negate == 'false' else ''}empty extra_files_path directories associated with the selected input."
+        return cls(message, negate)
 
     def validate(self, value, trans=None):
         if value:
@@ -564,7 +579,11 @@ class MetadataValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(message=elem.get('message', "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"),
+        message = elem.get('message', None)
+        if not message:
+            # TODO message not useful for negate="true" .. but maybe OK since the validator itself is not useful then
+            message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
+        return cls(message=message,
                    check=elem.get('check', ""),
                    skip=elem.get('skip', ""),
                    negate=elem.get('negate', 'false'))
@@ -575,7 +594,6 @@ class MetadataValidator(Validator):
         self.skip = skip.split(",")
 
     def validate(self, value, trans=None):
-        log.error("VAL value %s" % value)
         if value:
             # TODO why this validator checks for isinstance(value, model.DatasetInstance)
             super().validate(isinstance(value, model.DatasetInstance) and not value.missing_meta(check=self.check, skip=self.skip))
@@ -621,15 +639,18 @@ class UnspecifiedBuildValidator(Validator):
     >>> t = p.validate(has_dbkey_hda)
     Traceback (most recent call last):
         ...
-    ValueError: Unspecified genome build, click the pencil icon in the history item to set the genome build
+    ValueError: Specified genome build, click the pencil icon in the history item to remove the genome build
     >>> t = p.validate(has_no_dbkey_hda)
     """
     requires_dataset_metadata = True
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', "Unspecified genome build, click the pencil icon in the history item to set the genome build"),
-                   elem.get('negate', 'false'))
+        message = elem.get('message', None)
+        negate = elem.get('negate', 'false')
+        if not message:
+            message = f"{'Unspecified' if negate == 'false' else 'Specified'} genome build, click the pencil icon in the history item to {'set' if negate == 'false' else 'remove'} the genome build"
+        return cls(message, negate)
 
     def validate(self, value, trans=None):
         # if value is None, we cannot validate
@@ -667,13 +688,17 @@ class NoOptionsValidator(Validator):
     >>> t = p.validate('foo')
     Traceback (most recent call last):
         ...
-    ValueError: No options available for selection
+    ValueError: Options available for selection
     >>> t = p.validate(None)
     """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', "No options available for selection"), elem.get('negate', 'false'))
+        message = elem.get('message', None)
+        negate = elem.get('negate', 'false')
+        if not message:
+            message = f"{'No options' if negate == 'false' else 'Options'} available for selection"
+        return cls(message, negate)
 
     def validate(self, value, trans=None):
         super().validate(value is not None)
@@ -708,16 +733,16 @@ class EmptyTextfieldValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
+        message = elem.get('message', None)
         negate = elem.get('negate', 'false')
-        if negate == 'false':
-            message = elem.get('message', "Field requires a value")
-        else:
-            message = elem.get('message', "Field must not set a value")
+        if not message:
+            if negate == 'false':
+                message = elem.get('message', "Field requires a value")
+            else:
+                message = elem.get('message', "Field must not set a value")
         return cls(message, negate)
 
     def validate(self, value, trans=None):
-        if self.message is None:
-            self.message = ""
         super().validate(value != '')
 
 
@@ -751,12 +776,12 @@ class MetadataInFileColumnValidator(Validator):
     def __init__(self, filename, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None, split="\t", negate="false"):
         super().__init__(message, negate)
         self.metadata_name = metadata_name
-        self.valid_values = []
+        self.valid_values = set()
         for line in open(filename):
             if line_startswith is None or line.startswith(line_startswith):
                 fields = line.split(split)
                 if metadata_column < len(fields):
-                    self.valid_values.append(fields[metadata_column].strip())
+                    self.valid_values.add(fields[metadata_column].strip())
 
     def validate(self, value, trans=None):
         if not value:
@@ -803,14 +828,12 @@ class ValueInDataTableColumnValidator(Validator):
                 self.valid_values.append(fields[self._column])
 
     def validate(self, value, trans=None):
-        log.error(f"VALUE {value}")
-        log.error(f"valid_values {self.valid_values}")
         if not value:
             return
         if not self._tool_data_table.is_current_version(self._data_table_content_version):
             log.debug('ValueInDataTableColumnValidator: values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
             self._load_values()
-        super().validate(value in self.valid_values, trans)
+        super().validate(value in self.valid_values)
 
 
 class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
@@ -827,7 +850,7 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
 
     def validate(self, value, trans=None):
         try:
-            super().validate(value, trans)
+            super().validate(value)
         except ValueError:
             return
         else:
@@ -925,10 +948,12 @@ class MetadataInRangeValidator(InRangeValidator):
         metadata_name = elem.get('metadata_name', None)
         assert metadata_name, "dataset_metadata_in_range validator requires metadata_name attribute."
         metadata_name = metadata_name.strip()
-        return cls(metadata_name, elem.get('message', None),
-                   elem.get('min'), elem.get('max'),
-                   elem.get('exclude_min', 'false'), elem.get('exclude_max', 'false'),
-                   elem.get('negate', 'false'))
+        ret = cls(metadata_name, elem.get('message', None),
+                  elem.get('min'), elem.get('max'),
+                  elem.get('exclude_min', 'false'), elem.get('exclude_max', 'false'),
+                  elem.get('negate', 'false'))
+        ret.message = "Metadata: " + ret.message
+        return ret
 
     def __init__(self, metadata_name, message, range_min, range_max, exclude_min, exclude_max, negate):
         self.metadata_name = metadata_name
@@ -963,6 +988,7 @@ validator_types = dict(
     value_in_data_table=ValueInDataTableColumnValidator,
     dataset_ok_validator=DatasetOkValidator,
 )
+
 deprecated_validator_types = dict(
     dataset_metadata_in_file=MetadataInFileColumnValidator,
     dataset_metadata_not_in_data_table=MetadataNotInDataTableColumnValidator,

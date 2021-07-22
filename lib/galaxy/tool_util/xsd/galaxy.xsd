@@ -3747,7 +3747,7 @@ validators is in the ``validator_types`` dictionary in
         <xs:attribute name="message" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">
-The error message displayed on the tool form if validation fails.</xs:documentation>
+The error message displayed on the tool form if validation fails. A placeholder string ``%s`` will be repaced by the ``value``</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="negate" type="xs:boolean" default="false">
@@ -3837,6 +3837,11 @@ metadata fields will be checked unless ``check`` attribute is specified.</xs:doc
             <xs:documentation xml:lang="en">Deprecated. Used to indicate lines in the file
 being used for validation start with a this attribute value.
 For use with validator ``dataset_metadata_in_file``</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="substitute_value_in_message" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Deprecated. This is now always done.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
