@@ -7,7 +7,8 @@ either through the props, and make updates through the events -->
 
 <template>
     <div
-        class="dataset"
+        class="dataset history-content"
+        :id="typedId"
         :class="{ expanded, collapsed, selected }"
         :data-state="dataset.state"
         @keydown.arrow-left.self.stop="$emit('update:expanded', false)"
@@ -17,7 +18,12 @@ either through the props, and make updates through the events -->
         <!-- name, state buttons, menus -->
         <nav class="content-top-menu" @click.stop="$emit('update:expanded', !expanded)">
             <div class="content-status-indicators" @click.stop>
-                <b-check v-if="showSelection" :checked="selected" @change="$emit('update:selected', $event)" />
+                <b-check
+                    class="selector"
+                    v-if="showSelection"
+                    :checked="selected"
+                    @change="$emit('update:selected', $event)"
+                />
                 <StatusIcon v-if="!ok" class="status-icon px-1" :state="dataset.state" @click.stop="onStatusClick" />
                 <StateBtn
                     v-if="!dataset.visible"
@@ -57,7 +63,7 @@ either through the props, and make updates through the events -->
         </div>
 
         <!-- expanded view with editors -->
-        <header v-if="expanded" class="p-2">
+        <header v-if="expanded" class="p-2 details">
             <ClickToEdit
                 v-if="dataset.canEditName"
                 tag-name="h4"
@@ -142,6 +148,9 @@ export default {
         },
         ok() {
             return this.dataset.state == "ok";
+        },
+        typedId() {
+            return `dataset-${this.dataset.id}`;
         },
     },
     methods: {
