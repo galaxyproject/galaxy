@@ -19,12 +19,12 @@ FILTER_TYPES = [
 
 ATTRIB_VALIDATOR_COMPATIBILITY = {
     "check": ["metadata"],
-    "expression": ["regex"],
+    "expression": ["regex", "substitute_value_in_message"],
     "table_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table"],
     "filename": ["dataset_metadata_in_file"],
     "metadata_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "dataset_metadata_in_file"],
     "metadata_column": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_file options"],
-    "line_startswith": ["dataset_metadata_in_file", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table"],
+    "line_startswith": ["dataset_metadata_in_file"],
     "min": ["in_range", "length"],
     "max": ["in_range", "length"],
     "exclude_min": ["in_range"],

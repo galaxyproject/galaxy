@@ -725,8 +725,9 @@ class MetadataInFileColumnValidator(Validator):
     """
     Validator that checks if the value for a dataset's metadata item exists in a file.
 
-    TODO deprecate
-    note: this is covered in a framework test ()
+    Deprecated: DataTables are now the preferred way.
+
+    note: this is covered in a framework test (validation_dataset_metadata_in_file)
     """
     requires_dataset_metadata = True
 
@@ -781,14 +782,10 @@ class ValueInDataTableColumnValidator(Validator):
         except ValueError:
             pass
         message = elem.get("message", f"Value was not found in {table_name}.")
-        # TODO deprecate line_startswith .. not used in all *InDataTableColumnValidator validators
-        line_startswith = elem.get("line_startswith", None)
-        if line_startswith:
-            line_startswith = line_startswith.strip()
         negate = elem.get('negate', 'false')
-        return cls(tool_data_table, column, message, line_startswith, negate)
+        return cls(tool_data_table, column, message, negate)
 
-    def __init__(self, tool_data_table, column, message="Value not found.", line_startswith=None, negate='false'):
+    def __init__(self, tool_data_table, column, message="Value not found.", negate='false'):
         super().__init__(message, negate)
         self.valid_values = []
         self._data_table_content_version = None
@@ -820,11 +817,13 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
     """
     Validator that checks if a value is NOT in a tool data table column.
 
+    Deprecated: use now the `negate` attribute
+
     note: this is covered in a framework test (validation_value_in_datatable)
     """
 
-    def __init__(self, tool_data_table, metadata_column, message="Value already present.", line_startswith=None, negate='false'):
-        super().__init__(tool_data_table, metadata_column, message, line_startswith, negate)
+    def __init__(self, tool_data_table, metadata_column, message="Value already present.", negate='false'):
+        super().__init__(tool_data_table, metadata_column, message, negate)
 
     def validate(self, value, trans=None):
         try:
@@ -859,13 +858,10 @@ class MetadataInDataTableColumnValidator(Validator):
         except ValueError:
             pass
         message = elem.get("message", f"Value for metadata {metadata_name} was not found in {table_name}.")
-        line_startswith = elem.get("line_startswith", None)
-        if line_startswith:
-            line_startswith = line_startswith.strip()
         negate = elem.get('negate', 'false')
-        return cls(tool_data_table, metadata_name, metadata_column, message, line_startswith, negate)
+        return cls(tool_data_table, metadata_name, metadata_column, message, negate)
 
-    def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None, negate="false"):
+    def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", negate="false"):
         super().__init__(message, negate)
         self.metadata_name = metadata_name
         self.valid_values = []
@@ -898,12 +894,14 @@ class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
     """
     Validator that checks if the value for a dataset's metadata item doesn't exists in a file.
 
+    Deprecated: use now the `negate` attribute
+
     note: this is covered in a framework test (validation_metadata_in_datatable)
     """
     requires_dataset_metadata = True
 
-    def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None, negate="false"):
-        super().__init__(tool_data_table, metadata_name, metadata_column, message, line_startswith, negate)
+    def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", negate="false"):
+        super().__init__(tool_data_table, metadata_name, metadata_column, message, negate)
 
     def validate(self, value, trans=None):
         try:
@@ -960,14 +958,17 @@ validator_types = dict(
     empty_field=EmptyTextfieldValidator,
     empty_dataset=DatasetEmptyValidator,
     empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
-    dataset_metadata_in_file=MetadataInFileColumnValidator,
     dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
-    dataset_metadata_not_in_data_table=MetadataNotInDataTableColumnValidator,
     dataset_metadata_in_range=MetadataInRangeValidator,
     value_in_data_table=ValueInDataTableColumnValidator,
-    value_not_in_data_table=ValueNotInDataTableColumnValidator,
     dataset_ok_validator=DatasetOkValidator,
 )
+deprecated_validator_types = dict(
+    dataset_metadata_in_file=MetadataInFileColumnValidator,
+    dataset_metadata_not_in_data_table=MetadataNotInDataTableColumnValidator,
+    value_not_in_data_table=ValueNotInDataTableColumnValidator,
+)
+validator_types.update(deprecated_validator_types)
 
 
 def get_suite():

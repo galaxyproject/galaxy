@@ -3643,10 +3643,13 @@ parameters a ``metadata`` validator is added automatically.
 - ``dataset_ok_validator``: Check if the data set is in state OK.
 - ``dataset_metadata_in_range``: Check if a numeric metadata value is within
 a given range.
-- ``dataset_metadata_in_file``: Check if a metadata value is contained in a
-specific column of another data set.
-- ``dataset_metadata_in_data_table`` (``dataset_metadata_not_in_data_table``):
-Check if a metadata value is contained in a column of a data table.
+- ``dataset_metadata_in_data_table``: Check if a metadata value is contained in a column of a data table.
+
+Deprecated data validators:
+
+- ``dataset_metadata_in_file``: Use data tables with ``dataset_metadata_in_data_table``.
+Check if a metadata value is contained in a specific column of another data set.
+- ``dataset_metadata_not_in_data_table``: Use ``dataset_metadata_in_data_table`` with ``negate="true"``.
 
 ### Validators for textual inputs (``text``, ``select``, ...)
 
@@ -3666,8 +3669,12 @@ For ``text`` inputs the following validators are useful:
 
 - ``length``: Check if the length of the value is within a range.
 - ``empty_field``: Check if the string is not empty
-- ``value_in_data_table`` (``value_not_in_data_table``): Check if the value is
+- ``value_in_data_table``: Check if the value is
 contained in a column of a given data table.
+
+Deprecated:
+
+- ``value_not_in_data_table``: Use ``value_in_data_table`` with ``negate="true"``.
 
 ### Validators for numeric inputs (``integer``, ``float``)
 
@@ -3725,15 +3732,16 @@ use in filenames may not contain ``..``.
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ValidatorType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en"><![CDATA[The list of supported
+            <xs:documentation xml:lang="en"><![CDATA[
+Valid values are: ``expression``, ``regex``, ``in_range``, ``length``,
+``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
+``dataset_metadata_in_data_table``, ``value_in_data_table``,
+``dataset_ok_validator``, ``dataset_metadata_in_range``.
+Deprecated validators: ``dataset_metadata_in_file``, ``value_not_in_data_table``, ``dataset_metadata_not_in_data_table``.
+The list of supported
 validators is in the ``validator_types`` dictionary in
 [/lib/galaxy/tools/parameters/validation.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/validation.py).
-Valid values include: ``expression``, ``regex``, ``in_range``, ``length``,
-``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
-``dataset_metadata_in_file``,
-``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``,
-``value_in_data_table``, ``value_not_in_data_table``,
-``dataset_ok_validator``, ``dataset_metadata_in_range``]]></xs:documentation>
+]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="message" type="xs:string">
@@ -3785,13 +3793,6 @@ in ``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``, `
 This can be an integer index to the column or a column name.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="line_startswith" type="xs:string">
-          <xs:annotation>
-            <xs:documentation xml:lang="en">Used to indicate lines in the file
-being used for validation start with a this attribute value.
-For use with validators of type ``dataset_metadata_in_file``, ``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``, ``value_in_data_table``, ``value_not_in_data_tabl``</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
         <xs:attribute name="min" type="xs:decimal">
           <xs:annotation>
             <xs:documentation xml:lang="en">When the ``type`` attribute value is
@@ -3829,6 +3830,13 @@ not be modified.</xs:documentation>
             <xs:documentation xml:lang="en">Comma-seperated list of metadata
 fields to skip if type is ``metadata``. If not specified, all non-optional
 metadata fields will be checked unless ``check`` attribute is specified.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="line_startswith" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Deprecated. Used to indicate lines in the file
+being used for validation start with a this attribute value.
+For use with validator ``dataset_metadata_in_file``</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
