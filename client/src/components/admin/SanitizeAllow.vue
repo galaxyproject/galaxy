@@ -1,30 +1,121 @@
 <template>
     <div>
         <message :message="message" :status="status"></message>
-        <component
-            :is="currentView"
-            v-if="status !== 'error'"
-            v-bind="currentProps"
-        >
-        </component>
+        <b-tabs>
+            <b-tab title="Toolshed Tools">
+                <b-tabs>
+                    <b-tab title="HTML Sanitized">
+                        <base-grid :is-loaded="isLoaded" :columns="toolshedColumns" id="sanitize-allow-grid">
+                            <template v-slot:rows>
+                                <template v-for="(row, index) in toolshedBlocked">
+                                    <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                                        <td>{{ row.tool_name }}</td>
+                                        <td>
+                                            <span>{{ row.tool_id[0] }}</span>
+                                        </td>
+                                        <td>
+                                            <button @click="allowHTML(row.ids.owner)">{{ row.tool_id[2] }}</button>
+                                        </td>
+                                        <td>
+                                            <button @click="allowHTML(row.ids.repository)">{{ row.tool_id[3] }}</button>
+                                        </td>
+                                        <td>
+                                            <button @click="allowHTML(row.ids.tool)">{{ row.tool_id[4] }}</button>
+                                        </td>
+                                        <td>
+                                            <button @click="allowHTML(row.ids.full)">{{ row.tool_id[5] }}</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </template>
+                        </base-grid>
+                    </b-tab>
+                    <b-tab title="HTML Rendered">
+                        <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                            <template v-slot:rows>
+                                <template v-for="(row, index) in toolshedAllowed">
+                                    <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                                        <td>{{ row.tool_name }}</td>
+                                        <td>
+                                            <template v-for="(part, part_idx) in row.tool_id">
+                                                <span :key="part_idx">{{ part }}</span>
+                                            </template>
+                                        </td>
+                                        <td>
+                                            <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </template>
+                        </base-grid>
+                    </b-tab>
+                </b-tabs>
+            </b-tab>
+            <b-tab title="Local Tools">
+                <b-tabs>
+                    <b-tab title="HTML Sanitized">
+                        <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                            <template v-slot:rows>
+                                <template v-for="(row, index) in localBlocked">
+                                    <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                                        <td>{{ row.tool_name }}</td>
+                                        <td>{{ row.tool_id[0] }}</td>
+                                        <td>
+                                            <button @click="allowHTML(row.ids.full)">Render HTML</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </template>
+                        </base-grid>
+                    </b-tab>
+                    <b-tab title="HTML Rendered">
+                        <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                            <template v-slot:rows>
+                                <template v-for="(row, index) in localAllowed">
+                                    <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                                        <td>{{ row.tool_name }}</td>
+                                        <td>{{ row.tool_id[0] }}</td>
+                                        <td>
+                                            <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </template>
+                        </base-grid>
+                    </b-tab>
+                </b-tabs>
+            </b-tab>
+        </b-tabs>
     </div>
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import BaseGrid from "./BaseGrid.vue";
 import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
 import Message from "../Message.vue";
-import SanitizeAllowGrid from "./SanitizeAllowGrid.vue";
 
 export default {
     data() {
         return {
-            currentView: "sanitize-allow-grid",
             isLoaded: false,
             localAllowed: [],
             localBlocked: [],
             toolshedAllowed: [],
             toolshedBlocked: [],
+            columns: [
+                { text: "Tool Name", dataIndex: "tool_name" },
+                { text: "Tool ID", dataIndex: "tool_id" },
+                { text: "Action", dataIndex: "action" },
+            ],
+            toolshedColumns: [
+                { text: "Tool Name", dataIndex: "tool_name" },
+                { text: "Toolshed" },
+                { text: "Owner" },
+                { text: "Repository" },
+                { text: "Tool" },
+                { text: "Version" },
+            ],
             message: "",
             status: "",
         };
@@ -32,25 +123,7 @@ export default {
 
     components: {
         message: Message,
-        "sanitize-allow-grid": SanitizeAllowGrid,
-    },
-
-    computed: {
-        currentProps() {
-            let props;
-
-            if (this.currentView === "sanitize-allow-grid") {
-                props = {
-                    isLoaded: this.isLoaded,
-                    localAllowed: this.localAllowed,
-                    localBlocked: this.localBlocked,
-                    toolshedAllowed: this.toolshedAllowed,
-                    toolshedBlocked: this.toolshedBlocked,
-                };
-            }
-
-            return props;
-        },
+        "base-grid": BaseGrid,
     },
 
     created() {
@@ -68,6 +141,47 @@ export default {
             .catch((error) => {
                 console.error(error);
             });
+    },
+
+    methods: {
+        allowHTML(tool_id) {
+            axios
+                .put(`${getAppRoot()}api/sanitize_allow?tool_id=${tool_id}`, {
+                    params: {
+                        tool_id: tool_id,
+                    },
+                })
+                .then((response) => {
+                    this.localAllowed = response.data.data.allowed_local;
+                    this.localBlocked = response.data.data.blocked_local;
+                    this.toolshedAllowed = response.data.data.allowed_toolshed;
+                    this.toolshedBlocked = response.data.data.blocked_toolshed;
+                    this.message = response.data.message;
+                    this.status = response.data.status;
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        },
+        sanitizeHTML(tool_id) {
+            axios
+                .delete(`${getAppRoot()}api/sanitize_allow`, {
+                    params: {
+                        tool_id: tool_id,
+                    },
+                })
+                .then((response) => {
+                    this.localAllowed = response.data.data.allowed_local;
+                    this.localBlocked = response.data.data.blocked_local;
+                    this.toolshedAllowed = response.data.data.allowed_toolshed;
+                    this.toolshedBlocked = response.data.data.blocked_toolshed;
+                    this.message = response.data.message;
+                    this.status = response.data.status;
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        },
     },
 };
 </script>
