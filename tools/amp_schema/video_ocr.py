@@ -8,6 +8,26 @@ class VideoOcr:
         else:
             self.media = media
              
+    def toCsv(self, csvFile):
+        # Write as csv
+        with open(csvFile, mode='w') as csv_file:
+            csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_writer.writerow(['Start Time', 'Text', 'Language', 'X Min', 'Y Min', 'X Max', 'Y Max', 'Score Type', 'Score Value'])
+            for f in self.frames:
+                for o in f.objects:
+                    if o.score is not None:
+                        scoreType = o.score.type
+                        scoreValue = o.score.scoreValue
+                    else:
+                        scoreType = ''
+                        scoreValue = ''
+                    if o.language is not None:
+                        language = o.language
+                    else:
+                        language = ''
+                    v = o.vertices
+                    csv_writer.writerow([f.start, o.text, language, v.xmin, v.ymin, v.xmax, v.ymax, scoreType, scoreValue])
+                                 
 class VideoOcrResolution:
     width = None
     height = None

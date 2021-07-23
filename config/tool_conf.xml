@@ -62,6 +62,7 @@
   <section id="video_ocr" name="Video Optical Charater Recognition">
     <tool file="amp_vocr/tesseract.xml"/>
     <tool file="amp_vocr/azure_video_ocr.xml"/>
+    <tool file="amp_vocr/vocr_to_csv.xml"/>
   </section>
 
   <section id="music_ocr" name="Music Optical Charater Recognition">
