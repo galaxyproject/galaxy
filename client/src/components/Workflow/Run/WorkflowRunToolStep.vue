@@ -6,6 +6,8 @@
                 <FormDisplay
                     :inputs="model.inputs"
                     :form-config="formConfig"
+                    :sustainRepeats="true"
+                    :sustainConditionals="true"
                     :replace-params="replaceParams"
                     :validation-scroll-to="validationScrollTo"
                     @onChange="onChange"

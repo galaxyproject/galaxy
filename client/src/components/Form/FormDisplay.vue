@@ -17,6 +17,18 @@ export default {
             type: Array,
             required: true,
         },
+        sustainRepeats: {
+            type: Boolean,
+            default: false,
+        },
+        sustainConditionals: {
+            type: Boolean,
+            default: false,
+        },
+        hideOperations: {
+            type: Boolean,
+            default: false,
+        },
         textEnable: {
             type: String,
             default: null,
@@ -164,6 +176,8 @@ export default {
                     initial_errors: this.initialErrors,
                     text_enable: this.textEnable,
                     text_disable: this.textDisable,
+                    sustain_repeats: this.sustainRepeats,
+                    sustain_conditionals: this.sustainConditionals,
                     onchange: () => {
                         this.onChange();
                     },
