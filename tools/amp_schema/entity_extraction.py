@@ -79,7 +79,7 @@ class EntityExtractionEntity:
 		if 'end' in json_data.keys():
 			end = json_data['end']
 		if 'score' in json_data.keys():
-			score = from_json(json_data['score'])
+			score = EntityExtractionEntityScore.from_json(json_data['score'])
 		return cls(json_data['type'], json_data['text'], json_data['beginOffset'], json_data['endOffset'], start, end, score)
 
 class EntityExtractionEntityScore:
