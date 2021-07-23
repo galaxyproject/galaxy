@@ -15,10 +15,10 @@ import ner_helper
 
 
 def main():
-    (amp_transcript, aws_entities, amp_entities, ignore_types, bucket, dataAccessRoleArn) = sys.argv[1:6]
+    (amp_transcript, aws_entities, amp_entities, ignore_types, bucket, dataAccessRoleArn) = sys.argv[1:7]
     
     # preprocess NER inputs and initialize AMP entities output
-    [amp_transcript_obj, amp_entities_obj, ignore_types_list] = preprocess_amp_entities(amp_transcript, amp_entities, ignore_types)
+    [amp_transcript_obj, amp_entities_obj, ignore_types_list] = ner_helper.preprocess_amp_entities(amp_transcript, amp_entities, ignore_types)
 
     # if we reach here, further processing is needed, continue with preparation for AWS Comprehend job 
     s3uri = 's3://' + bucket + '/'
@@ -43,7 +43,7 @@ def main():
     aws_entities_list = aws_entities_json["Entities"]
 
     # populate AMP Entities list based on input AMP transcript words list and output AWS Entities list  
-    populate_amp_entities(amp_transcript_obj, aws_entities_list, amp_entities_obj, ignore_types_list)
+    ner_helper.populate_amp_entities(amp_transcript_obj, aws_entities_list, amp_entities_obj, ignore_types_list)
 
     # write the output AMP entities to JSON file
     mgm_utils.write_json_file(amp_entities_obj, amp_entities)

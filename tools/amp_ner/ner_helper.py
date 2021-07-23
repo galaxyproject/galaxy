@@ -14,7 +14,7 @@ import mgm_utils
 # If input transcript is empty, complete the process with empty output entities; otherwise return data needed by following process.
 def preprocess_amp_entities(amp_transcript, amp_entities, ignore_types):
     # get a list of entity types to ignore when outputting entity list
-    ignore_types_list = ner_helper.extract_ignore_types(ignore_types)
+    ignore_types_list = extract_ignore_types(ignore_types)
     print(f"Ignore types: {ignore_types_list}")    
 
     # parse input AMP Transcript JSON file into amp_entities object
@@ -60,8 +60,8 @@ def populate_amp_entities(amp_transcript_obj, ner_entities_list, amp_entities_ob
                 scoreValue = entity["Score"]
             else: 
                 mgm = "Spacy"
-                type = entity.text
-                text = entity.label_
+                type = entity.label_
+                text = entity.text
                 beginOffset = entity.start_char
                 endOffset = entity.end_char
                 scoreType = None
@@ -109,7 +109,7 @@ def populate_amp_entities(amp_transcript_obj, ner_entities_list, amp_entities_ob
 
 # Extract a list of cleaned entity types from the given comma separated ignore_types string. 
 def extract_ignore_types(ignore_types):    
-    return map(clean_type, ignore_types_string.split(','))
+    return list(map(clean_type, ignore_types.split(',')))
 
 
 # Clean the given entity type by removing all start/end spaces and change all chars to upper case.
@@ -123,4 +123,4 @@ def clean_type(type):
 def clean_word(word):
     return word.rstrip("'s").rstrip("'")
 
-    
+ 
