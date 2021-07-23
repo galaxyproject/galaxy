@@ -4,7 +4,7 @@
             <slot name="title">{{ title }}</slot>
         </div>
         <div class="card-body">
-            <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+            <table class="manage-table" border="0" cellspacing="0" cellpadding="0" width="100%">
                 <slot name="columns">
                     <th v-for="column in columns" :key="column.dataIndex">{{ column.text }}</th>
                 </slot>
@@ -47,10 +47,24 @@ export default {
 </script>
 <style lang="scss" scoped>
 @import "theme/blue.scss";
+@import "base.scss";
+
 .card-body {
     overflow: auto;
 }
-th, tr:nth-child(even) {
-    background-color: $table-bg-accent;
+
+table {
+    td,
+    th {
+        text-align: left;
+        padding: 5px;
+        line-height: $line-height-base;
+    }
+    th {
+        background-color: $table-heading-bg;
+    }
+    tr:nth-child(even) {
+        background-color: $table-bg-accent;
+    }
 }
 </style>
