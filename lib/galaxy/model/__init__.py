@@ -2149,46 +2149,46 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
 
     datasets = relationship('HistoryDatasetAssociation',
         back_populates='history',
-        order_by=lambda: asc(HistoryDatasetAssociation.hid))
+        order_by=lambda: asc(HistoryDatasetAssociation.hid))  # type: ignore
     exports = relationship('JobExportHistoryArchive',
         back_populates='history',
-        primaryjoin=lambda: JobExportHistoryArchive.history_id == History.id,
-        order_by=lambda: desc(JobExportHistoryArchive.id))
+        primaryjoin=lambda: JobExportHistoryArchive.history_id == History.id,  # type: ignore
+        order_by=lambda: desc(JobExportHistoryArchive.id))  # type: ignore
     active_datasets = relationship('HistoryDatasetAssociation',
         primaryjoin=(
-            lambda: and_(HistoryDatasetAssociation.history_id == History.id, not_(HistoryDatasetAssociation.deleted))
+            lambda: and_(HistoryDatasetAssociation.history_id == History.id, not_(HistoryDatasetAssociation.deleted))  # type: ignore
         ),
-        order_by=lambda: asc(HistoryDatasetAssociation.hid),
+        order_by=lambda: asc(HistoryDatasetAssociation.hid),  # type: ignore
         viewonly=True)
     active_dataset_collections = relationship('HistoryDatasetCollectionAssociation',
         primaryjoin=(
-            lambda: (and_(HistoryDatasetCollectionAssociation.history_id == History.id,
-             not_(HistoryDatasetCollectionAssociation.deleted)))
+            lambda: (and_(HistoryDatasetCollectionAssociation.history_id == History.id,  # type: ignore
+             not_(HistoryDatasetCollectionAssociation.deleted)))  # type: ignore
         ),
-        order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),
+        order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),  # type: ignore
         viewonly=True)
     visible_datasets = relationship('HistoryDatasetAssociation',
         primaryjoin=(
-            lambda: and_(HistoryDatasetAssociation.history_id == History.id,
-             not_(HistoryDatasetAssociation.deleted), HistoryDatasetAssociation.visible)
+            lambda: and_(HistoryDatasetAssociation.history_id == History.id,  # type: ignore
+             not_(HistoryDatasetAssociation.deleted), HistoryDatasetAssociation.visible)  # type: ignore
         ),
-        order_by=lambda: asc(HistoryDatasetAssociation.hid),
+        order_by=lambda: asc(HistoryDatasetAssociation.hid),  # type: ignore
         viewonly=True)
     visible_dataset_collections = relationship('HistoryDatasetCollectionAssociation',
         primaryjoin=(
-            lambda: and_(HistoryDatasetCollectionAssociation.history_id == History.id,
-             not_(HistoryDatasetCollectionAssociation.deleted), HistoryDatasetCollectionAssociation.visible)
+            lambda: and_(HistoryDatasetCollectionAssociation.history_id == History.id,  # type: ignore
+             not_(HistoryDatasetCollectionAssociation.deleted), HistoryDatasetCollectionAssociation.visible)  # type: ignore
         ),
-        order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),
+        order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),  # type: ignore
         viewonly=True)
     tags = relationship('HistoryTagAssociation',
-        order_by=lambda: HistoryTagAssociation.id,
+        order_by=lambda: HistoryTagAssociation.id,  # type: ignore
         back_populates='history')
     annotations = relationship('HistoryAnnotationAssociation',
-        order_by=lambda: HistoryAnnotationAssociation.id,
+        order_by=lambda: HistoryAnnotationAssociation.id,  # type: ignore
         back_populates='history')
     ratings = relationship('HistoryRatingAssociation',
-        order_by=lambda: HistoryRatingAssociation.id,
+        order_by=lambda: HistoryRatingAssociation.id,  # type: ignore
         back_populates='history')
     default_permissions = relationship('DefaultHistoryPermissions', back_populates='history')
     users_shared_with = relationship('HistoryUserShareAssociation', back_populates='history')
