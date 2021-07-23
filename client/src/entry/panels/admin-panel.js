@@ -112,6 +112,7 @@ const AdminPanel = Backbone.View.extend({
                         title: _l("Manage Allowlist"),
                         url: "admin/sanitize_allow",
                         id: "admin-link-allowlist",
+                        target: "__use_router__",
                     },
                     {
                         title: _l("Manage Dependencies"),
