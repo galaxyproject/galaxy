@@ -8,6 +8,11 @@
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
+        <template v-if="fileMode && filesOnly && this.multiple && items.length" v-slot:selectAll>
+            <b-button @click="selectAll" variant="light">
+                <font-awesome-icon icon="th-large" /> {{ `${allSelected() ? "Unselect" : "Select"}` }} entire folder
+            </b-button>
+        </template>
         <template v-slot:options>
             <data-dialog-table
                 v-if="optionsShow"
@@ -47,7 +52,11 @@ import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixi
 import { UrlTracker } from "components/DataDialog/utilities";
 import { Services } from "./services";
 import { Model } from "./model";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faThLarge } from "@fortawesome/free-solid-svg-icons";
 
+library.add(faThLarge);
 export default {
     mixins: [SelectionDialogMixin],
     props: {
@@ -64,6 +73,9 @@ export default {
             type: Boolean,
             default: false,
         },
+    },
+    components: {
+        FontAwesomeIcon,
     },
     data() {
         return {
@@ -88,8 +100,14 @@ export default {
         fileMode() {
             return this.mode == "file";
         },
+        filesOnly() {
+            return !this.items.some((item) => item.isLeaf === false);
+        },
     },
     methods: {
+        allSelected() {
+            return this.items.some((item) => this.model.exists(item.id));
+        },
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
         formatRows() {
             for (const item of this.items) {
@@ -122,6 +140,11 @@ export default {
             const results = this.model.finalize();
             this.modalShow = false;
             this.callback(results);
+        },
+        selectAll: function () {
+            this.items.forEach((item) => this.model.add(item));
+            this.hasValue = this.model.count() > 0;
+            this.formatRows();
         },
         /** Performs server request to retrieve data records **/
         load: function (url) {
