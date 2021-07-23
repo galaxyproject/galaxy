@@ -1,8 +1,9 @@
 import json
+import csv
 
 class VideoOcr:
     def __init__(self, media=None, frames = []):
-        self.frames = []
+        self.frames = frames
         if media is None:
             self.media = VideoOcrMedia()
         else:
@@ -17,7 +18,7 @@ class VideoOcr:
                 for o in f.objects:
                     if o.score is not None:
                         scoreType = o.score.type
-                        scoreValue = o.score.scoreValue
+                        scoreValue = o.score.value
                     else:
                         scoreType = ''
                         scoreValue = ''
@@ -26,7 +27,13 @@ class VideoOcr:
                     else:
                         language = ''
                     v = o.vertices
-                    csv_writer.writerow([f.start, o.text, language, v.xmin, v.ymin, v.xmax, v.ymax, scoreType, scoreValue])
+                    csv_writer.writerow([f.start, o.text, language, v.xmin, v.ymin, v.xmax, v.ymax, scoreType, scoreValue])                    
+
+    @classmethod
+    def from_json(cls, json_data: dict):
+        media = VideoOcrMedia.from_json(json_data["media"])                  
+        frames = list(map(VideoOcrFrame.from_json, json_data["frames"]))
+        return cls(media, frames)
                                  
 class VideoOcrResolution:
     width = None
@@ -63,13 +70,12 @@ class VideoOcrFrame:
     objects = []
     def __init__(self, start = None, objects = None):
         self.start = start
-        if(objects != None):
-            self.objects = objects
+        self.objects = objects
 
     @classmethod
-    def from_json(cls, json_data: dict):
-        return cls(**json_data)
-
+    def from_json(cls, json_data: dict):                  
+        objects = list(map(VideoOcrObject.from_json, json_data["objects"]))
+        return cls(json_data["start"], objects)
     
 class VideoOcrObject:
     text = ""
@@ -84,7 +90,13 @@ class VideoOcrObject:
         
     @classmethod
     def from_json(cls, json_data: dict):
-        return cls(**json_data)
+        language = None
+        score = None
+        if 'language' in json_data.keys():
+            language = json_data['language']
+        if 'score' in json_data.keys():
+            score = VideoOcrObjectScore.from_json(json_data['score'])
+        return cls(json_data['text'], language, score, VideoOcrObjectVertices.from_json(json_data['vertices']))
 
 
 class VideoOcrObjectScore:
@@ -113,3 +125,17 @@ class VideoOcrObjectVertices:
     @classmethod
     def from_json(cls, json_data: dict):
         return cls(**json_data)
+    
+     
+# if __name__ == "__main__":
+#     import sys
+#  
+#     (amp_vocr, amp_vocr_csv) = sys.argv[1:3]
+# 
+#     # Open the file and create the vocr object
+#     with open(amp_vocr, 'r') as file:
+#         vocr = VideoOcr.from_json(json.load(file))
+# 
+#     # Write the csv file
+#     vocr.toCsv(amp_vocr_csv)
+     
