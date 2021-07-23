@@ -531,6 +531,117 @@ class TestGroupRoleAssociation(BaseTest):
             assert stored_obj.role.id == role.id
 
 
+class TestHistory(BaseTest):
+
+    #    def test_table(self, cls_):
+    #        assert cls_.__tablename__ == 'history'
+    #        assert has_index(cls_.__table__, ('slug',))
+
+    def test_columns(self, session, cls_, user):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        name = 'a'
+        hid_counter = 2
+        deleted = True
+        purged = True
+        importing = True
+        genome_build = 'b'
+        importable = True
+        slug = 'c'
+        published = True
+        obj = cls_(name=name, user=user)
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.hid_counter = hid_counter
+        obj.deleted = deleted
+        obj.purged = purged
+        obj.importing = importing
+        obj.genome_build = genome_build
+        obj.importable = importable
+        obj.slug = slug
+        obj.published = published
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            # cannot test directly (trigger); applies to both column and column property
+            assert stored_obj.update_time
+            assert stored_obj.user_id == user.id
+            assert stored_obj.name == name
+            assert stored_obj.hid_counter == hid_counter
+            assert stored_obj.deleted == deleted
+            assert stored_obj.purged == purged
+            assert stored_obj.importing == importing
+            assert stored_obj.genome_build == genome_build
+            assert stored_obj.importable == importable
+            assert stored_obj.slug == slug
+            assert stored_obj.published == published
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        user,
+        history_dataset_association,
+        job_export_history_archive,
+        history_dataset_collection_association,
+        history_tag_association,
+        history_annotation_association,
+        history_rating_association,
+        default_history_permissions,
+        history_user_share_association,
+        model,
+    ):
+        obj = cls_()
+        obj.user = user
+        obj.datasets.append(history_dataset_association)
+
+        # TODO: this is mappend via backref: change to back_populates after mapping HDCA
+        obj.dataset_collections.append(history_dataset_collection_association)
+
+        obj.exports.append(job_export_history_archive)
+        obj.tags.append(history_tag_association)
+        obj.annotations.append(history_annotation_association)
+        obj.ratings.append(history_rating_association)
+        obj.default_permissions.append(default_history_permissions)
+        obj.users_shared_with.append(history_user_share_association)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.user.id == user.id
+            assert stored_obj.datasets == [history_dataset_association]
+            assert stored_obj.exports == [job_export_history_archive]
+            assert stored_obj.active_datasets == [history_dataset_association]
+            assert stored_obj.active_dataset_collections == [history_dataset_collection_association]
+            assert stored_obj.visible_datasets == [history_dataset_association]
+            assert stored_obj.visible_dataset_collections == [history_dataset_collection_association]
+            assert stored_obj.tags == [history_tag_association]
+            assert stored_obj.annotations == [history_annotation_association]
+            assert stored_obj.ratings == [history_rating_association]
+            # This doesn't test the average amount, just the mapping.
+            assert stored_obj.average_rating == history_rating_association.rating
+            assert stored_obj.users_shared_with_count == 1
+            assert stored_obj.users_shared_with == [history_user_share_association]
+            assert stored_obj.default_permissions == [default_history_permissions]
+
+    def test_average_rating(self, model, session, history, user):
+        # History has been expunged; to access its deferred properties,
+        # it needs to be added back to the session.
+        session.add(history)
+        assert history.average_rating is None  # With no ratings, we expect None.
+        # Create ratings
+        to_cleanup = []
+        for rating in (1, 2, 3, 4, 5):
+            history_rating_assoc = model.HistoryRatingAssociation(user, history)
+            history_rating_assoc.rating = rating
+            persist(session, history_rating_assoc)
+            to_cleanup.append(history_rating_assoc)
+        assert history.average_rating == 3.0  # Expect average after ratings added.
+        # Cleanup: remove ratings from database
+        delete_from_database(session, to_cleanup)
+
+
 class TestHistoryUserShareAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -554,8 +665,8 @@ class TestHistoryUserShareAssociation(BaseTest):
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.history_id == history.id
-            assert stored_obj.user_id == user.id
+            assert stored_obj.history.id == history.id
+            assert stored_obj.user.id == user.id
 
 
 class TestHistoryAudit(BaseTest):
@@ -935,7 +1046,7 @@ class TestJobStateHistory(BaseTest):
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
-        assert stored_obj.job.id == job.id
+            assert stored_obj.job.id == job.id
 
 
 class TestJobToImplicitOutputDatasetCollectionAssociation(BaseTest):
@@ -2757,6 +2868,12 @@ def dataset_source_hash(model, session):
 
 
 @pytest.fixture
+def default_history_permissions(model, session, history, role):
+    dha = model.DefaultHistoryPermissions(history, 'a', role)
+    yield from dbcleanup_wrapper(session, dha)
+
+
+@pytest.fixture
 def default_quota_association(model, session, quota):
     type_ = model.DefaultQuotaAssociation.types.REGISTERED
     dqa = model.DefaultQuotaAssociation(type_, quota)
@@ -2806,6 +2923,12 @@ def history(model, session):
 
 
 @pytest.fixture
+def history_annotation_association(model, session):
+    haa = model.HistoryAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, haa)
+
+
+@pytest.fixture
 def history_dataset_association(model, session, dataset):
     hda = model.HistoryDatasetAssociation(dataset=dataset)
     yield from dbcleanup_wrapper(session, hda)
@@ -2830,15 +2953,33 @@ def history_dataset_collection_tag_association(model, session):
 
 
 @pytest.fixture
+def history_rating_association(model, session, user, history):
+    hda = model.HistoryRatingAssociation(user, history)
+    yield from dbcleanup_wrapper(session, hda)
+
+
+@pytest.fixture
 def history_tag_association(model, session):
     hta = model.HistoryTagAssociation()
     yield from dbcleanup_wrapper(session, hta)
 
 
 @pytest.fixture
+def history_user_share_association(model, session):
+    husa = model.HistoryUserShareAssociation()
+    yield from dbcleanup_wrapper(session, husa)
+
+
+@pytest.fixture
 def job(model, session):
     j = model.Job()
     yield from dbcleanup_wrapper(session, j)
+
+
+@pytest.fixture
+def job_export_history_archive(model, session):
+    jeha = model.JobExportHistoryArchive()
+    yield from dbcleanup_wrapper(session, jeha)
 
 
 @pytest.fixture
