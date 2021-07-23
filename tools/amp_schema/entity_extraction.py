@@ -17,9 +17,9 @@ class EntityExtraction:
 			entity.score = EntityExtractionEntityScore(scoreType, scoreValue)
 		self.entities.append(entity)
 
-	def toCsv(self, outputFile):
+	def toCsv(self, csvFile):
 		# Write as csv
-		with open(outputFile, mode='w') as csv_file:
+		with open(csvFile, mode='w') as csv_file:
 			csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 			csv_writer.writerow(['Type', 'Text', 'Begin Offset', 'End Offset', 'Start Time', 'Score Type', 'Score Value'])
 			for e in self.entities:

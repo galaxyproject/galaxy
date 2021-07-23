@@ -8,9 +8,9 @@ class VideoOcr:
         else:
             self.media = media
              
-    def toCsv(self, outputFile):
+    def toCsv(self, csvFile):
         # Write as csv
-        with open(outputFile, mode='w') as csv_file:
+        with open(csvFile, mode='w') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             csv_writer.writerow(['Start Time', 'Text', 'Language', 'X Min', 'Y Min', 'X Max', 'Y Max', 'Score Type', 'Score Value'])
             for f in self.frames:
