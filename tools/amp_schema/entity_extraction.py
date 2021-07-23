@@ -37,8 +37,8 @@ class EntityExtraction:
 
 	@classmethod
 	def from_json(cls, json_data: dict):
+		media = EntityExtractionMedia.from_json(json_data["media"])
 		entities = list(map(EntityExtractionEntity.from_json, json_data["entities"]))
-		media = map(EntityExtractionMedia.from_json, json_data["media"])
 		return cls(media, entities)
 
 class EntityExtractionMedia:
@@ -59,17 +59,17 @@ class EntityExtractionEntity:
 	start = None
 	end = None
 	score = None
-	def __init__(self, type = None, text = None, beginOffset = None, endOffset = None, start = None, end = None):
+	def __init__(self, type = None, text = None, beginOffset = None, endOffset = None, start = None, end = None, score = None):
 		self.type = type
 		self.text = text
-		if beginOffset is not None and float(beginOffset) >= 0.00:
-			self.beginOffset = beginOffset
-		if endOffset is not None and  float(endOffset) >= 0.00:
-			self.endOffset = endOffset
+		self.beginOffset = beginOffset
+		self.endOffset = endOffset
 		if start is not None and  float(start) >= 0.00:
 			self.start = start
 		if end is not None and  float(end) >= 0.00:
 			self.end = end
+		self.score = score
+		 
 	@classmethod
 	def from_json(cls, json_data: dict):
 		start = None
@@ -92,3 +92,16 @@ class EntityExtractionEntityScore:
 	def from_json(cls, json_data: dict):
 		return cls(**json_data)
 
+
+# if __name__ == "__main__":
+# 	import sys
+# 	import json
+# 
+# 	(amp_entities, amp_entities_csv) = sys.argv[1:3]
+# 
+# 	# Open the file and create the ner object
+# 	with open(amp_entities, 'r') as file:
+# 		ner = EntityExtraction.from_json(json.load(file))
+# 
+# 	# Write the csv file
+# 	ner.toCsv(amp_entities_csv)

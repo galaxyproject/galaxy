@@ -4,7 +4,7 @@
 	<requirement type="package" version="3.8">python</requirement>
   </requirements>
   <command detect_errors="exit_code">
-    '$__tool_directory__/vocr_to_csv_.py' '$amp_vocr' '$amp_vocr_csv';
+    '$__tool_directory__/vocr_to_csv.py' '$amp_vocr' '$amp_vocr_csv';
   </command>
   <inputs>
     <param name="amp_vocr" type="data" format="vocr" label="AMP Video OCR" help="AMP Video OCR JSON file" ></param>
