@@ -72,19 +72,15 @@ class EntityExtractionEntity:
 			self.end = end
 	@classmethod
 	def from_json(cls, json_data: dict):
-		beginOffset = None
-		endOffset = None
 		start = None
 		end = None
-		if 'beginOffset' in json_data.keys():
-			beginOffset = json_data['beginOffset']
-		if 'endOffset' in json_data.keys():
-			endOffset = json_data['endOffset']
 		if 'start' in json_data.keys():
 			start = json_data['start']
 		if 'end' in json_data.keys():
 			end = json_data['end']
-		return cls(json_data['type'], json_data['text'], beginOffset, endOffset, start, end)
+		if 'score' in json_data.keys():
+			score = from_json(json_data['score'])
+		return cls(json_data['type'], json_data['text'], json_data['beginOffset'], json_data['endOffset'], start, end, score)
 
 class EntityExtractionEntityScore:
 	type = ""
