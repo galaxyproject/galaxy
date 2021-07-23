@@ -10,9 +10,9 @@ import mgm_utils
 
 # Shared helper methods for NER MGMs
 
-# Preprocess before submitting inputs to NER MGM: extract ignore types,  parse input AMP Transcript, initialize AMP Entity output.
+# Preprocess before submitting inputs to NER MGM: extract ignore types, parse input AMP Transcript, and initialize AMP Entity output.
 # If input transcript is empty, complete the process with empty output entities; otherwise return data needed by following process.
-def preprocess_amp_entities(amp_transcript, amp_entities, ignore_types):
+def initialize_amp_entities(amp_transcript, amp_entities, ignore_types):
     # get a list of entity types to ignore when outputting entity list
     ignore_types_list = extract_ignore_types(ignore_types)
     print(f"Ignore types: {ignore_types_list}")    

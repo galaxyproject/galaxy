@@ -12,7 +12,7 @@ def main():
     (amp_transcript, spacy_entities, amp_entities, ignore_types) = sys.argv[1:5]
 
     # preprocess NER inputs and initialize AMP entities output
-    [amp_transcript_obj, amp_entities_obj, ignore_types_list] = ner_helper.preprocess_amp_entities(amp_transcript, amp_entities, ignore_types)
+    [amp_transcript_obj, amp_entities_obj, ignore_types_list] = ner_helper.initialize_amp_entities(amp_transcript, amp_entities, ignore_types)
 
     # if we reach here, further processing is needed, continue with Spacy   
      
