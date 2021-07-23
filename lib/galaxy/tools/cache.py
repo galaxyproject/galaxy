@@ -17,7 +17,7 @@ from sqlitedict import SqliteDict
 
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.tools.toolbox.base import ToolConfRepository
+from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 

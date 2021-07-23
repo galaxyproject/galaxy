@@ -26,8 +26,8 @@ from galaxy.util import (
     get_charset_from_http_headers,
     listify,
     parse_xml,
-    string_as_bool,
     stream_to_open_named_file,
+    string_as_bool,
     unicodify,
 )
 from galaxy.util.bunch import Bunch

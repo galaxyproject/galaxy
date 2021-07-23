@@ -3,7 +3,6 @@ File format detector
 """
 
 import bz2
-import codecs
 import gzip
 import io
 import logging
@@ -17,7 +16,7 @@ import urllib.request
 import zipfile
 
 from galaxy import util
-from galaxy.util import compression_utils
+from galaxy.util import compression_utils, stream_to_open_named_file
 from galaxy.util.checkers import (
     check_binary,
     check_bz2,

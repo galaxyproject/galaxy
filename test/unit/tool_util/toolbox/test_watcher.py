@@ -6,7 +6,7 @@ from shutil import rmtree
 
 import pytest
 
-from galaxy.tools.toolbox import watcher
+from galaxy.tool_util.toolbox import watcher
 from galaxy.util import bunch
 
 

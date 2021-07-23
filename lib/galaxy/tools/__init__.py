@@ -46,6 +46,7 @@ from galaxy.tool_util.parser import (
 )
 from galaxy.tool_util.parser.xml import XmlPageSource
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
+from galaxy.tool_util.toolbox import BaseGalaxyToolBox
 from galaxy.tools import expressions
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -80,7 +81,6 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.tools.test import parse_tests
-from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
     in_directory,
     listify,

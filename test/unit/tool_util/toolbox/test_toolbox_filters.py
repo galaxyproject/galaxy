@@ -1,4 +1,4 @@
-from galaxy.tools.toolbox.filters import FilterFactory
+from galaxy.tool_util.toolbox.filters import FilterFactory
 from galaxy.util.bunch import Bunch
 
 

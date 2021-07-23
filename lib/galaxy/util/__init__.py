@@ -4,6 +4,7 @@ Utility functions used systemwide.
 """
 
 import binascii
+import codecs
 import collections
 import errno
 import importlib
@@ -1681,7 +1682,7 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
     try:
         codecs.lookup(target_encoding)
     except Exception:
-        target_encoding = util.DEFAULT_ENCODING  # utf-8
+        target_encoding = DEFAULT_ENCODING  # utf-8
     use_source_encoding = source_encoding is not None
     while True:
         chunk = stream.read(CHUNK_SIZE)
