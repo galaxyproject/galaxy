@@ -74,6 +74,7 @@ class EntityExtractionEntity:
 	def from_json(cls, json_data: dict):
 		start = None
 		end = None
+		score = None
 		if 'start' in json_data.keys():
 			start = json_data['start']
 		if 'end' in json_data.keys():
@@ -93,15 +94,3 @@ class EntityExtractionEntityScore:
 		return cls(**json_data)
 
 
-# if __name__ == "__main__":
-# 	import sys
-# 	import json
-# 
-# 	(amp_entities, amp_entities_csv) = sys.argv[1:3]
-# 
-# 	# Open the file and create the ner object
-# 	with open(amp_entities, 'r') as file:
-# 		ner = EntityExtraction.from_json(json.load(file))
-# 
-# 	# Write the csv file
-# 	ner.toCsv(amp_entities_csv)
