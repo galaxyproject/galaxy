@@ -9,9 +9,9 @@
                     <th v-for="column in columns" bgcolor="#D8D8D8" :key="column.dataIndex">{{ column.text }}</th>
                 </slot>
                 <slot name="rows">
-                    <template v-for="(row, index) in rows">
+                    <template v-for="row in rows">
                         <!-- eslint-disable-next-line vue/require-v-for-key -->
-                        <tr :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                        <tr>
                             <td v-for="column in columns" :key="column.dataIndex">{{ row[column.dataIndex] }}</td>
                         </tr>
                     </template>
@@ -32,18 +32,25 @@ export default {
         },
         title: {
             type: String,
+            default: "",
         },
         columns: {
             type: Array,
+            default: () => [],
         },
         rows: {
             type: Array,
+            default: () => [],
         },
     },
 };
 </script>
-<style>
+<style lang="scss" scoped>
+@import "theme/blue.scss";
 .card-body {
     overflow: auto;
+}
+tr:nth-child(odd) {
+    background-color: $table-bg-accent;
 }
 </style>
