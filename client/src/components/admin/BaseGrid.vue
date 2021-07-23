@@ -6,7 +6,7 @@
         <div class="card-body">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 <slot name="columns">
-                    <th v-for="column in columns" bgcolor="#D8D8D8" :key="column.dataIndex">{{ column.text }}</th>
+                    <th v-for="column in columns" :key="column.dataIndex">{{ column.text }}</th>
                 </slot>
                 <slot name="rows">
                     <template v-for="row in rows">
@@ -50,7 +50,7 @@ export default {
 .card-body {
     overflow: auto;
 }
-tr:nth-child(odd) {
+th, tr:nth-child(even) {
     background-color: $table-bg-accent;
 }
 </style>
