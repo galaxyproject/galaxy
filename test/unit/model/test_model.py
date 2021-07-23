@@ -533,9 +533,9 @@ class TestGroupRoleAssociation(BaseTest):
 
 class TestHistory(BaseTest):
 
-    #    def test_table(self, cls_):
-    #        assert cls_.__tablename__ == 'history'
-    #        assert has_index(cls_.__table__, ('slug',))
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'history'
+        assert has_index(cls_.__table__, ('slug',))
 
     def test_columns(self, session, cls_, user):
         create_time = datetime.now()

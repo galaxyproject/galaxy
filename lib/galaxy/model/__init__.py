@@ -39,6 +39,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    desc,
     ForeignKey,
     func,
     Index,
@@ -2126,7 +2127,79 @@ class HistoryAudit(Base, RepresentById):
         sa_session.execute(d.where(tuple_(history_audit_table.c.history_id, history_audit_table.c.update_time).in_(not_latest_query)))
 
 
-class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
+class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
+    __tablename__ = 'history'
+    __table_args__ = (
+        Index('ix_history_slug', 'slug', mysql_length=200),
+    )
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    _update_time = Column('update_time', DateTime, index=True, default=now, onupdate=now)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    name = Column(TrimmedString(255))
+    hid_counter = Column(Integer, default=1)
+    deleted = Column(Boolean, index=True, default=False)
+    purged = Column(Boolean, index=True, default=False)
+    importing = Column(Boolean, index=True, default=False)
+    genome_build = Column(TrimmedString(40))
+    importable = Column(Boolean, default=False)
+    slug = Column(TEXT)
+    published = Column(Boolean, index=True, default=False)
+
+    datasets = relationship('HistoryDatasetAssociation',
+        back_populates='history',
+        order_by=lambda: asc(HistoryDatasetAssociation.hid))
+    exports = relationship('JobExportHistoryArchive',
+        back_populates='history',
+        primaryjoin=lambda: JobExportHistoryArchive.history_id == History.id,
+        order_by=lambda: desc(JobExportHistoryArchive.id))
+    active_datasets = relationship('HistoryDatasetAssociation',
+        primaryjoin=(
+            lambda: and_(HistoryDatasetAssociation.history_id == History.id, not_(HistoryDatasetAssociation.deleted))
+        ),
+        order_by=lambda: asc(HistoryDatasetAssociation.hid),
+        viewonly=True)
+    active_dataset_collections = relationship('HistoryDatasetCollectionAssociation',
+        primaryjoin=(
+            lambda: (and_(HistoryDatasetCollectionAssociation.history_id == History.id,
+             not_(HistoryDatasetCollectionAssociation.deleted)))
+        ),
+        order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),
+        viewonly=True)
+    visible_datasets = relationship('HistoryDatasetAssociation',
+        primaryjoin=(
+            lambda: and_(HistoryDatasetAssociation.history_id == History.id,
+             not_(HistoryDatasetAssociation.deleted), HistoryDatasetAssociation.visible)
+        ),
+        order_by=lambda: asc(HistoryDatasetAssociation.hid),
+        viewonly=True)
+    visible_dataset_collections = relationship('HistoryDatasetCollectionAssociation',
+        primaryjoin=(
+            lambda: and_(HistoryDatasetCollectionAssociation.history_id == History.id,
+             not_(HistoryDatasetCollectionAssociation.deleted), HistoryDatasetCollectionAssociation.visible)
+        ),
+        order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),
+        viewonly=True)
+    tags = relationship('HistoryTagAssociation',
+        order_by=lambda: HistoryTagAssociation.id,
+        back_populates='history')
+    annotations = relationship('HistoryAnnotationAssociation',
+        order_by=lambda: HistoryAnnotationAssociation.id,
+        back_populates='history')
+    ratings = relationship('HistoryRatingAssociation',
+        order_by=lambda: HistoryRatingAssociation.id,
+        back_populates='history')
+    default_permissions = relationship('DefaultHistoryPermissions', back_populates='history')
+    users_shared_with = relationship('HistoryUserShareAssociation', back_populates='history')
+
+    update_time = column_property(
+        select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
+    )
+    # `users_shared_with_count` and `average_rating` added at the bottom of this module
+    # (cannot be added before HistoryUserShareAssociation and HistoryRatingAssociation are defined)
+    users_shared_with_count: column_property
+    average_rating: column_property
 
     dict_collection_visible_keys = ['id', 'name', 'published', 'deleted']
     dict_element_visible_keys = ['id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
@@ -7714,8 +7787,18 @@ def _prepare_metadata_for_serialization(id_encoder, serialization_options, metad
     return processed_metadata
 
 
-# This must be defined after PageRatingAssociation has been mapped
+# Must be defined after PageRatingAssociation has been mapped
 Page.average_rating = column_property(
     select(func.avg(PageRatingAssociation.rating)).where(PageRatingAssociation.page_id == Page.id).scalar_subquery(),
+    deferred=True
+)
+# Must be defined after HistoryUserShareAssociation has been mapped
+History.users_shared_with_count = column_property(
+    select(func.count(HistoryUserShareAssociation.id)).where(History.id == HistoryUserShareAssociation.history_id).scalar_subquery(),
+    deferred=True
+)
+# Must be defined after HistoryRatingAssociation has been mapped
+History.average_rating = column_property(
+    select(func.avg(HistoryRatingAssociation.rating)).where(HistoryRatingAssociation.history_id == History.id).scalar_subquery(),
     deferred=True
 )

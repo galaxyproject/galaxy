@@ -73,24 +73,6 @@ model.User.table = Table(
     Column("active", Boolean, index=True, default=True, nullable=False),
     Column("activation_token", TrimmedString(64), nullable=True, index=True))
 
-model.History.table = Table(
-    "history", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, key="_update_time", index=True, default=now, onupdate=now),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("name", TrimmedString(255)),
-    Column("hid_counter", Integer, default=1),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("purged", Boolean, index=True, default=False),
-    Column("importing", Boolean, index=True, default=False),
-    Column("genome_build", TrimmedString(40)),
-    Column("importable", Boolean, default=False),
-    Column("slug", TEXT),
-    Column("published", Boolean, index=True, default=False),
-    Index('ix_history_slug', 'slug', mysql_length=200),
-)
-
 model.HistoryDatasetAssociation.table = Table(
     "history_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -896,6 +878,7 @@ simple_mapping(model.HistoryDatasetAssociation,
     dependent_jobs=relation(model.JobToInputDatasetAssociation, back_populates='dataset'),
     creating_job_associations=relation(
         model.JobToOutputDatasetAssociation, back_populates='dataset'),
+    history=relation(model.History, back_populates='datasets'),
 )
 
 simple_mapping(model.Dataset,
@@ -952,68 +935,6 @@ mapper_registry.map_imperatively(model.ImplicitlyConvertedDatasetAssociation, mo
         backref="implicitly_converted_parent_datasets")
 ))
 
-mapper_registry.map_imperatively(model.History, model.History.table, properties=dict(
-    datasets=relation(model.HistoryDatasetAssociation,
-        backref="history",
-        order_by=asc(model.HistoryDatasetAssociation.table.c.hid)),
-    exports=relation(model.JobExportHistoryArchive,
-        backref="history",
-        primaryjoin=(model.JobExportHistoryArchive.table.c.history_id == model.History.table.c.id),
-        order_by=desc(model.JobExportHistoryArchive.table.c.id)),
-    active_datasets=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(
-            (model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id)
-            & not_(model.HistoryDatasetAssociation.table.c.deleted)
-        ),
-        order_by=asc(model.HistoryDatasetAssociation.table.c.hid),
-        viewonly=True),
-    active_dataset_collections=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=(
-            (model.HistoryDatasetCollectionAssociation.table.c.history_id == model.History.table.c.id)
-            & not_(model.HistoryDatasetCollectionAssociation.table.c.deleted)
-        ),
-        order_by=asc(model.HistoryDatasetCollectionAssociation.table.c.hid),
-        viewonly=True),
-    visible_datasets=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(
-            (model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id)
-            & not_(model.HistoryDatasetAssociation.table.c.deleted)
-            & model.HistoryDatasetAssociation.table.c.visible
-        ),
-        order_by=asc(model.HistoryDatasetAssociation.table.c.hid),
-        viewonly=True),
-    visible_dataset_collections=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=(
-            (model.HistoryDatasetCollectionAssociation.table.c.history_id == model.History.table.c.id)
-            & not_(model.HistoryDatasetCollectionAssociation.table.c.deleted)
-            & model.HistoryDatasetCollectionAssociation.table.c.visible
-        ),
-        order_by=asc(model.HistoryDatasetCollectionAssociation.table.c.hid),
-        viewonly=True),
-    tags=relation(model.HistoryTagAssociation,
-        order_by=model.HistoryTagAssociation.id,
-        back_populates="history"),
-    annotations=relation(model.HistoryAnnotationAssociation,
-        order_by=model.HistoryAnnotationAssociation.id,
-        back_populates="history"),
-    ratings=relation(model.HistoryRatingAssociation,
-        order_by=model.HistoryRatingAssociation.id,
-        back_populates="history"),
-    average_rating=column_property(
-        select(func.avg(model.HistoryRatingAssociation.rating)).where(model.HistoryRatingAssociation.history_id == model.History.table.c.id).scalar_subquery(),
-        deferred=True
-    ),
-    users_shared_with_count=column_property(
-        select(func.count(model.HistoryUserShareAssociation.id)).where(model.History.table.c.id == model.HistoryUserShareAssociation.history_id).scalar_subquery(),
-        deferred=True
-    ),
-    update_time=column_property(
-        select(func.max(model.HistoryAudit.update_time)).where(model.HistoryAudit.history_id == model.History.table.c.id).scalar_subquery(),
-    ),
-    default_permissions=relation(model.DefaultHistoryPermissions, back_populates='history'),
-    users_shared_with=relation(model.HistoryUserShareAssociation, back_populates='history'),
-))
-
 # Set up proxy so that
 #   History.users_shared_with
 # returns a list of users that history is shared with.
@@ -1032,8 +953,8 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
         order_by=desc(model.History.update_time)),
     active_histories=relation(model.History,
         primaryjoin=(
-            (model.History.table.c.user_id == model.User.table.c.id)
-            & (not_(model.History.table.c.deleted))
+            (model.History.user_id == model.User.table.c.id)
+            & (not_(model.History.deleted))
         ),
         viewonly=True,
         order_by=desc(model.History.update_time)),
@@ -1208,7 +1129,8 @@ mapper_registry.map_imperatively(model.JobExternalOutputMetadata, model.JobExter
 
 mapper_registry.map_imperatively(model.JobExportHistoryArchive, model.JobExportHistoryArchive.table, properties=dict(
     job=relation(model.Job),
-    dataset=relation(model.Dataset, backref='job_export_history_archive')
+    dataset=relation(model.Dataset, backref='job_export_history_archive'),
+    history=relation(model.History, back_populates='exports'),
 ))
 
 mapper_registry.map_imperatively(model.JobImportHistoryArchive, model.JobImportHistoryArchive.table, properties=dict(
