@@ -1,110 +1,36 @@
 #!/usr/bin/env python3
 
-import os
-import os.path
-import json
+
 import spacy
-import string
 import sys
 
-from entity_extraction import EntityExtraction, EntityExtractionMedia
-from speech_to_text import SpeechToText
-
 import mgm_utils
+import ner_helper
+
 
 def main():
-    (input_file, json_file) = sys.argv[1:3]
+    (amp_transcript, spacy_entities, amp_entities, ignore_types) = sys.argv[1:5]
 
-    # Read a list of categories to ignore when outputting entity list
-    ignore_cats_list = list()
-    if len(sys.argv) > 3:
-        print("Categories to ignore:" + sys.argv[3])
-        ignore_cats_list = split_ignore_list(sys.argv[3])
+    # preprocess NER inputs and initialize AMP entities output
+    [amp_transcript_obj, amp_entities_obj, ignore_types_list] = ner_helper.initialize_amp_entities(amp_transcript, amp_entities, ignore_types)
 
-    # Load English tokenizer, tagger, parser, NER and word vectors
+    # if we reach here, further processing is needed, continue with Spacy   
+     
+    # load English tokenizer, tagger, parser, NER and word vectors
     nlp = spacy.load("en_core_web_lg")
+    
+    # run Spacy with input transcript
+    spacy_entities_obj = nlp(amp_transcript_obj.results.transcript)
 
-    # Create the ner object
-    ner = EntityExtraction()
+    # write the output Spacy entities object to JSON file
+    mgm_utils.write_json_file(spacy_entities_obj.to_json(), spacy_entities)
+    
+    # populate AMP Entities list based on input AMP transcript words list and output AWS Entities list  
+    ner_helper.populate_amp_entities(amp_transcript_obj, spacy_entities_obj.ents, amp_entities_obj, ignore_types_list)
 
-    with open(input_file, 'r') as file:
-        stt = SpeechToText().from_json(json.load(file))
-
-    # If we have a blank file, don't error.  Create another blank json file to pass to the next process
-    if(stt is None or stt.results is None):
-        ner.media = EntityExtractionMedia(len(stt.results.transcript), input_file)
-        # Write the json file
-        mgm_utils.write_json_file(ner, json_file)
-        exit(0)
-
-    doc = nlp(stt.results.transcript)
-
-    # Add the media information
-    ner.media = EntityExtractionMedia(len(stt.results.transcript), input_file)
-
-    # Variables for filling time offsets based on speech to text
-    lastPos = 0  # Iterator to keep track of location in STT word
-    sttWords = len(stt.results.words) # Number of STT words
-
-    # Find named entities, phrases and concepts - Add them to the ner
-    for entity in doc.ents:
-        # Start and end time offsets
-        start = None
-        end = None
-        text = entity.text
-
-        # Split the entity into an array of words based on whitespace
-        entityParts = text.split()
-
-        # For each word in the entity, find the corresponding word in the STT word list
-        for entityPart in entityParts:
-            for wordPos in range(lastPos, sttWords):
-                word = stt.results.words[wordPos]
-                # If it matches, set the time offset.
-                if clean_entity_word(word.text) == clean_entity_word(entityPart):
-                    # Keep track of last position to save iterations
-                    lastPos = wordPos
-                    # Set start if we haven't set it yet
-                    if start == None:
-                        start = word.start
-                    end = word.end
-                    break
-        # Ignore certain categories
-        if clean_text(entity.label_) not in ignore_cats_list:
-            ner.addEntity(entity.label_, text, None, None, None, None, start, None)   #AMP-636 removed startOffset=endOffset=end=None
-
-    # Write the json file
-    mgm_utils.write_json_file(ner, json_file)
-
-# Standardize ignore list text
-def clean_text(text):
-    return text.lower().strip()
-
-def clean_entity_word(entity_word):
-    cleaned_word = entity_word
-    #if(entity_word.endswith('\'s')):
-    #    cleaned_word = entity_word.replace('\'s', '')
-    return cleaned_word.translate(str.maketrans('', '', string.punctuation))
-
-# Split a comma separated string, standardize input, and return list
-def split_ignore_list(ignore_list_string):
-    to_return = list()
-    ignore_cats_list = ignore_list_string.split(',')
-    for cat in ignore_cats_list:
-        to_return.append(clean_text(cat))
-    return to_return
-
-# Read a list of categories to ignore
-def read_ignore_list(ignore_list_filename):
-    print("Reading list")
-    ignore_cats_list = list()
-    f = open(ignore_list_filename, "r")
-    # For each value in the comma separated list.  Standardize text
-    for val in f.read().split(","):
-        ignore_cats_list.append(clean_text(val))
-    print(ignore_cats_list)
-    return ignore_cats_list
-
+    # write the output AMP entities object to JSON file
+    mgm_utils.write_json_file(amp_entities_obj, amp_entities)
+    
 
 if __name__ == "__main__":
     main()

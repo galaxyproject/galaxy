@@ -74,11 +74,24 @@ def cleanup_err_file(file):
         os.remove(err_file)
         print("Error file for " + file + " has been cleaned up")
         
+     
+# Read/parse the given JSON input_file and return the validated JSON dictionary.
+def read_json_file(input_file):
+    with open(input_file) as file:
+        input_json = json.load(file)
+    return input_json
         
+                
 # Serialize the given object and write it to the given JSON output_file
 def write_json_file(object, output_file):
     with open(output_file, 'w') as file:
         json.dump(object, file, indent = 4, default = lambda x: x.__dict__)
+        
+# Write the given string to the given text output_file
+def write_text_file(string, output_file):
+    with open(output_file, 'w') as file:
+        file.write(string)
+        
         
 # Get the configuration file
 def get_config(root_dir):
