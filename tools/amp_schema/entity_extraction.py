@@ -21,12 +21,19 @@ class EntityExtraction:
 		# Write as csv
 		with open(outputFile, mode='w') as csv_file:
 			csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-			csv_writer.writerow(['Type', 'Text', 'Start', 'Score Type', 'Score Value'])
+			csv_writer.writerow(['Type', 'Text', 'Begin Offset', 'End Offset', 'Start Time', 'Score Type', 'Score Value'])
 			for e in self.entities:
 				if e.score is not None:
-					csv_writer.writerow([e.type, e.text, e.start, e.score.type, e.score.scoreValue])
+					scoreType = e.score.type
+					scoreValue = e.score.scoreValue
 				else:
-					csv_writer.writerow([e.type, e.text, e.start, '', ''])
+					scoreType = ''
+					scoreValue = ''
+				if e.start is not None:
+					start = e.start
+				else:
+					start = ''
+				csv_writer.writerow([e.type, e.text, e.beginOffset, e.endOffset, start, scoreType, scoreValue])
 
 	@classmethod
 	def from_json(cls, json_data: dict):
@@ -40,16 +47,6 @@ class EntityExtractionMedia:
 	def __init__(self, characters = 0, filename = ""):
 		self.characters = characters
 		self.filename = filename
-	@classmethod
-	def from_json(cls, json_data: dict):
-		return cls(**json_data)
-
-class EntityExtractionEntityScore:
-	type = ""
-	scoreValue = 0.00
-	def __init__(self, type = None, scoreValue = None):
-		self.type = type
-		self.scoreValue = scoreValue
 	@classmethod
 	def from_json(cls, json_data: dict):
 		return cls(**json_data)
@@ -88,3 +85,14 @@ class EntityExtractionEntity:
 		if 'end' in json_data.keys():
 			end = json_data['end']
 		return cls(json_data['type'], json_data['text'], beginOffset, endOffset, start, end)
+
+class EntityExtractionEntityScore:
+	type = ""
+	scoreValue = 0.00
+	def __init__(self, type = None, scoreValue = None):
+		self.type = type
+		self.scoreValue = scoreValue
+	@classmethod
+	def from_json(cls, json_data: dict):
+		return cls(**json_data)
+

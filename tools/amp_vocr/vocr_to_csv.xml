@@ -1,0 +1,23 @@
+<tool id="vocr_to_csv" name="AMP Video OCR to CSV Converter" version="1.0.0">
+  <description>Convert AMP Video OCR JSON file to CSV file</description>
+  <requirements>
+	<requirement type="package" version="3.8">python</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+    '$__tool_directory__/vocr_to_csv_.py' '$amp_vocr' '$amp_vocr_csv';
+  </command>
+  <inputs>
+    <param name="amp_vocr" type="data" format="vocr" label="AMP Video OCR" help="AMP Video OCR JSON file" ></param>
+  </inputs>
+  <outputs>
+    <data name="amp_vocr_csv" format="csv" label="AMP Video OCR CSV Converted"/>
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Convert AMP Video OCR JSON file to CSV file.
+
+  </help>
+</tool>
