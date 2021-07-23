@@ -125,6 +125,92 @@ class TestCloudAuthz(BaseTest):
             assert stored_obj.authn.id == user_authnz_token.id
 
 
+class TestDataset(BaseTest):
+
+    # def test_table(self, cls_):
+    #    assert cls_.__tablename__ == 'dataset'
+
+    def test_columns(self, session, cls_, job):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        state = 'a'
+        deleted = True
+        purged = True
+        purgable = False
+        object_store_id = 'b'
+        external_filename = 'c'
+        _extra_files_path = 'd'
+        created_from_basename = 'e'
+        file_size = 1
+        total_size = 2
+
+        obj = cls_()
+        obj.job = job
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.state = state
+        obj.deleted = deleted
+        obj.purged = purged
+        obj.purgable = purgable
+        obj.object_store_id = object_store_id
+        obj.external_filename = external_filename
+        obj._extra_files_path = _extra_files_path
+        obj.created_from_basename = created_from_basename
+        obj.file_size = file_size
+        obj.total_size = total_size
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.job_id == job.id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.state == state
+            assert stored_obj.deleted == deleted
+            assert stored_obj.purged == purged
+            assert stored_obj.purgable == purgable
+            assert stored_obj.object_store_id == object_store_id
+            assert stored_obj.external_filename == external_filename
+            assert stored_obj._extra_files_path == _extra_files_path
+            assert stored_obj.created_from_basename == created_from_basename
+            assert stored_obj.file_size == file_size
+            assert stored_obj.total_size == total_size
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        job,
+        dataset_permission,
+        history_dataset_association,
+        library_dataset_dataset_association,
+        dataset_hash,
+        dataset_source,
+        model,
+    ):
+        obj = cls_()
+        obj.job = job
+        obj.actions.append(dataset_permission)
+        obj.history_associations.append(history_dataset_association)  # TODO: mappend via backref, map explicitly after HDA is mapped
+        obj.library_associations.append(library_dataset_dataset_association)  # TODO: mappend via backref, map explicitly after LDDA is mapped
+        obj.hashes.append(dataset_hash)
+        obj.sources.append(dataset_source)
+
+        hda = model.HistoryDatasetAssociation()
+        hda.purged = True
+        obj.history_associations.append(hda)
+
+        with dbcleanup(session, obj) as obj_id, dbcleanup(session, hda):
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.job.id == job.id
+            assert stored_obj.actions == [dataset_permission]
+            assert stored_obj.active_history_associations == [history_dataset_association]
+            assert stored_obj.purged_history_associations[0].id == hda.id
+            assert stored_obj.active_library_associations == [library_dataset_dataset_association]
+            assert stored_obj.hashes == [dataset_hash]
+            assert stored_obj.sources == [dataset_source]
+
+
 class TestDatasetHash(BaseTest):
 
     def test_table(self, cls_):
@@ -2847,6 +2933,12 @@ def dataset_collection_element(
     dce = model.DatasetCollectionElement(
         collection=dataset_collection, element=history_dataset_association)
     yield from dbcleanup_wrapper(session, dce)
+
+
+@pytest.fixture
+def dataset_hash(model, session):
+    dh = model.DatasetHash()
+    yield from dbcleanup_wrapper(session, dh)
 
 
 @pytest.fixture
