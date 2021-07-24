@@ -845,10 +845,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
         super().finish_job(job_state)
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params['k8s_namespace'])
-        if len(jobs.response['items']) != 1:
-            log.warning("More than one job matches selector. Possible configuration error"
-                        " in job id '%s'", job_state.job_id)
-        job = Job(self._pykube_api, jobs.response['items'][0])
-        if job_state.job_wrapper.guest_ports:
-            self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
-        self.__cleanup_k8s_job(job)
+        if len(jobs.response['items']) > 1:
+            log.warning("More than one job matches selector: %s. Possible configuration error"
+                        " in job id '%s'" % (jobs.response['items'], job_state.job_id))
+        elif len(jobs.response['items']) == 0:
+            log.warning("No k8s job found which matches job id '%s'. Ignoring...", job_state.job_id)
+        else:
+            job = Job(self._pykube_api, jobs.response['items'][0])
+            if job_state.job_wrapper.guest_ports:
+                self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
+            self.__cleanup_k8s_job(job)
