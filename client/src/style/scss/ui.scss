@@ -38,6 +38,13 @@ $ui-margin-horizontal: $margin-h;
 $ui-margin-horizontal-small: $margin-h * 0.5;
 $ui-margin-horizontal-large: $margin-v * 2;
 
+.ui-autocomplete {
+    max-height: 9.5rem;
+    position: fixed;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 .ui-modal {
     display: none;
     overflow: auto;

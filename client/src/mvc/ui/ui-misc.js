@@ -105,9 +105,7 @@ export var Input = Backbone.View.extend({
         var datalist = this.model.get("datalist");
         if (Array.isArray(datalist) && datalist.length > 0) {
             this.$el.autocomplete({
-                source: function (request, response) {
-                    response(self.model.get("datalist"));
-                },
+                source: self.model.get("datalist"),
                 change: function () {
                     self._onchange();
                 },
