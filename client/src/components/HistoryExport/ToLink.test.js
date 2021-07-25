@@ -12,6 +12,7 @@ const TEST_EXPORTS_URL = `/api/histories/${TEST_HISTORY_ID}/exports`;
 const TEST_JOB_ID = "test1234job";
 
 jest.mock("components/JobStates/wait");
+jest.mock("../History/caching");
 
 describe("ToLink.vue", () => {
     let axiosMock;
