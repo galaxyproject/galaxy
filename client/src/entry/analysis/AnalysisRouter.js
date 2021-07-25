@@ -152,8 +152,7 @@ export const getAnalysisRouter = (Galaxy) => {
 
         show_user_form: function (form_id) {
             const Galaxy = getGalaxyInstance();
-            const model = getUserPreferencesModel();
-            model.user_id = Galaxy.params.id;
+            const model = getUserPreferencesModel(Galaxy.params.id);
             this.page.display(new FormWrapper.View(_.extend(model[form_id], { active_tab: "user" })));
         },
 
