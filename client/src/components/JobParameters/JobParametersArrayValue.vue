@@ -2,11 +2,7 @@
     <div>
         <ul style="padding-inline-start: 25px">
             <li v-for="(elVal, pvIndex) in parameter_value" :key="pvIndex">
-                <span v-if="elVal.src == 'hda'">
-                    <a :href="appRoot() + 'datasets/' + elVal.id + '/show_params'">
-                        {{ elVal.hid }}: {{ elVal.name }}
-                    </a>
-                </span>
+                <workflow-invocation-data-contents v-if="['hda', 'hdca'].includes(elVal.src)" :data_item="elVal" />
                 <span v-else> {{ elVal.hid }}: {{ elVal.name }} </span>
             </li>
         </ul>
@@ -16,12 +12,17 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 
+import WorkflowInvocationDataContents from "components/WorkflowInvocationState/WorkflowInvocationDataContents";
+
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        WorkflowInvocationDataContents,
+    },
     props: {
         parameter_value: {
             type: Array,
@@ -30,6 +31,11 @@ export default {
     methods: {
         appRoot: function () {
             return getAppRoot();
+        },
+    },
+    methods: {
+        hidLabel(element) {
+            return elVal.hid ? ` ${element.hid} : ${element.name}` : element.name;
         },
     },
 };

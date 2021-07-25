@@ -665,12 +665,14 @@ def summarize_job_parameters(trans, job):
                 elif input.type == "data":
                     value = []
                     for element in listify(param_values[input.name]):
-                        if element.history_content_type == "dataset":
+                        encoded_id = trans.security.encode_id(element.id)
+                        if isinstance(element, model.DatasetInstance):
                             hda = element
-                            encoded_id = trans.security.encode_id(hda.id)
                             value.append({"src": "hda", "id": encoded_id, "hid": hda.hid, "name": hda.name})
+                        elif isinstance(element, model.DatasetCollectionElement):
+                            value.append({'src': "dce", "id": encoded_id, "name": element.element_identifier})
                         else:
-                            value.append({"hid": element.hid, "name": element.name})
+                            value.append({"src": "hdca", "id": encoded_id, "hid": element.hid, "name": element.name})
                     rval.append(dict(text=input.label, depth=depth, value=value))
                 elif input.visible:
                     if hasattr(input, "label") and input.label:

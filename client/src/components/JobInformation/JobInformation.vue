@@ -1,8 +1,6 @@
 <template>
     <div>
         <h3>Job Information</h3>
-        <job-outputs v-if="job" :jobOutputs="job.outputs" />
-        <job-outputs v-if="job" :jobOutputs="job.output_collections" />
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
                 <tr v-if="job && job.tool_id">
@@ -66,6 +64,7 @@
                 </tr>
             </tbody>
         </table>
+        <job-outputs v-if="job" :job-outputs="{ ...job.outputs, ...job.output_collections }" :title="`Job Outputs`" />
     </div>
 </template>
 
