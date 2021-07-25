@@ -1,11 +1,11 @@
 <template>
     <div>
-        <ul style="padding-inline-start: 25px">
-            <li v-for="(elVal, pvIndex) in parameter_value" :key="pvIndex">
+        <tr v-for="(elVal, pvIndex) in parameter_value" :key="pvIndex">
+            <td>
                 <workflow-invocation-data-contents v-if="['hda', 'hdca'].includes(elVal.src)" :data_item="elVal" />
                 <span v-else> {{ elVal.hid }}: {{ elVal.name }} </span>
-            </li>
-        </ul>
+            </td>
+        </tr>
     </div>
 </template>
 
