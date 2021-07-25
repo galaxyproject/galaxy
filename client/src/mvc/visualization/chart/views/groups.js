@@ -5,9 +5,10 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
-import Form from "mvc/form/form-view";
 import Repeat from "mvc/form/form-repeat";
 import FormData from "mvc/form/form-data";
+import FormDisplay from "components/Form/FormDisplay";
+import { appendVueComponent } from "utils/mountVueComponent";
 
 var GroupView = Backbone.View.extend({
     initialize: function (app, options) {
@@ -66,18 +67,15 @@ var GroupView = Backbone.View.extend({
                             value: data_columns,
                         });
                         self.chart.state("ok", "Metadata initialized...");
-                        self.form = new Form({
+                        const instance = appendVueComponent(self.$el, FormDisplay, {
                             inputs: inputs,
-                            onchange: function () {
-                                self.group.set(self.form.data.create());
-                                self.chart.set("modified", true);
-                                self.chart.trigger("redraw");
-                            },
                         });
-                        self.group.set(self.form.data.create());
-                        self.$el.empty().append(self.form.$el);
+                        instance.$on("onChange", (data) => {
+                            self.group.set(data);
+                            self.chart.set("modified", true);
+                            self.chart.trigger("redraw");
+                        });
                         process.resolve();
-                        self.chart.trigger("redraw");
                     },
                 });
             });
