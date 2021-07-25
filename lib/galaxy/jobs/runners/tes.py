@@ -62,9 +62,9 @@ class TESJobRunner(AsynchronousJobRunner):
         job_id = data["id"]
         return job_id
 
-    def _get_job(self, master_addr, job_id):
+    def _get_job(self, master_addr, job_id, view = "MINIMAL"):
         url = master_addr + "/v1/tasks/" + str(job_id)
-        r = requests.get(url)
+        r = requests.get(url,params={'view' : view})
         print(r.text)
         return r.json()
 
@@ -84,6 +84,7 @@ class TESJobRunner(AsynchronousJobRunner):
             endpoint_base = "%s" + \
                             self.app.config.nginx_upload_job_files_path + \
                             "?job_id=%s&job_key=%s"
+        
         files_endpoint = endpoint_base % (
             self.galaxy_url,
             encoded_job_id,
@@ -158,24 +159,43 @@ class TESJobRunner(AsynchronousJobRunner):
         from shlex import split
         commands = split(commands)
         other_inputs = job_wrapper.extra_filenames
-        # script_path = commands[1]
-        # final_commands = ["pip", "install", "galaxy-lib"]
-        # for cmd in commands:
-        #     final_commands.append(cmd)
 
-        # for tool_name in tool_names:
-        #     execution_script["inputs"].append({"url": tool_dir + tool_name, "path": tool_dir + tool_name})
         remote_container = self._find_container(job_wrapper)
         remote_image = "python"
 
         if(hasattr(remote_container, "container_id")):
             remote_image = remote_container.container_id
 
-        tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")
-        if os.path.exists(tool_script):
-            client_inputs_list.append({"paths": tool_script})
+        # tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")
+        # if os.path.exists(tool_script):
+        #     client_inputs_list.append({"paths": tool_script})
 
-        final_commands = ["/bin/bash", client_inputs_list[-1]["paths"]]
+        final_commands = []
+        file_creation = []
+
+        command_line = build_command(
+                self,
+                job_wrapper=job_wrapper,
+                include_metadata=False,
+                create_tool_working_directory=False,
+                include_work_dir_outputs=False,
+                remote_job_directory=job_wrapper.working_directory,
+            )
+
+        for output_f in output_files:
+            head_tail = os.path.split(output_f)
+            file_creation.extend(['mkdir', '-p', head_tail[0], '&&',  'touch', output_f, '&&'])
+
+        final_commands.extend(["/bin/bash", client_inputs_list[-1]["paths"]])
+        staging_up_command = ["python", "/inputs/staging.py", client_args['files_endpoint']]
+
+        for output_path in output_files:
+            staging_up_command.append(output_path)
+        
+        for output_path in other_inputs:
+            staging_up_command.append(output_path)
+
+        file_staging_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "util/file-staging.py")
 
         referenced_tool_files = self.find_referenced_subfiles(tool_dir, job_wrapper.command_line, other_inputs)
         env_variables = job_wrapper.environment_variables
@@ -186,25 +206,39 @@ class TESJobRunner(AsynchronousJobRunner):
             "outputs": [],
             "executors": [
                 {
+                    "workdir": job_wrapper.working_directory,
                     "image": remote_image,
-                    "command": final_commands,
+                    "command": command_line.split(),
+                },
+                {
+                    "workdir" : job_wrapper.working_directory,
+                    "image" : "file-staging",
+                    "command" : staging_up_command
                 }
-            ]
+            ],
+            "volumes": [job_wrapper.working_directory]
         }
+        
+
 
         for input in referenced_tool_files:
             execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + input, "path": input})
 
+        for root, _ , files in os.walk(job_wrapper.working_directory):
+            for file in files:
+                execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + os.path.join(root, file), "path": os.path.join(root, file)})
+        
+        execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + file_staging_path, "path": "/inputs/staging.py"})
         for input in client_inputs_list:
             execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + input["paths"], "path": input["paths"]})
 
         for output in output_files:
-            # execution_script["inputs"].append({"url": output, "path": output})
+            # execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + output, "path": output})
             execution_script["outputs"].append({"url": output, "path": output})
 
-        for output in other_inputs:
-            execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + output, "path": output})
-            execution_script["outputs"].append({"url": output, "path": output})
+        # for output in other_inputs:
+        #     execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + output, "path": output})
+            # execution_script["outputs"].append({"url": output, "path": output})
 
         return execution_script
 
@@ -274,15 +308,36 @@ class TESJobRunner(AsynchronousJobRunner):
 
     def _concat_job_log(self, data, key):
         s = ''
-        # for i, log in enumerate(data['logs']):
-        #     s += 'Step #{}\n'.format(i)
-        #     s += log.get(key, '')
-        return s
+        try:
+            logs_data = data.get('logs')
+            for log in logs_data:
+                # s += 'Step #{}\n'.format(i)
+                actual_log = log.get('logs')
+                for log_output in actual_log:
+                    try:
+                        s += log_output[key] + "\n"
+                    except:
+                        s += ''
+            return s
+
+        except:
+            return s
 
     def _concat_exit_codes(self, data):
-        # TODO TES doesn't actually return the exit code yet
-        return '0'
-        # return ','.join([str(l['exitcode']) for l in data['logs']])
+        s = '0'
+        return s
+        try:
+            logs_data = data.get('logs')
+            for log in logs_data:
+                actual_log = log.get('logs')
+                for log_output in actual_log:
+                    try:
+                        s = (s or int(log_output["exit_code"]))
+                    except:
+                        s = 1
+        except:
+            s = 1
+        return str(s)
 
     def check_watched_item(self, job_state):
         """
@@ -293,11 +348,12 @@ class TESJobRunner(AsynchronousJobRunner):
         galaxy_id_tag = job_state.job_wrapper.get_id_tag()
         master_addr = job_state.job_wrapper.job_destination.params.get("tes_master_addr")
 
-        data = self._get_job(master_addr, job_id)
+        data = self._get_job(master_addr, job_id, "FULL")
+        print(data)
         state = data['state']
-        job_running = state == "RUNNING"
-        job_complete = state == "COMPLETE"
-        job_failed = "ERROR" or "CANCELED" in state
+        job_running = state == "RUNNING" or state == "INITIALIZING"
+        job_complete = state == 'COMPLETE'
+        job_failed = ("ERROR" in state) or state == "CANCELED"
 
         # run_results = client.full_status()
         # remote_metadata_directory = run_results.get("metadata_directory", None)
@@ -343,6 +399,8 @@ class TESJobRunner(AsynchronousJobRunner):
 
         if job_failed:
             log.debug("(%s/%s) job failed" % (galaxy_id_tag, job_id))
+            with open(job_state.error_file, 'w') as fh:
+                    fh.write(self._concat_job_log(data, 'stderr'))
             self.mark_as_failed(job_state)
             return
 
