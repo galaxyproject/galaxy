@@ -1,23 +1,22 @@
 <template>
     <div>
         <div v-for="(elVal, pvIndex) in parameter_value" :key="pvIndex">
-            <workflow-invocation-data-contents v-if="['hda', 'hdca'].includes(elVal.src)" :data_item="elVal" />
+            <generic-history-content v-if="['hda', 'hdca'].includes(elVal.src)" :data_item="elVal" />
             <span v-else> {{ elVal.hid }}: {{ elVal.name }} </span>
         </div>
     </div>
 </template>
 
 <script>
-import WorkflowInvocationDataContents from "components/WorkflowInvocationState/WorkflowInvocationDataContents";
-
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        WorkflowInvocationDataContents,
+        GenericHistoryContent,
     },
     props: {
         parameter_value: {

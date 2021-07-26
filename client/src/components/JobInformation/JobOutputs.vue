@@ -8,17 +8,13 @@
                     <th>Dataset</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody v-if="jobOutputs">
                 <tr v-for="(value, name) in nonHiddenOutputs" :key="name">
                     <td>
                         {{ value[0].label || name }}
                     </td>
                     <td>
-                        <workflow-invocation-data-contents
-                            v-for="(item, index) in value"
-                            :key="index"
-                            :data_item="item.value"
-                        />
+                        <generic-history-content v-for="(item, index) in value" :key="index" :data_item="item.value" />
                     </td>
                 </tr>
             </tbody>
@@ -27,11 +23,11 @@
 </template>
 
 <script>
-import WorkflowInvocationDataContents from "components/WorkflowInvocationState/WorkflowInvocationDataContents";
+import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
 
 export default {
     components: {
-        WorkflowInvocationDataContents,
+        GenericHistoryContent,
     },
     props: {
         jobOutputs: Object,
