@@ -64,7 +64,6 @@
                 </tr>
             </tbody>
         </table>
-        <job-outputs v-if="job" :job-outputs="{ ...job.outputs, ...job.output_collections }" :title="`Job Outputs`" />
     </div>
 </template>
 
@@ -73,7 +72,6 @@ import { mapCacheActions } from "vuex-cache";
 import { getAppRoot } from "onload/loadConfig";
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
-import JobOutputs from "./JobOutputs.vue";
 import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
@@ -85,7 +83,6 @@ export default {
         DecodedId,
         UtcDate,
         CopyToClipboard,
-        JobOutputs,
     },
     props: {
         job_id: {

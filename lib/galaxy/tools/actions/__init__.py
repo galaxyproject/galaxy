@@ -774,7 +774,7 @@ class DefaultToolAction:
             # TODO: figure out why can't pass dataset_id here.
             job.add_input_dataset(name, dataset=dataset)
 
-    def get_output_name(self, output, dataset, tool, on_text, trans, incoming, history, params, job_params):
+    def get_output_name(self, output, dataset=None, tool=None, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None):
         if output.label:
             params['tool'] = tool
             params['on_string'] = on_text
