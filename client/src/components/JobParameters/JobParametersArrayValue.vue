@@ -10,8 +10,6 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-
 import WorkflowInvocationDataContents from "components/WorkflowInvocationState/WorkflowInvocationDataContents";
 
 import Vue from "vue";
@@ -26,16 +24,6 @@ export default {
     props: {
         parameter_value: {
             type: Array,
-        },
-    },
-    methods: {
-        appRoot: function () {
-            return getAppRoot();
-        },
-    },
-    methods: {
-        hidLabel(element) {
-            return elVal.hid ? ` ${element.hid} : ${element.name}` : element.name;
         },
     },
 };
