@@ -32,7 +32,7 @@ def test_custom_filters():
     tool_filters = filters["tool"]
     # TODO: the fact that -1 is the custom filter is an implementation
     # detail that should not be tested here.
-    assert tool_filters[-1].__doc__ == "Test Filter Tool"
+    assert tool_filters[-1].__doc__ == "Test Filter Tool", tool_filters
 
     section_filters = filters["section"]
     assert section_filters[0].__doc__ == "Test Filter Section"
@@ -50,7 +50,8 @@ def filter_factory(config_dict=None):
             tool_label_filters=["filtermod:filter_label_1", "filtermod:filter_label_2"],
         )
     config = Bunch(**config_dict)
-    config.toolbox_filter_base_modules = "galaxy.tools.filters,unit.tools.filter_modules"
+    parent_module_name = '.'.join(__name__.split('.')[:-1])
+    config.toolbox_filter_base_modules = f"galaxy.tool_util.toolbox.filters,{parent_module_name}.filter_modules"
     app = Bunch(config=config)
     toolbox = Bunch(app=app)
     return FilterFactory(toolbox)
