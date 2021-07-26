@@ -31,7 +31,17 @@
                 </div>
             </JobDetailsProvider>
             <JobProblemProvider :jobid="dataset.creating_job" v-slot="{ result, loading }">
-                <h3 class="common_problems"></h3>
+                <div v-if="result.has_duplicate_inputs || result.has_empty_inputs">
+                    <h3 class="common_problems">Detected Common Potential Problems</h3>
+                    <p v-if="result.has_empty_inputs">
+                        The tool was executed with one or more empty input datasets. This frequently
+                        results in tool errors due to problematic input choices.
+                    <p>
+                    <p v-if="result.has_duplicate_inputs">
+                        The tool was executed with one or more duplicate input datasets. This frequently
+                        results in tool errors due to problematic input choices.
+                    <p>
+                </div>
             </JobProblemProvider>
             <h3>Troubleshooting</h3>
             <p>
