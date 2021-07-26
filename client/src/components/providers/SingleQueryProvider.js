@@ -1,7 +1,16 @@
-export const SingleQueryProvider = (cfg = {}) => {
-    const { resultName = "result", lookup } = cfg;
+import hash from "object-hash";
 
-    let cached_result;
+/**
+ * Builds a provider that gets its result from a single promise-based query function and
+ * caches the result of lookup for subsequent instantitations.
+ *
+ * @param   {Function}  lookup  async function that loads the result, paramters will be an object
+ *                              whose properties are the attributes assigned to the provider component
+ * @return  {VueComponentOptions} Vue component options definition
+ */
+export const SingleQueryProvider = (lookup) => {
+    const promiseCache = new Map();
+    const resultCache = new Map();
 
     return {
         data() {
@@ -13,17 +22,32 @@ export const SingleQueryProvider = (cfg = {}) => {
             loading() {
                 return this.result === undefined;
             },
+            cacheKey() {
+                hash(this.$attrs || {});
+            },
         },
-        async created() {
-            if (undefined === cached_result) {
-                cached_result = await lookup();
+        mounted() {
+            const cachedResult = resultCache.get(this.cacheKey);
+            if (cachedResult) {
+                this.result = cachedResult;
+                return;
             }
-            this.result = cached_result;
+
+            let lookupPromise = promiseCache.get(this.cacheKey);
+            if (!lookupPromise) {
+                lookupPromise = lookup(this.$attrs);
+                promiseCache.set(this.cacheKey, lookupPromise);
+            }
+
+            lookupPromise.then((result) => {
+                resultCache.set(this.cacheKey, result);
+                this.result = result;
+            });
         },
         render() {
             return this.$scopedSlots.default({
                 loading: this.loading,
-                [resultName]: this.result,
+                result: this.result,
             });
         },
     };
