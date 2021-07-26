@@ -378,7 +378,12 @@ export const getAnalysisRouter = (Galaxy) => {
 
         show_dataset_edit_attributes: function (params) {
             const datasetId = params.dataset_id;
-            this._display_vue_helper(DatasetAttributes, { datasetId: datasetId });
+            if (datasetId) {
+                this._display_vue_helper(DatasetAttributes, { datasetId: datasetId });
+            } else {
+                // can happen with faulty navigating, reloading datasets/edit
+                this._loadCenterIframe("welcome");
+            }
         },
 
         show_dataset_error: function (params) {

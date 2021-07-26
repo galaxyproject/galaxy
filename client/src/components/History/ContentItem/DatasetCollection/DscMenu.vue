@@ -1,5 +1,4 @@
 <template>
-<<<<<<< HEAD
     <PriorityMenu>
         <b-dropdown no-caret right variant="link" size="sm" boundary="window" toggle-class="p-1 pl-3">
             <template v-slot:button-content>
