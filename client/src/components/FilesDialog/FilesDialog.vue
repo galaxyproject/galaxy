@@ -105,9 +105,6 @@ export default {
         },
     },
     methods: {
-        allSelected() {
-            return this.items.some((item) => this.model.exists(item.id));
-        },
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
         formatRows() {
             for (const item of this.items) {
@@ -141,6 +138,11 @@ export default {
             this.modalShow = false;
             this.callback(results);
         },
+        /** check if all objects in this folders are selected **/
+        allSelected() {
+            return this.items.some((item) => this.model.exists(item.id));
+        },
+        /** select all files in current folder**/
         selectAll: function () {
             this.items.forEach((item) => this.model.add(item));
             this.hasValue = this.model.count() > 0;
