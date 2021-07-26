@@ -9,7 +9,7 @@
             <data-dialog-search v-model="filter" />
         </template>
         <template v-if="fileMode && filesOnly && this.multiple && items.length" v-slot:selectAll>
-            <b-button @click="selectAll" variant="light">
+            <b-button @click="toggleSelectAll()" variant="light">
                 <font-awesome-icon icon="th-large" /> {{ `${allSelected() ? "Unselect" : "Select"}` }} entire folder
             </b-button>
         </template>
@@ -140,11 +140,19 @@ export default {
         },
         /** check if all objects in this folders are selected **/
         allSelected() {
-            return this.items.some((item) => this.model.exists(item.id));
+            return this.items.every((item) => this.model.exists(item.id));
         },
         /** select all files in current folder**/
-        selectAll: function () {
-            this.items.forEach((item) => this.model.add(item));
+        toggleSelectAll: function () {
+          const allSelected = this.allSelected()
+            for (const item of this.items) {
+                // add item if it's not added already
+                if (allSelected) {
+                    this.model.add(item);
+                } else if (!this.model.exists(item.id)) {
+                    this.model.add(item);
+                }
+            }
             this.hasValue = this.model.count() > 0;
             this.formatRows();
         },
