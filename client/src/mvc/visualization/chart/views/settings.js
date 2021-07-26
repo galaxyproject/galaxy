@@ -2,8 +2,8 @@
 import _ from "underscore";
 import Backbone from "backbone";
 import Utils from "utils/utils";
-import FormDisplay from "components/Form/FormDisplay";
 import FormData from "mvc/form/form-data";
+import FormDisplay from "components/Form/FormDisplay";
 import { appendVueComponent } from "utils/mountVueComponent";
 
 export default Backbone.View.extend({
