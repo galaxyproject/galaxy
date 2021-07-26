@@ -11,13 +11,14 @@ import tempfile
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import List, NamedTuple, Type, Union
+from typing import cast, Dict, List, NamedTuple, Optional, Tuple, Type, Union
 from urllib.parse import unquote_plus
 
 import packaging.version
 import webob.exc
 from lxml import etree
 from mako.template import Template
+from pkg_resources import resource_string
 from webob.compat import cgi_FieldStorage
 
 from galaxy import (
@@ -190,6 +191,9 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "substitutions1": packaging.version.parse("1.0.1"),
     "winSplitter": packaging.version.parse("1.0.1"),
 }
+
+BIOTOOLS_MAPPING_CONTENT = resource_string(__name__, 'biotools_mappings.tsv').decode("UTF-8")
+BIOTOOLS_MAPPING: Dict[str, str] = dict([cast(Tuple[str, str], tuple(x.split("\t"))) for x in BIOTOOLS_MAPPING_CONTENT.splitlines() if not x.startswith("#")])
 
 
 class safe_update(NamedTuple):
@@ -960,7 +964,13 @@ class Tool(Dictifiable):
         self.containers = containers
 
         self.citations = self._parse_citations(tool_source)
-        self.xrefs = tool_source.parse_xrefs()
+        xrefs = tool_source.parse_xrefs()
+        has_biotools_reference = any(x["reftype"] == "bio.tools" for x in xrefs)
+        if not has_biotools_reference:
+            legacy_biotools_ref = self.legacy_biotools_external_reference
+            if legacy_biotools_ref is not None:
+                xrefs.append({"value": legacy_biotools_ref, "reftype": "bio.tools"})
+        self.xrefs = xrefs
 
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
@@ -1397,6 +1407,25 @@ class Tool(Dictifiable):
             self.sharable_url = get_tool_shed_repository_url(
                 self.app, self.tool_shed, self.repository_owner, self.repository_name
             )
+
+    @property
+    def legacy_biotools_external_reference(self) -> Optional[str]:
+        """Return a bio.tools ID if any of tool's IDs are BIOTOOLS_MAPPING."""
+        for tool_id in self.all_ids:
+            if tool_id in BIOTOOLS_MAPPING:
+                return BIOTOOLS_MAPPING[tool_id]
+        return None
+
+    @property
+    def biotools_reference(self) -> Optional[str]:
+        """Return a bio.tools ID if external reference to it is found.
+
+        If multiple bio.tools references are found, return just the first one.
+        """
+        for xref in self.xrefs:
+            if xref["reftype"] == "bio.tools":
+                return xref["value"]
+        return None
 
     @property
     def help(self):
