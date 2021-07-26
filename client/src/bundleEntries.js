@@ -9,7 +9,7 @@
 
 /* jquery and _ are exposed via expose-loader while several external plugins rely on these */
 import $ from "jquery";
-import _ from "expose-loader?exposes=_,underscore!underscore"; // eslint-disable-line no-unused-vars
+import _ from "underscore"; // eslint-disable-line no-unused-vars
 
 export { getGalaxyInstance, setGalaxyInstance } from "app";
 import { TracksterUIView } from "viz/trackster";
