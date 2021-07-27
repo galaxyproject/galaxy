@@ -36,7 +36,7 @@
     "decode-uri-component": "^0.2.0",
     "deep-diff": "^1.0.2",
     "deep-equal": "^2.0.5",
-    "elkjs": "^0.6.2",
+    "elkjs": "^0.7.1",
     "flush-promises": "^1.0.2",
     "glob": "^7.1.6",
     "handsontable": "^2.0.0",
