@@ -20,6 +20,7 @@ describe("SelectionDialog.vue", () => {
             slots: {
                 options: "<tree-options />",
                 search: "<cool-search />",
+                selectAll: "<select-all />",
             },
             stubs: {
                 "tree-options": { template: "<div id='tree-options'/>" },
