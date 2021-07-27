@@ -148,9 +148,9 @@ export default {
         toggleSelectAll: function () {
             for (const item of this.items) {
                 if (this.allSelected) {
-                //  model.add() toggles select. Since all items are selected, we unselect all on this page
+                    //  model.add() toggles select. Since all items are selected, we unselect all on this page
                     this.model.add(item);
-                //  add item if it's not added already
+                    //  add item if it's not added already
                 } else if (!this.model.exists(item.id)) {
                     this.model.add(item);
                 }
