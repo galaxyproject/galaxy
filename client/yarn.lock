@@ -8949,10 +8949,10 @@ object.reduce@^1.0.0:
     for-own "^1.0.0"
     make-iterator "^1.0.0"
 
-observable-fns@^0.5.1:
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/observable-fns/-/observable-fns-0.5.1.tgz#9b56478690dd0fa8603e3a7e7d2975d88bca0904"
-  integrity sha512-wf7g4Jpo1Wt2KIqZKLGeiuLOEMqpaOZ5gJn7DmSdqXgTdxRwSdBhWegQQpPteQ2gZvzCKqNNpwb853wcpA0j7A==
+observable-fns@^0.6.1:
+  version "0.6.1"
+  resolved "https://registry.yarnpkg.com/observable-fns/-/observable-fns-0.6.1.tgz#636eae4fdd1132e88c0faf38d33658cc79d87e37"
+  integrity sha512-9gRK4+sRWzeN6AOewNBTLXir7Zl/i3GB6Yl26gK4flxz8BXVpD3kt8amREmWNb0mxYOGDotvE5a4N+PtGGKdkg==
 
 obuf@^1.0.0, obuf@^1.1.2:
   version "1.1.2"
@@ -10026,6 +10026,11 @@ process-nextick-args@^2.0.0, process-nextick-args@~2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/process-nextick-args/-/process-nextick-args-2.0.1.tgz#7820d9b16120cc55ca9ae7792680ae7dba6d7fe2"
   integrity sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==
+
+process@^0.11.10:
+  version "0.11.10"
+  resolved "https://registry.yarnpkg.com/process/-/process-0.11.10.tgz#7332300e840161bda3e69a1d1d91a7d4bc16f182"
+  integrity sha1-czIwDoQBYb2j5podHZGn1LwW8YI=
 
 progress@^2.0.0:
   version "2.0.3"
@@ -12191,15 +12196,15 @@ text-table@0.2.0, text-table@^0.2.0:
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
-threads@^1.6.3:
-  version "1.6.4"
-  resolved "https://registry.yarnpkg.com/threads/-/threads-1.6.4.tgz#cf8ad992d6014b492f20cf3566048475a3045192"
-  integrity sha512-A+9MQFAUha9W8MjIPmrvETy98qVmZFr5Unox9D95y7kvz3fBpGiFS7JOZs07B2KvTHoRNI5MrGudRVeCmv4Alw==
+threads@^1.6.5:
+  version "1.6.5"
+  resolved "https://registry.yarnpkg.com/threads/-/threads-1.6.5.tgz#5cee7f139e3e147c5a64f0134844ee92469932a5"
+  integrity sha512-yL1NN4qZ25crW8wDoGn7TqbENJ69w3zCEjIGXpbqmQ4I+QHrG8+DLaZVKoX74OQUXWCI2lbbrUxDxAbr1xjDGQ==
   dependencies:
     callsites "^3.1.0"
     debug "^4.2.0"
     is-observable "^2.1.0"
-    observable-fns "^0.5.1"
+    observable-fns "^0.6.1"
   optionalDependencies:
     tiny-worker ">= 2"
 

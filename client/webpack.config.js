@@ -212,6 +212,7 @@ module.exports = (env = {}, argv = {}) => {
                 _: "underscore",
                 Backbone: "backbone",
                 Galaxy: ["app", "monitor"],
+                process: "process/browser",
             }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
