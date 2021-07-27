@@ -1,7 +1,6 @@
 <%def name="load_default_js()">
 ${h.css( 'base' ) }
-${h.dist_js('libs.chunk',
-            'base.chunk',
+${h.dist_js('libs.bundled',
             'generic.bundled')}
 </%def>
 
