@@ -123,16 +123,6 @@ module.exports = (env = {}, argv = {}) => {
                         },
                     ],
                 },
-                {
-                    test: /\.(png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)(\?.*$|$)/,
-                    use: {
-                        loader: "file-loader",
-                        options: {
-                            outputPath: "assets",
-                            publicPath: "../dist/assets/",
-                        },
-                    },
-                },
                 // Alternative to setting window.bundleEntries
                 // Just import "bundleEntries" in any endpoint that needs
                 // access to these globals, or even-better, make
