@@ -55,7 +55,7 @@
                         </a>
                     </b>
                 </p>
-                <h3 class="mb-2">Issue Report</h3>
+                <h3 class="mb-3">Issue Report</h3>
                 <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
                 <b-alert v-for="resultMessage in resultMessages" :variant="resultMessage[1]" show>{{
                     resultMessage[0]
@@ -67,7 +67,7 @@
                     :area="true"
                     title="Please provide detailed information on the activities leading to this issue:"
                 />
-                <b-button variant="primary" @click="submit(dataset, user.email)" class="mt-2">
+                <b-button variant="primary" @click="submit(dataset, user.email)" class="mt-3">
                     <font-awesome-icon icon="bug" class="mr-1" />Report
                 </b-button>
             </div>
