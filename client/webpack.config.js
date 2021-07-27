@@ -15,7 +15,6 @@ module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
 
-    console.debug("Build mode is ", targetEnv)
     const buildconfig = {
         mode: targetEnv,
         entry: {
@@ -190,10 +189,6 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.(txt|tmpl)$/,
                     loader: "raw-loader",
                 },
-                {
-                    test: /\.worker\.js$/,
-                    use: { loader: "worker-loader" },
-                },
             ],
         },
         resolveLoader: {
@@ -226,7 +221,7 @@ module.exports = (env = {}, argv = {}) => {
             // proxy *everything* to the galaxy server
             // someday, this can be a more limited set -- e.g. `/api`, `/auth`
             port: 8081,
-            host: '0.0.0.0',
+            host: "0.0.0.0",
             proxy: {
                 "/": {
                     target: process.env.GALAXY_URL || "http://localhost:8080",
