@@ -131,6 +131,7 @@
     "babel-loader": "^8.2.2",
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
     "babel-plugin-transform-vue-template": "^0.4.2",
+    "buffer": "^6.0.3",
     "chai": "^4.2.0",
     "chokidar": "^3.5.2",
     "css-loader": "^5.1.3",
