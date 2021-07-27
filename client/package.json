@@ -72,7 +72,7 @@
     "slugify": "^1.4.0",
     "splitpanes": "2.3.6",
     "stream-browserify": "^3.0.0",
-    "threads": "^1.6.3",
+    "threads": "^1.6.5",
     "timers-browserify": "^2.0.12",
     "toastr": "^2.1.4",
     "underscore": "^1.10.2",
