@@ -10,7 +10,7 @@
         </template>
         <template v-if="fileMode && filesOnly && this.multiple && items.length" v-slot:selectAll>
             <b-button @click="toggleSelectAll()" variant="light">
-                <font-awesome-icon icon="th-large" /> {{ `${allSelected() ? "Unselect" : "Select"}` }} entire folder
+                <font-awesome-icon icon="th-large" /> {{ `${allSelected ? "Unselect" : "Select"}` }} entire folder
             </b-button>
         </template>
         <template v-slot:options>
@@ -79,6 +79,7 @@ export default {
     },
     data() {
         return {
+            allSelected: false,
             errorMessage: null,
             filter: null,
             items: [],
@@ -114,6 +115,7 @@ export default {
                 }
                 Vue.set(item, "_rowVariant", _rowVariant);
             }
+            this.allSelected = this.checkIfAllSelected();
         },
         /** Collects selected datasets in value array **/
         clicked: function (record) {
@@ -139,15 +141,14 @@ export default {
             this.callback(results);
         },
         /** check if all objects in this folders are selected **/
-        allSelected() {
+        checkIfAllSelected() {
             return this.items.every((item) => this.model.exists(item.id));
         },
         /** select all files in current folder**/
         toggleSelectAll: function () {
-          const allSelected = this.allSelected()
             for (const item of this.items) {
                 // add item if it's not added already
-                if (allSelected) {
+                if (this.allSelected) {
                     this.model.add(item);
                 } else if (!this.model.exists(item.id)) {
                     this.model.add(item);
