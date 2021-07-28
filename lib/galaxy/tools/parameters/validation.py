@@ -287,8 +287,7 @@ class InRangeValidator(Validator):
         super().validate(mincmp(float(value)) and maxcmp(float(value)), value_to_show=value)
 
 
-# TODO This could be a subclass of InRangeValidator
-class LengthValidator(Validator):
+class LengthValidator(InRangeValidator):
     """
     Validator that ensures the length of the provided string (value) is in a specific range
 
@@ -332,20 +331,12 @@ class LengthValidator(Validator):
         return cls(elem.get('message', None), elem.get('min', None), elem.get('max', None), elem.get('negate', 'false'))
 
     def __init__(self, message, length_min, length_max, negate):
-        if length_min is not None:
-            self.min = int(length_min)
-        else:
-            self.min = float('-inf')
-        if length_max is not None:
-            self.max = int(length_max)
-        else:
-            self.max = float('inf')
         if message is None:
-            message = f"Must {'not ' if negate == 'true' else ''}have length of at least {self.min} and at most {self.max}"
-        super().__init__(message, negate)
+            message = f"Must {'not ' if negate == 'true' else ''}have length of at least {length_min} and at most {length_max}"
+        super().__init__(message, range_min=length_min, range_max=length_max, negate=negate)
 
     def validate(self, value, trans=None):
-        super().validate(self.min <= len(value) <= self.max, trans, value_to_show=value)
+        super().validate(len(value), trans)
 
 
 class DatasetOkValidator(Validator):
@@ -426,7 +417,6 @@ class DatasetEmptyValidator(Validator):
     >>> sa_session.add(hist)
     >>> sa_session.flush()
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
-    >>> # TODO is there a better way than hardcoding 'test-data/'
     >>> empty_dataset = Dataset(external_filename=get_test_fname("empty.txt"))
     >>> empty_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', dataset=empty_dataset, sa_session=sa_session))
     >>> full_dataset = Dataset(external_filename=get_test_fname("1.tabular"))
@@ -465,6 +455,7 @@ class DatasetEmptyValidator(Validator):
 
     def validate(self, value, trans=None):
         if value:
+            log.error(f"EMPTY? value {value}")
             super().validate(value.get_size() != 0)
 
 
@@ -782,8 +773,10 @@ class MetadataInFileColumnValidator(Validator):
                 fields = line.split(split)
                 if metadata_column < len(fields):
                     self.valid_values.add(fields[metadata_column].strip())
+        log.error(f"self.valid_values {self.valid_values}")
 
     def validate(self, value, trans=None):
+        log.error(f"validate value {value} against self.valid_values {self.valid_values}")
         if not value:
             return
         super().validate(hasattr(value, "metadata") and value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values)
