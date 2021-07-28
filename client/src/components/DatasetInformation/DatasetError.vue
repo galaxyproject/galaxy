@@ -1,40 +1,44 @@
 <template>
-    <DatasetProvider :id="datasetId" v-slot="{ item: dataset }">
-        <JobDetailsProvider :jobid="dataset.creating_job" v-slot="{ result, loading }">
+    <DatasetProvider :id="datasetId" v-slot="{ item: dataset, loading: datasetLoading }">
+        <JobDetailsProvider
+            v-if="!datasetLoading"
+            :jobid="dataset.creating_job"
+            v-slot="{ result: jobDetails, loading }"
+        >
             <div v-if="!loading">
                 <div class="page-container edit-attr">
                     <div class="response-message"></div>
                 </div>
                 <h2>Dataset Error Report</h2>
                 <p>
-                    An error occurred while running the tool <b>{{ result.tool_id }}</b
+                    An error occurred while running the tool <b>{{ jobDetails.tool_id }}</b
                     >.
                 </p>
-                <div v-if="result.tool_stderr || result.job_stderr || result.job_messages">
+                <div v-if="jobDetails.tool_stderr || jobDetails.job_stderr || jobDetails.job_messages">
                     <h3>Details</h3>
                 </div>
-                <div v-if="result.job_messages">
+                <div v-if="jobDetails.job_messages">
                     <p>Execution resulted in the following messages:</p>
-                    <div v-for="(job_message, index) in result.job_messages" :key="index">
+                    <div v-for="(job_message, index) in jobDetails.job_messages" :key="index">
                         <pre class="rounded code">{{ job_message["desc"] }}</pre>
                     </div>
                 </div>
-                <div v-if="result.tool_stderr">
+                <div v-if="jobDetails.tool_stderr">
                     <p>Tool generated the following standard error:</p>
-                    <pre class="rounded code">{{ result.tool_stderr }}</pre>
+                    <pre class="rounded code">{{ jobDetails.tool_stderr }}</pre>
                 </div>
-                <div v-if="result.job_stderr">
+                <div v-if="jobDetails.job_stderr">
                     <p>Galaxy job runner generated the following standard error:</p>
-                    <pre class="rounded code">{{ result.job_stderr }}</pre>
+                    <pre class="rounded code">{{ jobDetails.job_stderr }}</pre>
                 </div>
-                <JobProblemProvider :jobid="dataset.creating_job" v-slot="{ result }">
-                    <div v-if="result && (result.has_duplicate_inputs || result.has_empty_inputs)">
+                <JobProblemProvider :jobid="dataset.creating_job" v-slot="{ result: jobProblems }">
+                    <div v-if="jobProblems && (jobProblems.has_duplicate_inputs || jobProblems.has_empty_inputs)">
                         <h3 class="common_problems">Detected Common Potential Problems</h3>
-                        <p v-if="result.has_empty_inputs">
+                        <p v-if="jobProblems.has_empty_inputs">
                             The tool was executed with one or more empty input datasets. This frequently results in tool
                             errors due to problematic input choices.
                         </p>
-                        <p v-if="result && result.has_duplicate_inputs">
+                        <p v-if="jobProblems.has_duplicate_inputs">
                             The tool was executed with one or more duplicate input datasets. This frequently results in
                             tool errors due to problematic input choices.
                         </p>
@@ -60,14 +64,19 @@
                     show
                     >{{ resultMessage[0] }}</b-alert
                 >
-                <FormElement v-if="!result.user_email" id="email" v-model="email" title="Please provide your email:" />
+                <FormElement
+                    v-if="!jobDetails.user_email"
+                    id="email"
+                    v-model="email"
+                    title="Please provide your email:"
+                />
                 <FormElement
                     id="message"
                     v-model="message"
                     :area="true"
                     title="Please provide detailed information on the activities leading to this issue:"
                 />
-                <b-button variant="primary" @click="submit(dataset, result.user_email)" class="mt-3">
+                <b-button variant="primary" @click="submit(dataset, jobDetails.user_email)" class="mt-3">
                     <font-awesome-icon icon="bug" class="mr-1" />Report
                 </b-button>
             </div>
