@@ -3231,7 +3231,7 @@ mapping:
 
       toolbox_filter_base_modules:
         type: str
-        default: galaxy.tools.filters,galaxy.tools.toolbox.filters
+        default: galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters
         required: false
         desc: |
           The base module(s) that are searched for modules for toolbox filtering

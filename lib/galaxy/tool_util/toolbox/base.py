@@ -10,7 +10,6 @@ from urllib.parse import urlparse
 
 from markupsafe import escape
 
-from galaxy.datatypes import sniff
 from galaxy.exceptions import (
     ConfigurationError,
     MessageException,
@@ -27,6 +26,7 @@ from galaxy.util import (
     get_charset_from_http_headers,
     listify,
     parse_xml,
+    stream_to_open_named_file,
     string_as_bool,
     unicodify,
 )
@@ -141,7 +141,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             log.debug('EDAM ontology file not present, downloading')
 
             page = urllib.request.urlopen('https://edamontology.org/EDAM.tsv')
-            sniff.stream_to_open_named_file(page, os.open(self.app.config.beta_edam_toolbox_ontology_path, os.O_WRONLY | os.O_CREAT), None, source_encoding=get_charset_from_http_headers(page.headers))
+            stream_to_open_named_file(page, os.open(self.app.config.beta_edam_toolbox_ontology_path, os.O_WRONLY | os.O_CREAT), None, source_encoding=get_charset_from_http_headers(page.headers))
 
         log.debug('Processing EDAM Terms')
         with open(self.app.config.beta_edam_toolbox_ontology_path, 'r') as handle:

@@ -1,4 +1,4 @@
-# TODO: this is largely copied from galaxy.tools.toolbox.galaxy and generalized, the tool-oriented watchers in that
+# TODO: this is largely copied from galaxy.tool_util.toolbox.galaxy and generalized, the tool-oriented watchers in that
 # module should probably be updated to use this where possible
 
 
