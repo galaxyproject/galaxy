@@ -118,7 +118,7 @@ class HistoryListGrid(grids.Grid):
             key="free-text-search", visible=False, filterable="standard")
     )
     global_actions = [
-        grids.GridAction("Import from file", dict(controller="", action="histories/import"))
+        grids.GridAction("Import history", dict(controller="", action="histories/import"))
     ]
     operations = [
         grids.GridOperation("Switch", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=True),

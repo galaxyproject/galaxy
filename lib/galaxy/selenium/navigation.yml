@@ -290,7 +290,7 @@ collection_builders:
 
 histories:
   labels:
-    import_button: 'Import from file'
+    import_button: 'Import history'
 
   sharing:
     selectors:
