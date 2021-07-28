@@ -21,7 +21,6 @@ echo 'Hello World' > out1
     </outputs>
     <tests>
         <!-- hg19 is in the test data table and hg38 not-->
-        <!-- TODO These tests fail if the same test data is used .. no idea why -->
         <test expect_failure="false">
             <param name="value" value="1.fasta" dbkey="hg19"/> 
             <param name="value_neg" value="2.fasta" dbkey="hg38"/>
