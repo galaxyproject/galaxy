@@ -1,5 +1,5 @@
 <template>
-    <textarea v-if="area" class="ui-textarea" v-model="currentValue"/>
+    <textarea v-if="area" class="ui-textarea" v-model="currentValue" />
     <input v-else class="ui-input" v-model="currentValue" />
 </template>
 <script>

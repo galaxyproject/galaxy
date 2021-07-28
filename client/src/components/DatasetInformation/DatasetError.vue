@@ -1,37 +1,33 @@
 <template>
-    <CurrentUser v-slot="{ user }">
-        <DatasetProvider :id="datasetId" v-slot="{ item: dataset, loading }">
+    <DatasetProvider :id="datasetId" v-slot="{ item: dataset }">
+        <JobDetailsProvider :jobid="dataset.creating_job" v-slot="{ result, loading }">
             <div v-if="!loading">
-                <JobDetailsProvider :jobid="dataset.creating_job" v-slot="{ result, loading }">
-                    <div v-if="!loading">
-                        <div class="page-container edit-attr">
-                            <div class="response-message"></div>
-                        </div>
-                        <h2>Dataset Error Report</h2>
-                        <p>
-                            An error occurred while running the tool <b>{{ result.tool_id }}</b
-                            >.
-                        </p>
-                        <div v-if="result.tool_stderr || result.job_stderr || result.job_messages">
-                            <h3>Details</h3>
-                        </div>
-                        <div v-if="result.job_messages">
-                            <p>Execution resulted in the following messages:</p>
-                            <div v-for="job_message in result.job_messages">
-                                <pre class="rounded code">{{ job_message["desc"] }}</pre>
-                            </div>
-                        </div>
-                        <div v-if="result.tool_stderr">
-                            <p>Tool generated the following standard error:</p>
-                            <pre class="rounded code">{{ result.tool_stderr }}</pre>
-                        </div>
-                        <div v-if="result.job_stderr">
-                            <p>Galaxy job runner generated the following standard error:</p>
-                            <pre class="rounded code">{{ result.job_stderr }}</pre>
-                        </div>
+                <div class="page-container edit-attr">
+                    <div class="response-message"></div>
+                </div>
+                <h2>Dataset Error Report</h2>
+                <p>
+                    An error occurred while running the tool <b>{{ result.tool_id }}</b
+                    >.
+                </p>
+                <div v-if="result.tool_stderr || result.job_stderr || result.job_messages">
+                    <h3>Details</h3>
+                </div>
+                <div v-if="result.job_messages">
+                    <p>Execution resulted in the following messages:</p>
+                    <div v-for="(job_message, index) in result.job_messages" :key="index">
+                        <pre class="rounded code">{{ job_message["desc"] }}</pre>
                     </div>
-                </JobDetailsProvider>
-                <JobProblemProvider :jobid="dataset.creating_job" v-slot="{ result, loading }">
+                </div>
+                <div v-if="result.tool_stderr">
+                    <p>Tool generated the following standard error:</p>
+                    <pre class="rounded code">{{ result.tool_stderr }}</pre>
+                </div>
+                <div v-if="result.job_stderr">
+                    <p>Galaxy job runner generated the following standard error:</p>
+                    <pre class="rounded code">{{ result.job_stderr }}</pre>
+                </div>
+                <JobProblemProvider :jobid="dataset.creating_job" v-slot="{ result }">
                     <div v-if="result && (result.has_duplicate_inputs || result.has_empty_inputs)">
                         <h3 class="common_problems">Detected Common Potential Problems</h3>
                         <p v-if="result.has_empty_inputs">
@@ -57,22 +53,26 @@
                 </p>
                 <h3 class="mb-3">Issue Report</h3>
                 <b-alert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</b-alert>
-                <b-alert v-for="resultMessage in resultMessages" :variant="resultMessage[1]" show>{{
-                    resultMessage[0]
-                }}</b-alert>
-                <FormElement v-if="!user.email" id="email" v-model="email" title="Please provide your email:" />
+                <b-alert
+                    v-for="(resultMessage, index) in resultMessages"
+                    :key="index"
+                    :variant="resultMessage[1]"
+                    show
+                    >{{ resultMessage[0] }}</b-alert
+                >
+                <FormElement v-if="!result.user_email" id="email" v-model="email" title="Please provide your email:" />
                 <FormElement
                     id="message"
                     v-model="message"
                     :area="true"
                     title="Please provide detailed information on the activities leading to this issue:"
                 />
-                <b-button variant="primary" @click="submit(dataset, user.email)" class="mt-3">
+                <b-button variant="primary" @click="submit(dataset, result.user_email)" class="mt-3">
                     <font-awesome-icon icon="bug" class="mr-1" />Report
                 </b-button>
             </div>
-        </DatasetProvider>
-    </CurrentUser>
+        </JobDetailsProvider>
+    </DatasetProvider>
 </template>
 
 <script>
