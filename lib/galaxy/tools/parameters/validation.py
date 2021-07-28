@@ -80,7 +80,6 @@ class Validator(abc.ABC):
         if (not self.negate and value) or (self.negate and not value):
             return
         else:
-            # TODO message often makes not sense if negate=True
             raise ValueError(message)
 
 
@@ -387,7 +386,6 @@ class DatasetOkValidator(Validator):
 
     def validate(self, value, trans=None):
         if value:
-            # TODO all Dataset Validators should be able to handle lists, or?
             super().validate(value.state == model.Dataset.states.OK)
 
 
@@ -444,7 +442,6 @@ class DatasetEmptyValidator(Validator):
 
     def validate(self, value, trans=None):
         if value:
-            log.error(f"EMPTY? value {value}")
             super().validate(value.get_size() != 0)
 
 
@@ -762,13 +759,11 @@ class MetadataInFileColumnValidator(Validator):
                 fields = line.split(split)
                 if metadata_column < len(fields):
                     self.valid_values.add(fields[metadata_column].strip())
-        log.error(f"self.valid_values {self.valid_values}")
 
     def validate(self, value, trans=None):
-        log.error(f"validate value {value} against self.valid_values {self.valid_values}")
         if not value:
             return
-        super().validate(hasattr(value, "metadata") and value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values)
+        super().validate(value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values)
 
 
 class ValueInDataTableColumnValidator(Validator):
@@ -839,7 +834,7 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
             raise ValueError(self.message)
 
 
-class MetadataInDataTableColumnValidator(Validator):
+class MetadataInDataTableColumnValidator(ValueInDataTableColumnValidator):
     """
     Validator that checks if the value for a dataset's metadata item exists in a file.
 
@@ -856,7 +851,7 @@ class MetadataInDataTableColumnValidator(Validator):
         metadata_name = elem.get("metadata_name", None)
         if metadata_name:
             metadata_name = metadata_name.strip()
-        # TODO rename to column
+        # TODO rename to column?
         metadata_column = elem.get("metadata_column", 0)
         try:
             metadata_column = int(metadata_column)
@@ -867,32 +862,11 @@ class MetadataInDataTableColumnValidator(Validator):
         return cls(tool_data_table, metadata_name, metadata_column, message, negate)
 
     def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", negate="false"):
-        super().__init__(message, negate)
+        super().__init__(tool_data_table, metadata_column, message, negate)
         self.metadata_name = metadata_name
-        self.valid_values = []
-        self._data_table_content_version = None
-        self._tool_data_table = tool_data_table
-        if isinstance(metadata_column, str):
-            metadata_column = tool_data_table.columns[metadata_column]
-        self._metadata_column = metadata_column
-        self._load_values()
-
-    def _load_values(self):
-        self._data_table_content_version, data_fields = self._tool_data_table.get_version_fields()
-        self.valid_values = []
-        for fields in data_fields:
-            if self._metadata_column < len(fields):
-                self.valid_values.append(fields[self._metadata_column])
 
     def validate(self, value, trans=None):
-        if not value:
-            return
-        if hasattr(value, "metadata"):
-            if not self._tool_data_table.is_current_version(self._data_table_content_version):
-                log.debug('MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
-                self._load_values()
-        # TODO instead of `and` call super().validate 2x using a better error message for the case that there is no metadata
-        super().validate(hasattr(value, "metadata") and value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values, trans)
+        super().validate(value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)), trans)
 
 
 class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
