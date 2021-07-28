@@ -44,7 +44,7 @@
                         :step-data="stepData"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
                         :wp-data="wpData"
-                        :history-id="currentHistory && currentHistory.id"
+                        :history-id="currentHistory?.id"
                         @onChange="onToolStepInputs"
                         @onValidation="onValidation"
                     />

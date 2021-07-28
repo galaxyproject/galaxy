@@ -38,6 +38,7 @@ export async function invokeWorkflow(workflowId, invocationData) {
  * @param {String} toolId - Tool ID to fetch data for.
  * @param {String} toolVersion - Corresponding tool version.
  * @param {Object} toolInputs - Current tool state.
+ * @param {Object} historyId - History ID to populate data selection fields.
  */
 export async function getTool(toolId, toolVersion, toolInputs, historyId) {
     const requestData = {
