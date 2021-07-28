@@ -1,8 +1,8 @@
 <template>
     <ConfigProvider v-slot="{ config }">
         <CurrentUser v-slot="{ user }">
-            <UserHistories v-if="user" :user="user" v-slot="{ currentHistory }">
-                <div v-if="currentHistory">
+            <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
+                <div v-if="currentHistoryId">
                     <LoadingSpan v-if="showLoading" message="Loading Tool" />
                     <div v-if="showEntryPoints">
                         <ToolEntryPoints v-for="job in entryPoints" :job-id="job.id" :key="job.id" />
@@ -76,7 +76,7 @@
                             <ButtonSpinner
                                 id="execute"
                                 title="Execute"
-                                @onClick="onExecute(config, currentHistory.id)"
+                                @onClick="onExecute(config, currentHistoryId)"
                                 :wait="showExecuting"
                                 :tooltip="tooltip"
                             />
