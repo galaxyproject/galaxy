@@ -1160,6 +1160,13 @@ class JobWrapper(HasResourceParameters):
         if job.tool_id == 'upload1':
             self.__prepare_upload_paramfile(tool_evaluator)
 
+        with store.DirectoryModelExportStore(export_directory=self.working_directory, app=self.app, for_edit=True, serialize_dataset_objects=True, serialize_jobs=False, encode_ids=False) as export_store:
+            export_store.export_job(job, tool=self.tool)
+        # FIXME: for now require extended metadata
+        # object_store_conf = self.object_store.to_dict()
+        # with open(os.path.join(self.working_directory, "object_store_conf.json"), "w") as f:
+        #     json.dump(object_store_conf, f)
+
         self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir

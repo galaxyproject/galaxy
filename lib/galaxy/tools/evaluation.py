@@ -47,6 +47,44 @@ from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
 
+PLAN = """
+Create job prolog script,
+- runs metadata script on inputs if necessary
+  - stages remote inputs
+- builds command line script
+  - takes as input:
+    - Job inputs / outputs, parameters
+    - Serialized tool ?
+- read command line back in set_metadata script
+
+======
+AND/OR
+======
+
+Schedule remote celery worker with one-time job handler, could do staging ... but yikes, I don't think that's atomic in any way
+Probably better to implement the above thing, then turn it into celery tasks for faster startup / less dependencies on worker.
+
+
+Problems:
+Do we want to build a full app ? Probably not.
+Do we want to supply galaxy config file ? Probably not.
+Dataset conversions ... would need to move outside of ToolEvaluator
+Access to secrets in general ... but we do serialize the object_store config, so maybe we don't care ?
+Input validation seems to require WorkRequestContext
+
+Questions:
+Do we do parameter validation ?
+  - Should be pointless
+
+Implementation:
+Split up ToolEvaluator, run input validation before job ?
+ - Might not be possible if validation depends on metadata (it does, but not for all tools)
+ - Performance penalty if check fails in submitted DRM job as opposed to in job handler (OTOH DRM should have more capacity than handler)
+
+What won't work:
+- Can't just serialize param_dict and overwrite inputs (I think), too many custom methods that could be called
+
+"""
 
 class ToolEvaluator:
     """ An abstraction linking together a tool and a job runtime to evaluate
@@ -88,7 +126,7 @@ class ToolEvaluator:
                 out_data["output_file"] = special
 
         # These can be passed on the command line if wanted as $__user_*__
-        incoming.update(model.User.user_template_environment(job.history and job.history.user))
+        incoming.update(model.User.user_template_environment(self._user))
 
         # Build params, done before hook so hook can use
         param_dict = self.build_param_dict(
@@ -618,3 +656,57 @@ class ToolEvaluator:
             return history.user
         else:
             return self.job.user
+
+
+class RemoteToolEvaluator(ToolEvaluator):
+    """
+    Evaluates tool inputs without access to database
+    """
+
+    @property
+    def compute_environment(self):
+        return Bunch(
+            working_directory=lambda: self.local_working_directory, 
+            galaxy_url=lambda: 'bla',
+            input_path_rewrite= lambda dataset: False,
+            output_path_rewrite= lambda dataset: False,
+            home_directory= lambda: '/tmp',
+            tmp_directory= lambda: '/tmp',
+            tool_directory= lambda: '/tmp',
+            new_file_path= lambda: '/tmp',
+            )
+
+    def setup(self):
+        job = self.job
+        incoming = {p.name: p.value for p in job.parameters}
+        incoming = self.tool.params_from_strings(incoming, self.app)
+
+        # Full parameter validation
+        request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
+        self.request_context = request_context
+
+        def validate_inputs(input, value, context, **kwargs):
+            value = input.from_json(value, request_context, context)
+            input.validate(value, request_context)
+        visit_input_values(self.tool.inputs, incoming, validate_inputs)
+
+        # Restore input / output data lists
+        inp_data, out_data, out_collections = job.io_dicts()
+
+        # These can be passed on the command line if wanted as $__user_*__
+        incoming.update(model.User.user_template_environment(self._user))
+
+        # Build params, done before hook so hook can use
+        self.param_dict = self.build_param_dict(
+            incoming,
+            inp_data,
+            out_data,
+            output_collections=out_collections,
+        )
+
+    def __populate_non_job_params(self, param_dict):
+        pass
+
+
+    def __populate_interactivetools(self, param_dict):
+        pass
