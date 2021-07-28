@@ -166,6 +166,7 @@ class Model(BaseModel):
     """Base model definition with common configuration used by all derived models."""
     class Config:
         use_enum_values = True  # when using .dict()
+        allow_population_by_field_name = True
 
 
 class UserModel(Model):
@@ -2089,11 +2090,7 @@ class DatasetPermissionAction(str, Enum):
     remove_restrictions = "remove_restrictions"
 
 
-class LibraryPermissionsPayloadBase(BaseModel):
-    class Config:
-        use_enum_values = True  # When using .dict()
-        allow_population_by_alias = True
-
+class LibraryPermissionsPayloadBase(Model):
     add_ids: Optional[RoleIdList] = Field(
         [],
         alias="add_ids[]",
@@ -2281,11 +2278,7 @@ class DatasetAssociationRoles(Model):
     )
 
 
-class UpdateDatasetPermissionsPayload(BaseModel):
-    class Config:
-        use_enum_values = True  # When using .dict()
-        allow_population_by_alias = True
-
+class UpdateDatasetPermissionsPayload(Model):
     action: Optional[DatasetPermissionAction] = Field(
         ...,
         title="Action",
