@@ -85,7 +85,6 @@
 </template>
 
 <script>
-import CurrentUser from "components/providers/CurrentUser";
 import FormElement from "components/Form/FormElement";
 import { DatasetProvider } from "components/WorkflowInvocationState/providers";
 import { JobDetailsProvider, JobProblemProvider } from "components/providers/JobProvider";
@@ -98,7 +97,6 @@ library.add(faBug);
 
 export default {
     components: {
-        CurrentUser,
         DatasetProvider,
         FontAwesomeIcon,
         FormElement,
