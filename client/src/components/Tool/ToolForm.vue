@@ -76,7 +76,7 @@
                             <ButtonSpinner
                                 id="execute"
                                 title="Execute"
-                                @onClick="onExecute(config, currentHistory && currentHistory.id)"
+                                @onClick="onExecute(config, currentHistory?.id)"
                                 :wait="showExecuting"
                                 :tooltip="tooltip"
                             />
