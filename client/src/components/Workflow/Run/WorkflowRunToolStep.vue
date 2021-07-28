@@ -50,6 +50,10 @@ export default {
             type: Array,
             required: true,
         },
+        historyId: {
+            type: String,
+            default: null,
+        },
     },
     data() {
         return {
@@ -125,7 +129,7 @@ export default {
             });
         },
         onChange(data) {
-            getTool(this.model.id, this.model.version, data).then(
+            getTool(this.model.id, this.model.version, data, this.historyId).then(
                 (formConfig) => {
                     this.formConfig = formConfig;
                 },

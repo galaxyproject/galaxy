@@ -35,13 +35,16 @@ export async function invokeWorkflow(workflowId, invocationData) {
 /**
  * Request tool step data.
  *
- * @param {String} workflowId - (Stored?) Workflow ID to fetch data for.
+ * @param {String} toolId - Tool ID to fetch data for.
+ * @param {String} toolVersion - Corresponding tool version.
+ * @param {Object} toolInputs - Current tool state.
  */
-export async function getTool(toolId, toolVersion, toolInputs) {
+export async function getTool(toolId, toolVersion, toolInputs, historyId) {
     const requestData = {
         tool_id: toolId,
         tool_version: toolVersion,
         inputs: JSON.parse(JSON.stringify(toolInputs)),
+        history_id: historyId,
     };
     try {
         const { data } = await axios.post(`${getAppRoot()}api/tools/${toolId}/build`, requestData);

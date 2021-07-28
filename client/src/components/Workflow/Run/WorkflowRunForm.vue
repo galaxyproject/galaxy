@@ -1,69 +1,73 @@
 <template>
     <CurrentUser v-slot="{ user }">
-        <div>
-            <div class="h4 clearfix mb-3">
-                <b>Workflow: {{ model.name }}</b>
-                <ButtonSpinner
-                    id="run-workflow"
-                    class="float-right"
-                    title="Run Workflow"
-                    :wait="showExecuting"
-                    @onClick="onExecute"
-                />
-            </div>
-            <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
-                <template v-slot:body>
-                    <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
-                </template>
-            </FormCard>
-            <FormCard title="History Options">
-                <template v-slot:body>
-                    <FormDisplay :inputs="historyInputs" @onChange="onHistoryInputs" />
-                </template>
-            </FormCard>
-            <FormCard v-if="reuseAllowed(user)" title="Job re-use Options">
-                <template v-slot:body>
-                    <FormElement
-                        title="Attempt to re-use jobs with identical parameters?"
-                        help="This may skip executing jobs that you have already run."
-                        type="boolean"
-                        v-model="useCachedJobs"
+        <UserHistories v-if="user" :user="user" v-slot="{ currentHistory }">
+            <div>
+                <div class="h4 clearfix mb-3">
+                    <b>Workflow: {{ model.name }}</b>
+                    <ButtonSpinner
+                        id="run-workflow"
+                        class="float-right"
+                        title="Run Workflow"
+                        :wait="showExecuting"
+                        @onClick="onExecute"
                     />
-                </template>
-            </FormCard>
-            <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
-                <template v-slot:body>
-                    <FormDisplay :inputs="resourceInputs" @onChange="onResourceInputs" />
-                </template>
-            </FormCard>
-            <div v-for="step in model.steps" :key="step.index">
-                <WorkflowRunToolStep
-                    v-if="step.step_type == 'tool'"
-                    :model="step"
-                    :step-data="stepData"
-                    :validation-scroll-to="getValidationScrollTo(step.index)"
-                    :wp-data="wpData"
-                    @onChange="onToolStepInputs"
-                    @onValidation="onValidation"
-                />
-                <WorkflowRunDefaultStep
-                    v-else
-                    :model="step"
-                    :validation-scroll-to="getValidationScrollTo(step.index)"
-                    @onChange="onDefaultStepInputs"
-                    @onValidation="onValidation"
-                />
+                </div>
+                <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
+                    <template v-slot:body>
+                        <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
+                    </template>
+                </FormCard>
+                <FormCard title="History Options">
+                    <template v-slot:body>
+                        <FormDisplay :inputs="historyInputs" @onChange="onHistoryInputs" />
+                    </template>
+                </FormCard>
+                <FormCard v-if="reuseAllowed(user)" title="Job re-use Options">
+                    <template v-slot:body>
+                        <FormElement
+                            title="Attempt to re-use jobs with identical parameters?"
+                            help="This may skip executing jobs that you have already run."
+                            type="boolean"
+                            v-model="useCachedJobs"
+                        />
+                    </template>
+                </FormCard>
+                <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
+                    <template v-slot:body>
+                        <FormDisplay :inputs="resourceInputs" @onChange="onResourceInputs" />
+                    </template>
+                </FormCard>
+                <div v-for="step in model.steps" :key="step.index">
+                    <WorkflowRunToolStep
+                        v-if="step.step_type == 'tool'"
+                        :model="step"
+                        :step-data="stepData"
+                        :validation-scroll-to="getValidationScrollTo(step.index)"
+                        :wp-data="wpData"
+                        :history-id="currentHistory && currentHistory.id"
+                        @onChange="onToolStepInputs"
+                        @onValidation="onValidation"
+                    />
+                    <WorkflowRunDefaultStep
+                        v-else
+                        :model="step"
+                        :validation-scroll-to="getValidationScrollTo(step.index)"
+                        @onChange="onDefaultStepInputs"
+                        @onValidation="onValidation"
+                    />
+                </div>
             </div>
-        </div>
+        </UserHistories>
     </CurrentUser>
 </template>
 
 <script>
+import ButtonSpinner from "components/Common/ButtonSpinner";
 import CurrentUser from "components/providers/CurrentUser";
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
-import ButtonSpinner from "components/Common/ButtonSpinner";
+import UserHistories from "components/History/providers/UserHistories";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunToolStep from "./WorkflowRunToolStep";
 import { invokeWorkflow } from "./services";
@@ -71,11 +75,12 @@ import { allowCachedJobs } from "components/Tool/utilities";
 
 export default {
     components: {
+        ButtonSpinner,
         CurrentUser,
         FormDisplay,
         FormCard,
         FormElement,
-        ButtonSpinner,
+        UserHistories,
         WorkflowRunDefaultStep,
         WorkflowRunToolStep,
     },
