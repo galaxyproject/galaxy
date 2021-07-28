@@ -19,6 +19,7 @@
                 :items="items"
                 :multiple="multiple"
                 :filter="filter"
+                :show-select-icon="undoShow"
                 :show-details="showDetails"
                 :show-time="showTime"
                 :show-navigate="mode == 'directory'"
@@ -67,7 +68,7 @@ export default {
         mode: {
             type: String,
             default: "file",
-            validator: (prop) => ["file", "directory"].includes(prop),
+            validator: (prop) => ["file", "directory", "tree"].includes(prop),
         },
         requireWritable: {
             type: Boolean,
@@ -89,6 +90,9 @@ export default {
             hasValue: false,
             showTime: true,
             showDetails: true,
+            showSelectIcon: true,
+            showNavigate: true,
+            matchedFolders: [],
         };
     },
     created: function () {
@@ -99,6 +103,7 @@ export default {
     },
     computed: {
         fileMode() {
+          console.log("this.mpde", this.mode)
             return this.mode == "file";
         },
         filesOnly() {
@@ -119,6 +124,8 @@ export default {
         },
         /** Collects selected datasets in value array **/
         clicked: function (record) {
+            console.log("record.isLeaf", record.isLeaf);
+            console.log("this.fileMode", this.fileMode);
             if (record.isLeaf || !this.fileMode) {
                 this.model.add(record);
                 this.hasValue = this.model.count() > 0;
@@ -128,6 +135,11 @@ export default {
                     this.finalize();
                 }
             } else {
+                // this.services.list(record.url, true).then((items) => {
+                //     this.parseItems(items);
+                //     console.log(this.items);
+                //     console.log("!!!!!!!!! this.mode",  this.mode)
+                // });
                 this.open(record);
             }
         },
@@ -193,35 +205,7 @@ export default {
                 this.services
                     .list(url)
                     .then((items) => {
-                        if (this.fileMode) {
-                            items = items.map((item) => {
-                                const itemClass = item.class;
-                                return {
-                                    id: item.uri,
-                                    label: item.name,
-                                    time: item.ctime,
-                                    isLeaf: itemClass == "File",
-                                    size: item.size,
-                                    url: item.uri,
-                                    labelTitle: item.uri,
-                                };
-                            });
-                        } else {
-                            items = items
-                                .filter((item) => item.class == "Directory")
-                                .map((item) => {
-                                    return {
-                                        id: item.uri,
-                                        label: item.name,
-                                        time: item.ctime,
-                                        isLeaf: false,
-                                        size: item.size,
-                                        url: item.uri,
-                                        labelTitle: item.uri,
-                                    };
-                                });
-                        }
-                        this.items = items;
+                        this.items = this.parseItems(items);
                         this.formatRows();
                         this.optionsShow = true;
                         this.showTime = true;
@@ -231,6 +215,37 @@ export default {
                         this.errorMessage = errorMessage;
                     });
             }
+        },
+        parseItems(items) {
+            if (this.fileMode) {
+                items = items.map((item) => {
+                    const itemClass = item.class;
+                    return {
+                        id: item.uri,
+                        label: item.name,
+                        time: item.ctime,
+                        isLeaf: itemClass == "File",
+                        size: item.size,
+                        url: item.uri,
+                        labelTitle: item.uri,
+                    };
+                });
+            } else {
+                items = items
+                    .filter((item) => item.class == "Directory")
+                    .map((item) => {
+                        return {
+                            id: item.uri,
+                            label: item.name,
+                            time: item.ctime,
+                            isLeaf: false,
+                            size: item.size,
+                            url: item.uri,
+                            labelTitle: item.uri,
+                        };
+                    });
+            }
+            return items;
         },
     },
 };

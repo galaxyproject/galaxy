@@ -11,15 +11,24 @@
             @row-clicked="clicked"
             @filtered="filtered"
         >
+            <template v-slot:cell(select_icon)="data">
+                <!--                <div @click="debug(data)">123123123123</div>-->
+                <font-awesome-icon
+                    :icon="data.item._rowVariant === 'success' ? ['far', 'check-square'] : ['far', 'square']"
+                />
+            </template>
             <template v-slot:cell(label)="data">
-                <pre
-                    v-if="isEncoded"
-                    :title="data.item.labelTitle"
-                ><code>{{ data.value ? data.value : "-" }}</code></pre>
-                <span v-else>
-                    <i v-if="data.item.isLeaf" :class="leafIcon" /> <i v-else class="fa fa-folder" />
-                    <span :title="data.item.labelTitle">{{ data.value ? data.value : "-" }}</span>
-                </span>
+                <div style="cursor: pointer" @click="debug('!!!!!!!!')">
+                    <pre
+                        v-if="isEncoded"
+                        :title="data.item.labelTitle"
+                    ><code>{{ data.value ? data.value : "-" }}</code></pre>
+                    <span v-else>
+                        <i v-if="data.item.isLeaf" :class="leafIcon" />
+                        <font-awesome-icon v-else icon="folder" />
+                        <span :title="data.item.labelTitle">{{ data.value ? data.value : "-" }}</span>
+                    </span>
+                </div>
             </template>
             <template v-slot:cell(details)="data">
                 {{ data.value ? data.value : "-" }}
@@ -45,15 +54,25 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
+import { faFolder } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
 
 Vue.use(BootstrapVue);
+
+[faCheckSquare, faSquare, faFolder].forEach((item) => library.add(item));
 
 const LABEL_FIELD = { key: "label", sortable: true };
 const DETAILS_FIELD = { key: "details", sortable: true };
 const TIME_FIELD = { key: "time", sortable: true };
 const NAVIGATE_FIELD = { key: "navigate", label: "", sortable: false };
+const SELECT_ICON_FIELD = { key: "select_icon", label: "", sortable: false };
 
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     props: {
         items: {
             type: Array,
@@ -83,6 +102,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        showSelectIcon: {
+            type: Boolean,
+            default: false,
+        },
         isEncoded: {
             type: Boolean,
             default: false,
@@ -105,7 +128,12 @@ export default {
     },
     computed: {
         fields: function () {
-            const fields = [LABEL_FIELD];
+            const fields = [];
+            if (this.showSelectIcon) {
+                fields.push(SELECT_ICON_FIELD);
+            }
+            fields.push(LABEL_FIELD);
+
             if (this.showDetails) {
                 fields.push(DETAILS_FIELD);
             }
@@ -115,10 +143,14 @@ export default {
             if (this.showNavigate) {
                 fields.push(NAVIGATE_FIELD);
             }
+
             return fields;
         },
     },
     methods: {
+        debug(d) {
+            console.log(d);
+        },
         /** Resets pagination when a filter/search word is entered **/
         filtered: function (items) {
             this.nItems = items.length;
