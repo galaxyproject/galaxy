@@ -2,7 +2,7 @@
     <ConfigProvider v-slot="{ config }">
         <CurrentUser v-slot="{ user }">
             <UserHistories v-if="user" :user="user" v-slot="{ currentHistory }">
-                <div>
+                <div v-if="currentHistory">
                     <LoadingSpan v-if="showLoading" message="Loading Tool" />
                     <div v-if="showEntryPoints">
                         <ToolEntryPoints v-for="job in entryPoints" :job-id="job.id" :key="job.id" />
@@ -76,7 +76,7 @@
                             <ButtonSpinner
                                 id="execute"
                                 title="Execute"
-                                @onClick="onExecute(config, currentHistory?.id)"
+                                @onClick="onExecute(config, currentHistory.id)"
                                 :wait="showExecuting"
                                 :tooltip="tooltip"
                             />

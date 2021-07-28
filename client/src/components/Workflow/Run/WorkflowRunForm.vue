@@ -1,7 +1,7 @@
 <template>
     <CurrentUser v-slot="{ user }">
         <UserHistories v-if="user" :user="user" v-slot="{ currentHistory }">
-            <div>
+            <div v-if="currentHistory">
                 <div class="h4 clearfix mb-3">
                     <b>Workflow: {{ model.name }}</b>
                     <ButtonSpinner
@@ -44,7 +44,7 @@
                         :step-data="stepData"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
                         :wp-data="wpData"
-                        :history-id="currentHistory?.id"
+                        :history-id="currentHistory.id"
                         @onChange="onToolStepInputs"
                         @onValidation="onValidation"
                     />
