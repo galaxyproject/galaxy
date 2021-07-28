@@ -191,9 +191,11 @@ class ExpressionValidator(Validator):
             message = f"Value '%s' does not evaluate to {'True' if negate == 'false' else 'False'} for '{expression}'"
         super().__init__(message, negate)
         # Save compiled expression, code objects are thread safe (right?)
+        log.error(f"ExpressionValidator expression {expression}")
         self.expression = compile(expression, '<string>', 'eval')
 
     def validate(self, value, trans=None):
+        log.error(f"ExpressionValidator.validate value {value} expression {self.expression}")
         try:
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
@@ -202,8 +204,7 @@ class ExpressionValidator(Validator):
         super().validate(evalresult, value_to_show=value)
 
 
-# TODO This could be a subclass of ExpressionValidator
-class InRangeValidator(Validator):
+class InRangeValidator(ExpressionValidator):
     """
     Validator that ensures a number is in a specified range
 
@@ -211,19 +212,19 @@ class InRangeValidator(Validator):
     >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="integer" value="10">
-    ...     <validator type="in_range" message="Not gonna happen" min="10" exclude_min="true" max="20"/>
+    ...     <validator type="in_range" message="Doh!! %s not in range" min="10" exclude_min="true" max="20"/>
     ... </param>
     ... '''))
     >>> t = p.validate(10)
     Traceback (most recent call last):
         ...
-    ValueError: Not gonna happen
+    ValueError: Doh!! 10 not in range
     >>> t = p.validate(15)
     >>> t = p.validate(20)
     >>> t = p.validate(21)
     Traceback (most recent call last):
         ...
-    ValueError: Not gonna happen
+    ValueError: Doh!! 21 not in range
     >>>
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="integer" value="10">
@@ -234,11 +235,11 @@ class InRangeValidator(Validator):
     >>> t = p.validate(15)
     Traceback (most recent call last):
         ...
-    ValueError: Value ('15') must not fulfill value > 10 and value <= 20
+    ValueError: Value ('15') must not fulfill float('10') < value <= float('20')
     >>> t = p.validate(20)
     Traceback (most recent call last):
         ...
-    ValueError: Value ('20') must not fulfill value > 10 and value <= 20
+    ValueError: Value ('20') must not fulfill float('10') < value <= float('20')
     >>> t = p.validate(21)
     """
 
@@ -257,34 +258,22 @@ class InRangeValidator(Validator):
         (1.e., min <= value <= max).  Combinations of exclude_min and exclude_max
         values are allowed.
         """
-        self.min = float(range_min if range_min is not None else '-inf')
+        self.min = range_min if range_min is not None else '-inf'
         self.exclude_min = util.asbool(exclude_min)
-        self.max = float(range_max if range_max is not None else 'inf')
+        self.max = range_max if range_max is not None else 'inf'
         self.exclude_max = util.asbool(exclude_max)
-        assert self.min <= self.max, 'min must be less than or equal to max'
+        assert float(self.min) <= float(self.max), 'min must be less than or equal to max'
         # Remove unneeded 0s and decimal from floats to make message pretty.
-        self_min_str = str(self.min).rstrip('0').rstrip('.')
-        self_max_str = str(self.max).rstrip('0').rstrip('.')
-        op1 = '>='
+        op1 = '<='
         op2 = '<='
         if self.exclude_min:
-            op1 = '>'
+            op1 = '<'
         if self.exclude_max:
             op2 = '<'
+        expression = f"float('{self.min}') {op1} value {op2} float('{self.max}')"
         if message is None:
-            message = f"Value ('%s') must {'not ' if negate == 'true' else ''}fulfill value {op1} {self_min_str} and value {op2} {self_max_str}"
-        super().__init__(message, negate)
-
-    def validate(self, value, trans=None):
-        if self.exclude_min:
-            mincmp = self.min.__lt__
-        else:
-            mincmp = self.min.__le__
-        if self.exclude_max:
-            maxcmp = self.max.__gt__
-        else:
-            maxcmp = self.max.__ge__
-        super().validate(mincmp(float(value)) and maxcmp(float(value)), value_to_show=value)
+            message = f"Value ('%s') must {'not ' if negate == 'true' else ''}fulfill {expression}"
+        super().__init__(message, expression, negate)
 
 
 class LengthValidator(InRangeValidator):
@@ -962,6 +951,7 @@ class MetadataInRangeValidator(InRangeValidator):
                 raise ValueError(f'{self.metadata_name} Metadata missing')
             except ValueError:
                 raise ValueError(f'{self.metadata_name} must be a float or an integer')
+            log.error(f"MetadataInRangeValidato.validate value_to_check {value_to_check}")
             super().validate(value_to_check, trans)
 
 
