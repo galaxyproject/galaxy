@@ -8,7 +8,7 @@
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
-        <template v-if="fileMode && filesOnly && this.multiple && items.length" v-slot:selectAll>
+        <template v-if="this.multiple && items.length > 0" v-slot:selectAll>
             <b-button @click="toggleSelectAll()" variant="light">
                 <font-awesome-icon icon="th-large" /> {{ `${allSelected ? "Unselect" : "Select"}` }} entire folder
             </b-button>
@@ -22,7 +22,7 @@
                 :show-select-icon="undoShow"
                 :show-details="showDetails"
                 :show-time="showTime"
-                :show-navigate="mode == 'directory'"
+                :show-navigate="showNavigate"
                 @clicked="clicked"
                 @open="open"
                 @load="load"
@@ -81,6 +81,7 @@ export default {
     data() {
         return {
             allSelected: false,
+            selectedDirs: [],
             errorMessage: null,
             filter: null,
             items: [],
@@ -103,11 +104,8 @@ export default {
     },
     computed: {
         fileMode() {
-          console.log("this.mpde", this.mode)
+            console.log("this.mpde", this.mode);
             return this.mode == "file";
-        },
-        filesOnly() {
-            return !this.items.some((item) => item.isLeaf === false);
         },
     },
     methods: {
@@ -117,6 +115,9 @@ export default {
                 let _rowVariant = "active";
                 if (item.isLeaf || !this.fileMode) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
+                } else {
+                  console.log("selectedDirs" , this.selectedDirs)
+                    _rowVariant = this.selectedDirs.includes(item.id) ? "success" : "default";
                 }
                 Vue.set(item, "_rowVariant", _rowVariant);
             }
@@ -135,12 +136,34 @@ export default {
                     this.finalize();
                 }
             } else {
-                // this.services.list(record.url, true).then((items) => {
-                //     this.parseItems(items);
-                //     console.log(this.items);
-                //     console.log("!!!!!!!!! this.mode",  this.mode)
-                // });
-                this.open(record);
+                this.services.list(record.url, true).then((items) => {
+                    //     this.parseItems(items);
+                    //     console.log(this.items);
+                    //     console.log("!!!!!!!!! this.mode",  this.mode)
+                    items.forEach((item) => {
+                        const itemClass = item.class;
+                        record = {
+                            id: item.uri,
+                            label: item.name,
+                            time: item.ctime,
+                            isLeaf: itemClass == "File",
+                            size: item.size,
+                            url: item.uri,
+                            labelTitle: item.uri,
+                        };
+                        if (record.isLeaf) {
+                            this.model.add(record);
+                        } else {
+                          console.log("!!!!! SUBFolder case! ")
+                            if (this.selectedDirs.includes(record.id)) {
+                                this.selectedDirs.push(record.id);
+                            } else {
+                                this.selectedDirs = this.selectedDirs.filter((id) => id !== record.id);
+                            }
+                        }
+                    });
+                });
+                this.formatRows();
             }
         },
         open: function (record) {
