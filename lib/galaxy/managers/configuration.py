@@ -172,6 +172,7 @@ class ConfigSerializer(base.ModelSerializer):
             'simplified_workflow_run_ui': _use_config,
             'simplified_workflow_run_ui_target_history': _use_config,
             'simplified_workflow_run_ui_job_cache': _use_config,
+            'simplified_workflow_run_ui': _use_config,
             'has_user_tool_filters': _defaults_to(False),
             # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
             # at any rate: the following works with path_prefix but is still brittle

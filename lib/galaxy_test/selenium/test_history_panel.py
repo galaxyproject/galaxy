@@ -187,6 +187,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.history_panel_ensure_showing_item_details(hid=1)
         self.history_panel_item_body_component(1, wait=True)
         self.history_panel_refresh_click()
+        self.wait_for_history()
 
         # After the refresh, verify the details are still open.
         self.sleep_for(self.wait_types.UX_TRANSITION)

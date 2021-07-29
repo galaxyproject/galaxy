@@ -3,21 +3,44 @@
         <div class="portlet-header">
             <div class="portlet-operations">
                 <slot name="operations" />
+                <b-button
+                    v-if="collapsible"
+                    role="button"
+                    title="Collapse/Expand"
+                    variant="link"
+                    size="sm"
+                    class="float-right"
+                    v-b-tooltip.hover.bottom
+                    @click="onCollapse"
+                >
+                    <font-awesome-icon v-if="collapsed" icon="eye-slash" class="fa-fw" />
+                    <font-awesome-icon v-else icon="eye" class="fa-fw" />
+                </b-button>
             </div>
-            <div class="portlet-title">
+            <a class="portlet-title" @click="onCollapse" :href="href">
                 <i :class="['portlet-title-icon fa mr-1', icon]" style="display: inline"></i>
                 <span class="portlet-title-text">
                     <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span>
                 </span>
-            </div>
+            </a>
         </div>
-        <div class="portlet-content">
+        <div v-show="!collapsed" class="portlet-content">
             <slot name="body" />
         </div>
     </div>
 </template>
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faEye);
+library.add(faEyeSlash);
+
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     props: {
         title: {
             type: String,
@@ -29,7 +52,30 @@ export default {
         },
         icon: {
             type: String,
-            default: "fa-wrench",
+            default: "",
+        },
+        collapsible: {
+            type: Boolean,
+            default: false,
+        },
+        collapsed: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    data() {
+        return {};
+    },
+    computed: {
+        href() {
+            return this.collapsible ? "#" : null;
+        },
+    },
+    methods: {
+        onCollapse() {
+            if (this.collapsible) {
+                this.$emit("update:collapsed", !this.collapsed);
+            }
         },
     },
 };

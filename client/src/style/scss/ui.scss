@@ -210,6 +210,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
         .portlet-operations {
             button {
                 @extend .ml-1;
+                @extend .py-0;
             }
         }
     }
@@ -243,14 +244,13 @@ $ui-margin-horizontal-large: $margin-v * 2;
     border-left: solid 3px $portlet-bg-color;
     border-radius: $border-radius-large;
     .portlet-header:first-child {
-        background: $portlet-bg-color;
         @extend .rounded-0;
+        @extend .p-2;
+        background: $portlet-bg-color;
         border-top-right-radius: $border-radius-large !important;
-        padding: 5px;
     }
     > .portlet-content {
         @extend .pl-2;
-        @extend .pr-0;
     }
 }
 
