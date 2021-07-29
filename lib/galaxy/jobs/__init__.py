@@ -950,8 +950,7 @@ class JobWrapper(HasResourceParameters):
         # the path rewriter needs destination params, so it cannot be set up until after the destination has been
         # resolved
         self._dataset_path_rewriter = None
-        self.output_paths = None
-        self.output_hdas_and_paths = None
+        self._job_io = None
         self.tool_provided_job_metadata = None
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
         self.params = None
@@ -991,8 +990,10 @@ class JobWrapper(HasResourceParameters):
         return self._dataset_path_rewriter
 
     @property
-    def dataset_path_rewriter(self):
-        return self._job_dataset_path_rewriter
+    def job_io(self):
+        if self._job_io is None:
+            self._job_io = JobIO(self.get_job(), self.dataset_path_rewriter)
+        return self._job_io
 
     @property
     def outputs_directory(self):
@@ -1164,6 +1165,15 @@ class JobWrapper(HasResourceParameters):
 
         with store.DirectoryModelExportStore(export_directory=self.working_directory, app=self.app, for_edit=True, serialize_dataset_objects=True, serialize_jobs=False, encode_ids=False) as export_store:
             export_store.export_job(job, tool=self.tool)
+        compute_environment_arguments = {
+            'galaxy_url': compute_environment.galaxy_url,
+            'tool_directory': compute_environment.tool_directory(),
+            'new_file_path': compute_environment.new_file_path(),
+            'home_directory': compute_environment.home_directory(),
+            'tmp_directory': compute_environment.tmp_directory(),
+            'outputs_directory': self.outputs_directory,
+            'outputs_to_working_directory': self.outputs_to_working_directory,
+        }
         # FIXME: for now require extended metadata
         # object_store_conf = self.object_store.to_dict()
         # with open(os.path.join(self.working_directory, "object_store_conf.json"), "w") as f:
@@ -1298,7 +1308,7 @@ class JobWrapper(HasResourceParameters):
         return tool_evaluator
 
     def _fix_output_permissions(self):
-        for path in [dp.real_path for dp in self.get_mutable_output_fnames()]:
+        for path in [dp.real_path for dp in self.job_io.get_mutable_output_fnames()]:
             if os.path.exists(path):
                 util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
 
@@ -1336,7 +1346,7 @@ class JobWrapper(HasResourceParameters):
                 etype, evalue, tb = sys.exc_info()
 
             if self.outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
-                for dataset_path in self.get_output_fnames():
+                for dataset_path in self.job_io.get_output_fnames():
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
                         log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
@@ -1691,7 +1701,7 @@ class JobWrapper(HasResourceParameters):
 
         if not extended_metadata and self.outputs_to_working_directory and not self.__link_file_check():
             # output will be moved by job if metadata_strategy is extended_metadata, so skip moving here
-            for dataset_path in self.get_output_fnames():
+            for dataset_path in self.job_io.get_output_fnames():
                 try:
                     shutil.move(dataset_path.false_path, dataset_path.real_path)
                     log.debug(f"finish(): Moved {dataset_path.false_path} to {dataset_path.real_path}")
@@ -1896,7 +1906,7 @@ class JobWrapper(HasResourceParameters):
 
     def get_output_sizes(self):
         sizes = []
-        output_paths = self.get_output_fnames()
+        output_paths = self.job_io.get_output_fnames()
         for outfile in [unicodify(o) for o in output_paths]:
             if os.path.exists(outfile):
                 sizes.append((outfile, os.stat(outfile).st_size))
@@ -1935,108 +1945,6 @@ class JobWrapper(HasResourceParameters):
         if self.app.config.environment_setup_file is None:
             return ''
         return f'[ -f "{self.app.config.environment_setup_file}" ] && . {self.app.config.environment_setup_file}'
-
-    def get_input_dataset_fnames(self, ds):
-        filenames = []
-        filenames = [ds.file_name]
-        # we will need to stage in metadata file names also
-        # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
-        for value in ds.metadata.values():
-            if isinstance(value, model.MetadataFile):
-                filenames.append(value.file_name)
-        return filenames
-
-    def get_input_fnames(self):
-        job = self.get_job()
-        filenames = []
-        for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
-            if da.dataset:
-                filenames.extend(self.get_input_dataset_fnames(da.dataset))
-        return filenames
-
-    def get_input_paths(self, job=None):
-        if job is None:
-            job = self.get_job()
-        paths = []
-        for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
-            if da.dataset:
-                paths.append(self.get_input_path(da.dataset))
-        return paths
-
-    def get_input_path(self, dataset):
-        real_path = dataset.file_name
-        false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, 'input')
-        return DatasetPath(
-            dataset.dataset.id,
-            real_path=real_path,
-            false_path=false_path,
-            mutable=False,
-            dataset_uuid=dataset.dataset.uuid,
-            object_store_id=dataset.dataset.object_store_id,
-        )
-
-    def get_output_basenames(self):
-        return [os.path.basename(str(fname)) for fname in self.get_output_fnames()]
-
-    def get_output_fnames(self):
-        if self.output_paths is None:
-            self.compute_outputs()
-        return self.output_paths
-
-    def get_output_path(self, dataset):
-        if getattr(dataset, "fake_dataset_association", False):
-            return dataset.file_name
-        assert dataset.id is not None, f"{dataset} needs to be flushed to find output path"
-        if self.output_paths is None:
-            self.compute_outputs()
-        for (hda, dataset_path) in self.output_hdas_and_paths.values():
-            if hda.id == dataset.id:
-                return dataset_path
-        raise KeyError(f"Couldn't find job output for [{dataset}] in [{self.output_hdas_and_paths.values()}]")
-
-    def get_mutable_output_fnames(self):
-        if self.output_paths is None:
-            self.compute_outputs()
-        return [dsp for dsp in self.output_paths if dsp.mutable]
-
-    def get_output_hdas_and_fnames(self):
-        if self.output_hdas_and_paths is None:
-            self.compute_outputs()
-        return self.output_hdas_and_paths
-
-    def compute_outputs(self):
-        dataset_path_rewriter = self.dataset_path_rewriter
-
-        job = self.get_job()
-        # Job output datasets are combination of history, library, and jeha datasets.
-        special = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=job).first()
-        false_path = None
-
-        results = []
-        for da in job.output_datasets + job.output_library_datasets:
-            da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, 'output')
-            mutable = da.dataset.dataset.external_filename is None
-            dataset_path = DatasetPath(da.dataset.dataset.id, da.dataset.file_name, false_path=da_false_path, mutable=mutable)
-            results.append((da.name, da.dataset, dataset_path))
-
-        self.output_paths = [t[2] for t in results]
-        self.output_hdas_and_paths = {t[0]: t[1:] for t in results}
-        if special:
-            false_path = dataset_path_rewriter.rewrite_dataset_path(special, 'output')
-            dsp = DatasetPath(special.dataset.id, special.dataset.file_name, false_path)
-            self.output_paths.append(dsp)
-            self.output_hdas_and_paths["output_file"] = [special.fda, dsp]
-        return self.output_paths
-
-    def get_output_file_id(self, file):
-        if self.output_paths is None:
-            self.get_output_fnames()
-        for dp in self.output_paths:
-            if self.outputs_to_working_directory and os.path.basename(dp.false_path) == file:
-                return dp.dataset_id
-            elif os.path.basename(dp.real_path) == file:
-                return dp.dataset_id
-        return None
 
     @property
     def object_store(self):
@@ -2591,6 +2499,116 @@ class ComputeEnvironment(metaclass=ABCMeta):
     @abstractmethod
     def galaxy_url(self):
         """URL to access Galaxy API from for this compute environment."""
+
+
+class JobIO:
+
+    def __init__(self, job, dataset_path_rewriter):
+        self.job = job
+        self.dataset_path_rewriter = dataset_path_rewriter
+        self.output_paths = None
+        self.output_hdas_and_paths = None
+
+    def get_input_dataset_fnames(self, ds):
+        filenames = []
+        filenames = [ds.file_name]
+        # we will need to stage in metadata file names also
+        # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
+        for value in ds.metadata.values():
+            if isinstance(value, model.MetadataFile):
+                filenames.append(value.file_name)
+        return filenames
+
+    def get_input_fnames(self):
+        job = self.job
+        filenames = []
+        for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
+            if da.dataset:
+                filenames.extend(self.get_input_dataset_fnames(da.dataset))
+        return filenames
+
+    def get_input_paths(self):
+        job = self.job
+        paths = []
+        for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
+            if da.dataset:
+                paths.append(self.get_input_path(da.dataset))
+        return paths
+
+    def get_input_path(self, dataset):
+        real_path = dataset.file_name
+        false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, 'input')
+        return DatasetPath(
+            dataset.dataset.id,
+            real_path=real_path,
+            false_path=false_path,
+            mutable=False,
+            dataset_uuid=dataset.dataset.uuid,
+            object_store_id=dataset.dataset.object_store_id,
+        )
+
+    def get_output_basenames(self):
+        return [os.path.basename(str(fname)) for fname in self.get_output_fnames()]
+
+    def get_output_fnames(self):
+        if self.output_paths is None:
+            self.compute_outputs()
+        return self.output_paths
+
+    def get_output_path(self, dataset):
+        if getattr(dataset, "fake_dataset_association", False):
+            return dataset.file_name
+        assert dataset.id is not None, f"{dataset} needs to be flushed to find output path"
+        if self.output_paths is None:
+            self.compute_outputs()
+        for (hda, dataset_path) in self.output_hdas_and_paths.values():
+            if hda.id == dataset.id:
+                return dataset_path
+        raise KeyError(f"Couldn't find job output for [{dataset}] in [{self.output_hdas_and_paths.values()}]")
+
+    def get_mutable_output_fnames(self):
+        if self.output_paths is None:
+            self.compute_outputs()
+        return [dsp for dsp in self.output_paths if dsp.mutable]
+
+    def get_output_hdas_and_fnames(self):
+        if self.output_hdas_and_paths is None:
+            self.compute_outputs()
+        return self.output_hdas_and_paths
+
+    def compute_outputs(self):
+        dataset_path_rewriter = self.dataset_path_rewriter
+
+        job = self.get_job()
+        # Job output datasets are combination of history, library, and jeha datasets.
+        special = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=job).first()
+        false_path = None
+
+        results = []
+        for da in job.output_datasets + job.output_library_datasets:
+            da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, 'output')
+            mutable = da.dataset.dataset.external_filename is None
+            dataset_path = DatasetPath(da.dataset.dataset.id, da.dataset.file_name, false_path=da_false_path, mutable=mutable)
+            results.append((da.name, da.dataset, dataset_path))
+
+        self.output_paths = [t[2] for t in results]
+        self.output_hdas_and_paths = {t[0]: t[1:] for t in results}
+        if special:
+            false_path = dataset_path_rewriter.rewrite_dataset_path(special, 'output')
+            dsp = DatasetPath(special.dataset.id, special.dataset.file_name, false_path)
+            self.output_paths.append(dsp)
+            self.output_hdas_and_paths["output_file"] = [special.fda, dsp]
+        return self.output_paths
+
+    def get_output_file_id(self, file):
+        if self.output_paths is None:
+            self.get_output_fnames()
+        for dp in self.output_paths:
+            if self.outputs_to_working_directory and os.path.basename(dp.false_path) == file:
+                return dp.dataset_id
+            elif os.path.basename(dp.real_path) == file:
+                return dp.dataset_id
+        return None
 
 
 class SimpleComputeEnvironment:
