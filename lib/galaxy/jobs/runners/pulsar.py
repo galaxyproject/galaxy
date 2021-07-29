@@ -342,7 +342,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 output_names = compute_environment.output_names()
 
                 client_inputs_list = []
-                for input_dataset_wrapper in job_wrapper.get_input_paths():
+                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths():
                     # str here to resolve false_path if set on a DatasetPath object.
                     path = str(input_dataset_wrapper)
                     object_store_ref = {
@@ -559,11 +559,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return updated
 
     def get_output_files(self, job_wrapper):
-        output_paths = job_wrapper.get_output_fnames()
+        output_paths = job_wrapper.job_io.get_output_fnames()
         return [str(o) for o in output_paths]   # Force job_path from DatasetPath objects.
 
     def get_input_files(self, job_wrapper):
-        input_paths = job_wrapper.get_input_paths()
+        input_paths = job_wrapper.job_io.get_input_paths()
         return [str(i) for i in input_paths]  # Force job_path from DatasetPath objects.
 
     def get_client_from_wrapper(self, job_wrapper):
@@ -1032,7 +1032,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def output_names(self):
         # Maybe this should use the path mapper, but the path mapper just uses basenames
-        return self.job_wrapper.get_output_basenames()
+        return self.job_wrapper.job_io.get_output_basenames()
 
     def input_path_rewrite(self, dataset):
         local_input_path_rewrite = self.local_path_config.input_path_rewrite(dataset)

@@ -122,7 +122,7 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
                     dataset_basename = line['dataset']
                     if job_wrapper:
                         try:
-                            line['dataset_id'] = job_wrapper.get_output_file_id(dataset_basename)
+                            line['dataset_id'] = job_wrapper.job_io.get_output_file_id(dataset_basename)
                         except KeyError:
                             log.warning(f'({job_wrapper.job_id}) Tool provided job dataset-specific metadata without specifying a dataset')
                             continue

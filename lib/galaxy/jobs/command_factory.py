@@ -214,7 +214,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     exec_dir = metadata_kwds.get('exec_dir', abspath(getcwd()))
     tmp_dir = metadata_kwds.get('tmp_dir', job_wrapper.working_directory)
     dataset_files_path = metadata_kwds.get('dataset_files_path', runner.app.model.Dataset.file_path)
-    output_fnames = metadata_kwds.get('output_fnames', job_wrapper.get_output_fnames())
+    output_fnames = metadata_kwds.get('output_fnames', job_wrapper.job_io.get_output_fnames())
     config_root = metadata_kwds.get('config_root', None)
     config_file = metadata_kwds.get('config_file', None)
     datatypes_config = metadata_kwds.get('datatypes_config', None)

@@ -989,10 +989,26 @@ class JobWrapper(HasResourceParameters):
             )
         return self._dataset_path_rewriter
 
+    def tool_directory(self):
+        tool_dir = self.tool.tool_dir
+        if tool_dir is not None:
+            tool_dir = os.path.abspath(tool_dir)
+        return tool_dir
+
     @property
     def job_io(self):
         if self._job_io is None:
-            self._job_io = JobIO(self.sa_session, self.get_job(), self.dataset_path_rewriter)
+            self._job_io = JobIO(
+                sa_session=self.sa_session,
+                job=self.get_job(),
+                dataset_path_rewriter=self.dataset_path_rewriter,
+                working_directory=self.working_directory,
+                galaxy_url=self.galaxy_url,
+                version_path=self.get_version_string_path(),
+                tool_directory=self.tool_directory(),
+                home_directory=self.home_directory(),
+                tmp_directory=self.tmp_directory(),
+            )
         return self._job_io
 
     @property
@@ -1089,6 +1105,10 @@ class JobWrapper(HasResourceParameters):
         """
         return self.job_runner_mapper.get_job_destination(self.params)
 
+    @property
+    def galaxy_url(self):
+        return self.get_destination_configuration("galaxy_infrastructure_url")
+
     def get_job(self):
         return self.sa_session.query(model.Job).get(self.job_id)
 
@@ -1154,7 +1174,6 @@ class JobWrapper(HasResourceParameters):
 
         tool_evaluator = self._get_tool_evaluator(job)
         compute_environment = compute_environment or self.default_compute_environment(job)
-        self.galaxy_url = compute_environment.galaxy_url
         tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
 
         self.sa_session.flush()
@@ -1283,7 +1302,7 @@ class JobWrapper(HasResourceParameters):
     def default_compute_environment(self, job=None):
         if not job:
             job = self.get_job()
-        return SharedComputeEnvironment(self, job)
+        return SharedComputeEnvironment(self.job_io, job, self.app.config.new_file_path)
 
     def _load_job(self):
         # Load job from database and verify it has user or session.
@@ -2111,7 +2130,7 @@ class JobWrapper(HasResourceParameters):
 
         # What should be done with the result... 'file' or 'callback'
         result = self.get_destination_configuration("container_monitor_result", "file")
-        galaxy_url = self.galaxy_url()
+        galaxy_url = self.galaxy_url
         container_config_dict = {
             "container_name": container.container_name,
             "container_type": container.container_type,
@@ -2503,10 +2522,16 @@ class ComputeEnvironment(metaclass=ABCMeta):
 
 class JobIO:
 
-    def __init__(self, sa_session, job, dataset_path_rewriter):
+    def __init__(self, sa_session, job, dataset_path_rewriter, working_directory, galaxy_url, version_path, tool_directory, home_directory, tmp_directory):
         self.sa_session = sa_session
         self.job = job
         self.dataset_path_rewriter = dataset_path_rewriter
+        self.working_directory = working_directory
+        self.galaxy_url = galaxy_url
+        self.version_path = version_path
+        self.tool_directory = tool_directory
+        self.home_directory = home_directory
+        self.tmp_directory = tmp_directory
         self.output_paths = None
         self.output_hdas_and_paths = None
 
@@ -2627,22 +2652,22 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
     file systems.
     """
 
-    def __init__(self, job_wrapper, job):
-        self.app = job_wrapper.app
-        self.job_wrapper = job_wrapper
+    def __init__(self, job_io, job, new_file_path):
+        self._new_file_path = os.path.abspath(new_file_path)
+        self.job_io = job_io
         self.job = job
 
     def output_names(self):
-        return self.job_wrapper.get_output_basenames()
+        return self.job_io.get_output_basenames()
 
     def output_paths(self):
-        return self.job_wrapper.get_output_fnames()
+        return self.job_io.get_output_fnames()
 
     def input_path_rewrite(self, dataset):
-        return self.job_wrapper.get_input_path(dataset).false_path
+        return self.job_io.get_input_path(dataset).false_path
 
     def output_path_rewrite(self, dataset):
-        dataset_path = self.job_wrapper.get_output_path(dataset)
+        dataset_path = self.job_io.get_output_path(dataset)
         if hasattr(dataset_path, "false_path"):
             return dataset_path.false_path
         else:
@@ -2661,32 +2686,29 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
         return None
 
     def working_directory(self):
-        return self.job_wrapper.working_directory
+        return self.job_io.working_directory
 
     def env_config_directory(self):
         """Working directory (possibly as environment variable evaluation)."""
         return "$_GALAXY_JOB_DIR"
 
     def new_file_path(self):
-        return os.path.abspath(self.app.config.new_file_path)
+        return self._new_file_path
 
     def version_path(self):
-        return self.job_wrapper.get_version_string_path()
+        return self.job_io.version_path
 
     def tool_directory(self):
-        tool_dir = self.job_wrapper.tool.tool_dir
-        if tool_dir is not None:
-            tool_dir = os.path.abspath(tool_dir)
-        return tool_dir
+        return self.job_io.tool_directory
 
     def home_directory(self):
-        return self.job_wrapper.home_directory()
+        return self.job_io.home_directory
 
     def tmp_directory(self):
-        return self.job_wrapper.tmp_directory()
+        return self.job_io.tmp_directory
 
     def galaxy_url(self):
-        return self.job_wrapper.get_destination_configuration("galaxy_infrastructure_url")
+        return self.job_io.galaxy_url
 
 
 class NoopQueue:
