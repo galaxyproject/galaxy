@@ -1210,9 +1210,10 @@ class DirectoryModelExportStore(ModelExportStore):
 
     def export_job(self, job, tool=None):
         self.export_jobs([job], include_job_data=True)
-        if tool:
+        tool_source = getattr(tool, 'tool_source', None)
+        if tool_source:
             with open(os.path.join(self.export_directory, 'tool.xml'), 'w') as out:
-                out.write(tool.tool_source.to_string())
+                out.write(tool_source.to_string())
 
     def export_jobs(self, jobs, jobs_attrs=None, include_job_data=False):
         jobs_attrs = jobs_attrs or []
