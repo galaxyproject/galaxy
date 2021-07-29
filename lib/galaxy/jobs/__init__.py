@@ -980,7 +980,7 @@ class JobWrapper(HasResourceParameters):
         return self.__external_output_metadata
 
     @property
-    def _job_dataset_path_rewriter(self):
+    def dataset_path_rewriter(self):
         if self._dataset_path_rewriter is None:
             self._dataset_path_rewriter = get_path_rewriter(
                 outputs_to_working_directory=self.outputs_to_working_directory,
@@ -2259,7 +2259,7 @@ class TaskWrapper(JobWrapper):
     @property
     def dataset_path_rewriter(self):
         if self._dataset_path_rewriter is None:
-            self._dataset_path_rewriter = TaskPathRewriter(self.working_directory, self._job_dataset_path_rewriter)
+            self._dataset_path_rewriter = TaskPathRewriter(self.working_directory, super().dataset_path_rewriter)
         return self._dataset_path_rewriter
 
     def can_split(self):
