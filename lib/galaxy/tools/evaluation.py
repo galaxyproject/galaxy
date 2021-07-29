@@ -71,6 +71,9 @@ Do we want to supply galaxy config file ? Probably not.
 Dataset conversions ... would need to move outside of ToolEvaluator
 Access to secrets in general ... but we do serialize the object_store config, so maybe we don't care ?
 Input validation seems to require WorkRequestContext
+How do I get a ComputeEnvironment for the running job ?
+Maybe I need to reconstruct the interface ?
+
 
 Questions:
 Do we do parameter validation ?

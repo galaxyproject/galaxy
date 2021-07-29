@@ -1294,9 +1294,9 @@ class JobWrapper(HasResourceParameters):
         return job
 
     def _get_tool_evaluator(self, job):
-        # Hacky way to avoid cirular import for now.
+        # Hacky way to avoid circular import for now.
         # Placing ToolEvaluator in either jobs or tools
-        # result in ciruclar dependency.
+        # result in circular dependency.
         from galaxy.tools.evaluation import ToolEvaluator
 
         tool_evaluator = ToolEvaluator(
