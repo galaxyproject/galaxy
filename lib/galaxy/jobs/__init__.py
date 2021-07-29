@@ -35,9 +35,8 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.job_execution.datasets import (
+    get_path_rewriter,
     DatasetPath,
-    NullDatasetPathRewriter,
-    OutputsToWorkingDirectoryPathRewriter,
     TaskPathRewriter
 )
 from galaxy.job_execution.output_collect import (
@@ -984,12 +983,11 @@ class JobWrapper(HasResourceParameters):
     @property
     def _job_dataset_path_rewriter(self):
         if self._dataset_path_rewriter is None:
-            outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-            if outputs_to_working_directory:
-                output_directory = self.outputs_directory
-                self._dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(self.working_directory, output_directory)
-            else:
-                self._dataset_path_rewriter = NullDatasetPathRewriter()
+            self._dataset_path_rewriter = get_path_rewriter(
+                outputs_to_working_directory=self.outputs_to_working_directory,
+                working_directory=self.working_directory,
+                outputs_directory=self.outputs_directory
+            )
         return self._dataset_path_rewriter
 
     @property
@@ -1001,6 +999,10 @@ class JobWrapper(HasResourceParameters):
         """Default location of ``outputs_to_working_directory``.
         """
         return None if self.created_with_galaxy_version < packaging.version.parse("20.01") else "outputs"
+
+    @property
+    def outputs_to_working_directory(self):
+        return util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
 
     @property
     def created_with_galaxy_version(self):
@@ -1333,8 +1335,7 @@ class JobWrapper(HasResourceParameters):
                 # a better message
                 etype, evalue, tb = sys.exc_info()
 
-            outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-            if outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
+            if self.outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
@@ -1688,8 +1689,7 @@ class JobWrapper(HasResourceParameters):
         else:
             final_job_state = job.states.ERROR
 
-        outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-        if not extended_metadata and outputs_to_working_directory and not self.__link_file_check():
+        if not extended_metadata and self.outputs_to_working_directory and not self.__link_file_check():
             # output will be moved by job if metadata_strategy is extended_metadata, so skip moving here
             for dataset_path in self.get_output_fnames():
                 try:
@@ -2032,8 +2032,7 @@ class JobWrapper(HasResourceParameters):
         if self.output_paths is None:
             self.get_output_fnames()
         for dp in self.output_paths:
-            outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-            if outputs_to_working_directory and os.path.basename(dp.false_path) == file:
+            if self.outputs_to_working_directory and os.path.basename(dp.false_path) == file:
                 return dp.dataset_id
             elif os.path.basename(dp.real_path) == file:
                 return dp.dataset_id
@@ -2604,7 +2603,7 @@ class SimpleComputeEnvironment:
 
 
 class SharedComputeEnvironment(SimpleComputeEnvironment):
-    """ Default ComputeEnviornment for job and task wrapper to pass
+    """ Default ComputeEnvironment for job and task wrapper to pass
     to ToolEvaluator - valid when Galaxy and compute share all the relevant
     file systems.
     """

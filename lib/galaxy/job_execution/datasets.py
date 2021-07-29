@@ -120,3 +120,10 @@ class TaskPathRewriter:
         dataset_file_name = dataset.file_name
         job_file_name = self.job_dataset_path_rewriter.rewrite_dataset_path(dataset, dataset_type) or dataset_file_name
         return os.path.join(self.working_directory, os.path.basename(job_file_name))
+
+
+def get_path_rewriter(outputs_to_working_directory, working_directory=None, outputs_directory=None):
+        if outputs_to_working_directory:
+            return OutputsToWorkingDirectoryPathRewriter(working_directory, outputs_directory)
+        else:
+            return NullDatasetPathRewriter()
