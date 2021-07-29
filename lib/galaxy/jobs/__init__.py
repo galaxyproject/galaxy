@@ -2449,77 +2449,6 @@ class TaskWrapper(JobWrapper):
         return working_directory
 
 
-class ComputeEnvironment(metaclass=ABCMeta):
-    """ Definition of the job as it will be run on the (potentially) remote
-    compute server.
-    """
-
-    @abstractmethod
-    def output_names(self):
-        """ Output unqualified filenames defined by job. """
-
-    @abstractmethod
-    def input_path_rewrite(self, dataset):
-        """Input path for specified dataset."""
-
-    @abstractmethod
-    def output_path_rewrite(self, dataset):
-        """Output path for specified dataset."""
-
-    @abstractmethod
-    def input_extra_files_rewrite(self, dataset):
-        """Input extra files path rewrite for specified dataset."""
-
-    @abstractmethod
-    def output_extra_files_rewrite(self, dataset):
-        """Output extra files path rewrite for specified dataset."""
-
-    @abstractmethod
-    def input_metadata_rewrite(self, dataset, metadata_value):
-        """Input metadata path rewrite for specified dataset."""
-
-    @abstractmethod
-    def unstructured_path_rewrite(self, path):
-        """Rewrite loc file paths, etc.."""
-
-    @abstractmethod
-    def working_directory(self):
-        """ Job working directory (potentially remote) """
-
-    @abstractmethod
-    def config_directory(self):
-        """ Directory containing config files (potentially remote) """
-
-    @abstractmethod
-    def sep(self):
-        """ os.path.sep for the platform this job will execute in.
-        """
-
-    @abstractmethod
-    def new_file_path(self):
-        """ Absolute path to dump new files for this job on compute server. """
-
-    @abstractmethod
-    def tool_directory(self):
-        """ Absolute path to tool files for this job on compute server. """
-
-    @abstractmethod
-    def version_path(self):
-        """ Location of the version file for the underlying tool. """
-
-    @abstractmethod
-    def home_directory(self):
-        """Home directory of target job - none if HOME should not be set."""
-
-    @abstractmethod
-    def tmp_directory(self):
-        """Temp directory of target job - none if HOME should not be set."""
-
-    @abstractmethod
-    def galaxy_url(self):
-        """URL to access Galaxy API from for this compute environment."""
-
-
 class JobIO:
 
     def __init__(self, sa_session, job, dataset_path_rewriter, working_directory, galaxy_url, version_path, tool_directory, home_directory, tmp_directory):
@@ -2635,6 +2564,77 @@ class JobIO:
             elif os.path.basename(dp.real_path) == file:
                 return dp.dataset_id
         return None
+
+
+class ComputeEnvironment(metaclass=ABCMeta):
+    """ Definition of the job as it will be run on the (potentially) remote
+    compute server.
+    """
+
+    @abstractmethod
+    def output_names(self):
+        """ Output unqualified filenames defined by job. """
+
+    @abstractmethod
+    def input_path_rewrite(self, dataset):
+        """Input path for specified dataset."""
+
+    @abstractmethod
+    def output_path_rewrite(self, dataset):
+        """Output path for specified dataset."""
+
+    @abstractmethod
+    def input_extra_files_rewrite(self, dataset):
+        """Input extra files path rewrite for specified dataset."""
+
+    @abstractmethod
+    def output_extra_files_rewrite(self, dataset):
+        """Output extra files path rewrite for specified dataset."""
+
+    @abstractmethod
+    def input_metadata_rewrite(self, dataset, metadata_value):
+        """Input metadata path rewrite for specified dataset."""
+
+    @abstractmethod
+    def unstructured_path_rewrite(self, path):
+        """Rewrite loc file paths, etc.."""
+
+    @abstractmethod
+    def working_directory(self):
+        """ Job working directory (potentially remote) """
+
+    @abstractmethod
+    def config_directory(self):
+        """ Directory containing config files (potentially remote) """
+
+    @abstractmethod
+    def sep(self):
+        """ os.path.sep for the platform this job will execute in.
+        """
+
+    @abstractmethod
+    def new_file_path(self):
+        """ Absolute path to dump new files for this job on compute server. """
+
+    @abstractmethod
+    def tool_directory(self):
+        """ Absolute path to tool files for this job on compute server. """
+
+    @abstractmethod
+    def version_path(self):
+        """ Location of the version file for the underlying tool. """
+
+    @abstractmethod
+    def home_directory(self):
+        """Home directory of target job - none if HOME should not be set."""
+
+    @abstractmethod
+    def tmp_directory(self):
+        """Temp directory of target job - none if HOME should not be set."""
+
+    @abstractmethod
+    def galaxy_url(self):
+        """URL to access Galaxy API from for this compute environment."""
 
 
 class SimpleComputeEnvironment:
