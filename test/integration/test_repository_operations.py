@@ -59,7 +59,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
 
     def test_repository_update(self):
         response = self._install_repository(revision=REVISION_4, version="0.0.3")[0]
-        assert response['ctx_rev'] == '4'
+        assert int(response['ctx_rev']) >= 4
         repo_response = self._get("/api/tool_shed_repositories/%s" % response['id']).json()
         assert repo_response['tool_shed_status']['revision_update'] == 'False'  # that should really be a boolean
         # now checkout revision 3 and attempt an update
@@ -108,7 +108,8 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         response = self._install_repository(revision=REVISION_4, version="0.0.3", verify_tool_absent=False)[0]
         assert response['changeset_revision'] == REVISION_4
         assert response['installed_changeset_revision'] == REVISION_3
-        assert response['ctx_rev'] == '4'
+        # should be 4 or newer
+        assert int(response['ctx_rev']) >= 4
 
     def _uninstall_repository(self):
         tool = self._get('/api/tools/collection_column_join').json()
