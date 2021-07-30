@@ -456,6 +456,41 @@ class TestDynamicTool(BaseTest):
             assert stored_obj.workflow_steps == [workflow_step]
 
 
+class TestEvent(BaseTest):
+
+    # def test_table(self, cls_):
+    #     assert cls_.__tablename__ == 'event'
+
+    def test_columns(self, session, cls_, history, galaxy_session, user):
+        message, tool_id = 'a', 'b'
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj = cls_(message, history, user, galaxy_session)
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.tool_id = tool_id
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.history_id == history.id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.message == message
+            assert stored_obj.session_id == galaxy_session.id
+            assert stored_obj.tool_id == tool_id
+
+    def test_relationships(self, session, cls_, history, galaxy_session, user):
+        obj = cls_(None, history, user, galaxy_session)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.history.id == history.id
+            assert stored_obj.user.id == user.id
+            assert stored_obj.galaxy_session.id == galaxy_session.id
+
+
 class TestFormDefinition(BaseTest):
 
     def test_table(self, cls_):
