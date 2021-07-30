@@ -410,6 +410,29 @@ class TestDefaultUserPermissions(BaseTest):
             assert stored_obj.role.id == role.id
 
 
+class TestDeferredJob(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'deferred_job'
+
+    def test_columns(self, session, cls_, model):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        state, plugin, params = model.DeferredJob.states.NEW, 'a', 'b'
+        obj = cls_(state, plugin, params)
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.state == state
+            assert stored_obj.plugin == plugin
+            assert stored_obj.params == params
+
+
 class TestDynamicTool(BaseTest):
 
     def test_table(self, cls_):
