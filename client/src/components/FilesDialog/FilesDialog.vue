@@ -110,9 +110,10 @@ export default {
     methods: {
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
         formatRows() {
+            this.hasValue = this.model.count() > 0 || this.selectedDirs.length > 0;
+
             for (const item of this.items) {
                 let _rowVariant = "active";
-                console.log(this.model.finalize());
                 if (item.isLeaf || !this.fileMode) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
                 } else {
@@ -135,9 +136,8 @@ export default {
                 }
             } else {
                 // record is directory
-
-                //you cannot select entire root directory
                 if (this.urlTracker.atRoot()) {
+                    //you cannot select entire root directory
                     this.open(record);
                     return;
                 }
