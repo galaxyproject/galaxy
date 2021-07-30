@@ -8,7 +8,7 @@
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
-        <template v-if="this.multiple && items.length > 0" v-slot:selectAll>
+        <template v-if="undoShow && multiple && items.length > 0" v-slot:selectAll>
             <b-button @click="toggleSelectAll()" variant="light">
                 <font-awesome-icon icon="th-large" /> {{ `${allSelected ? "Unselect" : "Select"}` }} entire folder
             </b-button>
@@ -112,12 +112,11 @@ export default {
         formatRows() {
             for (const item of this.items) {
                 let _rowVariant = "active";
+                console.log(this.model.finalize());
                 if (item.isLeaf || !this.fileMode) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
                 } else {
-                    console.log("selectedDirs", this.selectedDirs);
-                    console.log("item.id", item.id);
-                    _rowVariant = this.selectedDirs.includes(item.id) ? "success" : "default";
+                    _rowVariant = this.includesDirectory(item.id) ? "success" : "default";
                 }
                 Vue.set(item, "_rowVariant", _rowVariant);
             }
@@ -125,6 +124,7 @@ export default {
         },
         /** Collects selected datasets in value array **/
         clicked: function (record) {
+            // record is file
             if (record.isLeaf || !this.fileMode) {
                 this.model.add(record);
                 this.hasValue = this.model.count() > 0;
@@ -134,37 +134,63 @@ export default {
                     this.finalize();
                 }
             } else {
+                // record is directory
+
+                //you cannot select entire root directory
+                if (this.urlTracker.atRoot()) {
+                    this.open(record);
+                    return;
+                }
+                // add clicked directory
+                this.addDirectory(record);
+            }
+            this.formatRows();
+        },
+        addDirectory(record) {
+            if (this.includesDirectory(record.id)) {
+                // remove directory and all subdirectories/files under it
+                console.log(this.selectedDirs);
+                this.selectedDirs = this.selectedDirs.filter(({ id, path }) => {
+                    id !== record.id || !path.startsWith(record.path);
+                });
+                this.model.finalize().forEach((file) => {
+                    console.log(file);
+                    if (file.path.startsWith(record.path)) {
+                        this.model.add(record);
+                    }
+                });
+            } else {
+                this.selectedDirs.push(record);
+                // check for subdirectories
                 this.services.list(record.url, true).then((items) => {
-                    //     this.parseItems(items);
-                    //     console.log(this.items);
-                    //     console.log("!!!!!!!!! this.mode",  this.mode)
                     items.forEach((item) => {
+                        // construct record
                         const itemClass = item.class;
-                        record = {
+                        const sub_record = {
                             id: item.uri,
                             label: item.name,
+                            // remove first and last slash
+                            path: item.path.replace(/^\/|\/$/g, ""),
                             time: item.ctime,
                             isLeaf: itemClass == "File",
                             size: item.size,
                             url: item.uri,
                             labelTitle: item.uri,
                         };
-                        if (record.isLeaf) {
-                            this.model.add(record);
+                        // add file
+                        if (sub_record.isLeaf) {
+                            console.log("file added");
+                            this.model.add(sub_record);
                         } else {
-                            // console.log("!!!!! SUBFolder case! ");
-                            if (this.selectedDirs.includes(record.id)) {
-                                console.log("INCLUDES")
-                                this.selectedDirs = this.selectedDirs.filter((id) => id !== record.id);
-                            } else {
-                                this.selectedDirs.push(record.id);
-                            }
+                            // get all Subdirs
+                            this.selectedDirs.push(sub_record);
                         }
-                        this.formatRows();
                     });
                 });
-
             }
+        },
+        includesDirectory(directoryId) {
+            return this.selectedDirs.some(({ id }) => id === directoryId);
         },
         open: function (record) {
             this.load(record.url);
@@ -245,6 +271,7 @@ export default {
                     const itemClass = item.class;
                     return {
                         id: item.uri,
+                        path: item.path.replace(/^\/|\/$/g, ""),
                         label: item.name,
                         time: item.ctime,
                         isLeaf: itemClass == "File",
@@ -259,6 +286,7 @@ export default {
                     .map((item) => {
                         return {
                             id: item.uri,
+                            path: item.path.replace(/^\/|\/$/g, ""),
                             label: item.name,
                             time: item.ctime,
                             isLeaf: false,

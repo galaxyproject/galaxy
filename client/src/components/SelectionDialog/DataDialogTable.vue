@@ -18,7 +18,7 @@
                 />
             </template>
             <template v-slot:cell(label)="data">
-                <div style="cursor: pointer" @click="debug('!!!!!!!!')">
+                <div style="cursor: pointer">
                     <pre
                         v-if="isEncoded"
                         :title="data.item.labelTitle"
@@ -37,7 +37,9 @@
                 {{ data.value ? data.value : "-" }}
             </template>
             <template v-slot:cell(navigate)="data">
-                <i v-if="!data.item.isLeaf" class="fa fa-caret-square-o-right" @click.stop="open(data.item)" />
+                <b-button size="sm" v-if="!data.item.isLeaf" @click.stop="open(data.item)">
+                    <font-awesome-icon :icon="['far', 'caret-square-right']" />
+                </b-button>
             </template>
         </b-table>
         <div v-if="nItems === 0">
@@ -54,14 +56,14 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
+import { faCheckSquare, faSquare, faCaretSquareRight } from "@fortawesome/free-regular-svg-icons";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
 Vue.use(BootstrapVue);
 
-[faCheckSquare, faSquare, faFolder].forEach((item) => library.add(item));
+[faCheckSquare, faSquare, faFolder, faCaretSquareRight].forEach((item) => library.add(item));
 
 const LABEL_FIELD = { key: "label", sortable: true };
 const DETAILS_FIELD = { key: "details", sortable: true };
