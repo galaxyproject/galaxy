@@ -141,7 +141,7 @@ OUTPUTS_COLLECTION_FORMAT_SOURCE = """
     <outputs>
         <collection name="output_collection" type="paired">
             <data name="forward" format_source="input_readpair" />
-            <data name="reverse" format_source="input_readpair" />
+            <data name="reverse" format_source="input_readpair" format="fastq"/>
         </collection>
     </outputs>
 </tool>
@@ -218,7 +218,8 @@ TESTS = [
     (
         OUTPUTS_COLLECTION_FORMAT_SOURCE, outputs.lint_output,
         lambda x:
-            len(x.warn_messages) == 0 and len(x.error_messages) == 0
+            "Tool data output reverse should use either format_source or format/ext" in x.warn_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 0
     ),
 ]
 
