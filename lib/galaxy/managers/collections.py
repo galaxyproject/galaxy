@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 
 from sqlalchemy.orm import joinedload, Query
 
@@ -233,7 +234,10 @@ class DatasetCollectionManager:
         for datatype in dbkeys_and_extensions[1]:
             new_converters = {}
             new_converters = datatypes_registry.get_converters_by_datatype(datatype)
-            set_of_new_converters = set(new_converters.values())
+            set_of_new_converters = set()
+            for tgt_type, tgt_val in new_converters.items():
+                converter = (tgt_type, tgt_val, datatype)
+                set_of_new_converters.add(converter)
             if (first_extension is True):
                 suitable_converters = set_of_new_converters
                 first_extension = False
@@ -241,7 +245,7 @@ class DatasetCollectionManager:
                 suitable_converters = suitable_converters.intersection(set_of_new_converters)
         suitable_tool_ids = list()
         for tool in suitable_converters:
-            tool_info = {"tool_id": tool.id, "name": tool.name}
+            tool_info = {"tool_id": tool[1].id, "name": tool[1].name, "target_type": tool[0], "original_type": tool[2]}
             suitable_tool_ids.append(tool_info)
         return suitable_tool_ids
 

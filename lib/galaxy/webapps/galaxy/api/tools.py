@@ -4,6 +4,7 @@ from json import dumps, loads
 from typing import Any, cast, Dict, Optional
 
 from galaxy import exceptions, util, web
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
@@ -36,6 +37,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     """
     history_manager: HistoryManager = depends(HistoryManager)
     hda_manager: HDAManager = depends(HDAManager)
+    hdca_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans: GalaxyWebTransaction, **kwds):
@@ -421,6 +423,44 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         for citation in tool.citations:
             rval.append(citation.to_dict('bibtex'))
         return rval
+
+    @expose_api
+    def conversion(self, trans:GalaxyWebTransaction, id, payload, **kwd):
+        converter = self._get_tool(id, user=trans.user)
+        target_type = payload.get("target_type")
+        original_type = payload.get("original_type")
+        original_collection = payload.get("collection_data")
+        collection_inst = self.hdca_manager.get_dataset_collection_instance(trans, id=original_collection, instance_type="history")
+        # List of string of dependencies
+        try:
+            deps = trans.app.datatypes_registry.converter_deps[original_type][target_type]
+        except KeyError:
+            deps = {}
+        # Generate parameter dictionary
+        params = {}
+        # determine input parameter name and add to params
+        input_name = 'input1'
+        for key, value in converter.inputs.items():
+            if deps and value.name in deps:
+                params[value.name] = deps[value.name]
+            elif value.type == 'data':
+                input_name = key
+
+        params[input_name] = {
+            "values": [
+                {
+                    "id": original_collection,
+                    "hid": collection_inst.hid,
+                    "src": "hdca",
+                    "keep": False
+                }
+            ],
+            "batch": True
+        }
+       
+        # Make the target datatype available to the converter
+        params['__target_datatype__'] = target_type
+        converter.handle_input(trans, params)
 
     @expose_api_anonymous_and_sessionless
     def xrefs(self, trans: GalaxyWebTransaction, id, **kwds):

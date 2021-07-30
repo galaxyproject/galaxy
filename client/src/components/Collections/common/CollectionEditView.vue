@@ -112,11 +112,17 @@ export default {
             axios.put(url, data).catch(this.handleError);
         },
         clickedConvert: function (selectedConverter) {
-            const url = prependPath("/api/tools/");
+            const url = prependPath("/api/tools/conversion/" + selectedConverter.tool_id);
+            console.log(selectedConverter);
             const data = {
+                collection_data: this.collection_id,
+                name: selectedConverter.name,
+                original_type: selectedConverter.original_type,
+                target_type: selectedConverter.target_type,
                 tool_id: selectedConverter.tool_id,
-                inputs: { input: { batch: true, values: [{ src: "hdca", id: this.collection_id }] } },
             };
+            const data2 = JSON.stringify(this.selectedConverter);
+            console.log(data2)
             axios.post(url, data).catch(this.handleError);
         },
         handleError: function (err) {
