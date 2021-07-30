@@ -463,13 +463,6 @@ model.DatasetCollectionElement.table = Table(
     Column("element_index", Integer),
     Column("element_identifier", Unicode(255), ))
 
-model.GalaxySessionToHistoryAssociation.table = Table(
-    "galaxy_session_to_history", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True))
-
 model.StoredWorkflow.table = Table(
     "stored_workflow", metadata,
     Column("id", Integer, primary_key=True),
@@ -1215,11 +1208,6 @@ simple_mapping(model.DatasetCollectionElement,
         primaryjoin=(model.DatasetCollectionElement.table.c.ldda_id == model.LibraryDatasetDatasetAssociation.table.c.id)),
     child_collection=relation(model.DatasetCollection,
         primaryjoin=(model.DatasetCollectionElement.table.c.child_collection_id == model.DatasetCollection.table.c.id)))
-
-mapper_registry.map_imperatively(model.GalaxySessionToHistoryAssociation, model.GalaxySessionToHistoryAssociation.table, properties=dict(
-    galaxy_session=relation(model.GalaxySession, backref='histories'),
-    history=relation(model.History, backref='galaxy_sessions')
-))
 
 mapper_registry.map_imperatively(model.Workflow, model.Workflow.table, properties=dict(
     steps=relation(model.WorkflowStep,
