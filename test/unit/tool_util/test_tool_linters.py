@@ -1,7 +1,7 @@
 import pytest
 
 from galaxy.tool_util.lint import LintContext
-from galaxy.tool_util.linters import general, inputs
+from galaxy.tool_util.linters import general, inputs, outputs
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
 
@@ -134,6 +134,19 @@ VALIDATOR_INCOMPATIBILITIES = """
 </tool>
 """
 
+OUTPUTS_COLLECTION_FORMAT_SOURCE = """
+<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <outputs>
+        <collection name="output_collection" type="paired">
+            <data name="forward" format_source="input_readpair" />
+            <data name="reverse" format_source="input_readpair" />
+        </collection>
+    </outputs>
+</tool>
+"""
+
 TESTS = [
     (
         NO_SECTIONS_XML, inputs.lint_inputs,
@@ -202,6 +215,11 @@ TESTS = [
             and "Parameter [param_name]: 'regex' validators need to define an 'expression' attribute" in x.error_messages
             and len(x.warn_messages) == 1 and len(x.error_messages) == 4
     ),
+    (
+        OUTPUTS_COLLECTION_FORMAT_SOURCE, outputs.lint_output,
+        lambda x:
+            len(x.warn_messages) == 0 and len(x.error_messages) == 0
+    ),
 ]
 
 TEST_IDS = [
@@ -212,7 +230,8 @@ TEST_IDS = [
     'select deprecations',
     'select option definitions',
     'hazardous whitespace',
-    'validator imcompatibilities'
+    'validator imcompatibilities',
+    'outputs collection static elements with format_source'
 ]
 
 
