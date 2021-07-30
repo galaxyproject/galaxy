@@ -6616,9 +6616,19 @@ class WorkflowRequestStepState(Base, Dictifiable, RepresentById):
         self.type = type  # TODO this is incorrect. Verify and remove.
 
 
-class WorkflowRequestToInputDatasetAssociation(Dictifiable, RepresentById):
+class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, RepresentById):
     """ Workflow step input dataset parameters.
     """
+    __tablename__ = 'workflow_request_to_input_dataset'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255))
+    workflow_invocation_id = Column(Integer, ForeignKey("workflow_invocation.id"), index=True)
+    workflow_step_id = Column(Integer, ForeignKey("workflow_step.id"))
+    dataset_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True)
+    workflow_step = relationship('WorkflowStep')
+    dataset = relationship('HistoryDatasetAssociation')
+
     history_content_type = "dataset"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
 

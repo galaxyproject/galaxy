@@ -3104,6 +3104,39 @@ class TestWorkflowRequestStepState(BaseTest):
             assert stored_obj.workflow_step.id == workflow_step.id
 
 
+class TestWorkflowRequestToInputDatasetAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow_request_to_input_dataset'
+
+    def test_columns(self, session, cls_, workflow_step, workflow_invocation, history_dataset_association):
+        name = 'a'
+        obj = cls_()
+        obj.name = name
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+        obj.dataset = history_dataset_association
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.workflow_invocation_id == workflow_invocation.id
+            assert stored_obj.workflow_step_id == workflow_step.id
+            assert stored_obj.dataset_id == history_dataset_association.id
+
+    def test_relationships(self, session, cls_, workflow_step, workflow_invocation, history_dataset_association):
+        obj = cls_()
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+        obj.dataset = history_dataset_association
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.workflow_invocation.id == workflow_invocation.id
+            assert stored_obj.workflow_step.id == workflow_step.id
+            assert stored_obj.dataset_id == history_dataset_association.id
+
+
 class TestWorkflowStepAnnotationAssociation(BaseTest):
 
     def test_table(self, cls_):
