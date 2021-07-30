@@ -594,6 +594,60 @@ class TestFormValues(BaseTest):
             assert stored_obj.form_definition.id == form_definition.id
 
 
+class TestGalaxySession(BaseTest):
+
+    # def test_table(self, cls_):
+    #    assert cls_.__tablename__ == 'galaxy_session'
+
+    def test_columns(self, session, cls_, user, history, galaxy_session):
+
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        remote_host = 'a'
+        remote_addr = 'b'
+        referer = 'c'
+        session_key = 'd'
+        is_valid = True
+        disk_usage = 9
+        last_action = update_time + timedelta(hours=1)
+
+        obj = cls_(user=user, current_history=history, prev_session_id=galaxy_session.id)
+
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.remote_host = remote_host
+        obj.remote_addr = remote_addr
+        obj.referer = referer
+        obj.session_key = session_key
+        obj.is_valid = is_valid
+        obj.disk_usage = disk_usage
+        obj.last_action = last_action
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.user_id == user.id
+            assert stored_obj.remote_host == remote_host
+            assert stored_obj.remote_addr == remote_addr
+            assert stored_obj.referer == referer
+            assert stored_obj.current_history_id == history.id
+            assert stored_obj.session_key == session_key
+            assert stored_obj.is_valid == is_valid
+            assert stored_obj.prev_session_id == galaxy_session.id
+            assert stored_obj.disk_usage == disk_usage
+            assert stored_obj.last_action == last_action
+
+    def test_relationships(self, session, cls_, user, history):
+        obj = cls_(user=user, current_history=history)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.user.id == user.id
+            assert stored_obj.current_history.id == history.id
+
+
 class TestGroupQuotaAssociation(BaseTest):
 
     def test_table(self, cls_):
