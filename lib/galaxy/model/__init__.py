@@ -6630,9 +6630,17 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Dictifiable, RepresentB
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
 
 
-class WorkflowRequestInputStepParameter(Dictifiable, RepresentById):
+class WorkflowRequestInputStepParameter(Base, Dictifiable, RepresentById):
     """ Workflow step parameter inputs.
     """
+    __tablename__ = 'workflow_request_input_step_parameter'
+
+    id = Column(Integer, primary_key=True)
+    workflow_invocation_id = Column(Integer, ForeignKey('workflow_invocation.id'), index=True)
+    workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'))
+    parameter_value = Column(MutableJSONType)
+    workflow_step = relationship('WorkflowStep')
+
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value']
 
 

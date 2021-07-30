@@ -3047,6 +3047,36 @@ class TestWorkerProcess(BaseTest):
             assert stored_obj.update_time == update_time
 
 
+class TestWorkflowRequestInputStepParameter(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow_request_input_step_parameter'
+
+    def test_columns(self, session, cls_, workflow_step, workflow_invocation):
+        parameter_value = 'a'
+        obj = cls_()
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+        obj.parameter_value = parameter_value
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.workflow_invocation_id == workflow_invocation.id
+            assert stored_obj.workflow_step_id == workflow_step.id
+            assert stored_obj.parameter_value == parameter_value
+
+    def test_relationships(self, session, cls_, workflow_step, workflow_invocation):
+        obj = cls_()
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.workflow_invocation.id == workflow_invocation.id
+            assert stored_obj.workflow_step.id == workflow_step.id
+
+
 class TestWorkflowRequestStepState(BaseTest):
 
     def test_table(self, cls_):
