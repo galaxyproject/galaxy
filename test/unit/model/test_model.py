@@ -1260,6 +1260,31 @@ class TestJobExportHistoryArchive(BaseTest):
             assert stored_obj.dataset.id == dataset.id
 
 
+class TestJobImportHistoryArchive(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'job_import_history_archive'
+
+    def test_columns(self, session, cls_, job, history):
+        archive_dir = 'a'
+        obj = cls_(job, history, archive_dir)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.job_id == job.id
+            assert stored_obj.history_id == history.id
+            assert stored_obj. archive_dir == archive_dir
+
+    def test_relationships(self, session, cls_, job, history, dataset):
+        obj = cls_(job, history)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.job.id == job.id
+            assert stored_obj.history.id == history.id
+
+
 class TestJobMetricNumeric(BaseTest):
 
     def test_table(self, cls_):

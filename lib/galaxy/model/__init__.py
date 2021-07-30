@@ -1965,7 +1965,16 @@ class JobExportHistoryArchive(Base, RepresentById):
         }
 
 
-class JobImportHistoryArchive(RepresentById):
+class JobImportHistoryArchive(Base, RepresentById):
+    __tablename__ = 'job_import_history_archive'
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+    archive_dir = Column(TEXT)
+    job = relationship('Job')
+    history = relationship('History')
+
     def __init__(self, job=None, history=None, archive_dir=None):
         self.job = job
         self.history = history
