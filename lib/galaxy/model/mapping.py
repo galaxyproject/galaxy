@@ -106,19 +106,6 @@ model.HistoryDatasetAssociation.table = Table(
            ForeignKey("history_dataset_collection_association.id"), nullable=True))
 
 
-model.HistoryDatasetAssociationHistory.table = Table(
-    "history_dataset_association_history", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("update_time", DateTime, default=now),
-    Column("version", Integer),
-    Column("name", TrimmedString(255)),
-    Column("extension", TrimmedString(64)),
-    Column("metadata", JSONType, key="_metadata"),
-    Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
-)
-
-
 model.Dataset.table = Table(
     "dataset", metadata,
     Column("id", Integer, primary_key=True),
@@ -867,8 +854,6 @@ simple_mapping(model.Dataset,
     hashes=relation(model.DatasetHash, back_populates='dataset'),
     sources=relation(model.DatasetSource, back_populates='dataset'),
 )
-
-mapper_registry.map_imperatively(model.HistoryDatasetAssociationHistory, model.HistoryDatasetAssociationHistory.table)
 
 mapper_registry.map_imperatively(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table, properties=dict(
     history_dataset_association=relation(model.HistoryDatasetAssociation),
