@@ -39,8 +39,7 @@ class PosixFilesSource(BaseFilesSource):
         if recursive:
             res = []
             for (p, dirs, files) in safe_walk(dir_path, allowlist=self._allowlist):
-                dir_path_root = os.path.split(dir_path)[0]
-                rel_dir = os.path.relpath(p, dir_path_root)
+                rel_dir = os.path.relpath(p, self.root)
                 to_dict = functools.partial(self._resource_info_to_dict, rel_dir, user_context=user_context)
                 res.extend(map(to_dict, dirs))
                 res.extend(map(to_dict, files))
