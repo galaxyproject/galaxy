@@ -4673,7 +4673,13 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
             log.warning(f'Attempt to updated parent folder times failed: {ret.rowcount} records updated.')
 
 
-class ExtendedMetadata(RepresentById):
+class ExtendedMetadata(Base, RepresentById):
+    __tablename__ = 'extended_metadata'
+
+    id = Column(Integer, primary_key=True)
+    data = Column(MutableJSONType)
+    children = relationship('ExtendedMetadataIndex', back_populates='extended_metadata')
+
     def __init__(self, data):
         self.data = data
 

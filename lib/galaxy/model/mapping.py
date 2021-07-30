@@ -195,11 +195,6 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("message", TrimmedString(255)))
 
-model.ExtendedMetadata.table = Table(
-    "extended_metadata", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("data", MutableJSONType))
-
 model.ExtendedMetadataIndex.table = Table(
     "extended_metadata_index", metadata,
     Column("id", Integer, primary_key=True),
@@ -819,7 +814,7 @@ simple_mapping(model.HistoryDatasetAssociation,
         back_populates="history_dataset_association"),
     extended_metadata=relation(model.ExtendedMetadata,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.extended_metadata_id
-                     == model.ExtendedMetadata.table.c.id)),
+                     == model.ExtendedMetadata.id)),
     hidden_beneath_collection_instance=relation(model.HistoryDatasetCollectionAssociation,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id
                      == model.HistoryDatasetCollectionAssociation.table.c.id),
@@ -954,11 +949,9 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
     )
 ))
 
-mapper_registry.map_imperatively(model.ExtendedMetadata, model.ExtendedMetadata.table, properties=dict(
-    children=relation(model.ExtendedMetadataIndex, backref='extended_metadata')
+mapper_registry.map_imperatively(model.ExtendedMetadataIndex, model.ExtendedMetadataIndex.table, properties=dict(
+    extended_metadata=relation(model.ExtendedMetadata, back_populates='children')
 ))
-
-mapper_registry.map_imperatively(model.ExtendedMetadataIndex, model.ExtendedMetadataIndex.table)
 
 mapper_registry.map_imperatively(model.LibraryInfoAssociation, model.LibraryInfoAssociation.table, properties=dict(
     library=relation(model.Library,
@@ -1012,7 +1005,7 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.L
                   order_by=model.LibraryDatasetDatasetAssociationTagAssociation.id,
                   back_populates='library_dataset_dataset_association'),
     extended_metadata=relation(model.ExtendedMetadata,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id)
+        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.id)
     ),
     _metadata=deferred(model.LibraryDatasetDatasetAssociation.table.c._metadata),
     actions=relation(
