@@ -1255,6 +1255,22 @@ class TestHistoryTagAssociation(BaseTest):
             assert stored_obj.user.id == user.id
 
 
+class TestImplicitCollectionJobs(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'implicit_collection_jobs'
+
+    def test_columns(self, session, cls_, model):
+        populated_state = model.ImplicitCollectionJobs.populated_states.NEW
+        obj = cls_()
+        obj.populated_state = populated_state
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.populated_state == populated_state
+
+
 class TestJobExportHistoryArchive(BaseTest):
 
     def test_table(self, cls_):

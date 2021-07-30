@@ -1786,7 +1786,11 @@ class ImplicitlyCreatedDatasetCollectionInput(RepresentById):
         self.input_dataset_collection = input_dataset_collection
 
 
-class ImplicitCollectionJobs(RepresentById):
+class ImplicitCollectionJobs(Base, RepresentById):
+    __tablename__ = 'implicit_collection_jobs'
+
+    id = Column(Integer, primary_key=True)
+    populated_state = Column(TrimmedString(64), default='new', nullable=False)
 
     class populated_states(str, Enum):
         NEW = 'new'  # New implicit jobs object, unpopulated job associations
