@@ -1232,6 +1232,34 @@ class TestHistoryTagAssociation(BaseTest):
             assert stored_obj.user.id == user.id
 
 
+class TestJobExportHistoryArchive(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'job_export_history_archive'
+
+    def test_columns(self, session, cls_, job, history, dataset):
+        compressed, history_attrs_filename = True, 'a'
+        obj = cls_(job, history, dataset, compressed, history_attrs_filename)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.job_id == job.id
+            assert stored_obj.history_id == history.id
+            assert stored_obj.dataset_id == dataset.id
+            assert stored_obj.compressed == compressed
+            assert stored_obj.history_attrs_filename == history_attrs_filename
+
+    def test_relationships(self, session, cls_, job, history, dataset):
+        obj = cls_(job, history, dataset, True, None)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.job.id == job.id
+            assert stored_obj.history.id == history.id
+            assert stored_obj.dataset.id == dataset.id
+
+
 class TestJobMetricNumeric(BaseTest):
 
     def test_table(self, cls_):

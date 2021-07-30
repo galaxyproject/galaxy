@@ -1873,7 +1873,19 @@ class FakeDatasetAssociation:
         return isinstance(other, FakeDatasetAssociation) and self.dataset == other.dataset
 
 
-class JobExportHistoryArchive(RepresentById):
+class JobExportHistoryArchive(Base, RepresentById):
+    __tablename__ = 'job_export_history_archive'
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+    dataset_id = Column(Integer, ForeignKey('dataset.id'), index=True)
+    compressed = Column(Boolean, index=True, default=False)
+    history_attrs_filename = Column(TEXT)
+    job = relationship('Job')
+    dataset = relationship('Dataset', back_populates='job_export_history_archive')
+    history = relationship('History', back_populates='exports')
+
     ATTRS_FILENAME_HISTORY = 'history_attrs.txt'
 
     def __init__(self, job=None, history=None, dataset=None, compressed=False,
