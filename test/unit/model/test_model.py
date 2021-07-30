@@ -639,13 +639,41 @@ class TestGalaxySession(BaseTest):
             assert stored_obj.disk_usage == disk_usage
             assert stored_obj.last_action == last_action
 
-    def test_relationships(self, session, cls_, user, history):
+    def test_relationships(self, session, cls_, user, history, galaxy_session_history_association):
         obj = cls_(user=user, current_history=history)
+        obj.histories.append(galaxy_session_history_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.user.id == user.id
             assert stored_obj.current_history.id == history.id
+            assert stored_obj.histories == [galaxy_session_history_association]
+
+
+class TestGalaxySessionToHistoryAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'galaxy_session_to_history'
+
+    def test_columns(self, session, cls_, galaxy_session, history):
+        create_time = datetime.now()
+        obj = cls_(galaxy_session, history)
+        obj.create_time = create_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.session_id == galaxy_session.id
+            assert stored_obj.history_id == history.id
+
+    def test_relationships(self, session, cls_, galaxy_session, history):
+        obj = cls_(galaxy_session, history)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.galaxy_session.id == galaxy_session.id
+            assert stored_obj.history.id == history.id
 
 
 class TestGroupQuotaAssociation(BaseTest):
@@ -766,6 +794,7 @@ class TestHistory(BaseTest):
         history_rating_association,
         default_history_permissions,
         history_user_share_association,
+        galaxy_session_history_association,
         model,
     ):
         obj = cls_()
@@ -781,6 +810,7 @@ class TestHistory(BaseTest):
         obj.ratings.append(history_rating_association)
         obj.default_permissions.append(default_history_permissions)
         obj.users_shared_with.append(history_user_share_association)
+        obj.galaxy_sessions.append(galaxy_session_history_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -799,6 +829,7 @@ class TestHistory(BaseTest):
             assert stored_obj.users_shared_with_count == 1
             assert stored_obj.users_shared_with == [history_user_share_association]
             assert stored_obj.default_permissions == [default_history_permissions]
+            assert stored_obj.galaxy_sessions == [galaxy_session_history_association]
 
     def test_average_rating(self, model, session, history, user):
         # History has been expunged; to access its deferred properties,
@@ -3077,6 +3108,12 @@ def form_definition_current(model, session):
 def galaxy_session(model, session, user):
     s = model.GalaxySession()
     yield from dbcleanup_wrapper(session, s)
+
+
+@pytest.fixture
+def galaxy_session_history_association(model, session, galaxy_session, history):
+    sha = model.GalaxySessionToHistoryAssociation(galaxy_session, history)
+    yield from dbcleanup_wrapper(session, sha)
 
 
 @pytest.fixture

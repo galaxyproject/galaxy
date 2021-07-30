@@ -2192,6 +2192,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         back_populates='history')
     default_permissions = relationship('DefaultHistoryPermissions', back_populates='history')
     users_shared_with = relationship('HistoryUserShareAssociation', back_populates='history')
+    galaxy_sessions = relationship('GalaxySessionToHistoryAssociation', back_populates='history')
 
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
@@ -5527,6 +5528,7 @@ class GalaxySession(Base, RepresentById):
     disk_usage = Column(Numeric(15, 0), index=True)
     last_action = Column(DateTime)
     current_history = relationship('History')
+    histories = relationship('GalaxySessionToHistoryAssociation', back_populates='galaxy_session')
 
     def __init__(self,
                  id=None,
@@ -5567,7 +5569,16 @@ class GalaxySession(Base, RepresentById):
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
 
-class GalaxySessionToHistoryAssociation(RepresentById):
+class GalaxySessionToHistoryAssociation(Base, RepresentById):
+    __tablename__ = 'galaxy_session_to_history'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    session_id = Column(Integer, ForeignKey('galaxy_session.id'), index=True)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+    galaxy_session = relationship('GalaxySession', back_populates='histories')
+    history = relationship('History', back_populates='galaxy_sessions')
+
     def __init__(self, galaxy_session, history):
         self.galaxy_session = galaxy_session
         self.history = history
