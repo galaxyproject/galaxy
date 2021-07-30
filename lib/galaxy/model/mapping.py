@@ -267,12 +267,6 @@ model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
         ForeignKey("history_dataset_collection_association.id"), index=True),
     Column("name", Unicode(255)))
 
-model.ImplicitCollectionJobs.table = Table(
-    "implicit_collection_jobs", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("populated_state", TrimmedString(64), default='new', nullable=False),
-)
-
 model.ImplicitCollectionJobsJobAssociation.table = Table(
     "implicit_collection_jobs_job_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -969,8 +963,6 @@ simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
         # backref="implicitly_created_dataset_collections",
     ),
 )
-
-simple_mapping(model.ImplicitCollectionJobs)
 
 # simple_mapping(
 #     model.ImplicitCollectionJobsHistoryDatasetCollectionAssociation,
