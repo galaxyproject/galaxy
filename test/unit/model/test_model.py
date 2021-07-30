@@ -514,6 +514,30 @@ class TestExtendedMetadata(BaseTest):
             assert stored_obj.children == [extended_metadata_index]
 
 
+class TestExtendedMetadataIndex(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'extended_metadata_index'
+
+    def test_columns(self, session, cls_, extended_metadata):
+        path, value = 'a', 'b'
+        obj = cls_(extended_metadata, path, value)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.extended_metadata_id == extended_metadata.id
+            assert stored_obj.path == path
+            assert stored_obj.value == value
+
+    def test_relationships(self, session, cls_, extended_metadata):
+        obj = cls_(extended_metadata, None, None)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.extended_metadata.id == extended_metadata.id
+
+
 class TestFormDefinition(BaseTest):
 
     def test_table(self, cls_):
