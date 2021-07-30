@@ -848,6 +848,36 @@ class TestHistory(BaseTest):
         delete_from_database(session, to_cleanup)
 
 
+class TestHistoryDatasetAssociationHistory(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'history_dataset_association_history'
+
+    def test_columns(self, session, cls_, history_dataset_association, extended_metadata):
+        name, update_time, version, extension, metadata = 'a', datetime.now(), 2, 'b', 'c'
+        obj = cls_(
+            history_dataset_association.id,
+            name,
+            None,
+            update_time,
+            version,
+            extension,
+            extended_metadata.id,
+            metadata
+        )
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.history_dataset_association_id == history_dataset_association.id
+            assert stored_obj.name == name
+            assert stored_obj.update_time == update_time
+            assert stored_obj.version == version
+            assert stored_obj.extension == extension
+            assert stored_obj.extended_metadata_id == extended_metadata.id
+            assert stored_obj._metadata == metadata
+
+
 class TestHistoryUserShareAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -3090,6 +3120,12 @@ def default_quota_association(model, session, quota):
     type_ = model.DefaultQuotaAssociation.types.REGISTERED
     dqa = model.DefaultQuotaAssociation(type_, quota)
     yield from dbcleanup_wrapper(session, dqa)
+
+
+@pytest.fixture
+def extended_metadata(model, session):
+    em = model.ExtendedMetadata(None)
+    yield from dbcleanup_wrapper(session, em)
 
 
 @pytest.fixture

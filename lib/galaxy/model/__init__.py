@@ -83,6 +83,7 @@ import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.custom_types import (
+    JSONType,
     MutableJSONType,
     TrimmedString,
     UUIDType,
@@ -4127,7 +4128,18 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                  + type_coerce(cls.id, Unicode)).label('type_id'))
 
 
-class HistoryDatasetAssociationHistory(RepresentById):
+class HistoryDatasetAssociationHistory(Base, RepresentById):
+    __tablename__ = 'history_dataset_association_history'
+
+    id = Column(Integer, primary_key=True)
+    history_dataset_association_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True)
+    update_time = Column(DateTime, default=now)
+    version = Column(Integer)
+    name = Column(TrimmedString(255))
+    extension = Column(TrimmedString(64))
+    _metadata = Column('metadata', JSONType)
+    extended_metadata_id = Column(Integer, ForeignKey("extended_metadata.id"), index=True)
+
     def __init__(self,
                  history_dataset_association_id,
                  name,
