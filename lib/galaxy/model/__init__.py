@@ -6595,16 +6595,25 @@ class WorkflowRequestInputParameter(Base, Dictifiable, RepresentById):
         self.type = type
 
 
-class WorkflowRequestStepState(Dictifiable, RepresentById):
+class WorkflowRequestStepState(Base, Dictifiable, RepresentById):
     """ Workflow step value parameters.
     """
+    __tablename__ = 'workflow_request_step_states'
+
+    id = Column(Integer, primary_key=True)
+    workflow_invocation_id = Column(Integer,
+        ForeignKey('workflow_invocation.id', onupdate='CASCADE', ondelete='CASCADE'))
+    workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'))
+    value = Column(MutableJSONType)
+    workflow_step = relationship('WorkflowStep')
+
     dict_collection_visible_keys = ['id', 'name', 'value', 'workflow_step_id']
 
     def __init__(self, workflow_step=None, name=None, value=None):
         self.workflow_step = workflow_step
-        self.name = name
+        self.name = name  # TODO this is unused and not persisted. Verify and remove.
         self.value = value
-        self.type = type
+        self.type = type  # TODO this is incorrect. Verify and remove.
 
 
 class WorkflowRequestToInputDatasetAssociation(Dictifiable, RepresentById):
