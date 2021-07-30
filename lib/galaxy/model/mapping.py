@@ -297,13 +297,6 @@ model.JobExternalOutputMetadata.table = Table(
     Column("filename_override_metadata", String(255)),
     Column("job_runner_external_pid", String(255)))
 
-model.JobImportHistoryArchive.table = Table(
-    "job_import_history_archive", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("archive_dir", TEXT))
-
 model.GenomeIndexToolData.table = Table(
     "genome_index_tool_data", metadata,
     Column("id", Integer, primary_key=True),
@@ -1047,11 +1040,6 @@ simple_mapping(
 mapper_registry.map_imperatively(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, properties=dict(
     history_dataset_association=relation(model.HistoryDatasetAssociation, lazy=False),
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation, lazy=False)
-))
-
-mapper_registry.map_imperatively(model.JobImportHistoryArchive, model.JobImportHistoryArchive.table, properties=dict(
-    job=relation(model.Job),
-    history=relation(model.History)
 ))
 
 mapper_registry.map_imperatively(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=dict(
