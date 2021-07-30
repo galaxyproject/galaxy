@@ -596,8 +596,8 @@ class TestFormValues(BaseTest):
 
 class TestGalaxySession(BaseTest):
 
-    # def test_table(self, cls_):
-    #    assert cls_.__tablename__ == 'galaxy_session'
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'galaxy_session'
 
     def test_columns(self, session, cls_, user, history, galaxy_session):
 

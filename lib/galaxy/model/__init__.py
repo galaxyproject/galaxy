@@ -5508,7 +5508,26 @@ class Event(Base, RepresentById):
         self.message = message
 
 
-class GalaxySession(RepresentById):
+class GalaxySession(Base, RepresentById):
+    __tablename__ = 'galaxy_session'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True, nullable=True)
+    remote_host = Column(String(255))
+    remote_addr = Column(String(255))
+    referer = Column(TEXT)
+    current_history_id = Column(Integer, ForeignKey('history.id'), nullable=True)
+    # unique 128 bit random number coerced to a string
+    session_key = Column(TrimmedString(255), index=True, unique=True)
+    is_valid = Column(Boolean, default=False)
+    # saves a reference to the previous session so we have a way to chain them together
+    prev_session_id = Column(Integer)
+    disk_usage = Column(Numeric(15, 0), index=True)
+    last_action = Column(DateTime)
+    current_history = relationship('History')
+
     def __init__(self,
                  id=None,
                  user=None,
