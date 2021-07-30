@@ -26,10 +26,12 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
 
     def setUp(self):
         super().setUp()
+        self.setup_shed_config()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def tearDown(self):
         self.reset_shed_tools()
+        return super().tearDown()
 
     def test_repository_installation(self):
         """
@@ -105,7 +107,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         assert repo_response['tool_shed_status']['revision_update'] == 'True'
         assert repo_response['changeset_revision'] == REVISION_3
         assert repo_response['ctx_rev'] == '3'
-        # now install revision 4 (a.k.a a minor update)
+        # now install revision 4 (or newer) (a.k.a a minor update)
         response = self._install_repository(revision=REVISION_4, version="0.0.3", verify_tool_absent=False)[0]
         assert response['changeset_revision'] == latest_revision
         assert response['installed_changeset_revision'] == REVISION_3
