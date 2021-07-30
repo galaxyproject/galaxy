@@ -352,15 +352,6 @@ model.PostJobActionAssociation.table = Table(
     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
     Column("post_job_action_id", Integer, ForeignKey("post_job_action.id"), index=True, nullable=False))
 
-model.DeferredJob.table = Table(
-    "deferred_job", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("state", String(64), index=True),
-    Column("plugin", String(128), index=True),
-    Column("params", MutableJSONType))
-
 model.TransferJob.table = Table(
     "transfer_job", metadata,
     Column("id", Integer, primary_key=True),
@@ -1067,8 +1058,6 @@ mapper_registry.map_imperatively(model.PostJobAction, model.PostJobAction.table,
 mapper_registry.map_imperatively(model.PostJobActionAssociation, model.PostJobActionAssociation.table, properties=dict(
     post_job_action=relation(model.PostJobAction)
 ))
-
-mapper_registry.map_imperatively(model.DeferredJob, model.DeferredJob.table, properties={})
 
 mapper_registry.map_imperatively(model.TransferJob, model.TransferJob.table, properties={})
 

@@ -2033,7 +2033,15 @@ class GenomeIndexToolData(RepresentById):
         self.transfer = transfer_job
 
 
-class DeferredJob(RepresentById):
+class DeferredJob(Base, RepresentById):
+    __tablename__ = 'deferred_job'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    state = Column(String(64), index=True)
+    plugin = Column(String(128), index=True)
+    params = Column(MutableJSONType)
 
     class states(str, Enum):
         NEW = 'new'
