@@ -104,7 +104,6 @@ export default {
     },
     computed: {
         fileMode() {
-            console.log("this.mpde", this.mode);
             return this.mode == "file";
         },
     },
@@ -116,7 +115,8 @@ export default {
                 if (item.isLeaf || !this.fileMode) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
                 } else {
-                  console.log("selectedDirs" , this.selectedDirs)
+                    console.log("selectedDirs", this.selectedDirs);
+                    console.log("item.id", item.id);
                     _rowVariant = this.selectedDirs.includes(item.id) ? "success" : "default";
                 }
                 Vue.set(item, "_rowVariant", _rowVariant);
@@ -125,8 +125,6 @@ export default {
         },
         /** Collects selected datasets in value array **/
         clicked: function (record) {
-            console.log("record.isLeaf", record.isLeaf);
-            console.log("this.fileMode", this.fileMode);
             if (record.isLeaf || !this.fileMode) {
                 this.model.add(record);
                 this.hasValue = this.model.count() > 0;
@@ -154,16 +152,18 @@ export default {
                         if (record.isLeaf) {
                             this.model.add(record);
                         } else {
-                          console.log("!!!!! SUBFolder case! ")
+                            // console.log("!!!!! SUBFolder case! ");
                             if (this.selectedDirs.includes(record.id)) {
-                                this.selectedDirs.push(record.id);
-                            } else {
+                                console.log("INCLUDES")
                                 this.selectedDirs = this.selectedDirs.filter((id) => id !== record.id);
+                            } else {
+                                this.selectedDirs.push(record.id);
                             }
                         }
+                        this.formatRows();
                     });
                 });
-                this.formatRows();
+
             }
         },
         open: function (record) {
