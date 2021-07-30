@@ -482,15 +482,6 @@ model.WorkflowStepInput.table = Table(
     Index('ix_workflow_step_input_workflow_step_id_name_unique', "workflow_step_id", "name", unique=True, mysql_length={'name': 200}),
 )
 
-
-model.WorkflowRequestStepState.table = Table(
-    "workflow_request_step_states", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer,
-        ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
-    Column("value", MutableJSONType))
-
 model.WorkflowRequestInputStepParameter.table = Table(
     "workflow_request_input_step_parameter", metadata,
     Column("id", Integer, primary_key=True),
@@ -1287,9 +1278,6 @@ simple_mapping(model.WorkflowInvocationStep,
         )).scalar_subquery(),
     ),
 )
-
-simple_mapping(model.WorkflowRequestStepState,
-    workflow_step=relation(model.WorkflowStep))
 
 simple_mapping(model.WorkflowRequestInputStepParameter,
     workflow_step=relation(model.WorkflowStep))
