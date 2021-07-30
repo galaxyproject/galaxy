@@ -195,14 +195,6 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("message", TrimmedString(255)))
 
-model.ExtendedMetadataIndex.table = Table(
-    "extended_metadata_index", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("extended_metadata_id", Integer,
-        ForeignKey("extended_metadata.id", onupdate="CASCADE", ondelete="CASCADE"), index=True),
-    Column("path", String(255)),
-    Column("value", TEXT))
-
 model.LibraryInfoAssociation.table = Table(
     "library_info_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -947,10 +939,6 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
             & (model.UserRoleAssociation.table.c.role_id == model.Role.id)
             & not_(model.Role.name == model.User.table.c.email))
     )
-))
-
-mapper_registry.map_imperatively(model.ExtendedMetadataIndex, model.ExtendedMetadataIndex.table, properties=dict(
-    extended_metadata=relation(model.ExtendedMetadata, back_populates='children')
 ))
 
 mapper_registry.map_imperatively(model.LibraryInfoAssociation, model.LibraryInfoAssociation.table, properties=dict(

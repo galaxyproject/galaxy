@@ -4684,7 +4684,16 @@ class ExtendedMetadata(Base, RepresentById):
         self.data = data
 
 
-class ExtendedMetadataIndex(RepresentById):
+class ExtendedMetadataIndex(Base, RepresentById):
+    __tablename__ = 'extended_metadata_index'
+
+    id = Column(Integer, primary_key=True)
+    extended_metadata_id = Column(Integer,
+        ForeignKey('extended_metadata.id', onupdate='CASCADE', ondelete='CASCADE'), index=True)
+    path = Column(String(255))
+    value = Column(TEXT)
+    extended_metadata = relationship('ExtendedMetadata', back_populates='children')
+
     def __init__(self, extended_metadata, path, value):
         self.extended_metadata = extended_metadata
         self.path = path
