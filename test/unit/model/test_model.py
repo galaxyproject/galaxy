@@ -458,8 +458,8 @@ class TestDynamicTool(BaseTest):
 
 class TestEvent(BaseTest):
 
-    # def test_table(self, cls_):
-    #     assert cls_.__tablename__ == 'event'
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'event'
 
     def test_columns(self, session, cls_, history, galaxy_session, user):
         message, tool_id = 'a', 'b'

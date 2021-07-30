@@ -463,17 +463,6 @@ model.DatasetCollectionElement.table = Table(
     Column("element_index", Integer),
     Column("element_identifier", Unicode(255), ))
 
-model.Event.table = Table(
-    "event", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True, nullable=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=True),
-    Column("message", TrimmedString(1024)),
-    Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True, nullable=True),
-    Column("tool_id", String(255)))
-
 model.GalaxySession.table = Table(
     "galaxy_session", metadata,
     Column("id", Integer, primary_key=True),
@@ -1244,13 +1233,6 @@ simple_mapping(model.DatasetCollectionElement,
         primaryjoin=(model.DatasetCollectionElement.table.c.ldda_id == model.LibraryDatasetDatasetAssociation.table.c.id)),
     child_collection=relation(model.DatasetCollection,
         primaryjoin=(model.DatasetCollectionElement.table.c.child_collection_id == model.DatasetCollection.table.c.id)))
-
-mapper_registry.map_imperatively(model.Event, model.Event.table, properties=dict(
-    history=relation(model.History),
-    galaxy_session=relation(model.GalaxySession),
-    # user=relation( model.User.mapper ) ) )
-    user=relation(model.User)
-))
 
 mapper_registry.map_imperatively(model.GalaxySession, model.GalaxySession.table, properties=dict(
     current_history=relation(model.History),

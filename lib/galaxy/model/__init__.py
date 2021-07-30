@@ -5484,7 +5484,22 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
         return rval
 
 
-class Event(RepresentById):
+class Event(Base, RepresentById):
+    __tablename__ = 'event'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True, nullable=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True, nullable=True)
+    message = Column(TrimmedString(1024))
+    session_id = Column(Integer, ForeignKey('galaxy_session.id'), index=True, nullable=True)
+    tool_id = Column(String(255))
+
+    history = relationship('History')
+    user = relationship('User')
+    galaxy_session = relationship('GalaxySession')
+
     def __init__(self, message=None, history=None, user=None, galaxy_session=None):
         self.history = history
         self.galaxy_session = galaxy_session
