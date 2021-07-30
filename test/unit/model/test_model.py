@@ -491,6 +491,29 @@ class TestEvent(BaseTest):
             assert stored_obj.galaxy_session.id == galaxy_session.id
 
 
+class TestExtendedMetadata(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'extended_metadata'
+
+    def test_columns(self, session, cls_):
+        data = 'a'
+        obj = cls_(data)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.data == data
+
+    def test_relationships(self, session, cls_, extended_metadata_index):
+        obj = cls_(None)
+        obj.children.append(extended_metadata_index)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.children == [extended_metadata_index]
+
+
 class TestFormDefinition(BaseTest):
 
     def test_table(self, cls_):
@@ -3126,6 +3149,12 @@ def default_quota_association(model, session, quota):
 def extended_metadata(model, session):
     em = model.ExtendedMetadata(None)
     yield from dbcleanup_wrapper(session, em)
+
+
+@pytest.fixture
+def extended_metadata_index(model, session, extended_metadata):
+    emi = model.ExtendedMetadataIndex(extended_metadata, None, None)
+    yield from dbcleanup_wrapper(session, emi)
 
 
 @pytest.fixture
