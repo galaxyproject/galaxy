@@ -463,24 +463,6 @@ model.DatasetCollectionElement.table = Table(
     Column("element_index", Integer),
     Column("element_identifier", Unicode(255), ))
 
-model.GalaxySession.table = Table(
-    "galaxy_session", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=True),
-    Column("remote_host", String(255)),
-    Column("remote_addr", String(255)),
-    Column("referer", TEXT),
-    Column("current_history_id", Integer, ForeignKey("history.id"), nullable=True),
-    # unique 128 bit random number coerced to a string
-    Column("session_key", TrimmedString(255), index=True, unique=True),
-    Column("is_valid", Boolean, default=False),
-    # saves a reference to the previous session so we have a way to chain them together
-    Column("prev_session_id", Integer),
-    Column("disk_usage", Numeric(15, 0), index=True),
-    Column("last_action", DateTime))
-
 model.GalaxySessionToHistoryAssociation.table = Table(
     "galaxy_session_to_history", metadata,
     Column("id", Integer, primary_key=True),
@@ -949,7 +931,7 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
         order_by=desc(model.History.update_time)),
     galaxy_sessions=relation(model.GalaxySession,
         backref="user",
-        order_by=desc(model.GalaxySession.table.c.update_time)),
+        order_by=desc(model.GalaxySession.update_time)),
     pages_shared_by_others=relation(model.PageUserShareAssociation, back_populates='user'),
     quotas=relation(model.UserQuotaAssociation, back_populates='user'),
     social_auth=relation(model.UserAuthnzToken, back_populates='user'),
@@ -1233,10 +1215,6 @@ simple_mapping(model.DatasetCollectionElement,
         primaryjoin=(model.DatasetCollectionElement.table.c.ldda_id == model.LibraryDatasetDatasetAssociation.table.c.id)),
     child_collection=relation(model.DatasetCollection,
         primaryjoin=(model.DatasetCollectionElement.table.c.child_collection_id == model.DatasetCollection.table.c.id)))
-
-mapper_registry.map_imperatively(model.GalaxySession, model.GalaxySession.table, properties=dict(
-    current_history=relation(model.History),
-))
 
 mapper_registry.map_imperatively(model.GalaxySessionToHistoryAssociation, model.GalaxySessionToHistoryAssociation.table, properties=dict(
     galaxy_session=relation(model.GalaxySession, backref='histories'),
