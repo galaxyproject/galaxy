@@ -297,15 +297,6 @@ model.JobExternalOutputMetadata.table = Table(
     Column("filename_override_metadata", String(255)),
     Column("job_runner_external_pid", String(255)))
 
-model.JobExportHistoryArchive.table = Table(
-    "job_export_history_archive", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
-    Column("compressed", Boolean, index=True, default=False),
-    Column("history_attrs_filename", TEXT))
-
 model.JobImportHistoryArchive.table = Table(
     "job_import_history_archive", metadata,
     Column("id", Integer, primary_key=True),
@@ -840,6 +831,7 @@ simple_mapping(model.Dataset,
         viewonly=True),
     hashes=relation(model.DatasetHash, back_populates='dataset'),
     sources=relation(model.DatasetSource, back_populates='dataset'),
+    job_export_history_archive=relation(model.JobExportHistoryArchive, back_populates='dataset'),
 )
 
 mapper_registry.map_imperatively(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table, properties=dict(
@@ -1055,12 +1047,6 @@ simple_mapping(
 mapper_registry.map_imperatively(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, properties=dict(
     history_dataset_association=relation(model.HistoryDatasetAssociation, lazy=False),
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation, lazy=False)
-))
-
-mapper_registry.map_imperatively(model.JobExportHistoryArchive, model.JobExportHistoryArchive.table, properties=dict(
-    job=relation(model.Job),
-    dataset=relation(model.Dataset, backref='job_export_history_archive'),
-    history=relation(model.History, back_populates='exports'),
 ))
 
 mapper_registry.map_imperatively(model.JobImportHistoryArchive, model.JobImportHistoryArchive.table, properties=dict(
