@@ -482,14 +482,6 @@ model.WorkflowStepInput.table = Table(
     Index('ix_workflow_step_input_workflow_step_id_name_unique', "workflow_step_id", "name", unique=True, mysql_length={'name': 200}),
 )
 
-model.WorkflowRequestToInputDatasetAssociation.table = Table(
-    "workflow_request_to_input_dataset", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("name", String(255)),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
-    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True))
-
 model.WorkflowRequestToInputDatasetCollectionAssociation.table = Table(
     "workflow_request_to_input_collection_dataset", metadata,
     Column("id", Integer, primary_key=True),
@@ -1270,11 +1262,6 @@ simple_mapping(model.WorkflowInvocationStep,
         )).scalar_subquery(),
     ),
 )
-
-simple_mapping(model.WorkflowRequestToInputDatasetAssociation,
-    workflow_step=relation(model.WorkflowStep),
-    dataset=relation(model.HistoryDatasetAssociation))
-
 
 simple_mapping(model.WorkflowRequestToInputDatasetCollectionAssociation,
     workflow_step=relation(model.WorkflowStep),
