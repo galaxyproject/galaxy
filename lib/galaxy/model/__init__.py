@@ -4193,7 +4193,19 @@ class HistoryDatasetAssociationHistory(Base, RepresentById):
         self._metadata = metadata
 
 
-class HistoryDatasetAssociationDisplayAtAuthorization(RepresentById):
+# hda read access permission given by a user to a specific site (gen. for external display applications)
+class HistoryDatasetAssociationDisplayAtAuthorization(Base, RepresentById):
+    __tablename__ = 'history_dataset_association_display_at_authorization'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, index=True, default=now, onupdate=now)
+    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    site = Column(TrimmedString(255))
+    history_dataset_association = relationship('HistoryDatasetAssociation')
+    user = relationship('User')
+
     def __init__(self, hda=None, user=None, site=None):
         self.history_dataset_association = hda
         self.user = user

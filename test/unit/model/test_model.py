@@ -1057,6 +1057,35 @@ class TestHistoryDatasetAssociationAnnotationAssociation(BaseTest):
             assert stored_obj.user.id == user.id
 
 
+class TestHistoryDatasetAssociationDisplayAtAuthorization(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'history_dataset_association_display_at_authorization'
+
+    def test_columns(self, session, cls_, history_dataset_association, user):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        site = 'a'
+        obj = cls_(history_dataset_association, user, site)
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.history_dataset_association_id == history_dataset_association.id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.site == site
+
+    def test_relationships(self, session, cls_, history_dataset_association, user):
+        obj = cls_(history_dataset_association, user)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.history_dataset_association.id == history_dataset_association.id
+            assert stored_obj.user.id == user.id
+
+
 class TestHistoryDatasetAssociationRatingAssociation(BaseTest):
 
     def test_table(self, cls_):
