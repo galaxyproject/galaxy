@@ -7451,7 +7451,20 @@ class VisualizationUserShareAssociation(UserShareAssociation):
         self.user = None
 
 
-class TransferJob(RepresentById):
+class TransferJob(Base, RepresentById):
+    __tablename__ = 'transfer_job'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    state = Column(String(64), index=True)
+    path = Column(String(1024))
+    info = Column(TEXT)
+    pid = Column(Integer)
+    socket = Column(Integer)
+    params = Column(MutableJSONType)
+    transfer_job = relationship('GenomeIndexToolData', back_populates='transfer')
+
     # These states are used both by the transfer manager's IPC and the object
     # state in the database.  Not all states are used by both.
     class states(str, Enum):
