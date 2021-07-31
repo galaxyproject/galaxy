@@ -310,7 +310,7 @@ class CustosAuthnz(IdentityProvider):
         self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
         self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
         self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
-        self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
+        self.config['end_session_endpoint'] = well_known_oidc_config.get('end_session_endpoint')
 
     def _get_verify_param(self):
         """Return 'ca_bundle' if 'verify_ssl' is true and 'ca_bundle' is configured."""
