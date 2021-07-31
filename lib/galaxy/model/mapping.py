@@ -265,19 +265,6 @@ model.ImplicitCollectionJobsJobAssociation.table = Table(
     Column("order_index", Integer, nullable=False),
 )
 
-model.GenomeIndexToolData.table = Table(
-    "genome_index_tool_data", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("deferred_job_id", Integer, ForeignKey("deferred_job.id"), index=True),
-    Column("transfer_job_id", Integer, ForeignKey("transfer_job.id"), index=True),
-    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
-    Column("fasta_path", String(255)),
-    Column("created_time", DateTime, default=now),
-    Column("modified_time", DateTime, default=now, onupdate=now),
-    Column("indexer", String(64)),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
-
 model.InteractiveToolEntryPoint.table = Table(
     "interactivetool_entry_point", metadata,
     Column("id", Integer, primary_key=True),
@@ -751,6 +738,7 @@ simple_mapping(model.Dataset,
     hashes=relation(model.DatasetHash, back_populates='dataset'),
     sources=relation(model.DatasetSource, back_populates='dataset'),
     job_export_history_archive=relation(model.JobExportHistoryArchive, back_populates='dataset'),
+    genome_index_tool_data=relation(model.GenomeIndexToolData, back_populates='dataset'),
 )
 
 mapper_registry.map_imperatively(model.HistoryDatasetAssociationSubset, model.HistoryDatasetAssociationSubset.table, properties=dict(
@@ -956,14 +944,6 @@ simple_mapping(
     ),
 )
 
-mapper_registry.map_imperatively(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=dict(
-    job=relation(model.Job, backref='job'),
-    dataset=relation(model.Dataset, backref='genome_index_tool_data'),
-    user=relation(model.User),
-    deferred=relation(model.DeferredJob, backref='deferred_job'),
-    transfer=relation(model.TransferJob, backref='transfer_job')
-))
-
 mapper_registry.map_imperatively(model.InteractiveToolEntryPoint, model.InteractiveToolEntryPoint.table, properties=dict(
     job=relation(model.Job, backref=backref('interactivetool_entry_points', uselist=True), uselist=False)
 ))
@@ -982,7 +962,9 @@ mapper_registry.map_imperatively(model.PostJobActionAssociation, model.PostJobAc
     post_job_action=relation(model.PostJobAction)
 ))
 
-mapper_registry.map_imperatively(model.TransferJob, model.TransferJob.table, properties={})
+mapper_registry.map_imperatively(model.TransferJob, model.TransferJob.table, properties=dict(
+    transfer_job=relation(model.GenomeIndexToolData, back_populates='transfer'),
+))
 
 
 simple_mapping(model.DatasetCollection,
@@ -1332,6 +1314,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     state_history=relation(model.JobStateHistory, back_populates='job'),
     text_metrics=relation(model.JobMetricText, back_populates='job'),
     numeric_metrics=relation(model.JobMetricNumeric, back_populates='job'),
+    job=relation(model.GenomeIndexToolData, back_populates='job'),  # TODO review attr naming (the functionality IS correct)
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],

@@ -432,6 +432,14 @@ class TestDeferredJob(BaseTest):
             assert stored_obj.plugin == plugin
             assert stored_obj.params == params
 
+    def test_relationships(self, session, cls_, genome_index_tool_data):
+        obj = cls_()
+        obj.deferred_job.append(genome_index_tool_data)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.deferred_job == [genome_index_tool_data]
+
 
 class TestDynamicTool(BaseTest):
 
@@ -744,6 +752,57 @@ class TestGalaxySessionToHistoryAssociation(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.galaxy_session.id == galaxy_session.id
             assert stored_obj.history.id == history.id
+
+
+class TestGenomeIndexToolData(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'genome_index_tool_data'
+
+    def test_columns(self, session, cls_, job, deferred_job, transfer_job, dataset, user):
+        fasta_path = 'a'
+        created_time = datetime.now()
+        modified_time = created_time + timedelta(hours=1)
+        indexer = 'b'
+        obj = cls_()
+        obj.job = job
+        obj.deferred = deferred_job
+        obj.transfer = transfer_job
+        obj.dataset = dataset
+        obj.fasta_path = fasta_path
+        obj.created_time = created_time
+        obj.modified_time = modified_time
+        obj.indexer = indexer
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.job_id == job.id
+            assert stored_obj.deferred_job_id == deferred_job.id
+            assert stored_obj.transfer_job_id == transfer_job.id
+            assert stored_obj.dataset_id == dataset.id
+            assert stored_obj.fasta_path == fasta_path
+            assert stored_obj.created_time == created_time
+            assert stored_obj.modified_time == modified_time
+            assert stored_obj.indexer == indexer
+            assert stored_obj.user_id == user.id
+
+    def test_relationships(self, session, cls_, job, deferred_job, transfer_job, dataset, user):
+        obj = cls_()
+        obj.job = job
+        obj.deferred = deferred_job
+        obj.transfer = transfer_job
+        obj.dataset = dataset
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.job.id == job.id
+            assert stored_obj.deferred.id == deferred_job.id
+            assert stored_obj.transfer.id == transfer_job.id
+            assert stored_obj.dataset.id == dataset.id
+            assert stored_obj.user.id == user.id
 
 
 class TestGroupQuotaAssociation(BaseTest):
@@ -3502,6 +3561,12 @@ def default_quota_association(model, session, quota):
 
 
 @pytest.fixture
+def deferred_job(model, session):
+    dj = model.DeferredJob()
+    yield from dbcleanup_wrapper(session, dj)
+
+
+@pytest.fixture
 def extended_metadata(model, session):
     em = model.ExtendedMetadata(None)
     yield from dbcleanup_wrapper(session, em)
@@ -3535,6 +3600,12 @@ def galaxy_session(model, session, user):
 def galaxy_session_history_association(model, session, galaxy_session, history):
     sha = model.GalaxySessionToHistoryAssociation(galaxy_session, history)
     yield from dbcleanup_wrapper(session, sha)
+
+
+@pytest.fixture
+def genome_index_tool_data(model, session):
+    gitd = model.GenomeIndexToolData()
+    yield from dbcleanup_wrapper(session, gitd)
 
 
 @pytest.fixture
@@ -3778,6 +3849,12 @@ def task_metric_text(model, session):
 def tool_tag_association(model, session):
     tta = model.ToolTagAssociation()
     yield from dbcleanup_wrapper(session, tta)
+
+
+@pytest.fixture
+def transfer_job(model, session):
+    tj = model.TransferJob()
+    yield from dbcleanup_wrapper(session, tj)
 
 
 @pytest.fixture

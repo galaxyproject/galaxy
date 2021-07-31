@@ -2038,7 +2038,25 @@ class InteractiveToolEntryPoint(Dictifiable, RepresentById):
         return False
 
 
-class GenomeIndexToolData(RepresentById):
+class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
+    __tablename__ = 'genome_index_tool_data'
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey("job.id"), index=True)
+    deferred_job_id = Column(Integer, ForeignKey('deferred_job.id'), index=True)
+    transfer_job_id = Column(Integer, ForeignKey('transfer_job.id'), index=True)
+    dataset_id = Column(Integer, ForeignKey('dataset.id'), index=True)
+    fasta_path = Column(String(255))
+    created_time = Column(DateTime, default=now)
+    modified_time = Column(DateTime, default=now, onupdate=now)
+    indexer = Column(String(64))
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    job = relationship('Job', back_populates='job')
+    dataset = relationship('Dataset', back_populates='genome_index_tool_data')
+    user = relationship('User')
+    deferred = relationship('DeferredJob', back_populates='deferred_job')
+    transfer = relationship('TransferJob', back_populates='transfer_job')
+
     def __init__(self, job=None, params=None, dataset=None, deferred_job=None,
                  transfer_job=None, fasta_path=None, created_time=None, modified_time=None,
                  dbkey=None, user=None, indexer=None):
@@ -2062,6 +2080,8 @@ class DeferredJob(Base, RepresentById):
     state = Column(String(64), index=True)
     plugin = Column(String(128), index=True)
     params = Column(MutableJSONType)
+    # TODO review attr naming: DeferredJob.deferred_job (that points to a GenomeIndexToolData object) is confusing.
+    deferred_job = relationship('GenomeIndexToolData', back_populates='deferred')
 
     class states(str, Enum):
         NEW = 'new'
