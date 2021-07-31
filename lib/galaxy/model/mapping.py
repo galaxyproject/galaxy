@@ -124,16 +124,6 @@ model.Dataset.table = Table(
     Column('total_size', Numeric(15, 0)),
     Column('uuid', UUIDType()))
 
-# hda read access permission given by a user to a specific site (gen. for external display applications)
-model.HistoryDatasetAssociationDisplayAtAuthorization.table = Table(
-    "history_dataset_association_display_at_authorization", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
-    Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("site", TrimmedString(255)))
-
 model.HistoryDatasetAssociationSubset.table = Table(
     "history_dataset_association_subset", metadata,
     Column("id", Integer, primary_key=True),
@@ -778,11 +768,6 @@ simple_mapping(model.Dataset,
     sources=relation(model.DatasetSource, back_populates='dataset'),
     job_export_history_archive=relation(model.JobExportHistoryArchive, back_populates='dataset'),
 )
-
-mapper_registry.map_imperatively(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table, properties=dict(
-    history_dataset_association=relation(model.HistoryDatasetAssociation),
-    user=relation(model.User)
-))
 
 mapper_registry.map_imperatively(model.HistoryDatasetAssociationSubset, model.HistoryDatasetAssociationSubset.table, properties=dict(
     hda=relation(model.HistoryDatasetAssociation,
