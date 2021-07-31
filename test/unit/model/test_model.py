@@ -1328,6 +1328,80 @@ class TestJobExportHistoryArchive(BaseTest):
             assert stored_obj.dataset.id == dataset.id
 
 
+class TestJobExternalOutputMetadata(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'job_external_output_metadata'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        job,
+        history_dataset_association,
+        library_dataset_dataset_association
+    ):
+        is_valid = False
+        filename_in = 'a'
+        filename_out = 'b'
+        filename_results_code = 'c'
+        filename_kwds = 'd'
+        filename_override_metadata = 'e'
+        job_runner_external_pid = 'f'
+
+        # We can only pass one dataset: an hda or a ldda, but we need to test both.
+        # First test passing an hda
+        obj = cls_(job, history_dataset_association)
+
+        obj.is_valid = is_valid
+        obj.filename_in = filename_in
+        obj.filename_out = filename_out
+        obj.filename_results_code = filename_results_code
+        obj.filename_kwds = filename_kwds
+        obj.filename_override_metadata = filename_override_metadata
+        obj.job_runner_external_pid = job_runner_external_pid
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.job_id == job.id
+            assert stored_obj.history_dataset_association_id == history_dataset_association.id
+            assert stored_obj.is_valid == is_valid
+            assert stored_obj.filename_in == filename_in
+            assert stored_obj.filename_out == filename_out
+            assert stored_obj.filename_results_code == filename_results_code
+            assert stored_obj.filename_kwds == filename_kwds
+            assert stored_obj.filename_override_metadata == filename_override_metadata
+            assert stored_obj.job_runner_external_pid == job_runner_external_pid
+
+        # Now pass an ldda (w/no extra fields, since we've just tested them)
+        obj = cls_(job, library_dataset_dataset_association)
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.library_dataset_dataset_association_id == library_dataset_dataset_association.id
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        job,
+        history_dataset_association,
+        library_dataset_dataset_association
+    ):
+        # First test passing an hda
+        obj = cls_(job, history_dataset_association)
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.job.id == job.id
+            assert stored_obj.dataset.id == history_dataset_association.id
+
+        # Now pass an ldda
+        obj = cls_(job, library_dataset_dataset_association)
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.dataset.id == library_dataset_dataset_association.id
+
+
 class TestJobImportHistoryArchive(BaseTest):
 
     def test_table(self, cls_):

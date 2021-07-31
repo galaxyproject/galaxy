@@ -1844,7 +1844,23 @@ class PostJobActionAssociation(RepresentById):
         self.post_job_action = pja
 
 
-class JobExternalOutputMetadata(RepresentById):
+class JobExternalOutputMetadata(Base, RepresentById):
+    __tablename__ = 'job_external_output_metadata'
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True, nullable=True)
+    library_dataset_dataset_association_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
+    is_valid = Column(Boolean, default=True)
+    filename_in = Column(String(255))
+    filename_out = Column(String(255))
+    filename_results_code = Column(String(255))
+    filename_kwds = Column(String(255))
+    filename_override_metadata = Column(String(255))
+    job_runner_external_pid = Column(String(255))
+    history_dataset_association = relationship('HistoryDatasetAssociation', lazy=False)
+    library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation', lazy=False)
+
     def __init__(self, job=None, dataset=None):
         self.job = job
         if isinstance(dataset, galaxy.model.HistoryDatasetAssociation):
