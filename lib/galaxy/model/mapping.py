@@ -307,18 +307,6 @@ model.PostJobActionAssociation.table = Table(
     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
     Column("post_job_action_id", Integer, ForeignKey("post_job_action.id"), index=True, nullable=False))
 
-model.TransferJob.table = Table(
-    "transfer_job", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("state", String(64), index=True),
-    Column("path", String(1024)),
-    Column("info", TEXT),
-    Column("pid", Integer),
-    Column("socket", Integer),
-    Column("params", MutableJSONType))
-
 model.DatasetCollection.table = Table(
     "dataset_collection", metadata,
     Column("id", Integer, primary_key=True),
@@ -961,11 +949,6 @@ mapper_registry.map_imperatively(model.PostJobAction, model.PostJobAction.table,
 mapper_registry.map_imperatively(model.PostJobActionAssociation, model.PostJobActionAssociation.table, properties=dict(
     post_job_action=relation(model.PostJobAction)
 ))
-
-mapper_registry.map_imperatively(model.TransferJob, model.TransferJob.table, properties=dict(
-    transfer_job=relation(model.GenomeIndexToolData, back_populates='transfer'),
-))
-
 
 simple_mapping(model.DatasetCollection,
     elements=relation(model.DatasetCollectionElement,

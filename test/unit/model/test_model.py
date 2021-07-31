@@ -2961,6 +2961,40 @@ class TestToolTagAssociation(BaseTest):
             assert stored_obj.user.id == user.id
 
 
+class TestTransferJob(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'transfer_job'
+
+    def test_columns(self, session, cls_, model):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        state, path, info, pid, socket, params = model.TransferJob.states.NEW, 'a', 'b', 2, 3, 'c'
+        obj = cls_(state, path, info, pid, socket, params)
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.state == state
+            assert stored_obj.path == path
+            assert stored_obj.info == info
+            assert stored_obj.pid == pid
+            assert stored_obj.socket == socket
+            assert stored_obj.params == params
+
+    def test_relationships(self, session, cls_, genome_index_tool_data):
+        obj = cls_()
+        obj.transfer_job.append(genome_index_tool_data)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.transfer_job == [genome_index_tool_data]
+
+
 class TestUserAction(BaseTest):
 
     def test_table(self, cls_):
