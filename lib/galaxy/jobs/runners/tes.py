@@ -3,8 +3,6 @@ Job control via TES.
 """
 import logging
 import os
-import json
-import shlex
 from re import escape, findall
 from os import sep
 import requests
@@ -22,8 +20,8 @@ log = logging.getLogger(__name__)
 __all__ = ('TESJobRunner', )
 
 GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
-FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitoring this job."
-LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
+FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitoring the job."
+LOST_REMOTE_ERROR = "Remote job server could not determine the job's state."
 
 DEFAULT_GALAXY_URL = "http://localhost:8080"
 
@@ -46,40 +44,65 @@ class TESJobRunner(AsynchronousJobRunner):
     runner_name = "TESJobRunner"
 
     def __init__(self, app, nworkers, **kwargs):
-        """Initialize this job runner and start the monitor thread"""
+        """
+            Initialize this job runner and start the monitor thread
+        """
         super(TESJobRunner, self).__init__(app, nworkers, **kwargs)
         self.container_workdir = "/tmp"
         self.galaxy_url = "http://localhost:8080/"
-        # self.tes_url = tes_url
-        # self.tes_client = tes.HTTPClient(url=self.tes_url)
         self._init_monitor_thread()
         self._init_worker_threads()
 
     def _send_task(self, master_addr, task):
-        url = master_addr + "/v1/tasks"
-        r = requests.post(url, json=task)
-        data = r.json()
-        job_id = data["id"]
-        return job_id
+        """
+            Send job-script to TES
+        """
+        log.debug(f"Sending job script to TES Server")
+        url = f"{master_addr}/v1/tasks"
+        try:
+            req = requests.post(url, json=task)
+            job_id = req.json()["id"]
+            return job_id
+        except:
+            log.error(f"{GENERIC_REMOTE_ERROR} on URL {master_addr}")
+            
 
     def _get_job(self, master_addr, job_id, view = "MINIMAL"):
-        url = master_addr + "/v1/tasks/" + str(job_id)
-        r = requests.get(url,params={'view' : view})
-        print(r.text)
-        return r.json()
+        """
+            Get Job Status from TES Server
+        """
+        log.debug(f"Getting status for job id {job_id}")
+        url = f"{master_addr}/v1/tasks/{str(job_id)}"
+        try:
+            req = requests.get(url,params={'view' : view})
+            return req.json()
+        except:
+            log.error(f"{LOST_REMOTE_ERROR} for job id {job_id}")
+
 
     def _cancel_job(self, master_addr, job_id):
-        url = master_addr + "/v1/tasks" + str(job_id) + ":cancel"
-        r = requests.post(url)
+        """
+            Cancel the Job on TES Server
+        """
+        log.debug(f"Cancelling the job id {job_id}")
+        url = f"{master_addr}/v1/tasks/{job_id}:cancel"
+        try:
+            req = requests.post(url)
+        except:
+            log.error(f"{GENERIC_REMOTE_ERROR} for cancellation of job id {job_id}")
 
-    def get_upload_path(self, job_destination_params, job_id, env=None):
-        # Cannot use url_for outside of web thread.
-        # files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
+
+    def get_upload_path(self, job_id, env=None):
+        """
+            For getting upload URL for staging in the files
+        """
         if env is None:
             env = []
+
         encoded_job_id = self.app.security.encode_id(job_id)
         job_key = self.app.security.encode_id(job_id, kind="jobs_files")
         endpoint_base = "%sapi/jobs/%s/files?job_key=%s"
+        
         if self.app.config.nginx_upload_job_files_path:
             endpoint_base = "%s" + \
                             self.app.config.nginx_upload_job_files_path + \
@@ -90,14 +113,13 @@ class TESJobRunner(AsynchronousJobRunner):
             encoded_job_id,
             job_key
         )
+
         get_client_kwds = dict(
             job_id=str(job_id),
             files_endpoint=files_endpoint,
             env=env
         )
-        # Turn MutableDict into standard dict for pulsar consumption
-        job_destination_params = dict(job_destination_params.items())
-        return get_client_kwds, job_destination_params
+        return get_client_kwds
 
     def output_names(self):
         # Maybe this should use the path mapper, but the path mapper just uses basenames
@@ -166,9 +188,6 @@ class TESJobRunner(AsynchronousJobRunner):
         if(hasattr(remote_container, "container_id")):
             remote_image = remote_container.container_id
 
-        # tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")
-        # if os.path.exists(tool_script):
-        #     client_inputs_list.append({"paths": tool_script})
 
         final_commands = []
         file_creation = []
@@ -186,6 +205,7 @@ class TESJobRunner(AsynchronousJobRunner):
             head_tail = os.path.split(output_f)
             file_creation.extend(['mkdir', '-p', head_tail[0], '&&',  'touch', output_f, '&&'])
 
+        file_creation[-1] = '\n'
         final_commands.extend(["/bin/bash", client_inputs_list[-1]["paths"]])
         staging_up_command = ["python", "/inputs/staging.py", client_args['files_endpoint']]
 
@@ -198,25 +218,38 @@ class TESJobRunner(AsynchronousJobRunner):
         file_staging_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "util/file-staging.py")
 
         referenced_tool_files = self.find_referenced_subfiles(tool_dir, job_wrapper.command_line, other_inputs)
-        env_variables = job_wrapper.environment_variables
+        actual_job_directory = job_wrapper.working_directory
+        object_store_path = job_wrapper.object_store.file_path
+        common_path = os.path.commonprefix([actual_job_directory, object_store_path])
         execution_script = {
             "name": "Galaxy Job Execution",
             "description": job_wrapper.tool.description,
-            "inputs": [],
+            "inputs": [
+                        {
+                            "path": os.path.join(job_wrapper.working_directory, 'createfiles.sh'),
+                            "content" : ' '.join(file_creation),
+                        }
+                    ],
             "outputs": [],
             "executors": [
                 {
-                    "workdir": job_wrapper.working_directory,
-                    "image": remote_image,
-                    "command": command_line.split(),
+                    "workdir": common_path,
+                    "image": "vipchhabra99/pulsar-lib",
+                    "command": ["/bin/bash",os.path.join(job_wrapper.working_directory, 'createfiles.sh')]
                 },
                 {
-                    "workdir" : job_wrapper.working_directory,
-                    "image" : "file-staging",
+                    "workdir": common_path,
+                    "image": remote_image,
+                    "command": command_line.split(),
+                    "env": {}
+                },
+                {
+                    "workdir" : common_path,
+                    "image" : "vipchhabra99/pulsar-lib",
                     "command" : staging_up_command
                 }
             ],
-            "volumes": [job_wrapper.working_directory]
+            "volumes": [common_path]
         }
         
 
@@ -231,14 +264,6 @@ class TESJobRunner(AsynchronousJobRunner):
         execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + file_staging_path, "path": "/inputs/staging.py"})
         for input in client_inputs_list:
             execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + input["paths"], "path": input["paths"]})
-
-        for output in output_files:
-            # execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + output, "path": output})
-            execution_script["outputs"].append({"url": output, "path": output})
-
-        # for output in other_inputs:
-        #     execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + output, "path": output})
-            # execution_script["outputs"].append({"url": output, "path": output})
 
         return execution_script
 
@@ -273,7 +298,7 @@ class TESJobRunner(AsynchronousJobRunner):
         if hasattr(job_wrapper, 'task_id'):
             job_id = f"{job_id}_{job_wrapper.task_id}"
         params = job_wrapper.job_destination.params.copy()
-        client_args, destination_params = self.get_upload_path(params, job_id)
+        client_args = self.get_upload_path(job_id)
         job_destination = job_wrapper.job_destination
         galaxy_id_tag = job_wrapper.get_id_tag()
         master_addr = job_destination.params.get("tes_master_addr")
@@ -306,6 +331,20 @@ class TESJobRunner(AsynchronousJobRunner):
         input_paths = job_wrapper.get_input_paths()
         return [str(i) for i in input_paths]
 
+    def __finish_job(self, stdout, stderr, exit_code, job_wrapper):
+        
+        job_metrics_directory = os.path.join(job_wrapper.working_directory, "metadata")
+        try:
+            job_wrapper.finish(
+                    stdout,
+                    stderr,
+                    exit_code,
+                    job_metrics_directory=job_metrics_directory,
+            )
+        except Exception:
+            log.exception("Job wrapper finish method failed")
+            job_wrapper.fail("Unable to finish job", exception=True)
+
     def _concat_job_log(self, data, key):
         s = ''
         try:
@@ -324,20 +363,11 @@ class TESJobRunner(AsynchronousJobRunner):
             return s
 
     def _concat_exit_codes(self, data):
-        s = '0'
-        return s
-        try:
-            logs_data = data.get('logs')
-            for log in logs_data:
-                actual_log = log.get('logs')
-                for log_output in actual_log:
-                    try:
-                        s = (s or int(log_output["exit_code"]))
-                    except:
-                        s = 1
-        except:
-            s = 1
-        return str(s)
+        if(data['state'] == "COMPLETE"):
+            return '0'
+
+        else:
+            return '1'
 
     def check_watched_item(self, job_state):
         """
@@ -349,20 +379,17 @@ class TESJobRunner(AsynchronousJobRunner):
         master_addr = job_state.job_wrapper.job_destination.params.get("tes_master_addr")
 
         data = self._get_job(master_addr, job_id, "FULL")
-        print(data)
         state = data['state']
-        job_running = state == "RUNNING" or state == "INITIALIZING"
-        job_complete = state == 'COMPLETE'
-        job_failed = ("ERROR" in state) or state == "CANCELED"
 
-        # run_results = client.full_status()
-        # remote_metadata_directory = run_results.get("metadata_directory", None)
-        # stdout = run_results.get('stdout', '')
-        # stderr = run_results.get('stderr', '')
-        # exit_code = run_results.get('returncode', None)
-        # job_metrics_directory = os.path.join(job_wrapper.working_directory, "metadata")
-        # print '=' * 50
-        # print state, job_state.running, data
+        running_states = ["RUNNING", "INITIALIZING", "QUEUED", "PAUSED"]
+        complete_states = ["COMPLETE"]
+        error_states = ["EXECUTOR_ERROR", "SYSTEM_ERROR", "CANCELED", "UNKNOWN"]
+        cancel_state = ["CANCELED"]
+        
+        job_running = state in running_states
+        job_complete = state in complete_states
+        job_failed = state in error_states
+        job_cancel = state in cancel_state
 
         if job_running and job_state.running:
             return job_state
@@ -373,48 +400,40 @@ class TESJobRunner(AsynchronousJobRunner):
             job_state.running = True
             return job_state
 
-        # TODO this is from the condor backend. What's the right thing for TES?
         if not job_running and job_state.running:
-            log.debug("(%s/%s) job has stopped running" % (galaxy_id_tag, job_id))
-            # Will switching from RUNNING to QUEUED confuse Galaxy?
-            # job_state.job_wrapper.change_state( model.Job.states.QUEUED )
+            log.debug("(%s/%s) job has stopped running" % (galaxy_id_tag, job_id))  
+            if(job_cancel):
+                job_state.job_wrapper.change_state(model.Job.states.DELETED)
+                job_state.running = False              
+                self.__finish_job('', '', 0, job_state.job_wrapper)
 
         if job_complete:
             if job_state.job_wrapper.get_state() != model.Job.states.DELETED:
                 external_metadata = asbool(job_state.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
                 if external_metadata:
                     self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
-                with open(job_state.output_file, 'w') as fh:
-                    fh.write(self._concat_job_log(data, 'stdout'))
-
-                with open(job_state.error_file, 'w') as fh:
-                    fh.write(self._concat_job_log(data, 'stderr'))
-
-                with open(job_state.exit_code_file, 'w') as fh:
-                    fh.write(self._concat_exit_codes(data))
-
+                
+                stdout = self._concat_job_log(data, 'stdout')
+                stderr = self._concat_job_log(data, 'stderr')
+                exit_code = self._concat_exit_codes(data)
+                self.__finish_job(stdout, stderr, exit_code, job_state.job_wrapper)
                 log.debug("(%s/%s) job has completed" % (galaxy_id_tag, job_id))
-                self.mark_as_finished(job_state)
             return
 
         if job_failed:
             log.debug("(%s/%s) job failed" % (galaxy_id_tag, job_id))
-            with open(job_state.error_file, 'w') as fh:
-                    fh.write(self._concat_job_log(data, 'stderr'))
-            self.mark_as_failed(job_state)
+            stdout = ""
+            stderr = self._concat_job_log(data, 'stderr')
+            exit_code = 1
+            self.__finish_job(stdout, stderr, exit_code, job_state.job_wrapper)
             return
 
         return job_state
 
     def stop_job(self, job_wrapper):
         """Attempts to delete a task from the task queue"""
-
-        # Possibly the job was deleted before it was fully started.
-        # In this case, the job_id will be None. This seems to be a bug in Galaxy.
-        # It's likely that the job was in fact submitted to TES, but the job_id
-        # wasn't persisted to the monitor queue?
         # TODO: This needs a thorough check why job Id is not coming with job_object
-        # and why this is getting called after the job completion
+        # and why this is getting called after the job completion in failed case
         job = job_wrapper.get_job()
 
         job_id = job.job_runner_external_id
@@ -423,11 +442,9 @@ class TESJobRunner(AsynchronousJobRunner):
 
         master_addr = job.destination_params.get('tes_master_addr')
         self._cancel_job(master_addr, job_id)
-        # TODO send cancel message to TES
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
-        return
         # TODO Check if we need any changes here
         job_id = job.get_job_runner_external_id()
         galaxy_id_tag = job_wrapper.get_id_tag()
