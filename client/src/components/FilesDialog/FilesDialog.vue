@@ -149,14 +149,13 @@ export default {
         addDirectory(record) {
             if (this.includesDirectory(record.id)) {
                 // remove directory and all subdirectories/files under it
-                console.log(this.selectedDirs);
                 this.selectedDirs = this.selectedDirs.filter(({ id, path }) => {
                     id !== record.id || !path.startsWith(record.path);
                 });
+
                 this.model.finalize().forEach((file) => {
-                    console.log(file);
                     if (file.path.startsWith(record.path)) {
-                        this.model.add(record);
+                        this.model.add(file);
                     }
                 });
             } else {
@@ -179,7 +178,6 @@ export default {
                         };
                         // add file
                         if (sub_record.isLeaf) {
-                            console.log("file added");
                             this.model.add(sub_record);
                         } else {
                             // get all Subdirs
