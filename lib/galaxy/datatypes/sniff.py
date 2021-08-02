@@ -38,6 +38,24 @@ def get_test_fname(fname):
     return full_path
 
 
+def get_test_iter(fnames):
+    """Returns test data paths separated into those that
+    should evaluate positive and negative given a list
+    of basenames that should evaluate positive.
+    """
+    pos = set()
+    neg = set()
+    path, name = os.path.split(__file__)
+    path = os.path.join(path, 'test')
+    with os.scandir(path) as it:
+        for entry in it:
+            if entry.name in fnames:
+                pos.add(entry.path)
+            else:
+                neg.add(entry.path)
+    return pos, neg
+
+
 def sniff_with_cls(cls, fname):
     path = get_test_fname(fname)
     try:
@@ -136,10 +154,11 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt=br"[^\S\n]+", tmp_dir=N
 
 def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
     idx = 0
-    if isinstance(fname_or_file_prefix, FilePrefix):
-        file_iterator = fname_or_file_prefix.line_iterator()
-    else:
-        file_iterator = compression_utils.get_fileobj(fname_or_file_prefix)
+    if not isinstance(fname_or_file_prefix, FilePrefix):
+        fname_or_file_prefix = FilePrefix(fname_or_file_prefix)
+    if fname_or_file_prefix.binary:
+        return
+    file_iterator = fname_or_file_prefix.line_iterator()
     for line in file_iterator:
         line = line.rstrip('\n\r')
         if comment_designator is not None and comment_designator != '' and line.startswith(comment_designator):
@@ -447,9 +466,8 @@ def guess_ext(fname, sniff_order, is_binary=False):
     # skip header check if data is already known to be binary
     if is_binary:
         return file_ext or 'binary'
-    try:
-        get_headers(file_prefix, None)
-    except UnicodeDecodeError:
+    # get_headers returns an empty list for binary (and empty) files
+    if len(get_headers(file_prefix, None)) == 0:
         return 'data'  # default data type file extension
     if is_column_based(file_prefix, '\t', 1):
         return 'tabular'  # default tabular data type file extension
