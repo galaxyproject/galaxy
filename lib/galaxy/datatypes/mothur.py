@@ -498,20 +498,21 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         headers = iter_headers(file_prefix, sep='\t')
         count = 0
         for line in headers:
-            if not line[0].startswith('@'):
-                if len(line) != 3:
-                    return False
+            if line[0].startswith('@'):
+                continue
+            if len(line) != 3:
+                return False
+            try:
+                float(line[2])
                 try:
-                    float(line[2])
-                    try:
-                        # See if it's also an integer
-                        int(line[2])
-                    except ValueError:
-                        # At least one value is not an integer
-                        all_ints = False
+                    # See if it's also an integer
+                    int(line[2])
                 except ValueError:
-                    return False
-                count += 1
+                    # At least one value is not an integer
+                    all_ints = False
+            except ValueError:
+                return False
+            count += 1
 
         if count > 2:
             return not all_ints
