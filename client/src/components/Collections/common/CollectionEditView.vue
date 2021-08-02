@@ -113,7 +113,6 @@ export default {
         },
         clickedConvert: function (selectedConverter) {
             const url = prependPath("/api/tools/conversion/" + selectedConverter.tool_id);
-            console.log(selectedConverter);
             const data = {
                 collection_data: this.collection_id,
                 name: selectedConverter.name,
@@ -121,8 +120,6 @@ export default {
                 target_type: selectedConverter.target_type,
                 tool_id: selectedConverter.tool_id,
             };
-            const data2 = JSON.stringify(this.selectedConverter);
-            console.log(data2)
             axios.post(url, data).catch(this.handleError);
         },
         handleError: function (err) {
