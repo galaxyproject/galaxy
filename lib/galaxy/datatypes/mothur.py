@@ -502,6 +502,7 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
                 continue
             if len(line) != 3:
                 return False
+            # check if col3 contains distances (floats)
             try:
                 float(line[2])
                 try:
@@ -513,9 +514,21 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
             except ValueError:
                 return False
             count += 1
+            #check if col1 and col2 likely contain names
+            names = [False, False]
+            for c in [0, 1]:
+                try:
+                    float(line[c])
+                except ValueError:
+                    names[c] = True
+        
+        if not names[0] or not names[1]:
+            return False
 
         if count > 2:
             return not all_ints
+
+
 
         return False
 
