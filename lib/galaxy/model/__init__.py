@@ -4269,6 +4269,7 @@ class Library(Base, Dictifiable, HasName, RepresentById):
     synopsis = Column(TEXT)
     root_folder = relationship('LibraryFolder', back_populates='library_root')
     actions = relationship('LibraryPermissions', back_populates='library')
+    info_association = relationship('LibraryInfoAssociation', back_populates='library')  # TODO: should this be plural?
 
     permitted_actions = get_permitted_actions(filter='LIBRARY')
     dict_collection_visible_keys = ['id', 'name']
@@ -4781,7 +4782,28 @@ class ExtendedMetadataIndex(Base, RepresentById):
         self.value = value
 
 
-class LibraryInfoAssociation(RepresentById):
+class LibraryInfoAssociation(Base, RepresentById):
+    __tablename__ = 'library_info_association'
+
+    id = Column(Integer, primary_key=True)
+    library_id = Column(Integer, ForeignKey('library.id'), index=True)
+    form_definition_id = Column(Integer, ForeignKey('form_definition.id'), index=True)
+    form_values_id = Column(Integer, ForeignKey('form_values.id'), index=True)
+    inheritable = Column(Boolean, index=True, default=False)
+    deleted = Column(Boolean, index=True, default=False)
+
+    library = relationship('Library',
+        primaryjoin=(
+            lambda: and_(
+                LibraryInfoAssociation.library_id == Library.id,  # type: ignore
+                not_(LibraryInfoAssociation.deleted))  # type: ignore
+        ),
+        back_populates='info_association')
+    template = relationship('FormDefinition',
+        primaryjoin=lambda: LibraryInfoAssociation.form_definition_id == FormDefinition.id)  # type: ignore
+    info = relationship('FormValues',
+        primaryjoin=lambda: LibraryInfoAssociation.form_values_id == FormValues.id)  # type: ignore
+
     def __init__(self, library, form_definition, info, inheritable=False):
         self.library = library
         self.template = form_definition

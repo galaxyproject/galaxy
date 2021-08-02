@@ -185,15 +185,6 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("message", TrimmedString(255)))
 
-model.LibraryInfoAssociation.table = Table(
-    "library_info_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("library_id", Integer, ForeignKey("library.id"), index=True),
-    Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-    Column("inheritable", Boolean, index=True, default=False),
-    Column("deleted", Boolean, index=True, default=False))
-
 model.LibraryFolderInfoAssociation.table = Table(
     "library_folder_info_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -821,19 +812,6 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
             & (model.UserRoleAssociation.table.c.role_id == model.Role.id)
             & not_(model.Role.name == model.User.table.c.email))
     )
-))
-
-mapper_registry.map_imperatively(model.LibraryInfoAssociation, model.LibraryInfoAssociation.table, properties=dict(
-    library=relation(model.Library,
-        primaryjoin=(
-            (model.LibraryInfoAssociation.table.c.library_id == model.Library.id)
-            & (not_(model.LibraryInfoAssociation.table.c.deleted))
-        ),
-        backref="info_association"),
-    template=relation(model.FormDefinition,
-        primaryjoin=(model.LibraryInfoAssociation.table.c.form_definition_id == model.FormDefinition.id)),
-    info=relation(model.FormValues,
-        primaryjoin=(model.LibraryInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
 mapper_registry.map_imperatively(model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.table, properties=dict(

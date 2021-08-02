@@ -1893,14 +1893,24 @@ class TestLibrary(BaseTest):
             assert stored_obj.description == description
             assert stored_obj.synopsis == synopsis
 
-    def test_relationships(self, session, cls_, library_folder, library_permission):
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        library_folder,
+        library_permission,
+        library_info_association,
+    ):
         obj = cls_(None, None, None, library_folder)
         obj.actions.append(library_permission)
+        session.add(library_info_association)  # must be bound to a session for lazy load of attr. `library` (https://docs.sqlalchemy.org/en/14/errors.html#error-bhk3)
+        obj.info_association.append(library_info_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.root_folder.id == library_folder.id
             assert stored_obj.actions == [library_permission]
+            assert stored_obj.info_association == [library_info_association]
 
 
 class TestLibraryDatasetCollectionAnnotationAssociation(BaseTest):
@@ -2182,6 +2192,34 @@ class TestLibraryFolderPermissions(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.folder.id == library_folder.id
             assert stored_obj.role.id == role.id
+
+
+class TestLibraryInfoAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'library_info_association'
+
+    def test_columns(self, session, cls_, library, form_definition, form_values):
+        inheritable, deleted = True, True
+        obj = cls_(library, form_definition, form_values, inheritable)
+        obj.deleted = deleted
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.library_id == library.id
+            assert stored_obj.form_definition_id == form_definition.id
+            assert stored_obj.form_values_id == form_values.id
+            assert stored_obj.inheritable == inheritable
+            assert stored_obj.deleted == deleted
+
+    def test_relationships(self, session, cls_, library, form_definition, form_values):
+        obj = cls_(library, form_definition, form_values, None)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.library.id == library.id
+            assert stored_obj.template.id == form_definition.id
+            assert stored_obj.info.id == form_values.id
 
 
 class TestLibraryPermissions(BaseTest):
@@ -3625,6 +3663,12 @@ def form_definition_current(model, session):
 
 
 @pytest.fixture
+def form_values(model, session):
+    fv = model.FormValues()
+    yield from dbcleanup_wrapper(session, fv)
+
+
+@pytest.fixture
 def galaxy_session(model, session, user):
     s = model.GalaxySession()
     yield from dbcleanup_wrapper(session, s)
@@ -3784,6 +3828,12 @@ def library_dataset_dataset_association_permission(model, session, library_datas
 def library_folder_permission(model, session, library_folder, role):
     lfp = model.LibraryFolderPermissions('a', library_folder, role)
     yield from dbcleanup_wrapper(session, lfp)
+
+
+@pytest.fixture
+def library_info_association(model, session, library, form_definition, form_values):
+    lia = model.LibraryInfoAssociation(library, form_definition, form_values)
+    yield from dbcleanup_wrapper(session, lia)
 
 
 @pytest.fixture
