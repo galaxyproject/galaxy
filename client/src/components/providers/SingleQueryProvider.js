@@ -35,7 +35,9 @@ export const SingleQueryProvider = (lookup) => {
 
             let lookupPromise = promiseCache.get(this.cacheKey);
             if (!lookupPromise) {
-                lookupPromise = lookup(this.$attrs);
+                lookupPromise = lookup(this.$attrs).catch((err) => {
+                    this.$emit("error", err);
+                });
                 promiseCache.set(this.cacheKey, lookupPromise);
             }
 
