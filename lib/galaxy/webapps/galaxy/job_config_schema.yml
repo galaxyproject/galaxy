@@ -81,6 +81,8 @@ mapping:
         mapping:
           id:
             type: str
+          class:
+            type: str
           handler:
             type: str
           environment:

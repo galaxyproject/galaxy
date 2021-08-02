@@ -59,13 +59,17 @@ class UsesShed:
         config["conda_auto_install"] = True
         config["conda_prefix"] = os.environ.get('GALAXY_TEST_CONDA_PREFIX') or os.path.join(cls.conda_tmp_prefix, 'conda')
 
-    def reset_shed_tools(self):
+    def setup_shed_config(self):
         shutil.rmtree(self._app.config.shed_tools_dir, ignore_errors=True)
         os.makedirs(self._app.config.shed_tools_dir)
+        self._app.config.shed_tools_dir = self.shed_tools_dir
         with open(self._app.config.shed_tool_config_file, "w") as tool_conf_file:
             tool_conf_file.write(SHED_TOOL_CONF.substitute(shed_tools_path=self._app.config.shed_tools_dir))
         # deleting the containing folder doesn't trigger a toolbox reload, so signal it now and wait until it's done
         self._app.queue_worker.send_control_task('reload_toolbox', get_response=True)
+
+    def reset_shed_tools(self):
+        self.setup_shed_config()
         model = self._app.install_model
         models_to_delete = [
             model.RepositoryRepositoryDependencyAssociation,

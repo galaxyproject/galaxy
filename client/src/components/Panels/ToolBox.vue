@@ -28,10 +28,10 @@
             <div class="toolMenuContainer">
                 <div class="toolMenu">
                     <tool-section
-                        v-for="section in sections"
+                        v-for="(section, key) in sections"
                         :category="section"
                         :query-filter="queryFilter"
-                        :key="section.id"
+                        :key="key"
                         @onClick="onOpen"
                     />
                 </div>

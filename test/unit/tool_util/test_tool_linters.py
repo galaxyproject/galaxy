@@ -1,8 +1,19 @@
 import pytest
 
 from galaxy.tool_util.lint import LintContext
-from galaxy.tool_util.linters import inputs
+from galaxy.tool_util.linters import general, inputs, outputs
+from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
+
+
+def lint_general(xml_tree, lint_ctx):
+    """Wrap calling of lint_general to provide XmlToolSource argument.
+
+    This allows general.lint_general to be called with the other linters which
+    take an XmlTree as an argument.
+    """
+    tool_source = XmlToolSource(xml_tree)
+    return general.lint_general(tool_source, lint_ctx)
 
 
 NO_SECTIONS_XML = """
@@ -93,6 +104,49 @@ SELECT_OPTION_DEFINITIONS = """
 </tool>
 """
 
+WHITESPACE_IN_VERSIONS_AND_NAMES = """
+<tool name=" BWA Mapper " id="bwa tool" version=" 1.0.1 " is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <requirements>
+        <requirement type="package" version=" 1.2.5 "> bwa </requirement>
+    </requirements>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <inputs>
+        <param name="select_fd_op" type="select">
+            <options from_dataset="xyz"/>
+            <options from_data_table="xyz"/>
+            <option value="x">x</option>
+        </param>
+    </inputs>
+</tool>
+"""
+
+VALIDATOR_INCOMPATIBILITIES = """
+<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <inputs>
+        <param name="param_name" type="text">
+            <validator type="in_range">TEXT</validator>
+            <validator type="regex" filename="blah"/>
+        </param>
+    </inputs>
+</tool>
+"""
+
+OUTPUTS_COLLECTION_FORMAT_SOURCE = """
+<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <outputs>
+        <collection name="output_collection" type="paired">
+            <data name="forward" format_source="input_readpair" />
+            <data name="reverse" format_source="input_readpair" format="fastq"/>
+        </collection>
+    </outputs>
+</tool>
+"""
+
 TESTS = [
     (
         NO_SECTIONS_XML, inputs.lint_inputs,
@@ -142,6 +196,31 @@ TESTS = [
             and "Select parameter [select_fd_fdt] options uses 'from_dataset' and 'from_data_table' attribute." in x.error_messages
             and len(x.warn_messages) == 0 and len(x.error_messages) == 5
     ),
+    (
+        WHITESPACE_IN_VERSIONS_AND_NAMES, lint_general,
+        lambda x:
+            "Tool version contains whitespace, this may cause errors: [ 1.0.1 ]." in x.warn_messages
+            and "Tool name contains whitespace, this may cause errors: [ BWA Mapper ]." in x.warn_messages
+            and "Requirement version contains whitespace, this may cause errors: [ 1.2.5 ]." in x.warn_messages
+            and "Tool ID contains whitespace - this is discouraged: [bwa tool]."
+            and len(x.warn_messages) == 4 and len(x.error_messages) == 0
+    ),
+    (
+        VALIDATOR_INCOMPATIBILITIES, inputs.lint_inputs,
+        lambda x:
+            "Parameter [param_name]: 'in_range' validators are not expected to contain text (found 'TEXT')" in x.warn_messages
+            and "Parameter [param_name]: validator with an incompatible type 'in_range'" in x.error_messages
+            and "Parameter [param_name]: 'in_range' validators need to define the 'min' or 'max' attribute(s)" in x.error_messages
+            and "Parameter [param_name]: attribute 'filename' is incompatible with validator of type 'regex'" in x.error_messages
+            and "Parameter [param_name]: 'regex' validators need to define an 'expression' attribute" in x.error_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 4
+    ),
+    (
+        OUTPUTS_COLLECTION_FORMAT_SOURCE, outputs.lint_output,
+        lambda x:
+            "Tool data output reverse should use either format_source or format/ext" in x.warn_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
 ]
 
 TEST_IDS = [
@@ -150,7 +229,10 @@ TEST_IDS = [
     'radio select incompatibilities',
     'select duplicated options',
     'select deprecations',
-    'select option definitions'
+    'select option definitions',
+    'hazardous whitespace',
+    'validator imcompatibilities',
+    'outputs collection static elements with format_source'
 ]
 
 
@@ -159,4 +241,7 @@ def test_tool_xml(tool_xml, lint_func, assert_func):
     lint_ctx = LintContext('all')
     tree = etree.ElementTree(element=etree.fromstring(tool_xml))
     lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=tree)
-    assert assert_func(lint_ctx), f"Warnings: {lint_ctx.warn_messages}\nErrors: {lint_ctx.error_messages}"
+    assert assert_func(lint_ctx), (
+        f"Warnings: {lint_ctx.warn_messages}\n"
+        f"Errors: {lint_ctx.error_messages}"
+    )

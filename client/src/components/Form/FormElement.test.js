@@ -22,7 +22,7 @@ describe("FormElement", () => {
         });
     });
 
-    it("check help text", async () => {
+    it("check props", async () => {
         const help = wrapper.find(".ui-form-info");
         expect(help.text()).toBe("help_text");
         const error = wrapper.find(".ui-form-error-text");

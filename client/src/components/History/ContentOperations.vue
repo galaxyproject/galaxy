@@ -20,6 +20,7 @@
                 <PriorityMenuItem
                     key="selection"
                     title="Operations on multiple datasets"
+                    class="show-history-content-selectors-btn"
                     icon="fas fa-check-square"
                     @click="$emit('update:show-selection', !showSelection)"
                     :pressed="showSelection"
@@ -27,6 +28,7 @@
 
                 <PriorityMenuItem
                     key="copy-datasets"
+                    class="copy-datasets-menu-item"
                     title="Copy Datasets"
                     icon="fas fa-copy"
                     @click="iframeRedirect('/dataset/copy_datasets')"
@@ -67,7 +69,10 @@
         </transition>
 
         <transition name="shutterfade">
-            <b-button-toolbar v-if="showSelection" class="content-selection justify-content-between mt-1">
+            <b-button-toolbar
+                v-if="showSelection"
+                class="content-selection justify-content-between mt-1 list-action-menu"
+            >
                 <b-button-group>
                     <b-button size="sm" @click="$emit('selectAllContent')">
                         {{ "Select All" | localize }}
@@ -77,7 +82,12 @@
                     </b-button>
                 </b-button-group>
 
-                <b-dropdown class="ml-auto" size="sm" text="With Selected" :disabled="!hasSelection">
+                <b-dropdown
+                    class="ml-auto history-contents-list-action-menu-btn"
+                    size="sm"
+                    text="With Selected"
+                    :disabled="!hasSelection"
+                >
                     <b-dropdown-item @click="hideSelected">
                         {{ "Hide Datasets" | localize }}
                     </b-dropdown-item>

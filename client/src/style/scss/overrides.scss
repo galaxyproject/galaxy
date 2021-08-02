@@ -35,6 +35,10 @@ pre {
 .dropdown-menu {
     .dropdown-item {
         text-decoration: none;
+        .fa {
+            @extend .fa-fw;
+            @extend .mr-2;
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 <template>
     <CurrentUser v-slot="{ user }">
-        <FormCardTool
+        <ToolCard
             :id="node.config_form.id"
             :user="user"
             :version="node.config_form.version"
@@ -18,7 +18,7 @@
                     :value="node.label"
                     title="Label"
                     help="Add a step label."
-                    @onChange="onLabel"
+                    @input="onLabel"
                     :error="errorLabel"
                 />
                 <FormElement
@@ -27,16 +27,16 @@
                     title="Step Annotation"
                     :area="true"
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-                    @onChange="onAnnotation"
+                    @input="onAnnotation"
                 />
-                <Form
+                <FormDisplay
                     :id="id"
                     :inputs="inputs"
                     :initial-errors="true"
+                    :form-config="formConfig"
                     text-enable="Set in Advance"
                     text-disable="Set at Runtime"
                     @onChange="onChange"
-                    ref="form"
                 />
                 <FormSection
                     :id="id"
@@ -46,14 +46,14 @@
                     @onChangeOutputDatatype="onChangeOutputDatatype"
                 />
             </template>
-        </FormCardTool>
+        </ToolCard>
     </CurrentUser>
 </template>
 
 <script>
 import CurrentUser from "components/providers/CurrentUser";
-import Form from "components/Form/Form";
-import FormCardTool from "components/Form/FormCardTool";
+import FormDisplay from "components/Form/FormDisplay";
+import ToolCard from "components/Tool/ToolCard";
 import FormSection from "./FormSection";
 import FormElement from "components/Form/FormElement";
 import { getModule } from "components/Workflow/Editor/modules/services";
@@ -63,8 +63,8 @@ import Utils from "utils/utils";
 export default {
     components: {
         CurrentUser,
-        Form,
-        FormCardTool,
+        FormDisplay,
+        ToolCard,
         FormElement,
         FormSection,
     },
@@ -88,6 +88,7 @@ export default {
             sectionValues: {},
             messageVariant: "",
             messageText: "",
+            formConfig: {},
         };
     },
     computed: {
@@ -161,9 +162,7 @@ export default {
                 inputs: Object.assign({}, this.mainValues, this.sectionValues),
             }).then((data) => {
                 this.$emit("onSetData", this.node.id, data);
-                const form = this.$refs["form"];
-                form.parseUpdate(data.config_form);
-                form.parseErrors(data.config_form);
+                this.formConfig = data;
                 if (newVersion) {
                     const options = data.config_form;
                     this.messageVariant = "success";

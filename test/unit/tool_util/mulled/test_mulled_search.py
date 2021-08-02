@@ -1,6 +1,13 @@
 import pytest
 
-from galaxy.tool_util.deps.mulled.mulled_search import CondaSearch, get_package_hash, GitHubSearch, QuaySearch, run_command, singularity_search
+from galaxy.tool_util.deps.mulled.mulled_search import (
+    CondaSearch,
+    get_package_hash,
+    GitHubSearch,
+    QuaySearch,
+    run_command,
+    singularity_search
+)
 from ..util import external_dependency_management
 
 

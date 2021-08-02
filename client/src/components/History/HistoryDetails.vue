@@ -1,14 +1,15 @@
 <template>
     <header>
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between align-items-center actions">
             <h6 class="text-nowrap text-truncate mr-auto">
-                <span class="size">{{ history.niceSize | localize }}</span>
+                <span class="size history-size">{{ history.niceSize | localize }}</span>
             </h6>
 
             <PriorityMenu style="max-width: 50%" :starting-height="28">
                 <PriorityMenuItem
                     key="edit-history-tags"
                     title="Edit History Tags"
+                    class="history-tag-btn"
                     icon="fas fa-tags"
                     :pressed="showTags"
                     @click="showTags = !showTags"
@@ -16,6 +17,7 @@
                 <PriorityMenuItem
                     key="edit-history-annotation"
                     title="Edit Annotation"
+                    class="history-annotate-btn"
                     icon="fas fa-comment"
                     :pressed="showAnnotation"
                     @click="showAnnotation = !showAnnotation"
@@ -84,7 +86,7 @@
                     key="export-history-to-file"
                     title="Export History to File"
                     icon="fas fa-file-archive"
-                    @click="iframeRedirect('/history/export_archive?preview=True')"
+                    @click="backboneRoute(exportLink)"
                 />
             </PriorityMenu>
         </div>
@@ -94,8 +96,8 @@
             class="history-title mt-2"
             tag-name="h3"
             v-model="historyName"
-            :tooltip-title="'Rename history...' | localize"
-            tooltip-placement="top"
+            :title="'Rename history...' | localize"
+            v-b-tooltip.hover="{ boundary: 'viewport', placement: 'left' }"
         />
 
         <transition name="shutterfade">
@@ -183,6 +185,9 @@ export default {
                     this.updateFields({ name });
                 }
             },
+        },
+        exportLink() {
+            return `histories/${this.history.id}/export`;
         },
     },
     methods: {

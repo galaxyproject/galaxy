@@ -246,10 +246,14 @@ class FoldersController(BaseGalaxyAPIController):
 
         :raises: InsufficientPermissionsException
         """
-        scope = kwd.get('scope', None)
-        page = kwd.get('page', None)
-        page_limit = kwd.get('page_limit', None)
-        query = kwd.get('q', None)
+        scope = kwd.get('scope')
+        page = kwd.get('page')
+        if isinstance(page, str):
+            page = int(page)
+        page_limit = kwd.get('page_limit')
+        if isinstance(page_limit, str):
+            page_limit = int(page_limit)
+        query = kwd.get('q')
         return self.service.get_permissions(trans, encoded_folder_id, scope, page, page_limit, query)
 
     @expose_api

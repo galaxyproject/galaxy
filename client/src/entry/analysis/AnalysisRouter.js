@@ -15,7 +15,7 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
-import ToolForm from "mvc/tool/tool-form";
+import ToolForm from "components/Tool/ToolForm";
 import FormWrapper from "mvc/form/form-wrapper";
 import Sharing from "components/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
@@ -433,7 +433,7 @@ export const getAnalysisRouter = (Galaxy) => {
             if (params.version) {
                 params.version = decodeUriComponent(params.version);
             }
-            this.page.display(new ToolForm.View(params));
+            this._display_vue_helper(ToolForm, params);
         },
 
         /** load the center panel iframe using the given url */

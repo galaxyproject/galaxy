@@ -8,9 +8,10 @@ import testApp from "../test-app";
 import InputElement from "mvc/form/form-input";
 import Ui from "mvc/ui/ui-misc";
 import FormData from "mvc/form/form-data";
-import ToolForm from "mvc/tool/tool-form";
+import Form from "mvc/form/form-view";
 import Utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";
+import toolsTestBuild from "../test-data/json/tools.test.build";
 
 QUnit.module("Form test", {
     beforeEach: function () {
@@ -32,16 +33,9 @@ QUnit.module("Form test", {
     },
 });
 
-QUnit.test("tool-form", function (assert) {
-    var toolform = new ToolForm.View({ id: "test" });
-    $("body").prepend(toolform.$el);
-    window.fakeserver.respond();
-
-    var form = toolform.form;
-    assert.ok(
-        form.$(".portlet-title-text").html() == `<b itemprop="name">_name</b> <span itemprop="description">_description</span> (Galaxy Version _version)`,
-        "Title correct"
-    );
+QUnit.test("form", function (assert) {
+    var form = new Form(toolsTestBuild);
+    $("body").prepend(form.$el);
     var tour_ids = [];
     $("[tour_id]").each(function () {
         tour_ids.push($(this).attr("tour_id"));
@@ -90,7 +84,7 @@ QUnit.test("data", function (assert) {
     Utils.get({
         url: getAppRoot() + "api/tools/test/build",
         success: function (response) {
-            FormData.visitInputs(response.inputs, function (node, name, context) {
+            FormData.visitInputs(response.inputs, function (node, name) {
                 visits.push({ name: name, node: node });
             });
         },

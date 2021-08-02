@@ -27,6 +27,8 @@ from pulsar.client import (
     submit_job as pulsar_submit_job,
     url_to_destination_params
 )
+# TODO: Perform pulsar release with this included in the client package
+from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
 
 from galaxy import model
 from galaxy.jobs import (
@@ -758,9 +760,19 @@ class PulsarJobRunner(AsynchronousJobRunner):
         metadata_strategy = job_wrapper.get_destination_configuration('metadata_strategy', None)
         dynamic_outputs = None  # use default
         if metadata_strategy == "extended" and PulsarJobRunner.__remote_metadata(client):
-            # if Pulsar is doing remote metdata and the remote metadata is extended,
+            # if Pulsar is doing remote metadata and the remote metadata is extended,
             # we only need to recover the final model store.
             dynamic_outputs = EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN
+        else:
+            # otherwise collect everything we might need
+            dynamic_outputs = DEFAULT_DYNAMIC_COLLECTION_PATTERN[:]
+            dynamic_outputs.extend(job_wrapper.tool.output_discover_patterns)
+        tool = job_wrapper.tool
+        tool_provided_metadata_file_path = tool.provided_metadata_file
+        tool_provided_metadata_style = tool.provided_metadata_style
+        dynamic_file_sources = [
+            {"path": tool_provided_metadata_file_path, "type": "galaxy" if tool_provided_metadata_style == "default" else "legacy_galaxy"}
+        ]
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.tool_working_directory,
             metadata_directory=metadata_directory,
@@ -768,6 +780,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             output_files=output_files,
             version_file=job_wrapper.get_version_string_path(),
             dynamic_outputs=dynamic_outputs,
+            dynamic_file_sources=dynamic_file_sources,
         )
         return client_outputs
 

@@ -1,4 +1,4 @@
-from galaxy.tools.toolbox import ToolSection
+from galaxy.tool_util.toolbox import ToolSection
 from galaxy.util import etree
 
 

@@ -386,6 +386,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         elif operation == 'autodetect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
             self.hda_manager.set_metadata(trans, data, overwrite=True)
+            message = "Auto-detect operation successfully submitted."
         elif operation == 'conversion':
             target_type = payload.get('target_type')
             if target_type:

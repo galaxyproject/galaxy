@@ -24,7 +24,6 @@ import packaging.version
 import yaml
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
-import galaxy
 from galaxy import (
     model,
     util,
@@ -40,7 +39,10 @@ from galaxy.job_execution.datasets import (
     OutputsToWorkingDirectoryPathRewriter,
     TaskPathRewriter
 )
-from galaxy.job_execution.output_collect import collect_extra_files
+from galaxy.job_execution.output_collect import (
+    collect_extra_files,
+    collect_shrinked_content_from_path,
+)
 from galaxy.job_execution.setup import (  # noqa: F401
     create_working_directory_for_job,
     ensure_configs_directory,
@@ -82,6 +84,7 @@ DEFAULT_JOB_SHELL = '/bin/bash'
 DEFAULT_LOCAL_WORKERS = 4
 
 DEFAULT_CLEANUP_JOB = "always"
+VALID_TOOL_CLASSES = ["local", "requires_galaxy"]
 
 
 class JobDestination(Bunch):
@@ -244,10 +247,10 @@ def job_config_xml_to_dict(config, root):
     tools = root.find('tools')
     config_dict['tools'] = []
     if tools is not None:
-        for tool in ConfiguresHandlers._findall_with_required(tools, 'tool'):
+        for tool in tools.findall('tool'):
             # There can be multiple definitions with identical ids, but different params
             tool_mapping_conf = {}
-            for key in ['handler', 'destination', 'id', 'resources']:
+            for key in ['handler', 'destination', 'id', 'resources', 'class']:
                 value = tool.get(key)
                 if value:
                     if key == "destination":
@@ -283,6 +286,7 @@ class JobConfiguration(ConfiguresHandlers):
     handlers: dict
     handler_runner_plugins: Dict[str, str]
     tools: Dict[str, list]
+    tool_classes: Dict[str, list]
     resource_groups: Dict[str, list]
     destinations: Dict[str, tuple]
     resource_parameters: Dict[str, Any]
@@ -317,6 +321,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.destinations = {}
         self.default_destination_id = None
         self.tools = {}
+        self.tool_classes = {}
         self.resource_groups = {}
         self.default_resource_group = None
         self.resource_parameters = {}
@@ -473,9 +478,18 @@ class JobConfiguration(ConfiguresHandlers):
 
         tools = job_config_dict.get('tools', [])
         for tool in tools:
-            tool_id = tool.get('id').lower().rstrip('/')
-            if tool_id not in self.tools:
-                self.tools[tool_id] = list()
+            raw_tool_id = tool.get('id')
+            tool_class = tool.get('class')
+            if raw_tool_id is not None:
+                assert tool_class is None
+                tool_id = raw_tool_id.lower().rstrip('/')
+                if tool_id not in self.tools:
+                    self.tools[tool_id] = list()
+            else:
+                assert tool_class in VALID_TOOL_CLASSES, tool_class
+                if tool_class not in self.tool_classes:
+                    self.tool_classes[tool_class] = list()
+
             params = tool.get("params")
             if params is None:
                 params = {}
@@ -486,7 +500,12 @@ class JobConfiguration(ConfiguresHandlers):
                 tool["params"] = params
             if "environment" in tool:
                 tool["destination"] = tool.pop("environment")
-            self.tools[tool_id].append(JobToolConfiguration(**dict(tool.items())))
+
+            jtc = JobToolConfiguration(**dict(tool.items()))
+            if raw_tool_id:
+                self.tools[tool_id].append(jtc)
+            else:
+                self.tool_classes[tool_class].append(jtc)
 
         types = dict(registered_user_concurrent_jobs=int,
                      anonymous_user_concurrent_jobs=int,
@@ -693,7 +712,7 @@ class JobConfiguration(ConfiguresHandlers):
         return JobToolConfiguration(id='_default_', handler=self.default_handler_id, destination=self.default_destination_id)
 
     # Called upon instantiation of a Tool object
-    def get_job_tool_configurations(self, ids):
+    def get_job_tool_configurations(self, ids, tool_classes):
         """
         Get all configured JobToolConfigurations for a tool ID, or, if given
         a list of IDs, the JobToolConfigurations for the first id in ``ids``
@@ -713,6 +732,7 @@ class JobConfiguration(ConfiguresHandlers):
         * Tool config tool id: ``filter_tool``
         """
         rval = []
+        match_found = False
         # listify if ids is a single (string) id
         ids = util.listify(ids)
         for id in ids:
@@ -723,11 +743,16 @@ class JobConfiguration(ConfiguresHandlers):
                 for job_tool_configuration in self.tools[id]:
                     if not job_tool_configuration.params:
                         break
-                else:
-                    rval.append(self.default_job_tool_configuration)
                 rval.extend(self.tools[id])
-                break
-        else:
+                match_found = True
+
+        if not match_found:
+            for tool_class in tool_classes:
+                if tool_class in self.tool_classes:
+                    rval.extend(self.tool_classes[tool_class])
+                    match_found = True
+                    break
+        if not match_found:
             rval.append(self.default_job_tool_configuration)
         return rval
 
@@ -1650,16 +1675,6 @@ class JobWrapper(HasResourceParameters):
         else:
             final_job_state = job.states.ERROR
 
-        if self.tool.version_string_cmd:
-            version_filename = self.get_version_string_path()
-            # TODO: Remove in Galaxy 20.XX, for running jobs at GX upgrade
-            if not os.path.exists(version_filename):
-                version_filename = self.get_version_string_path_legacy()
-            if os.path.exists(version_filename):
-                with open(version_filename, 'rb') as fh:
-                    self.version_string = galaxy.util.shrink_and_unicodify(fh.read())
-                os.unlink(version_filename)
-
         outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
         if not extended_metadata and outputs_to_working_directory and not self.__link_file_check():
             # output will be moved by job if metadata_strategy is extended_metadata, so skip moving here
@@ -1688,6 +1703,11 @@ class JobWrapper(HasResourceParameters):
             except Exception:
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
                 raise
+        else:
+            if self.tool.version_string_cmd:
+                version_filename = self.get_version_string_path()
+                self.version_string = collect_shrinked_content_from_path(version_filename)
+
         output_dataset_associations = job.output_datasets + job.output_library_datasets
         for dataset_assoc in output_dataset_associations:
             context = self.get_dataset_finish_context(job_context, dataset_assoc)

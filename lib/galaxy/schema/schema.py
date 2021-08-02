@@ -31,6 +31,7 @@ from galaxy.model import (
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     ModelClassField,
+    optional,
 )
 from galaxy.schema.types import RelativeUrl
 
@@ -53,7 +54,7 @@ RelativeUrlField: RelativeUrl = Field(
     deprecated=False  # TODO Should this field be deprecated in FastAPI?
 )
 
-DownloadUrlField: AnyUrl = Field(
+DownloadUrlField: RelativeUrl = Field(
     ...,
     title="Download URL",
     description="The URL to download this item from the server.",
@@ -165,6 +166,7 @@ class Model(BaseModel):
     """Base model definition with common configuration used by all derived models."""
     class Config:
         use_enum_values = True  # when using .dict()
+        allow_population_by_field_name = True
 
 
 class UserModel(Model):
@@ -208,10 +210,25 @@ class DatasetSourceType(str, Enum):
     ldda = "ldda"
 
 
+class ColletionSourceType(str, Enum):
+    hda = "hda"
+    ldda = "ldda"
+    hdca = "hdca"
+    new_collection = "new_collection"
+
+
+class HistoryContentSource(str, Enum):
+    hda = "hda"
+    hdca = "hdca"
+    library = "library"
+    library_folder = "library_folder"
+    new_collection = "new_collection"
+
+
 class TagCollection(Model):
     """Represents the collection of tags associated with an item."""
     __root__: List[str] = Field(
-        [],
+        default=...,
         title="Tags",
         description="The collection of tags associated with an item.",
     )
@@ -224,7 +241,7 @@ class MetadataFile(Model):
         title="File Type",
         description="TODO",
     )
-    download_url: AnyUrl = DownloadUrlField
+    download_url: RelativeUrl = DownloadUrlField
 
 
 class DatasetPermissions(Model):
@@ -463,7 +480,7 @@ class HDADetailed(HDASummary):
         description="The message with details about the datatype validation result for this dataset.",
     )
     annotation: Optional[str] = AnnotationField
-    download_url: AnyUrl = DownloadUrlField
+    download_url: RelativeUrl = DownloadUrlField
     type: str = Field(
         "file",
         const=True,
@@ -506,6 +523,12 @@ class HDAExtended(HDADetailed):
 class HDABeta(HDADetailed):  # TODO: change HDABeta name to a more appropriate one.
     """History Dataset Association information used in the new Beta History."""
     # Equivalent to `betawebclient` serialization view for HDAs
+    pass
+
+
+@optional
+class UpdateHDAPayload(HDABeta):
+    """Used for updating a particular HDA. All fields are optional."""
     pass
 
 
@@ -587,6 +610,28 @@ class HDCADetailed(HDCASummary):
     """History Dataset Collection Association detailed information."""
     populated: bool = PopulatedField
     elements: List[DCESummary] = ElementsField
+
+
+@optional
+class UpdateHDCAPayload(HDCADetailed):
+    """Used for updating a particular HDCA. All fields are optional."""
+    pass
+
+
+class UpdateHistoryContentsBatchPayload(Model):
+    items: List[Union[UpdateHDAPayload, UpdateHDCAPayload]] = Field(
+        ...,
+        title="Items",
+        description="A list of content items to update with the changes.",
+    )
+    deleted: Optional[bool] = Field(
+        default=False,
+        title="Deleted",
+        description=(
+            "This will check the uploading state if not deleting (i.e: deleted=False), "
+            "otherwise cannot delete uploading files, so it will raise an error."
+        ),
+    )
 
 
 class HistoryBase(BaseModel):
@@ -844,7 +889,7 @@ class JobExportHistoryArchive(Model):
         title="Up to Date",
         description="False, if a new export archive should be generated for the corresponding history.",
     )
-    download_url: str = Field(
+    download_url: RelativeUrl = Field(
         ...,
         title="Download URL",
         description="Relative API URL to download the exported history archive.",
@@ -1026,6 +1071,27 @@ class JobImportHistoryResponse(JobBaseModel):
         title="Message",
         description="Text message containing information about the history import.",
     )
+
+
+class JobStateSummary(Model):
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    model: str = ModelClassField("Job")
+    populated_state: DatasetCollection.populated_states = PopulatedStateField
+    states: Dict[Job.states, int] = Field(
+        {},
+        title="States",
+        description=(
+            "A dictionary of job states and the number of jobs in that state."
+        )
+    )
+
+
+class ImplicitCollectionJobsStateSummary(JobStateSummary):
+    model: str = ModelClassField("ImplicitCollectionJobs")
+
+
+class WorkflowInvocationStateSummary(JobStateSummary):
+    model: str = ModelClassField("WorkflowInvocation")
 
 
 class JobSummary(JobBaseModel):
@@ -2018,11 +2084,13 @@ class LibraryPermissionAction(str, Enum):
     remove_restrictions = "remove_restrictions"  # name inconsistency? should be `make_public`?
 
 
-class LibraryPermissionsPayloadBase(BaseModel):
-    class Config:
-        use_enum_values = True  # When using .dict()
-        allow_population_by_alias = True
+class DatasetPermissionAction(str, Enum):
+    set_permissions = "set_permissions"
+    make_private = "make_private"
+    remove_restrictions = "remove_restrictions"
 
+
+class LibraryPermissionsPayloadBase(Model):
     add_ids: Optional[RoleIdList] = Field(
         [],
         alias="add_ids[]",
@@ -2177,4 +2245,73 @@ class LibraryFolderCurrentPermissions(BaseModel):
         ...,
         title="Add Role List",
         description="A list containing pairs of role names and corresponding encoded IDs which can add items to the Library folder.",
+    )
+
+
+class DatasetAssociationRoles(Model):
+    access_dataset_roles: List[RoleNameIdTuple] = Field(
+        default=[],
+        title="Access Roles",
+        description=(
+            "A list of roles that can access the dataset. "
+            "The user has to **have all these roles** in order to access this dataset. "
+            "Users without access permission **cannot** have other permissions on this dataset. "
+            "If there are no access roles set on the dataset it is considered **unrestricted**."
+        ),
+    )
+    manage_dataset_roles: List[RoleNameIdTuple] = Field(
+        default=[],
+        title="Manage Roles",
+        description=(
+            "A list of roles that can manage permissions on the dataset. "
+            "Users with **any** of these roles can manage permissions of this dataset. "
+            "If you remove yourself you will lose the ability to manage this dataset unless you are an admin."
+        ),
+    )
+    modify_item_roles: List[RoleNameIdTuple] = Field(
+        default=[],
+        title="Modify Roles",
+        description=(
+            "A list of roles that can modify the library item. This is a library related permission. "
+            "User with **any** of these roles can modify name, metadata, and other information about this library item."
+        ),
+    )
+
+
+class UpdateDatasetPermissionsPayload(Model):
+    action: Optional[DatasetPermissionAction] = Field(
+        ...,
+        title="Action",
+        description="Indicates what action should be performed on the dataset.",
+    )
+    access_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="access_ids[]",  # Added for backward compatibility but it looks really ugly...
+        title="Access IDs",
+        description="A list of role encoded IDs defining roles that should have access permission on the dataset.",
+    )
+    manage_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="manage_ids[]",
+        title="Manage IDs",
+        description="A list of role encoded IDs defining roles that should have manage permission on the dataset.",
+    )
+    modify_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="modify_ids[]",
+        title="Modify IDs",
+        description="A list of role encoded IDs defining roles that should have modify permission on the dataset.",
+    )
+
+
+class DeleteHDCAResult(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="The encoded ID of the collection.",
+    )
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="True if the collection was successfully deleted.",
     )

@@ -26,6 +26,7 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.libraries import LibraryManager
+from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.tools import DynamicToolManager
@@ -149,6 +150,7 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
 
 class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._register_singleton(MinimalManagerApp, self)
@@ -173,6 +175,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.workflow_contents_manager = self._register_singleton(WorkflowContentsManager)
         self.library_folder_manager = self._register_singleton(FolderManager)
         self.library_manager = self._register_singleton(LibraryManager)
+        self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)
         self.role_manager = self._register_singleton(RoleManager)
         from galaxy.jobs.manager import JobManager
         self.job_manager = self._register_singleton(JobManager)

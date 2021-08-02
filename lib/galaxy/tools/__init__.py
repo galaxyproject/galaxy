@@ -11,13 +11,14 @@ import tempfile
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import List, NamedTuple, Type, Union
+from typing import cast, Dict, List, NamedTuple, Optional, Tuple, Type, Union
 from urllib.parse import unquote_plus
 
 import packaging.version
 import webob.exc
 from lxml import etree
 from mako.template import Template
+from pkg_resources import resource_string
 from webob.compat import cgi_FieldStorage
 
 from galaxy import (
@@ -46,6 +47,7 @@ from galaxy.tool_util.parser import (
 )
 from galaxy.tool_util.parser.xml import XmlPageSource
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
+from galaxy.tool_util.toolbox import BaseGalaxyToolBox
 from galaxy.tools import expressions
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -80,7 +82,6 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.tools.test import parse_tests
-from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
     in_directory,
     listify,
@@ -190,6 +191,9 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "substitutions1": packaging.version.parse("1.0.1"),
     "winSplitter": packaging.version.parse("1.0.1"),
 }
+
+BIOTOOLS_MAPPING_CONTENT = resource_string(__name__, 'biotools_mappings.tsv').decode("UTF-8")
+BIOTOOLS_MAPPING: Dict[str, str] = dict([cast(Tuple[str, str], tuple(x.split("\t"))) for x in BIOTOOLS_MAPPING_CONTENT.splitlines() if not x.startswith("#")])
 
 
 class safe_update(NamedTuple):
@@ -490,6 +494,7 @@ class Tool(Dictifiable):
     requires_setting_metadata = True
     produces_entry_points = False
     default_tool_action = DefaultToolAction
+    tool_type_local = False
     dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
     def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, tool_shed_repository=None, allow_code_files=True, dynamic=False):
@@ -897,7 +902,16 @@ class Tool(Dictifiable):
 
         # In the toolshed context, there is no job config.
         if hasattr(self.app, 'job_config'):
-            self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids)
+            # Order of this list must match documentation in job_conf.sample_advanced.yml
+            tool_classes = []
+            if self.tool_type_local:
+                tool_classes.append("local")
+            elif self.old_id in ['upload1', '__DATA_FETCH__']:
+                tool_classes.append("local")
+            if self.requires_galaxy_python_environment:
+                tool_classes.append("requires_galaxy")
+
+            self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids, tool_classes)
 
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = tool_source.parse_hidden()
@@ -950,7 +964,13 @@ class Tool(Dictifiable):
         self.containers = containers
 
         self.citations = self._parse_citations(tool_source)
-        self.xrefs = tool_source.parse_xrefs()
+        xrefs = tool_source.parse_xrefs()
+        has_biotools_reference = any(x["reftype"] == "bio.tools" for x in xrefs)
+        if not has_biotools_reference:
+            legacy_biotools_ref = self.legacy_biotools_external_reference
+            if legacy_biotools_ref is not None:
+                xrefs.append({"value": legacy_biotools_ref, "reftype": "bio.tools"})
+        self.xrefs = xrefs
 
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
@@ -1387,6 +1407,25 @@ class Tool(Dictifiable):
             self.sharable_url = get_tool_shed_repository_url(
                 self.app, self.tool_shed, self.repository_owner, self.repository_name
             )
+
+    @property
+    def legacy_biotools_external_reference(self) -> Optional[str]:
+        """Return a bio.tools ID if any of tool's IDs are BIOTOOLS_MAPPING."""
+        for tool_id in self.all_ids:
+            if tool_id in BIOTOOLS_MAPPING:
+                return BIOTOOLS_MAPPING[tool_id]
+        return None
+
+    @property
+    def biotools_reference(self) -> Optional[str]:
+        """Return a bio.tools ID if external reference to it is found.
+
+        If multiple bio.tools references are found, return just the first one.
+        """
+        for xref in self.xrefs:
+            if xref["reftype"] == "bio.tools":
+                return xref["value"]
+        return None
 
     @property
     def help(self):
@@ -1844,6 +1883,14 @@ class Tool(Dictifiable):
         Return a list of dictionaries for all tool dependencies with their associated status
         """
         return self._view.get_requirements_status({self.id: self.tool_requirements}, self.installed_tool_dependencies)
+
+    @property
+    def output_discover_patterns(self):
+        # patterns to collect for remote job execution
+        patterns = []
+        for output in self.outputs.values():
+            patterns.extend(output.output_discover_patterns)
+        return patterns
 
     def build_redirect_url_params(self, param_dict):
         """
@@ -2431,6 +2478,7 @@ class OutputParameterJSONTool(Tool):
 class ExpressionTool(Tool):
     requires_js_runtime = True
     tool_type = 'expression'
+    tool_type_local = True
     EXPRESSION_INPUTS_NAME = "_expression_inputs_.json"
 
     def parse_command(self, tool_source):
@@ -2772,6 +2820,7 @@ class DataManagerTool(OutputParameterJSONTool):
 class DatabaseOperationTool(Tool):
     default_tool_action = ModelOperationToolAction
     require_dataset_ok = True
+    tool_type_local = True
 
     @property
     def valid_input_states(self):

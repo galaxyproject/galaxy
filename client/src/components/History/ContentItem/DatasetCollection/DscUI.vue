@@ -5,6 +5,7 @@
     <div
         class="dataset dataset-collection collapsed"
         :class="{ selected }"
+        :id="typedId"
         :data-state="dsc.state"
         @keydown.arrow-right.self.stop="$emit('viewCollection')"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
@@ -12,7 +13,12 @@
     >
         <nav class="content-top-menu">
             <div class="content-status-indicators mr-1" @click.stop>
-                <b-check v-if="showSelection" :checked="selected" @change="$emit('update:selected', $event)" />
+                <b-check
+                    class="selector"
+                    v-if="showSelection"
+                    :checked="selected"
+                    @change="$emit('update:selected', $event)"
+                />
 
                 <StatusIcon
                     v-if="dsc.state != 'ok'"
@@ -97,6 +103,11 @@ export default {
     methods: {
         onStatusClick() {
             console.log("onStatusClick", ...arguments);
+        },
+    },
+    computed: {
+        typedId() {
+            return this.dsc.type_id;
         },
     },
 };

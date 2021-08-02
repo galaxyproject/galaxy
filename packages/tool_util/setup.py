@@ -40,6 +40,9 @@ PACKAGES = [
     'galaxy.tool_util.linters',
     'galaxy.tool_util.locations',
     'galaxy.tool_util.parser',
+    'galaxy.tool_util.toolbox',
+    'galaxy.tool_util.toolbox.filters',
+    'galaxy.tool_util.toolbox.lineages',
     'galaxy.tool_util.verify',
     'galaxy.tool_util.verify.asserts',
 ]

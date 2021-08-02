@@ -1,7 +1,7 @@
 <template>
     <CurrentUser class="d-flex flex-column" v-slot="{ user }">
         <UserHistories v-if="user" :user="user" v-slot="{ currentHistory, histories, handlers }">
-            <HistoryPanel v-if="currentHistory" :history="currentHistory" v-on="handlers">
+            <HistoryPanel v-if="currentHistory" :history="currentHistory" v-on="handlers" id="current-history-panel">
                 <template v-slot:nav>
                     <div>
                         <HistorySelector

@@ -10,26 +10,30 @@
                         title="Options"
                         variant="link"
                         aria-label="View all Options"
-                        class="float-right"
+                        class="tool-dropdown float-right"
                         size="sm"
                         v-b-tooltip.hover
                     >
                         <template v-slot:button-content>
                             <span class="fa fa-caret-down" />
                         </template>
-                        <b-dropdown-item @click="onCopyLink"> <span class="fa fa-chain" /> Copy Link </b-dropdown-item>
-                        <b-dropdown-item @click="onCopyId">
-                            <span class="fa fa-files-o" /> Copy Tool ID
+                        <b-dropdown-item @click="onCopyLink"
+                            ><span class="fa fa-chain" /><span v-localize>Copy Link</span>
                         </b-dropdown-item>
-                        <b-dropdown-item v-if="showDownload" @click="onDownload">
-                            <span class="fa fa-download" /> Download
+                        <b-dropdown-item @click="onCopyId"
+                            ><span class="fa fa-files-o" /><span v-localize>Copy Tool ID</span>
                         </b-dropdown-item>
-                        <b-dropdown-item v-if="showLink" @click="onLink">
-                            <span class="fa fa-external-link" /> See in Tool Shed
+                        <b-dropdown-item v-if="showDownload" @click="onDownload"
+                            ><span class="fa fa-download" /><span v-localize>Download</span>
                         </b-dropdown-item>
-                        <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
-                            <span :class="w.icon" /> {{ w.title }}
-                        </b-dropdown-item>
+                        <b-dropdown-item v-if="showLink" @click="onLink"
+                            ><span class="fa fa-external-link" /><span v-localize
+                                >See in Tool Shed</span
+                            ></b-dropdown-item
+                        >
+                        <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick"
+                            ><span :class="w.icon" />{{ w.title | l }}</b-dropdown-item
+                        >
                     </b-dropdown>
                     <b-dropdown
                         v-if="showVersions"
@@ -47,8 +51,8 @@
                             <span class="fa fa-cubes" />
                         </template>
                         <b-dropdown-item v-for="v of availableVersions" :key="v" @click="$emit('onChangeVersion', v)">
-                            <span class="fa fa-cube" /> Switch to {{ v }}
-                        </b-dropdown-item>
+                            <span class="fa fa-cube" /><span v-localize>Switch to </span>{{ v }}</b-dropdown-item
+                        >
                     </b-dropdown>
                     <b-button
                         v-if="showAddFavorite"
@@ -79,16 +83,17 @@
                     <i class="portlet-title-icon fa mr-1 fa-wrench" style="display: inline"></i>
                     <span class="portlet-title-text">
                         <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span> (Galaxy
-                        Verson {{ version }})
+                        Version {{ version }})
                     </span>
                 </div>
             </div>
             <div class="portlet-content">
-                <FormMessage class="mt-2" :message="errorText" variant="danger" :persistent="true" />
-                <FormMessage class="mt-2" :message="messageText" :variant="messageVariant" />
+                <FormMessage :message="errorText" variant="danger" :persistent="true" />
+                <FormMessage :message="messageText" :variant="messageVariant" />
                 <slot name="body" />
             </div>
         </div>
+        <slot name="buttons" />
         <div class="m-1">
             <ToolHelp :content="options.help" />
             <ToolFooter
@@ -105,7 +110,7 @@
 <script>
 import ariaAlert from "utils/ariaAlert";
 import { copyLink, downloadTool, openLink } from "./utilities";
-import FormMessage from "./FormMessage";
+import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import Webhooks from "mvc/webhooks";
@@ -137,10 +142,6 @@ export default {
         description: {
             type: String,
             required: false,
-        },
-        sustainVersion: {
-            type: Boolean,
-            default: false,
         },
         options: {
             type: Object,
@@ -174,7 +175,7 @@ export default {
             return !!this.user.email && !this.isFavorite;
         },
         showVersions() {
-            return !this.sustainVersion && this.versions && this.versions.length > 1;
+            return this.versions && this.versions.length > 1;
         },
         availableVersions() {
             const versions = this.versions.slice();
@@ -205,7 +206,7 @@ export default {
                         this.webhookDetails.push({
                             icon: `fa ${webhook.config.icon}`,
                             title: webhook.config.title,
-                            onclick: function () {
+                            onclick: () => {
                                 const func = new Function("options", webhook.config.function);
                                 func(this.options);
                             },

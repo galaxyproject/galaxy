@@ -8,7 +8,7 @@
                 :get-item-key="(item) => item.type_id"
                 v-slot="{ isExpanded, setExpanded }"
             >
-                <Layout>
+                <Layout class="dataset-collection-panel">
                     <template v-slot:nav>
                         <TopNav :history="history" :selected-collections="selectedCollections" v-on="$listeners" />
                     </template>

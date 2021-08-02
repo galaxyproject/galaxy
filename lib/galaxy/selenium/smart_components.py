@@ -75,6 +75,10 @@ class SmartTarget:
     def is_displayed(self):
         return self._has_driver.is_displayed(self._target)
 
+    @property
+    def is_absent(self):
+        return self._has_driver.element_absent(self._target)
+
     def wait_for_absent_or_hidden(self, **kwds):
         self._has_driver.wait_for_absent_or_hidden(self._target, **kwds)
 
