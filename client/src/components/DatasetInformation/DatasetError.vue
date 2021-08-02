@@ -33,7 +33,7 @@
                 </div>
                 <JobProblemProvider :jobid="dataset.creating_job" v-slot="{ result: jobProblems }">
                     <div v-if="jobProblems && (jobProblems.has_duplicate_inputs || jobProblems.has_empty_inputs)">
-                        <h3 class="common_problems">Detected Common Potential Problems</h3>
+                        <h3 class="common_problems mt-3">Detected Common Potential Problems</h3>
                         <p v-if="jobProblems.has_empty_inputs">
                             The tool was executed with one or more empty input datasets. This frequently results in tool
                             errors due to problematic input choices.
@@ -44,7 +44,7 @@
                         </p>
                     </div>
                 </JobProblemProvider>
-                <h3>Troubleshooting</h3>
+                <h3 class="mt-3">Troubleshooting</h3>
                 <p>
                     There are a number of helpful resources to self diagnose and correct problems.
                     <br />
