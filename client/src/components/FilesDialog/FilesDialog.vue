@@ -81,7 +81,7 @@ export default {
     data() {
         return {
             allSelected: false,
-            selectedDirs: [],
+            selectedDirectories: [],
             errorMessage: null,
             filter: null,
             items: [],
@@ -110,14 +110,14 @@ export default {
     methods: {
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
         formatRows() {
-            this.hasValue = this.model.count() > 0 || this.selectedDirs.length > 0;
+            this.hasValue = this.model.count() > 0 || this.selectedDirectories.length > 0;
 
             for (const item of this.items) {
                 let _rowVariant = "active";
                 if (item.isLeaf || !this.fileMode) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
                 } else {
-                    _rowVariant = this.includesDirectory(item.id) ? "success" : "default";
+                    _rowVariant = this.isDirectorySelected(item.id) ? "success" : "default";
                 }
                 Vue.set(item, "_rowVariant", _rowVariant);
             }
@@ -125,43 +125,55 @@ export default {
         },
         /** Collects selected datasets in value array **/
         clicked: function (record) {
-            // record is file
             if (record.isLeaf || !this.fileMode) {
-                this.model.add(record);
-                this.hasValue = this.model.count() > 0;
-                if (this.multiple) {
-                    this.formatRows();
-                } else {
-                    this.finalize();
-                }
+                // record is file
+                this.selectFile(record);
             } else {
                 // record is directory
-                if (this.urlTracker.atRoot()) {
-                    //you cannot select entire root directory
-                    this.open(record);
-                    return;
-                }
-                // add clicked directory
-                this.addDirectory(record);
+                // you cannot select entire root directory
+                this.urlTracker.atRoot() ? this.open(record) : this.selectDirectory(record);
             }
             this.formatRows();
         },
-        addDirectory(record) {
-            if (this.includesDirectory(record.id)) {
-                // remove directory and all subdirectories/files under it
-                this.selectedDirs = this.selectedDirs.filter(({ id, path }) => {
-                    id !== record.id || !path.startsWith(record.path);
-                });
+        selectFile(record) {
+            this.model.add(record);
+            this.hasValue = this.model.count() > 0;
+            if (this.multiple) {
+                this.formatRows();
+            } else {
+                this.finalize();
+            }
+        },
+        selectDirectory(record) {
+            if (this.isDirectorySelected(record.id)) {
+                // unselect directory and all subdirectories under it
+                console.log("! record", record.path);
+                console.log("! before", this.selectedDirectories);
+                this.selectedDirectories = this.selectedDirectories.filter(({ id, path }) => {
+                    // remove selected directory
+                    if (id !== record.id && path === record.path) {
+                        return true;
+                    } else {
+                        return (
+                            id !== record.id ||
+                            // //and every sub-directory UNDER record.path
+                            !path.startsWith(record.path)
+                        );
+                    }
 
+                });
+                console.log("! after", this.selectedDirectories)
+                // unselect all files under this path
                 this.model.finalize().forEach((file) => {
                     if (file.path.startsWith(record.path)) {
                         this.model.add(file);
                     }
                 });
             } else {
-                this.selectedDirs.push(record);
-                // check for subdirectories
-                this.services.list(record.url, true).then((items) => {
+                this.selectedDirectories.push(record);
+                // look for subdirectories
+                const recursive = true;
+                this.services.list(record.url, recursive).then((items) => {
                     items.forEach((item) => {
                         // construct record
                         const itemClass = item.class;
@@ -171,24 +183,25 @@ export default {
                             // remove first and last slash
                             path: item.path.replace(/^\/|\/$/g, ""),
                             time: item.ctime,
-                            isLeaf: itemClass == "File",
+                            isLeaf: itemClass === "File",
                             size: item.size,
                             url: item.uri,
                             labelTitle: item.uri,
                         };
-                        // add file
+
                         if (sub_record.isLeaf) {
+                            // select file under this path
                             this.model.add(sub_record);
                         } else {
-                            // get all Subdirs
-                            this.selectedDirs.push(sub_record);
+                            // select subdirectory
+                            this.selectedDirectories.push(sub_record);
                         }
                     });
                 });
             }
         },
-        includesDirectory(directoryId) {
-            return this.selectedDirs.some(({ id }) => id === directoryId);
+        isDirectorySelected(directoryId) {
+            return this.selectedDirectories.some(({ id }) => id === directoryId);
         },
         open: function (record) {
             this.load(record.url);
@@ -201,7 +214,7 @@ export default {
         },
         /** check if all objects in this folders are selected **/
         checkIfAllSelected() {
-            return this.items.every((item) => this.model.exists(item.id));
+            return this.items.every(({ id }) => this.model.exists(id) || this.isDirectorySelected(id));
         },
         /** select all files in current folder**/
         toggleSelectAll: function () {

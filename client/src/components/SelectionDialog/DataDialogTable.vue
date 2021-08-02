@@ -37,7 +37,7 @@
                 {{ data.value ? data.value : "-" }}
             </template>
             <template v-slot:cell(navigate)="data">
-                <b-button size="sm" v-if="!data.item.isLeaf" @click.stop="open(data.item)">
+                <b-button variant="light" size="sm" v-if="!data.item.isLeaf" @click.stop="open(data.item)">
                     <font-awesome-icon :icon="['far', 'caret-square-right']" />
                 </b-button>
             </template>
