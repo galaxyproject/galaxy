@@ -38,8 +38,6 @@ def lint_output(tool_xml, lint_ctx):
                 lint_ctx.warn("Collection output with undefined 'type' found.")
             if "structured_like" in output.attrib and "inherit_format" in output.attrib:
                 format_set = True
-        if "format_source" in output.attrib:
-            format_set = True
         for sub in output:
             if __check_pattern(sub):
                 format_set = True
@@ -54,12 +52,16 @@ def lint_output(tool_xml, lint_ctx):
 
 def __check_format(node, lint_ctx, allow_ext=False):
     """
-    check if format/ext attribute is set in a given node
+    check if format/ext/format_source attribute is set in a given node
     issue a warning if the value is input
     return true (node defines format/ext) / false (else)
     """
-    fmt = None
+    if "format_source" in node.attrib and ("ext" in node.attrib or "format" in node.attrib):
+        lint_ctx.warn(f"Tool {node.tag} output {node.attrib.get('name', 'with missing name')} should use either format_source or format/ext")
+    if "format_source" in node.attrib:
+        return True
     # if allowed (e.g. for discover_datasets), ext takes precedence over format
+    fmt = None
     if allow_ext:
         fmt = node.attrib.get("ext")
     if fmt is None:
