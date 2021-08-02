@@ -2027,14 +2027,25 @@ module.
       </xs:element>
       <xs:element name="has_archive_member" type="AssertHasArchiveMember">
       </xs:element>
-      <xs:element name="has_size" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the output has a size (in bytes) of the specified ``value``; if the size is allowed to deviate from this value, the maximum difference can be optionally specified with ``delta`` (e.g. ``<has_size value="10000" delta="100" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
+      <xs:element name="has_size" type="AssertHasSize">
       </xs:element>
     </xs:choice>
   </xs:group>
+  <xs:complexType name="AssertHasSize">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts the output has specific size (in bytes), e.g. ``<has_size value="10000" delta="100" />``.]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Desired size of the outpyt (in bytes)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum allowed size difference (default is 0).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="AssertHasH5Keys">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output has a set of attributes (``keys``), specified as a comma-separated list (e.g. ``<has_h5_keys keys="bins,chroms,indexes,pixels,chroms/lengths" />``).]]></xs:documentation>
