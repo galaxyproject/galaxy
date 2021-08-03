@@ -425,13 +425,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         else:
             yield 'uncategorized'
 
-    def _get_section(self, sec_id, sec_nm):
-        if sec_id not in self._tool_panel:
-            section = ToolSection({'id': sec_id, 'name': sec_nm, 'version': ''})
-            self._tool_panel[sec_id] = section
-        else:
-            section = self._tool_panel[sec_id]
-        return section
+    def _get_section(self, sec_id: str, sec_nm: str) -> ToolSection:
+        return self._tool_panel.get_or_create_section(sec_id, sec_nm)
 
     def _edam_children_of(self, parentTerm):
         for term in self.edam.keys():

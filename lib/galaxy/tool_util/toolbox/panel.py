@@ -135,6 +135,14 @@ class ToolPanelElements(odict, HasPanelItems):
                     self[key].elems[tool_key] = new_tool
                     break
 
+    def get_or_create_section(self, sec_id: str, sec_nm: str) -> ToolSection:
+        if sec_id not in self:
+            section = ToolSection({'id': sec_id, 'name': sec_nm, 'version': ''})
+            self[sec_id] = section
+        else:
+            section = self[sec_id]
+        return section
+
     def remove_tool(self, tool_id: str) -> None:
         tool_key = f"tool_{tool_id}"
         for key, val in self.items():
