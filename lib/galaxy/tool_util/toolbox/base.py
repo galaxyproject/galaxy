@@ -122,6 +122,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 self._load_tool_panel_edam()
             else:
                 self._load_tool_panel()
+        elif self.app.name == 'galaxy' and self.app.config.enable_beta_edam_toolbox:
+            # This would have been ignored in the integrated tool panel loading right?
+            self._load_tool_panel_edam()
         if save_integrated_tool_panel:
             self._save_integrated_tool_panel()
 
