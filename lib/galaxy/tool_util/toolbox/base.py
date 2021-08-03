@@ -3,7 +3,6 @@ import logging
 import os
 import string
 import time
-import urllib.request
 from collections import namedtuple
 from errno import ENOENT
 from urllib.parse import urlparse
@@ -19,14 +18,13 @@ from galaxy.tool_util.deps import (
     build_dependency_manager,
     NullDependencyManager
 )
+from galaxy.tool_util.edam_util import load_edam_tree
 from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.util import (
     etree,
     ExecutionTimer,
-    get_charset_from_http_headers,
     listify,
     parse_xml,
-    stream_to_open_named_file,
     string_as_bool,
     unicodify,
 )
@@ -124,52 +122,13 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if save_integrated_tool_panel:
             self._save_integrated_tool_panel()
 
-    def _recurse_edam_parents(self, term, path=None):
-        log.debug(f"term:{term} path:{path} parents:{self.edam[term]['parents']}")
-        if self.edam[term]['parents'] and len(self.edam[term]['parents']) > 0:
-            for parent in self.edam[term]['parents']:
-                yield from self._recurse_edam_parents(parent, path + [parent])
-        else:
-            yield path
-
     def _load_edam(self):
         if not self.app.config.enable_beta_edam_toolbox:
             return
         log.debug('Loading EDAM Terms')
-
-        if not os.path.exists(self.app.config.beta_edam_toolbox_ontology_path):
-            log.debug('EDAM ontology file not present, downloading')
-
-            page = urllib.request.urlopen('https://edamontology.org/EDAM.tsv')
-            stream_to_open_named_file(page, os.open(self.app.config.beta_edam_toolbox_ontology_path, os.O_WRONLY | os.O_CREAT), None, source_encoding=get_charset_from_http_headers(page.headers))
-
-        log.debug('Processing EDAM Terms')
-        with open(self.app.config.beta_edam_toolbox_ontology_path, 'r') as handle:
-            log.debug(f'Processing {handle}')
-            self.edam = {}
-            for line in handle.readlines():
-                fields = line.split('\t')
-                if not fields[0].startswith('http://edamontology.org/'):
-                    continue
-                term_id = fields[0][len('http://edamontology.org/'):]
-
-                # Only care about formats and operations
-                if not (term_id.startswith('operation_') or term_id.startswith('topic_')):
-                    continue
-
-                parents = fields[7].split('|')
-                self.edam[term_id] = {
-                    'label': fields[1],  # preferred label
-                    'parents': [x[len('http://edamontology.org/'):] for x in parents if x.startswith('http://edamontology.org/')],
-                }
-                log.debug(f'Loaded term {term_id} => {fields[1]}')
-
-        for term in sorted(self.edam.keys()):
-            tails = []
-            for x in self._recurse_edam_parents(term, path=[]):
-                if x[-2:] not in tails:
-                    tails.append(x[-2:])
-            self.edam[term]['path'] = tails
+        edam_path = self.app.config.beta_edam_toolbox_ontology_path
+        edam = load_edam_tree(None if not os.path.exists(edam_path) else edam_path)
+        self.edam = edam
 
     def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds):
         raise NotImplementedError()

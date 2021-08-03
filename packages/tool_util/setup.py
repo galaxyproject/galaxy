@@ -104,6 +104,9 @@ setup(
             'jinja2',
             'Whoosh',
         ],
+        'edam': [
+            'edam-ontology',
+        ],
     },
     license="AFL",
     zip_safe=False,
