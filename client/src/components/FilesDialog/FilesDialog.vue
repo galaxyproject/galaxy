@@ -94,6 +94,11 @@ export default {
             showSelectIcon: true,
             showNavigate: true,
             matchedFolders: [],
+            directorySelectionModes: {
+                unselected: "default",
+                mixed: "secondary",
+                selected: "success",
+            },
         };
     },
     created: function () {
@@ -116,8 +121,8 @@ export default {
                 let _rowVariant = "active";
                 if (item.isLeaf || !this.fileMode) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
-                } else {
-                    _rowVariant = this.isDirectorySelected(item.id) ? "success" : "default";
+                } else if (!item.isLeaf) {
+                    _rowVariant = item.selectMode;
                 }
                 Vue.set(item, "_rowVariant", _rowVariant);
             }
@@ -135,9 +140,11 @@ export default {
             }
             this.formatRows();
         },
-        selectFile(record) {
-            this.model.add(record);
-            this.hasValue = this.model.count() > 0;
+        selectFile(file) {
+            if (this.model.exists(file.id)) {
+                this.model.add(file);
+                this.hasValue = this.model.count() > 0;
+            }
             if (this.multiple) {
                 this.formatRows();
             } else {
@@ -147,22 +154,21 @@ export default {
         selectDirectory(record) {
             if (this.isDirectorySelected(record.id)) {
                 // unselect directory and all subdirectories under it
-                console.log("! record", record.path);
-                console.log("! before", this.selectedDirectories);
                 this.selectedDirectories = this.selectedDirectories.filter(({ id, path }) => {
                     // remove selected directory
-                    if (id !== record.id && path === record.path) {
+                    if (id === record.id) {
+                        return false;
+                    }
+                    // don't remove directory with the same path
+                    if (path === record.path) {
                         return true;
                     } else {
                         return (
-                            id !== record.id ||
                             // //and every sub-directory UNDER record.path
                             !path.startsWith(record.path)
                         );
                     }
-
                 });
-                console.log("! after", this.selectedDirectories)
                 // unselect all files under this path
                 this.model.finalize().forEach((file) => {
                     if (file.path.startsWith(record.path)) {
@@ -176,24 +182,14 @@ export default {
                 this.services.list(record.url, recursive).then((items) => {
                     items.forEach((item) => {
                         // construct record
-                        const itemClass = item.class;
-                        const sub_record = {
-                            id: item.uri,
-                            label: item.name,
-                            // remove first and last slash
-                            path: item.path.replace(/^\/|\/$/g, ""),
-                            time: item.ctime,
-                            isLeaf: itemClass === "File",
-                            size: item.size,
-                            url: item.uri,
-                            labelTitle: item.uri,
-                        };
+                        const sub_record = this.parseItemFileMode(item);
 
                         if (sub_record.isLeaf) {
                             // select file under this path
                             this.model.add(sub_record);
                         } else {
                             // select subdirectory
+
                             this.selectedDirectories.push(sub_record);
                         }
                     });
@@ -276,20 +272,27 @@ export default {
                     });
             }
         },
+        parseItemFileMode(item) {
+            const result = {
+                id: item.uri,
+                label: item.name,
+                // remove first and last slash
+                path: item.path.replace(/^\/|\/$/g, ""),
+                time: item.ctime,
+                isLeaf: item.class === "File",
+                size: item.size,
+                url: item.uri,
+                labelTitle: item.uri,
+            };
+            if (result.isLeaf) {
+                result.selectMode = this.directorySelectionModes.unselected;
+            }
+            return result;
+        },
         parseItems(items) {
             if (this.fileMode) {
                 items = items.map((item) => {
-                    const itemClass = item.class;
-                    return {
-                        id: item.uri,
-                        path: item.path.replace(/^\/|\/$/g, ""),
-                        label: item.name,
-                        time: item.ctime,
-                        isLeaf: itemClass == "File",
-                        size: item.size,
-                        url: item.uri,
-                        labelTitle: item.uri,
-                    };
+                    return this.parseItemFileMode(item);
                 });
             } else {
                 items = items
