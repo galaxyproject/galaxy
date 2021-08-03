@@ -8012,6 +8012,95 @@ def _prepare_metadata_for_serialization(id_encoder, serialization_options, metad
     return processed_metadata
 
 
+class CleanupEvent(Base):
+    __tablename__ = 'cleanup_event'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    message = Column(TrimmedString(1024))
+
+
+class CleanupEventDatasetAssociation(Base):
+    __tablename__ = 'cleanup_event_dataset_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    cleanup_event_id = Column(Integer, ForeignKey('cleanup_event.id'), index=True, nullable=True)
+    dataset_id = Column(Integer, ForeignKey('dataset.id'), index=True)
+
+
+class CleanupEventMetadataFileAssociation(Base):
+    __tablename__ = 'cleanup_event_metadata_file_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    cleanup_event_id = Column(Integer, ForeignKey('cleanup_event.id'), index=True, nullable=True)
+    metadata_file_id = Column(Integer, ForeignKey('metadata_file.id'), index=True)
+
+
+class CleanupEventHistoryAssociation(Base):
+    __tablename__ = 'cleanup_event_history_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    cleanup_event_id = Column(Integer, ForeignKey('cleanup_event.id'), index=True, nullable=True)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+
+
+class CleanupEventHistoryDatasetAssociationAssociation(Base):
+    __tablename__ = 'cleanup_event_hda_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    cleanup_event_id = Column(Integer, ForeignKey('cleanup_event.id'), index=True, nullable=True)
+    hda_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+
+
+class CleanupEventLibraryAssociation(Base):
+    __tablename__ = 'cleanup_event_library_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    cleanup_event_id = Column(Integer, ForeignKey('cleanup_event.id'), index=True, nullable=True)
+    library_id = Column(Integer, ForeignKey('library.id'), index=True)
+
+
+class CleanupEventLibraryFolderAssociation(Base):
+    __tablename__ = 'cleanup_event_library_folder_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    cleanup_event_id = Column(Integer, ForeignKey('cleanup_event.id'), index=True, nullable=True)
+    library_folder_id = Column(Integer, ForeignKey('library_folder.id'), index=True)
+
+
+class CleanupEventLibraryDatasetAssociation(Base):
+    __tablename__ = 'cleanup_event_library_dataset_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    cleanup_event_id = Column(Integer, ForeignKey('cleanup_event.id'), index=True, nullable=True)
+    library_dataset_id = Column(Integer, ForeignKey('library_dataset.id'), index=True)
+
+
+class CleanupEventLibraryDatasetDatasetAssociationAssociation(Base):
+    __tablename__ = 'cleanup_event_ldda_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    cleanup_event_id = Column(Integer, ForeignKey('cleanup_event.id'), index=True, nullable=True)
+    ldda_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True)
+
+
+class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base):
+    __tablename__ = 'cleanup_event_icda_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    cleanup_event_id = Column(Integer, ForeignKey('cleanup_event.id'), index=True, nullable=True)
+    icda_id = Column(Integer, ForeignKey('implicitly_converted_dataset_association.id'), index=True)
+
+
 # Must be defined after PageRatingAssociation has been mapped
 Page.average_rating = column_property(
     select(func.avg(PageRatingAssociation.rating)).where(PageRatingAssociation.page_id == Page.id).scalar_subquery(),
