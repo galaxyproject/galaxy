@@ -72,17 +72,22 @@
                     >
                     <FormElement
                         v-if="!jobDetails.user_email"
-                        id="email"
+                        id="dataset-error-email"
                         v-model="email"
                         title="Please provide your email:"
                     />
                     <FormElement
-                        id="message"
+                        id="dataset-error-message"
                         v-model="message"
                         :area="true"
                         title="Please provide detailed information on the activities leading to this issue:"
                     />
-                    <b-button variant="primary" @click="submit(dataset, jobDetails.user_email)" class="mt-3">
+                    <b-button
+                        id="dataset-error-submit"
+                        variant="primary"
+                        @click="submit(dataset, jobDetails.user_email)"
+                        class="mt-3"
+                    >
                         <font-awesome-icon icon="bug" class="mr-1" />Report
                     </b-button>
                 </div>

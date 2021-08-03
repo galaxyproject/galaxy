@@ -9,7 +9,7 @@ jest.mock("components/WorkflowInvocationState/providers", () => {
 
 const localVue = getLocalVue();
 
-function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true) {
+function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true, user_email = "") {
     return mount(DatasetError, {
         propsData: {
             datasetId: "dataset_id",
@@ -22,6 +22,7 @@ function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true) {
                     tool_stderr: "tool_stderr",
                     job_stderr: "job_stderr",
                     job_messages: [{ desc: "message_1" }, { desc: "message_2" }],
+                    user_email: user_email,
                 },
             }),
             JobProblemProvider: MockProvider({
@@ -48,14 +49,16 @@ describe("DatasetError", () => {
         expect(messages.at(1).text()).toBe("message_2");
         expect(wrapper.find("#dataset-error-has-empty-inputs")).toBeDefined();
         expect(wrapper.find("#dataset-error-has-duplicate-inputs")).toBeDefined();
+        expect(wrapper.findAll("#dataset-error-email").length).toBe(1);
     });
 
     it("check props without common problems", async () => {
-        const wrapper = buildWrapper(false, false);
+        const wrapper = buildWrapper(false, false, "user_email");
         expect(wrapper.find("#dataset-error-tool-id").text()).toBe("tool_id");
         expect(wrapper.find("#dataset-error-tool-stderr").text()).toBe("tool_stderr");
         expect(wrapper.find("#dataset-error-job-stderr").text()).toBe("job_stderr");
         expect(wrapper.findAll("#dataset-error-has-empty-inputs").length).toBe(0);
         expect(wrapper.findAll("#dataset-error-has-duplicate-inputs").length).toBe(0);
+        expect(wrapper.findAll("#dataset-error-email").length).toBe(0);
     });
 });
