@@ -5,6 +5,7 @@ import string
 import time
 from collections import namedtuple
 from errno import ENOENT
+from typing import Dict, List
 from urllib.parse import urlparse
 
 from markupsafe import escape
@@ -13,15 +14,11 @@ from galaxy.exceptions import (
     ConfigurationError,
     MessageException,
     ObjectNotFound,
+    RequestParameterInvalidException,
 )
 from galaxy.tool_util.deps import (
     build_dependency_manager,
     NullDependencyManager
-)
-from galaxy.tool_util.edam_util import (
-    load_edam_tree,
-    ROOT_OPERATION,
-    ROOT_TOPIC,
 )
 from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.util import (
@@ -48,6 +45,14 @@ from .parser import (
     get_toolbox_parser
 )
 from .tags import tool_tag_manager
+from .views.edam import EdamPanelMode, EdamToolPanelView
+from .views.interface import (
+    ToolBoxRegistry,
+    ToolPanelView,
+    ToolPanelViewModel,
+    ToolPanelViewModelType,
+)
+from .views.static import StaticToolPanelView
 
 log = logging.getLogger(__name__)
 
@@ -73,17 +78,37 @@ class ToolConfRepository(_ToolConfRepository):
         return self.tool_path, self.repository_path
 
 
+class ToolBoxRegistryImpl(ToolBoxRegistry):
+    """View of ToolBox provided to ToolPanelView to reason about tools loaded."""
+
+    def __init__(self, toolbox: 'AbstractToolBox'):
+        self.__toolbox = toolbox
+
+    def has_tool(self, tool_id: str) -> bool:
+        return tool_id in self.__toolbox._tools_by_id
+
+    def get_tool(self, tool_id: str):
+        return self.__toolbox.get_tool(tool_id)
+
+    def get_workflow(self, id: str):
+        return self.__toolbox._workflows_by_id[id]
+
+    def add_tool_to_tool_panel_view(self, tool, tool_panel_component) -> None:
+        self.__toolbox.add_tool_to_tool_panel_view(tool, tool_panel_component)
+
+
 class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
     workflows optionally in labelled sections.
     """
 
-    def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
+    def __init__(self, config_filenames, tool_root_dir, app, view_sources=None, default_panel_view="default", save_integrated_tool_panel=True):
         """
         Create a toolbox from the config files named by `config_filenames`, using
         `tool_root_dir` as the base directory for finding individual tool config files.
         """
+        self._default_panel_view = default_panel_view
         # The _dynamic_tool_confs list contains dictionaries storing
         # information about the tools defined in each shed-related
         # shed_tool_conf.xml file.
@@ -114,27 +139,52 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._filter_factory = FilterFactory(self)
         self._tool_tag_manager = tool_tag_manager(app)
         self._init_tools_from_configs(config_filenames)
-        self._load_edam()
 
         if self.app.name == 'galaxy' and self._integrated_tool_panel_config_has_contents:
-            # Load self._tool_panel based on the order in self._integrated_tool_panel.
-            if self.app.config.enable_beta_edam_toolbox:
-                self._load_tool_panel_edam()
-            else:
-                self._load_tool_panel()
-        elif self.app.name == 'galaxy' and self.app.config.enable_beta_edam_toolbox:
-            # This would have been ignored in the integrated tool panel loading right?
-            self._load_tool_panel_edam()
+            self._load_tool_panel()
+
+        toolbox = self
+
+        class DefaultToolPanelView(ToolPanelView):
+
+            def apply_view(self, base_tool_panel: ToolPanelElements, toolbox_registry: ToolBoxRegistry) -> ToolPanelElements:
+                return toolbox._tool_panel
+
+            def to_model(self) -> ToolPanelViewModel:
+                model_id = "default"
+                name = "Full Tool Panel"
+                description = "Galaxy's fully configured toolbox panel with all sections, tools, and configured workflows loaded."
+                view_type = ToolPanelViewModelType.default_type
+                model_class = DefaultToolPanelView.__class__.__name__
+                return ToolPanelViewModel(
+                    id=model_id,
+                    name=name,
+                    description=description,
+                    model_class=model_class,
+                    view_type=view_type,
+                    searchable=True,
+                )
+
+        tool_panel_views_list = [
+            DefaultToolPanelView(),
+        ]
+
+        for edam_view in listify(self.app.config.edam_panel_views):
+            mode = EdamPanelMode[edam_view]
+            tool_panel_views_list.append(EdamToolPanelView(self.app.config.edam_toolbox_ontology_path, mode=mode))
+
+        if view_sources is not None:
+            for definition in view_sources.get_definitions():
+                tool_panel_views_list.append(StaticToolPanelView(definition))
+
+        self._tool_panel_views = {}
+        for tool_panel_view in tool_panel_views_list:
+            self._tool_panel_views[tool_panel_view.to_model().id] = tool_panel_view
+
+        if self.app.name == 'galaxy':
+            self._load_tool_panel_views()
         if save_integrated_tool_panel:
             self._save_integrated_tool_panel()
-
-    def _load_edam(self):
-        if not self.app.config.enable_beta_edam_toolbox:
-            return
-        log.debug('Loading EDAM Terms')
-        edam_path = self.app.config.beta_edam_toolbox_ontology_path
-        edam = load_edam_tree(None if not os.path.exists(edam_path) else edam_path)
-        self.edam = edam
 
     def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds):
         raise NotImplementedError()
@@ -254,6 +304,16 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
         return None
 
+    def panel_views(self) -> List[ToolPanelViewModel]:
+        return [v.to_model() for v in self._tool_panel_views.values()]
+
+    def panel_view_dicts(self) -> Dict[str, Dict]:
+        return {m.id: m.dict() for m in self.panel_views()}
+
+    def panel_has_tool(self, tool, panel_view_id):
+        panel_view_rendered = self._tool_panel_view_rendered[panel_view_id]
+        return panel_view_rendered.has_item_recursive(tool)
+
     def load_dynamic_tool(self, dynamic_tool):
         if not dynamic_tool.active:
             return None
@@ -350,7 +410,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             tool_path = string.Template(tool_path).safe_substitute(tool_path_vars)
         return tool_path
 
-    def __add_tool_to_tool_panel(self, tool, panel_component, section=False):
+    def add_tool_to_tool_panel_view(self, tool, view_panel_component):
+        self.__add_tool_to_tool_panel(tool, view_panel_component)
+
+    def __add_tool_to_tool_panel(self, tool, panel_component, section=None):
+        if section is None:
+            section = isinstance(panel_component, ToolSection)
         # See if a version of this tool is already loaded into the tool panel.
         # The value of panel_component will be a ToolSection (if the value of
         # section=True) or self._tool_panel (if section=False).
@@ -417,113 +482,11 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if log_msg and (not hasattr(self.app, 'tool_cache') or tool_id in self.app.tool_cache._new_tool_ids):
             log.debug(log_msg)
 
-    def _get_edam_sec(self, tool):
-        edam = tool.edam_operations + tool.edam_topics
-        if len(edam) > 0:
-            for term in edam:
-                yield term
-        else:
-            yield 'uncategorized'
-
-    def _get_section(self, sec_id: str, sec_nm: str) -> ToolSection:
-        return self._tool_panel.get_or_create_section(sec_id, sec_nm)
-
-    def _edam_children_of(self, parentTerm):
-        for term in self.edam.keys():
-            if parentTerm in self.edam[term]['parents']:
-                yield term
-
-    def _walk_integrated_tools(self):
-        for key, item_type, val in self._integrated_tool_panel.panel_items_iter():
-            if item_type == panel_item_types.TOOL:
-                tool_id = key.replace('tool_', '', 1)
-                if tool_id in self._tools_by_id:
-                    yield (tool_id, key, val, val.name)
-            elif item_type == panel_item_types.SECTION:
-                for section_key, section_item_type, section_val in val.panel_items_iter():
-                    if section_item_type == panel_item_types.TOOL:
-                        tool_id = section_key.replace('tool_', '', 1)
-                        if tool_id in self._tools_by_id:
-                            yield (tool_id, key, section_val, val.name)
-
-    def _load_tool_panel_edam(self):
-        execution_timer = ExecutionTimer()
-
-        # Find the children of the top level topics
-        operations = [ROOT_OPERATION] + list(self._edam_children_of(ROOT_OPERATION))
-        topics = [ROOT_TOPIC] + list(self._edam_children_of(ROOT_TOPIC))
-
-        # Sort them (by english label)
-        # operations = sorted(operations, key=lambda x: self.edam[x]['label'])
-        # topics = sorted(topics, key=lambda x: self.edam[x]['label'])
-
-        # Convert these to list of dicts, wherein we'll add our tools/etc.
-        operations = {
-            x: {}
-            for x in operations
-        }
-        topics = {
-            x: {}
-            for x in topics
-        }
-        uncategorized = []
-
-        for tool_id, key, val, val_name in self._walk_integrated_tools():
-            for term in self._get_edam_sec(val):
-                if term == 'uncategorized':
-                    uncategorized.append((tool_id, key, val, val_name))
-                else:
-                    for path in self.edam[term]['path']:
-                        if len(path) == 1:
-                            t = term
-                        else:
-                            t = path[0]
-
-                        if path[0].startswith('operation_'):
-                            operations[t][tool_id] = (term, tool_id, key, val, val_name)
-                        elif path[0].startswith('topic_'):
-                            topics[t][tool_id] = (term, tool_id, key, val, val_name)
-
-        for term in sorted(operations.keys(), key=lambda x: self._sort_edam_key(x)):
-            if len(operations[term].keys()) == 0:
-                continue
-
-            elem = etree.Element('label')
-            elem.attrib['text'] = self.edam[term]['label']
-            elem.attrib['id'] = term
-            self._tool_panel[f"label_{term}"] = ToolSectionLabel(elem)
-
-            for (term, tool_id, key, val, val_name) in operations[term].values():
-                section = self._get_section(term, self.edam[term]['label'])
-                self.__add_tool_to_tool_panel(val, section, section=True)
-                self._tool_panel.record_section_for_tool_id(tool_id, key, val_name)
-
-        for term in sorted(topics.keys(), key=lambda x: self._sort_edam_key(x)):
-            if len(topics[term].keys()) == 0:
-                continue
-
-            elem = etree.Element('label')
-            elem.attrib['text'] = self.edam[term]['label']
-            elem.attrib['id'] = term
-            self._tool_panel[f"label_{term}"] = ToolSectionLabel(elem)
-
-            for (term, tool_id, key, val, val_name) in topics[term].values():
-                section = self._get_section(term, self.edam[term]['label'])
-                self.__add_tool_to_tool_panel(val, section, section=True)
-                self._tool_panel.record_section_for_tool_id(tool_id, key, val_name)
-
-        section = self._get_section('uncategorized', 'Uncategorized')
-        for (tool_id, key, val, val_name) in uncategorized:
-            print(tool_id, key, val, val_name)
-            self.__add_tool_to_tool_panel(val, section, section=True)
-            self._tool_panel.record_section_for_tool_id(tool_id, key, val_name)
-        log.debug("Loading EDAM tool panel finished %s", execution_timer)
-
-    def _sort_edam_key(self, x):
-        if x in (ROOT_OPERATION, ROOT_TOPIC):
-            return f"!{x}"
-        else:
-            return self.edam[x]['label']
+    def _load_tool_panel_views(self):
+        self._tool_panel_view_rendered = {}
+        registry = ToolBoxRegistryImpl(self)
+        for key, view in self._tool_panel_views.items():
+            self._tool_panel_view_rendered[key] = view.apply_view(self._integrated_tool_panel, registry)
 
     def _load_tool_panel(self):
         execution_timer = ExecutionTimer()
@@ -864,7 +827,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         tool._lineage = self._lineage_map.register(tool)
         self.register_tool(tool)
         if load_panel_dict:
-            self.__add_tool_to_tool_panel(tool, panel_dict, section=isinstance(panel_dict, ToolSection))
+            self.__add_tool_to_tool_panel(tool, panel_dict)
 
     def _load_workflow_tag_set(self, item, panel_dict, integrated_panel_dict, load_panel_dict, index=None):
         try:
@@ -941,10 +904,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 integrated_elems[key] = tool
 
                 if async_load:
-                    if self.app.config.enable_beta_edam_toolbox:
-                        self._load_tool_panel_edam()
-                    else:
-                        self._load_tool_panel()
+                    self._load_tool_panel()
+                    self._load_tool_panel_views()
                     self._save_integrated_tool_panel()
                 return tool.id
             except Exception:
@@ -1148,11 +1109,16 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         stored = self.app.model.context.query(self.app.model.StoredWorkflow).get(id)
         return stored.latest_workflow
 
-    def tool_panel_contents(self, trans, **kwds):
+    def tool_panel_contents(self, trans, view=None, **kwds):
         """ Filter tool_panel contents for displaying for user.
         """
+        if view is None:
+            view = self._default_panel_view
+        if view not in self._tool_panel_view_rendered:
+            raise RequestParameterInvalidException(f"No panel view {view} found.")
         filter_method = self._build_filter_method(trans)
-        for _, item_type, elt in self._tool_panel.panel_items_iter():
+        tool_panel_view = self._tool_panel_view_rendered[view]
+        for _, item_type, elt in tool_panel_view.panel_items_iter():
             elt = filter_method(elt, item_type)
             if elt:
                 yield elt
@@ -1179,14 +1145,14 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     self._tool_to_dict_cache_admin[tool.id] = to_dict
         return to_dict
 
-    def to_dict(self, trans, in_panel=True, tool_help=False, **kwds):
+    def to_dict(self, trans, in_panel=True, tool_help=False, view=None, **kwds):
         """
         Create a dictionary representation of the toolbox.
         Uses primitive cache for toolbox-specific tool 'to_dict's.
         """
         rval = []
         if in_panel:
-            panel_elts = list(self.tool_panel_contents(trans, **kwds))
+            panel_elts = list(self.tool_panel_contents(trans, view=view, **kwds))
             for elt in panel_elts:
                 # Only use cache for objects that are Tools.
                 if hasattr(elt, "tool_type"):
@@ -1304,8 +1270,8 @@ class BaseGalaxyToolBox(AbstractToolBox):
     shouldn't really depend on.
     """
 
-    def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
-        super().__init__(config_filenames, tool_root_dir, app, save_integrated_tool_panel)
+    def __init__(self, config_filenames, tool_root_dir, app, view_sources=None, default_panel_view=None, save_integrated_tool_panel=True):
+        super().__init__(config_filenames, tool_root_dir, app, view_sources, default_panel_view, save_integrated_tool_panel)
         old_toolbox = getattr(app, 'toolbox', None)
         if old_toolbox:
             self.dependency_manager = old_toolbox.dependency_manager

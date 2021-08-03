@@ -64,7 +64,7 @@ class ToolSection(Dictifiable, HasPanelItems):
         copy.name = self.name
         copy.id = self.id
         copy.version = self.version
-        copy.elems = self.elems.copy()
+        copy.elems.update(self.elems)
         return copy
 
     def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None):
@@ -213,3 +213,44 @@ class ToolPanelElements(odict, HasPanelItems):
 
     def panel_items(self):
         return self
+
+    def walk_sections(self):
+        for key, item in self.items():
+            if isinstance(item, ToolSection):
+                yield (key, item)
+
+    def closest_section(self, target_section_id: Optional[str], target_section_name: Optional[str]):
+        for (section_id, section) in self.walk_sections():
+            if section_id == target_section_id:
+                return section
+
+        for (_, section) in self.walk_sections():
+            if section.name == target_section_name:
+                return section
+
+        return None
+
+    def apply_filter(self, f):
+        to_remove = []
+
+        for key, item in self.items():
+            if not f(key, item):
+                to_remove.append(key)
+
+        for key in to_remove:
+            del self[key]
+
+    def copy(self) -> 'ToolPanelElements':
+        the_copy = ToolPanelElements()
+        the_copy.update(self)
+        return the_copy
+
+    def has_item_recursive(self, item):
+        """Check panel and section elements for supplied item."""
+        for value in self.values():
+            if value == item:
+                return True
+            if isinstance(value, ToolSection):
+                if item in value.elems.values():
+                    return True
+        return False

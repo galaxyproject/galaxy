@@ -137,6 +137,12 @@ def ensure_tool_conf_item(xml_or_item):
         return None
     elif isinstance(xml_or_item, ToolConfItem):
         return xml_or_item
+    elif isinstance(xml_or_item, dict):
+        # TODO: handle sections...
+        as_dict = xml_or_item.copy()
+        type = as_dict.pop("type")
+        attributes = as_dict
+        return ToolConfItem(type, attributes, None)
     else:
         elem = xml_or_item
         type = elem.tag
