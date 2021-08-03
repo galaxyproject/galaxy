@@ -2454,7 +2454,7 @@ mapping:
         path_resolves_to: data_dir
         required: false
         desc: |
-          Sets the path to EDAM ontology file.
+          Sets the path to EDAM ontology file - if the path doesn't exist PyPI package data will be loaded.
 
       default_workflow_export_format:
         type: str
