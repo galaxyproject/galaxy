@@ -86,7 +86,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._dynamic_tool_confs = []
         self._tools_by_id = {}
         self._tools_by_uuid = {}
-        self._integrated_section_by_tool = {}
         # Tool lineages can contain chains of related tools with different ids
         # so each will be present once in the above dictionary. The following
         # dictionary can instead hold multiple tools with different versions.
@@ -331,11 +330,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def get_section_for_tool(self, tool):
         tool_id = tool.id
-
-        if tool_id in self._integrated_section_by_tool:
-            return self._integrated_section_by_tool[tool_id]
-
-        return None, None
+        return self._tool_panel.get_section_for_tool_id(tool_id)
 
     def __resolve_tool_path(self, tool_path, config_filename):
         if not tool_path:
@@ -522,7 +517,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             for (term, tool_id, key, val, val_name) in operations[term].values():
                 section = self._get_section(term, self.edam[term]['label'])
                 self.__add_tool_to_tool_panel(val, section, section=True)
-                self._integrated_section_by_tool[tool_id] = key, val_name
+                self._tool_panel.record_section_for_tool_id(tool_id, key, val_name)
 
         for term in sorted(topics.keys(), key=lambda x: self._sort_edam_key(x)):
             if len(topics[term].keys()) == 0:
@@ -536,13 +531,13 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             for (term, tool_id, key, val, val_name) in topics[term].values():
                 section = self._get_section(term, self.edam[term]['label'])
                 self.__add_tool_to_tool_panel(val, section, section=True)
-                self._integrated_section_by_tool[tool_id] = key, val_name
+                self._tool_panel.record_section_for_tool_id(tool_id, key, val_name)
 
         section = self._get_section('uncategorized', 'Uncategorized')
         for (tool_id, key, val, val_name) in uncategorized:
             print(tool_id, key, val, val_name)
             self.__add_tool_to_tool_panel(val, section, section=True)
-            self._integrated_section_by_tool[tool_id] = key, val_name
+            self._tool_panel.record_section_for_tool_id(tool_id, key, val_name)
 
     def _sort_edam_key(self, x):
         if x in ('operation_0004', 'topic_0003'):
@@ -557,7 +552,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 tool_id = key.replace('tool_', '', 1)
                 if tool_id in self._tools_by_id:
                     self.__add_tool_to_tool_panel(val, self._tool_panel, section=False)
-                    self._integrated_section_by_tool[tool_id] = '', ''
+                    self._tool_panel.record_section_for_tool_id(tool_id, '', '')
             elif item_type == panel_item_types.WORKFLOW:
                 workflow_id = key.replace('workflow_', '', 1)
                 if workflow_id in self._workflows_by_id:
@@ -579,7 +574,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         tool_id = section_key.replace('tool_', '', 1)
                         if tool_id in self._tools_by_id:
                             self.__add_tool_to_tool_panel(section_val, section, section=True)
-                            self._integrated_section_by_tool[tool_id] = key, val.name
+                            self._tool_panel.record_section_for_tool_id(tool_id, key, val.name)
                     elif section_item_type == panel_item_types.WORKFLOW:
                         workflow_id = section_key.replace('workflow_', '', 1)
                         if workflow_id in self._workflows_by_id:
@@ -943,7 +938,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if section_item_type == panel_item_types.TOOL:
                 if section_item:
                     tool_id = section_key.replace('tool_', '', 1)
-                    self._integrated_section_by_tool[tool_id] = integrated_section.id, integrated_section.name
+                    self._tool_panel.record_section_for_tool_id(tool_id, integrated_section.id, integrated_section.name)
 
         if load_panel_dict:
             self._tool_panel[key] = section

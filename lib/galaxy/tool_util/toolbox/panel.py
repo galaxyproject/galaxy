@@ -1,5 +1,5 @@
 from abc import abstractmethod
-
+from typing import Dict, Optional, Tuple
 
 from galaxy.util import bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -115,6 +115,15 @@ class ToolPanelElements(odict, HasPanelItems):
     """ Represents an ordered dictionary of tool entries - abstraction
     used both by tool panel itself (normal and integrated) and its sections.
     """
+    _section_by_tool: Dict[str, Tuple[str, str]] = {}
+
+    def record_section_for_tool_id(self, tool_id: str, key: str, val: str):
+        self._section_by_tool[tool_id] = (key, val)
+
+    def get_section_for_tool_id(self, tool_id: str) -> Tuple[Optional[str], Optional[str]]:
+        if tool_id in self._section_by_tool:
+            return self._section_by_tool[tool_id]
+        return (None, None)
 
     def update_or_append(self, index, key, value):
         if key in self or index is None:
