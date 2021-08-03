@@ -50,6 +50,7 @@
 <script>
 import Vue from "vue";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
+import { selectionModes } from "components/SelectionDialog/selectionModes";
 import { UrlTracker } from "components/DataDialog/utilities";
 import { Services } from "./services";
 import { Model } from "./model";
@@ -93,12 +94,6 @@ export default {
             showDetails: true,
             showSelectIcon: true,
             showNavigate: true,
-            matchedFolders: [],
-            directorySelectionModes: {
-                unselected: "default",
-                mixed: "secondary",
-                selected: "success",
-            },
         };
     },
     created: function () {
@@ -121,8 +116,16 @@ export default {
                 let _rowVariant = "active";
                 if (item.isLeaf || !this.fileMode) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
-                } else if (!item.isLeaf) {
-                    _rowVariant = item.selectMode;
+                }
+                // if directory
+                else if (!item.isLeaf) {
+                    if (this.isDirectorySelected(item.id)) {
+                        _rowVariant = selectionModes.selected;
+                    } else {
+                        _rowVariant = this.model.isPathExists(item.path)
+                            ? selectionModes.mixed
+                            : selectionModes.unselected;
+                    }
                 }
                 Vue.set(item, "_rowVariant", _rowVariant);
             }
@@ -140,11 +143,34 @@ export default {
             }
             this.formatRows();
         },
+        unselectPath(path, unselectDirectoriesAbove = false, unselectId) {
+            // unselect directory and all subdirectories under it
+            this.selectedDirectories = this.selectedDirectories.filter((directory) => {
+                if (unselectId === directory.id) {
+                    return false;
+                }
+                const pathMatched = unselectDirectoriesAbove ? path.startsWith(directory.path) : directory.path.startsWith(path);
+                if (directory.path !== path && pathMatched) {
+                    return false;
+                }
+                return true;
+            });
+            if (!unselectDirectoriesAbove) {
+                // unselect all files under this path
+                this.model.finalize().forEach((file) => {
+                    if (file.path.startsWith(path)) {
+                        this.model.add(file);
+                    }
+                });
+            }
+        },
         selectFile(file) {
             if (this.model.exists(file.id)) {
-                this.model.add(file);
-                this.hasValue = this.model.count() > 0;
+                this.unselectPath(file.path, true);
             }
+            this.model.add(file);
+
+            this.hasValue = this.model.count() > 0;
             if (this.multiple) {
                 this.formatRows();
             } else {
@@ -153,28 +179,7 @@ export default {
         },
         selectDirectory(record) {
             if (this.isDirectorySelected(record.id)) {
-                // unselect directory and all subdirectories under it
-                this.selectedDirectories = this.selectedDirectories.filter(({ id, path }) => {
-                    // remove selected directory
-                    if (id === record.id) {
-                        return false;
-                    }
-                    // don't remove directory with the same path
-                    if (path === record.path) {
-                        return true;
-                    } else {
-                        return (
-                            // //and every sub-directory UNDER record.path
-                            !path.startsWith(record.path)
-                        );
-                    }
-                });
-                // unselect all files under this path
-                this.model.finalize().forEach((file) => {
-                    if (file.path.startsWith(record.path)) {
-                        this.model.add(file);
-                    }
-                });
+                this.unselectPath(record.path, false, record.id);
             } else {
                 this.selectedDirectories.push(record);
                 // look for subdirectories
@@ -189,7 +194,6 @@ export default {
                             this.model.add(sub_record);
                         } else {
                             // select subdirectory
-
                             this.selectedDirectories.push(sub_record);
                         }
                     });
@@ -202,6 +206,7 @@ export default {
         open: function (record) {
             this.load(record.url);
         },
+        isSelectedUnderPath(path) {},
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         finalize: function () {
             const results = this.model.finalize();
@@ -284,9 +289,6 @@ export default {
                 url: item.uri,
                 labelTitle: item.uri,
             };
-            if (result.isLeaf) {
-                result.selectMode = this.directorySelectionModes.unselected;
-            }
             return result;
         },
         parseItems(items) {

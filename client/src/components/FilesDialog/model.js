@@ -34,6 +34,17 @@ export class Model {
         return !!this.values[key];
     }
 
+    /** Returns true if a record under given path exists **/
+    isPathExists(path) {
+        return Object.values(this.values).some((value) => {
+            if (value.path === path) {
+                return true;
+            } else {
+                return value.path.startsWith(path);
+            }
+        });
+    }
+
     /** Finalizes the results from added records **/
     finalize() {
         let results = [];

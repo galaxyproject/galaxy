@@ -12,10 +12,7 @@
             @filtered="filtered"
         >
             <template v-slot:cell(select_icon)="data">
-                <!--                <div @click="debug(data)">123123123123</div>-->
-                <font-awesome-icon
-                    :icon="data.item._rowVariant === 'success' ? ['far', 'check-square'] : ['far', 'square']"
-                />
+                <font-awesome-icon :icon="selectionIcon(data.item._rowVariant)" />
             </template>
             <template v-slot:cell(label)="data">
                 <div style="cursor: pointer">
@@ -56,14 +53,15 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { faCheckSquare, faSquare, faCaretSquareRight } from "@fortawesome/free-regular-svg-icons";
+import { faCheckSquare, faSquare, faCaretSquareRight, faMinusSquare } from "@fortawesome/free-regular-svg-icons";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { selectionModes } from "components/SelectionDialog/selectionModes";
 
 Vue.use(BootstrapVue);
 
-[faCheckSquare, faSquare, faFolder, faCaretSquareRight].forEach((item) => library.add(item));
+[faCheckSquare, faSquare, faFolder, faCaretSquareRight, faMinusSquare].forEach((item) => library.add(item));
 
 const LABEL_FIELD = { key: "label", sortable: true };
 const DETAILS_FIELD = { key: "details", sortable: true };
@@ -150,8 +148,15 @@ export default {
         },
     },
     methods: {
-        debug(d) {
-            console.log(d);
+        selectionIcon(d) {
+            switch (d) {
+                case selectionModes.selected:
+                    return ["far", "check-square"];
+                case selectionModes.mixed:
+                    return ["fas", "minus-square"];
+                default:
+                    return ["far", "square"];
+            }
         },
         /** Resets pagination when a filter/search word is entered **/
         filtered: function (items) {
