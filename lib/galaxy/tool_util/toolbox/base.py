@@ -18,7 +18,11 @@ from galaxy.tool_util.deps import (
     build_dependency_manager,
     NullDependencyManager
 )
-from galaxy.tool_util.edam_util import load_edam_tree
+from galaxy.tool_util.edam_util import (
+    load_edam_tree,
+    ROOT_OPERATION,
+    ROOT_TOPIC,
+)
 from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.util import (
     etree,
@@ -448,8 +452,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         execution_timer = ExecutionTimer()
 
         # Find the children of the top level topics
-        operations = ['operation_0004'] + list(self._edam_children_of('operation_0004'))
-        topics = ['topic_0003'] + list(self._edam_children_of('topic_0003'))
+        operations = [ROOT_OPERATION] + list(self._edam_children_of(ROOT_OPERATION))
+        topics = [ROOT_TOPIC] + list(self._edam_children_of(ROOT_TOPIC))
 
         # Sort them (by english label)
         # operations = sorted(operations, key=lambda x: self.edam[x]['label'])
@@ -518,7 +522,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         log.debug("Loading EDAM tool panel finished %s", execution_timer)
 
     def _sort_edam_key(self, x):
-        if x in ('operation_0004', 'topic_0003'):
+        if x in (ROOT_OPERATION, ROOT_TOPIC):
             return f"!{x}"
         else:
             return self.edam[x]['label']

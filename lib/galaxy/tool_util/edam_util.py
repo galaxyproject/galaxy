@@ -12,6 +12,9 @@ COLUMN_TERM = 0
 COLUMN_LABEL = 1
 COLUMN_PARENTS = 7
 
+ROOT_OPERATION = 'operation_0004'
+ROOT_TOPIC = 'topic_0003'
+
 
 def load_edam_tree(path: Optional[str] = None):
     if path is not None:
@@ -60,3 +63,6 @@ def load_edam_tree_from_tsv_stream(tsv_stream: TextIO):
         edam[term]['path'] = tails
 
     return edam
+
+
+__all__ = ('load_edam_tree', 'ROOT_OPERATION', 'ROOT_TOPIC')
