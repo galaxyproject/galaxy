@@ -1099,15 +1099,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if tool_cache:
                 tool_cache.expire_tool(tool_id)
             if remove_from_panel:
-                tool_key = f"tool_{tool_id}"
-                for key, val in self._tool_panel.items():
-                    if key == tool_key:
-                        del self._tool_panel[key]
-                        break
-                    elif key.startswith('section'):
-                        if tool_key in val.elems:
-                            del self._tool_panel[key].elems[tool_key]
-                            break
+                self._tool_panel.remove_tool(tool_id)
                 if tool_id in self.data_manager_tools:
                     del self.data_manager_tools[tool_id]
             # TODO: do we need to manually remove from the integrated panel here?
