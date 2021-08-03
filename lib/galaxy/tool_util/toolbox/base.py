@@ -431,6 +431,19 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if parentTerm in self.edam[term]['parents']:
                 yield term
 
+    def _walk_integrated_tools(self):
+        for key, item_type, val in self._integrated_tool_panel.panel_items_iter():
+            if item_type == panel_item_types.TOOL:
+                tool_id = key.replace('tool_', '', 1)
+                if tool_id in self._tools_by_id:
+                    yield (tool_id, key, val, val.name)
+            elif item_type == panel_item_types.SECTION:
+                for section_key, section_item_type, section_val in val.panel_items_iter():
+                    if section_item_type == panel_item_types.TOOL:
+                        tool_id = section_key.replace('tool_', '', 1)
+                        if tool_id in self._tools_by_id:
+                            yield (tool_id, key, section_val, val.name)
+
     def _load_tool_panel_edam(self):
         execution_timer = ExecutionTimer()
 
@@ -453,57 +466,21 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         }
         uncategorized = []
 
-        for key, item_type, val in self._integrated_tool_panel.panel_items_iter():
-            if item_type == panel_item_types.TOOL:
-                tool_id = key.replace('tool_', '', 1)
-                if tool_id in self._tools_by_id:
-                    if tool_id in self._tools_by_id:
-                        for term in self._get_edam_sec(val):
-                            if term == 'uncategorized':
-                                uncategorized.append((tool_id, key, val, val.name))
-                            else:
-                                for path in self.edam[term]['path']:
-                                    if len(path) == 1:
-                                        t = term
-                                    else:
-                                        t = path[0]
+        for tool_id, key, val, val_name in self._walk_integrated_tools():
+            for term in self._get_edam_sec(val):
+                if term == 'uncategorized':
+                    uncategorized.append((tool_id, key, val, val_name))
+                else:
+                    for path in self.edam[term]['path']:
+                        if len(path) == 1:
+                            t = term
+                        else:
+                            t = path[0]
 
-                                    if path[0].startswith('operation_'):
-                                        operations[t][tool_id] = (term, tool_id, key, val, val.name)
-                                    elif path[0].startswith('topic_'):
-                                        topics[t][tool_id] = (term, tool_id, key, val, val.name)
-            # elif item_type == panel_item_types.WORKFLOW:
-                # workflow_id = key.replace('workflow_', '', 1)
-                # if workflow_id in self._workflows_by_id:
-                    # workflow = self._workflows_by_id[workflow_id]
-                    # self._tool_panel[key] = workflow
-                    # log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
-            elif item_type == panel_item_types.SECTION:
-                for section_key, section_item_type, section_val in val.panel_items_iter():
-                    if section_item_type == panel_item_types.TOOL:
-                        tool_id = section_key.replace('tool_', '', 1)
-                        if tool_id in self._tools_by_id:
-                            for term in self._get_edam_sec(section_val):
-                                if term == 'uncategorized':
-                                    uncategorized.append((tool_id, key, section_val, val.name))
-                                else:
-                                    for path in self.edam[term]['path']:
-                                        if len(path) == 1:
-                                            t = term
-                                        else:
-                                            t = path[0]
-
-                                        if path[0].startswith('operation_'):
-                                            operations[t][tool_id] = (term, tool_id, key, section_val, val.name)
-                                        if path[0].startswith('topic_'):
-                                            topics[t][tool_id] = (term, tool_id, key, section_val, val.name)
-                    # elif section_item_type == panel_item_types.WORKFLOW:
-                        # workflow_id = section_key.replace('workflow_', '', 1)
-                        # if workflow_id in self._workflows_by_id:
-                            # workflow = self._workflows_by_id[workflow_id]
-                            # section.elems[section_key] = workflow
-                            # log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
-        log.debug("Loading tool panel finished %s", execution_timer)
+                        if path[0].startswith('operation_'):
+                            operations[t][tool_id] = (term, tool_id, key, val, val_name)
+                        elif path[0].startswith('topic_'):
+                            topics[t][tool_id] = (term, tool_id, key, val, val_name)
 
         for term in sorted(operations.keys(), key=lambda x: self._sort_edam_key(x)):
             if len(operations[term].keys()) == 0:
@@ -538,6 +515,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             print(tool_id, key, val, val_name)
             self.__add_tool_to_tool_panel(val, section, section=True)
             self._tool_panel.record_section_for_tool_id(tool_id, key, val_name)
+        log.debug("Loading EDAM tool panel finished %s", execution_timer)
 
     def _sort_edam_key(self, x):
         if x in ('operation_0004', 'topic_0003'):
