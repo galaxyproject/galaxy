@@ -94,6 +94,188 @@ class TestAPIKeys(BaseTest):
             assert stored_obj.user.id == user.id
 
 
+class TestCleanupEvent(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'cleanup_event'
+
+    def test_columns(self, session, cls_):
+        create_time, message = datetime.now(), 'a'
+        obj = cls_(create_time=create_time, message=message)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.message == message
+
+
+class TestCleanupEventDatasetAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'cleanup_event_dataset_association'
+
+    def test_columns(self, session, cls_, cleanup_event, dataset):
+        create_time = datetime.now()
+        obj = cls_(create_time=create_time, cleanup_event_id=cleanup_event.id, dataset_id=dataset.id)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.cleanup_event_id == cleanup_event.id
+            assert stored_obj.dataset_id == dataset.id
+
+
+class TestCleanupEventMetadataFileAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'cleanup_event_metadata_file_association'
+
+    def test_columns(self, session, cls_, cleanup_event, metadata_file):
+        create_time = datetime.now()
+        obj = cls_(create_time=create_time, cleanup_event_id=cleanup_event.id, metadata_file_id=metadata_file.id)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.cleanup_event_id == cleanup_event.id
+            assert stored_obj.metadata_file_id == metadata_file.id
+
+
+class TestCleanupEventHistoryAssociation(BaseTest):
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'cleanup_event_history_association'
+
+    def test_columns(self, session, cls_, cleanup_event, history):
+        create_time = datetime.now()
+        obj = cls_(create_time=create_time, cleanup_event_id=cleanup_event.id, history_id=history.id)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.cleanup_event_id == cleanup_event.id
+            assert stored_obj.history_id == history.id
+
+
+class TestCleanupEventHistoryDatasetAssociationAssociation(BaseTest):
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'cleanup_event_hda_association'
+
+    def test_columns(self, session, cls_, cleanup_event, history_dataset_association):
+        create_time = datetime.now()
+        obj = cls_(
+            create_time=create_time,
+            cleanup_event_id=cleanup_event.id,
+            hda_id=history_dataset_association.id
+        )
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.cleanup_event_id == cleanup_event.id
+            assert stored_obj.hda_id == history_dataset_association.id
+
+
+class TestCleanupEventLibraryAssociation(BaseTest):
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'cleanup_event_library_association'
+
+    def test_columns(self, session, cls_, cleanup_event, library):
+        create_time = datetime.now()
+        obj = cls_(create_time=create_time, cleanup_event_id=cleanup_event.id, library_id=library.id)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.cleanup_event_id == cleanup_event.id
+            assert stored_obj.library_id == library.id
+
+
+class TestCleanupEventLibraryFolderAssociation(BaseTest):
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'cleanup_event_library_folder_association'
+
+    def test_columns(self, session, cls_, cleanup_event, library_folder):
+        create_time = datetime.now()
+        obj = cls_(
+            create_time=create_time,
+            cleanup_event_id=cleanup_event.id,
+            library_folder_id=library_folder.id
+        )
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.cleanup_event_id == cleanup_event.id
+            assert stored_obj.library_folder_id == library_folder.id
+
+
+class TestCleanupEventLibraryDatasetAssociation(BaseTest):
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'cleanup_event_library_dataset_association'
+
+    def test_columns(self, session, cls_, cleanup_event, library_dataset):
+        create_time = datetime.now()
+        obj = cls_(
+            create_time=create_time,
+            cleanup_event_id=cleanup_event.id,
+            library_dataset_id=library_dataset.id
+        )
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.cleanup_event_id == cleanup_event.id
+            assert stored_obj.library_dataset_id == library_dataset.id
+
+
+class TestCleanupEventLibraryDatasetDatasetAssociationAssociation(BaseTest):
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'cleanup_event_ldda_association'
+
+    def test_columns(self, session, cls_, cleanup_event, library_dataset_dataset_association):
+        create_time = datetime.now()
+        obj = cls_(
+            create_time=create_time,
+            cleanup_event_id=cleanup_event.id,
+            ldda_id=library_dataset_dataset_association.id
+        )
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.cleanup_event_id == cleanup_event.id
+            assert stored_obj.ldda_id == library_dataset_dataset_association.id
+
+
+class TestCleanupEventImplicitlyConvertedDatasetAssociationAssociation(BaseTest):
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'cleanup_event_icda_association'
+
+    def test_columns(self, session, cls_, cleanup_event, implicitly_converted_dataset_association):
+        create_time = datetime.now()
+        obj = cls_(
+            create_time=create_time,
+            cleanup_event_id=cleanup_event.id,
+            icda_id=implicitly_converted_dataset_association.id
+        )
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.cleanup_event_id == cleanup_event.id
+            assert stored_obj.icda_id == implicitly_converted_dataset_association.id
+
+
 class TestCloudAuthz(BaseTest):
 
     def test_table(self, cls_):
@@ -3570,6 +3752,12 @@ def session(model):
 
 
 @pytest.fixture
+def cleanup_event(model, session):
+    ce = model.CleanupEvent()
+    yield from dbcleanup_wrapper(session, ce)
+
+
+@pytest.fixture
 def cloud_authz(model, session, user, user_authnz_token):
     ca = model.CloudAuthz(user.id, 'a', 'b', user_authnz_token.id, 'c')
     yield from dbcleanup_wrapper(session, ca)
@@ -3759,6 +3947,15 @@ def history_user_share_association(model, session):
 
 
 @pytest.fixture
+def implicitly_converted_dataset_association(model, session, history_dataset_association):
+    icda = model.ImplicitlyConvertedDatasetAssociation(
+        dataset=history_dataset_association,
+        parent=history_dataset_association,  # using the same dataset; should work here.
+    )
+    yield from dbcleanup_wrapper(session, icda)
+
+
+@pytest.fixture
 def job(model, session):
     j = model.Job()
     yield from dbcleanup_wrapper(session, j)
@@ -3840,6 +4037,12 @@ def library_info_association(model, session, library, form_definition, form_valu
 def library_permission(model, session, library, role):
     lp = model.LibraryPermissions('a', library, role)
     yield from dbcleanup_wrapper(session, lp)
+
+
+@pytest.fixture
+def metadata_file(model, session):
+    mf = model.MetadataFile()
+    yield from dbcleanup_wrapper(session, mf)
 
 
 @pytest.fixture
