@@ -1115,6 +1115,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         return message, status
 
     def get_sections(self):
+        """Return section id and name pairs.
+
+        Only used by build_tool_panel_section_select_field in tool shed client code.
+        """
         for v in self._tool_panel.values():
             if isinstance(v, ToolSection):
                 yield (v.id, v.name)
