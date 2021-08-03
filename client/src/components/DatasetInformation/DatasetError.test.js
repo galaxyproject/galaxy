@@ -9,32 +9,53 @@ jest.mock("components/WorkflowInvocationState/providers", () => {
 
 const localVue = getLocalVue();
 
-describe("DatasetError", () => {
-    let wrapper;
-    
-    beforeEach(() => {
-        wrapper = mount(DatasetError, {
-            propsData: {
-                datasetId: "dataset_id",
-            },
-            localVue,
-            stubs: {
-                JobDetailsProvider: MockProvider({
-                    result: { tool_id: "tool_id", tool_stderr: "tool_stderr", job_stderr: "job_stderr" },
-                }),
-                JobProblemProvider: MockProvider({ result: { has_duplicate_inputs: true, has_empty_inputs: true } }),
-                DatasetProvider: MockProvider({
-                    resultLabel: "item",
-                    result: { id: "dataset_id", creating_job: "creating_job" },
-                }),
-                FontAwesomeIcon: false,
-                FormElement: false,
-            },
-        });
+function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true) {
+    return mount(DatasetError, {
+        propsData: {
+            datasetId: "dataset_id",
+        },
+        localVue,
+        stubs: {
+            JobDetailsProvider: MockProvider({
+                result: {
+                    tool_id: "tool_id",
+                    tool_stderr: "tool_stderr",
+                    job_stderr: "job_stderr",
+                    job_messages: [{ desc: "message_1" }, { desc: "message_2" }],
+                },
+            }),
+            JobProblemProvider: MockProvider({
+                result: { has_duplicate_inputs: has_duplicate_inputs, has_empty_inputs: has_empty_inputs },
+            }),
+            DatasetProvider: MockProvider({
+                resultLabel: "item",
+                result: { id: "dataset_id", creating_job: "creating_job" },
+            }),
+            FontAwesomeIcon: false,
+            FormElement: false,
+        },
     });
+}
 
-    it("check props", async () => {
+describe("DatasetError", () => {
+    it("check props with common problems", async () => {
+        const wrapper = buildWrapper();
         expect(wrapper.find("#dataset-error-tool-id").text()).toBe("tool_id");
         expect(wrapper.find("#dataset-error-tool-stderr").text()).toBe("tool_stderr");
+        expect(wrapper.find("#dataset-error-job-stderr").text()).toBe("job_stderr");
+        const messages = wrapper.findAll("#dataset-error-job-messages .code");
+        expect(messages.at(0).text()).toBe("message_1");
+        expect(messages.at(1).text()).toBe("message_2");
+        expect(wrapper.find("#dataset-error-has-empty-inputs")).toBeDefined();
+        expect(wrapper.find("#dataset-error-has-duplicate-inputs")).toBeDefined();
+    });
+
+    it("check props without common problems", async () => {
+        const wrapper = buildWrapper(false, false);
+        expect(wrapper.find("#dataset-error-tool-id").text()).toBe("tool_id");
+        expect(wrapper.find("#dataset-error-tool-stderr").text()).toBe("tool_stderr");
+        expect(wrapper.find("#dataset-error-job-stderr").text()).toBe("job_stderr");
+        expect(wrapper.findAll("#dataset-error-has-empty-inputs").length).toBe(0);
+        expect(wrapper.findAll("#dataset-error-has-duplicate-inputs").length).toBe(0);
     });
 });

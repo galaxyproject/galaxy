@@ -24,7 +24,7 @@
                     <div v-if="jobDetails.tool_stderr || jobDetails.job_stderr || jobDetails.job_messages">
                         <h3>Details</h3>
                     </div>
-                    <div v-if="jobDetails.job_messages">
+                    <div v-if="jobDetails.job_messages" id="dataset-error-job-messages">
                         <p>Execution resulted in the following messages:</p>
                         <div v-for="(job_message, index) in jobDetails.job_messages" :key="index">
                             <pre class="rounded code">{{ job_message["desc"] }}</pre>
@@ -36,16 +36,16 @@
                     </div>
                     <div v-if="jobDetails.job_stderr">
                         <p>Galaxy job runner generated the following standard error:</p>
-                        <pre class="rounded code">{{ jobDetails.job_stderr }}</pre>
+                        <pre id="dataset-error-job-stderr" class="rounded code">{{ jobDetails.job_stderr }}</pre>
                     </div>
                     <JobProblemProvider :jobid="dataset.creating_job" v-slot="{ result: jobProblems }" @error="onError">
                         <div v-if="jobProblems && (jobProblems.has_duplicate_inputs || jobProblems.has_empty_inputs)">
                             <h3 class="common_problems mt-3">Detected Common Potential Problems</h3>
-                            <p v-if="jobProblems.has_empty_inputs">
+                            <p v-if="jobProblems.has_empty_inputs" id="dataset-error-has-empty-inputs">
                                 The tool was executed with one or more empty input datasets. This frequently results in
                                 tool errors due to problematic input choices.
                             </p>
-                            <p v-if="jobProblems.has_duplicate_inputs">
+                            <p v-if="jobProblems.has_duplicate_inputs" id="dataset-error-has-duplicate-inputs">
                                 The tool was executed with one or more duplicate input datasets. This frequently results
                                 in tool errors due to problematic input choices.
                             </p>
