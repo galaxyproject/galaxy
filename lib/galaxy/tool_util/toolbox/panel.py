@@ -125,6 +125,17 @@ class ToolPanelElements(odict, HasPanelItems):
             return self._section_by_tool[tool_id]
         return (None, None)
 
+    def replace_tool_for_id(self, tool_id: str, new_tool) -> None:
+        tool_key = f"tool_{tool_id}"
+        for key, val in self.items():
+            if key == tool_key:
+                self[key] = new_tool
+                break
+            elif key.startswith('section'):
+                if tool_key in val.elems:
+                    self[key].elems[tool_key] = new_tool
+                    break
+
     def update_or_append(self, index, key, value):
         if key in self or index is None:
             self[key] = value

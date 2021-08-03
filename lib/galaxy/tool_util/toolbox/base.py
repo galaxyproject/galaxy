@@ -1095,15 +1095,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             new_tool.installed_changeset_revision = old_tool.installed_changeset_revision
             new_tool.old_id = old_tool.old_id
             # Replace old_tool with new_tool in self._tool_panel
-            tool_key = f"tool_{tool_id}"
-            for key, val in self._tool_panel.items():
-                if key == tool_key:
-                    self._tool_panel[key] = new_tool
-                    break
-                elif key.startswith('section'):
-                    if tool_key in val.elems:
-                        self._tool_panel[key].elems[tool_key] = new_tool
-                        break
+            self._tool_panel.replace_tool_for_id(tool_id, new_tool)
             # (Re-)Register the reloaded tool, this will handle
             #  _tools_by_id and _tool_versions_by_id
             self.register_tool(new_tool)
