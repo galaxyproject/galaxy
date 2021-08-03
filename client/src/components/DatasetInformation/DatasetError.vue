@@ -17,7 +17,8 @@
                     </div>
                     <h2>Dataset Error Report</h2>
                     <p>
-                        An error occurred while running the tool <b>{{ jobDetails.tool_id }}</b
+                        An error occurred while running the tool
+                        <b id="dataset-error-tool-id">{{ jobDetails.tool_id }}</b
                         >.
                     </p>
                     <div v-if="jobDetails.tool_stderr || jobDetails.job_stderr || jobDetails.job_messages">
@@ -31,7 +32,7 @@
                     </div>
                     <div v-if="jobDetails.tool_stderr">
                         <p>Tool generated the following standard error:</p>
-                        <pre class="rounded code">{{ jobDetails.tool_stderr }}</pre>
+                        <pre id="dataset-error-tool-stderr" class="rounded code">{{ jobDetails.tool_stderr }}</pre>
                     </div>
                     <div v-if="jobDetails.job_stderr">
                         <p>Galaxy job runner generated the following standard error:</p>
