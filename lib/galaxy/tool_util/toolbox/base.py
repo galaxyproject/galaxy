@@ -329,7 +329,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         log.debug(f"Loading new tool panel section: {str(tool_section.name)}")
         return tool_section
 
-    def get_integrated_section_for_tool(self, tool):
+    def get_section_for_tool(self, tool):
         tool_id = tool.id
 
         if tool_id in self._integrated_section_by_tool:

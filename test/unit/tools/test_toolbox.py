@@ -372,7 +372,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         assert next(iter(section.elems.values())).id == "github.com/galaxyproject/example/test_tool/0.2"
 
         test_tool = self.toolbox.get_tool("test_tool", tool_version="0.1")
-        section_pair = self.toolbox.get_integrated_section_for_tool(test_tool)
+        section_pair = self.toolbox.get_section_for_tool(test_tool)
         assert section_pair == ("tid", "TID")
 
     def test_group_tools_out_of_section(self):
