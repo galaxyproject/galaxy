@@ -248,14 +248,6 @@ model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
         ForeignKey("history_dataset_collection_association.id"), index=True),
     Column("name", Unicode(255)))
 
-model.PostJobAction.table = Table(
-    "post_job_action", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=True),
-    Column("action_type", String(255), nullable=False),
-    Column("output_name", String(255), nullable=True),
-    Column("action_arguments", MutableJSONType, nullable=True))
-
 model.PostJobActionAssociation.table = Table(
     "post_job_action_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -801,12 +793,6 @@ simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
 #     ),
 # )
 
-mapper_registry.map_imperatively(model.PostJobAction, model.PostJobAction.table, properties=dict(
-    workflow_step=relation(model.WorkflowStep,
-        backref='post_job_actions',
-        primaryjoin=(model.WorkflowStep.table.c.id == model.PostJobAction.table.c.workflow_step_id))
-))
-
 mapper_registry.map_imperatively(model.PostJobActionAssociation, model.PostJobActionAssociation.table, properties=dict(
     post_job_action=relation(model.PostJobAction)
 ))
@@ -913,7 +899,8 @@ mapper_registry.map_imperatively(model.WorkflowStep, model.WorkflowStep.table, p
         back_populates="workflow_step"),
     annotations=relation(model.WorkflowStepAnnotationAssociation,
         order_by=model.WorkflowStepAnnotationAssociation.id,
-        back_populates="workflow_step")
+        back_populates="workflow_step"),
+    post_job_actions=relation(model.PostJobAction, back_populates='workflow_step'),
 ))
 
 mapper_registry.map_imperatively(model.WorkflowStepInput, model.WorkflowStepInput.table, properties=dict(

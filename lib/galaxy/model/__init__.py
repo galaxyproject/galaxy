@@ -1834,7 +1834,19 @@ class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
         self.implicit_collection_jobs_id = None
 
 
-class PostJobAction(RepresentById):
+class PostJobAction(Base, RepresentById):
+    __tablename__ = 'post_job_action'
+
+    id = Column(Integer, primary_key=True)
+    workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'), index=True, nullable=True)
+    action_type = Column(String(255), nullable=False)
+    output_name = Column(String(255), nullable=True)
+    action_arguments = Column(MutableJSONType, nullable=True)
+    workflow_step = relationship('WorkflowStep',
+        back_populates='post_job_actions',
+        primaryjoin=(lambda: WorkflowStep.id == PostJobAction.workflow_step_id)  # type: ignore
+    )
+
     def __init__(self, action_type, workflow_step=None, output_name=None, action_arguments=None):
         self.action_type = action_type
         self.output_name = output_name
