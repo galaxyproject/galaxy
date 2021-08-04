@@ -18,7 +18,7 @@
                     <h2>Dataset Error Report</h2>
                     <p>
                         An error occurred while running the tool
-                        <b id="dataset-error-tool-id">{{ jobDetails.tool_id }}</b
+                        <b id="dataset-error-tool-id" class="text-break">{{ jobDetails.tool_id }}</b
                         >.
                     </p>
                     <div v-if="jobDetails.tool_stderr || jobDetails.job_stderr || jobDetails.job_messages">
