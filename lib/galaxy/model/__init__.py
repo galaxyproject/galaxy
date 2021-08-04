@@ -1791,6 +1791,7 @@ class ImplicitCollectionJobs(Base, RepresentById):
 
     id = Column(Integer, primary_key=True)
     populated_state = Column(TrimmedString(64), default='new', nullable=False)
+    jobs = relationship('ImplicitCollectionJobsJobAssociation', back_populates='implicit_collection_jobs')
 
     class populated_states(str, Enum):
         NEW = 'new'  # New implicit jobs object, unpopulated job associations
@@ -1819,7 +1820,15 @@ class ImplicitCollectionJobs(Base, RepresentById):
         return rval
 
 
-class ImplicitCollectionJobsJobAssociation(RepresentById):
+class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
+    __tablename__ = 'implicit_collection_jobs_job_association'
+
+    id = Column(Integer, primary_key=True)
+    implicit_collection_jobs_id = Column(Integer, ForeignKey('implicit_collection_jobs.id'), index=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)  # Consider making this nullable...
+    order_index = Column(Integer, nullable=False)
+    implicit_collection_jobs = relationship('ImplicitCollectionJobs', back_populates='jobs')
+    job = relationship('Job', back_populates='implicit_collection_jobs_association')
 
     def __init__(self):
         self.implicit_collection_jobs_id = None
