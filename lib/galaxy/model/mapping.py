@@ -248,14 +248,6 @@ model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
         ForeignKey("history_dataset_collection_association.id"), index=True),
     Column("name", Unicode(255)))
 
-model.ImplicitCollectionJobsJobAssociation.table = Table(
-    "implicit_collection_jobs_job_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),  # Consider making this nullable...
-    Column("order_index", Integer, nullable=False),
-)
-
 model.JobContainerAssociation.table = Table(
     "job_container_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -819,20 +811,6 @@ simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
 #     ),
 # )
 
-simple_mapping(
-    model.ImplicitCollectionJobsJobAssociation,
-    implicit_collection_jobs=relation(
-        model.ImplicitCollectionJobs,
-        backref=backref("jobs", uselist=True),
-        uselist=False,
-    ),
-    job=relation(
-        model.Job,
-        backref=backref("implicit_collection_jobs_association", uselist=False),
-        uselist=False,
-    ),
-)
-
 mapper_registry.map_imperatively(model.JobContainerAssociation, model.JobContainerAssociation.table, properties=dict(
     job=relation(model.Job, backref=backref('container', uselist=False), uselist=False)
 ))
@@ -1196,6 +1174,8 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     numeric_metrics=relation(model.JobMetricNumeric, back_populates='job'),
     job=relation(model.GenomeIndexToolData, back_populates='job'),  # TODO review attr naming (the functionality IS correct)
     interactivetool_entry_points=relation(model.InteractiveToolEntryPoint, back_populates='job', uselist=True),
+    implicit_collection_jobs_association=relation(model.ImplicitCollectionJobsJobAssociation,
+        back_populates='job', uselist=False),
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],

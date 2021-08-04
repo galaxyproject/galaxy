@@ -1540,6 +1540,47 @@ class TestImplicitCollectionJobs(BaseTest):
             assert stored_obj.id == obj_id
             assert stored_obj.populated_state == populated_state
 
+    def test_relationships(self, session, cls_, implicit_collection_jobs_job_association):
+        obj = cls_()
+        obj.jobs.append(implicit_collection_jobs_job_association)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.jobs == [implicit_collection_jobs_job_association]
+
+
+class TestImplicitCollectionJobsJobAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'implicit_collection_jobs_job_association'
+
+    def test_columns(self, session, cls_, implicit_collection_jobs, job):
+        order_index = 1
+        obj = cls_()
+        obj.implicit_collection_jobs = implicit_collection_jobs
+        session.add(job)  # TODO review this after remapping Job (required to lazy-load attr)
+        obj.job = job
+        obj.order_index = order_index
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.implicit_collection_jobs_id == implicit_collection_jobs.id
+            assert stored_obj.job_id == job.id
+            assert stored_obj.order_index == order_index
+
+    def test_relationships(self, session, cls_, implicit_collection_jobs, job):
+        obj = cls_()
+        obj.implicit_collection_jobs = implicit_collection_jobs
+        session.add(job)  # TODO review this after remapping Job (required to lazy-load attr)
+        obj.job = job
+        obj.order_index = 1
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.implicit_collection_jobs.id == implicit_collection_jobs.id
+            assert stored_obj.job.id == job.id
+
 
 class TestInteractiveToolEntryPoint(BaseTest):
 
@@ -4007,6 +4048,19 @@ def history_tag_association(model, session):
 def history_user_share_association(model, session):
     husa = model.HistoryUserShareAssociation()
     yield from dbcleanup_wrapper(session, husa)
+
+
+@pytest.fixture
+def implicit_collection_jobs(model, session):
+    icj = model.ImplicitCollectionJobs(populated_state='new')
+    yield from dbcleanup_wrapper(session, icj)
+
+
+@pytest.fixture
+def implicit_collection_jobs_job_association(model, session):
+    icjja = model.ImplicitCollectionJobsJobAssociation()
+    icjja.order_index = 1
+    yield from dbcleanup_wrapper(session, icjja)
 
 
 @pytest.fixture
