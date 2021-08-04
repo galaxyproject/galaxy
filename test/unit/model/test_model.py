@@ -1645,6 +1645,43 @@ class TestInteractiveToolEntryPoint(BaseTest):
             assert stored_obj.job.id == job.id
 
 
+class TestJobContainerAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'job_container_association'
+
+    def test_columns(self, session, cls_, job):
+        container_type = 'a'
+        container_name = 'b'
+        container_info = 'c'
+        created_time = datetime.now()
+        modified_time = created_time + timedelta(hours=1)
+
+        session.add(job)  # TODO review this after remapping Job (required to lazy-load `container` attr)
+
+        obj = cls_(job, container_type, container_name, container_info)
+        obj.created_time = created_time
+        obj.modified_time = modified_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.job_id == job.id
+            assert stored_obj.container_type == container_type
+            assert stored_obj.container_name == container_name
+            assert stored_obj.container_info == container_info
+            assert stored_obj.created_time == created_time
+            assert stored_obj.modified_time == modified_time
+
+    def test_relationships(self, session, cls_, job):
+        session.add(job)  # TODO review this after remapping Job (required to lazy-load `container` attr)
+        obj = cls_(job, None, None, None)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.job.id == job.id
+
+
 class TestJobExportHistoryArchive(BaseTest):
 
     def test_table(self, cls_):

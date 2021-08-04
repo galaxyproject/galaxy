@@ -248,16 +248,6 @@ model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
         ForeignKey("history_dataset_collection_association.id"), index=True),
     Column("name", Unicode(255)))
 
-model.JobContainerAssociation.table = Table(
-    "job_container_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("container_type", TEXT),
-    Column("container_name", TEXT),
-    Column("container_info", MutableJSONType, nullable=True),
-    Column("created_time", DateTime, default=now),
-    Column("modified_time", DateTime, default=now, onupdate=now))
-
 model.PostJobAction.table = Table(
     "post_job_action", metadata,
     Column("id", Integer, primary_key=True),
@@ -811,10 +801,6 @@ simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
 #     ),
 # )
 
-mapper_registry.map_imperatively(model.JobContainerAssociation, model.JobContainerAssociation.table, properties=dict(
-    job=relation(model.Job, backref=backref('container', uselist=False), uselist=False)
-))
-
 mapper_registry.map_imperatively(model.PostJobAction, model.PostJobAction.table, properties=dict(
     workflow_step=relation(model.WorkflowStep,
         backref='post_job_actions',
@@ -1176,6 +1162,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     interactivetool_entry_points=relation(model.InteractiveToolEntryPoint, back_populates='job', uselist=True),
     implicit_collection_jobs_association=relation(model.ImplicitCollectionJobsJobAssociation,
         back_populates='job', uselist=False),
+    container=relation('JobContainerAssociation', back_populates='job', uselist=False),
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],
