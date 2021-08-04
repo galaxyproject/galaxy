@@ -1,18 +1,17 @@
 from abc import abstractmethod
+from enum import Enum
 from typing import Dict, Optional, Tuple
 
-from galaxy.util import bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
 from .parser import ensure_tool_conf_item
 
 
-panel_item_types = bunch.Bunch(
-    TOOL="TOOL",
-    WORKFLOW="WORKFLOW",
-    SECTION="SECTION",
-    LABEL="LABEL",
-)
+class panel_item_types(str, Enum):
+    TOOL = "TOOL"
+    WORKFLOW = "WORKFLOW"
+    SECTION = "SECTION"
+    LABEL = "LABEL"
 
 
 class HasPanelItems:
@@ -147,61 +146,62 @@ class ToolPanelElements(odict, HasPanelItems):
                     del self[key].elems[tool_key]
                     break
 
-    def update_or_append(self, index, key, value):
+    def update_or_append(self, index: int, key: str, value) -> None:
         if key in self or index is None:
             self[key] = value
         else:
             self.insert(index, key, value)
 
-    def get_label(self, label):
+    def get_label(self, label: str) -> Optional[ToolSection]:
         for element in self.values():
             if isinstance(element, ToolSection) and element.name == label:
                 return element
+        return None
 
-    def has_tool_with_id(self, tool_id):
+    def has_tool_with_id(self, tool_id: str) -> bool:
         key = f'tool_{tool_id}'
         return key in self
 
-    def replace_tool(self, previous_tool_id, new_tool_id, tool):
+    def replace_tool(self, previous_tool_id: str, new_tool_id: str, tool) -> None:
         previous_key = f'tool_{previous_tool_id}'
         new_key = f'tool_{new_tool_id}'
         index = self.keys().index(previous_key)
         del self[previous_key]
         self.insert(index, new_key, tool)
 
-    def index_of_tool_id(self, tool_id):
+    def index_of_tool_id(self, tool_id: str) -> Optional[int]:
         query_key = f'tool_{tool_id}'
         for index, target_key in enumerate(self.keys()):
             if query_key == target_key:
                 return index
         return None
 
-    def insert_tool(self, index, tool):
+    def insert_tool(self, index: int, tool) -> None:
         key = f"tool_{tool.id}"
         self.insert(index, key, tool)
 
-    def get_tool_with_id(self, tool_id):
+    def get_tool_with_id(self, tool_id: str):
         key = f"tool_{tool_id}"
         return self[key]
 
-    def append_tool(self, tool):
+    def append_tool(self, tool) -> None:
         key = f"tool_{tool.id}"
         self[key] = tool
 
-    def stub_tool(self, key):
+    def stub_tool(self, key: str) -> None:
         key = f"tool_{key}"
         self[key] = None
 
-    def stub_workflow(self, key):
+    def stub_workflow(self, key: str) -> None:
         key = f'workflow_{key}'
         self[key] = None
 
-    def stub_label(self, key):
+    def stub_label(self, key: str) -> None:
         key = f'label_{key}'
         self[key] = None
 
-    def append_section(self, key, section_elems):
-        self[key] = section_elems
+    def append_section(self, key: str, section: ToolSection) -> None:
+        self[key] = section
 
     def panel_items(self):
         return self
