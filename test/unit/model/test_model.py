@@ -2835,6 +2835,33 @@ class TestPasswordResetToken(BaseTest):
             assert stored_obj.user.id == user.id
 
 
+class TestPostJobAction(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'post_job_action'
+
+    def test_columns(self, session, cls_, workflow_step):
+        action_type = 'a'
+        output_name = 'b'
+        action_arguments = 'c'
+        obj = cls_(action_type, workflow_step, output_name, action_arguments)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.workflow_step_id == workflow_step.id
+            assert stored_obj.action_type == action_type
+            assert stored_obj.output_name == output_name
+            assert stored_obj.action_arguments == action_arguments
+
+    def test_relationships(self, session, cls_, workflow_step):
+        obj = cls_('a', workflow_step, None, None)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.workflow_step.id == workflow_step.id
+
+
 class TestPSAAssociation(BaseTest):
 
     def test_table(self, cls_):
