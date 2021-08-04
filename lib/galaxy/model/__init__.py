@@ -1780,7 +1780,19 @@ class JobStateHistory(Base, RepresentById):
         self.info = job.info
 
 
-class ImplicitlyCreatedDatasetCollectionInput(RepresentById):
+class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
+    __tablename__ = 'implicitly_created_dataset_collection_inputs'
+
+    id = Column(Integer, primary_key=True)
+    dataset_collection_id = Column(Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    input_dataset_collection_id = Column(Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    name = Column(Unicode(255))
+
+    input_dataset_collection = relationship('HistoryDatasetCollectionAssociation',
+        primaryjoin=(
+            lambda: HistoryDatasetCollectionAssociation.id == ImplicitlyCreatedDatasetCollectionInput.input_dataset_collection_id  # type: ignore
+        ))
+
     def __init__(self, name, input_dataset_collection):
         self.name = name
         self.input_dataset_collection = input_dataset_collection
