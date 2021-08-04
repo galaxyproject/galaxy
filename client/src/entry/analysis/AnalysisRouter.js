@@ -42,7 +42,7 @@ import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
 import QueryStringParsing from "utils/query-string-parsing";
 import DatasetError from "components/DatasetInformation/DatasetError";
-import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
+import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import Citations from "components/Citation/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
@@ -385,8 +385,9 @@ export const getAnalysisRouter = (Galaxy) => {
             this._display_vue_helper(CustomBuilds);
         },
 
-        show_dataset_edit_attributes: function () {
-            this.page.display(new DatasetEditAttributes.View());
+        show_dataset_edit_attributes: function (params) {
+            const datasetId = params.dataset_id;
+            this._display_vue_helper(DatasetAttributes, { datasetId: datasetId });
         },
 
         show_dataset_error: function (params) {
