@@ -239,15 +239,6 @@ model.Job.table = Table(
     Column("params", TrimmedString(255), index=True),
     Column("handler", TrimmedString(255), index=True))
 
-model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
-    "implicitly_created_dataset_collection_inputs", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("dataset_collection_id", Integer,
-        ForeignKey("history_dataset_collection_association.id"), index=True),
-    Column("input_dataset_collection_id", Integer,
-        ForeignKey("history_dataset_collection_association.id"), index=True),
-    Column("name", Unicode(255)))
-
 model.DatasetCollection.table = Table(
     "dataset_collection", metadata,
     Column("id", Integer, primary_key=True),
@@ -770,14 +761,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
-simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
-    input_dataset_collection=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id
-                     == model.ImplicitlyCreatedDatasetCollectionInput.table.c.input_dataset_collection_id),
-        # backref="implicitly_created_dataset_collections",
-    ),
-)
-
 # simple_mapping(
 #     model.ImplicitCollectionJobsHistoryDatasetCollectionAssociation,
 #     history_dataset_collection_associations=relation(
@@ -809,7 +792,7 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         uselist=False),
     implicit_input_collections=relation(model.ImplicitlyCreatedDatasetCollectionInput,
         primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id
-                     == model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id),
+                     == model.ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id),
         backref="dataset_collection",
     ),
     implicit_collection_jobs=relation(

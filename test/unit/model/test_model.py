@@ -1582,6 +1582,44 @@ class TestImplicitCollectionJobsJobAssociation(BaseTest):
             assert stored_obj.job.id == job.id
 
 
+class TestImplicitlyCreatedDatasetCollectionInput(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'implicitly_created_dataset_collection_inputs'
+
+    def test_columns(self, session, cls_, history_dataset_collection_association, model):
+        name = 'a'
+
+        hdca2 = model.HistoryDatasetCollectionAssociation()
+        persist(session, hdca2)
+
+        obj = cls_(name, history_dataset_collection_association)
+        obj.dataset_collection_id = hdca2.id
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.input_dataset_collection_id == history_dataset_collection_association.id
+            assert stored_obj.dataset_collection_id == hdca2.id
+            assert stored_obj.name == name
+
+        delete_from_database(session, [hdca2])
+
+    def test_relationships(self, session, cls_, history_dataset_collection_association, model):
+        hdca2 = model.HistoryDatasetCollectionAssociation()
+        persist(session, hdca2)
+
+        obj = cls_(None, history_dataset_collection_association)
+        obj.dataset_collection_id = hdca2.id
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.input_dataset_collection.id == history_dataset_collection_association.id
+            assert stored_obj.dataset_collection.id == hdca2.id
+
+        delete_from_database(session, [hdca2])
+
+
 class TestInteractiveToolEntryPoint(BaseTest):
 
     def test_table(self, cls_):
