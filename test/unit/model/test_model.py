@@ -2862,6 +2862,29 @@ class TestPostJobAction(BaseTest):
             assert stored_obj.workflow_step.id == workflow_step.id
 
 
+class TestPostJobActionAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'post_job_action_association'
+
+    def test_columns(self, session, cls_, job, post_job_action):
+        obj = cls_(post_job_action, job)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.job_id == job.id
+            assert stored_obj.post_job_action_id == post_job_action.id
+
+    def test_relationships(self, session, cls_, job, post_job_action):
+        obj = cls_(post_job_action, job)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.job.id == job.id
+            assert stored_obj.post_job_action.id == post_job_action.id
+
+
 class TestPSAAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -4262,6 +4285,12 @@ def page_tag_association(model, session):
 def page_user_share_association(model, session):
     pra = model.PageUserShareAssociation()
     yield from dbcleanup_wrapper(session, pra)
+
+
+@pytest.fixture
+def post_job_action(model, session):
+    pja = model.PostJobAction('a')
+    yield from dbcleanup_wrapper(session, pja)
 
 
 @pytest.fixture

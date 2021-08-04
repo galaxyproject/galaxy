@@ -1854,7 +1854,14 @@ class PostJobAction(Base, RepresentById):
         self.workflow_step = workflow_step
 
 
-class PostJobActionAssociation(RepresentById):
+class PostJobActionAssociation(Base, RepresentById):
+    __tablename__ = 'post_job_action_association'
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True, nullable=False)
+    post_job_action_id = Column(Integer, ForeignKey('post_job_action.id'), index=True, nullable=False)
+    post_job_action = relationship('PostJobAction')
+
     def __init__(self, pja, job=None, job_id=None):
         if job is not None:
             self.job = job
