@@ -4,11 +4,13 @@
         <b-alert v-if="messageText" :variant="messageVariant" show>
             {{ messageText | l }}
         </b-alert>
-        <DatasetAttributesProvider :id="datasetId" v-slot="{ result, loading }">
+        <DatasetAttributesProvider :id="datasetId" v-slot="{ result, loading }" @error="onError">
             <div v-if="!loading" class="mt-3">
                 <b-tabs>
                     <b-tab v-if="!result['attribute_disable']">
-                        <template #title><font-awesome-icon icon="bars" class="mr-1" />{{ "Attributes" | l }}</template>
+                        <template v-slot:title>
+                            <font-awesome-icon icon="bars" class="mr-1" />{{ "Attributes" | l }}
+                        </template>
                         <FormDisplay :inputs="result['attribute_inputs']" @onChange="onAttribute" />
                         <div class="mt-2">
                             <b-button @click="submit('attribute', 'attributes')" variant="primary" class="mr-1">
@@ -20,7 +22,9 @@
                         </div>
                     </b-tab>
                     <b-tab v-if="!result['conversion_disable']">
-                        <template #title><font-awesome-icon icon="cog" class="mr-1" />{{ "Convert" | l }}</template>
+                        <template v-slot:title>
+                            <font-awesome-icon icon="cog" class="mr-1" />{{ "Convert" | l }}
+                        </template>
                         <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
                         <div class="mt-2">
                             <b-button @click="submit('conversion', 'conversion')" variant="primary">
@@ -29,9 +33,9 @@
                         </div>
                     </b-tab>
                     <b-tab v-if="!result['datatype_disable']">
-                        <template #title
-                            ><font-awesome-icon icon="database" class="mr-1" />{{ "Datatypes" | l }}</template
-                        >
+                        <template v-slot:title>
+                            <font-awesome-icon icon="database" class="mr-1" />{{ "Datatypes" | l }}
+                        </template>
                         <FormDisplay :inputs="result['datatype_inputs']" @onChange="onDatatype" />
                         <div class="mt-2">
                             <b-button @click="submit('datatype', 'datatype')" variant="primary" class="mr-1">
@@ -43,9 +47,9 @@
                         </div>
                     </b-tab>
                     <b-tab v-if="!result['permission_disable']">
-                        <template #title
-                            ><font-awesome-icon icon="user" class="mr-1" />{{ "Permissions" | l }}</template
-                        >
+                        <template v-slot:title>
+                            <font-awesome-icon icon="user" class="mr-1" />{{ "Permissions" | l }}
+                        </template>
                         <FormDisplay :inputs="result['permission_inputs']" @onChange="onPermission" />
                         <div class="mt-2">
                             <b-button @click="submit('permission', 'permission')" variant="primary">
@@ -108,6 +112,10 @@ export default {
         onPermission(data) {
             this.formData["permission"] = data;
         },
+        onError(messageText) {
+            this.messageText = messageText;
+            this.messageVariant = "danger";
+        },
         submit(key, operation) {
             setAttributes(this.datasetId, this.formData[key], operation).then(
                 (response) => {
@@ -115,13 +123,9 @@ export default {
                     this.messageVariant = response.status;
                     this._reloadHistory();
                 },
-                (messageText) => {
-                    this.messageText = messageText;
-                    this.messageVariant = "danger";
-                }
+                this.onError
             );
         },
-
         /** reload Galaxy's history after updating dataset's attributes */
         _reloadHistory: function () {
             const Galaxy = getGalaxyInstance();
