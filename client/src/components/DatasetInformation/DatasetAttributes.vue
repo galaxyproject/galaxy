@@ -2,46 +2,55 @@
     <div>
         <h4>Edit Dataset Attributes</h4>
         <b-alert v-if="messageText" :variant="messageVariant" show>
-            <h4 class="alert-heading">Failed to access dataset details.</h4>
-            {{ messageText }}
+            {{ messageText | l }}
         </b-alert>
         <DatasetAttributesProvider :id="datasetId" v-slot="{ result, loading }">
             <div v-if="!loading" class="mt-3">
                 <b-tabs>
                     <b-tab v-if="!result['attribute_disable']">
-                        <template #title><font-awesome-icon icon="bars" class="mr-1" />Attributes</template>
-                        <FormDisplay :inputs="result['attribute_inputs']" />
+                        <template #title><font-awesome-icon icon="bars" class="mr-1" />{{ "Attributes" | l }}</template>
+                        <FormDisplay :inputs="result['attribute_inputs']" @onChange="onAttribute" />
                         <div class="mt-2">
-                            <b-button variant="primary" class="mr-1">
-                                <font-awesome-icon icon="save" class="mr-1" />Save
+                            <b-button @click="submit('attribute', 'attributes')" variant="primary" class="mr-1">
+                                <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
                             </b-button>
-                            <b-button> <font-awesome-icon icon="redo" class="mr-1" />Auto-detect </b-button>
+                            <b-button @click="submit('attribute', 'autodetect')">
+                                <font-awesome-icon icon="redo" class="mr-1" />{{ "Auto-detect" | l }}
+                            </b-button>
                         </div>
                     </b-tab>
                     <b-tab v-if="!result['conversion_disable']">
-                        <template #title><font-awesome-icon icon="cog" class="mr-1" />Convert</template>
-                        <FormDisplay :inputs="result['conversion_inputs']" />
+                        <template #title><font-awesome-icon icon="cog" class="mr-1" />{{ "Convert" | l }}</template>
+                        <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
                         <div class="mt-2">
-                            <b-button variant="primary">
-                                <font-awesome-icon icon="exchange-alt" class="mr-1" />Create Dataset
+                            <b-button @click="submit('conversion', 'conversion')" variant="primary">
+                                <font-awesome-icon icon="exchange-alt" class="mr-1" />{{ "Create Dataset" | l }}
                             </b-button>
                         </div>
                     </b-tab>
                     <b-tab v-if="!result['datatype_disable']">
-                        <template #title><font-awesome-icon icon="database" class="mr-1" />Datatypes</template>
-                        <FormDisplay :inputs="result['datatype_inputs']" />
+                        <template #title
+                            ><font-awesome-icon icon="database" class="mr-1" />{{ "Datatypes" | l }}</template
+                        >
+                        <FormDisplay :inputs="result['datatype_inputs']" @onChange="onDatatype" />
                         <div class="mt-2">
-                            <b-button variant="primary" class="mr-1">
-                                <font-awesome-icon icon="save" class="mr-1" />Save
+                            <b-button @click="submit('datatype', 'datatype')" variant="primary" class="mr-1">
+                                <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
                             </b-button>
-                            <b-button> <font-awesome-icon icon="redo" class="mr-1" />Auto-detect </b-button>
+                            <b-button @click="submit('datatype', 'datatype_detect')">
+                                <font-awesome-icon icon="redo" class="mr-1" />{{ "Auto-detect" | l }}
+                            </b-button>
                         </div>
                     </b-tab>
                     <b-tab v-if="!result['permission_disable']">
-                        <template #title><font-awesome-icon icon="user" class="mr-1" />Permissions</template>
-                        <FormDisplay :inputs="result['permission_inputs']" />
+                        <template #title
+                            ><font-awesome-icon icon="user" class="mr-1" />{{ "Permissions" | l }}</template
+                        >
+                        <FormDisplay :inputs="result['permission_inputs']" @onChange="onPermission" />
                         <div class="mt-2">
-                            <b-button variant="primary"> <font-awesome-icon icon="save" class="mr-1" />Save </b-button>
+                            <b-button @click="submit('permission', 'permission')" variant="primary">
+                                <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
+                            </b-button>
                         </div>
                     </b-tab>
                 </b-tabs>
@@ -51,12 +60,13 @@
 </template>
 
 <script>
+import { getGalaxyInstance } from "app";
 import FormDisplay from "components/Form/FormDisplay";
 import { DatasetAttributesProvider } from "components/providers/DatasetProvider";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser } from "@fortawesome/free-solid-svg-icons";
-import { sendErrorReport } from "./services";
+import { setAttributes } from "./services";
 
 library.add(faBars);
 library.add(faCog);
@@ -80,27 +90,44 @@ export default {
     },
     data() {
         return {
-            message: null,
-            email: null,
             messageText: null,
             messageVariant: null,
+            formData: {},
         };
     },
     methods: {
-        onError(err) {
-            this.messageText = err;
+        onAttribute(data) {
+            this.formData["attribute"] = data;
         },
-        submit(dataset, userEmail) {
-            const email = this.email || userEmail;
-            const message = this.message;
-            sendErrorReport(dataset, message, email).then(
-                (resultMessages) => {
-                    this.resultMessages = resultMessages;
+        onConversion(data) {
+            this.formData["conversion"] = data;
+        },
+        onDatatype(data) {
+            this.formData["datatype"] = data;
+        },
+        onPermission(data) {
+            this.formData["permission"] = data;
+        },
+        submit(key, operation) {
+            setAttributes(this.datasetId, this.formData[key], operation).then(
+                (response) => {
+                    this.messageText = response.message;
+                    this.messageVariant = response.status;
+                    this._reloadHistory();
                 },
                 (messageText) => {
                     this.messageText = messageText;
+                    this.messageVariant = "danger";
                 }
             );
+        },
+
+        /** reload Galaxy's history after updating dataset's attributes */
+        _reloadHistory: function () {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy) {
+                Galaxy.currHistoryPanel.loadCurrentHistory();
+            }
         },
     },
 };

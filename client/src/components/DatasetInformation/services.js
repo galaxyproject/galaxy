@@ -16,3 +16,18 @@ export async function sendErrorReport(dataset, message, email) {
         rethrowSimple(e);
     }
 }
+
+export async function setAttributes(datasetId, settings, operation) {
+    const payload = {
+        dataset_id: datasetId,
+        operation: operation,
+        ...settings,
+    };
+    const url = `${getAppRoot()}dataset/set_edit`;
+    try {
+        const { data } = await axios.put(url, payload);
+        return data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
