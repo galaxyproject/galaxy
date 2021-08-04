@@ -6179,7 +6179,28 @@ class WorkflowStep(RepresentById):
                 pass
 
 
-class WorkflowStepInput(RepresentById):
+class WorkflowStepInput(Base, RepresentById):
+    __tablename__ = 'workflow_step_input'
+    __table_args__ = (
+        Index('ix_workflow_step_input_workflow_step_id_name_unique',
+            'workflow_step_id', 'name', unique=True, mysql_length={'name': 200}),
+    )
+
+    id = Column(Integer, primary_key=True)
+    workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'), index=True)
+    name = Column(TEXT)
+    merge_type = Column(TEXT)
+    scatter_type = Column(TEXT)
+    value_from = Column(MutableJSONType)
+    value_from_type = Column(TEXT)
+    default_value = Column(MutableJSONType)
+    default_value_set = Column(Boolean, default=False)
+    runtime_value = Column(Boolean, default=False)
+    workflow_step = relationship('WorkflowStep',
+        back_populates='inputs',
+        cascade='all',
+        primaryjoin=(lambda: WorkflowStepInput.workflow_step_id == WorkflowStep.id))  # type: ignore
+
     default_merge_type = None
     default_scatter_type = None
 
