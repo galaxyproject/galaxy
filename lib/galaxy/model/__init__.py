@@ -2009,7 +2009,26 @@ class JobContainerAssociation(RepresentById):
         self.container_info = container_info or {}
 
 
-class InteractiveToolEntryPoint(Dictifiable, RepresentById):
+class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
+    __tablename__ = 'interactivetool_entry_point'
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey("job.id"), index=True)
+    name = Column(TEXT)
+    token = Column(TEXT)
+    tool_port = Column(Integer)
+    host = Column(TEXT)
+    port = Column(Integer)
+    protocol = Column(TEXT)
+    entry_url = Column(TEXT)
+    requires_domain = Column(Boolean, default=True)
+    info = Column(MutableJSONType, nullable=True)
+    configured = Column(Boolean, default=False)
+    deleted = Column(Boolean, default=False)
+    created_time = Column(DateTime, default=now)
+    modified_time = Column(DateTime, default=now, onupdate=now)
+    job = relationship('Job', back_populates='interactivetool_entry_points', uselist=False)
+
     dict_collection_visible_keys = ['id', 'name', 'active', 'created_time', 'modified_time']
     dict_element_visible_keys = ['id', 'name', 'active', 'created_time', 'modified_time']
 

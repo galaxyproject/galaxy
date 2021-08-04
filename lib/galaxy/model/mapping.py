@@ -256,24 +256,6 @@ model.ImplicitCollectionJobsJobAssociation.table = Table(
     Column("order_index", Integer, nullable=False),
 )
 
-model.InteractiveToolEntryPoint.table = Table(
-    "interactivetool_entry_point", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("name", TEXT),
-    Column("token", TEXT),
-    Column("tool_port", Integer),
-    Column("host", TEXT),
-    Column("port", Integer),
-    Column("protocol", TEXT),
-    Column("entry_url", TEXT),
-    Column("requires_domain", Boolean, default=True),
-    Column("info", MutableJSONType, nullable=True),
-    Column("configured", Boolean, default=False),
-    Column("deleted", Boolean, default=False),
-    Column("created_time", DateTime, default=now),
-    Column("modified_time", DateTime, default=now, onupdate=now))
-
 model.JobContainerAssociation.table = Table(
     "job_container_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -851,10 +833,6 @@ simple_mapping(
     ),
 )
 
-mapper_registry.map_imperatively(model.InteractiveToolEntryPoint, model.InteractiveToolEntryPoint.table, properties=dict(
-    job=relation(model.Job, backref=backref('interactivetool_entry_points', uselist=True), uselist=False)
-))
-
 mapper_registry.map_imperatively(model.JobContainerAssociation, model.JobContainerAssociation.table, properties=dict(
     job=relation(model.Job, backref=backref('container', uselist=False), uselist=False)
 ))
@@ -1217,6 +1195,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     text_metrics=relation(model.JobMetricText, back_populates='job'),
     numeric_metrics=relation(model.JobMetricNumeric, back_populates='job'),
     job=relation(model.GenomeIndexToolData, back_populates='job'),  # TODO review attr naming (the functionality IS correct)
+    interactivetool_entry_points=relation(model.InteractiveToolEntryPoint, back_populates='job', uselist=True),
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],

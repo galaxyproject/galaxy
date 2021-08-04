@@ -1541,6 +1541,69 @@ class TestImplicitCollectionJobs(BaseTest):
             assert stored_obj.populated_state == populated_state
 
 
+class TestInteractiveToolEntryPoint(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'interactivetool_entry_point'
+
+    def test_columns(self, session, cls_, job):
+        name = 'a'
+        token = 'b'
+        tool_port = 1
+        host = 'c'
+        port = 2
+        protocol = 'd'
+        entry_url = 'e'
+        requires_domain = False
+        info = 'f'
+        configured = True
+        deleted = True
+        created_time = datetime.now()
+        modified_time = created_time + timedelta(hours=1)
+
+        obj = cls_()
+
+        obj.job = job
+        obj.name = name
+        obj.token = token
+        obj.tool_port = tool_port
+        obj.host = host
+        obj.port = port
+        obj.protocol = protocol
+        obj.entry_url = entry_url
+        obj.requires_domain = requires_domain
+        obj.info = info
+        obj.configured = configured
+        obj.deleted = deleted
+        obj.created_time = created_time
+        obj.modified_time = modified_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.job_id == job.id
+            assert stored_obj.name == name
+            assert stored_obj.token == token
+            assert stored_obj.tool_port == tool_port
+            assert stored_obj.host == host
+            assert stored_obj.port == port
+            assert stored_obj.protocol == protocol
+            assert stored_obj.entry_url == entry_url
+            assert stored_obj.requires_domain == requires_domain
+            assert stored_obj.info == info
+            assert stored_obj.configured == configured
+            assert stored_obj.deleted == deleted
+            assert stored_obj.created_time == created_time
+            assert stored_obj.modified_time == modified_time
+
+    def test_relationships(self, session, cls_, job):
+        obj = cls_(job=job)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.job.id == job.id
+
+
 class TestJobExportHistoryArchive(BaseTest):
 
     def test_table(self, cls_):
