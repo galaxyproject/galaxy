@@ -5,24 +5,24 @@
             <h4 class="alert-heading">Failed to access dataset details.</h4>
             {{ messageText }}
         </b-alert>
-        <DatasetAttributesProvider :id="datasetId" v-slot="{ result: dataset, loading }">
+        <DatasetAttributesProvider :id="datasetId" v-slot="{ result, loading }">
             <div v-if="!loading" class="mt-3">
                 <b-tabs>
-                    <b-tab>
+                    <b-tab v-if="!result['attribute_disable']">
                         <template #title><font-awesome-icon icon="bars" class="mr-1" />Attributes</template>
-                        <p>I'm the first tab</p>
+                        <FormDisplay :inputs="result['attribute_inputs']" />
                     </b-tab>
-                    <b-tab>
+                    <b-tab v-if="!result['conversion_disable']">
                         <template #title><font-awesome-icon icon="cog" class="mr-1" />Convert</template>
-                        <p>I'm the second tab</p>
+                        <FormDisplay :inputs="result['conversion_inputs']" />
                     </b-tab>
-                    <b-tab>
+                    <b-tab v-if="!result['datatype_disable']">
                         <template #title><font-awesome-icon icon="database" class="mr-1" />Datatypes</template>
-                        <p>I'm the third tab</p>
+                        <FormDisplay :inputs="result['datatype_inputs']" />
                     </b-tab>
-                    <b-tab>
+                    <b-tab v-if="!result['permission_disable']">
                         <template #title><font-awesome-icon icon="user" class="mr-1" />Permissions</template>
-                        <p>I'm the fourth tab</p>
+                        <FormDisplay :inputs="result['permission_inputs']" />
                     </b-tab>
                 </b-tabs>
             </div>
@@ -31,7 +31,7 @@
 </template>
 
 <script>
-import FormElement from "components/Form/FormElement";
+import FormDisplay from "components/Form/FormDisplay";
 import { DatasetAttributesProvider } from "components/providers/DatasetProvider";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -47,6 +47,7 @@ export default {
     components: {
         DatasetAttributesProvider,
         FontAwesomeIcon,
+        FormDisplay,
     },
     props: {
         datasetId: {
