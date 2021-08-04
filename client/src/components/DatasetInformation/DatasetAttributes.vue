@@ -5,8 +5,8 @@
             <h4 class="alert-heading">Failed to access dataset details.</h4>
             {{ messageText }}
         </b-alert>
-        <DatasetProvider :id="datasetId" v-slot="{ item: dataset, loading: datasetLoading }">
-            <div class="mt-3">
+        <DatasetAttributesProvider :id="datasetId" v-slot="{ result: dataset, loading }">
+            <div v-if="!loading" class="mt-3">
                 <b-tabs>
                     <b-tab>
                         <template #title><font-awesome-icon icon="bars" class="mr-1" />Attributes</template>
@@ -26,13 +26,13 @@
                     </b-tab>
                 </b-tabs>
             </div>
-        </DatasetProvider>
+        </DatasetAttributesProvider>
     </div>
 </template>
 
 <script>
 import FormElement from "components/Form/FormElement";
-import { DatasetProvider } from "components/WorkflowInvocationState/providers";
+import { DatasetAttributesProvider } from "components/providers/DatasetProvider";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faDatabase, faCog, faUser } from "@fortawesome/free-solid-svg-icons";
@@ -45,7 +45,7 @@ library.add(faUser);
 
 export default {
     components: {
-        DatasetProvider,
+        DatasetAttributesProvider,
         FontAwesomeIcon,
     },
     props: {
