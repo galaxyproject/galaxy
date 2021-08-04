@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool outputs."""
+from galaxy.util import string_as_bool
 from ._util import is_valid_cheetah_placeholder
 
 
@@ -73,10 +74,14 @@ def __check_format(node, lint_ctx, allow_ext=False):
 
 def __check_pattern(node):
     """
-    check if pattern attribute is set and defines the extension
+    check if
+    - pattern attribute is set and defines the extension or
+    - from_tool_provided_metadata is true
     """
     if node.tag != "discover_datasets":
         return False
+    if "from_tool_provided_metadata" in node.attrib and string_as_bool(node.attrib.get("from_tool_provided_metadata", "false")):
+        return True
     if "pattern" not in node.attrib:
         return False
     if node.attrib["pattern"] == "__default__":
