@@ -25,7 +25,6 @@
                 :show-navigate="showNavigate"
                 @clicked="clicked"
                 @open="open"
-                @load="load"
             />
         </template>
         <template v-slot:buttons>
@@ -94,6 +93,7 @@ export default {
             showDetails: true,
             showSelectIcon: true,
             showNavigate: true,
+            currentDirectory: undefined,
         };
     },
     created: function () {
@@ -143,19 +143,29 @@ export default {
             }
             this.formatRows();
         },
-        unselectPath(path, unselectDirectoriesAbove = false, unselectId) {
-            // unselect directory and all subdirectories under it
+        isSubPath(originPath, destinationPath) {
+            return originPath !== destinationPath && destinationPath.startsWith(originPath);
+        },
+        unselectPath(path, unselectOnlyAboveDirectories = false, unselectId) {
+            // unselect directories
             this.selectedDirectories = this.selectedDirectories.filter((directory) => {
                 if (unselectId === directory.id) {
                     return false;
                 }
-                const pathMatched = unselectDirectoriesAbove ? path.startsWith(directory.path) : directory.path.startsWith(path);
-                if (directory.path !== path && pathMatched) {
-                    return false;
+
+                let matched;
+                if (unselectOnlyAboveDirectories) {
+                    matched = this.isSubPath(directory.path, path);
+                } else {
+                    // unselect all folders under or above the current path
+                    matched = this.isSubPath(directory.path, path) || this.isSubPath(path, directory.path);
                 }
-                return true;
+                // filter out those that matched
+                return !matched;
             });
-            if (!unselectDirectoriesAbove) {
+
+            // unselect files
+            if (!unselectOnlyAboveDirectories) {
                 // unselect all files under this path
                 this.model.finalize().forEach((file) => {
                     if (file.path.startsWith(path)) {
@@ -190,8 +200,9 @@ export default {
                         const sub_record = this.parseItemFileMode(item);
 
                         if (sub_record.isLeaf) {
+                            this.model.add;
                             // select file under this path
-                            this.model.add(sub_record);
+                            this.selectFile(sub_record);
                         } else {
                             // select subdirectory
                             this.selectedDirectories.push(sub_record);
@@ -204,9 +215,8 @@ export default {
             return this.selectedDirectories.some(({ id }) => id === directoryId);
         },
         open: function (record) {
-            this.load(record.url);
+            this.load(record);
         },
-        isSelectedUnderPath(path) {},
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         finalize: function () {
             const results = this.model.finalize();
@@ -215,7 +225,12 @@ export default {
         },
         /** check if all objects in this folders are selected **/
         checkIfAllSelected() {
-            return this.items.every(({ id }) => this.model.exists(id) || this.isDirectorySelected(id));
+            const isAllSelected = this.items.every(({ id }) => this.model.exists(id) || this.isDirectorySelected(id));
+            if (isAllSelected && !this.isDirectorySelected(this.currentDirectory)) {
+                // if all selected add the root folder
+                this.selectedDirectories.push(this.currentDirectory);
+            }
+            return isAllSelected;
         },
         /** select all files in current folder**/
         toggleSelectAll: function () {
@@ -232,8 +247,8 @@ export default {
             this.formatRows();
         },
         /** Performs server request to retrieve data records **/
-        load: function (url) {
-            url = this.urlTracker.getUrl(url);
+        load: function (record) {
+            this.currentDirectory = this.urlTracker.getUrl(record);
             this.filter = null;
             this.optionsShow = false;
             this.undoShow = !this.urlTracker.atRoot();
@@ -264,7 +279,7 @@ export default {
                     });
             } else {
                 this.services
-                    .list(url)
+                    .list(this.currentDirectory.url)
                     .then((items) => {
                         this.items = this.parseItems(items);
                         this.formatRows();
