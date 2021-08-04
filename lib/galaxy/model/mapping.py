@@ -248,12 +248,6 @@ model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
         ForeignKey("history_dataset_collection_association.id"), index=True),
     Column("name", Unicode(255)))
 
-model.PostJobActionAssociation.table = Table(
-    "post_job_action_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
-    Column("post_job_action_id", Integer, ForeignKey("post_job_action.id"), index=True, nullable=False))
-
 model.DatasetCollection.table = Table(
     "dataset_collection", metadata,
     Column("id", Integer, primary_key=True),
@@ -792,10 +786,6 @@ simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
 #         uselist=True,
 #     ),
 # )
-
-mapper_registry.map_imperatively(model.PostJobActionAssociation, model.PostJobActionAssociation.table, properties=dict(
-    post_job_action=relation(model.PostJobAction)
-))
 
 simple_mapping(model.DatasetCollection,
     elements=relation(model.DatasetCollectionElement,
