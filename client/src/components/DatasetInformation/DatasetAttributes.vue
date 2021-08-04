@@ -11,18 +11,38 @@
                     <b-tab v-if="!result['attribute_disable']">
                         <template #title><font-awesome-icon icon="bars" class="mr-1" />Attributes</template>
                         <FormDisplay :inputs="result['attribute_inputs']" />
+                        <div class="mt-2">
+                            <b-button variant="primary" class="mr-1">
+                                <font-awesome-icon icon="save" class="mr-1" />Save
+                            </b-button>
+                            <b-button> <font-awesome-icon icon="redo" class="mr-1" />Auto-detect </b-button>
+                        </div>
                     </b-tab>
                     <b-tab v-if="!result['conversion_disable']">
                         <template #title><font-awesome-icon icon="cog" class="mr-1" />Convert</template>
                         <FormDisplay :inputs="result['conversion_inputs']" />
+                        <div class="mt-2">
+                            <b-button variant="primary">
+                                <font-awesome-icon icon="exchange-alt" class="mr-1" />Create Dataset
+                            </b-button>
+                        </div>
                     </b-tab>
                     <b-tab v-if="!result['datatype_disable']">
                         <template #title><font-awesome-icon icon="database" class="mr-1" />Datatypes</template>
                         <FormDisplay :inputs="result['datatype_inputs']" />
+                        <div class="mt-2">
+                            <b-button variant="primary" class="mr-1">
+                                <font-awesome-icon icon="save" class="mr-1" />Save
+                            </b-button>
+                            <b-button> <font-awesome-icon icon="redo" class="mr-1" />Auto-detect </b-button>
+                        </div>
                     </b-tab>
                     <b-tab v-if="!result['permission_disable']">
                         <template #title><font-awesome-icon icon="user" class="mr-1" />Permissions</template>
                         <FormDisplay :inputs="result['permission_inputs']" />
+                        <div class="mt-2">
+                            <b-button variant="primary"> <font-awesome-icon icon="save" class="mr-1" />Save </b-button>
+                        </div>
                     </b-tab>
                 </b-tabs>
             </div>
@@ -35,12 +55,15 @@ import FormDisplay from "components/Form/FormDisplay";
 import { DatasetAttributesProvider } from "components/providers/DatasetProvider";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBars, faDatabase, faCog, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser } from "@fortawesome/free-solid-svg-icons";
 import { sendErrorReport } from "./services";
 
 library.add(faBars);
-library.add(faDatabase);
 library.add(faCog);
+library.add(faDatabase);
+library.add(faExchangeAlt);
+library.add(faRedo);
+library.add(faSave);
 library.add(faUser);
 
 export default {
