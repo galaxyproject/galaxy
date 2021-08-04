@@ -3876,6 +3876,53 @@ class TestWorkflowStepAnnotationAssociation(BaseTest):
             assert stored_obj.user.id == user.id
 
 
+class TestWorkflowStepInput(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow_step_input'
+        assert has_index(cls_.__table__, ('workflow_step_id', 'name'))
+
+    def test_columns(self, session, cls_, workflow_step):
+        name = 'a'
+        merge_type = 'b'
+        scatter_type = 'c'
+        value_from = 'd'
+        value_from_type = 'e'
+        default_value = 'f'
+        default_value_set = True
+        runtime_value = True
+
+        obj = cls_(workflow_step)
+        obj.name = name
+        obj.merge_type = merge_type
+        obj.scatter_type = scatter_type
+        obj.value_from = value_from
+        obj.value_from_type = value_from_type
+        obj.default_value = default_value
+        obj.default_value_set = default_value_set
+        obj.runtime_value = runtime_value
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.workflow_step_id == workflow_step.id
+            assert stored_obj.name == name
+            assert stored_obj.merge_type == merge_type
+            assert stored_obj.scatter_type == scatter_type
+            assert stored_obj.value_from == value_from
+            assert stored_obj.value_from_type == value_from_type
+            assert stored_obj.default_value == default_value
+            assert stored_obj.default_value_set == default_value_set
+            assert stored_obj.runtime_value == runtime_value
+
+    def test_relationships(self, session, cls_, workflow_step):
+        obj = cls_(workflow_step)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.workflow_step_id == workflow_step.id
+
+
 class TestWorkflowStepTagAssociation(BaseTest):
 
     def test_table(self, cls_):
