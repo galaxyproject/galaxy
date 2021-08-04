@@ -2010,7 +2010,18 @@ class JobImportHistoryArchive(Base, RepresentById):
         self.archive_dir = archive_dir
 
 
-class JobContainerAssociation(RepresentById):
+class JobContainerAssociation(Base, RepresentById):
+    __tablename__ = 'job_container_association'
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True)
+    container_type = Column(TEXT)
+    container_name = Column(TEXT)
+    container_info = Column(MutableJSONType, nullable=True)
+    created_time = Column(DateTime, default=now)
+    modified_time = Column(DateTime, default=now, onupdate=now)
+    job = relationship('Job', back_populates='container')
+
     def __init__(self, job=None, container_type=None, container_name=None, container_info=None):
         self.job = job
         self.container_type = container_type
