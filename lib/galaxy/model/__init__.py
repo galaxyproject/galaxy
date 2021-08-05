@@ -6904,8 +6904,21 @@ class WorkflowRequestInputStepParameter(Base, Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value']
 
 
-class WorkflowInvocationOutputDatasetAssociation(Dictifiable, RepresentById):
+class WorkflowInvocationOutputDatasetAssociation(Base, Dictifiable, RepresentById):
     """Represents links to output datasets for the workflow."""
+    __tablename__ = 'workflow_invocation_output_dataset_association'
+
+    id = Column(Integer, primary_key=True)
+    workflow_invocation_id = Column(Integer, ForeignKey('workflow_invocation.id'), index=True)
+    workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'), index=True)
+    dataset_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    workflow_output_id = Column(Integer, ForeignKey('workflow_output.id'), index=True)
+
+    workflow_invocation = relationship('WorkflowInvocation', back_populates='output_datasets')
+    workflow_step = relationship('WorkflowStep')
+    dataset = relationship('HistoryDatasetAssociation')
+    workflow_output = relationship('WorkflowOutput')
+
     history_content_type = "dataset"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
 

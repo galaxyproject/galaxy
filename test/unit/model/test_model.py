@@ -3802,6 +3802,57 @@ class TestWorkerProcess(BaseTest):
             assert stored_obj.update_time == update_time
 
 
+class TestWorkflowInvocationOutputDatasetAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow_invocation_output_dataset_association'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        workflow_invocation,
+        workflow_step,
+        history_dataset_association,
+        workflow_output,
+    ):
+        obj = cls_()
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+        obj.dataset = history_dataset_association
+        obj.workflow_output = workflow_output
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.workflow_invocation_id == workflow_invocation.id
+            assert stored_obj.workflow_step_id == workflow_step.id
+            assert stored_obj.dataset_id == history_dataset_association.id
+            assert stored_obj.workflow_output_id == workflow_output.id
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow_invocation,
+        workflow_step,
+        history_dataset_association,
+        workflow_output,
+    ):
+        obj = cls_()
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+        obj.dataset = history_dataset_association
+        obj.workflow_output = workflow_output
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.workflow_invocation.id == workflow_invocation.id
+            assert stored_obj.workflow_step.id == workflow_step.id
+            assert stored_obj.dataset.id == history_dataset_association.id
+            assert stored_obj.workflow_output.id == workflow_output.id
+
+
 class TestWorkflowInvocationOutputDatasetCollectionAssociation(BaseTest):
 
     def test_table(self, cls_):
