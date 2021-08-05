@@ -321,26 +321,6 @@ model.Workflow.table = Table(
     Column("license", TEXT),
     Column("uuid", UUIDType, nullable=True))
 
-model.WorkflowStep.table = Table(
-    "workflow_step", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("workflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=False),
-    Column("subworkflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=True),
-    Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True),
-    Column("type", String(64)),
-    Column("tool_id", TEXT),
-    Column("tool_version", TEXT),
-    Column("tool_inputs", JSONType),
-    Column("tool_errors", JSONType),
-    Column("position", MutableJSONType),
-    Column("config", JSONType),
-    Column("order_index", Integer),
-    Column("uuid", UUIDType),
-    # Column( "input_connections", JSONType ),
-    Column("label", Unicode(255)))
-
 model.WorkflowStepConnection.table = Table(
     "workflow_step_connection", metadata,
     Column("id", Integer, primary_key=True),
@@ -824,33 +804,18 @@ simple_mapping(model.DatasetCollectionElement,
 mapper_registry.map_imperatively(model.Workflow, model.Workflow.table, properties=dict(
     steps=relation(model.WorkflowStep,
         backref='workflow',
-        primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id),
-        order_by=asc(model.WorkflowStep.table.c.order_index),
+        primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.workflow_id),
+        order_by=asc(model.WorkflowStep.order_index),
         cascade="all, delete-orphan",
         lazy=False),
     step_count=column_property(
-        select(func.count(model.WorkflowStep.table.c.id)).where(model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id).scalar_subquery(),
+        select(func.count(model.WorkflowStep.id)).where(model.Workflow.table.c.id == model.WorkflowStep.workflow_id).scalar_subquery(),
         deferred=True
-    )
-
-))
-
-mapper_registry.map_imperatively(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
-    subworkflow=relation(model.Workflow,
-        primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id),
-        backref="parent_workflow_steps"),
-    dynamic_tool=relation(model.DynamicTool,
-        primaryjoin=(model.DynamicTool.id == model.WorkflowStep.table.c.dynamic_tool_id),
-        back_populates="workflow_steps"),
-    tags=relation(model.WorkflowStepTagAssociation,
-        order_by=model.WorkflowStepTagAssociation.id,
-        back_populates="workflow_step"),
-    annotations=relation(model.WorkflowStepAnnotationAssociation,
-        order_by=model.WorkflowStepAnnotationAssociation.id,
-        back_populates="workflow_step"),
-    post_job_actions=relation(model.PostJobAction, back_populates='workflow_step'),
-    inputs=relation(model.WorkflowStepInput, back_populates='workflow_step'),
-    workflow_outputs=relation(model.WorkflowOutput, back_populates='workflow_step'),
+    ),
+    parent_workflow_steps=relation(
+        model.WorkflowStep,
+        primaryjoin=(lambda: model.Workflow.id == model.WorkflowStep.subworkflow_id),  # type: ignore
+        back_populates='subworkflow'),
 ))
 
 mapper_registry.map_imperatively(model.WorkflowStepConnection, model.WorkflowStepConnection.table, properties=dict(
@@ -860,12 +825,12 @@ mapper_registry.map_imperatively(model.WorkflowStepConnection, model.WorkflowSte
         primaryjoin=(model.WorkflowStepConnection.table.c.input_step_input_id == model.WorkflowStepInput.id)),
     input_subworkflow_step=relation(model.WorkflowStep,
         backref=backref("parent_workflow_input_connections", uselist=True),
-        primaryjoin=(model.WorkflowStepConnection.table.c.input_subworkflow_step_id == model.WorkflowStep.table.c.id),
+        primaryjoin=(model.WorkflowStepConnection.table.c.input_subworkflow_step_id == model.WorkflowStep.id),
     ),
     output_step=relation(model.WorkflowStep,
         backref="output_connections",
         cascade="all",
-        primaryjoin=(model.WorkflowStepConnection.table.c.output_step_id == model.WorkflowStep.table.c.id)),
+        primaryjoin=(model.WorkflowStepConnection.table.c.output_step_id == model.WorkflowStep.id)),
 ))
 
 

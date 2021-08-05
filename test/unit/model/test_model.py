@@ -3870,6 +3870,82 @@ class TestWorkflowRequestToInputDatasetCollectionAssociation(BaseTest):
             assert stored_obj.dataset_collection.id == history_dataset_collection_association.id
 
 
+class TestWorkflowStep(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow_step'
+
+    def test_columns(self, session, cls_, workflow, dynamic_tool, model):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        type = 'a'
+        tool_id = 'b'
+        tool_version = 'c'
+        tool_inputs = 'd'
+        tool_errors = 'e'
+        position = 'f'
+        config = 'g'
+        order_index = 'h'
+        label = 'k'
+
+        subworkflow = model.Workflow()
+        persist(session, subworkflow)
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.workflow = workflow
+        obj.subworkflow = subworkflow
+        obj.dynamic_tool = dynamic_tool
+        obj.type = type
+        obj.tool_id = tool_id
+        obj.tool_version = tool_version
+        obj.tool_inputs = tool_inputs
+        obj.tool_errors = tool_errors
+        obj.position = position
+        obj.config = config
+        obj.order_index = order_index
+        obj.label = label
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.workflow_id == workflow.id
+            assert stored_obj.subworkflow_id == subworkflow.id
+            assert stored_obj.dynamic_tool_id == dynamic_tool.id
+            assert stored_obj.type == type
+            assert stored_obj.tool_id == tool_id
+            assert stored_obj.tool_version == tool_version
+            assert stored_obj.tool_inputs == tool_inputs
+            assert stored_obj.tool_errors == tool_errors
+            assert stored_obj.position == position
+            assert stored_obj.config == config
+            assert stored_obj.order_index == order_index
+            assert stored_obj.uuid  # set in constructor
+            assert stored_obj.label == label
+
+        delete_from_database(session, [subworkflow])
+
+    def test_relationships(self, session, cls_, workflow, dynamic_tool, model):
+        subworkflow = model.Workflow()
+        persist(session, subworkflow)
+
+        obj = cls_()
+        obj.workflow = workflow
+        obj.subworkflow = subworkflow
+        obj.dynamic_tool = dynamic_tool
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.workflow.id == workflow.id
+            assert stored_obj.subworkflow.id == subworkflow.id
+            assert stored_obj.dynamic_tool.id == dynamic_tool.id
+
+        delete_from_database(session, [subworkflow])
+
+
 class TestWorkflowStepAnnotationAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -4125,6 +4201,12 @@ def default_quota_association(model, session, quota):
 def deferred_job(model, session):
     dj = model.DeferredJob()
     yield from dbcleanup_wrapper(session, dj)
+
+
+@pytest.fixture
+def dynamic_tool(model, session):
+    dt = model.DynamicTool()
+    yield from dbcleanup_wrapper(session, dt)
 
 
 @pytest.fixture
