@@ -372,14 +372,6 @@ model.WorkflowInvocationOutputValue.table = Table(
     Column("value", MutableJSONType),
 )
 
-model.WorkflowInvocationStepOutputDatasetAssociation.table = Table(
-    "workflow_invocation_step_output_dataset_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id"), index=True),
-    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("output_name", String(255), nullable=True),
-)
-
 model.WorkflowInvocationToSubworkflowInvocationAssociation.table = Table(
     "workflow_invocation_to_subworkflow_invocation_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -869,6 +861,8 @@ simple_mapping(model.WorkflowInvocationStep,
     output_dataset_collections=relation(
         model.WorkflowInvocationStepOutputDatasetCollectionAssociation,
         back_populates='workflow_invocation_step'),
+    output_datasets=relation(model.WorkflowInvocationStepOutputDatasetAssociation,
+        back_populates='workflow_invocation_step'),
 )
 
 mapper_registry.map_imperatively(model.MetadataFile, model.MetadataFile.table, properties=dict(
@@ -909,13 +903,6 @@ simple_mapping(
     ),
     workflow_step=relation(model.WorkflowStep),
     workflow_output=relation(model.WorkflowOutput),
-)
-
-
-simple_mapping(
-    model.WorkflowInvocationStepOutputDatasetAssociation,
-    workflow_invocation_step=relation(model.WorkflowInvocationStep, backref="output_datasets"),
-    dataset=relation(model.HistoryDatasetAssociation),
 )
 
 # Set up proxy so that
