@@ -307,6 +307,39 @@ class TestCloudAuthz(BaseTest):
             assert stored_obj.authn.id == user_authnz_token.id
 
 
+class TestDataManagerHistoryAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'data_manager_history_association'
+
+    def test_columns(self, session, cls_, history, user):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.history = history
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.history_id == history.id
+            assert stored_obj.user_id == user.id
+
+    def test_relationships(self, session, cls_, history, user):
+        obj = cls_()
+        obj.history = history
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.history.id == history.id
+            assert stored_obj.user.id == user.id
+
+
 class TestDataManagerJobAssociation(BaseTest):
 
     def test_table(self, cls_):
