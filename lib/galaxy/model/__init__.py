@@ -8112,7 +8112,19 @@ class DataManagerHistoryAssociation(RepresentById):
         self.user = user
 
 
-class DataManagerJobAssociation(RepresentById):
+class DataManagerJobAssociation(Base, RepresentById):
+    __tablename__ = 'data_manager_job_association'
+    __table_args__ = (
+        Index('ix_data_manager_job_association_data_manager_id', 'data_manager_id', mysql_length=200),
+    )
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, index=True, default=now, onupdate=now)
+    job_id = Column(Integer, ForeignKey("job.id"), index=True)
+    data_manager_id = Column(TEXT)
+    job = relationship('Job', back_populates='data_manager_association', uselist=False)
+
     def __init__(self, id=None, job=None, data_manager_id=None):
         self.id = id
         self.job = job

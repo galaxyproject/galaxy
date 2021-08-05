@@ -457,16 +457,6 @@ model.DataManagerHistoryAssociation.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
-model.DataManagerJobAssociation.table = Table(
-    "data_manager_job_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("data_manager_id", TEXT),
-    Index('ix_data_manager_job_association_data_manager_id', 'data_manager_id', mysql_length=200),
-)
-
 model.UserPreference.table = Table(
     "user_preference", metadata,
     Column("id", Integer, primary_key=True),
@@ -1027,6 +1017,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     implicit_collection_jobs_association=relation(model.ImplicitCollectionJobsJobAssociation,
         back_populates='job', uselist=False),
     container=relation('JobContainerAssociation', back_populates='job', uselist=False),
+    data_manager_association=relation('DataManagerJobAssociation', back_populates='job', uselist=False),
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],
@@ -1048,12 +1039,6 @@ mapper_registry.map_imperatively(model.DataManagerHistoryAssociation, model.Data
     history=relation(model.History),
     user=relation(model.User,
         backref='data_manager_histories')
-))
-
-mapper_registry.map_imperatively(model.DataManagerJobAssociation, model.DataManagerJobAssociation.table, properties=dict(
-    job=relation(model.Job,
-        backref=backref('data_manager_association', uselist=False),
-        uselist=False)
 ))
 
 class_mapper(model.HistoryDatasetCollectionAssociation).add_property(
