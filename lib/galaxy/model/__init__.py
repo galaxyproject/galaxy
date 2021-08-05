@@ -7633,7 +7633,15 @@ class VisualizationRevision(Base, RepresentById):
         )
 
 
-class VisualizationUserShareAssociation(UserShareAssociation):
+class VisualizationUserShareAssociation(Base, UserShareAssociation):
+    __tablename__ = 'visualization_user_share_association'
+
+    id = Column(Integer, primary_key=True)
+    visualization_id = Column(Integer, ForeignKey('visualization.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user = relationship('User', backref='visualizations_shared_by_others')
+    visualization = relationship('Visualization', backref='users_shared_with')
+
     def __init__(self):
         self.visualization = None
         self.user = None
