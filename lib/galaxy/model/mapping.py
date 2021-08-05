@@ -345,15 +345,6 @@ model.WorkflowInvocationStep.table = Table(
     Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
     Column("action", MutableJSONType, nullable=True))
 
-model.WorkflowInvocationOutputDatasetAssociation.table = Table(
-    "workflow_invocation_output_dataset_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
-    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
-)
-
 model.WorkflowInvocationOutputValue.table = Table(
     "workflow_invocation_output_value", metadata,
     Column("id", Integer, primary_key=True),
@@ -830,6 +821,8 @@ mapper_registry.map_imperatively(model.WorkflowInvocation, model.WorkflowInvocat
     workflow=relation(model.Workflow),
     output_dataset_collections=relation(model.WorkflowInvocationOutputDatasetCollectionAssociation,
         back_populates='workflow_invocation'),
+    output_datasets=relation(model.WorkflowInvocationOutputDatasetAssociation,
+        back_populates='workflow_invocation'),
 ))
 
 mapper_registry.map_imperatively(model.WorkflowInvocationToSubworkflowInvocationAssociation, model.WorkflowInvocationToSubworkflowInvocationAssociation.table, properties=dict(
@@ -862,16 +855,6 @@ mapper_registry.map_imperatively(model.MetadataFile, model.MetadataFile.table, p
     history_dataset=relation(model.HistoryDatasetAssociation),
     library_dataset=relation(model.LibraryDatasetDatasetAssociation)
 ))
-
-
-simple_mapping(
-    model.WorkflowInvocationOutputDatasetAssociation,
-    workflow_invocation=relation(model.WorkflowInvocation, backref="output_datasets"),
-    workflow_step=relation(model.WorkflowStep),
-    dataset=relation(model.HistoryDatasetAssociation),
-    workflow_output=relation(model.WorkflowOutput),
-)
-
 
 simple_mapping(
     model.WorkflowInvocationOutputValue,
