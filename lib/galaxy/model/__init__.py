@@ -6926,8 +6926,22 @@ class WorkflowInvocationStepOutputDatasetAssociation(Dictifiable, RepresentById)
     dict_collection_visible_keys = ['id', 'workflow_invocation_step_id', 'dataset_id', 'output_name']
 
 
-class WorkflowInvocationStepOutputDatasetCollectionAssociation(Dictifiable, RepresentById):
+class WorkflowInvocationStepOutputDatasetCollectionAssociation(Base, Dictifiable, RepresentById):
     """Represents links to output dataset collections for the workflow."""
+    __tablename__ = 'workflow_invocation_step_output_dataset_collection_association'
+
+    id = Column(Integer, primary_key=True)
+    workflow_invocation_step_id = Column(
+        Integer, ForeignKey('workflow_invocation_step.id', name='fk_wisodca_wisi'), index=True)
+    workflow_step_id = Column(
+        Integer, ForeignKey('workflow_step.id', name='fk_wisodca_wsi'), index=True)
+    dataset_collection_id = Column(
+        Integer, ForeignKey('history_dataset_collection_association.id', name='fk_wisodca_dci'), index=True)
+    output_name = Column(String(255), nullable=True)
+
+    workflow_invocation_step = relationship('WorkflowInvocationStep', back_populates='output_dataset_collections')
+    dataset_collection = relationship('HistoryDatasetCollectionAssociation')
+
     dict_collection_visible_keys = ['id', 'workflow_invocation_step_id', 'dataset_collection_id', 'output_name']
 
 

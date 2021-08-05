@@ -380,15 +380,6 @@ model.WorkflowInvocationStepOutputDatasetAssociation.table = Table(
     Column("output_name", String(255), nullable=True),
 )
 
-model.WorkflowInvocationStepOutputDatasetCollectionAssociation.table = Table(
-    "workflow_invocation_step_output_dataset_collection_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id", name='fk_wisodca_wisi'), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wisodca_wsi'), index=True),
-    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wisodca_dci'), index=True),
-    Column("output_name", String(255), nullable=True),
-)
-
 model.WorkflowInvocationToSubworkflowInvocationAssociation.table = Table(
     "workflow_invocation_to_subworkflow_invocation_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -875,6 +866,9 @@ simple_mapping(model.WorkflowInvocationStep,
             model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.workflow_step_id == model.WorkflowInvocationStep.table.c.workflow_step_id,
         )).scalar_subquery(),
     ),
+    output_dataset_collections=relation(
+        model.WorkflowInvocationStepOutputDatasetCollectionAssociation,
+        back_populates='workflow_invocation_step'),
 )
 
 mapper_registry.map_imperatively(model.MetadataFile, model.MetadataFile.table, properties=dict(
@@ -922,13 +916,6 @@ simple_mapping(
     model.WorkflowInvocationStepOutputDatasetAssociation,
     workflow_invocation_step=relation(model.WorkflowInvocationStep, backref="output_datasets"),
     dataset=relation(model.HistoryDatasetAssociation),
-)
-
-
-simple_mapping(
-    model.WorkflowInvocationStepOutputDatasetCollectionAssociation,
-    workflow_invocation_step=relation(model.WorkflowInvocationStep, backref="output_dataset_collections"),
-    dataset_collection=relation(model.HistoryDatasetCollectionAssociation),
 )
 
 # Set up proxy so that

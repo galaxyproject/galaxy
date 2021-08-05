@@ -3802,6 +3802,51 @@ class TestWorkerProcess(BaseTest):
             assert stored_obj.update_time == update_time
 
 
+class TestWorkflowInvocationStepOutputDatasetCollectionAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow_invocation_step_output_dataset_collection_association'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        workflow_invocation_step,
+        workflow_step,
+        history_dataset_collection_association,
+    ):
+        output_name = 'a'
+        obj = cls_()
+        obj.workflow_invocation_step = workflow_invocation_step
+        obj.workflow_step_id = workflow_step.id
+        obj.dataset_collection = history_dataset_collection_association
+        obj.output_name = output_name
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.workflow_invocation_step_id == workflow_invocation_step.id
+            assert stored_obj.workflow_step_id == workflow_step.id
+            assert stored_obj.dataset_collection_id == history_dataset_collection_association.id
+            assert stored_obj.output_name == output_name
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow_invocation_step,
+        history_dataset_collection_association,
+    ):
+        obj = cls_()
+        obj.workflow_invocation_step = workflow_invocation_step
+        obj.dataset_collection = history_dataset_collection_association
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.workflow_invocation_step.id == workflow_invocation_step.id
+            assert stored_obj.dataset_collection.id == history_dataset_collection_association.id
+
+
 class TestWorkflowOutput(BaseTest):
 
     def test_table(self, cls_):
@@ -4739,6 +4784,14 @@ def workflow_invocation(model, session, workflow):
     wi = model.WorkflowInvocation()
     wi.workflow = workflow
     yield from dbcleanup_wrapper(session, wi)
+
+
+@pytest.fixture
+def workflow_invocation_step(model, session, workflow_invocation, workflow_step):
+    wis = model.WorkflowInvocationStep()
+    wis.workflow_invocation = workflow_invocation
+    wis.workflow_step = workflow_step
+    yield from dbcleanup_wrapper(session, wis)
 
 
 @pytest.fixture
