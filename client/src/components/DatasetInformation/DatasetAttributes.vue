@@ -111,14 +111,11 @@ export default {
             this.messageVariant = "danger";
         },
         submit(key, operation) {
-            setAttributes(this.datasetId, this.formData[key], operation).then(
-                (response) => {
-                    this.messageText = response.message;
-                    this.messageVariant = response.status;
-                    this._reloadHistory();
-                },
-                this.onError
-            );
+            setAttributes(this.datasetId, this.formData[key], operation).then((response) => {
+                this.messageText = response.message;
+                this.messageVariant = response.status;
+                this._reloadHistory();
+            }, this.onError);
         },
         /** reload Galaxy's history after updating dataset's attributes */
         _reloadHistory: function () {
