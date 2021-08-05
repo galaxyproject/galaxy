@@ -72,13 +72,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser } from "@fortawesome/free-solid-svg-icons";
 import { setAttributes } from "./services";
 
-library.add(faBars);
-library.add(faCog);
-library.add(faDatabase);
-library.add(faExchangeAlt);
-library.add(faRedo);
-library.add(faSave);
-library.add(faUser);
+library.add(faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser);
 
 export default {
     components: {
