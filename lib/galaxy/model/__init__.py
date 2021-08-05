@@ -5849,7 +5849,6 @@ class Workflow(Dictifiable, RepresentById):
 
     See :class:`galaxy.model.WorkflowStep` for more information
     """
-
     dict_collection_visible_keys = ['name', 'has_cycles', 'has_errors']
     dict_element_visible_keys = ['name', 'has_cycles', 'has_errors']
     input_step_types = ['data_input', 'data_collection_input', 'parameter_input']
@@ -5982,12 +5981,47 @@ class Workflow(Dictifiable, RepresentById):
         return "Workflow[id=%d%s]" % (self.id, extra)
 
 
-class WorkflowStep(RepresentById):
+class WorkflowStep(Base, RepresentById):
     """
     WorkflowStep represents a tool or subworkflow, its inputs, annotations, and any outputs that are flagged as workflow outputs.
 
     See :class:`galaxy.model.WorkflowStepInput` and :class:`galaxy.model.WorkflowStepConnection` for more information.
     """
+    __tablename__ = 'workflow_step'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    workflow_id = Column(Integer, ForeignKey('workflow.id'), index=True, nullable=False)
+    subworkflow_id = Column(Integer, ForeignKey('workflow.id'), index=True, nullable=True)
+    dynamic_tool_id = Column(Integer, ForeignKey('dynamic_tool.id'), index=True, nullable=True)
+    type = Column(String(64))
+    tool_id = Column(TEXT)
+    tool_version = Column(TEXT)
+    tool_inputs = Column(JSONType)
+    tool_errors = Column(JSONType)
+    position = Column(MutableJSONType)
+    config = Column(JSONType)
+    order_index = Column(Integer)
+    uuid = Column(UUIDType)
+    label = Column(Unicode(255))
+
+    subworkflow = relationship('Workflow',
+        primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),  # type: ignore
+        back_populates='parent_workflow_steps')
+    dynamic_tool = relationship('DynamicTool',
+        primaryjoin=(lambda: DynamicTool.id == WorkflowStep.dynamic_tool_id),  # type: ignore
+        back_populates='workflow_steps')
+    tags = relationship('WorkflowStepTagAssociation',
+        order_by=lambda: WorkflowStepTagAssociation.id,  # type: ignore
+        back_populates='workflow_step')
+    annotations = relationship('WorkflowStepAnnotationAssociation',
+        order_by=lambda: WorkflowStepAnnotationAssociation.id,  # type: ignore
+        back_populates="workflow_step")
+    post_job_actions = relationship('PostJobAction', back_populates='workflow_step')
+    inputs = relationship('WorkflowStepInput', back_populates='workflow_step')
+    workflow_outputs = relationship('WorkflowOutput', back_populates='workflow_step')
+
     STEP_TYPE_TO_INPUT_TYPE = {
         "data_input": "dataset",
         "data_collection_input": "dataset_collection",
