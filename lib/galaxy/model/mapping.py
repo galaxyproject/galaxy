@@ -354,14 +354,6 @@ model.WorkflowInvocationOutputValue.table = Table(
     Column("value", MutableJSONType),
 )
 
-model.WorkflowInvocationToSubworkflowInvocationAssociation.table = Table(
-    "workflow_invocation_to_subworkflow_invocation_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name='fk_wfi_swi_wfi'), index=True),
-    Column("subworkflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name='fk_wfi_swi_swi'), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wfi_swi_ws')),
-)
-
 model.StoredWorkflowUserShareAssociation.table = Table(
     "stored_workflow_user_share_connection", metadata,
     Column("id", Integer, primary_key=True),
@@ -812,7 +804,7 @@ mapper_registry.map_imperatively(model.WorkflowInvocation, model.WorkflowInvocat
     input_dataset_collections=relation(model.WorkflowRequestToInputDatasetCollectionAssociation,
         backref='workflow_invocation'),
     subworkflow_invocations=relation(model.WorkflowInvocationToSubworkflowInvocationAssociation,
-        primaryjoin=(model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.workflow_invocation_id == model.WorkflowInvocation.table.c.id),
+        primaryjoin=(model.WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == model.WorkflowInvocation.table.c.id),
         backref=backref("parent_workflow_invocation", uselist=False),
         uselist=True,
     ),
@@ -823,15 +815,10 @@ mapper_registry.map_imperatively(model.WorkflowInvocation, model.WorkflowInvocat
         back_populates='workflow_invocation'),
     output_datasets=relation(model.WorkflowInvocationOutputDatasetAssociation,
         back_populates='workflow_invocation'),
-))
-
-mapper_registry.map_imperatively(model.WorkflowInvocationToSubworkflowInvocationAssociation, model.WorkflowInvocationToSubworkflowInvocationAssociation.table, properties=dict(
-    subworkflow_invocation=relation(model.WorkflowInvocation,
-        primaryjoin=(model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.subworkflow_invocation_id == model.WorkflowInvocation.table.c.id),
-        backref="parent_workflow_invocation_association",
-        uselist=False,
-    ),
-    workflow_step=relation(model.WorkflowStep),
+    parent_workflow_invocation_association=relation(model.WorkflowInvocationToSubworkflowInvocationAssociation,
+        primaryjoin=(
+            model.WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id == model.WorkflowInvocation.table.c.id),
+        back_populates='subworkflow_invocation'),
 ))
 
 simple_mapping(model.WorkflowInvocationStep,
@@ -839,9 +826,9 @@ simple_mapping(model.WorkflowInvocationStep,
     job=relation(model.Job, backref=backref('workflow_invocation_step', uselist=False), uselist=False),
     implicit_collection_jobs=relation(model.ImplicitCollectionJobs, backref=backref('workflow_invocation_step', uselist=False), uselist=False),
     subworkflow_invocation_id=column_property(
-        select(model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.subworkflow_invocation_id).where(and_(
-            model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.workflow_invocation_id == model.WorkflowInvocationStep.table.c.workflow_invocation_id,
-            model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.workflow_step_id == model.WorkflowInvocationStep.table.c.workflow_step_id,
+        select(model.WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id).where(and_(
+            model.WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == model.WorkflowInvocationStep.table.c.workflow_invocation_id,
+            model.WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id == model.WorkflowInvocationStep.table.c.workflow_step_id,
         )).scalar_subquery(),
     ),
     output_dataset_collections=relation(

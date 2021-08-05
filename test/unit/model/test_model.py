@@ -3979,6 +3979,41 @@ class TestWorkflowInvocationStepOutputDatasetCollectionAssociation(BaseTest):
             assert stored_obj.dataset_collection.id == history_dataset_collection_association.id
 
 
+class TestWorkflowInvocationToSubworkflowInvocationAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow_invocation_to_subworkflow_invocation_association'
+
+    def test_columns(self, session, cls_, workflow_invocation, workflow_step, model, workflow):
+        subworkflow_invocation = model.WorkflowInvocation()
+        subworkflow_invocation.workflow = workflow
+        persist(session, subworkflow_invocation)
+
+        obj = cls_()
+        obj.workflow_invocation_id = workflow_invocation.id
+        obj.subworkflow_invocation = subworkflow_invocation
+        obj.workflow_step = workflow_step
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.workflow_invocation_id == workflow_invocation.id
+            assert stored_obj.subworkflow_invocation_id == subworkflow_invocation.id
+            assert stored_obj.workflow_step_id == workflow_step.id
+
+        delete_from_database(session, [subworkflow_invocation])
+
+    def test_relationships(self, session, cls_, workflow_invocation, workflow_step, model, workflow):
+        obj = cls_()
+        obj.subworkflow_invocation = workflow_invocation  # We need only 1 instance, so we use the fixture
+        obj.workflow_step = workflow_step
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.subworkflow_invocation.id == workflow_invocation.id
+            assert stored_obj.workflow_step.id == workflow_step.id
+
+
 class TestWorkflowOutput(BaseTest):
 
     def test_table(self, cls_):
