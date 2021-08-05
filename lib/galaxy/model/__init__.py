@@ -8105,7 +8105,17 @@ class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
 
 
 # Data manager classes.
-class DataManagerHistoryAssociation(RepresentById):
+class DataManagerHistoryAssociation(Base, RepresentById):
+    __tablename__ = 'data_manager_history_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, index=True, default=now, onupdate=now)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    history = relationship('History')
+    user = relationship('User', back_populates='data_manager_histories')
+
     def __init__(self, id=None, history=None, user=None):
         self.id = id
         self.history = history

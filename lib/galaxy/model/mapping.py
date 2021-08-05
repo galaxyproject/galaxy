@@ -448,15 +448,6 @@ model.VisualizationUserShareAssociation.table = Table(
     Column("visualization_id", Integer, ForeignKey("visualization.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
-# Data Manager tables
-model.DataManagerHistoryAssociation.table = Table(
-    "data_manager_history_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
-
 model.UserPreference.table = Table(
     "user_preference", metadata,
     Column("id", Integer, primary_key=True),
@@ -612,6 +603,7 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     reset_tokens=relation(model.PasswordResetToken, back_populates='user'),
     histories_shared_by_others=relation(
         model.HistoryUserShareAssociation, back_populates='user'),
+    data_manager_histories=relation(model.DataManagerHistoryAssociation, back_populates='user'),
 ))
 
 # Set up proxy so that this syntax is possible:
@@ -1033,13 +1025,6 @@ model.Job.any_output_dataset_collection_instances_deleted = column_property(  # 
                 model.HistoryDatasetCollectionAssociation.table.c.deleted == true())
            )
 )
-
-# Data Manager tables
-mapper_registry.map_imperatively(model.DataManagerHistoryAssociation, model.DataManagerHistoryAssociation.table, properties=dict(
-    history=relation(model.History),
-    user=relation(model.User,
-        backref='data_manager_histories')
-))
 
 class_mapper(model.HistoryDatasetCollectionAssociation).add_property(
     "creating_job_associations", relation(model.JobToOutputDatasetCollectionAssociation, viewonly=True))
