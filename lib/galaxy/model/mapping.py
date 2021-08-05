@@ -354,15 +354,6 @@ model.WorkflowInvocationOutputDatasetAssociation.table = Table(
     Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
 )
 
-model.WorkflowInvocationOutputDatasetCollectionAssociation.table = Table(
-    "workflow_invocation_output_dataset_collection_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name='fk_wiodca_wii'), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wiodca_wsi'), index=True),
-    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wiodca_dci'), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi'), index=True),
-)
-
 model.WorkflowInvocationOutputValue.table = Table(
     "workflow_invocation_output_value", metadata,
     Column("id", Integer, primary_key=True),
@@ -836,7 +827,9 @@ mapper_registry.map_imperatively(model.WorkflowInvocation, model.WorkflowInvocat
     ),
     steps=relation(model.WorkflowInvocationStep,
         backref="workflow_invocation"),
-    workflow=relation(model.Workflow)
+    workflow=relation(model.Workflow),
+    output_dataset_collections=relation(model.WorkflowInvocationOutputDatasetCollectionAssociation,
+        back_populates='workflow_invocation'),
 ))
 
 mapper_registry.map_imperatively(model.WorkflowInvocationToSubworkflowInvocationAssociation, model.WorkflowInvocationToSubworkflowInvocationAssociation.table, properties=dict(
@@ -876,15 +869,6 @@ simple_mapping(
     workflow_invocation=relation(model.WorkflowInvocation, backref="output_datasets"),
     workflow_step=relation(model.WorkflowStep),
     dataset=relation(model.HistoryDatasetAssociation),
-    workflow_output=relation(model.WorkflowOutput),
-)
-
-
-simple_mapping(
-    model.WorkflowInvocationOutputDatasetCollectionAssociation,
-    workflow_invocation=relation(model.WorkflowInvocation, backref="output_dataset_collections"),
-    workflow_step=relation(model.WorkflowStep),
-    dataset_collection=relation(model.HistoryDatasetCollectionAssociation),
     workflow_output=relation(model.WorkflowOutput),
 )
 

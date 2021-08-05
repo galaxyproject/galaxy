@@ -3802,6 +3802,57 @@ class TestWorkerProcess(BaseTest):
             assert stored_obj.update_time == update_time
 
 
+class TestWorkflowInvocationOutputDatasetCollectionAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow_invocation_output_dataset_collection_association'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        workflow_invocation,
+        workflow_step,
+        history_dataset_collection_association,
+        workflow_output,
+    ):
+        obj = cls_()
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+        obj.dataset_collection = history_dataset_collection_association
+        obj.workflow_output = workflow_output
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.workflow_invocation_id == workflow_invocation.id
+            assert stored_obj.workflow_step_id == workflow_step.id
+            assert stored_obj.dataset_collection_id == history_dataset_collection_association.id
+            assert stored_obj.workflow_output_id == workflow_output.id
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow_invocation,
+        workflow_step,
+        history_dataset_collection_association,
+        workflow_output,
+    ):
+        obj = cls_()
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+        obj.dataset_collection = history_dataset_collection_association
+        obj.workflow_output = workflow_output
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.workflow_invocation.id == workflow_invocation.id
+            assert stored_obj.workflow_step.id == workflow_step.id
+            assert stored_obj.dataset_collection.id == history_dataset_collection_association.id
+            assert stored_obj.workflow_output.id == workflow_output.id
+
+
 class TestWorkflowInvocationStepOutputDatasetAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -4822,6 +4873,12 @@ def workflow_invocation_step(model, session, workflow_invocation, workflow_step)
     wis.workflow_invocation = workflow_invocation
     wis.workflow_step = workflow_step
     yield from dbcleanup_wrapper(session, wis)
+
+
+@pytest.fixture
+def workflow_output(model, session, workflow_step):
+    wo = model.WorkflowOutput(workflow_step)
+    yield from dbcleanup_wrapper(session, wo)
 
 
 @pytest.fixture
