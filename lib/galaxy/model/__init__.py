@@ -6723,7 +6723,22 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return f"{self.__class__.__name__}[{extra}]"
 
 
-class WorkflowInvocationToSubworkflowInvocationAssociation(Dictifiable, RepresentById):
+class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, RepresentById):
+    __tablename__ = 'workflow_invocation_to_subworkflow_invocation_association'
+
+    id = Column(Integer, primary_key=True)
+    workflow_invocation_id = Column(Integer, ForeignKey('workflow_invocation.id', name='fk_wfi_swi_wfi'), index=True)
+    subworkflow_invocation_id = Column(Integer, ForeignKey('workflow_invocation.id', name='fk_wfi_swi_swi'), index=True)
+    workflow_step_id = Column(Integer, ForeignKey('workflow_step.id', name='fk_wfi_swi_ws'))
+
+    subworkflow_invocation = relationship('WorkflowInvocation',
+        primaryjoin=(lambda:
+            WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id == WorkflowInvocation.id),  # type: ignore
+        back_populates='parent_workflow_invocation_association',
+        uselist=False,
+    )
+    workflow_step = relationship('WorkflowStep')
+
     dict_collection_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
     dict_element_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
 
