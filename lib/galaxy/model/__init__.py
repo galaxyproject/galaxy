@@ -6021,6 +6021,12 @@ class WorkflowStep(Base, RepresentById):
     post_job_actions = relationship('PostJobAction', back_populates='workflow_step')
     inputs = relationship('WorkflowStepInput', back_populates='workflow_step')
     workflow_outputs = relationship('WorkflowOutput', back_populates='workflow_step')
+    parent_workflow_input_connections = relationship('WorkflowStepConnection',
+        primaryjoin=(lambda: WorkflowStepConnection.input_subworkflow_step_id == WorkflowStep.id)  # type: ignore
+    )
+    output_connections = relationship('WorkflowStepConnection',
+        primaryjoin=(lambda: WorkflowStepConnection.output_step_id == WorkflowStep.id)  # type: ignore
+    )
 
     STEP_TYPE_TO_INPUT_TYPE = {
         "data_input": "dataset",
@@ -6230,10 +6236,15 @@ class WorkflowStepInput(Base, RepresentById):
     default_value = Column(MutableJSONType)
     default_value_set = Column(Boolean, default=False)
     runtime_value = Column(Boolean, default=False)
+
     workflow_step = relationship('WorkflowStep',
         back_populates='inputs',
         cascade='all',
         primaryjoin=(lambda: WorkflowStepInput.workflow_step_id == WorkflowStep.id))  # type: ignore
+    connections = relationship(
+        'WorkflowStepConnection',
+        back_populates='input_step_input',
+        primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id))  # type: ignore
 
     default_merge_type = None
     default_scatter_type = None
@@ -6258,7 +6269,27 @@ class WorkflowStepInput(Base, RepresentById):
         return copied_step_input
 
 
-class WorkflowStepConnection(RepresentById):
+class WorkflowStepConnection(Base, RepresentById):
+    __tablename__ = 'workflow_step_connection'
+
+    id = Column(Integer, primary_key=True)
+    output_step_id = Column(Integer, ForeignKey('workflow_step.id'), index=True)
+    input_step_input_id = Column(Integer, ForeignKey('workflow_step_input.id'), index=True)
+    output_name = Column(TEXT)
+    input_subworkflow_step_id = Column(Integer, ForeignKey('workflow_step.id'), index=True)
+
+    input_step_input = relationship('WorkflowStepInput',
+        back_populates='connections',
+        cascade='all',
+        primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id))  # type: ignore
+    input_subworkflow_step = relationship('WorkflowStep',
+        back_populates='parent_workflow_input_connections',
+        primaryjoin=(lambda: WorkflowStepConnection.input_subworkflow_step_id == WorkflowStep.id))  # type: ignore
+    output_step = relationship('WorkflowStep',
+        back_populates='output_connections',
+        cascade='all',
+        primaryjoin=(lambda: WorkflowStepConnection.output_step_id == WorkflowStep.id))  # type: ignore
+
     # Constant used in lieu of output_name and input_name to indicate an
     # implicit connection between two steps that is not dependent on a dataset
     # or a dataset collection. Allowing for instance data manager steps to setup
