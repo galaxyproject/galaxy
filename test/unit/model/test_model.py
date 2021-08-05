@@ -3930,20 +3930,28 @@ class TestWorkflowStep(BaseTest):
 
     def test_relationships(self, session, cls_, workflow, dynamic_tool, model):
         subworkflow = model.Workflow()
-        persist(session, subworkflow)
+        workflow_step_connection_in = model.WorkflowStepConnection()
+        workflow_step_connection_out = model.WorkflowStepConnection()
+        extra_objects = [subworkflow, workflow_step_connection_in, workflow_step_connection_out]
+        for eo in extra_objects:
+            persist(session, eo)
 
         obj = cls_()
         obj.workflow = workflow
         obj.subworkflow = subworkflow
         obj.dynamic_tool = dynamic_tool
+        obj.parent_workflow_input_connections.append(workflow_step_connection_in)
+        obj.output_connections.append(workflow_step_connection_out)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.workflow.id == workflow.id
             assert stored_obj.subworkflow.id == subworkflow.id
             assert stored_obj.dynamic_tool.id == dynamic_tool.id
+            assert stored_obj.parent_workflow_input_connections == [workflow_step_connection_in]
+            assert stored_obj.output_connections == [workflow_step_connection_out]
 
-        delete_from_database(session, [subworkflow])
+        delete_from_database(session, extra_objects)
 
 
 class TestWorkflowStepAnnotationAssociation(BaseTest):
@@ -3975,6 +3983,53 @@ class TestWorkflowStepAnnotationAssociation(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.workflow_step.id == workflow_step.id
             assert stored_obj.user.id == user.id
+
+
+class TestWorkflowStepConnection(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow_step_connection'
+
+    def test_columns(self, session, cls_, workflow_step_input, workflow_step, workflow, model):
+        output_name = 'a'
+
+        output_workflow_step = model.WorkflowStep()
+        output_workflow_step.workflow = workflow
+        persist(session, output_workflow_step)
+
+        obj = cls_()
+        obj.output_step = output_workflow_step
+        obj.input_step_input = workflow_step_input
+        obj.output_name = output_name
+        obj.input_subworkflow_step = workflow_step
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.output_step_id == output_workflow_step.id
+            assert stored_obj.input_step_input_id == workflow_step_input.id
+            assert stored_obj.output_name == output_name
+            assert stored_obj.input_subworkflow_step_id == workflow_step.id
+
+        delete_from_database(session, [output_workflow_step])
+
+    def test_relationships(self, session, cls_, workflow_step_input, workflow_step, workflow, model):
+        output_workflow_step = model.WorkflowStep()
+        output_workflow_step.workflow = workflow
+        persist(session, output_workflow_step)
+
+        obj = cls_()
+        obj.output_step = output_workflow_step
+        obj.input_step_input = workflow_step_input
+        obj.input_subworkflow_step = workflow_step
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.output_step.id == output_workflow_step.id
+            assert stored_obj.input_step_input.id == workflow_step_input.id
+            assert stored_obj.input_subworkflow_step.id == workflow_step.id
+
+        delete_from_database(session, [output_workflow_step])
 
 
 class TestWorkflowStepInput(BaseTest):
@@ -4016,12 +4071,14 @@ class TestWorkflowStepInput(BaseTest):
             assert stored_obj.default_value_set == default_value_set
             assert stored_obj.runtime_value == runtime_value
 
-    def test_relationships(self, session, cls_, workflow_step):
+    def test_relationships(self, session, cls_, workflow_step, workflow_step_connection):
         obj = cls_(workflow_step)
+        obj.connections.append(workflow_step_connection)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.workflow_step_id == workflow_step.id
+            assert stored_obj.connections == [workflow_step_connection]
 
 
 class TestWorkflowStepTagAssociation(BaseTest):
@@ -4595,6 +4652,18 @@ def workflow_step(model, session, workflow):
     s = model.WorkflowStep()
     s.workflow = workflow
     yield from dbcleanup_wrapper(session, s)
+
+
+@pytest.fixture
+def workflow_step_connection(model, session):
+    wsc = model.WorkflowStepConnection()
+    yield from dbcleanup_wrapper(session, wsc)
+
+
+@pytest.fixture
+def workflow_step_input(model, session, workflow_step):
+    wsi = model.WorkflowStepInput(workflow_step)
+    yield from dbcleanup_wrapper(session, wsi)
 
 
 @pytest.fixture

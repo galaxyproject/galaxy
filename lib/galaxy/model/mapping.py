@@ -321,15 +321,6 @@ model.Workflow.table = Table(
     Column("license", TEXT),
     Column("uuid", UUIDType, nullable=True))
 
-model.WorkflowStepConnection.table = Table(
-    "workflow_step_connection", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("output_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
-    Column("input_step_input_id", Integer, ForeignKey("workflow_step_input.id"), index=True),
-    Column("output_name", TEXT),
-    Column("input_subworkflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
-)
-
 model.WorkflowInvocation.table = Table(
     "workflow_invocation", metadata,
     Column("id", Integer, primary_key=True),
@@ -817,22 +808,6 @@ mapper_registry.map_imperatively(model.Workflow, model.Workflow.table, propertie
         primaryjoin=(lambda: model.Workflow.id == model.WorkflowStep.subworkflow_id),  # type: ignore
         back_populates='subworkflow'),
 ))
-
-mapper_registry.map_imperatively(model.WorkflowStepConnection, model.WorkflowStepConnection.table, properties=dict(
-    input_step_input=relation(model.WorkflowStepInput,
-        backref="connections",
-        cascade="all",
-        primaryjoin=(model.WorkflowStepConnection.table.c.input_step_input_id == model.WorkflowStepInput.id)),
-    input_subworkflow_step=relation(model.WorkflowStep,
-        backref=backref("parent_workflow_input_connections", uselist=True),
-        primaryjoin=(model.WorkflowStepConnection.table.c.input_subworkflow_step_id == model.WorkflowStep.id),
-    ),
-    output_step=relation(model.WorkflowStep,
-        backref="output_connections",
-        cascade="all",
-        primaryjoin=(model.WorkflowStepConnection.table.c.output_step_id == model.WorkflowStep.id)),
-))
-
 
 mapper_registry.map_imperatively(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
     user=relation(model.User,
