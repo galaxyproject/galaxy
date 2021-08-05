@@ -3754,6 +3754,33 @@ class TestVisualizationRevision(BaseTest):
             assert stored_obj.visualization.id == visualization.id
 
 
+class TestVisualizationUserShareAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'visualization_user_share_association'
+
+    def test_columns(self, session, cls_, visualization, user):
+        obj = cls_()
+        obj.visualization = visualization
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.visualization_id == visualization.id
+            assert stored_obj.user_id == user.id
+
+    def test_relationships(self, session, cls_, visualization, user):
+        obj = cls_()
+        obj.visualization = visualization
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.visualization.id == visualization.id
+            assert stored_obj.user.id == user.id
+
+
 class TestWorkerProcess(BaseTest):
 
     def test_table(self, cls_):

@@ -442,12 +442,6 @@ model.Visualization.table = Table(
     Index('ix_visualization_slug', 'slug', mysql_length=200),
 )
 
-model.VisualizationUserShareAssociation.table = Table(
-    "visualization_user_share_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("visualization_id", Integer, ForeignKey("visualization.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
-
 model.UserPreference.table = Table(
     "user_preference", metadata,
     Column("id", Integer, primary_key=True),
@@ -971,13 +965,6 @@ mapper_registry.map_imperatively(model.Visualization, model.Visualization.table,
 #   Visualization.users_shared_with
 # returns a list of users that visualization is shared with.
 model.Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-mapper_registry.map_imperatively(model.VisualizationUserShareAssociation, model.VisualizationUserShareAssociation.table, properties=dict(
-    user=relation(model.User,
-        backref='visualizations_shared_by_others'),
-    visualization=relation(model.Visualization,
-        backref='users_shared_with')
-))
 
 mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     # user=relation( model.User.mapper ),
