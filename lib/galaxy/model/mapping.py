@@ -350,15 +350,6 @@ model.WorkflowStepConnection.table = Table(
     Column("input_subworkflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
 )
 
-model.WorkflowOutput.table = Table(
-    "workflow_output", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
-    Column("output_name", String(255), nullable=True),
-    Column("label", Unicode(255)),
-    Column("uuid", UUIDType),
-)
-
 model.WorkflowInvocation.table = Table(
     "workflow_invocation", metadata,
     Column("id", Integer, primary_key=True),
@@ -859,12 +850,7 @@ mapper_registry.map_imperatively(model.WorkflowStep, model.WorkflowStep.table, p
         back_populates="workflow_step"),
     post_job_actions=relation(model.PostJobAction, back_populates='workflow_step'),
     inputs=relation(model.WorkflowStepInput, back_populates='workflow_step'),
-))
-
-mapper_registry.map_imperatively(model.WorkflowOutput, model.WorkflowOutput.table, properties=dict(
-    workflow_step=relation(model.WorkflowStep,
-        backref='workflow_outputs',
-        primaryjoin=(model.WorkflowStep.table.c.id == model.WorkflowOutput.table.c.workflow_step_id))
+    workflow_outputs=relation(model.WorkflowOutput, back_populates='workflow_step'),
 ))
 
 mapper_registry.map_imperatively(model.WorkflowStepConnection, model.WorkflowStepConnection.table, properties=dict(
