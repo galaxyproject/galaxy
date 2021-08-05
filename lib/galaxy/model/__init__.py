@@ -6261,7 +6261,17 @@ class WorkflowStepConnection(RepresentById):
         return copied_connection
 
 
-class WorkflowOutput(RepresentById):
+class WorkflowOutput(Base, RepresentById):
+    __tablename__ = 'workflow_output'
+
+    id = Column(Integer, primary_key=True)
+    workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'), index=True, nullable=False)
+    output_name = Column(String(255), nullable=True)
+    label = Column(Unicode(255))
+    uuid = Column(UUIDType)
+    workflow_step = relationship('WorkflowStep',
+        back_populates='workflow_outputs',
+        primaryjoin=(lambda: WorkflowStep.id == WorkflowOutput.workflow_step_id))
 
     def __init__(self, workflow_step, output_name=None, label=None, uuid=None):
         self.workflow_step = workflow_step
