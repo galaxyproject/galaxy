@@ -6354,14 +6354,29 @@ class WorkflowOutput(Base, RepresentById):
         return copied_output
 
 
-class StoredWorkflowUserShareAssociation(UserShareAssociation):
+class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
+    __tablename__ = 'stored_workflow_user_share_connection'
+
+    id = Column(Integer, primary_key=True)
+    stored_workflow_id = Column(Integer, ForeignKey('stored_workflow.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user = relationship('User', back_populates='workflows_shared_by_others')
+    stored_workflow = relationship('StoredWorkflow', back_populates='users_shared_with')
 
     def __init__(self):
         self.stored_workflow = None
         self.user = None
 
 
-class StoredWorkflowMenuEntry(RepresentById):
+class StoredWorkflowMenuEntry(Base, RepresentById):
+    __tablename__ = 'stored_workflow_menu_entry'
+
+    id = Column(Integer, primary_key=True)
+    stored_workflow_id = Column(Integer, ForeignKey('stored_workflow.id'), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    order_index = Column(Integer)
+
+    stored_workflow = relationship('StoredWorkflow')
 
     def __init__(self):
         self.stored_workflow = None

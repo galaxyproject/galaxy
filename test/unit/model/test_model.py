@@ -3189,6 +3189,36 @@ class TestStoredWorkflowAnnotationAssociation(BaseTest):
             assert stored_obj.user.id == user.id
 
 
+class TestStoredWorkflowMenuEntry(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'stored_workflow_menu_entry'
+
+    def test_columns(self, session, cls_, stored_workflow, user):
+        order_index = 1
+        obj = cls_()
+        obj.stored_workflow = stored_workflow
+        obj.user = user
+        obj.order_index = order_index
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.stored_workflow_id == stored_workflow.id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.order_index == order_index
+
+    def test_relationships(self, session, cls_, stored_workflow, user):
+        obj = cls_()
+        obj.stored_workflow = stored_workflow
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.stored_workflow.id == stored_workflow.id
+            assert stored_obj.user.id == user.id
+
+
 class TestStoredWorkflowRatingAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -3243,6 +3273,33 @@ class TestStoredWorkflowTagAssociation(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.stored_workflow.id == stored_workflow.id
             assert stored_obj.tag.id == tag.id
+            assert stored_obj.user.id == user.id
+
+
+class TestStoredWorkflowUserShareAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'stored_workflow_user_share_connection'
+
+    def test_columns(self, session, cls_, stored_workflow, user):
+        obj = cls_()
+        obj.stored_workflow = stored_workflow
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.stored_workflow_id == stored_workflow.id
+            assert stored_obj.user_id == user.id
+
+    def test_relationships(self, session, cls_, stored_workflow, user):
+        obj = cls_()
+        obj.stored_workflow = stored_workflow
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.stored_workflow.id == stored_workflow.id
             assert stored_obj.user.id == user.id
 
 

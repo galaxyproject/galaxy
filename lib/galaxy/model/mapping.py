@@ -354,19 +354,6 @@ model.WorkflowInvocationOutputValue.table = Table(
     Column("value", MutableJSONType),
 )
 
-model.StoredWorkflowUserShareAssociation.table = Table(
-    "stored_workflow_user_share_connection", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("stored_workflow_id", Integer, ForeignKey("stored_workflow.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
-
-model.StoredWorkflowMenuEntry.table = Table(
-    "stored_workflow_menu_entry", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("stored_workflow_id", Integer, ForeignKey("stored_workflow.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("order_index", Integer))
-
 model.MetadataFile.table = Table(
     "metadata_file", metadata,
     Column("id", Integer, primary_key=True),
@@ -535,8 +522,8 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     social_auth=relation(model.UserAuthnzToken, back_populates='user'),
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
         primaryjoin=(
-            (model.StoredWorkflowMenuEntry.table.c.user_id == model.User.table.c.id)
-            & (model.StoredWorkflowMenuEntry.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id)
+            (model.StoredWorkflowMenuEntry.user_id == model.User.table.c.id)
+            & (model.StoredWorkflowMenuEntry.stored_workflow_id == model.StoredWorkflow.table.c.id)
             & not_(model.StoredWorkflow.table.c.deleted)
         ),
         backref="user",
@@ -555,6 +542,7 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     histories_shared_by_others=relation(
         model.HistoryUserShareAssociation, back_populates='user'),
     data_manager_histories=relation(model.DataManagerHistoryAssociation, back_populates='user'),
+    workflows_shared_by_others=relation(model.StoredWorkflowUserShareAssociation, back_populates='user'),
 ))
 
 # Set up proxy so that this syntax is possible:
@@ -774,24 +762,14 @@ mapper_registry.map_imperatively(model.StoredWorkflow, model.StoredWorkflow.tabl
     average_rating=column_property(
         select(func.avg(model.StoredWorkflowRatingAssociation.rating)).where(model.StoredWorkflowRatingAssociation.stored_workflow_id == model.StoredWorkflow.table.c.id).scalar_subquery(),
         deferred=True
-    )
+    ),
+    users_shared_with=relation(model.StoredWorkflowUserShareAssociation, back_populates='stored_workflow'),
 ))
 
 # Set up proxy so that
 #   StoredWorkflow.users_shared_with
 # returns a list of users that workflow is shared with.
 model.StoredWorkflow.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-mapper_registry.map_imperatively(model.StoredWorkflowUserShareAssociation, model.StoredWorkflowUserShareAssociation.table, properties=dict(
-    user=relation(model.User,
-        backref='workflows_shared_by_others'),
-    stored_workflow=relation(model.StoredWorkflow,
-        backref='users_shared_with')
-))
-
-mapper_registry.map_imperatively(model.StoredWorkflowMenuEntry, model.StoredWorkflowMenuEntry.table, properties=dict(
-    stored_workflow=relation(model.StoredWorkflow)
-))
 
 mapper_registry.map_imperatively(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict(
     history=relation(model.History, backref=backref('workflow_invocations', uselist=True)),
