@@ -67,7 +67,7 @@ export default {
         mode: {
             type: String,
             default: "file",
-            validator: (prop) => ["file", "directory", "tree"].includes(prop),
+            validator: (prop) => ["file", "directory"].includes(prop),
         },
         requireWritable: {
             type: Boolean,
@@ -253,7 +253,7 @@ export default {
 
             for (const item of this.items) {
                 if (isUnselectAll) {
-                    if (this.model.exists(item.id) || this.isDirectorySelected(item.id)) {
+                    if (this.model.exists(item.id) || this.model.pathExists(item.id)) {
                         item.isLeaf ? this.model.add(item) : this.selectDirectory(item);
                     }
                 } else {
