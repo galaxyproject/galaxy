@@ -1237,6 +1237,7 @@ mapping:
       brand:
         type: str
         required: false
+        per_host: true
         desc: |
           Append "{brand}" text to the masthead.
 
@@ -1244,6 +1245,7 @@ mapping:
         type: bool
         default: true
         required: false
+        per_host: true
         desc: |
           Display the "Galaxy" text in the masthead.
 
@@ -1327,6 +1329,7 @@ mapping:
         default: /static/welcome.html
         required: false
         reloadable: true
+        per_host: true
         desc: |
           The URL of the page to display in Galaxy's middle pane when loaded.  This can
           be an absolute or relative URL.
@@ -1335,6 +1338,7 @@ mapping:
         type: str
         default: /
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Galaxy/brand" text.
 
@@ -1342,18 +1346,21 @@ mapping:
         type: str
         default: /static/favicon.png
         required: false
+        per_host: true
         desc: |
           The brand image source.
 
       logo_src_secondary:
         type: str
         required: false
+        per_host: true
         desc: |
           The custom brand image source.
 
       helpsite_url:
         type: str
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Galaxy Help" link in the "Help" menu.
 
@@ -1361,6 +1368,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Wiki" link in the "Help" menu.
 
@@ -1375,6 +1383,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/support/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
 
@@ -1382,6 +1391,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/citing-galaxy
         required: false
+        per_host: true
         desc: |
           The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
 
@@ -1396,6 +1406,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/search/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Search" link in the "Help" menu.
 
@@ -1403,6 +1414,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/mailing-lists/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Mailing Lists" link in the "Help" menu.
 
@@ -1410,12 +1422,14 @@ mapping:
         type: str
         default: https://vimeo.com/galaxyproject
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Videos" link in the "Help" menu.
 
       terms_url:
         type: str
         required: false
+        per_host: true        
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
           as on the user registration and login forms and in the activation emails.
@@ -2638,6 +2652,7 @@ mapping:
         default: 'prefer'
         enum: ['off', 'prefer']
         required: false
+        per_host: true
         desc: |
           If set to 'off' by default, always use the traditional workflow form that renders
           all steps in the GUI and serializes the tool state of all steps during
@@ -2652,6 +2667,7 @@ mapping:
         default: 'current'
         enum: ['current', 'new']
         required: false
+        per_host: true
         desc: |
           When the simplified workflow run form is rendered, should the invocation outputs
           be sent to the 'current' history or a 'new' history.
@@ -2661,6 +2677,7 @@ mapping:
         default: 'off'
         enum: ['on', 'off']
         required: false
+        per_host: true
         desc: |
           When the simplified workflow run form is rendered, should the invocation use job
           caching. This isn't a boolean so an option for 'show-selection' can be added later.
@@ -2675,6 +2692,7 @@ mapping:
       ftp_upload_site:
         type: str
         required: false
+        per_host: true
         desc: |
           Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
           configure an FTP server (we've used ProFTPd since it can use Galaxy's

@@ -39,8 +39,10 @@ class ConfigurationManager:
         serialization_params: SerializationParams
     ) -> Dict[str, Any]:
         is_admin = trans.user_is_admin
-        serializer = AdminConfigSerializer(self._app) if is_admin else ConfigSerializer(self._app)
-        return serializer.serialize_to_view(self._app.config, **serialization_params)
+        host = getattr(trans, "host", None)
+        serializer_class = AdminConfigSerializer if is_admin else ConfigSerializer
+        serializer = serializer_class(self._app)
+        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params)
 
     def version(self) -> Dict[str, Any]:
         version_info = {
@@ -120,7 +122,7 @@ class ConfigSerializer(base.ModelSerializer):
         def _use_config(config, key, **context):
             """Let config object determine the value for key"""
             assert hasattr(config, key)
-            return getattr(config, key)
+            return config.config_value_for_host(key, context.get("host"))
 
         def _config_is_truthy(config, key, **context):
             return True if config.get(key) else False
@@ -217,7 +219,7 @@ class AdminConfigSerializer(ConfigSerializer):
 
         self.serializers.update({
             # TODO: this is available from user serialization: remove
-            'is_admin_user': lambda *a: True,
+            'is_admin_user': lambda *a, **context: True,
 
             'library_import_dir': _defaults_to(None),
             'user_library_import_dir': _defaults_to(None),
