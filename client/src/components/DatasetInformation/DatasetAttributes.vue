@@ -120,7 +120,6 @@ export default {
                 this.messageText = response.message;
                 this.messageVariant = response.status;
                 this._reloadHistory();
-                this.$emit("onSubmit", this.messageText);
             }, this.onError);
         },
         /** reload Galaxy's history after updating dataset's attributes */
