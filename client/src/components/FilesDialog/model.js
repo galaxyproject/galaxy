@@ -1,6 +1,8 @@
 /**
  * Model to track selected URI for FilesDialog - mirroring DataDialog's model.
  */
+import { isSubPath } from "components/FilesDialog/utilities";
+
 export class Model {
     constructor(options = {}) {
         this.values = {};
@@ -35,13 +37,9 @@ export class Model {
     }
 
     /** Returns true if a record under given path exists **/
-    isPathExists(path) {
+    pathExists(path) {
         return Object.values(this.values).some((value) => {
-            if (value.path === path) {
-                return true;
-            } else {
-                return value.path.startsWith(path);
-            }
+            return isSubPath(path, value.url);
         });
     }
 

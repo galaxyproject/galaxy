@@ -8,9 +8,18 @@
             :filter="filter"
             :per-page="perPage"
             :current-page="currentPage"
+            :busy.sync="isBusy"
             @row-clicked="clicked"
             @filtered="filtered"
         >
+            <template v-slot:head(select_icon)="">
+                <font-awesome-icon
+                    @click="$emit('toggleSelectAll')"
+                    class="select-checkbox cursor-pointer"
+                    title="Check to select all datasets"
+                    :icon="selectionIcon(selectAllIcon)"
+                />
+            </template>
             <template v-slot:cell(select_icon)="data">
                 <font-awesome-icon :icon="selectionIcon(data.item._rowVariant)" />
             </template>
@@ -60,8 +69,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { selectionModes } from "components/SelectionDialog/selectionModes";
 
 Vue.use(BootstrapVue);
-
-[faCheckSquare, faSquare, faFolder, faCaretSquareRight, faMinusSquare].forEach((item) => library.add(item));
+library.add(faCheckSquare, faSquare, faFolder, faCaretSquareRight, faMinusSquare);
 
 const LABEL_FIELD = { key: "label", sortable: true };
 const DETAILS_FIELD = { key: "details", sortable: true };
@@ -86,6 +94,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        selectAllIcon: {
+            type: String,
+            default: selectionModes.unselected,
+        },
         leafIcon: {
             type: String,
             default: "fa fa-file-o",
@@ -107,6 +119,10 @@ export default {
             default: false,
         },
         isEncoded: {
+            type: Boolean,
+            default: false,
+        },
+        isBusy: {
             type: Boolean,
             default: false,
         },
@@ -133,7 +149,6 @@ export default {
                 fields.push(SELECT_ICON_FIELD);
             }
             fields.push(LABEL_FIELD);
-
             if (this.showDetails) {
                 fields.push(DETAILS_FIELD);
             }
@@ -148,8 +163,8 @@ export default {
         },
     },
     methods: {
-        selectionIcon(d) {
-            switch (d) {
+        selectionIcon(variant) {
+            switch (variant) {
                 case selectionModes.selected:
                     return ["far", "check-square"];
                 case selectionModes.mixed:
