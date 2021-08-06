@@ -5553,8 +5553,28 @@ class LibraryDatasetCollectionAssociation(DatasetCollectionInstance, RepresentBy
         return dict_value
 
 
-class DatasetCollectionElement(Dictifiable, RepresentById):
+class DatasetCollectionElement(Base, Dictifiable, RepresentById):
     """ Associates a DatasetInstance (hda or ldda) with a DatasetCollection. """
+    __tablename__ = 'dataset_collection_element'
+
+    id = Column(Integer, primary_key=True)
+    # Parent collection id describing what collection this element belongs to.
+    dataset_collection_id = Column(Integer, ForeignKey('dataset_collection.id'), index=True, nullable=False)
+    # Child defined by this association - HDA, LDDA, or another dataset association...
+    hda_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True, nullable=True)
+    ldda_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
+    child_collection_id = Column(Integer, ForeignKey('dataset_collection.id'), index=True, nullable=True)
+    # Element index and identifier to define this parent-child relationship.
+    element_index = Column(Integer)
+    element_identifier = Column(Unicode(255))
+
+    hda = relationship('HistoryDatasetAssociation',
+        primaryjoin=(lambda: DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id))  # type: ignore
+    ldda = relationship('LibraryDatasetDatasetAssociation',
+        primaryjoin=(lambda: DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id))  # type: ignore
+    child_collection = relationship('DatasetCollection',
+        primaryjoin=(lambda: DatasetCollectionElement.child_collection_id == DatasetCollection.id))  # type: ignore
+
     # actionable dataset id needs to be available via API...
     dict_collection_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']
     dict_element_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']

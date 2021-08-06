@@ -274,19 +274,6 @@ model.LibraryDatasetCollectionAssociation.table = Table(
     Column("name", TrimmedString(255)),
     Column("deleted", Boolean, default=False))
 
-model.DatasetCollectionElement.table = Table(
-    "dataset_collection_element", metadata,
-    Column("id", Integer, primary_key=True),
-    # Parent collection id describing what collection this element belongs to.
-    Column("dataset_collection_id", Integer, ForeignKey("dataset_collection.id"), index=True, nullable=False),
-    # Child defined by this association - HDA, LDDA, or another dataset association...
-    Column("hda_id", Integer, ForeignKey("history_dataset_association.id"), index=True, nullable=True),
-    Column("ldda_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True),
-    Column("child_collection_id", Integer, ForeignKey("dataset_collection.id"), index=True, nullable=True),
-    # Element index and identifier to define this parent-child relationship.
-    Column("element_index", Integer),
-    Column("element_identifier", Unicode(255), ))
-
 model.StoredWorkflow.table = Table(
     "stored_workflow", metadata,
     Column("id", Integer, primary_key=True),
@@ -639,10 +626,10 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
 
 simple_mapping(model.DatasetCollection,
     elements=relation(model.DatasetCollectionElement,
-        primaryjoin=(model.DatasetCollection.table.c.id == model.DatasetCollectionElement.table.c.dataset_collection_id),
-        remote_side=[model.DatasetCollectionElement.table.c.dataset_collection_id],
+        primaryjoin=(model.DatasetCollection.table.c.id == model.DatasetCollectionElement.dataset_collection_id),
+        remote_side=[model.DatasetCollectionElement.dataset_collection_id],
         backref="collection",
-        order_by=model.DatasetCollectionElement.table.c.element_index),
+        order_by=model.DatasetCollectionElement.element_index),
     output_dataset_collections=relation(
         model.JobToImplicitOutputDatasetCollectionAssociation, back_populates='dataset_collection'),
 )
@@ -704,14 +691,6 @@ simple_mapping(model.LibraryDatasetCollectionAssociation,
     ratings=relation(model.LibraryDatasetCollectionRatingAssociation,
         order_by=model.LibraryDatasetCollectionRatingAssociation.id,
         back_populates="dataset_collection"))
-
-simple_mapping(model.DatasetCollectionElement,
-    hda=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.DatasetCollectionElement.table.c.hda_id == model.HistoryDatasetAssociation.table.c.id)),
-    ldda=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.DatasetCollectionElement.table.c.ldda_id == model.LibraryDatasetDatasetAssociation.table.c.id)),
-    child_collection=relation(model.DatasetCollection,
-        primaryjoin=(model.DatasetCollectionElement.table.c.child_collection_id == model.DatasetCollection.table.c.id)))
 
 mapper_registry.map_imperatively(model.Workflow, model.Workflow.table, properties=dict(
     steps=relation(model.WorkflowStep,
