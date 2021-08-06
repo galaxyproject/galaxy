@@ -23,7 +23,7 @@ export const SingleQueryProvider = (lookup) => {
                 return this.result === undefined;
             },
             cacheKey() {
-                hash(this.$attrs || {});
+                return hash(this.$attrs || {});
             },
         },
         mounted() {
