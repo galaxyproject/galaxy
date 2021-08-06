@@ -3863,6 +3863,103 @@ class TestUserQuotaAssociation(BaseTest):
             assert stored_obj.quota.id == quota.id
 
 
+class TestVisualization(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'visualization'
+        assert has_index(cls_.__table__, ('dbkey',))
+        assert has_index(cls_.__table__, ('slug',))
+
+    def test_columns(self, session, cls_, user, visualization_revision):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        title = 'a'
+        type = 'b'
+        dbkey = 'c'
+        deleted = True
+        importable = True
+        slug = 'd'
+        published = True
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.user = user
+        obj.latest_revision = visualization_revision
+        obj.title = title
+        obj.type = type
+        obj.dbkey = dbkey
+        obj.deleted = deleted
+        obj.importable = importable
+        obj.slug = slug
+        obj.published = published
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.user_id == user.id
+            assert stored_obj.latest_revision_id == visualization_revision.id
+            assert stored_obj.title == title
+            assert stored_obj.type == type
+            assert stored_obj.dbkey == dbkey
+            assert stored_obj.deleted == deleted
+            assert stored_obj.importable == importable
+            assert stored_obj.slug == slug
+            assert stored_obj.published == published
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        user,
+        visualization_revision,
+        model,
+        visualization,
+        visualization_tag_association,
+        visualization_annotation_association,
+        visualization_rating_association,
+    ):
+        revision2 = model.VisualizationRevision(visualization=visualization)
+        persist(session, revision2)
+
+        obj = cls_()
+        obj.user = user
+        obj.latest_revision = visualization_revision
+        obj.revisions.append(revision2)
+        obj.tags.append(visualization_tag_association)
+        obj.annotations.append(visualization_annotation_association)
+        obj.ratings.append(visualization_rating_association)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.user.id == user.id
+            assert stored_obj.latest_revision.id == visualization_revision.id
+            assert stored_obj.revisions == [revision2]
+            assert stored_obj.tags == [visualization_tag_association]
+            assert stored_obj.annotations == [visualization_annotation_association]
+            assert stored_obj.ratings == [visualization_rating_association]
+            # This doesn't test the average amount, just the mapping.
+            assert stored_obj.average_rating == visualization_rating_association.rating
+
+    def test_average_rating(self, model, session, visualization, user):
+        # Visualization has been expunged; to access its deferred properties,
+        # it needs to be added back to the session.
+        session.add(visualization)
+        assert visualization.average_rating is None  # With no ratings, we expect None.
+        # Create ratings
+        to_cleanup = []
+        for rating in (1, 2, 3, 4, 5):
+            visualization_rating_assoc = model.VisualizationRatingAssociation(user, visualization)
+            visualization_rating_assoc.rating = rating
+            persist(session, visualization_rating_assoc)
+            to_cleanup.append(visualization_rating_assoc)
+        assert visualization.average_rating == 3.0  # Expect average after ratings added.
+        # Cleanup: remove ratings from database
+        delete_from_database(session, to_cleanup)
+
+
 class TestVisualizationAnnotationAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -5135,6 +5232,24 @@ def visualization(model, session, user):
     v = model.Visualization()
     v.user = user
     yield from dbcleanup_wrapper(session, v)
+
+
+@pytest.fixture
+def visualization_annotation_association(model, session):
+    vaa = model.VisualizationAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, vaa)
+
+
+@pytest.fixture
+def visualization_rating_association(model, session, user, visualization):
+    vaa = model.VisualizationRatingAssociation(user, visualization)
+    yield from dbcleanup_wrapper(session, vaa)
+
+
+@pytest.fixture
+def visualization_revision(model, session, visualization):
+    vr = model.VisualizationRevision(visualization=visualization)
+    yield from dbcleanup_wrapper(session, vr)
 
 
 @pytest.fixture
