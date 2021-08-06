@@ -2667,13 +2667,23 @@ class TestLibraryFolder(BaseTest):
             assert stored_obj.genome_build == genome_build
 
     def test_relationships(
-            self, session, cls_, model, library_folder, library_dataset, library, library_folder_permission):
+        self,
+        session,
+        cls_,
+        model,
+        library_folder,
+        library_dataset,
+        library,
+        library_folder_permission,
+        library_folder_info_association,
+    ):
         obj = cls_()
         obj.parent = library_folder
         folder1 = model.LibraryFolder()
         obj.folders.append(folder1)
         obj.library_root.append(library)
         obj.actions.append(library_folder_permission)
+        obj.info_association.append(library_folder_info_association)
 
         # There's no back reference, so dataset does not update folder; so we have to flush to the database
         # via dbcleanup() context manager. TODO: ..but why is there no back reference?
@@ -2689,6 +2699,36 @@ class TestLibraryFolder(BaseTest):
             # use identity equality instread of object equality.
             assert stored_obj.datasets[0].id == library_dataset.id
             assert stored_obj.active_datasets[0].id == library_dataset.id
+            assert stored_obj.info_association == [library_folder_info_association]
+
+
+class TestLibraryFolderInfoAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'library_folder_info_association'
+
+    def test_columns(self, session, cls_, library_folder, form_definition, form_values):
+        inheritable, deleted = True, True
+        obj = cls_(library_folder, form_definition, form_values, inheritable)
+        obj.deleted = deleted
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.library_folder_id == library_folder.id
+            assert stored_obj.form_definition_id == form_definition.id
+            assert stored_obj.form_values_id == form_values.id
+            assert stored_obj.inheritable == inheritable
+            assert stored_obj.deleted == deleted
+
+    def test_relationships(self, session, cls_, library_folder, form_definition, form_values):
+        obj = cls_(library_folder, form_definition, form_values)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.folder.id == library_folder.id
+            assert stored_obj.template.id == form_definition.id
+            assert stored_obj.info.id == form_values.id
 
 
 class TestLibraryFolderPermissions(BaseTest):
@@ -4935,6 +4975,12 @@ def library_dataset_permission(model, session, library_dataset, role):
 def library_dataset_dataset_association_permission(model, session, library_dataset_dataset_association, role):
     lddp = model.LibraryDatasetDatasetAssociationPermissions('a', library_dataset_dataset_association, role)
     yield from dbcleanup_wrapper(session, lddp)
+
+
+@pytest.fixture
+def library_folder_info_association(model, session, library_folder, form_definition, form_values):
+    lfia = model.LibraryFolderInfoAssociation(library_folder, form_definition, form_values)
+    yield from dbcleanup_wrapper(session, lfia)
 
 
 @pytest.fixture

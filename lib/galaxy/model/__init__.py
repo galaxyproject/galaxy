@@ -4468,6 +4468,7 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
 
     library_root = relationship('Library', back_populates='root_folder')
     actions = relationship('LibraryFolderPermissions', back_populates='folder')
+    info_association = relationship('LibraryFolderInfoAssociation', back_populates='folder')
 
     dict_element_visible_keys = ['id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted']
 
@@ -4895,7 +4896,26 @@ class LibraryInfoAssociation(Base, RepresentById):
         self.inheritable = inheritable
 
 
-class LibraryFolderInfoAssociation(RepresentById):
+class LibraryFolderInfoAssociation(Base, RepresentById):
+    __tablename__ = 'library_folder_info_association'
+
+    id = Column(Integer, primary_key=True)
+    library_folder_id = Column(Integer, ForeignKey('library_folder.id'), nullable=True, index=True)
+    form_definition_id = Column(Integer, ForeignKey('form_definition.id'), index=True)
+    form_values_id = Column(Integer, ForeignKey('form_values.id'), index=True)
+    inheritable = Column(Boolean, index=True, default=False)
+    deleted = Column(Boolean, index=True, default=False)
+
+    folder = relationship('LibraryFolder',
+        primaryjoin=(lambda:
+            (LibraryFolderInfoAssociation.library_folder_id == LibraryFolder.id)  # type: ignore
+            & (not_(LibraryFolderInfoAssociation.deleted))),  # type: ignore
+        back_populates="info_association")
+    template = relationship('FormDefinition',
+        primaryjoin=(lambda: LibraryFolderInfoAssociation.form_definition_id == FormDefinition.id))  # type: ignore
+    info = relationship('FormValues',
+        primaryjoin=(lambda: LibraryFolderInfoAssociation.form_values_id == FormValues.id))  # type: ignore
+
     def __init__(self, folder, form_definition, info, inheritable=False):
         self.folder = folder
         self.template = form_definition
