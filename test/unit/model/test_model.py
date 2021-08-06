@@ -460,6 +460,71 @@ class TestDataset(BaseTest):
             assert stored_obj.sources == [dataset_source]
 
 
+class TestDatasetCollectionElement(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'dataset_collection_element'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        dataset_collection,
+        history_dataset_association,
+        library_dataset_dataset_association,
+        model,
+    ):
+        element_index, element_identifier = 1, 'a'
+        obj = cls_(element=history_dataset_association)  # using hda is sufficient for this test
+        obj.element_index = element_index
+        obj.element_identifier = element_identifier
+        obj.hda = history_dataset_association
+        obj.ldda = library_dataset_dataset_association
+        obj.child_collection = dataset_collection
+
+        # set dataset_collection_id (can't set directly; persisted automatically)
+        parent_collection = model.DatasetCollection(collection_type='a')
+        parent_collection.elements.append(obj)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.dataset_collection_id == parent_collection.id
+            assert stored_obj.hda_id == history_dataset_association.id
+            assert stored_obj.ldda_id == library_dataset_dataset_association.id
+            assert stored_obj.child_collection_id == dataset_collection.id
+            assert stored_obj.element_index == element_index
+            assert stored_obj.element_identifier == element_identifier
+
+        delete_from_database(session, [parent_collection])  # because this won't be removed automatically
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        dataset_collection,
+        history_dataset_association,
+        library_dataset_dataset_association,
+        model,
+    ):
+        obj = cls_(element=history_dataset_association)  # using hda is sufficient for this test
+        obj.hda = history_dataset_association
+        obj.ldda = library_dataset_dataset_association
+        obj.child_collection = dataset_collection
+
+        # set dataset_collection_id (can't set directly; persisted automatically)
+        parent_collection = model.DatasetCollection(collection_type='a')
+        parent_collection.elements.append(obj)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.hda.id == history_dataset_association.id
+            assert stored_obj.ldda.id == library_dataset_dataset_association.id
+            assert stored_obj.child_collection.id == dataset_collection.id
+
+        delete_from_database(session, [parent_collection])  # because this won't be removed automatically
+
+
 class TestDatasetHash(BaseTest):
 
     def test_table(self, cls_):
