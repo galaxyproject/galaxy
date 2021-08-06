@@ -124,13 +124,6 @@ model.Dataset.table = Table(
     Column('total_size', Numeric(15, 0)),
     Column('uuid', UUIDType()))
 
-model.HistoryDatasetAssociationSubset.table = Table(
-    "history_dataset_association_subset", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("history_dataset_association_subset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("location", Unicode(255), index=True))
-
 model.ImplicitlyConvertedDatasetAssociation.table = Table(
     "implicitly_converted_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -453,15 +446,6 @@ simple_mapping(model.Dataset,
     job_export_history_archive=relation(model.JobExportHistoryArchive, back_populates='dataset'),
     genome_index_tool_data=relation(model.GenomeIndexToolData, back_populates='dataset'),
 )
-
-mapper_registry.map_imperatively(model.HistoryDatasetAssociationSubset, model.HistoryDatasetAssociationSubset.table, properties=dict(
-    hda=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociationSubset.table.c.history_dataset_association_id
-                     == model.HistoryDatasetAssociation.table.c.id)),
-    subset=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociationSubset.table.c.history_dataset_association_subset_id
-                     == model.HistoryDatasetAssociation.table.c.id))
-))
 
 mapper_registry.map_imperatively(model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDatasetAssociation.table, properties=dict(
     parent_hda=relation(model.HistoryDatasetAssociation,

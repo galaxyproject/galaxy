@@ -4318,7 +4318,21 @@ class HistoryDatasetAssociationDisplayAtAuthorization(Base, RepresentById):
         self.site = site
 
 
-class HistoryDatasetAssociationSubset(RepresentById):
+class HistoryDatasetAssociationSubset(Base, RepresentById):
+    __tablename__ = 'history_dataset_association_subset'
+
+    id = Column(Integer, primary_key=True)
+    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    history_dataset_association_subset_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    location = Column(Unicode(255), index=True)
+
+    hda = relationship('HistoryDatasetAssociation',
+        primaryjoin=(lambda: HistoryDatasetAssociationSubset.history_dataset_association_id  # type: ignore
+            == HistoryDatasetAssociation.id))  # type: ignore
+    subset = relationship('HistoryDatasetAssociation',
+        primaryjoin=(lambda: HistoryDatasetAssociationSubset.history_dataset_association_subset_id  # type: ignore
+            == HistoryDatasetAssociation.id))  # type: ignore
+
     def __init__(self, hda, subset, location):
         self.hda = hda
         self.subset = subset

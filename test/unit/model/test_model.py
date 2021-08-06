@@ -1321,6 +1321,41 @@ class TestHistoryDatasetAssociationHistory(BaseTest):
             assert stored_obj._metadata == metadata
 
 
+class TestHistoryDatasetAssociationSubset(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'history_dataset_association_subset'
+
+    def test_columns(self, session, cls_, history_dataset_association, model, dataset):
+        hda_subset = model.HistoryDatasetAssociation(dataset=dataset)
+        persist(session, hda_subset)
+
+        location = 'a'
+        obj = cls_(history_dataset_association, hda_subset, location)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.history_dataset_association_id == history_dataset_association.id
+            assert stored_obj.history_dataset_association_subset_id == hda_subset.id
+            assert stored_obj.location == location
+
+        delete_from_database(session, [hda_subset])
+
+    def test_relationships(self, session, cls_, history_dataset_association, model, dataset):
+        hda_subset = model.HistoryDatasetAssociation(dataset=dataset)
+        persist(session, hda_subset)
+
+        obj = cls_(history_dataset_association, hda_subset, None)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.hda.id == history_dataset_association.id
+            assert stored_obj.subset.id == hda_subset.id
+
+        delete_from_database(session, [hda_subset])
+
+
 class TestHistoryUserShareAssociation(BaseTest):
 
     def test_table(self, cls_):
