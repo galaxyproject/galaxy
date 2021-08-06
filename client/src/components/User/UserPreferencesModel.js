@@ -1,15 +1,16 @@
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 
-export const getUserPreferencesModel = () => {
+export const getUserPreferencesModel = (user_id) => {
     const Galaxy = getGalaxyInstance();
     const config = Galaxy.config;
+    user_id = user_id || Galaxy.user.id;
     return {
         information: {
             title: _l("Manage Information"),
             id: "edit-preferences-information",
             description: "Edit your email, addresses and custom parameters or change your public name.",
-            url: `api/users/${Galaxy.user.id}/information/inputs`,
+            url: `api/users/${user_id}/information/inputs`,
             icon: "fa-user",
             redirect: "user",
             shouldRender: !config.use_remote_user && config.enable_account_interface,
@@ -19,7 +20,7 @@ export const getUserPreferencesModel = () => {
             id: "edit-preferences-password",
             description: _l("Allows you to change your login credentials."),
             icon: "fa-unlock-alt",
-            url: `api/users/${Galaxy.user.id}/password/inputs`,
+            url: `api/users/${user_id}/password/inputs`,
             submit_title: "Save Password",
             redirect: "user",
             shouldRender: !config.use_remote_user && config.enable_account_interface,
@@ -38,7 +39,7 @@ export const getUserPreferencesModel = () => {
             id: "edit-preferences-permissions",
             description:
                 "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.",
-            url: `api/users/${Galaxy.user.id}/permissions/inputs`,
+            url: `api/users/${user_id}/permissions/inputs`,
             icon: "fa-users",
             submit_title: "Save Permissions",
             redirect: "user",
@@ -55,7 +56,7 @@ export const getUserPreferencesModel = () => {
             title: _l("Manage API Key"),
             id: "edit-preferences-api-key",
             description: _l("Access your current API key or create a new one."),
-            url: `api/users/${Galaxy.user.id}/api_key/inputs`,
+            url: `api/users/${user_id}/api_key/inputs`,
             icon: "fa-key",
             submit_title: "Create a new Key",
             submit_icon: "fa-check",
@@ -73,7 +74,7 @@ export const getUserPreferencesModel = () => {
             title: _l("Manage Toolbox Filters"),
             id: "edit-preferences-toolbox-filters",
             description: _l("Customize your Toolbox by displaying or omitting sets of Tools."),
-            url: `api/users/${Galaxy.user.id}/toolbox_filters/inputs`,
+            url: `api/users/${user_id}/toolbox_filters/inputs`,
             icon: "fa-filter",
             submit_title: "Save Filters",
             redirect: "user",
