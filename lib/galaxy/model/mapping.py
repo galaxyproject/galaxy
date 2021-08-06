@@ -338,25 +338,6 @@ model.MetadataFile.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
 
-model.Visualization.table = Table(
-    "visualization", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=False),
-    Column("latest_revision_id", Integer,
-        ForeignKey("visualization_revision.id", use_alter=True, name='visualization_latest_revision_id_fk'), index=True),
-    Column("title", TEXT),
-    Column("type", TEXT),
-    Column("dbkey", TEXT),
-    Column("deleted", Boolean, default=False, index=True),
-    Column("importable", Boolean, default=False, index=True),
-    Column("slug", TEXT),
-    Column("published", Boolean, default=False, index=True),
-    Index('ix_visualization_dbkey', 'dbkey', mysql_length=200),
-    Index('ix_visualization_slug', 'slug', mysql_length=200),
-)
-
 model.UserPreference.table = Table(
     "user_preference", metadata,
     Column("id", Integer, primary_key=True),
@@ -782,31 +763,6 @@ simple_mapping(
 #   Page.users_shared_with
 # returns a list of users that page is shared with.
 model.Page.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-mapper_registry.map_imperatively(model.Visualization, model.Visualization.table, properties=dict(
-    user=relation(model.User),
-    revisions=relation(model.VisualizationRevision,
-        backref='visualization',
-        cascade="all, delete-orphan",
-        primaryjoin=(model.Visualization.table.c.id == model.VisualizationRevision.visualization_id)),
-    latest_revision=relation(model.VisualizationRevision,
-        post_update=True,
-        primaryjoin=(model.Visualization.table.c.latest_revision_id == model.VisualizationRevision.id),
-        lazy=False),
-    tags=relation(model.VisualizationTagAssociation,
-        order_by=model.VisualizationTagAssociation.id,
-        back_populates="visualization"),
-    annotations=relation(model.VisualizationAnnotationAssociation,
-        order_by=model.VisualizationAnnotationAssociation.id,
-        back_populates="visualization"),
-    ratings=relation(model.VisualizationRatingAssociation,
-        order_by=model.VisualizationRatingAssociation.id,
-        back_populates="visualization"),
-    average_rating=column_property(
-        select(func.avg(model.VisualizationRatingAssociation.rating)).where(model.VisualizationRatingAssociation.visualization_id == model.Visualization.table.c.id).scalar_subquery(),
-        deferred=True
-    )
-))
 
 # Set up proxy so that
 #   Visualization.users_shared_with

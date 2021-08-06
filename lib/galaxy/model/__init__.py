@@ -7695,7 +7695,50 @@ class PageUserShareAssociation(Base, UserShareAssociation):
         self.user = None
 
 
-class Visualization(RepresentById):
+class Visualization(Base, RepresentById):
+    __tablename__ = 'visualization'
+    __table_args__ = (
+        Index('ix_visualization_dbkey', 'dbkey', mysql_length=200),
+        Index('ix_visualization_slug', 'slug', mysql_length=200),
+    )
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True, nullable=False)
+    latest_revision_id = Column(Integer,
+        ForeignKey('visualization_revision.id', use_alter=True, name='visualization_latest_revision_id_fk'),
+        index=True)
+    title = Column(TEXT)
+    type = Column(TEXT)
+    dbkey = Column(TEXT)
+    deleted = Column(Boolean, default=False, index=True)
+    importable = Column(Boolean, default=False, index=True)
+    slug = Column(TEXT)
+    published = Column(Boolean, default=False, index=True)
+
+    user = relationship('User')
+    revisions = relationship('VisualizationRevision',
+        back_populates='visualization',
+        cascade="all, delete-orphan",
+        primaryjoin=(lambda: Visualization.id == VisualizationRevision.visualization_id))  # type: ignore
+    latest_revision = relationship('VisualizationRevision',
+        post_update=True,
+        primaryjoin=(lambda: Visualization.latest_revision_id == VisualizationRevision.id),  # type: ignore
+        lazy=False)
+    tags = relationship('VisualizationTagAssociation',
+        order_by='VisualizationTagAssociation.id',
+        back_populates="visualization")
+    annotations = relationship('VisualizationAnnotationAssociation',
+        order_by='VisualizationAnnotationAssociation.id',
+        back_populates="visualization")
+    ratings = relationship('VisualizationRatingAssociation',
+        order_by='VisualizationRatingAssociation.id',
+        back_populates="visualization")
+    # `average_rating` added at the bottom of this module
+    # (cannot be added before VisualizationRatingAssociation is defined)
+    average_rating: column_property
+
     def __init__(self, id=None, user=None, type=None, title=None, dbkey=None, slug=None, latest_revision=None):
         self.id = id
         self.user = user
@@ -7704,8 +7747,8 @@ class Visualization(RepresentById):
         self.dbkey = dbkey
         self.slug = slug
         self.latest_revision = latest_revision
-        self.revisions = []
-        if self.latest_revision:
+        self.revisions = []  # TODO: review: this attempts to overwrite an instrumented attr (SA overwrites this?)
+        if self.latest_revision:  # TODO: but this happens ONLY if passed to constructor. Review.
             self.revisions.append(latest_revision)
 
     def copy(self, user=None, title=None):
@@ -7743,6 +7786,9 @@ class VisualizationRevision(Base, RepresentById):
     title = Column(TEXT)
     dbkey = Column(TEXT)
     config = Column(MutableJSONType)
+    visualization = relationship('Visualization',
+        back_populates='revisions',
+        primaryjoin=(lambda: Visualization.id == VisualizationRevision.visualization_id))  # type: ignore
 
     def __init__(self, visualization=None, title=None, dbkey=None, config=None):
         self.id = None
@@ -8443,5 +8489,11 @@ History.users_shared_with_count = column_property(
 # Must be defined after HistoryRatingAssociation has been mapped
 History.average_rating = column_property(
     select(func.avg(HistoryRatingAssociation.rating)).where(HistoryRatingAssociation.history_id == History.id).scalar_subquery(),
+    deferred=True
+)
+
+# Must be defined after VisualizationRatingAssociation has been mapped
+Visualization.average_rating = column_property(
+    select(func.avg(VisualizationRatingAssociation.rating)).where(VisualizationRatingAssociation.visualization_id == Visualization.id).scalar_subquery(),
     deferred=True
 )
