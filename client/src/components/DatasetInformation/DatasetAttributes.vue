@@ -13,7 +13,12 @@
                         </template>
                         <FormDisplay :inputs="result['attribute_inputs']" @onChange="onAttribute" />
                         <div class="mt-2">
-                            <b-button @click="submit('attribute', 'attributes')" variant="primary" class="mr-1">
+                            <b-button
+                                id="dataset-attributes-default-save"
+                                @click="submit('attribute', 'attributes')"
+                                variant="primary"
+                                class="mr-1"
+                            >
                                 <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
                             </b-button>
                             <b-button @click="submit('attribute', 'autodetect')">
