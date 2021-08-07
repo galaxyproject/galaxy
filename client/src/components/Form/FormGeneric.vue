@@ -18,7 +18,7 @@
                     class="mr-1"
                     v-b-tooltip.hover
                     :title="result.submit_tooltip"
-                    @click="onSubmit(result)"
+                    @click="onSubmit()"
                 >
                     <span :class="submitIcon(result)" />{{ submitTitle(result) | l }}
                 </b-button>
@@ -37,6 +37,7 @@
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
+import { submitData } from "./services";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import FormCard from "components/Form/FormCard";
 import FormDisplay from "components/Form/FormDisplay";
@@ -53,7 +54,6 @@ export default {
         },
     },
     components: {
-        FontAwesomeIcon,
         FormCard,
         FormDisplay,
         UrlDataProvider,
@@ -89,17 +89,9 @@ export default {
         onCancel(options) {
             window.location = `${getAppRoot()}${options.cancel_redirect}`;
         },
-        onSubmit(options) {
-            /*
-            var self = this;
-        $.ajax({
-            url: getAppRoot() + self.url,
-            data: JSON.stringify(form.data.create()),
-            type: "PUT",
-            contentType: "application/json",
-        })
-            .done((response) => {
-                var params = {};
+        onSubmit() {
+            submitData(this.url, this.formData).then((response) => {
+                let params = {};
                 if (response.id) {
                     params.id = response.id;
                 } else {
@@ -109,22 +101,15 @@ export default {
                         persistent: false,
                     };
                 }
-                if (self.redirect) {
-                    window.location = `${getAppRoot()}${self.redirect}?${$.param(params)}`;
+                if (this.redirect) {
+                    window.location = `${getAppRoot()}${this.redirect}?${$.param(params)}`;
                 } else {
-                    form.data.matchModel(response, (input, input_id) => {
-                        form.field_list[input_id].value(input.value);
-                    });
-                    self._showMessage(form, response.message);
+                    /*form.data.matchModel(response, (input, input_id) => {
+                            form.field_list[input_id].value(input.value);
+                        });
+                        self._showMessage(form, response.message);*/
                 }
-            })
-            .fail((response) => {
-                self._showMessage(form, {
-                    message: response.responseJSON.err_msg,
-                    status: "danger",
-                    persistent: false,
-                });
-            });*/
+            }, this.onError);
         },
         onError(error) {
             this.messageText = `Failed to load resource ${this.url}.`;
