@@ -1,15 +1,15 @@
 <template>
-    <UrlDataProvider :url="url" v-slot="{ result, loading }" @error="onError">
+    <UrlDataProvider :url="url" v-slot="{ result: config, loading }" @error="onError">
         <div v-if="!loading">
-            <b-alert v-if="result.message" :variant="resultMessageVariant(result)" show>
-                {{ result.message }}
+            <b-alert v-if="config.message" :variant="configMessageVariant(config)" show>
+                {{ config.message }}
             </b-alert>
             <b-alert v-if="messageText" :variant="messageVariant" show>
                 {{ messageText }}
             </b-alert>
-            <FormCard :title="result.title" :icon="result.icon">
+            <FormCard :title="configTitle(config)" :icon="configIcon(config)">
                 <template v-slot:body>
-                    <FormDisplay :inputs="result.inputs" @onChange="onChange" />
+                    <FormDisplay :inputs="config.inputs" @onChange="onChange" />
                 </template>
             </FormCard>
             <div class="mt-2">
@@ -17,18 +17,18 @@
                     variant="primary"
                     class="mr-1"
                     v-b-tooltip.hover
-                    :title="result.submit_tooltip"
+                    :title="config.submit_tooltip"
                     @click="onSubmit()"
                 >
-                    <span :class="submitIcon(result)" />{{ submitTitle(result) | l }}
+                    <span :class="submitIcon(config)" />{{ submitTitle(config) | l }}
                 </b-button>
                 <b-button
-                    v-if="result.cancel_redirect"
+                    v-if="config.cancel_redirect"
                     v-b-tooltip.hover
-                    :title="result.cancel_tooltip"
-                    @click="onCancel(result)"
+                    :title="config.cancel_tooltip"
+                    @click="onCancel(config)"
                 >
-                    <span :class="cancelIcon(result)" />{{ cancelTitle(result) | l }}
+                    <span :class="cancelIcon(config)" />{{ cancelTitle(config) | l }}
                 </b-button>
             </div>
         </div>
@@ -44,6 +44,18 @@ import FormDisplay from "components/Form/FormDisplay";
 
 export default {
     props: {
+        id: {
+            type: String,
+            required: false,
+        },
+        title: {
+            type: String,
+            required: false,
+        },
+        icon: {
+            type: String,
+            required: false,
+        },
         url: {
             type: String,
             required: true,
@@ -66,7 +78,13 @@ export default {
         };
     },
     methods: {
-        resultMessageVariant(options) {
+        configTitle(options) {
+            return this.title || options.title;
+        },
+        configIcon(options) {
+            return this.icon || options.icon;
+        },
+        configMessageVariant(options) {
             return options.status || "warning";
         },
         cancelTitle(options) {
