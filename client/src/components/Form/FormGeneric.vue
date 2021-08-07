@@ -1,7 +1,7 @@
 <template>
     <UrlDataProvider :url="url" v-slot="{ result, loading }" @error="onError">
         <div v-if="!loading">
-            <b-alert v-if="result.message" :variant="resultMessageVariant" show>
+            <b-alert v-if="result.message" :variant="resultMessageVariant(result)" show>
                 {{ result.message }}
             </b-alert>
             <b-alert v-if="messageText" :variant="messageVariant" show>
@@ -50,7 +50,7 @@ export default {
         },
         redirect: {
             type: String,
-            required: false,
+            required: true,
         },
     },
     components: {
@@ -67,7 +67,7 @@ export default {
     },
     methods: {
         resultMessageVariant(options) {
-            return result.status || "warning";
+            return options.status || "warning";
         },
         cancelTitle(options) {
             return options.cancel_title || "Cancel";
@@ -101,14 +101,7 @@ export default {
                         persistent: false,
                     };
                 }
-                if (this.redirect) {
-                    window.location = `${getAppRoot()}${this.redirect}?${$.param(params)}`;
-                } else {
-                    /*form.data.matchModel(response, (input, input_id) => {
-                            form.field_list[input_id].value(input.value);
-                        });
-                        self._showMessage(form, response.message);*/
-                }
+                window.location = `${getAppRoot()}${this.redirect}?${$.param(params)}`;
             }, this.onError);
         },
         onError(error) {
