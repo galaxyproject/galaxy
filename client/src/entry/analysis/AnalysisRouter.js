@@ -228,12 +228,10 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_histories_rename: function () {
-            this.page.display(
-                new FormWrapper.View({
-                    url: `history/rename?id=${QueryStringParsing.get("id")}`,
-                    redirect: "histories/list",
-                })
-            );
+            this._display_vue_helper(FormGeneric, {
+                url: `history/rename?id=${QueryStringParsing.get("id")}`,
+                redirect: "histories/list",
+            });
         },
 
         show_histories_sharing: function () {
