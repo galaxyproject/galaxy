@@ -112,7 +112,7 @@ export default {
             }, this.onError);
         },
         onError(error) {
-            this.messageText = `Failed to load resource ${this.url}.`;
+            this.messageText = error || `Failed to load resource ${this.url}.`;
             this.messageVariant = "danger";
         },
     },
