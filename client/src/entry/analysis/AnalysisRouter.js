@@ -16,6 +16,7 @@ import { getAppRoot } from "onload";
 import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
 import ToolForm from "components/Tool/ToolForm";
+import FormGeneric from "components/Form/FormGeneric";
 import FormWrapper from "mvc/form/form-wrapper";
 import Sharing from "components/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
@@ -268,12 +269,10 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_histories_permissions: function () {
-            this.page.display(
-                new FormWrapper.View({
-                    url: `history/permissions?id=${QueryStringParsing.get("id")}`,
-                    redirect: "histories/list",
-                })
-            );
+            this._display_vue_helper(FormGeneric, {
+                url: `history/permissions?id=${QueryStringParsing.get("id")}`,
+                redirect: "histories/list",
+            });
         },
 
         show_datasets: function () {
