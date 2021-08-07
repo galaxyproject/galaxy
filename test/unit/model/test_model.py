@@ -435,7 +435,7 @@ class TestDataset(BaseTest):
         library_dataset_dataset_association,
         dataset_hash,
         dataset_source,
-        model,
+        history_dataset_association_factory,
     ):
         obj = cls_()
         obj.job = job
@@ -445,7 +445,7 @@ class TestDataset(BaseTest):
         obj.hashes.append(dataset_hash)
         obj.sources.append(dataset_source)
 
-        hda = model.HistoryDatasetAssociation()
+        hda = history_dataset_association_factory()
         hda.purged = True
         obj.history_associations.append(hda)
 
@@ -472,7 +472,7 @@ class TestDatasetCollectionElement(BaseTest):
         dataset_collection,
         history_dataset_association,
         library_dataset_dataset_association,
-        model,
+        dataset_collection_factory,
     ):
         element_index, element_identifier = 1, 'a'
         obj = cls_(element=history_dataset_association)  # using hda is sufficient for this test
@@ -483,7 +483,7 @@ class TestDatasetCollectionElement(BaseTest):
         obj.child_collection = dataset_collection
 
         # set dataset_collection_id (can't set directly; persisted automatically)
-        parent_collection = model.DatasetCollection(collection_type='a')
+        parent_collection = dataset_collection_factory()
         parent_collection.elements.append(obj)
 
         with dbcleanup(session, obj) as obj_id:
@@ -505,7 +505,7 @@ class TestDatasetCollectionElement(BaseTest):
         dataset_collection,
         history_dataset_association,
         library_dataset_dataset_association,
-        model,
+        dataset_collection_factory,
     ):
         obj = cls_(element=history_dataset_association)  # using hda is sufficient for this test
         obj.hda = history_dataset_association
@@ -513,7 +513,7 @@ class TestDatasetCollectionElement(BaseTest):
         obj.child_collection = dataset_collection
 
         # set dataset_collection_id (can't set directly; persisted automatically)
-        parent_collection = model.DatasetCollection(collection_type='a')
+        parent_collection = dataset_collection_factory()
         parent_collection.elements.append(obj)
 
         with dbcleanup(session, obj) as obj_id:
@@ -1238,7 +1238,6 @@ class TestHistory(BaseTest):
         default_history_permissions,
         history_user_share_association,
         galaxy_session_history_association,
-        model,
     ):
         obj = cls_()
         obj.user = user
@@ -1274,7 +1273,7 @@ class TestHistory(BaseTest):
             assert stored_obj.default_permissions == [default_history_permissions]
             assert stored_obj.galaxy_sessions == [galaxy_session_history_association]
 
-    def test_average_rating(self, model, session, history, user):
+    def test_average_rating(self, session, history, user, history_rating_association_factory):
         # History has been expunged; to access its deferred properties,
         # it needs to be added back to the session.
         session.add(history)
@@ -1282,8 +1281,7 @@ class TestHistory(BaseTest):
         # Create ratings
         to_cleanup = []
         for rating in (1, 2, 3, 4, 5):
-            history_rating_assoc = model.HistoryRatingAssociation(user, history)
-            history_rating_assoc.rating = rating
+            history_rating_assoc = history_rating_association_factory(user, history, rating)
             persist(session, history_rating_assoc)
             to_cleanup.append(history_rating_assoc)
         assert history.average_rating == 3.0  # Expect average after ratings added.
@@ -1326,8 +1324,15 @@ class TestHistoryDatasetAssociationSubset(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'history_dataset_association_subset'
 
-    def test_columns(self, session, cls_, history_dataset_association, model, dataset):
-        hda_subset = model.HistoryDatasetAssociation(dataset=dataset)
+    def test_columns(
+        self,
+        session,
+        cls_,
+        history_dataset_association,
+        history,
+        history_dataset_association_factory,
+    ):
+        hda_subset = history_dataset_association_factory()
         persist(session, hda_subset)
 
         location = 'a'
@@ -1342,8 +1347,14 @@ class TestHistoryDatasetAssociationSubset(BaseTest):
 
         delete_from_database(session, [hda_subset])
 
-    def test_relationships(self, session, cls_, history_dataset_association, model, dataset):
-        hda_subset = model.HistoryDatasetAssociation(dataset=dataset)
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        history_dataset_association,
+        history_dataset_association_factory,
+    ):
+        hda_subset = history_dataset_association_factory()
         persist(session, hda_subset)
 
         obj = cls_(history_dataset_association, hda_subset, None)
@@ -1754,10 +1765,16 @@ class TestImplicitlyCreatedDatasetCollectionInput(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'implicitly_created_dataset_collection_inputs'
 
-    def test_columns(self, session, cls_, history_dataset_collection_association, model):
+    def test_columns(
+        self,
+        session,
+        cls_,
+        history_dataset_collection_association,
+        history_dataset_collection_association_factory,
+    ):
         name = 'a'
 
-        hdca2 = model.HistoryDatasetCollectionAssociation()
+        hdca2 = history_dataset_collection_association_factory()
         persist(session, hdca2)
 
         obj = cls_(name, history_dataset_collection_association)
@@ -1772,8 +1789,14 @@ class TestImplicitlyCreatedDatasetCollectionInput(BaseTest):
 
         delete_from_database(session, [hdca2])
 
-    def test_relationships(self, session, cls_, history_dataset_collection_association, model):
-        hdca2 = model.HistoryDatasetCollectionAssociation()
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        history_dataset_collection_association,
+        history_dataset_collection_association_factory,
+    ):
+        hdca2 = history_dataset_collection_association_factory()
         persist(session, hdca2)
 
         obj = cls_(None, history_dataset_collection_association)
@@ -2348,14 +2371,14 @@ class TestLibraryDataset(BaseTest):
         library_dataset_dataset_association,
         library_folder,
         library_dataset_permission,
-        model,
+        library_dataset_dataset_association_factory,
     ):
         obj = cls_()
         obj.folder = library_folder
         obj.library_dataset_dataset_association = library_dataset_dataset_association
         obj.actions.append(library_dataset_permission)
 
-        ldda = model.LibraryDatasetDatasetAssociation()
+        ldda = library_dataset_dataset_association_factory()
         ldda.library_dataset = obj
         obj.actions.append(library_dataset_permission)
 
@@ -2670,16 +2693,16 @@ class TestLibraryFolder(BaseTest):
         self,
         session,
         cls_,
-        model,
         library_folder,
         library_dataset,
         library,
         library_folder_permission,
         library_folder_info_association,
+        library_folder_factory,
     ):
         obj = cls_()
         obj.parent = library_folder
-        folder1 = model.LibraryFolder()
+        folder1 = library_folder_factory()
         obj.folders.append(folder1)
         obj.library_root.append(library)
         obj.actions.append(library_folder_permission)
@@ -2890,7 +2913,7 @@ class TestPage(BaseTest):
             # This doesn't test the average amount, just the mapping.
             assert stored_obj.average_rating == page_rating_association.rating
 
-    def test_average_rating(self, model, session, page, user):
+    def test_average_rating(self, session, page, user, page_rating_association_factory):
         # Page has been expunged; to access its deferred properties,
         # it needs to be added back to the session.
         session.add(page)
@@ -2898,8 +2921,7 @@ class TestPage(BaseTest):
         # Create ratings
         to_cleanup = []
         for rating in (1, 2, 3, 4, 5):
-            page_rating_assoc = model.PageRatingAssociation(user, page)
-            page_rating_assoc.rating = rating
+            page_rating_assoc = page_rating_association_factory(user, page, rating)
             persist(session, page_rating_assoc)
             to_cleanup.append(page_rating_assoc)
         assert page.average_rating == 3.0  # Expect average after ratings added.
@@ -3915,13 +3937,12 @@ class TestVisualization(BaseTest):
         cls_,
         user,
         visualization_revision,
-        model,
-        visualization,
         visualization_tag_association,
         visualization_annotation_association,
         visualization_rating_association,
+        visualization_revision_factory,
     ):
-        revision2 = model.VisualizationRevision(visualization=visualization)
+        revision2 = visualization_revision_factory()
         persist(session, revision2)
 
         obj = cls_()
@@ -3943,7 +3964,7 @@ class TestVisualization(BaseTest):
             # This doesn't test the average amount, just the mapping.
             assert stored_obj.average_rating == visualization_rating_association.rating
 
-    def test_average_rating(self, model, session, visualization, user):
+    def test_average_rating(self, session, visualization, user, visualization_rating_association_factory):
         # Visualization has been expunged; to access its deferred properties,
         # it needs to be added back to the session.
         session.add(visualization)
@@ -3951,8 +3972,7 @@ class TestVisualization(BaseTest):
         # Create ratings
         to_cleanup = []
         for rating in (1, 2, 3, 4, 5):
-            visualization_rating_assoc = model.VisualizationRatingAssociation(user, visualization)
-            visualization_rating_assoc.rating = rating
+            visualization_rating_assoc = visualization_rating_association_factory(user, visualization, rating)
             persist(session, visualization_rating_assoc)
             to_cleanup.append(visualization_rating_assoc)
         assert visualization.average_rating == 3.0  # Expect average after ratings added.
@@ -4278,8 +4298,16 @@ class TestWorkflowInvocationToSubworkflowInvocationAssociation(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'workflow_invocation_to_subworkflow_invocation_association'
 
-    def test_columns(self, session, cls_, workflow_invocation, workflow_step, model, workflow):
-        subworkflow_invocation = model.WorkflowInvocation()
+    def test_columns(
+        self,
+        session,
+        cls_,
+        workflow_invocation,
+        workflow_step,
+        workflow,
+        workflow_invocation_factory,
+    ):
+        subworkflow_invocation = workflow_invocation_factory()
         subworkflow_invocation.workflow = workflow
         persist(session, subworkflow_invocation)
 
@@ -4297,7 +4325,14 @@ class TestWorkflowInvocationToSubworkflowInvocationAssociation(BaseTest):
 
         delete_from_database(session, [subworkflow_invocation])
 
-    def test_relationships(self, session, cls_, workflow_invocation, workflow_step, model, workflow):
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow_invocation,
+        workflow_step,
+        workflow,
+    ):
         obj = cls_()
         obj.subworkflow_invocation = workflow_invocation  # We need only 1 instance, so we use the fixture
         obj.workflow_step = workflow_step
@@ -4475,7 +4510,7 @@ class TestWorkflowStep(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'workflow_step'
 
-    def test_columns(self, session, cls_, workflow, dynamic_tool, model):
+    def test_columns(self, session, cls_, workflow, dynamic_tool, workflow_factory):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         type = 'a'
@@ -4488,7 +4523,7 @@ class TestWorkflowStep(BaseTest):
         order_index = 'h'
         label = 'k'
 
-        subworkflow = model.Workflow()
+        subworkflow = workflow_factory()
         persist(session, subworkflow)
 
         obj = cls_()
@@ -4528,10 +4563,18 @@ class TestWorkflowStep(BaseTest):
 
         delete_from_database(session, [subworkflow])
 
-    def test_relationships(self, session, cls_, workflow, dynamic_tool, model):
-        subworkflow = model.Workflow()
-        workflow_step_connection_in = model.WorkflowStepConnection()
-        workflow_step_connection_out = model.WorkflowStepConnection()
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow,
+        dynamic_tool,
+        workflow_factory,
+        workflow_step_connection_factory,
+    ):
+        subworkflow = workflow_factory()
+        workflow_step_connection_in = workflow_step_connection_factory()
+        workflow_step_connection_out = workflow_step_connection_factory()
         extra_objects = [subworkflow, workflow_step_connection_in, workflow_step_connection_out]
         for eo in extra_objects:
             persist(session, eo)
@@ -4590,10 +4633,18 @@ class TestWorkflowStepConnection(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'workflow_step_connection'
 
-    def test_columns(self, session, cls_, workflow_step_input, workflow_step, workflow, model):
+    def test_columns(
+        self,
+        session,
+        cls_,
+        workflow_step_input,
+        workflow_step,
+        workflow,
+        workflow_step_factory,
+    ):
         output_name = 'a'
 
-        output_workflow_step = model.WorkflowStep()
+        output_workflow_step = workflow_step_factory()
         output_workflow_step.workflow = workflow
         persist(session, output_workflow_step)
 
@@ -4613,8 +4664,16 @@ class TestWorkflowStepConnection(BaseTest):
 
         delete_from_database(session, [output_workflow_step])
 
-    def test_relationships(self, session, cls_, workflow_step_input, workflow_step, workflow, model):
-        output_workflow_step = model.WorkflowStep()
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow_step_input,
+        workflow_step,
+        workflow,
+        workflow_step_factory,
+    ):
+        output_workflow_step = workflow_step_factory()
         output_workflow_step.workflow = workflow
         persist(session, output_workflow_step)
 
@@ -4772,6 +4831,8 @@ class TestWorkflowRequestInputParameter(BaseTest):
             assert stored_obj.workflow_invocation.id == workflow_invocation.id
 
 
+# Misc. helper fixtures.
+
 @pytest.fixture(scope='module')
 def model():
     db_uri = 'sqlite:///:memory:'
@@ -4784,6 +4845,8 @@ def session(model):
     yield Session()
     Session.remove()  # Ensures we get a new session for each test
 
+
+# Fixtures yielding persisted instances of models, deleted from the database on test exit.
 
 @pytest.fixture
 def cleanup_event(model, session):
@@ -5309,6 +5372,110 @@ def workflow_step_tag_association(model, session):
     wsta = model.WorkflowStepTagAssociation()
     yield from dbcleanup_wrapper(session, wsta)
 
+
+# Fixtures yielding factory functions.
+# In some tests we may need more than one instance of the same model. We cannot reuse a model
+# fixture, and we cannot pass multiple copies of the same fixture to one test. We have to
+# instantiate a new instance of the model inside the test. However, a test should only know
+# how to construct the model it is testing, so instead of constructing an object directly,
+# a test calls a factory function, passed to it as a fixture.
+
+@pytest.fixture
+def dataset_collection_factory(model):
+    def make_instance(*args, **kwds):
+        if 'collection_type' not in kwds:
+            kwds['collection_type'] = 'a'
+        return model.DatasetCollection(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def history_dataset_association_factory(model):
+    def make_instance(*args, **kwds):
+        return model.HistoryDatasetAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def history_dataset_collection_association_factory(model):
+    def make_instance(*args, **kwds):
+        return model.HistoryDatasetCollectionAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def history_rating_association_factory(model, user, history):
+    def make_instance(*args, **kwds):
+        return model.HistoryRatingAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def library_dataset_dataset_association_factory(model):
+    def make_instance(*args, **kwds):
+        return model.LibraryDatasetDatasetAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def library_folder_factory(model):
+    def make_instance(*args, **kwds):
+        return model.LibraryFolder(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def page_rating_association_factory(model):
+    def make_instance(*args, **kwds):
+        return model.PageRatingAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def visualization_rating_association_factory(model):
+    def make_instance(*args, **kwds):
+        return model.VisualizationRatingAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def visualization_revision_factory(model, visualization):
+    def make_instance(*args, **kwds):
+        if 'visualization' not in kwds:
+            kwds['visualization'] = visualization
+        return model.VisualizationRevision(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def workflow_factory(model):
+    def make_instance(*args, **kwds):
+        return model.Workflow(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def workflow_invocation_factory(model):
+    def make_instance(*args, **kwds):
+        return model.WorkflowInvocation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def workflow_step_connection_factory(model):
+    def make_instance(*args, **kwds):
+        return model.WorkflowStepConnection(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def workflow_step_factory(model):
+    def make_instance(*args, **kwds):
+        return model.WorkflowStep(*args, **kwds)
+    return make_instance
+
+
+# Mics. helpers.
 
 def dbcleanup_wrapper(session, obj):
     with dbcleanup(session, obj):
