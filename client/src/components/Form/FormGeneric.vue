@@ -13,21 +13,10 @@
                 </template>
             </FormCard>
             <div class="mt-2">
-                <b-button
-                    variant="primary"
-                    class="mr-1"
-                    v-b-tooltip.hover
-                    :title="config.submit_tooltip"
-                    @click="onSubmit()"
-                >
+                <b-button variant="primary" class="mr-1" @click="onSubmit()">
                     <span :class="submitIcon(config)" />{{ submitTitle(config) | l }}
                 </b-button>
-                <b-button
-                    v-if="config.cancel_redirect"
-                    v-b-tooltip.hover
-                    :title="config.cancel_tooltip"
-                    @click="onCancel(config)"
-                >
+                <b-button v-if="config.cancel_redirect" @click="onCancel(config)">
                     <span :class="cancelIcon(config)" />{{ cancelTitle(config) | l }}
                 </b-button>
             </div>
