@@ -40,11 +40,6 @@ import { getAppRoot } from "onload/loadConfig";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import FormCard from "components/Form/FormCard";
 import FormDisplay from "components/Form/FormDisplay";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faSave, faTimes);
 
 export default {
     props: {
