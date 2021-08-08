@@ -14,7 +14,7 @@
             </FormCard>
             <div class="mt-3">
                 <b-button id="submit" variant="primary" class="mr-1" @click="onSubmit()">
-                    <span :class="getSubmitIcon()" />{{ submitTitle | l }}
+                    <span :class="submitIconClass" />{{ submitTitle | l }}
                 </b-button>
                 <b-button v-if="cancelRedirect" @click="onCancel()">
                     <span class="mr-1 fa fa-times" />{{ "Cancel" | l }}
@@ -48,7 +48,7 @@ export default {
         },
         submitIcon: {
             type: String,
-            required: false,
+            default: "fa-save",
         },
         submitTitle: {
             type: String,
@@ -80,6 +80,11 @@ export default {
             replaceParams: null,
         };
     },
+    computed: {
+        submitIconClass() {
+            return `mr-1 fa ${this.submitIcon}`;
+        },
+    },
     methods: {
         configTitle(options) {
             return this.title || options.title;
@@ -89,10 +94,6 @@ export default {
         },
         configMessageVariant(options) {
             return options.status || "warning";
-        },
-        getSubmitIcon() {
-            const icon = this.submitIcon || "fa-save";
-            return `mr-1 fa ${icon}`;
         },
         onChange(formData) {
             this.formData = formData;
