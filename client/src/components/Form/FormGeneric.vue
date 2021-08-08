@@ -16,7 +16,7 @@
                 <b-button id="submit" variant="primary" class="mr-1" @click="onSubmit()">
                     <span :class="getSubmitIcon()" />{{ submitTitle | l }}
                 </b-button>
-                <b-button v-if="cancelRedirect" @click="onCancel(config)">
+                <b-button v-if="cancelRedirect" @click="onCancel()">
                     <span class="mr-1 fa fa-times" />{{ "Cancel" | l }}
                 </b-button>
             </div>
@@ -97,7 +97,7 @@ export default {
         onChange(formData) {
             this.formData = formData;
         },
-        onCancel(options) {
+        onCancel() {
             window.location = `${getAppRoot()}${this.cancelRedirect}`;
         },
         onSubmit() {
