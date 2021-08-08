@@ -114,6 +114,7 @@ export default {
         onError(error) {
             this.messageText = error || `Failed to load resource ${this.url}.`;
             this.messageVariant = "danger";
+            document.querySelector(".center-panel").scrollTop = 0;
         },
     },
 };

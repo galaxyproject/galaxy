@@ -125,6 +125,5 @@ export default Backbone.View.extend({
         if (options.inputs) {
             this.$el.append(this.section.$el);
         }
-        console.debug("form-view::initialize()", "Completed");
     },
 });
