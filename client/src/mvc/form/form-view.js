@@ -4,7 +4,6 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import Ui from "mvc/ui/ui-misc";
 import FormSection from "mvc/form/form-section";
 import FormData from "mvc/form/form-data";
 
