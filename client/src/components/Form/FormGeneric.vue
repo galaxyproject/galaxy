@@ -12,7 +12,7 @@
                     <FormDisplay :inputs="config.inputs" :replace-params="replaceParams" @onChange="onChange" />
                 </template>
             </FormCard>
-            <div class="mt-2">
+            <div class="mt-3">
                 <b-button id="submit" variant="primary" class="mr-1" @click="onSubmit()">
                     <span :class="getSubmitIcon()" />{{ submitTitle | l }}
                 </b-button>
