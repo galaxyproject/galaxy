@@ -113,7 +113,7 @@
                                 />
                             </div>
                         </div>
-                        <div class="unified-panel-body workflow-right">
+                        <div class="unified-panel-body workflow-right" ref="right-panel">
                             <div class="m-1">
                                 <FormTool
                                     v-if="hasActiveNodeTool"
@@ -335,6 +335,7 @@ export default {
                 node.makeActive();
                 this.activeNode = node;
                 this.canvasManager.drawOverview();
+                this.$refs["right-panel"].scrollTop = 0;
             }
         },
         onDeactivate() {
