@@ -9,7 +9,7 @@
             </b-alert>
             <FormCard :title="configTitle(config)" :icon="configIcon(config)">
                 <template v-slot:body>
-                    <FormDisplay :inputs="config.inputs" @onChange="onChange" />
+                    <FormDisplay :inputs="config.inputs" :replace-params="replaceParams" @onChange="onChange" />
                 </template>
             </FormCard>
             <div class="mt-2">
@@ -28,6 +28,7 @@
 import { getAppRoot } from "onload/loadConfig";
 import { submitData } from "./services";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import { visitInputs } from "components/Form/utilities";
 import FormCard from "components/Form/FormCard";
 import FormDisplay from "components/Form/FormDisplay";
 
@@ -64,6 +65,7 @@ export default {
             messageText: null,
             messageVariant: null,
             formData: {},
+            replaceParams: null,
         };
     },
     methods: {
@@ -108,13 +110,25 @@ export default {
                         persistent: false,
                     };
                 }
-                const urlParams = new URLSearchParams(params);
-                window.location = `${getAppRoot()}${this.redirect}?${urlParams.toString()}`;
+                if (this.redirect) {
+                    const urlParams = new URLSearchParams(params);
+                    window.location = `${getAppRoot()}${this.redirect}?${urlParams.toString()}`;
+                } else {
+                    const replaceParams = {};
+                    visitInputs(response.inputs, (input, name) => {
+                        replaceParams[name] = input.value;
+                    });
+                    this.replaceParams = replaceParams;
+                    this.showMessage(response.message);
+                }
             }, this.onError);
         },
         onError(error) {
-            this.messageText = error || `Failed to load resource ${this.url}.`;
-            this.messageVariant = "danger";
+            this.showMessage(error || `Failed to load resource ${this.url}.`, "danger");
+        },
+        showMessage(message, variant = "success") {
+            this.messageText = message;
+            this.messageVariant = variant;
             document.querySelector(".center-panel").scrollTop = 0;
         },
     },

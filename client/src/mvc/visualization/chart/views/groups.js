@@ -6,7 +6,7 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 import Repeat from "mvc/form/form-repeat";
-import FormData from "mvc/form/form-data";
+import { visitInputs } from "components/Form/utilities";
 import FormDisplay from "components/Form/FormDisplay";
 import { appendVueComponent } from "utils/mountVueComponent";
 
@@ -34,7 +34,7 @@ var GroupView = Backbone.View.extend({
                     cache: true,
                     success: function (dataset) {
                         var data_columns = {};
-                        FormData.visitInputs(inputs, function (input, prefixed) {
+                        visitInputs(inputs, function (input, prefixed) {
                             if (input.type == "data_column") {
                                 data_columns[prefixed] = Utils.clone(input);
                                 var columns = [];

@@ -619,7 +619,7 @@ admin:
     registration_form: 'form#registration'
     groups_grid: '#groups-grid'
     roles_grid: '#roles-grid'
-    groups_create_view: '#create-group'
+    groups_create_view: '#submit'
 
 libraries:
 
