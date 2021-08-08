@@ -327,9 +327,9 @@ export const getAnalysisRouter = (Galaxy) => {
                 url: "workflow/create",
                 redirect: "workflow/editor",
                 active_tab: "workflow",
-                submit_title: "Create",
-                submit_icon: "fa-check",
-                cancel_redirect: "workflows/list",
+                submitTitle: "Create",
+                submitIcon: "fa-check",
+                cancelRedirect: "workflows/list",
             });
         },
 

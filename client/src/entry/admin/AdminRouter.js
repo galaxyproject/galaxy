@@ -164,7 +164,7 @@ export const getAdminRouter = (Galaxy, options) => {
                     title: _l("Reset passwords"),
                     url: `admin/reset_user_password${id}`,
                     icon: "fa-user",
-                    submit_title: "Save new password",
+                    submitTitle: "Save new password",
                     redirect: "admin/users",
                 },
                 manage_roles_and_groups_for_user: {

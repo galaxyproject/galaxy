@@ -14,10 +14,10 @@
             </FormCard>
             <div class="mt-2">
                 <b-button id="submit" variant="primary" class="mr-1" @click="onSubmit()">
-                    <span :class="submitIcon(config)" />{{ submitTitle(config) | l }}
+                    <span :class="getSubmitIcon()" />{{ submitTitle | l }}
                 </b-button>
-                <b-button v-if="config.cancel_redirect" @click="onCancel(config)">
-                    <span :class="cancelIcon(config)" />{{ cancelTitle(config) | l }}
+                <b-button v-if="cancelRedirect" @click="onCancel(config)">
+                    <span class="mr-1 fa fa-times" />{{ "Cancel" | l }}
                 </b-button>
             </div>
         </div>
@@ -43,6 +43,18 @@ export default {
             required: false,
         },
         icon: {
+            type: String,
+            required: false,
+        },
+        submitIcon: {
+            type: String,
+            required: false,
+        },
+        submitTitle: {
+            type: String,
+            default: "Save",
+        },
+        cancelRedirect: {
             type: String,
             required: false,
         },
@@ -78,25 +90,15 @@ export default {
         configMessageVariant(options) {
             return options.status || "warning";
         },
-        cancelTitle(options) {
-            return options.cancel_title || "Cancel";
-        },
-        cancelIcon(options) {
-            const icon = options.cancel_icon || "fa-times";
-            return `mr-1 fa ${icon}`;
-        },
-        submitTitle(options) {
-            return options.submit_title || "Save";
-        },
-        submitIcon(options) {
-            const icon = options.submit_icon || "fa-save";
+        getSubmitIcon() {
+            const icon = this.submitIcon || "fa-save";
             return `mr-1 fa ${icon}`;
         },
         onChange(formData) {
             this.formData = formData;
         },
         onCancel(options) {
-            window.location = `${getAppRoot()}${options.cancel_redirect}`;
+            window.location = `${getAppRoot()}${this.cancelRedirect}`;
         },
         onSubmit() {
             submitData(this.url, this.formData).then((response) => {
