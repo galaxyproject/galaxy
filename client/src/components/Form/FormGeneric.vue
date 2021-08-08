@@ -1,6 +1,6 @@
 <template>
     <UrlDataProvider :url="url" v-slot="{ result: config, loading }" @error="onError">
-        <div v-if="!loading">
+        <div :id="id" v-if="!loading">
             <b-alert v-if="config.message" :variant="configMessageVariant(config)" show>
                 {{ config.message }}
             </b-alert>
@@ -13,7 +13,7 @@
                 </template>
             </FormCard>
             <div class="mt-2">
-                <b-button variant="primary" class="mr-1" @click="onSubmit()">
+                <b-button id="submit" variant="primary" class="mr-1" @click="onSubmit()">
                     <span :class="submitIcon(config)" />{{ submitTitle(config) | l }}
                 </b-button>
                 <b-button v-if="config.cancel_redirect" @click="onCancel(config)">
@@ -108,7 +108,8 @@ export default {
                         persistent: false,
                     };
                 }
-                window.location = `${getAppRoot()}${this.redirect}?${$.param(params)}`;
+                const urlParams = new URLSearchParams(params);
+                window.location = `${getAppRoot()}${this.redirect}?${urlParams.toString()}`;
             }, this.onError);
         },
         onError(error) {
