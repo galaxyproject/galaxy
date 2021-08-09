@@ -6,6 +6,7 @@ def stage_back_data(url, paths):
     """Responsible for staging out of data for the desired path"""
 
     url = url.replace("localhost", str("172.17.0.1"))
+    url = url.replace("127.0.0.1", str("172.17.0.1"))
 
     for file_path in paths:
         temp_url = url + '&path=' + file_path

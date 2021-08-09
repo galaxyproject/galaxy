@@ -57,6 +57,10 @@ def skip_unless_kubernetes():
     return skip_unless_executable("kubectl")
 
 
+def skip_unless_tes():
+    return skip_unless_executable("tes")
+
+
 def k8s_config_path():
     return os.environ.get('GALAXY_TEST_KUBE_CONFIG_PATH', '~/.kube/config')
 

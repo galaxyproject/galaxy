@@ -1,6 +1,7 @@
 """
 Job control via TES.
 """
+from lib.galaxy.jobs.runners.util.job_script import job_script
 import logging
 import os
 from re import escape, findall
@@ -23,7 +24,7 @@ GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
 FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitoring the job."
 LOST_REMOTE_ERROR = "Remote job server could not determine the job's state."
 
-DEFAULT_GALAXY_URL = "http://localhost:8080"
+DEFAULT_GALAXY_URL = "http://localhost:8080/"
 
 
 class TESJobState(AsynchronousJobState):
@@ -49,7 +50,7 @@ class TESJobRunner(AsynchronousJobRunner):
         """
         super(TESJobRunner, self).__init__(app, nworkers, **kwargs)
         self.container_workdir = "/tmp"
-        self.galaxy_url = "http://localhost:8080/"
+        self.galaxy_url = DEFAULT_GALAXY_URL
         self._init_monitor_thread()
         self._init_worker_threads()
 
@@ -121,10 +122,6 @@ class TESJobRunner(AsynchronousJobRunner):
         )
         return get_client_kwds
 
-    def output_names(self):
-        # Maybe this should use the path mapper, but the path mapper just uses basenames
-        return self.job_wrapper.get_output_basenames()
-
     def find_referenced_subfiles(self, directory, command_line, extra_files):
         """
         Return list of files below specified `directory` in job inputs. Could
@@ -152,6 +149,10 @@ class TESJobRunner(AsynchronousJobRunner):
             input.close()
 
     def __items(self, command_line, extra_files):
+        """
+        Utility method to form the list in required format
+        for getting input files using regex
+        """
         items = [command_line]
         config_files = {}
         for config_file in extra_files or []:
@@ -161,36 +162,154 @@ class TESJobRunner(AsynchronousJobRunner):
         return items
 
     def find_pattern_references(self, pattern, command_line, extra_files):
+        """
+        Finding the list of referenced file, using regex
+        """
         referenced_files = set()
         for input_contents in self.__items(command_line, extra_files):
             referenced_files.update(findall(pattern, input_contents))
         return list(referenced_files)
 
-    def __prepare_jobscript(self, job_wrapper, metadata_directory, client_args):
-        input_files = self.__get_inputs(job_wrapper)
-        work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
-        output_files = self.get_output_files(job_wrapper)
-        metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
-        metadata_strategy = job_wrapper.get_destination_configuration('metadata_strategy', None)
-        config_files = job_wrapper.extra_filenames
-        tool_dir = job_wrapper.tool.tool_dir
-        tool_names = os.listdir(tool_dir)
+    def file_creation_executor(self, mounted_dir, work_dir):
+        """
+        Returns the executor for creation of files
+        """
+        file_executor = {
+            "workdir": mounted_dir,
+            "image": "vipchhabra99/pulsar-lib",
+            "command": ["/bin/bash",os.path.join(work_dir, 'createfiles.sh')]
+            }
+        return file_executor
 
-        client_inputs_list = self.__get_inputs(job_wrapper)
-        commands = job_wrapper.command_line
-        from shlex import split
-        commands = split(commands)
-        other_inputs = job_wrapper.extra_filenames
+    def job_executor(self, mounted_dir, remote_image, command_line, env):
+        """
+        Returns the executor for executing jobs
+        """
+        job_executor = {
+            "workdir": mounted_dir,
+            "image": remote_image,
+            "command": command_line.split(),
+            "env": env
+            }
+        return job_executor
+
+    def file_staging_out_executor(self, mounted_dir, command):
+        """
+        Returns the executor for staging out of the files
+        """
+        staging_out_executor = {
+            "workdir" : mounted_dir,
+            "image" : "vipchhabra99/pulsar-lib",
+            "command" : command
+            }
+        return staging_out_executor
+    
+    def base_job_script(self, mounted_dir, work_dir, output_files, description):
+        """
+        Retruns the basic structure for job-script
+        """
+        execution_script = {
+            "name": "Galaxy Job Execution",
+            "description": description,
+            "inputs": [
+                {
+                    "path": os.path.join(work_dir, 'createfiles.sh'),
+                    "content" : self.output_file_gen_script(output_files),
+                    }],
+            "executors": [],
+            "volumes": [mounted_dir]
+        }
+        
+        return execution_script
+
+    def output_file_gen_script(self, output_files):
+        """
+            Generates shell script for generating output files in container
+        """
+        script = []
+        
+        for file in output_files:
+            dir_name = os.path.split(file)[0]
+            script.extend(['mkdir', '-p', dir_name, '&&',  'touch', file, '&&'])
+        
+        script[-1] = '\n'
+        return ' '.join(script)
+
+    def staging_out_command(self, script_path, output_files, api_url):
+        """
+            Generates command for staging out of files
+        """
+        command = ["python", script_path, api_url]
+
+        for file in output_files:
+            command.append(file)
+        
+        return command
+
+    def env_variables(self, job_wrapper):
+        """
+            Get environment variables from job_wrapper
+        """
+        env_vars = {}
+        for variable in job_wrapper.environment_variables:
+            env_vars[variable['name']] = variable['value']
+        env_vars["_GALAXY_JOB_TMP_DIR"] = self.container_workdir
+        env_vars["_GALAXY_JOB_HOME_DIR"] = self.container_workdir
+        return env_vars
+
+    def input_url(self, api_url, path):
+        """
+            Get URL for path
+        """
+        file_link = f"{api_url}&path={path}"
+        return file_link
+
+    def input_descriptors(self, api_url, input_paths, type = "FILE"):
+        """
+            Get Input Descriptor for Jobfile
+        """
+        input_description = []
+
+        for path in input_paths:
+            input_description.append({
+                "url" : self.input_url(api_url, path),
+                "path" : path,
+                "type" : type
+            })
+        return input_description
+
+    def get_job_directory_files(self, work_dir):
+        """
+        Get path for all the files from work directory
+        """
+        paths = []
+        for root, _ , files in os.walk(work_dir):
+            for file in files:
+                paths.append(os.path.join(root, file))
+        
+        return paths
+
+    def build_script(self, job_wrapper, client_args):
+        """
+        Returns the Job script with required configurations of the job
+        """
+        tool_dir = job_wrapper.tool.tool_dir
+        work_dir = job_wrapper.working_directory
+        object_store_path = job_wrapper.object_store.file_path
+        mount_path = os.path.commonprefix([work_dir, object_store_path])
+        script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "util/file-staging.py")
+
+
+        input_files = self.__get_inputs(job_wrapper)
+        output_files = self.get_output_files(job_wrapper)
+        extra_files = job_wrapper.extra_filenames
+        tool_files = self.find_referenced_subfiles(tool_dir, job_wrapper.command_line, extra_files)
 
         remote_container = self._find_container(job_wrapper)
-        remote_image = "python"
+        remote_image = "vipchhabra99/pulsar-lib"
 
         if(hasattr(remote_container, "container_id")):
             remote_image = remote_container.container_id
-
-
-        final_commands = []
-        file_creation = []
 
         command_line = build_command(
                 self,
@@ -201,89 +320,32 @@ class TESJobRunner(AsynchronousJobRunner):
                 remote_job_directory=job_wrapper.working_directory,
             )
 
-        for output_f in output_files:
-            head_tail = os.path.split(output_f)
-            file_creation.extend(['mkdir', '-p', head_tail[0], '&&',  'touch', output_f, '&&'])
-
-        file_creation[-1] = '\n'
-        final_commands.extend(["/bin/bash", client_inputs_list[-1]["paths"]])
-        staging_up_command = ["python", "/inputs/staging.py", client_args['files_endpoint']]
-
-        for output_path in output_files:
-            staging_up_command.append(output_path)
+        env_var = self.env_variables(job_wrapper)
+        staging_out_command = self.staging_out_command(script_path, output_files, client_args['files_endpoint'])
         
-        for output_path in other_inputs:
-            staging_up_command.append(output_path)
-
-        file_staging_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "util/file-staging.py")
-
-        referenced_tool_files = self.find_referenced_subfiles(tool_dir, job_wrapper.command_line, other_inputs)
-        actual_job_directory = job_wrapper.working_directory
-        object_store_path = job_wrapper.object_store.file_path
-        common_path = os.path.commonprefix([actual_job_directory, object_store_path])
-        execution_script = {
-            "name": "Galaxy Job Execution",
-            "description": job_wrapper.tool.description,
-            "inputs": [
-                        {
-                            "path": os.path.join(job_wrapper.working_directory, 'createfiles.sh'),
-                            "content" : ' '.join(file_creation),
-                        }
-                    ],
-            "outputs": [],
-            "executors": [
-                {
-                    "workdir": common_path,
-                    "image": "vipchhabra99/pulsar-lib",
-                    "command": ["/bin/bash",os.path.join(job_wrapper.working_directory, 'createfiles.sh')]
-                },
-                {
-                    "workdir": common_path,
-                    "image": remote_image,
-                    "command": command_line.split(),
-                    "env": {}
-                },
-                {
-                    "workdir" : common_path,
-                    "image" : "vipchhabra99/pulsar-lib",
-                    "command" : staging_up_command
-                }
-            ],
-            "volumes": [common_path]
-        }
+        job_script = self.base_job_script(mount_path, work_dir, output_files, job_wrapper.tool.description)
         
+        job_script["inputs"].extend(self.input_descriptors(client_args['files_endpoint'], [script_path]))
+        job_script["inputs"].extend(self.input_descriptors(client_args['files_endpoint'], tool_files))
+        job_script["inputs"].extend(self.input_descriptors(client_args['files_endpoint'], self.get_job_directory_files(work_dir)))
+        job_script["inputs"].extend(self.input_descriptors(client_args['files_endpoint'], input_files))
 
-
-        for input in referenced_tool_files:
-            execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + input, "path": input})
-
-        for root, _ , files in os.walk(job_wrapper.working_directory):
-            for file in files:
-                execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + os.path.join(root, file), "path": os.path.join(root, file)})
+        job_script["executors"].append(self.file_creation_executor(mount_path, work_dir))
+        job_script["executors"].append(self.job_executor(mount_path, remote_image, command_line, env_var))
+        job_script["executors"].append(self.file_staging_out_executor(mount_path, staging_out_command))
         
-        execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + file_staging_path, "path": "/inputs/staging.py"})
-        for input in client_inputs_list:
-            execution_script["inputs"].append({"url": client_args['files_endpoint'] + '&path=' + input["paths"], "path": input["paths"]})
-
-        return execution_script
+        return job_script
 
     def __get_inputs(self, job_wrapper):
         """Returns the list about the details of input files."""
 
-        client_inputs_list = []
+        input_files = []
 
         for input_dataset_wrapper in job_wrapper.get_input_paths():
-            # str here to resolve false_path if set on a DatasetPath object.
             path = str(input_dataset_wrapper)
-            object_store_ref = {
-                "paths": path,
-                "dataset_id": input_dataset_wrapper.dataset_id,
-                "dataset_uuid": str(input_dataset_wrapper.dataset_uuid),
-                "object_store_id": input_dataset_wrapper.object_store_id,
-            }
-            client_inputs_list.append(object_store_ref)
+            input_files.append(path)
 
-        return client_inputs_list
+        return input_files
 
     def queue_job(self, job_wrapper):
         """Submit the job to TES."""
@@ -293,25 +355,24 @@ class TESJobRunner(AsynchronousJobRunner):
         include_metadata = asbool(job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
         if not self.prepare_job(job_wrapper, include_metadata=include_metadata):
             return
-
+        
         job_id = job_wrapper.job_id
         if hasattr(job_wrapper, 'task_id'):
             job_id = f"{job_id}_{job_wrapper.task_id}"
-        params = job_wrapper.job_destination.params.copy()
+
         client_args = self.get_upload_path(job_id)
         job_destination = job_wrapper.job_destination
         galaxy_id_tag = job_wrapper.get_id_tag()
         master_addr = job_destination.params.get("tes_master_addr")
-        working_directory = job_wrapper.working_directory
 
-        if self.app.config.metadata_strategy == "legacy":
-            metadata_directory = job_wrapper.working_directory
-        else:
-            metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
+        if(hasattr(job_wrapper.app, "galaxy_url")):
+            self.galaxy_url = f"{job_wrapper.app.galaxy_url.rstrip('/')}/"
 
-        execution_script = self.__prepare_jobscript(job_wrapper, metadata_directory, client_args)
+        if('galaxy_url' in job_destination.params):
+            self.galaxy_url = job_destination.params.get("galaxy_url")
 
-        job_id = self._send_task(master_addr, execution_script)
+        job_script = self.build_script(job_wrapper, client_args)
+        job_id = self._send_task(master_addr, job_script)
 
         job_state = TESJobState(
             job_id=job_id,
@@ -324,14 +385,23 @@ class TESJobRunner(AsynchronousJobRunner):
         self.monitor_job(job_state)
 
     def get_output_files(self, job_wrapper):
+        """
+        Utility for getting list of Output Files
+        """
         output_paths = job_wrapper.get_output_fnames()
         return [str(o) for o in output_paths]   # Force job_path from DatasetPath objects.
 
     def get_input_files(self, job_wrapper):
+        """"
+        Utility for getting list of Input Files
+        """
         input_paths = job_wrapper.get_input_paths()
         return [str(i) for i in input_paths]
 
     def __finish_job(self, stdout, stderr, exit_code, job_wrapper):
+        """
+        Utility for finishing job after completion
+        """
         
         job_metrics_directory = os.path.join(job_wrapper.working_directory, "metadata")
         try:
@@ -346,6 +416,9 @@ class TESJobRunner(AsynchronousJobRunner):
             job_wrapper.fail("Unable to finish job", exception=True)
 
     def _concat_job_log(self, data, key):
+        """"
+        Utility for concatination required job logs
+        """
         s = ''
         try:
             logs_data = data.get('logs')
@@ -363,6 +436,9 @@ class TESJobRunner(AsynchronousJobRunner):
             return s
 
     def _concat_exit_codes(self, data):
+        """"
+        Utility for getting out exit code of the job
+        """
         if(data['state'] == "COMPLETE"):
             return '0'
 
@@ -422,7 +498,7 @@ class TESJobRunner(AsynchronousJobRunner):
 
         if job_failed:
             log.debug("(%s/%s) job failed" % (galaxy_id_tag, job_id))
-            stdout = ""
+            stdout = self._concat_job_log(data, 'stdout')
             stderr = self._concat_job_log(data, 'stderr')
             exit_code = 1
             self.__finish_job(stdout, stderr, exit_code, job_state.job_wrapper)
@@ -432,8 +508,7 @@ class TESJobRunner(AsynchronousJobRunner):
 
     def stop_job(self, job_wrapper):
         """Attempts to delete a task from the task queue"""
-        # TODO: This needs a thorough check why job Id is not coming with job_object
-        # and why this is getting called after the job completion in failed case
+        #TODO: Need to check why this is getting called after the job completion in failed case
         job = job_wrapper.get_job()
 
         job_id = job.job_runner_external_id
