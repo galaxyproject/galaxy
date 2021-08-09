@@ -4251,6 +4251,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         dce = alias(DatasetCollectionElement)
 
         depth_collection_type = dataset_collection.collection_type
+        order_by_columns = [dce.c.element_index]
         nesting_level = 0
 
         def attribute_columns(column_collection, attributes, nesting_level=None):
@@ -4269,6 +4270,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
             nesting_level += 1
             inner_dc = alias(DatasetCollection)
             inner_dce = alias(DatasetCollectionElement)
+            order_by_columns.append(inner_dce.c.element_index)
             q = q.join(
                 inner_dc, inner_dc.c.id == dce.c.child_collection_id
             ).join(
@@ -4297,7 +4299,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
             q = q.add_entity(entity)
             if entity == DatasetCollectionElement:
                 q = q.filter(entity.id == dce.c.id)
-        return q.distinct()
+        return q.distinct(*order_by_columns).order_by(*order_by_columns)
 
     @property
     def dataset_states_and_extensions_summary(self):

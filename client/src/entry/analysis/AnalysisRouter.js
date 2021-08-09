@@ -138,10 +138,8 @@ export const getAnalysisRouter = (Galaxy) => {
             });
         },
 
-        show_user_form: function (form_id) {
-            const Galaxy = getGalaxyInstance();
-            const model = getUserPreferencesModel();
-            model.user_id = Galaxy.params.id;
+        show_user_form: function (form_id, params) {
+            const model = getUserPreferencesModel(params.id);
             this.page.display(new FormWrapper.View(_.extend(model[form_id], { active_tab: "user" })));
         },
 
