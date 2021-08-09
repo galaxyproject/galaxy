@@ -460,6 +460,55 @@ class TestDataset(BaseTest):
             assert stored_obj.sources == [dataset_source]
 
 
+class TestDatasetCollection(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'dataset_collection'
+
+    def test_columns(self, session, cls_):
+        collection_type = 'a'
+        populated_state = 'b'
+        populated_state_message = 'c'
+        element_count = 1
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+
+        obj = cls_()
+        obj.collection_type = collection_type
+        obj.populated_state = populated_state
+        obj.populated_state_message = populated_state_message
+        obj.element_count = element_count
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.collection_type == collection_type
+            assert stored_obj.populated_state == populated_state
+            assert stored_obj.populated_state_message == populated_state_message
+            assert stored_obj.element_count == element_count
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        dataset_collection_element,
+        job_to_implicit_output_dataset_collection_association,
+    ):
+        obj = cls_()
+        obj.collection_type, obj.populated_state = 'a', 'b'
+        obj.elements.append(dataset_collection_element)
+        obj.output_dataset_collections.append(job_to_implicit_output_dataset_collection_association)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.elements == [dataset_collection_element]
+            assert stored_obj.output_dataset_collections == [job_to_implicit_output_dataset_collection_association]
+
+
 class TestDatasetCollectionElement(BaseTest):
 
     def test_table(self, cls_):
@@ -512,15 +561,15 @@ class TestDatasetCollectionElement(BaseTest):
         obj.ldda = library_dataset_dataset_association
         obj.child_collection = dataset_collection
 
-        # set dataset_collection_id (can't set directly; persisted automatically)
         parent_collection = dataset_collection_factory()
-        parent_collection.elements.append(obj)
+        obj.collection = parent_collection  # same as parent_collection.elements.append(obj)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.hda.id == history_dataset_association.id
             assert stored_obj.ldda.id == library_dataset_dataset_association.id
             assert stored_obj.child_collection.id == dataset_collection.id
+            assert stored_obj.collection.id == parent_collection.id
 
         delete_from_database(session, [parent_collection])  # because this won't be removed automatically
 
@@ -5081,6 +5130,12 @@ def job(model, session):
 def job_export_history_archive(model, session):
     jeha = model.JobExportHistoryArchive()
     yield from dbcleanup_wrapper(session, jeha)
+
+
+@pytest.fixture
+def job_to_implicit_output_dataset_collection_association(model, session, dataset_collection):
+    instance = model.JobToImplicitOutputDatasetCollectionAssociation(None, dataset_collection)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture

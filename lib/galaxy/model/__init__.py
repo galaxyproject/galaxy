@@ -4974,9 +4974,24 @@ class ImplicitlyConvertedDatasetAssociation(RepresentById):
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
 
 
-class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
-    """
-    """
+class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
+    __tablename__ = 'dataset_collection'
+
+    id = Column(Integer, primary_key=True)
+    collection_type = Column(Unicode(255), nullable=False)
+    populated_state = Column(TrimmedString(64), default='ok', nullable=False)
+    populated_state_message = Column(TEXT)
+    element_count = Column(Integer, nullable=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+
+    elements = relationship('DatasetCollectionElement',
+        primaryjoin=(lambda: DatasetCollection.id == DatasetCollectionElement.dataset_collection_id),  # type: ignore
+        back_populates='collection',
+        order_by='DatasetCollectionElement.element_index')
+    output_dataset_collections = relationship(
+        'JobToImplicitOutputDatasetCollectionAssociation', back_populates='dataset_collection')
+
     dict_collection_visible_keys = ['id', 'collection_type']
     dict_element_visible_keys = ['id', 'collection_type']
 
@@ -5608,6 +5623,10 @@ class DatasetCollectionElement(Base, Dictifiable, RepresentById):
         primaryjoin=(lambda: DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id))  # type: ignore
     child_collection = relationship('DatasetCollection',
         primaryjoin=(lambda: DatasetCollectionElement.child_collection_id == DatasetCollection.id))  # type: ignore
+    collection = relationship('DatasetCollection',
+        primaryjoin=(lambda: DatasetCollection.id == DatasetCollectionElement.dataset_collection_id),  # type: ignore
+        back_populates='elements',
+    )
 
     # actionable dataset id needs to be available via API...
     dict_collection_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']

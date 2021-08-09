@@ -223,16 +223,6 @@ model.Job.table = Table(
     Column("params", TrimmedString(255), index=True),
     Column("handler", TrimmedString(255), index=True))
 
-model.DatasetCollection.table = Table(
-    "dataset_collection", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("collection_type", Unicode(255), nullable=False),
-    Column("populated_state", TrimmedString(64), default='ok', nullable=False),
-    Column("populated_state_message", TEXT),
-    Column("element_count", Integer, nullable=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now))
-
 model.HistoryDatasetCollectionAssociation.table = Table(
     "history_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -566,16 +556,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
 #         uselist=True,
 #     ),
 # )
-
-simple_mapping(model.DatasetCollection,
-    elements=relation(model.DatasetCollectionElement,
-        primaryjoin=(model.DatasetCollection.table.c.id == model.DatasetCollectionElement.dataset_collection_id),
-        remote_side=[model.DatasetCollectionElement.dataset_collection_id],
-        backref="collection",
-        order_by=model.DatasetCollectionElement.element_index),
-    output_dataset_collections=relation(
-        model.JobToImplicitOutputDatasetCollectionAssociation, back_populates='dataset_collection'),
-)
 
 simple_mapping(model.HistoryDatasetCollectionAssociation,
     collection=relation(model.DatasetCollection),
