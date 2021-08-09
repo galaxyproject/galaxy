@@ -95,7 +95,7 @@ steps:
       #backdrop: true
 
     - title: "Tool parameters"
-      element: '.center-panel .ui-portlet'
+      element: '.center-panel .portlet-content'
       intro: "Here you can choose your tool parameters. Select your input dataset from your history and specify parameters for your analysis."
       position: "right"
 
