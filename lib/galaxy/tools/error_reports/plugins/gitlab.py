@@ -5,12 +5,6 @@ import os
 import sys
 
 import requests
-if sys.version_info[0] < 3:
-    import urllib as urllib
-    import urlparse as urlparse
-else:
-    import urllib.parse as urllib
-    urlparse = urllib
 
 try:
     import gitlab
@@ -115,21 +109,18 @@ class GitLabPlugin(BaseGitPlugin):
                     else "/".join((self.git_default_repo_owner, self.git_default_repo_name))
                 issue_cache_key = self._get_issue_cache_key(job, ts_repourl)
 
-                gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
-
                 # Make sure we are always logged in, then retrieve the GitLab project if it isn't cached.
                 self.gitlab.auth()
                 try:
                     if gitlab_projecturl not in self.git_project_cache:
-                        self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
+                        self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_projecturl)
                 except gitlab.GitlabGetError:
                     # Handle scenario where the repository doesn't exist so we can still continue
-                    log.warning(f"GitLab error reporting - Repository '{gitlab_urlencodedpath}' doesn't exist, using default repository.")
+                    log.warning(f"GitLab error reporting - Repository '{gitlab_projecturl}' doesn't exist, using default repository.")
                     # Redo some of the previous steps to recover from such an issue but continue issue creation
                     gitlab_projecturl = "/".join((self.git_default_repo_owner, self.git_default_repo_name))
-                    gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
                     if gitlab_projecturl not in self.git_project_cache:
-                        self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
+                        self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_projecturl)
                 gl_project = self.git_project_cache[gitlab_projecturl]
 
                 # Make sure we keep a cache of the issues, per tool in this case
@@ -175,7 +166,7 @@ class GitLabPlugin(BaseGitPlugin):
 
                         # Add a comment to an issue...
                         self._append_issue(issue_cache_key, error_title, error_message,
-                                           gitlab_urlencodedpath=gitlab_urlencodedpath)
+                                           gitlab_projecturl=gitlab_projecturl)
                     else:
                         self._open_issue(error_message, error_title, gitlab_projecturl, gl_project, gl_userid,
                                          issue_cache_key)
@@ -222,11 +213,10 @@ class GitLabPlugin(BaseGitPlugin):
         except (gitlab.GitlabOwnershipError, gitlab.GitlabGetError):
             # Create an issue in the default location
             gitlab_projecturl = "/".join((self.git_default_repo_owner, self.git_default_repo_name))
-            gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
             # Make sure we are always logged in, then retrieve the GitLab project if it isn't cached.
             self.gitlab = self.gitlab_connect()
             if gitlab_projecturl not in self.git_project_cache:
-                self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
+                self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_projecturl)
             gl_project = self.git_project_cache[gitlab_projecturl]
 
             # Submit issue to default project
@@ -262,7 +252,7 @@ class GitLabPlugin(BaseGitPlugin):
             "api",
             "v4",
             "projects",
-            kwargs.get('gitlab_urlencodedpath'),
+            kwargs.get('gitlab_projecturl'),
             "issues",
             str(self.issue_cache[issue_cache_key][error_title]),
             "notes"
