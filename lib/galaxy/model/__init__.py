@@ -1180,8 +1180,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         rval['tool_id'] = self.tool_id
         rval['history_id'] = self.history_id
         if view == 'workflow':
-            if self.workflow_invocation_step:
-                rval['workflow_invocation_step'] = self.workflow_invocation_step.to_dict() if self.workflow_invocation_step else {}
+            rval['workflow_invocation_step'] = self.workflow_invocation_step.to_dict() if self.workflow_invocation_step else {}
 
         if system_details or view == 'admin_job_list':
             # System level details that only admins should have.
@@ -5908,6 +5907,7 @@ class WorkflowInvocationStep(Dictifiable, RepresentById):
         rval['workflow_step_label'] = self.workflow_step.label
         rval['workflow_step_uuid'] = str(self.workflow_step.uuid)
         rval['workflow_invocation_id'] = self.workflow_invocation.id
+        rval['stored_workflow_id'] = self.workflow_invocation.workflow.stored_workflow.id
         # Following no longer makes sense...
         # rval['state'] = self.job.state if self.job is not None else None
         if view == 'element':

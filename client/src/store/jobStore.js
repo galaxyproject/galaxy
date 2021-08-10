@@ -13,8 +13,8 @@ const getters = {
 };
 
 const actions = {
-    fetchJob: async ({ commit }, jobId) => {
-        const { data } = await axios.get(`${getAppRoot()}api/jobs/${jobId}?full=true&view=workflow`);
+    fetchJob: async ({ commit }, { jobId, view = "collection" }) => {
+        const { data } = await axios.get(`${getAppRoot()}api/jobs/${jobId}?full=true&view=${view}`);
         commit("saveJobForJobId", { jobId, job: data });
     },
 };

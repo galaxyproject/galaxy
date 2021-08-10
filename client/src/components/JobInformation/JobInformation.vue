@@ -25,8 +25,8 @@
                 <tr v-if="job && job.workflow_invocation_step && showWorkflowInfo">
                     <td>Workflow ID:</td>
                     <td id="workflow-id">
-                        {{ job.workflow_invocation_step.id }} (<a
-                            :href="'/workflow/display_by_id?id=' + job.workflow_invocation_step.id"
+                        {{ job.workflow_invocation_step.stored_workflow_id }} (<a
+                            :href="'/workflow/display_by_id?id=' + job.workflow_invocation_step.stored_workflow_id"
                             target="_top"
                             >view</a
                         >)
@@ -121,7 +121,7 @@ export default {
         },
     },
     created: function () {
-        this.fetchJob(this.job_id);
+        this.fetchJob({ jobId: this.job_id, view: "workflow" });
     },
     computed: {
         job: function () {
