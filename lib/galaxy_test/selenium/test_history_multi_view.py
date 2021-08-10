@@ -16,12 +16,11 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
 
         self.home()
 
-        hdca_selector = self.history_panel_wait_for_hid_state(input_hid, "ok")
-
         self.components.history_panel.multi_view_button.wait_for_and_click()
+        hdca_selector = self.history_panel_wait_for_hid_state(input_hid, "ok", multi_history_panel=True)
+        self.wait_for_visible(hdca_selector)
         self.components.multi_history_view.create_new_button.wait_for_and_click()
         self.components.multi_history_view.drag_drop_help.wait_for_visible()
-        self.wait_for_visible(hdca_selector)
         self.screenshot("multi_history_collection")
 
     @selenium_test
@@ -129,7 +128,7 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         histories = self.components.multi_history_view.histories.all()
         assert len(histories) == histories_number
         # search for history with history_id
-        assert should_exist == any(history.get_attribute("id") == "history-column-" + history_id for history in histories)
+        assert should_exist == any(history.get_attribute("id") == f"history-column-{history_id}" for history in histories)
 
     def copy_history(self, history_id):
         self.components.multi_history_view.history_dropdown_btn(history_id=history_id).wait_for_and_click()
@@ -144,6 +143,6 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         self.home()
         self.components.history_panel.multi_view_button.wait_for_and_click()
 
-        selector = self.history_panel_wait_for_hid_state(collection_hid, "ok")
+        selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
         self.click(selector)
         return selector

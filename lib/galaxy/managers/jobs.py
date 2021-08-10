@@ -253,7 +253,7 @@ class JobSearch:
                     name_condition = []
                     if identifier:
                         data_conditions.append(and_(model.Job.id == d.job_id,
-                                             d.name.in_({"%s|__identifier__" % _ for _ in k}),
+                                             d.name.in_({f"{_}|__identifier__" for _ in k}),
                                              d.value == json.dumps(identifier)))
                     else:
                         stmt = stmt.where(e.name == c.name)
@@ -462,7 +462,7 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
                     implicit_collection_job_ids.add(invocation_step_source_id)
             workflow_invocations_job_sources[job_source_id] = workflow_invocation_job_sources
         else:
-            raise RequestParameterInvalidException("Invalid job source type %s found." % job_source_type)
+            raise RequestParameterInvalidException(f"Invalid job source type {job_source_type} found.")
 
     job_summaries = {}
     implicit_collection_jobs_summaries = {}
@@ -661,7 +661,7 @@ def summarize_job_parameters(trans, job):
                     else:
                         rval.append(dict(text=input.name, depth=depth, notes="The previously used value is no longer valid.", error=True))
                 elif input.type == "upload_dataset":
-                    rval.append(dict(text=input.group_title(param_values), depth=depth, value="%s uploaded datasets" % len(param_values[input.name])))
+                    rval.append(dict(text=input.group_title(param_values), depth=depth, value=f"{len(param_values[input.name])} uploaded datasets"))
                 elif input.type == "data":
                     value = []
                     for element in listify(param_values[input.name]):

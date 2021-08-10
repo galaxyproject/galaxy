@@ -13,8 +13,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" format="fasta" value="chr_m.fasta"/>
-            <output name="output" format="tabular" value="chr_m.tabular"/>
+            <param name="input" ftype="fasta" value="chr_m.fasta"/>
+            <output name="output" ftype="tabular" value="chr_m.tabular"/>
         </test>
     </tests>
     <help>

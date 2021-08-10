@@ -51,7 +51,7 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
     });
     it("manages collection expansion", async () => {
         expect(wrapper.vm.expand).toBeFalsy();
-        wrapper.findComponent(DscUI).vm.$emit("update:expanded", wrapper.vm.datasetCollection);
+        wrapper.findComponent(DscUI).vm.$emit("viewCollection", wrapper.vm.datasetCollection);
         expect(wrapper.vm.expand).toBeTruthy();
     });
     it("build dsc from collection content", async () => {

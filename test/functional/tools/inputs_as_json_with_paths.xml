@@ -33,6 +33,7 @@ if test_case == "1":
     assert_equals(as_dict["section_example"]["section_text"], "section_default")
     assert_equals(as_dict["data_input"], None)
     assert_equals(as_dict["multiple_data_input"], [None])
+    assert as_dict["collection_input"] == []
 elif test_case == "2":
     assert_equals(as_dict["test_case"], 2)
     assert_equals(as_dict["text_test"], "bar")
@@ -50,6 +51,11 @@ elif test_case == "2":
     multiple_data_input = as_dict["multiple_data_input"]
     assert type(multiple_data_input) is list
     assert len(multiple_data_input) == 2
+    assert as_dict["collection_input"] == []
+elif test_case == "3":
+    collection_input = as_dict["collection_input"]
+    assert type(collection_input) is list
+    assert len(collection_input) == 1
 
 with open("output", "w") as f:
     f.write("okay\n")
@@ -69,6 +75,7 @@ with open("output", "w") as f:
         </param>
         <param name="data_input" type="data" optional="true" />
         <param name="multiple_data_input" type="data" optional="true" multiple="true" />
+        <param name="collection_input" type="data_collection" optional="true"/>
         <repeat name="repeat" title="Repeat" min="1">
             <param name="r" type="color" />
         </repeat>
@@ -132,6 +139,19 @@ with open("output", "w") as f:
                     <has_line line="okay" />
                 </assert_contents>
             </output>
+        </test>
+        <test>
+            <param name="test_case" value="3" />
+            <param name="text_test" value="foo" />
+            <param name="collection_input">
+                <collection type="list:list">
+                    <element name="list">
+                        <collection type="list">
+                            <element name="element1" value="simple_line.txt" ftype="txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
         </test>
     </tests>
     <help>

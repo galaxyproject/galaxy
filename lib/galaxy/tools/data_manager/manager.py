@@ -50,7 +50,7 @@ class DataManagers:
             return  # we are not able to load any data managers
         root = tree.getroot()
         if root.tag != 'data_managers':
-            log.error('A data managers configuration must have a "data_managers" tag as the root. "%s" is present' % (root.tag))
+            log.error(f'A data managers configuration must have a "data_managers" tag as the root. "{root.tag}" is present')
             return
         if store_tool_path:
             tool_path = root.get('tool_path', None)
@@ -78,12 +78,12 @@ class DataManagers:
             return None
         if add_manager:
             self.add_manager(data_manager)
-        log.debug('Loaded Data Manager: %s' % (data_manager.id))
+        log.debug(f'Loaded Data Manager: {data_manager.id}')
         return data_manager
 
     def add_manager(self, data_manager):
         if data_manager.id in self.data_managers:
-            log.warning("A data manager has been defined twice: %s " % (data_manager.id))
+            log.warning(f"A data manager has been defined twice: {data_manager.id} ")
         self.data_managers[data_manager.id] = data_manager
         for data_table_name in data_manager.data_tables.keys():
             if data_table_name not in self.managed_data_tables:
@@ -136,7 +136,7 @@ class DataManager:
             self.load_from_element(elem, tool_path or self.data_managers.tool_path)
 
     def load_from_element(self, elem, tool_path):
-        assert elem.tag == 'data_manager', 'A data manager configuration must have a "data_manager" tag as the root. "%s" is present' % (elem.tag)
+        assert elem.tag == 'data_manager', f'A data manager configuration must have a "data_manager" tag as the root. "{elem.tag}" is present'
         self.declared_id = elem.get('id')
         self.guid = elem.get('guid')
         path = elem.get('tool_file')
@@ -146,7 +146,7 @@ class DataManager:
 
         if path is None:
             tool_elem = elem.find('tool')
-            assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % (util.xml_to_string(elem))
+            assert tool_elem is not None, f"Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n{util.xml_to_string(elem)}"
             path = tool_elem.get("file")
             tool_guid = tool_elem.get("guid")
             # need to determine repository info so that dependencies will work correctly
@@ -161,7 +161,7 @@ class DataManager:
                 shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename(shed_conf_file)
                 if shed_conf:
                     tool_path = shed_conf.get("tool_path", tool_path)
-        assert path is not None, "A tool file path could not be determined:\n%s" % (util.xml_to_string(elem))
+        assert path is not None, f"A tool file path could not be determined:\n{util.xml_to_string(elem)}"
         self.load_tool(os.path.join(tool_path, path),
                        guid=tool_guid,
                        data_manager_id=self.id,
@@ -201,9 +201,9 @@ class DataManager:
                                     if value_translation in VALUE_TRANSLATION_FUNCTIONS:
                                         value_translation = VALUE_TRANSLATION_FUNCTIONS[value_translation]
                                     else:
-                                        raise ValueError("Unsupported value translation function: '%s'" % (value_translation))
+                                        raise ValueError(f"Unsupported value translation function: '{value_translation}'")
                                 else:
-                                    assert value_translation_type == DEFAULT_VALUE_TRANSLATION_TYPE, ValueError("Unsupported value translation type: '%s'" % (value_translation_type))
+                                    assert value_translation_type == DEFAULT_VALUE_TRANSLATION_TYPE, ValueError(f"Unsupported value translation type: '{value_translation_type}'")
                                 self.value_translation_by_data_table_column[data_table_name][data_table_coumn_name].append(value_translation)
 
                     for move_elem in column_elem.findall('move'):
@@ -282,10 +282,10 @@ class DataManager:
 
             data_table = self.data_managers.app.tool_data_tables.get(data_table_name, None)
             if data_table is None:
-                log.error('The data manager "{}" returned an unknown data table "{}" with new entries "{}". These entries will not be created. Please confirm that an entry for "{}" exists in your "{}" file.'.format(self.id, data_table_name, data_table_values, data_table_name, 'tool_data_table_conf.xml'))
+                log.error(f"The data manager \"{self.id}\" returned an unknown data table \"{data_table_name}\" with new entries \"{data_table_values}\". These entries will not be created. Please confirm that an entry for \"{data_table_name}\" exists in your \"tool_data_table_conf.xml\" file.")
                 continue  # next table name
             if not isinstance(data_table, SUPPORTED_DATA_TABLE_TYPES):
-                log.error('The data manager "{}" returned an unsupported data table "{}" with type "{}" with new entries "{}". These entries will not be created. Please confirm that the data table is of a supported type ({}).'.format(self.id, data_table_name, type(data_table), data_table_values, SUPPORTED_DATA_TABLE_TYPES))
+                log.error(f'The data manager "{self.id}" returned an unsupported data table "{data_table_name}" with type "{type(data_table)}" with new entries "{data_table_values}". These entries will not be created. Please confirm that the data table is of a supported type ({SUPPORTED_DATA_TABLE_TYPES}).')
                 continue  # next table name
             output_ref_values = {}
             if data_table_name in self.output_ref_by_data_table:

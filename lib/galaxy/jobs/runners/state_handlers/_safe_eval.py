@@ -137,5 +137,5 @@ def safe_eval(expression, variables):
     True
     """
     if not _check_expression(expression, allowed_variables=list(variables.keys())):
-        raise Exception("Invalid expression [%s], only a very simple subset of Python is allowed." % expression)
+        raise Exception(f"Invalid expression [{expression}], only a very simple subset of Python is allowed.")
     return eval(expression, globals(), variables)

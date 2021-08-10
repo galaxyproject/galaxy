@@ -3,6 +3,7 @@
 from galaxy_test.driver import integration_util
 
 TEST_TOOL_IDS = [
+    "job_properties",
     "multi_output",
     "multi_output_configured",
     "multi_output_assign_primary",

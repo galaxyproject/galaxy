@@ -28,3 +28,11 @@ export const mountVueComponent = (ComponentDefinition) => {
     const component = Vue.extend(ComponentDefinition);
     return (propsData, el) => new component({ store, propsData, el });
 };
+
+export const appendVueComponent = ($el, ComponentDefinition, propsData = {}) => {
+    const container = document.createElement("div");
+    $el.empty().append(container);
+    const component = Vue.extend(ComponentDefinition);
+    const mountFn = (propsData, el) => new component({ propsData, el });
+    return mountFn(propsData, container);
+};

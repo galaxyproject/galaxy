@@ -106,7 +106,7 @@ class UnivaJobRunner(DRMAAJobRunner):
                 ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                 drmaa_state = self.drmaa_job_states.FAILED
         elif state in [self.drmaa.JobState.QUEUED_ACTIVE, self.drmaa.JobState.SYSTEM_ON_HOLD, self.drmaa.JobState.USER_ON_HOLD, self.drmaa.JobState.USER_SYSTEM_ON_HOLD, self.drmaa.JobState.RUNNING, self.drmaa.JobState.SYSTEM_SUSPENDED, self.drmaa.JobState.USER_SUSPENDED]:
-            log.warning('({tag}/{jobid}) Job is {state}, returning to monitor queue'.format(tag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id, state=self.drmaa_job_state_strings[state]))
+            log.warning(f'({ajs.job_wrapper.get_id_tag()}/{ajs.job_id}) Job is {self.drmaa_job_state_strings[state]}, returning to monitor queue')
             # TODO return True?
             return True  # job was not actually terminal
         elif state == self.drmaa.JobState.UNDETERMINED:
@@ -257,7 +257,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # "NONE". If qdel was called multiple times, every invocation is recorded in a comma
         # separated list.
         if "deleted_by" in qacct and qacct["deleted_by"] != "NONE":
-            log.info("DRMAAUniva: job {job_id} was aborted by {culprit}".format(job_id=job_id, culprit=qacct["deleted_by"]))
+            log.info(f"DRMAAUniva: job {job_id} was aborted by {qacct['deleted_by']}")
             extinfo["deleted"] = True
             return self.drmaa.JobState.FAILED
 
@@ -273,14 +273,14 @@ class UnivaJobRunner(DRMAAJobRunner):
         if "exit_status" in qacct:
             qacct["exit_status"] = int(qacct["exit_status"])
             if qacct["exit_status"] < 1:
-                log.error("DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=qacct["exit_status"]))
+                log.error(f"DRMAAUniva: job {job_id} has exit status {qacct['exit_status']}")
                 state = self.drmaa.JobState.DONE
             elif 0 < qacct["exit_status"] < 129:
-                log.error("DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=qacct["exit_status"]))
+                log.error(f"DRMAAUniva: job {job_id} has exit status {qacct['exit_status']}")
                 extinfo['exit_status'] = qacct["exit_status"]
                 state = self.drmaa.JobState.FAILED
             else:
-                log.error("DRMAAUniva: job {job_id} was killed by signal {signal}".format(job_id=job_id, signal=qacct["exit_status"] - 128))
+                log.error(f"DRMAAUniva: job {job_id} was killed by signal {qacct['exit_status'] - 128}")
                 state = self.drmaa.JobState.FAILED
                 extinfo["signal"] = signals[qacct["exit_status"] - 128]
 
@@ -300,7 +300,7 @@ class UnivaJobRunner(DRMAAJobRunner):
             elif code in [24, 25]:
                 state = self.drmaa.JobState.RUNNING
             else:
-                log.error("DRMAAUniva: job {job_id} failed with failure {failure}".format(job_id=job_id, failure=qacct["failed"]))
+                log.error(f"DRMAAUniva: job {job_id} failed with failure {qacct['failed']}")
                 state = self.drmaa.JobState.FAILED
         # log.debug("UnivaJobRunner._get_drmaa_state_qacct ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
         return state

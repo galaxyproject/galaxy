@@ -1,20 +1,12 @@
 from fastapi import FastAPI, Request
-from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.wsgi import WSGIMiddleware
-from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
-try:
-    from starlette_context.middleware import RawContextMiddleware
-    from starlette_context.plugins import RequestIdPlugin
-except ImportError:
-    pass
 
-from galaxy.exceptions import MessageException
-from galaxy.web.framework.base import walk_controller_modules
-from galaxy.web.framework.decorators import (
-    api_error_message,
-    validation_error_to_message_exception
+from galaxy.webapps.base.api import (
+    add_exception_handler,
+    add_request_id_middleware,
+    include_all_package_routers,
 )
 from galaxy.webapps.base.webapp import config_allows_origin
 
@@ -66,28 +58,6 @@ class GalaxyCORSMiddleware(CORSMiddleware):
         return config_allows_origin(origin, self.config)
 
 
-def add_exception_handler(
-    app: FastAPI
-) -> None:
-
-    @app.exception_handler(RequestValidationError)
-    async def validate_exception_middleware(request: Request, exc: RequestValidationError) -> Response:
-        exc = validation_error_to_message_exception(exc)
-        error_dict = api_error_message(None, exception=exc)
-        return JSONResponse(
-            status_code=400,
-            content=error_dict
-        )
-
-    @app.exception_handler(MessageException)
-    async def message_exception_middleware(request: Request, exc: MessageException) -> Response:
-        error_dict = api_error_message(None, exception=exc)
-        return JSONResponse(
-            status_code=exc.status_code,
-            content=error_dict
-        )
-
-
 def add_galaxy_middleware(app: FastAPI, gx_app):
     x_frame_options = getattr(gx_app.config, 'x_frame_options', None)
     if x_frame_options:
@@ -117,21 +87,16 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             return response
 
 
-def add_request_id_middleware(app: FastAPI):
-    app.add_middleware(RawContextMiddleware, plugins=(RequestIdPlugin(force_new_uuid=True),))
-
-
-def initialize_fast_app(gx_webapp, gx_app):
+def initialize_fast_app(gx_wsgi_webapp, gx_app):
     app = FastAPI(
-        openapi_tags=api_tags_metadata
+        title="Galaxy API",
+        docs_url="/api/docs",
+        openapi_tags=api_tags_metadata,
     )
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
     add_request_id_middleware(app)
-    wsgi_handler = WSGIMiddleware(gx_webapp)
-    for _, module in walk_controller_modules('galaxy.webapps.galaxy.api'):
-        router = getattr(module, "router", None)
-        if router:
-            app.include_router(router)
+    include_all_package_routers(app, 'galaxy.webapps.galaxy.api')
+    wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     app.mount('/', wsgi_handler)
     return app

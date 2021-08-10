@@ -210,7 +210,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
 
-        self.home = "/" + self.zone + "/home/" + self.username
+        self.home = f"/{self.zone}/home/{self.username}"
 
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
@@ -282,7 +282,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return os.path.join(base, rel_path)
 
         if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
         log.debug("irods_pt _construct_path: %s", ipt_timer)
         return rel_path
 
@@ -296,8 +296,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = self.home + "/" + str(subcollection_name)
-        data_object_path = collection_path + "/" + str(data_object_name)
+        collection_path = f"{self.home}/{str(subcollection_name)}"
+        data_object_path = f"{collection_path}/{str(data_object_name)}"
 
         try:
             data_obj = self.session.data_objects.get(data_object_path)
@@ -318,8 +318,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = self.home + "/" + str(subcollection_name)
-        data_object_path = collection_path + "/" + str(data_object_name)
+        collection_path = f"{self.home}/{str(subcollection_name)}"
+        data_object_path = f"{collection_path}/{str(data_object_name)}"
 
         try:
             self.session.data_objects.get(data_object_path)
@@ -358,8 +358,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = self.home + "/" + str(subcollection_name)
-        data_object_path = collection_path + "/" + str(data_object_name)
+        collection_path = f"{self.home}/{str(subcollection_name)}"
+        data_object_path = f"{collection_path}/{str(data_object_name)}"
         data_obj = None
 
         try:
@@ -409,8 +409,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return False
 
         # Check if the data object exists in iRODS
-        collection_path = self.home + "/" + str(subcollection_name)
-        data_object_path = collection_path + "/" + str(data_object_name)
+        collection_path = f"{self.home}/{str(subcollection_name)}"
+        data_object_path = f"{collection_path}/{str(data_object_name)}"
         exists = False
         try:
             exists = self.session.data_objects.exists(data_object_path)
@@ -419,20 +419,28 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 log.debug("Wanted to push file '%s' to iRODS collection '%s' but its size is 0; skipping.", source_file, rel_path)
                 return True
 
+            # Create sub-collection first
+            self.session.collections.create(collection_path, recurse=True)
+
+            # Create data object
+            data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
+
             if from_string:
-                data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
+                # Save 'from_string' as a file
                 with data_obj.open('w') as data_obj_fp:
                     data_obj_fp.write(from_string)
+
+                # Add file containing 'from_string' to the irods collection, since
+                # put() expects a file as input. Get file name from data object's 'desc' field
+                self.session.data_objects.put(data_obj.desc, f"{collection_path}/", **options)
+
                 log.debug("Pushed data from string '%s' to collection '%s'", from_string, data_object_path)
             else:
                 start_time = datetime.now()
                 log.debug("Pushing cache file '%s' of size %s bytes to collection '%s'", source_file, os.path.getsize(source_file), rel_path)
 
-                # Create sub-collection first
-                self.session.collections.create(collection_path, recurse=True)
-
                 # Add the source file to the irods collection
-                self.session.data_objects.put(source_file, collection_path + "/", **options)
+                self.session.data_objects.put(source_file, f"{collection_path}/", **options)
 
                 end_time = datetime.now()
                 log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
@@ -507,7 +515,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 os.makedirs(cache_dir)
 
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
                 self._push_to_irods(rel_path, from_string='')
         log.debug("irods_pt _create: %s", ipt_timer)
@@ -557,7 +565,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path))
 
-                col_path = self.home + "/" + str(rel_path)
+                col_path = f"{self.home}/{str(rel_path)}"
                 col = None
                 try:
                     col = self.session.collections.get(col_path)
@@ -592,8 +600,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 data_object_name = p.stem + p.suffix
                 subcollection_name = p.parent
 
-                collection_path = self.home + "/" + str(subcollection_name)
-                data_object_path = collection_path + "/" + str(data_object_name)
+                collection_path = f"{self.home}/{str(subcollection_name)}"
+                data_object_path = f"{collection_path}/{str(data_object_name)}"
 
                 try:
                     data_obj = self.session.data_objects.get(data_object_path)
@@ -708,8 +716,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             data_object_name = p.stem + p.suffix
             subcollection_name = p.parent
 
-            collection_path = self.home + "/" + str(subcollection_name)
-            data_object_path = collection_path + "/" + str(data_object_name)
+            collection_path = f"{self.home}/{str(subcollection_name)}"
+            data_object_path = f"{collection_path}/{str(data_object_name)}"
 
             return data_object_path
 

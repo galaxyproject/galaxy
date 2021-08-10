@@ -197,7 +197,7 @@ class JobRunnerMapper:
         elif expand_type in STOCK_RULES:
             expand_function = STOCK_RULES[expand_type]
         else:
-            raise JobMappingConfigurationException("Unhandled dynamic job runner type specified - %s" % expand_type)
+            raise JobMappingConfigurationException(f"Unhandled dynamic job runner type specified - {expand_type}")
 
         return self.__handle_rule(expand_function, destination)
 
@@ -214,7 +214,7 @@ class JobRunnerMapper:
     def __determine_job_destination(self, params, raw_job_destination=None):
         if self.job_wrapper.tool is None:
             raise JobMappingException(
-                "Can't map job to destination, tool '%s' is unavailable" % self.job_wrapper.get_job().tool_id
+                f"Can't map job to destination, tool '{self.job_wrapper.get_job().tool_id}' is unavailable"
             )
         if raw_job_destination is None:
             raw_job_destination = self.job_wrapper.tool.get_job_destination(params)

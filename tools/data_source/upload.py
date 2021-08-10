@@ -16,6 +16,7 @@ from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.upload_util import handle_upload, UploadProblemException
 from galaxy.util import (
     bunch,
+    is_url,
     safe_makedirs,
     unicodify
 )
@@ -196,24 +197,25 @@ def add_composite_file(dataset, registry, output_path, files_path):
         datatype = registry.get_datatype_by_extension(dataset.file_type)
 
     def to_path(path_or_url):
-        is_url = path_or_url.find('://') != -1  # todo fixme
-        if is_url:
+        isa_url = is_url(path_or_url)
+        file_sources = get_file_sources()
+        if isa_url or file_sources and file_sources.looks_like_uri(path_or_url):
             try:
-                temp_name = sniff.stream_url_to_file(path_or_url, file_sources=get_file_sources())
+                temp_name = sniff.stream_url_to_file(path_or_url, file_sources=file_sources)
             except Exception as e:
                 raise UploadProblemException('Unable to fetch %s\n%s' % (path_or_url, unicodify(e)))
 
-            return temp_name, is_url
+            return temp_name, isa_url
 
-        return path_or_url, is_url
+        return path_or_url, isa_url
 
     def make_files_path():
         safe_makedirs(files_path)
 
     def stage_file(name, composite_file_path, is_binary=False):
         dp = composite_file_path['path']
-        path, is_url = to_path(dp)
-        if is_url:
+        path, isa_url = to_path(dp)
+        if isa_url:
             dataset.path = path
             dp = path
 

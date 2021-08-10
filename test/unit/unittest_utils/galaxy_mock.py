@@ -27,6 +27,7 @@ from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import ApplicationStack
+from galaxy_test.base.celery_helper import rebind_container_to_task
 
 
 # =============================================================================
@@ -86,7 +87,9 @@ class MockApp(di.Container):
         self.init_datatypes()
         self.job_config = Bunch(
             dynamic_params=None,
-            destinations={}
+            destinations={},
+            use_messaging=False,
+            assign_handler=lambda *args, **kwargs: None
         )
         self.tool_data_tables = {}
         self.dataset_collections_service = None
@@ -99,6 +102,8 @@ class MockApp(di.Container):
         self.auth_manager = AuthManager(self.config)
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
+        self.is_job_handler = False
+        rebind_container_to_task(self)
 
         def url_for(*args, **kwds):
             return "/mock/url"
@@ -231,6 +236,7 @@ class MockTrans:
         self.anonymous = False
         self.debug = True
         self.user_is_admin = True
+        self.qualified_url_builder = None
 
         self.galaxy_session = None
         self.__user = user

@@ -11,6 +11,8 @@ export const STATES = {
     SETTING_METADATA: "setting_metadata",
     /** was created without a tool */
     NEW: "new",
+    /** job is being created, but not put into job queue yet */
+    WAITING: "waiting",
     /** has no data */
     EMPTY: "empty",
     /** has successfully completed running */

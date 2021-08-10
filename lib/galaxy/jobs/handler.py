@@ -21,6 +21,7 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy import model
+from galaxy.exceptions import ObjectNotFound
 from galaxy.jobs import (
     JobDestination,
     JobWrapper,
@@ -78,25 +79,34 @@ class ItemGrabber:
         self.sa_session = app.model.context
         self.grab_this = getattr(model, grab_type)
         self.grab_type = grab_type
+        self.handler_assignment_method = handler_assignment_method
+        self.self_handler_tags = self_handler_tags
+        self.max_grab = max_grab
+        self.handler_tags = handler_tags
         self._grab_conn_opts = {'autocommit': False}
+        self._grab_query = None
+        self._supports_returning = self.app.application_stack.supports_returning()
+
+    def setup_query(self):
         subq = select([self.grab_this.id]) \
             .where(and_(
-                self.grab_this.table.c.handler.in_(self_handler_tags),
+                self.grab_this.table.c.handler.in_(self.self_handler_tags),
                 self.grab_this.table.c.state == self.grab_this.states.NEW)) \
             .order_by(self.grab_this.table.c.id)
-        if max_grab:
-            subq = subq.limit(max_grab)
-        if handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
+        if self.max_grab:
+            subq = subq.limit(self.max_grab)
+        if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
             subq = subq.with_for_update(skip_locked=True)
         self._grab_query = self.grab_this.table.update() \
-            .returning(self.grab_this.table.c.id) \
             .where(self.grab_this.table.c.id.in_(subq)) \
             .values(handler=self.app.config.server_name)
-        if handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
+        if self._supports_returning:
+            self._grab_query = self._grab_query.returning(self.grab_this.table.c.id)
+        if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
             self._grab_conn_opts['isolation_level'] = 'SERIALIZABLE'
         log.info(
-            "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", handler_assignment_method,
-            self.app.config.server_name, ', '.join(str(x) for x in handler_tags)
+            "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", self.handler_assignment_method,
+            self.app.config.server_name, ', '.join(str(x) for x in self.handler_tags)
         )
 
     @staticmethod
@@ -119,16 +129,22 @@ class ItemGrabber:
         """
         # an excellent discussion on PostgreSQL concurrency safety:
         # https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
+        if self._grab_query is None:
+            self.setup_query()
         self.sa_session.expunge_all()
         conn = self.sa_session.connection(execution_options=self._grab_conn_opts)
         with conn.begin() as trans:
             try:
-                rows = conn.execute(self._grab_query).fetchall()
-                if rows:
-                    log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
-                    trans.commit()
+                proxy = conn.execute(self._grab_query)
+                if self._supports_returning:
+                    rows = proxy.fetchall()
+                    if rows:
+                        log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
+                        trans.commit()
+                    else:
+                        trans.rollback()
                 else:
-                    trans.rollback()
+                    trans.commit()
             except OperationalError as e:
                 # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
                 # and should have attribute `code`. Other engines should just report the message and move on.
@@ -232,7 +248,7 @@ class JobHandlerQueue(Monitors):
                 self.job_wrapper(job).fail('This tool was disabled before the job completed.  Please contact your Galaxy administrator.')
             elif job.job_runner_name is not None and job.job_runner_external_id is None:
                 # This could happen during certain revisions of Galaxy where a runner URL was persisted before the job was dispatched to a runner.
-                log.debug("(%s) Job runner assigned but no external ID recorded, adding to the job handler queue" % job.id)
+                log.debug(f"({job.id}) Job runner assigned but no external ID recorded, adding to the job handler queue")
                 job.job_runner_name = None
                 if self.track_jobs_in_database:
                     job.set_state(model.Job.states.NEW)
@@ -246,7 +262,7 @@ class JobHandlerQueue(Monitors):
                     job_destination.id = 'legacy_url'
                 job_wrapper.set_job_destination(job_destination, job.job_runner_external_id)
                 self.dispatcher.recover(job, job_wrapper)
-                log.info('(%s) Converted job from a URL to a destination and recovered' % (job.id))
+                log.info(f'({job.id}) Converted job from a URL to a destination and recovered')
             elif job.job_runner_name is None:
                 # Never (fully) dispatched
                 log.debug(f"({job.id}) No job runner assigned and job still in '{job.state}' state, adding to the job handler queue")
@@ -434,13 +450,15 @@ class JobHandlerQueue(Monitors):
                                    JOB_USER_OVER_TOTAL_WALLTIME):
                     if job_state == JOB_USER_OVER_QUOTA:
                         log.info("(%d) User (%s) is over quota: job paused" % (job.id, job.user_id))
+                        what = "your disk quota"
                     else:
                         log.info("(%d) User (%s) is over total walltime limit: job paused" % (job.id, job.user_id))
+                        what = "your total job runtime"
 
                     job.set_state(model.Job.states.PAUSED)
                     for dataset_assoc in job.output_datasets + job.output_library_datasets:
                         dataset_assoc.dataset.dataset.state = model.Dataset.states.PAUSED
-                        dataset_assoc.dataset.info = "Execution of this dataset's job is paused because you were over your disk quota at the time it was ready to run"
+                        dataset_assoc.dataset.info = f"Execution of this dataset's job is paused because you were over {what} at the time it was ready to run"
                         self.sa_session.add(dataset_assoc.dataset.dataset)
                     self.sa_session.add(job)
                 elif job_state == JOB_ERROR:
@@ -495,20 +513,20 @@ class JobHandlerQueue(Monitors):
             if hda_deleted or dataset_deleted:
                 if dataset_purged:
                     # If the dataset has been purged we can't resume the job by undeleting the input
-                    jobs_to_fail[job_id].append("Input dataset '%s' was deleted before the job started" % hda_name)
+                    jobs_to_fail[job_id].append(f"Input dataset '{hda_name}' was deleted before the job started")
                 else:
-                    jobs_to_pause[job_id].append("Input dataset '%s' was deleted before the job started" % hda_name)
+                    jobs_to_pause[job_id].append(f"Input dataset '{hda_name}' was deleted before the job started")
             elif hda_state == model.HistoryDatasetAssociation.states.FAILED_METADATA:
-                jobs_to_pause[job_id].append("Input dataset '%s' failed to properly set metadata" % hda_name)
+                jobs_to_pause[job_id].append(f"Input dataset '{hda_name}' failed to properly set metadata")
             elif dataset_state == model.Dataset.states.PAUSED:
-                jobs_to_pause[job_id].append("Input dataset '%s' was paused before the job started" % hda_name)
+                jobs_to_pause[job_id].append(f"Input dataset '{hda_name}' was paused before the job started")
             elif dataset_state == model.Dataset.states.ERROR:
-                jobs_to_pause[job_id].append("Input dataset '%s' is in error state" % hda_name)
+                jobs_to_pause[job_id].append(f"Input dataset '{hda_name}' is in error state")
             elif dataset_state != model.Dataset.states.OK:
                 jobs_to_ignore[job_id].append(f"Input dataset '{hda_name}' is in {dataset_state} state")
         for job_id in sorted(jobs_to_pause):
             pause_message = ", ".join(jobs_to_pause[job_id])
-            pause_message = "%s. To resume this job fix the input dataset(s)." % pause_message
+            pause_message = f"{pause_message}. To resume this job fix the input dataset(s)."
             job, job_wrapper = self.job_pair_for_id(job_id)
             try:
                 job_wrapper.pause(job=job, message=pause_message)
@@ -587,7 +605,7 @@ class JobHandlerQueue(Monitors):
             if failure_message == DEFAULT_JOB_PUT_FAILURE_MESSAGE:
                 log.exception('Failed to generate job destination')
             else:
-                log.debug("Intentionally failing job with message (%s)" % failure_message)
+                log.debug(f"Intentionally failing job with message ({failure_message})")
             job_wrapper.fail(failure_message)
             return JOB_ERROR, job_destination
         # job is ready to run, check limits
@@ -601,10 +619,13 @@ class JobHandlerQueue(Monitors):
         # Check total walltime limits
         if (state == JOB_READY and "delta" in self.app.job_config.limits.total_walltime):
             jobs_to_check = self.sa_session.query(model.Job).filter(
-                model.Job.user_id == job.user.id,
                 model.Job.update_time >= datetime.datetime.now() - datetime.timedelta(self.app.job_config.limits.total_walltime["window"]),
                 model.Job.state == 'ok'
-            ).all()
+            )
+            if job.user_id:
+                jobs_to_check = jobs_to_check.filter(model.Job.user_id == job.user_id)
+            else:
+                jobs_to_check = jobs_to_check.filter(model.Job.session_id == job.session_id)
             time_spent = datetime.timedelta(0)
             for job in jobs_to_check:
                 # History is job.state_history
@@ -618,7 +639,11 @@ class JobHandlerQueue(Monitors):
                     elif history.state == "ok":
                         finished = history.create_time
 
-                time_spent += finished - started
+                if started is not None and finished is not None:
+                    time_spent += finished - started
+                else:
+                    log.warning("Unable to calculate time spent for job %s; started: %s, finished: %s",
+                                job.id, started, finished)
 
             if time_spent > self.app.job_config.limits.total_walltime["delta"]:
                 return JOB_USER_OVER_TOTAL_WALLTIME, job_destination
@@ -643,10 +668,10 @@ class JobHandlerQueue(Monitors):
                 return JOB_INPUT_DELETED
             # an error in the input data causes us to bail immediately
             elif idata.state == idata.states.ERROR:
-                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail("input data %s is in error state" % (idata.hid))
+                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail(f"input data {idata.hid} is in error state")
                 return JOB_INPUT_ERROR
             elif idata.state == idata.states.FAILED_METADATA:
-                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail("input data %s failed to properly set metadata" % (idata.hid))
+                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail(f"input data {idata.hid} failed to properly set metadata")
                 return JOB_INPUT_ERROR
             elif idata.state != idata.states.OK and not (idata.state == idata.states.SETTING_METADATA and job.tool_id is not None and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id):
                 # need to requeue
@@ -782,7 +807,7 @@ class JobHandlerQueue(Monitors):
                 if count >= self.app.job_config.limits.anonymous_user_concurrent_jobs:
                     return JOB_WAIT
         else:
-            log.warning('Job %s is not associated with a user or session so job concurrency limit cannot be checked.' % job.id)
+            log.warning(f'Job {job.id} is not associated with a user or session so job concurrency limit cannot be checked.')
         return JOB_READY
 
     def __cache_total_job_count_per_destination(self):
@@ -909,7 +934,7 @@ class JobHandlerStopQueue(Monitors):
         if error_msg is not None:
             final_state = job.states.ERROR
             job.info = error_msg
-        job.set_final_state(final_state)
+        job.set_final_state(final_state, supports_skip_locked=self.app.application_stack.supports_skip_locked())
         self.sa_session.add(job)
         self.sa_session.flush()
 
@@ -998,7 +1023,7 @@ class DefaultJobDispatcher:
         # URLs can have their URL params converted to the destination's param
         # dict by the plugin.
         self.app.job_config.convert_legacy_destinations(self.job_runners)
-        log.debug("Loaded job runners plugins: " + ':'.join(self.job_runners.keys()))
+        log.debug(f"Loaded job runners plugins: {':'.join(self.job_runners.keys())}")
 
     def __get_runner_name(self, job_wrapper):
         if job_wrapper.can_split():
@@ -1063,6 +1088,10 @@ class DefaultJobDispatcher:
         except KeyError:
             log.error(f'recover(): ({job_wrapper.job_id}) Invalid job runner: {runner_name}')
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
+        except ObjectNotFound:
+            msg = "Could not recover job working directory after Galaxy restart"
+            log.exception(f"recover(): ({job_wrapper.job_id}) {msg}")
+            job_wrapper.fail(msg)
 
     def shutdown(self):
         failures = []
@@ -1073,4 +1102,4 @@ class DefaultJobDispatcher:
                 failures.append(name)
                 log.exception("Failed to shutdown runner %s", name)
         if failures:
-            raise Exception("Failed to shutdown runners: %s" % ', '.join(failures))
+            raise Exception(f"Failed to shutdown runners: {', '.join(failures)}")

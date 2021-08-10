@@ -371,12 +371,12 @@ def parse_gff3_attributes(attr_str):
     for tag_value_pair in attributes_list:
         pair = tag_value_pair.strip().split("=")
         if len(pair) == 1:
-            raise Exception("Attribute '%s' does not contain a '='" % tag_value_pair)
+            raise Exception(f"Attribute '{tag_value_pair}' does not contain a '='")
         if pair == '':
             continue
         tag = pair[0].strip()
         if tag == '':
-            raise Exception("Empty tag in attribute '%s'" % tag_value_pair)
+            raise Exception(f"Empty tag in attribute '{tag_value_pair}'")
         value = pair[1].strip()
         attributes[tag] = value
     return attributes
@@ -424,7 +424,7 @@ def read_unordered_gtf(iterator, strict=False):
         # transcripts with same ID on different chromosomes; this occurs in some popular
         # datasources, such as RefGenes in UCSC.
         def key_fn(fields):
-            return fields[0] + '_' + get_transcript_id(fields)
+            return f"{fields[0]}_{get_transcript_id(fields)}"
 
     # Aggregate intervals by transcript_id and collect comments.
     feature_intervals = {}

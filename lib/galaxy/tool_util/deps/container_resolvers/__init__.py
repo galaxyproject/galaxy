@@ -58,4 +58,4 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
         return container_description.type in enabled_container_types
 
     def __str__(self):
-        return "%s[]" % self.__class__.__name__
+        return f"{self.__class__.__name__}[]"

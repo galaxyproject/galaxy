@@ -1,10 +1,12 @@
 import json
 
+import yaml
 from selenium.webdriver.common.keys import Keys
 
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
+    WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
     WORKFLOW_WITH_INVALID_STATE,
@@ -87,6 +89,37 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open_with_name(new_name)
         self.assert_wf_name_is(name)
+
+    @selenium_test
+    def test_optional_select_data_field(self):
+        editor = self.components.workflow_editor
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SELECT_FROM_OPTIONAL_DATASET)
+        self.workflow_index_open()
+        self.workflow_index_click_option("Edit")
+        editor = self.components.workflow_editor
+        node = editor.node._(label="select_from_dataset_optional")
+        node.title.wait_for_and_click()
+        self.components.tool_form.parameter_checkbox(parameter='select_single').wait_for_and_click()
+        self.components.tool_form.parameter_input(parameter='select_single').wait_for_and_send_keys('parameter value')
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        tool_state = json.loads(workflow['steps']['0']['tool_state'])
+        assert tool_state['select_single'] == 'parameter value'
+        # Disable optional button, resets value to null
+        self.components.tool_form.parameter_checkbox(parameter='select_single').wait_for_and_click()
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        tool_state = json.loads(workflow['steps']['0']['tool_state'])
+        assert tool_state['select_single'] is None
+        # Enable button but don't provide a value
+        self.components.tool_form.parameter_checkbox(parameter='select_single').wait_for_and_click()
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        tool_state = json.loads(workflow['steps']['0']['tool_state'])
+        assert tool_state['select_single'] == ""
 
     @selenium_test
     def test_data_input(self):
@@ -404,6 +437,33 @@ steps:
         self.components.workflow_editor.modal_button_continue.wait_for_and_click()
         self.assert_has_changes_and_save()
 
+    @selenium_test
+    def test_editor_subworkflow_tool_upgrade_message(self):
+        workflow_populator = self.workflow_populator
+        embedded_workflow = yaml.safe_load(WORKFLOW_WITH_OLD_TOOL_VERSION)
+        # Create invalid tool state
+        embedded_workflow['steps']['mul_versions']['state']['inttest'] = 'Invalid'
+        outer_workflow = yaml.safe_load("""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+steps:
+  nested_workflow:
+    run: {}
+    in:
+      input1: outer_input
+        """)
+        outer_workflow['steps']['nested_workflow']['run'] = embedded_workflow
+        workflow_populator.upload_yaml_workflow(json.dumps(outer_workflow), exact_tools=True)
+        self.workflow_index_open()
+        self.workflow_index_click_option("Edit")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
+        self.assert_modal_has_text("parameter 'inttest': an integer or workflow parameter is required")
+        self.screenshot("workflow_editor_subworkflow_tool_upgrade")
+        self.components.workflow_editor.modal_button_continue.wait_for_and_click()
+        self.assert_has_changes_and_save()
+
     @staticmethod
     def set_text_element(element, value):
         # Try both, no harm here
@@ -549,8 +609,8 @@ steps:
 
     def workflow_editor_connect(self, source, sink, screenshot_partial=None):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        source_element = self.driver.find_element_by_css_selector("#" + source_id)
-        sink_element = self.driver.find_element_by_css_selector("#" + sink_id)
+        source_element = self.driver.find_element_by_css_selector(f"#{source_id}")
+        sink_element = self.driver.find_element_by_css_selector(f"#{sink_id}")
 
         ac = self.action_chains()
         ac = ac.move_to_element(source_element).click_and_hold()

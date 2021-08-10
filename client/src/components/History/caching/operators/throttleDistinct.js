@@ -4,7 +4,7 @@
 import moment from "moment";
 import { pipe } from "rxjs";
 import { filter } from "rxjs/operators";
-import { createDateStore } from "../model/DateStore";
+import { createDateStore } from "../../model/DateStore";
 
 export const throttleDistinctDateStore = createDateStore("throttleDistinct default");
 

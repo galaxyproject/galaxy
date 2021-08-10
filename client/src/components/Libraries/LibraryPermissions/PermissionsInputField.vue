@@ -104,8 +104,11 @@ export default {
                 .getSelectOptions(this.apiRootUrl, this.id, true, this.page, this.page_limit, this.searchValue)
                 .then((response) => {
                     this.options = response;
-                    if (searchChanged) this.fetched_options = this.options.roles;
-                    else this.fetched_options = this.fetched_options.concat(this.options.roles);
+                    if (searchChanged) {
+                        this.fetched_options = this.options.roles;
+                    } else {
+                        this.fetched_options = this.fetched_options.concat(this.options.roles);
+                    }
                 });
         },
         reachedEndOfList(reached) {

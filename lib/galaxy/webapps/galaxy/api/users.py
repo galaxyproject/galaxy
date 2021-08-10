@@ -30,7 +30,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
-from galaxy.tools.toolbox.filters import FilterFactory
+from galaxy.tool_util.toolbox.filters import FilterFactory
 from galaxy.util import (
     docstring_trim,
     listify
@@ -88,27 +88,27 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         deleted = util.string_as_bool(deleted)
 
         if f_email and (trans.user_is_admin or trans.app.config.expose_user_email):
-            query = query.filter(User.email.like("%%%s%%" % f_email))
+            query = query.filter(User.email.like(f"%{f_email}%"))
 
         if f_name and (trans.user_is_admin or trans.app.config.expose_user_name):
-            query = query.filter(User.username.like("%%%s%%" % f_name))
+            query = query.filter(User.username.like(f"%{f_name}%"))
 
         if f_any:
             if trans.user_is_admin:
                 query = query.filter(or_(
-                    User.email.like("%%%s%%" % f_any),
-                    User.username.like("%%%s%%" % f_any)
+                    User.email.like(f"%{f_any}%"),
+                    User.username.like(f"%{f_any}%")
                 ))
             else:
                 if trans.app.config.expose_user_email and trans.app.config.expose_user_name:
                     query = query.filter(or_(
-                        User.email.like("%%%s%%" % f_any),
-                        User.username.like("%%%s%%" % f_any)
+                        User.email.like(f"%{f_any}%"),
+                        User.username.like(f"%{f_any}%")
                     ))
                 elif trans.app.config.expose_user_email:
-                    query = query.filter(User.email.like("%%%s%%" % f_any))
+                    query = query.filter(User.email.like(f"%{f_any}%"))
                 elif trans.app.config.expose_user_name:
-                    query = query.filter(User.username.like("%%%s%%" % f_any))
+                    query = query.filter(User.username.like(f"%{f_any}%"))
 
         if deleted:
             # only admins can see deleted users
@@ -307,7 +307,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                         input['help'] = f"{help} {required}"
                     else:
                         input['help'] = required
-                    field = item + '|' + input['name']
+                    field = f"{item}|{input['name']}"
                     for data_item in user.extra_preferences:
                         if field in data_item:
                             input['value'] = user.extra_preferences[data_item]
@@ -421,7 +421,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 # Update user email and user's private role name which must match
                 private_role = trans.app.security_agent.get_private_user_role(user)
                 private_role.name = email
-                private_role.description = 'Private role for ' + email
+                private_role.description = f"Private role for {email}"
                 user.email = email
                 trans.sa_session.add(user)
                 trans.sa_session.add(private_role)
@@ -434,7 +434,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     else:
                         message = 'Unable to send activation email, please contact your local Galaxy administrator.'
                         if trans.app.config.error_email_to is not None:
-                            message += ' Contact: %s' % trans.app.config.error_email_to
+                            message += f' Contact: {trans.app.config.error_email_to}'
                         raise exceptions.InternalServerError(message)
         # Update public name
         if 'username' in payload:
@@ -462,7 +462,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         extra_pref_keys = self._get_extra_user_preferences(trans)
         if extra_pref_keys is not None:
             for key in extra_pref_keys:
-                key_prefix = key + '|'
+                key_prefix = f"{key}|"
                 for item in payload:
                     if item.startswith(key_prefix):
                         # Show error message if the required field is empty
@@ -495,13 +495,13 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 try:
                     user_address = trans.sa_session.query(UserAddress).get(trans.security.decode_id(d['id']))
                 except Exception as e:
-                    raise exceptions.ObjectNotFound('Failed to access user address ({}). {}'.format(d['id'], e))
+                    raise exceptions.ObjectNotFound(f"Failed to access user address ({d['id']}). {e}")
             else:
                 user_address = UserAddress()
                 trans.log_event('User address added')
             for field in AddressField.fields():
                 if str(field[2]).lower() == 'required' and not d.get(field[0]):
-                    raise exceptions.ObjectAttributeMissingException('Address {}: {} ({}) required.'.format(index + 1, field[1], field[0]))
+                    raise exceptions.ObjectAttributeMissingException(f'Address {index + 1}: {field[1]} ({field[0]}) required.')
                 setattr(user_address, field[0], str(d.get(field[0], '')))
             user_address.user = user
             user.addresses.append(user_address)
@@ -531,9 +531,9 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             tool_id = payload.get('object_id')
             tool = self.app.toolbox.get_tool(tool_id)
             if not tool:
-                raise exceptions.ObjectNotFound("Could not find tool with id '%s'." % tool_id)
+                raise exceptions.ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
             if not tool.allow_user_access(user):
-                raise exceptions.AuthenticationFailed("Access denied for tool with id '%s'." % tool_id)
+                raise exceptions.AuthenticationFailed(f"Access denied for tool with id '{tool_id}'.")
             if 'tools' in favorites:
                 favorite_tools = favorites['tools']
             else:
@@ -577,7 +577,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         if object_type in ['tools']:
             pass
         else:
-            raise exceptions.ObjectAttributeInvalidException("This type is not supported. Given object_type: %s" % object_type)
+            raise exceptions.ObjectAttributeInvalidException(f"This type is not supported. Given object_type: {object_type}")
 
     @expose_api
     def get_password(self, trans, id, payload=None, **kwd):
@@ -670,7 +670,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             new_filters = []
             for prefixed_name in payload:
                 if payload.get(prefixed_name) == 'true' and prefixed_name.startswith(filter_type):
-                    prefix = filter_type + '|'
+                    prefix = f"{filter_type}|"
                     new_filters.append(prefixed_name[len(prefix):])
             user.preferences[filter_type] = ','.join(new_filters)
         trans.sa_session.add(user)
@@ -695,7 +695,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 if len(split) > 1:
                     description = split[1]
             else:
-                log.warning('No description specified in the __doc__ string for %s.' % filter_name)
+                log.warning(f'No description specified in the __doc__ string for {filter_name}.')
 
             filter_inputs.append({
                 'type': 'boolean',
@@ -895,14 +895,14 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             del dbkeys[key]
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
-            return {'message': 'Deleted %s.' % key}
+            return {'message': f'Deleted {key}.'}
         else:
-            raise exceptions.ObjectNotFound('Could not find and delete build (%s).' % key)
+            raise exceptions.ObjectNotFound(f'Could not find and delete build ({key}).')
 
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)
         if not user:
-            raise exceptions.RequestParameterInvalidException('Invalid user (%s).' % id)
+            raise exceptions.RequestParameterInvalidException(f'Invalid user ({id}).')
         if user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException('Access denied.')
         return user

@@ -188,6 +188,10 @@ def config_allows_origin(origin_raw, config):
     return False
 
 
+def qualified_url_builder(path):
+    return url_for(path, qualified=True)
+
+
 class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryContext):
     """
     Encapsulates web transaction specific state for the Galaxy application
@@ -276,6 +280,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     @property
     def app(self):
         return self._app
+
+    @property
+    def qualified_url_builder(self):
+        return qualified_url_builder
 
     def setup_i18n(self):
         locales = []
@@ -480,7 +488,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                             galaxy_session.user.email)
             elif galaxy_session is not None and galaxy_session.user is not None and galaxy_session.user.deleted:
                 invalidate_existing_session = True
-                log.warning("User '%s' is marked deleted, invalidating session" % galaxy_session.user.email)
+                log.warning(f"User '{galaxy_session.user.email}' is marked deleted, invalidating session")
         # Do we need to invalidate the session for some reason?
         if invalidate_existing_session:
             prev_galaxy_session = galaxy_session
@@ -612,14 +620,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             user.set_random_password(length=12)
             user.external = True
             # Replace invalid characters in the username
-            for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-' + '.']:
+            for char in [x for x in username if x not in f"{string.ascii_lowercase + string.digits}-."]:
                 username = username.replace(char, '-')
             # Find a unique username - user can change it later
             if self.sa_session.query(self.app.model.User).filter_by(username=username).first():
                 i = 1
-                while self.sa_session.query(self.app.model.User).filter_by(username=(username + '-' + str(i))).first():
+                while self.sa_session.query(self.app.model.User).filter_by(username=f"{username}-{str(i)}").first():
                     i += 1
-                username += '-' + str(i)
+                username += f"-{str(i)}"
             user.username = username
             self.sa_session.add(user)
             self.sa_session.flush()
@@ -967,6 +975,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             template.render_context(context)
             return []
         return render
+
+    def qualified_url_for_path(self, path):
+        return url_for(path, qualified=True)
 
 
 def default_url_path(path):

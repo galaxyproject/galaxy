@@ -29,7 +29,7 @@ class View:
                 c.type,
                 primary_key=(c.name in pkeys)
             )
-            for c in selectable.c
+            for c in selectable.subquery().columns
         ]
         # We do not use the metadata object from model.mapping.py that contains all the Table objects
         # because that would create a circular import (create_view is called from View objects

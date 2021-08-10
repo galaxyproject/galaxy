@@ -19,7 +19,7 @@ assert sys.version_info[:2] >= (2, 4)
 
 
 def stop_err(msg):
-    sys.exit("%s" % msg)
+    sys.exit(f"{msg}")
 
 
 def __main__():
@@ -40,10 +40,10 @@ def __main__():
                     seq_title_startswith = line_startswith
                 if seq_title_startswith != line_startswith:
                     stop_err('Invalid fastqsolexa format at line %d: %s.' % (i + 1, line))
-                outfile.write('>%s\n' % line[1:])
+                outfile.write(f'>{line[1:]}\n')
             elif fastq_block_lines == 2:
                 # line 2 is nucleotides
-                outfile.write('%s\n' % line)
+                outfile.write(f'{line}\n')
             else:
                 pass
 

@@ -42,7 +42,7 @@ class ToolInfo:
 
     def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=None, guest_ports=None, tool_id=None, tool_version=None, profile=-1):
         if env_pass_through is None:
-            env_pass_through = ["GALAXY_SLOTS"]
+            env_pass_through = ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT"]
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:

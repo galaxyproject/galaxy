@@ -68,7 +68,7 @@ class HomebrewToolShedDependencyResolver(
         try:
             raw_dependencies = RawDependencies(tool_dependencies_path)
         except Exception:
-            log.debug("Failed to parse dependencies in file %s" % tool_dependencies_path)
+            log.debug(f"Failed to parse dependencies in file {tool_dependencies_path}")
             return NullDependency(version=version, name=name)
 
         raw_dependency = raw_dependencies.find(name, version)

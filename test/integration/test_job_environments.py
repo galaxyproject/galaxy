@@ -15,8 +15,9 @@ SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")
 IO_INJECTION_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "io_injection_job_conf.yml")
 SETS_TMP_DIR_TO_TRUE_JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "sets_tmp_dir_to_true_job_conf.xml")
 SETS_TMP_DIR_AS_EXPRESSION_JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "sets_tmp_dir_expression_job_conf.xml")
+EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_job_conf.xml")
 
-JobEnviromentProperties = collections.namedtuple("JobEnvironmentProperties", [
+JobEnvironmentProperties = collections.namedtuple("JobEnvironmentProperties", [
     "user_id",
     "group_id",
     "pwd",
@@ -42,7 +43,7 @@ class RunsEnvironmentJobs:
         home = self.dataset_populator.get_history_dataset_content(history_id, hid=4).strip()
         tmp = self.dataset_populator.get_history_dataset_content(history_id, hid=5).strip()
         some_env = self.dataset_populator.get_history_dataset_content(history_id, hid=6).strip()
-        return JobEnviromentProperties(user_id, group_id, pwd, home, tmp, some_env)
+        return JobEnvironmentProperties(user_id, group_id, pwd, home, tmp, some_env)
 
     def _check_completed_history(self, history_id):
         """Extension point that lets subclasses investigate the completed job."""
@@ -113,6 +114,35 @@ class DefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTest
         assert job_env.pwd.endswith("/working")
         job_directory = os.path.dirname(job_env.pwd)
         assert job_env.home == os.path.join(job_directory, "home"), job_env.home
+
+
+class EmbeddedPulsarDefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls.jobs_directory = tempfile.mkdtemp()
+        config["jobs_directory"] = cls.jobs_directory
+        config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE
+
+    @skip_without_tool("job_environment_default")
+    def test_default_environment_1801(self):
+        job_env = self._run_and_get_environment_properties()
+
+        euid = os.geteuid()
+        egid = os.getgid()
+
+        assert job_env.user_id == str(euid), job_env.user_id
+        assert job_env.group_id == str(egid), job_env.group_id
+        assert 'pulsar_staging' in job_env.pwd
+        assert job_env.pwd.endswith("/working")
+        # job ran in embedded pulsar, not local job dir
+        assert self.jobs_directory not in job_env.pwd
+
+        # Newer tools get isolated home directories in job_directory/home
+        job_directory = os.path.dirname(job_env.pwd)
+        assert os.path.abspath(job_env.home) == os.path.join(job_directory, "home"), job_env.home
+
+        # Since job_conf doesn't set tmp_dir parameter - temp isn't in job_directory
+        assert not job_env.tmp.startswith(job_directory)
 
 
 class TmpDirToTrueJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):

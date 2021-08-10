@@ -22,7 +22,7 @@ class NavigatesGalaxySeleniumTestCase(SeleniumTestCase):
         # Open the details, verify they are open and do a refresh.
         exception = None
         try:
-            refresh_button = self.wait_for_selector("#history-refresh-button")
+            refresh_button = self.wait_for_selector(".history-refresh-button")
             refresh_button.click()
         except Exception as e:
             exception = e

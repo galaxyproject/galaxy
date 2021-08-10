@@ -9,9 +9,9 @@ from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
 from galaxy.util import directory_hash_id
 from ..unittest_utils.objectstore_helpers import (
+    Config as TestConfig,
     DISK_TEST_CONFIG,
     DISK_TEST_CONFIG_YAML,
-    TestConfig,
 )
 
 

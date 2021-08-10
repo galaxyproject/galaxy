@@ -63,11 +63,16 @@ export const HistoryPanelProxy = Backbone.View.extend({
         });
 
         // Watch the store, change the fake history model when it changs
-        store.subscribe(({ type, payload: newId }) => {
-            if (type == "betaHistory/setCurrentHistoryId") {
-                Galaxy.currHistoryPanel.setModel(new History({ id: newId }));
+        store.watch(
+            (st, gets) => gets["betaHistory/currentHistory"],
+            (history) => {
+                const panel = Galaxy.currHistoryPanel;
+                const existingId = panel?.model?.id || undefined;
+                if (existingId != history.id) {
+                    panel.setModel(new History({ id: history.id }));
+                }
             }
-        });
+        );
     },
     render() {
         // Hack: For now, remove unused "unified-panel" elements until we can

@@ -1,7 +1,7 @@
 import { of, isObservable, timer } from "rxjs";
 import { take, takeUntil } from "rxjs/operators";
 import { ObserverSpy } from "@hirez_io/observer-spy";
-// import { wait } from "jest/helpers";
+import { untilNthEmission } from "jest/helpers";
 
 import { SearchParams } from "../../model/SearchParams";
 import { buildContentId } from "../../caching/db/observables";
@@ -17,31 +17,39 @@ import historyContent from "../../test/json/historyContent.json";
 jest.mock("app");
 jest.mock("../../caching");
 
-beforeEach(wipeDatabase);
-afterEach(wipeDatabase);
+beforeEach(async () => {
+    await wipeDatabase();
+    // eslint-disable-next-line no-unused-vars
+    const cachedContent = await bulkCacheContent(historyContent, true);
+    // console.log(cachedContent.map((o) => o.hid));
+});
+
+afterEach(async () => {
+    await wipeDatabase();
+});
 
 // We're testing observables and we're assuming they complete,
 // but we add a takeUntil() to each one in the event that something
 // is wrong to avoid making the tests take forever
-const safetyTimeout = 600;
+const safetyTimeout = 1000;
 
 describe("watchHistoryContents", () => {
     const firstDoc = historyContent[0];
 
-    beforeEach(async () => await bulkCacheContent(historyContent));
-
     describe("simple loading scenario", () => {
         const hid$ = of(firstDoc.hid);
-        const fakeHistory = { id: firstDoc.history_id };
-        const input$ = of([fakeHistory, new SearchParams()]);
+        const history = { id: firstDoc.history_id };
+        const filters = new SearchParams();
+        const pageSize = 5;
 
         test("should observe pre-inserted content on the initial emission", async () => {
-            const watcher$ = input$.pipe(
+            const watcher$ = hid$.pipe(
                 watchHistoryContents({
-                    hid$,
-                    pageSize: 5,
+                    history,
+                    filters,
+                    pageSize,
+                    debug: false,
                 }),
-                take(1),
                 takeUntil(timer(safetyTimeout))
             );
 
@@ -54,54 +62,54 @@ describe("watchHistoryContents", () => {
 
             expect(spy.receivedNext()).toBe(true);
             expect(spy.receivedComplete()).toBe(true);
+            expect(spy.getValuesLength()).toBe(1);
 
             const { startKey, contents } = spy.getFirstValue();
-            expect(startKey).toEqual(firstDoc.hid); // we know there should be an exactd match
+            // we know there should be an exactd match
+            expect(startKey).toEqual(firstDoc.hid);
             expect(Array.isArray(contents)).toEqual(true);
-            expect(contents.length).toEqual(6); // we're at the top, should get 5 rows down + the match
+            // Top of list, match + 2 * pageSize
+            expect(contents.length).toBeGreaterThanOrEqual(2 * pageSize);
         });
 
         test("should observe subsequently updated data", async () => {
-            const watcher$ = input$.pipe(
+            const watcher$ = hid$.pipe(
                 watchHistoryContents({
-                    hid$,
+                    history,
+                    filters,
+                    debouncePeriod: 100,
                     pageSize: 5,
                 }),
-                // safeguard, sometimes the debouncing merges both results into one
-                // event, sometimes they come in as 2 separate ones, either way
-                // should be done in 2 secs.
-                take(2),
-                takeUntil(timer(1000))
+                takeUntil(timer(safetyTimeout))
             );
-
-            expect(isObservable(watcher$)).toBe(true);
-
-            // after the initial event, update one of the items
-
-            const firstWatcherEvent$ = watcher$.pipe(take(1));
-
-            firstWatcherEvent$.subscribe(async () => {
-                const docId = buildContentId(firstDoc);
-                const lookup = await getCachedContent(docId);
-                expect(lookup.hid).toEqual(firstDoc.hid);
-                expect(lookup._id).toEqual(docId);
-
-                lookup.foo = "abc";
-                const update = await cacheContent(lookup);
-                expect(update.updated).toEqual(true);
-                expect(update.id).toEqual(lookup._id);
-                expect(update.id).toEqual(docId);
-            });
 
             // spy on output of observable, wait for it to end
             const spy = new ObserverSpy();
             watcher$.subscribe(spy);
-            await spy.onComplete();
+
+            // wait for the first event (take(n) as a promise for easier testing)
+            await untilNthEmission(watcher$, 1, safetyTimeout);
+
+            // then update the first doc, need to delay longer than
+            // the debounce on the watch operator or the aggregation will
+            // think it's all part of the same update
+            const docId = buildContentId(firstDoc);
+            const lookup = await getCachedContent(docId);
+            expect(lookup.hid).toEqual(firstDoc.hid);
+            expect(lookup._id).toEqual(docId);
+
+            lookup.foo = "abc";
+            const update = await cacheContent(lookup);
+            expect(update.updated).toEqual(true);
+            expect(update.id).toEqual(lookup._id);
+            expect(update.id).toEqual(docId);
 
             // Should see 2 sets of content, the last of which should have the
             // foo field in one of its entries
+            await spy.onComplete();
             expect(spy.receivedNext()).toBe(true);
             expect(spy.receivedComplete()).toBe(true);
+            expect(spy.getValuesLength()).toBe(2);
 
             const { contents: lastContents } = spy.getLastValue();
             expect(lastContents.some((doc) => doc.foo == "abc")).toBe(true);
@@ -110,17 +118,20 @@ describe("watchHistoryContents", () => {
 
     describe("should respect filter inputs", () => {
         const hid$ = of(firstDoc.hid);
-        const fakeHistory = { id: firstDoc.history_id };
+        const history = { id: firstDoc.history_id };
+        let filters;
+
+        beforeEach(() => {
+            filters = new SearchParams();
+        });
 
         test("deleted flag", async () => {
-            const filters = new SearchParams();
             filters.showDeleted = true;
 
-            const input$ = of([fakeHistory, filters]);
-
-            const watcher$ = input$.pipe(
+            const watcher$ = hid$.pipe(
                 watchHistoryContents({
-                    hid$,
+                    history,
+                    filters,
                     pageSize: 5,
                 }),
                 take(1),
@@ -142,14 +153,12 @@ describe("watchHistoryContents", () => {
         });
 
         test("hidden flag", async () => {
-            const filters = new SearchParams();
             filters.showHidden = true;
 
-            const input$ = of([fakeHistory, filters]);
-
-            const watcher$ = input$.pipe(
+            const watcher$ = hid$.pipe(
                 watchHistoryContents({
-                    hid$,
+                    history,
+                    filters,
                     pageSize: 5,
                 }),
                 take(1),
@@ -171,15 +180,13 @@ describe("watchHistoryContents", () => {
         });
 
         test("deleted and hidden flag", async () => {
-            const filters = new SearchParams();
             filters.showDeleted = true;
             filters.showHidden = true;
 
-            const input$ = of([fakeHistory, filters]);
-
-            const watcher$ = input$.pipe(
+            const watcher$ = hid$.pipe(
                 watchHistoryContents({
-                    hid$,
+                    history,
+                    filters,
                     pageSize: 5,
                 }),
                 take(1),

@@ -102,7 +102,7 @@
                     job_id: dataset.creating_job,
                 })
             "
-            icon="fa fa-refresh"
+            icon="fa fa-redo"
         />
 
         <PriorityMenuItem
@@ -241,7 +241,9 @@ export default {
 
         viewData() {
             const id = this.dataset.id;
-            if (!id) return;
+            if (!id) {
+                return;
+            }
             this.useGalaxy((Galaxy) => {
                 if (Galaxy.frame && Galaxy.frame.active) {
                     Galaxy.frame.addDataset(id);

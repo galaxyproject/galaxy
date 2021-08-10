@@ -29,7 +29,8 @@ extra_dirs:
 """
 
 
-class TestConfig:
+class Config:
+
     def __init__(self, config_str=DISK_TEST_CONFIG, clazz=None, store_by="id"):
         self.temp_directory = mkdtemp()
         if config_str.startswith("<"):

@@ -17,7 +17,7 @@ def parse_filters(search_term, filters):
     search_term_without_filters = None
     search_space = search_term.replace('"', "'")
     filter_keys = "|".join(list(filters.keys()))
-    pattern = fr"({filter_keys}):(\w+|\'.*?\')"
+    pattern = fr"({filter_keys}):(?:\s+)?([\w-]+|\'.*?\')"
     reserved = re.compile(pattern)
     while True:
         match = reserved.search(search_space)

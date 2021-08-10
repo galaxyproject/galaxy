@@ -190,7 +190,7 @@ class Interval(Tabular):
                     # Make sure we are at the next new line
                     readline_count = VIEWPORT_MAX_READS_PER_LINE
                     while line.rstrip('\n\r') == line:
-                        assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                        assert readline_count > 0, Exception(f'Viewport readline count exceeded for dataset {dataset.id}.')
                         line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
                         if not line:
                             break  # EOF
@@ -605,7 +605,7 @@ class _RemoteCallMixin:
         the data available, followed by redirecting to the remote site with a
         link back to the available information.
         """
-        internal_url = "%s" % app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename=f'{type}_{site_name}')
+        internal_url = f"{app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename=f'{type}_{site_name}')}"
         base_url = app.config.get("display_at_callback", base_url)
         display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
                                  (base_url, app.url_for(controller='root'), dataset.id, type))
@@ -734,7 +734,7 @@ class Gff(Tabular, _RemoteCallMixin):
                                     stop = int(elems[1].split('..')[1])
                                     break  # use location declared in file
                                 else:
-                                    log.debug("line (%s) uses an unsupported ##sequence-region definition." % str(line))
+                                    log.debug(f"line ({str(line)}) uses an unsupported ##sequence-region definition.")
                                     # break #no break, if bad definition, we try another line
                             elif line.startswith("browser position"):
                                 # Allow UCSC style browser and track info in the GFF file
@@ -759,7 +759,7 @@ class Gff(Tabular, _RemoteCallMixin):
                         # make sure we are at the next new line
                         readline_count = VIEWPORT_MAX_READS_PER_LINE
                         while line.rstrip('\n\r') == line:
-                            assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                            assert readline_count > 0, Exception(f'Viewport readline count exceeded for dataset {dataset.id}.')
                             line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
                             if not line:
                                 break  # EOF
@@ -1139,7 +1139,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                         # make sure we are at the next new line
                         readline_count = VIEWPORT_MAX_READS_PER_LINE
                         while line.rstrip('\n\r') == line:
-                            assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                            assert readline_count > 0, Exception(f'Viewport readline count exceeded for dataset {dataset.id}.')
                             line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
                             if not line:
                                 break  # EOF
@@ -1319,7 +1319,7 @@ class CustomTrack(Tabular):
                         # make sure we are at the next new line
                         readline_count = VIEWPORT_MAX_READS_PER_LINE
                         while line.rstrip('\n\r') == line:
-                            assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                            assert readline_count > 0, Exception(f'Viewport readline count exceeded for dataset {dataset.id}.')
                             line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
                             if not line:
                                 break  # EOF
@@ -1338,7 +1338,7 @@ class CustomTrack(Tabular):
         if chrom is not None:
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites('ucsc'):
-                    internal_url = "%s" % app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)
+                    internal_url = f"{app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)}"
                     display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, app.url_for(controller='root'), dataset.id, type))
                     redirect_url = quote_plus(f"{site_url}db={dataset.dbkey}&position={chrom}:{start}-{stop}&hgt.customText=%s")
                     link = f'{internal_url}?redirect_url={redirect_url}&display_url={display_url}'

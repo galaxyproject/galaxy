@@ -130,7 +130,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             history_properties = self.new_history_properties()
             history_name = history_properties.get('name')
             if history_name:
-                history_name = 'imported from archive: %s' % history_name
+                history_name = f'imported from archive: {history_name}'
             else:
                 history_name = 'unnamed imported history'
 
@@ -203,7 +203,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         "object_store_id",
                         "total_size",
                         "created_from_basename",
-                        "uuid"
+                        "uuid",
                     ]
 
                     for attribute in dataset_attributes:
@@ -231,10 +231,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     "designation",
                     "visible",
                     "metadata",
+                    "tool_version",
                 ]
                 for attribute in attributes:
                     if attribute in dataset_attrs:
-                        value = dataset_attrs[attribute]
+                        value = dataset_attrs.get(attribute)
                         if attribute == "metadata":
                             def remap_objects(p, k, obj):
                                 if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
@@ -262,6 +263,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                        visible=dataset_attrs['visible'],
                                                                        deleted=dataset_attrs.get('deleted', False),
                                                                        dbkey=metadata['dbkey'],
+                                                                       tool_version=metadata.get('tool_version'),
                                                                        metadata=metadata,
                                                                        history=history,
                                                                        create_dataset=True,
@@ -278,6 +280,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                               visible=dataset_attrs['visible'],
                                                                               deleted=dataset_attrs.get('deleted', False),
                                                                               dbkey=metadata['dbkey'],
+                                                                              tool_version=metadata.get('tool_version'),
                                                                               metadata=metadata,
                                                                               create_dataset=True,
                                                                               sa_session=self.sa_session)
@@ -312,13 +315,13 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         # Do security check and move/copy dataset data.
                         archive_path = os.path.abspath(os.path.join(self.archive_dir, file_name))
                         if os.path.islink(archive_path):
-                            raise MalformedContents("Invalid dataset path: %s" % archive_path)
+                            raise MalformedContents(f"Invalid dataset path: {archive_path}")
 
                         temp_dataset_file_name = \
                             os.path.realpath(archive_path)
 
                         if not in_directory(temp_dataset_file_name, self.archive_dir):
-                            raise MalformedContents("Invalid dataset path: %s" % temp_dataset_file_name)
+                            raise MalformedContents(f"Invalid dataset path: {temp_dataset_file_name}")
 
                     if not file_name or not os.path.exists(temp_dataset_file_name):
                         dataset_instance.state = dataset_instance.states.DISCARDED
@@ -341,7 +344,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                 for extra_file in files:
                                     source = os.path.join(root, extra_file)
                                     if not in_directory(source, self.archive_dir):
-                                        raise MalformedContents("Invalid dataset path: %s" % source)
+                                        raise MalformedContents(f"Invalid dataset path: {source}")
                                     self.object_store.update_from_file(
                                         dataset_instance.dataset, extra_dir=extra_dir,
                                         alt_name=extra_file, file_name=source,
@@ -772,7 +775,8 @@ class ObjectImportTracker:
 
 
 def get_import_model_store_for_directory(archive_dir, **kwd):
-    assert os.path.isdir(archive_dir)
+    if not os.path.isdir(archive_dir):
+        raise Exception(f"Could not find import model store for directory [{archive_dir}] (full path [{os.path.abspath(archive_dir)}])")
     if os.path.exists(os.path.join(archive_dir, ATTRS_FILENAME_EXPORT)):
         return DirectoryImportModelStoreLatest(archive_dir, **kwd)
     else:
@@ -793,7 +797,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
     def datasets_properties(self):
         datasets_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_DATASETS)
         datasets_attrs = load(open(datasets_attrs_file_name))
-        provenance_file_name = datasets_attrs_file_name + ".provenance"
+        provenance_file_name = f"{datasets_attrs_file_name}.provenance"
 
         if os.path.exists(provenance_file_name):
             provenance_attrs = load(open(provenance_file_name))
@@ -819,16 +823,17 @@ class BaseDirectoryImportModelStore(ModelImportStore):
 
     def jobs_properties(self):
         jobs_attr_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_JOBS)
-        jobs_attrs = load(open(jobs_attr_file_name))
-        return jobs_attrs
+        try:
+            return load(open(jobs_attr_file_name))
+        except FileNotFoundError:
+            return []
 
     def implicit_collection_jobs_properties(self):
         implicit_collection_jobs_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS)
-        if os.path.exists(implicit_collection_jobs_attrs_file_name):
-            implicit_collection_jobs_attrs = load(open(implicit_collection_jobs_attrs_file_name))
-        else:
-            implicit_collection_jobs_attrs = []
-        return implicit_collection_jobs_attrs
+        try:
+            return load(open(implicit_collection_jobs_attrs_file_name))
+        except FileNotFoundError:
+            return []
 
 
 class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
@@ -1010,7 +1015,7 @@ class ModelExportStore(metaclass=abc.ABCMeta):
 
 class DirectoryModelExportStore(ModelExportStore):
 
-    def __init__(self, export_directory, app=None, for_edit=False, serialize_dataset_objects=None, export_files=None, strip_metadata_files=True):
+    def __init__(self, export_directory, app=None, for_edit=False, serialize_dataset_objects=None, export_files=None, strip_metadata_files=True, serialize_jobs=True):
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
         :param app: Galaxy App or app-like object. Must be provided if `for_edit` and/or `serialize_dataset_objects` are True
@@ -1018,6 +1023,7 @@ class DirectoryModelExportStore(ModelExportStore):
         :param serialize_dataset_objects: If True will encode IDs using the host secret. Defaults `for_edit`.
         :param export_files: How files should be exported, can be 'symlink', 'copy' or None, in which case files
                              will not be serialized.
+        :param serialize_jobs: Include job data in model export. Not needed for set_metadata script.
         """
         if not os.path.exists(export_directory):
             os.makedirs(export_directory)
@@ -1030,6 +1036,7 @@ class DirectoryModelExportStore(ModelExportStore):
             sessionless = True
             security = IdEncodingHelper(id_secret="randomdoesntmatter")
 
+        self.serialize_jobs = serialize_jobs
         self.sessionless = sessionless
         self.security = security
 
@@ -1114,7 +1121,7 @@ class DirectoryModelExportStore(ModelExportStore):
                 file_list = []
 
             if len(file_list):
-                arcname = os.path.join(dir_name, 'extra_files_path_%s' % dataset_hid)
+                arcname = os.path.join(dir_name, f'extra_files_path_{dataset_hid}')
                 add(extra_files_path, os.path.join(export_directory, arcname))
                 as_dict['extra_files_path'] = arcname
             else:
@@ -1236,7 +1243,7 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(datasets_attrs_filename, 'w') as datasets_attrs_out:
             datasets_attrs_out.write(to_json(datasets_attrs))
 
-        with open(datasets_attrs_filename + ".provenance", 'w') as provenance_attrs_out:
+        with open(f"{datasets_attrs_filename}.provenance", 'w') as provenance_attrs_out:
             provenance_attrs_out.write(to_json(provenance_attrs))
 
         libraries_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_LIBRARIES)
@@ -1247,126 +1254,7 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(collections_attrs_filename, 'w') as collections_attrs_out:
             collections_attrs_out.write(to_json(self.collections_attrs))
 
-        #
-        # Write jobs attributes file.
-        #
-
-        # Get all jobs associated with included HDAs.
-        jobs_dict = {}
-        implicit_collection_jobs_dict = {}
-
-        def record_associated_jobs(obj):
-            # Get the job object.
-            job = None
-            for assoc in getattr(obj, 'creating_job_associations', []):
-                # For mapped over jobs obj could be DatasetCollection, which has no creating_job_association
-                job = assoc.job
-                break
-            if not job:
-                # No viable job.
-                return
-
-            jobs_dict[job.id] = job
-            icja = job.implicit_collection_jobs_association
-            if icja:
-                implicit_collection_jobs = icja.implicit_collection_jobs
-                implicit_collection_jobs_dict[implicit_collection_jobs.id] = implicit_collection_jobs
-
-        for hda, _include_files in self.included_datasets.values():
-            # Get the associated job, if any. If this hda was copied from another,
-            # we need to find the job that created the origial hda
-            job_hda = hda
-            while job_hda.copied_from_history_dataset_association:  # should this check library datasets as well?
-                job_hda = job_hda.copied_from_history_dataset_association
-            if not job_hda.creating_job_associations:
-                # No viable HDA found.
-                continue
-
-            record_associated_jobs(job_hda)
-
-        for hdca in self.included_collections:
-            record_associated_jobs(hdca)
-
-        # Get jobs' attributes.
         jobs_attrs = []
-        for job in jobs_dict.values():
-            # Don't attempt to serialize jobs for editing... yet at least.
-            if self.serialization_options.for_edit:
-                continue
-
-            job_attrs = job.serialize(self.security, self.serialization_options)
-
-            # -- Get input, output datasets. --
-
-            input_dataset_mapping = {}
-            output_dataset_mapping = {}
-            input_dataset_collection_mapping = {}
-            input_dataset_collection_element_mapping = {}
-            output_dataset_collection_mapping = {}
-            implicit_output_dataset_collection_mapping = {}
-
-            for assoc in job.input_datasets:
-                # Optional data inputs will not have a dataset.
-                if assoc.dataset:
-                    name = assoc.name
-                    if name not in input_dataset_mapping:
-                        input_dataset_mapping[name] = []
-
-                    input_dataset_mapping[name].append(self.exported_key(assoc.dataset))
-
-            for assoc in job.output_datasets:
-                # Optional data inputs will not have a dataset.
-                if assoc.dataset:
-                    name = assoc.name
-                    if name not in output_dataset_mapping:
-                        output_dataset_mapping[name] = []
-
-                    output_dataset_mapping[name].append(self.exported_key(assoc.dataset))
-
-            for assoc in job.input_dataset_collections:
-                # Optional data inputs will not have a dataset.
-                if assoc.dataset_collection:
-                    name = assoc.name
-                    if name not in input_dataset_collection_mapping:
-                        input_dataset_collection_mapping[name] = []
-
-                    input_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
-
-            for assoc in job.input_dataset_collection_elements:
-                if assoc.dataset_collection_element:
-                    name = assoc.name
-                    if name not in input_dataset_collection_element_mapping:
-                        input_dataset_collection_element_mapping[name] = []
-
-                    input_dataset_collection_element_mapping[name].append(self.exported_key(assoc.dataset_collection_element))
-
-            for assoc in job.output_dataset_collection_instances:
-                # Optional data outputs will not have a dataset.
-                if assoc.dataset_collection_instance:
-                    name = assoc.name
-                    if name not in output_dataset_collection_mapping:
-                        output_dataset_collection_mapping[name] = []
-
-                    output_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection_instance))
-
-            for assoc in job.output_dataset_collections:
-                if assoc.dataset_collection:
-                    name = assoc.name
-
-                    if name not in implicit_output_dataset_collection_mapping:
-                        implicit_output_dataset_collection_mapping[name] = []
-
-                    implicit_output_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
-
-            job_attrs['input_dataset_mapping'] = input_dataset_mapping
-            job_attrs['input_dataset_collection_mapping'] = input_dataset_collection_mapping
-            job_attrs['input_dataset_collection_element_mapping'] = input_dataset_collection_element_mapping
-            job_attrs['output_dataset_mapping'] = output_dataset_mapping
-            job_attrs['output_dataset_collection_mapping'] = output_dataset_collection_mapping
-            job_attrs['implicit_output_dataset_collection_mapping'] = implicit_output_dataset_collection_mapping
-
-            jobs_attrs.append(job_attrs)
-
         for job_id, job_output_dataset_associations in self.job_output_dataset_associations.items():
             output_dataset_mapping = {}
             for name, dataset in job_output_dataset_associations.items():
@@ -1375,22 +1263,141 @@ class DirectoryModelExportStore(ModelExportStore):
                 output_dataset_mapping[name].append(self.exported_key(dataset))
             jobs_attrs.append({"id": job_id, 'output_dataset_mapping': output_dataset_mapping})
 
-        icjs_attrs = []
-        for icj in implicit_collection_jobs_dict.values():
-            icj_attrs = icj.serialize(self.security, self.serialization_options)
-            icjs_attrs.append(icj_attrs)
+        if self.serialize_jobs:
 
-        jobs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_JOBS)
-        with open(jobs_attrs_filename, 'w') as jobs_attrs_out:
-            jobs_attrs_out.write(json_encoder.encode(jobs_attrs))
+            #
+            # Write jobs attributes file.
+            #
 
-        icjs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS)
-        with open(icjs_attrs_filename, 'w') as icjs_attrs_out:
-            icjs_attrs_out.write(json_encoder.encode(icjs_attrs))
+            # Get all jobs associated with included HDAs.
+            jobs_dict = {}
+            implicit_collection_jobs_dict = {}
+
+            def record_associated_jobs(obj):
+                # Get the job object.
+                job = None
+                for assoc in getattr(obj, 'creating_job_associations', []):
+                    # For mapped over jobs obj could be DatasetCollection, which has no creating_job_association
+                    job = assoc.job
+                    break
+                if not job:
+                    # No viable job.
+                    return
+
+                jobs_dict[job.id] = job
+                icja = job.implicit_collection_jobs_association
+                if icja:
+                    implicit_collection_jobs = icja.implicit_collection_jobs
+                    implicit_collection_jobs_dict[implicit_collection_jobs.id] = implicit_collection_jobs
+
+            for hda, _include_files in self.included_datasets.values():
+                # Get the associated job, if any. If this hda was copied from another,
+                # we need to find the job that created the origial hda
+                job_hda = hda
+                while job_hda.copied_from_history_dataset_association:  # should this check library datasets as well?
+                    job_hda = job_hda.copied_from_history_dataset_association
+                if not job_hda.creating_job_associations:
+                    # No viable HDA found.
+                    continue
+
+                record_associated_jobs(job_hda)
+
+            for hdca in self.included_collections:
+                record_associated_jobs(hdca)
+
+            # Get jobs' attributes.
+            for job in jobs_dict.values():
+                if self.serialization_options.for_edit:
+                    continue
+                job_attrs = job.serialize(self.security, self.serialization_options)
+
+                # -- Get input, output datasets. --
+
+                input_dataset_mapping = {}
+                output_dataset_mapping = {}
+                input_dataset_collection_mapping = {}
+                input_dataset_collection_element_mapping = {}
+                output_dataset_collection_mapping = {}
+                implicit_output_dataset_collection_mapping = {}
+
+                for assoc in job.input_datasets:
+                    # Optional data inputs will not have a dataset.
+                    if assoc.dataset:
+                        name = assoc.name
+                        if name not in input_dataset_mapping:
+                            input_dataset_mapping[name] = []
+
+                        input_dataset_mapping[name].append(self.exported_key(assoc.dataset))
+
+                for assoc in job.output_datasets:
+                    # Optional data inputs will not have a dataset.
+                    if assoc.dataset:
+                        name = assoc.name
+                        if name not in output_dataset_mapping:
+                            output_dataset_mapping[name] = []
+
+                        output_dataset_mapping[name].append(self.exported_key(assoc.dataset))
+
+                for assoc in job.input_dataset_collections:
+                    # Optional data inputs will not have a dataset.
+                    if assoc.dataset_collection:
+                        name = assoc.name
+                        if name not in input_dataset_collection_mapping:
+                            input_dataset_collection_mapping[name] = []
+
+                        input_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
+
+                for assoc in job.input_dataset_collection_elements:
+                    if assoc.dataset_collection_element:
+                        name = assoc.name
+                        if name not in input_dataset_collection_element_mapping:
+                            input_dataset_collection_element_mapping[name] = []
+
+                        input_dataset_collection_element_mapping[name].append(self.exported_key(assoc.dataset_collection_element))
+
+                for assoc in job.output_dataset_collection_instances:
+                    # Optional data outputs will not have a dataset.
+                    if assoc.dataset_collection_instance:
+                        name = assoc.name
+                        if name not in output_dataset_collection_mapping:
+                            output_dataset_collection_mapping[name] = []
+
+                        output_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection_instance))
+
+                for assoc in job.output_dataset_collections:
+                    if assoc.dataset_collection:
+                        name = assoc.name
+
+                        if name not in implicit_output_dataset_collection_mapping:
+                            implicit_output_dataset_collection_mapping[name] = []
+
+                        implicit_output_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
+
+                job_attrs['input_dataset_mapping'] = input_dataset_mapping
+                job_attrs['input_dataset_collection_mapping'] = input_dataset_collection_mapping
+                job_attrs['input_dataset_collection_element_mapping'] = input_dataset_collection_element_mapping
+                job_attrs['output_dataset_mapping'] = output_dataset_mapping
+                job_attrs['output_dataset_collection_mapping'] = output_dataset_collection_mapping
+                job_attrs['implicit_output_dataset_collection_mapping'] = implicit_output_dataset_collection_mapping
+
+                jobs_attrs.append(job_attrs)
+
+            icjs_attrs = []
+            for icj in implicit_collection_jobs_dict.values():
+                icj_attrs = icj.serialize(self.security, self.serialization_options)
+                icjs_attrs.append(icj_attrs)
+
+            icjs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS)
+            with open(icjs_attrs_filename, 'w') as icjs_attrs_out:
+                icjs_attrs_out.write(json_encoder.encode(icjs_attrs))
 
         export_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_EXPORT)
         with open(export_attrs_filename, 'w') as export_attrs_out:
             dump({"galaxy_export_version": GALAXY_EXPORT_VERSION}, export_attrs_out)
+
+        jobs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_JOBS)
+        with open(jobs_attrs_filename, 'w') as jobs_attrs_out:
+            jobs_attrs_out.write(json_encoder.encode(jobs_attrs))
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is None:
@@ -1456,7 +1463,7 @@ def get_export_dataset_filename(name, ext, hid):
     Builds a filename for a dataset using its name an extension.
     """
     base = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in name)
-    return base + f"_{hid}.{ext}"
+    return f"{base}_{hid}.{ext}"
 
 
 def imported_store_for_metadata(directory, object_store=None):

@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="navigation">
         <b-dropdown v-if="breadCrumbOptions.length" class="mr-auto" size="sm" text="Go to..." boundary="viewport">
             <b-dropdown-item @click="close"> History: {{ history.name }} </b-dropdown-item>
             <b-dropdown-item v-for="option in breadCrumbOptions" :key="option.key" @click="reselect(option.value)">
@@ -7,7 +7,7 @@
             </b-dropdown-item>
         </b-dropdown>
 
-        <b-button v-else size="sm" class="mr-auto" @click="close"> Back to: {{ history.name }} </b-button>
+        <b-button v-else size="sm" class="mr-auto back" @click="close"> Back to: {{ history.name }} </b-button>
 
         <PriorityMenu :starting-height="27">
             <PriorityMenuItem

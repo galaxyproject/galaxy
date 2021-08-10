@@ -30,6 +30,12 @@
                         <UtcDate :date="job.update_time" mode="pretty" />
                     </td>
                 </tr>
+                <tr v-if="job && includeTimes && jobIsTerminal">
+                    <td>Time To Finish</td>
+                    <td id="runtime">
+                        {{ runTime }}
+                    </td>
+                </tr>
                 <code-row id="command-line" v-if="job" :code-label="'Command Line'" :code-item="job.command_line" />
                 <code-row id="stdout" v-if="job" :code-label="'Tool Standard Output'" :code-item="job.tool_stdout" />
                 <code-row id="stderr" v-if="job" :code-label="'Tool Standard Error'" :code-item="job.tool_stderr" />
@@ -45,6 +51,7 @@
                         </ul>
                     </td>
                 </tr>
+                <slot></slot>
                 <tr v-if="job && job.id">
                     <td>Job API ID:</td>
                     <td id="encoded-job-id">{{ job.id }} <decoded-id :id="job.id" /></td>
@@ -67,6 +74,8 @@ import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
 import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
+import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import { formatDuration, intervalToDuration } from "date-fns";
 
 export default {
     components: {
@@ -90,8 +99,15 @@ export default {
     },
     computed: {
         job: function () {
-            const job = this.$store.getters.job(this.job_id);
-            return job;
+            return this.$store.getters.job(this.job_id);
+        },
+        runTime: function () {
+            return formatDuration(
+                intervalToDuration({ start: new Date(this.job.create_time), end: new Date(this.job.update_time) })
+            );
+        },
+        jobIsTerminal() {
+            return !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(this.job.state);
         },
     },
     methods: {

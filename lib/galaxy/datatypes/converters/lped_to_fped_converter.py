@@ -34,9 +34,9 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
     """convert linkage ped/map to fbat"""
     recode = {'A': '1', 'C': '2', 'G': '3', 'T': '4', 'N': '0', '0': '0', '1': '1', '2': '2', '3': '3', '4': '4'}
     basename = os.path.split(inpedfilepath)[-1]  # get basename
-    inmap = '%s.map' % inpedfilepath
-    inped = '%s.ped' % inpedfilepath
-    outf = '%s.ped' % basename  # note the fbat exe insists that this is the extension for the ped data
+    inmap = f'{inpedfilepath}.map'
+    inped = f'{inpedfilepath}.ped'
+    outf = f'{basename}.ped'  # note the fbat exe insists that this is the extension for the ped data
     outfpath = os.path.join(outfilepath, outf)  # where to write the fbat format file to
     try:
         mf = open(inmap)
@@ -45,7 +45,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
     try:
         rsl = [x.split()[1] for x in mf]
     except Exception:
-        sys.exit('## cannot parse %s' % inmap)
+        sys.exit(f'## cannot parse {inmap}')
     try:
         os.makedirs(outfilepath)
     except Exception:
@@ -68,7 +68,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
                 g = lrow[6:]
                 gc = [recode.get(z, '0') for z in g]
                 lrow = p + gc
-                row = '%s\n' % ' '.join(lrow)
+                row = f"{' '.join(lrow)}\n"
             o.write(row)
 
 
@@ -97,7 +97,7 @@ def main():
         print(f'## Rgenetics: http://rgenetics.org Galaxy Tools {prog} {timenow()}')  # becomes info
         f.write(f'<div>## Rgenetics: http://rgenetics.org Galaxy Tools {prog} {timenow()}\n<ol>')
         for data in flist:
-            f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
+            f.write(f'<li><a href="{os.path.split(data)[-1]}">{os.path.split(data)[-1]}</a></li>\n')
         f.write("</div></body></html>")
 
 

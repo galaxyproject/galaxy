@@ -8,5 +8,4 @@ galaxy-web-framework
 nose
 pytest
 pyyaml
-sqlalchemy-utils
 six

@@ -46,7 +46,7 @@ class ExplicitSingularityContainerResolver(ExplicitContainerResolver):
             if container_description.type == 'docker':
                 desc_dict = container_description.to_dict()
                 desc_dict['type'] = self.container_type
-                desc_dict['identifier'] = "docker://%s" % container_description.identifier
+                desc_dict['identifier'] = f"docker://{container_description.identifier}"
                 container_description = container_description.from_dict(desc_dict)
             if self._container_type_enabled(container_description, enabled_container_types):
                 return container_description

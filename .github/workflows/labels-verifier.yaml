@@ -2,7 +2,6 @@ name: Labels Verifier
 on:
   pull_request_target:
     types: [closed]
-
 jobs:
   onMerged:
     name: "Check Labels on merge"

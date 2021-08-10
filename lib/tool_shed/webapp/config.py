@@ -57,7 +57,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self._ensure_directory(path)
         # Check that required files exist.
         if not os.path.isfile(self.datatypes_config):
-            raise ConfigurationError('File not found: %s' % self.datatypes_config)
+            raise ConfigurationError(f'File not found: {self.datatypes_config}')
 
     def _process_config(self, kwargs):
         # Backwards compatibility for names used in too many places to fix
@@ -70,7 +70,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.version = VERSION
         # Database related configuration
         if not self.database_connection:  # Provide default if not supplied by user
-            self.database_connection = 'sqlite:///%s?isolation_level=IMMEDIATE' % self._in_data_dir('community.sqlite')
+            self.database_connection = f"sqlite:///{self._in_data_dir('community.sqlite')}?isolation_level=IMMEDIATE"
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get('database_create_tables', 'True'))
         # Where dataset files are stored

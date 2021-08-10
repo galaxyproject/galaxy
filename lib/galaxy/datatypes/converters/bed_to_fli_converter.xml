@@ -10,8 +10,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="bed" value="droPer1.bed"/>
-            <output name="output1" format="fli" value="droPer1.fli"/>
+            <param name="input1" ftype="bed" value="droPer1.bed"/>
+            <output name="output1" ftype="fli" value="droPer1.fli"/>
         </test>
     </tests>
     <help>

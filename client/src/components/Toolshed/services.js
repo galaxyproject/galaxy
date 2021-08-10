@@ -162,7 +162,9 @@ export class Services {
         });
     }
     _formatCount(value) {
-        if (value > 1000) return `>${Math.floor(value / 1000)}k`;
+        if (value > 1000) {
+            return `>${Math.floor(value / 1000)}k`;
+        }
         return value;
     }
     _getParamsString(params) {

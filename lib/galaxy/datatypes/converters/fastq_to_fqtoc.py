@@ -39,7 +39,7 @@ def main():
             line = in_file.readline()
 
         chunk_end = in_file.tell()
-        out_file.write('{{"start":"{}","end":"{}","sequences":"{}"}}'.format(chunk_begin, chunk_end, (current_line % lines_per_chunk) / 4))
+        out_file.write(f'{{"start":"{chunk_begin}","end":"{chunk_end}","sequences":"{current_line % lines_per_chunk / 4}"}}')
         out_file.write(']}\n')
 
 
