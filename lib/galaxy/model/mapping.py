@@ -222,14 +222,6 @@ model.Job.table = Table(
     Column("params", TrimmedString(255), index=True),
     Column("handler", TrimmedString(255), index=True))
 
-model.LibraryDatasetCollectionAssociation.table = Table(
-    "library_dataset_collection_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("collection_id", Integer, ForeignKey("dataset_collection.id"), index=True),
-    Column("folder_id", Integer, ForeignKey("library_folder.id"), index=True),
-    Column("name", TrimmedString(255)),
-    Column("deleted", Boolean, default=False))
-
 model.StoredWorkflow.table = Table(
     "stored_workflow", metadata,
     Column("id", Integer, primary_key=True),
@@ -538,20 +530,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
 #         uselist=True,
 #     ),
 # )
-
-simple_mapping(model.LibraryDatasetCollectionAssociation,
-    collection=relation(model.DatasetCollection),
-    folder=relation(model.LibraryFolder,
-        backref='dataset_collections'),
-    tags=relation(model.LibraryDatasetCollectionTagAssociation,
-        order_by=model.LibraryDatasetCollectionTagAssociation.id,
-        back_populates='dataset_collection'),
-    annotations=relation(model.LibraryDatasetCollectionAnnotationAssociation,
-        order_by=model.LibraryDatasetCollectionAnnotationAssociation.id,
-        back_populates="dataset_collection"),
-    ratings=relation(model.LibraryDatasetCollectionRatingAssociation,
-        order_by=model.LibraryDatasetCollectionRatingAssociation.id,
-        back_populates="dataset_collection"))
 
 mapper_registry.map_imperatively(model.Workflow, model.Workflow.table, properties=dict(
     steps=relation(model.WorkflowStep,

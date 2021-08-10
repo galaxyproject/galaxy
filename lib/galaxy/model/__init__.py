@@ -4474,6 +4474,7 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
         lazy=True,
         viewonly=True)
 
+    dataset_collections = relationship('LibraryDatasetCollectionAssociation', back_populates='folder')
     library_root = relationship('Library', back_populates='root_folder')
     actions = relationship('LibraryFolderPermissions', back_populates='folder')
     info_association = relationship('LibraryFolderInfoAssociation', back_populates='folder')
@@ -5658,8 +5659,29 @@ class HistoryDatasetCollectionAssociation(
         return len(results) > 0
 
 
-class LibraryDatasetCollectionAssociation(DatasetCollectionInstance, RepresentById):
+class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, RepresentById):
     """ Associates a DatasetCollection with a library folder. """
+    __tablename__ = 'library_dataset_collection_association'
+
+    id = Column(Integer, primary_key=True)
+    collection_id = Column(Integer, ForeignKey('dataset_collection.id'), index=True)
+    folder_id = Column(Integer, ForeignKey('library_folder.id'), index=True)
+    name = Column(TrimmedString(255))
+    deleted = Column(Boolean, default=False)
+
+    collection = relationship('DatasetCollection')
+    folder = relationship('LibraryFolder', back_populates='dataset_collections')
+
+    tags = relationship('LibraryDatasetCollectionTagAssociation',
+        order_by='LibraryDatasetCollectionTagAssociation.id',
+        back_populates='dataset_collection')
+    annotations = relationship('LibraryDatasetCollectionAnnotationAssociation',
+        order_by='LibraryDatasetCollectionAnnotationAssociation.id',
+        back_populates="dataset_collection")
+    ratings = relationship('LibraryDatasetCollectionRatingAssociation',
+        order_by='LibraryDatasetCollectionRatingAssociation.id',
+        back_populates="dataset_collection")
+
     editable_keys = ('name', 'deleted')
 
     def __init__(

@@ -2549,6 +2549,54 @@ class TestLibraryDataset(BaseTest):
             assert stored_obj.actions == [library_dataset_permission]
 
 
+class TestLibraryDatasetCollectionAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'library_dataset_collection_association'
+
+    def test_columns(self, session, cls_, dataset_collection, library_folder):
+        name, deleted = 'a', True
+        obj = cls_()
+        obj.collection = dataset_collection
+        obj.folder = library_folder
+        obj.name = name
+        obj.deleted = deleted
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.collection_id == dataset_collection.id
+            assert stored_obj.folder_id == library_folder.id
+            assert stored_obj.name == name
+            assert stored_obj.deleted == deleted
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        dataset_collection,
+        library_folder,
+        library_dataset_collection_annotation_association,
+        library_dataset_collection_rating_association,
+        library_dataset_collection_tag_association,
+    ):
+
+        obj = cls_()
+        obj.collection = dataset_collection
+        obj.folder = library_folder
+        obj.tags.append(library_dataset_collection_tag_association)
+        obj.annotations.append(library_dataset_collection_annotation_association)
+        obj.ratings.append(library_dataset_collection_rating_association)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.collection.id == dataset_collection.id
+            assert stored_obj.folder.id == library_folder.id
+            assert stored_obj.tags == [library_dataset_collection_tag_association]
+            assert stored_obj.annotations == [library_dataset_collection_annotation_association]
+            assert stored_obj.ratings == [library_dataset_collection_rating_association]
+
+
 class TestJobToOutputLibraryDatasetAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -2855,6 +2903,7 @@ class TestLibraryFolder(BaseTest):
         library_folder,
         library_dataset,
         library,
+        library_dataset_collection_association,
         library_folder_permission,
         library_folder_info_association,
         library_folder_factory,
@@ -2863,6 +2912,7 @@ class TestLibraryFolder(BaseTest):
         obj.parent = library_folder
         folder1 = library_folder_factory()
         obj.folders.append(folder1)
+        obj.dataset_collections.append(library_dataset_collection_association)
         obj.library_root.append(library)
         obj.actions.append(library_folder_permission)
         obj.info_association.append(library_folder_info_association)
@@ -2881,6 +2931,7 @@ class TestLibraryFolder(BaseTest):
             # use identity equality instread of object equality.
             assert stored_obj.datasets[0].id == library_dataset.id
             assert stored_obj.active_datasets[0].id == library_dataset.id
+            assert stored_obj.dataset_collections == [library_dataset_collection_association]
             assert stored_obj.info_association == [library_folder_info_association]
 
 
@@ -5296,9 +5347,27 @@ def library_dataset(model, session):
 
 
 @pytest.fixture
+def library_dataset_annotation_association(model, session):
+    instance = model.LibraryDatasetAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def library_dataset_collection_annotation_association(model, session):
+    instance = model.LibraryDatasetCollectionAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def library_dataset_collection_association(model, session):
     ldca = model.LibraryDatasetCollectionAssociation()
     yield from dbcleanup_wrapper(session, ldca)
+
+
+@pytest.fixture
+def library_dataset_collection_rating_association(model, session):
+    instance = model.LibraryDatasetCollectionRatingAssociation(None, None)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
