@@ -24,9 +24,7 @@ from sqlalchemy import (
     select,
     String, Table,
     TEXT,
-    Text,
     true,
-    Unicode,
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
@@ -281,21 +279,12 @@ model.WorkflowInvocationOutputValue.table = Table(
     Column("value", MutableJSONType),
 )
 
-model.UserPreference.table = Table(
-    "user_preference", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("name", Unicode(255), index=True),
-    Column("value", Text))
-
 
 # With the tables defined we can define the mappers and setup the
 # relationships between the model objects.
 def simple_mapping(model, **kwds):
     mapper_registry.map_imperatively(model, model.table, properties=kwds)
 
-
-mapper_registry.map_imperatively(model.UserPreference, model.UserPreference.table, properties={})
 
 simple_mapping(model.HistoryDatasetAssociation,
     dataset=relation(model.Dataset,
