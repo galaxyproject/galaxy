@@ -31,7 +31,6 @@
         </b-dropdown-group>
         <b-dropdown-divider v-if="groupedPanelViews.length > 0"></b-dropdown-divider>
         <PanelViewMenuItem
-            v-if="ungroupedPanelViews.length > 0"
             v-for="(panelView, key) in ungroupedPanelViews"
             :key="key"
             :current-panel-view="currentPanelView"
