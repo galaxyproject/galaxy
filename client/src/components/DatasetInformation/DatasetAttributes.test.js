@@ -5,9 +5,9 @@ import { getLocalVue } from "jest/helpers";
 import DatasetAttributes from "./DatasetAttributes";
 import MockProvider from "../providers/MockProvider";
 import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
 
 const localVue = getLocalVue();
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve));
 
 function buildWrapper(conversion_disable = false) {
     return mount(DatasetAttributes, {
