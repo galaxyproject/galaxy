@@ -2,9 +2,9 @@
 
 import logging
 import os
-import sys
 
 import requests
+import urllib.parse
 
 try:
     import gitlab
@@ -39,7 +39,8 @@ class GitLabPlugin(BaseGitPlugin):
 
         try:
             if gitlab is None:
-                raise Exception("GitLab error reporting plugin is configured, but gitlab is not installed. Please install python-gitlab.")
+                raise Exception("GitLab error reporting plugin is configured, but gitlab is not installed. "
+                                "Please install python-gitlab v2.10.0 or higher.")
             self.gitlab = self.gitlab_connect()
             self.gitlab.auth()
 
@@ -93,7 +94,7 @@ class GitLabPlugin(BaseGitPlugin):
                 # this will be detected by requests and used further down the line. Also cache this so everything is
                 # as fast as possible
                 ts_url = self._determine_ts_url(tool)
-                log.info("GitLab error reporting - Determined ToolShed is %s", ts_url)
+                log.info("GitLab error reporting - Determined ToolShed is {ts_url}")
 
                 # Find the repo inside the ToolShed
                 ts_repourl = self._get_gitrepo_from_ts(job, ts_url)
@@ -102,10 +103,10 @@ class GitLabPlugin(BaseGitPlugin):
                 if ts_repourl is not None and ts_repourl.endswith(".git"):
                     ts_repourl = ts_repourl[:-4]
 
-                log.info("GitLab error reporting - Determine ToolShed Repository URL: %s", ts_repourl)
+                log.info(f"GitLab error reporting - Determine ToolShed Repository URL: {ts_repourl}")
 
                 # Determine the GitLab project URL and the issue cache key
-                gitlab_projecturl = urlparse.urlparse(ts_repourl).path[1:] if (ts_repourl and not self.git_default_repo_only)\
+                gitlab_projecturl = urllib.parse.urlparse(ts_repourl).path[1:] if (ts_repourl and not self.git_default_repo_only)\
                     else "/".join((self.git_default_repo_owner, self.git_default_repo_name))
                 issue_cache_key = self._get_issue_cache_key(job, ts_repourl)
 
@@ -143,8 +144,7 @@ class GitLabPlugin(BaseGitPlugin):
                         gl_emailquery = self.gitlab.users.list(search=gl_useremail)
                         log.debug(f"GitLab error reporting - User list: {gl_emailquery}")
                         if len(gl_emailquery) > 0:
-                            log.debug("GitLab error reporting - Last Committer user ID: %d" %
-                                      gl_emailquery[0].get_id())
+                            log.debug("GitLab error reporting - Last Committer user ID: " % gl_emailquery[0].get_id())
                             self.git_username_id_cache[gl_useremail] = gl_emailquery[0].get_id()
                     gl_userid = self.git_username_id_cache.get(gl_useremail, None)
 
