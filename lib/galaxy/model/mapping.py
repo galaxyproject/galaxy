@@ -136,14 +136,6 @@ model.ImplicitlyConvertedDatasetAssociation.table = Table(
     Column("metadata_safe", Boolean, index=True, default=True),
     Column("type", TrimmedString(255)))
 
-model.UserRoleAssociation.table = Table(
-    "user_role_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("role_id", Integer, ForeignKey("role.id"), index=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now))
-
 model.LibraryDatasetDatasetAssociation.table = Table(
     "library_dataset_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -437,25 +429,12 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
         model.HistoryUserShareAssociation, back_populates='user'),
     data_manager_histories=relation(model.DataManagerHistoryAssociation, back_populates='user'),
     workflows_shared_by_others=relation(model.StoredWorkflowUserShareAssociation, back_populates='user'),
+    roles=relation(model.UserRoleAssociation, back_populates='user'),
 ))
 
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
 model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)  # type: ignore
-
-mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssociation.table, properties=dict(
-    user=relation(model.User, backref="roles"),
-    role=relation(model.Role, backref="users"),
-    non_private_roles=relation(
-        model.User,
-        backref="non_private_roles",
-        viewonly=True,
-        primaryjoin=(
-            (model.User.table.c.id == model.UserRoleAssociation.table.c.user_id)
-            & (model.UserRoleAssociation.table.c.role_id == model.Role.id)
-            & not_(model.Role.name == model.User.table.c.email))
-    )
-))
 
 mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
     dataset=relation(model.Dataset,

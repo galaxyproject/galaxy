@@ -3572,6 +3572,7 @@ class TestRole(BaseTest):
         library_folder_permission,
         library_dataset_permission,
         library_dataset_dataset_association_permission,
+        user_role_association,
     ):
         name, description, type_ = get_random_string(), 'b', cls_.types.SYSTEM
         obj = cls_(name, description, type_)
@@ -3581,6 +3582,7 @@ class TestRole(BaseTest):
         obj.library_dataset_actions.append(library_dataset_permission)
         obj.library_dataset_dataset_actions.append(library_dataset_dataset_association_permission)
         obj.groups.append(group_role_association)
+        obj.users.append(user_role_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -3590,6 +3592,7 @@ class TestRole(BaseTest):
             assert stored_obj.library_folder_actions == [library_folder_permission]
             assert stored_obj.library_dataset_actions == [library_dataset_permission]
             assert stored_obj.library_dataset_dataset_actions == [library_dataset_dataset_association_permission]
+            assert stored_obj.users == [user_role_association]
 
 
 class TestStoredWorkflowAnnotationAssociation(BaseTest):
@@ -4155,6 +4158,36 @@ class TestUserQuotaAssociation(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.user.id == user.id
             assert stored_obj.quota.id == quota.id
+
+
+class TestUserRoleAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'user_role_association'
+
+    def test_columns(self, session, cls_, user, role):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj = cls_(user, role)
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.role_id == role.id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+
+    def test_relationships(self, session, cls_, user, role):
+        obj = cls_(user, role)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.user.id == user.id
+            assert stored_obj.role.id == role.id
+            # TODO non_private_roles should be defined on the User only (test to be added to TestUser)
 
 
 class TestVisualization(BaseTest):
@@ -5613,6 +5646,12 @@ def user_authnz_token(model, session, user):
 def user_quota_association(model, session):
     uqa = model.UserQuotaAssociation(None, None)
     yield from dbcleanup_wrapper(session, uqa)
+
+
+@pytest.fixture
+def user_role_association(model, session, user, role):
+    instance = model.UserRoleAssociation(user, role)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
