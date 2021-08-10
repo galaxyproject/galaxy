@@ -589,7 +589,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Database data tables connection
         if not self.data_table_database_connection:  # Provide default if not supplied by user
             db_path = self._in_data_dir('data_tables.sqlite')
-            self.data_table_database_connection = 'sqlite:///%s?isolation_level=IMMEDIATE' % db_path
+            self.data_table_database_connection = f'sqlite:///{db_path}?isolation_level=IMMEDIATE'
             self.data_table_database_engine_options = get_database_engine_options(kwargs, model_prefix="data_tables_")
 
         self.thread_local_log = None
@@ -1323,7 +1323,7 @@ class ConfiguresGalaxyMixin:
             create_or_verify_database(data_tables_db_url, install_database_options)
 
         from galaxy.model.data_tables import mapping as data_tables_mapping
-        log.info("Data tables database using its own connection %s" % data_tables_db_url)
+        log.info(f"Data tables database using its own connection {data_tables_db_url}")
         self.data_tables_model = data_tables_mapping.init(data_tables_db_url)
 
     def _configure_signal_handlers(self, handlers):
