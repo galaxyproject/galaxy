@@ -66,7 +66,7 @@ import { faCheckSquare, faSquare, faCaretSquareRight, faMinusSquare } from "@for
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { selectionModes } from "components/SelectionDialog/selectionModes";
+import { selectionStates } from "components/SelectionDialog/selectionStates";
 
 Vue.use(BootstrapVue);
 library.add(faCheckSquare, faSquare, faFolder, faCaretSquareRight, faMinusSquare);
@@ -96,7 +96,7 @@ export default {
         },
         selectAllIcon: {
             type: String,
-            default: selectionModes.unselected,
+            default: selectionStates.unselected,
         },
         leafIcon: {
             type: String,
@@ -165,9 +165,9 @@ export default {
     methods: {
         selectionIcon(variant) {
             switch (variant) {
-                case selectionModes.selected:
+                case selectionStates.selected:
                     return ["far", "check-square"];
-                case selectionModes.mixed:
+                case selectionStates.mixed:
                     return ["fas", "minus-square"];
                 default:
                     return ["far", "square"];

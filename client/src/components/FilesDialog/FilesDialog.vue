@@ -47,7 +47,7 @@
 <script>
 import Vue from "vue";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
-import { selectionModes } from "components/SelectionDialog/selectionModes";
+import { selectionStates } from "components/SelectionDialog/selectionStates";
 import { UrlTracker } from "components/DataDialog/utilities";
 import { isSubPath } from "components/FilesDialog/utilities";
 import { Services } from "./services";
@@ -94,7 +94,7 @@ export default {
             showNavigate: true,
             isBusy: false,
             currentDirectory: undefined,
-            selectAllIcon: selectionModes.unselected,
+            selectAllIcon: selectionStates.unselected,
         };
     },
     created: function () {
@@ -113,14 +113,13 @@ export default {
         formatRows() {
             const getIcon = (isSelected, path) => {
                 if (isSelected) {
-                    return selectionModes.selected;
+                    return selectionStates.selected;
                 } else {
-                    return this.model.pathExists(path) ? selectionModes.mixed : selectionModes.unselected;
+                    return this.model.pathExists(path) ? selectionStates.mixed : selectionStates.unselected;
                 }
             };
 
             this.hasValue = this.model.count() > 0 || this.selectedDirectories.length > 0;
-
             for (const item of this.items) {
                 let _rowVariant = "active";
                 if (item.isLeaf || !this.fileMode) {
@@ -168,11 +167,7 @@ export default {
             // unselect files
             if (!unselectOnlyAboveDirectories) {
                 // unselect all files under this path
-                this.model.finalize().forEach((file) => {
-                    if (isSubPath(path, file.url)) {
-                        this.model.add(file);
-                    }
-                });
+                this.model.unselectUnderPath(path);
             }
         },
         selectFile(file, selectOnly = false) {

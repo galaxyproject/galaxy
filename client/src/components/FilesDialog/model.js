@@ -43,6 +43,15 @@ export class Model {
         });
     }
 
+    /** unselect all files under this path **/
+    unselectUnderPath(path) {
+        Object.keys(this.values).forEach((key) => {
+            if (isSubPath(path, this.values[key].url)) {
+                delete this.values[key];
+            }
+        });
+    }
+
     /** Finalizes the results from added records **/
     finalize() {
         let results = [];

@@ -10,7 +10,6 @@
     >
         <template v-slot:modal-header>
             <slot name="search"> </slot>
-            <slot name="selectAll"> </slot>
         </template>
         <b-alert v-if="errorMessage" variant="danger" show v-html="errorMessage" />
         <div v-else>
