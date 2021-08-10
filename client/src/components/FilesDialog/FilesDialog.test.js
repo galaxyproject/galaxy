@@ -8,10 +8,13 @@ import axios from "axios";
 import {
     rootId,
     directoryId,
+    subDirectoryId,
+    subSubDirectoryId,
     rootResponse,
     pdbResponse,
     directory1RecursiveResponse,
     directory1Response,
+    subsubdirectoryResponse,
 } from "./testingData";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 
@@ -22,6 +25,7 @@ const api_paths_map = new Map([
     ["/api/remote_files?target=gxfiles://pdb-gzip", pdbResponse],
     ["/api/remote_files?target=gxfiles://pdb-gzip/directory1&recursive=true", directory1RecursiveResponse],
     ["/api/remote_files?target=gxfiles://pdb-gzip/directory1", directory1Response],
+    ["/api/remote_files?target=gxfiles://pdb-gzip/directory1/subdirectory1", subsubdirectoryResponse],
 ]);
 
 // PLEASE NOTE
@@ -108,12 +112,9 @@ describe("FilesDialog/FilesDialog.vue", () => {
 
     it("select directory", async () => {
         await open_root_folder();
-        const table = getTable();
-        const getSelectDirectory = () => wrapper.vm.items.find((item) => directoryId === item.id);
 
         // select directory
-        table.$emit("clicked", getSelectDirectory());
-        await flushPromises();
+        await clickOn(getRenderedDirectory(directoryId));
 
         const [response_files, response_directories] = [[], []];
 
@@ -128,8 +129,7 @@ describe("FilesDialog/FilesDialog.vue", () => {
         expect(wrapper.vm.selectedDirectories.length).toBe(response_directories.length + 1);
 
         // go inside directory1
-        table.$emit("open", getSelectDirectory());
-        await flushPromises();
+        await openDirectory(directoryId);
 
         // select icon button should be active
         expect(wrapper.vm.selectAllIcon).toBe(selectionStates.selected);
@@ -147,15 +147,38 @@ describe("FilesDialog/FilesDialog.vue", () => {
         const file = wrapper.vm.items.find((item) => item.isLeaf);
 
         // unlesect random file
-        getTable().$emit("clicked", file);
-        await flushPromises();
+        await clickOn(file);
 
         // go back
         wrapper.vm.load();
         await flushPromises();
 
         // ensure that it has "mixed" icon
-        expect(getSelectDirectory()._rowVariant).toBe(selectionStates.mixed);
+        expect(getRenderedDirectory(directoryId)._rowVariant).toBe(selectionStates.mixed);
+    });
+
+    // Unselect subdirectory1
+    it("unselect sub-directory", async () => {
+        await open_root_folder();
+        const table = getTable();
+        // select directory1
+        table.$emit("clicked", getRenderedDirectory(directoryId));
+        await flushPromises();
+        //go inside subDirectoryId
+        await openDirectory(directoryId);
+        await openDirectory(subDirectoryId);
+        // unselect subfolder
+        await clickOn(getRenderedDirectory(subSubDirectoryId));
+        // directory should be unselected
+        expect(getRenderedDirectory(subSubDirectoryId)._rowVariant).toBe(selectionStates.unselected);
+        // selectAllIcon should be unselected
+        expect(wrapper.vm.selectAllIcon).toBe(selectionStates.unselected);
+        // go back
+        wrapper.vm.load();
+        // go back
+        wrapper.vm.load();
+        await flushPromises();
+        expect(getRenderedDirectory(directoryId)._rowVariant).toBe(selectionStates.mixed);
     });
 
     /** Util methods **/
@@ -167,11 +190,17 @@ describe("FilesDialog/FilesDialog.vue", () => {
         const rootElement = wrapper.vm.items.find((item) => rootId === item.id);
 
         // open root folder with rootId
-        const table = getTable();
-        table.$emit("clicked", rootElement);
-
+        await clickOn(rootElement);
+    };
+    const openDirectory = async (directoryId) => {
+        getTable().$emit("open", getRenderedDirectory(directoryId));
         await flushPromises();
     };
+    const clickOn = async (element) => {
+        getTable().$emit("clicked", element);
+        await flushPromises();
+    };
+    const getRenderedDirectory = (directoryId) => wrapper.vm.items.find(({ id }) => directoryId === id);
 
     const get_rendered_files = () => wrapper.vm.items.filter((item) => item.isLeaf);
 

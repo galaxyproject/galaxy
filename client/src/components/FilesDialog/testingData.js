@@ -1,5 +1,7 @@
 export const rootId = "pdb-gzip";
 export const directoryId = "gxfiles://pdb-gzip/directory1";
+export const subDirectoryId = "gxfiles://pdb-gzip/directory1/subdirectory1";
+export const subSubDirectoryId = "gxfiles://pdb-gzip/directory1/subdirectory1/subsubdirectory";
 
 export const rootResponse = [
     {
@@ -141,5 +143,13 @@ export const directory1Response = [
         ctime: "08/10/2021 07:37:48 PM",
         uri: "gxfiles://pdb-gzip/directory1/directory1file3",
         path: "directory1/directory1file3",
+    },
+];
+export const subsubdirectoryResponse = [
+    {
+        class: "Directory",
+        name: "subsubdirectory",
+        uri: "gxfiles://pdb-gzip/directory1/subdirectory1/subsubdirectory",
+        path: "directory1/subdirectory1/subsubdirectory",
     },
 ];
