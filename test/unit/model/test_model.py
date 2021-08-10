@@ -45,6 +45,7 @@ TestFoo(BaseTest):  # BaseTest is parent class
 import random
 from contextlib import contextmanager
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import (
@@ -3053,6 +3054,67 @@ class TestLibraryPermissions(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.library.id == library.id
             assert stored_obj.role.id == role.id
+
+
+class TestMetadataFile(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'metadata_file'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        history_dataset_association,
+        library_dataset_dataset_association,
+    ):
+        name = 'a'
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        object_store_id = 'b'
+        uuid = uuid4()
+        deleted = True
+        purged = True
+
+        obj = cls_()
+        obj.name = name
+        obj.history_dataset = history_dataset_association
+        obj.library_dataset = library_dataset_dataset_association
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.object_store_id = object_store_id
+        obj.uuid = uuid
+        obj.deleted = deleted
+        obj.purged = purged
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.name == name
+            assert stored_obj.hda_id == history_dataset_association.id
+            assert stored_obj.lda_id == library_dataset_dataset_association.id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.object_store_id == object_store_id
+            assert stored_obj.uuid == uuid
+            assert stored_obj.deleted == deleted
+            assert stored_obj.purged == purged
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        history_dataset_association,
+        library_dataset_dataset_association,
+    ):
+        obj = cls_()
+        obj.history_dataset = history_dataset_association
+        obj.library_dataset = library_dataset_dataset_association
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.history_dataset.id == history_dataset_association.id
+            assert stored_obj.library_dataset.id == library_dataset_dataset_association.id
 
 
 class TestPage(BaseTest):
