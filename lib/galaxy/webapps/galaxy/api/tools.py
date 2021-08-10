@@ -425,7 +425,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return rval
 
     @expose_api
-    def conversion(self, trans:GalaxyWebTransaction, id, payload, **kwd):
+    def conversion(self, trans: GalaxyWebTransaction, id, payload, **kwd):
         converter = self._get_tool(id, user=trans.user)
         target_type = payload.get("target_type")
         original_type = payload.get("original_type")
@@ -457,7 +457,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             ],
             "batch": True
         }
-       
+
         # Make the target datatype available to the converter
         params['__target_datatype__'] = target_type
         converter.handle_input(trans, params)

@@ -1,5 +1,4 @@
 import logging
-import numpy as np
 
 from sqlalchemy.orm import joinedload, Query
 
@@ -230,23 +229,28 @@ class DatasetCollectionManager:
         dbkeys_and_extensions = dataset_collection_instance.dataset_dbkeys_and_extensions_summary
         suitable_converters = set()
         first_extension = True
+        most_recent_datatype = None
         # TODO error checking
         for datatype in dbkeys_and_extensions[1]:
             new_converters = {}
             new_converters = datatypes_registry.get_converters_by_datatype(datatype)
             set_of_new_converters = set()
             for tgt_type, tgt_val in new_converters.items():
-                converter = (tgt_type, tgt_val, datatype)
+                converter = (tgt_type, tgt_val)
                 set_of_new_converters.add(converter)
             if (first_extension is True):
                 suitable_converters = set_of_new_converters
+                most_recent_datatype = datatype
                 first_extension = False
             else:
                 suitable_converters = suitable_converters.intersection(set_of_new_converters)
+                if (suitable_converters.__len__ != 0):
+                    most_recent_datatype = datatype
         suitable_tool_ids = list()
         for tool in suitable_converters:
-            tool_info = {"tool_id": tool[1].id, "name": tool[1].name, "target_type": tool[0], "original_type": tool[2]}
+            tool_info = {"tool_id": tool[1].id, "name": tool[1].name, "target_type": tool[0], "original_type": most_recent_datatype}
             suitable_tool_ids.append(tool_info)
+        print("SUITABLETOOLIDS >>>>>>>>>> " + str(suitable_tool_ids))
         return suitable_tool_ids
 
     def _element_identifiers_to_elements(self,
