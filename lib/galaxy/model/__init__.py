@@ -90,6 +90,7 @@ from galaxy.model.custom_types import (
 )
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
 from galaxy.model.orm.now import now
+from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 from galaxy.security import get_permitted_actions
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import (
@@ -1792,6 +1793,10 @@ class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
         primaryjoin=(
             lambda: HistoryDatasetCollectionAssociation.id == ImplicitlyCreatedDatasetCollectionInput.input_dataset_collection_id  # type: ignore
         ))
+    dataset_collection = relationship('HistoryDatasetCollectionAssociation',
+        primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
+            == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id),  # type: ignore
+        back_populates='implicit_input_collections')
 
     def __init__(self, name, input_dataset_collection):
         self.name = name
@@ -1804,6 +1809,8 @@ class ImplicitCollectionJobs(Base, RepresentById):
     id = Column(Integer, primary_key=True)
     populated_state = Column(TrimmedString(64), default='new', nullable=False)
     jobs = relationship('ImplicitCollectionJobsJobAssociation', back_populates='implicit_collection_jobs')
+    history_dataset_collection_associations = relationship('HistoryDatasetCollectionAssociation',
+        back_populates='implicit_collection_jobs')
 
     class populated_states(str, Enum):
         NEW = 'new'  # New implicit jobs object, unpopulated job associations
@@ -2300,6 +2307,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         ),
         order_by=lambda: asc(HistoryDatasetAssociation.hid),  # type: ignore
         viewonly=True)
+    dataset_collections = relationship('HistoryDatasetCollectionAssociation', back_populates='history')
     active_dataset_collections = relationship('HistoryDatasetCollectionAssociation',
         primaryjoin=(
             lambda: (and_(HistoryDatasetCollectionAssociation.history_id == History.id,  # type: ignore
@@ -5361,12 +5369,88 @@ class DatasetCollectionInstance(HasName):
         return changed
 
 
-class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
-                                          HasTags,
-                                          Dictifiable,
-                                          UsesAnnotations,
-                                          RepresentById):
+class HistoryDatasetCollectionAssociation(
+    Base,
+    DatasetCollectionInstance,
+    HasTags,
+    Dictifiable,
+    UsesAnnotations,
+    RepresentById
+):
     """ Associates a DatasetCollection with a History. """
+    __tablename__ = 'history_dataset_collection_association'
+
+    id = Column(Integer, primary_key=True)
+    collection_id = Column(Integer, ForeignKey('dataset_collection.id'), index=True)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+    name = Column(TrimmedString(255))
+    hid = Column(Integer)
+    visible = Column(Boolean)
+    deleted = Column(Boolean, default=False)
+    copied_from_history_dataset_collection_association_id = Column(Integer,
+        ForeignKey('history_dataset_collection_association.id'), nullable=True)
+    implicit_output_name = Column(Unicode(255), nullable=True)
+    job_id = Column(ForeignKey('job.id'), index=True, nullable=True)
+    implicit_collection_jobs_id = Column(
+        ForeignKey('implicit_collection_jobs.id'), index=True, nullable=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now, index=True)
+
+    collection = relationship('DatasetCollection')
+    history = relationship('History', back_populates='dataset_collections')
+
+    copied_from_history_dataset_collection_association = relationship(
+        'HistoryDatasetCollectionAssociation',
+        primaryjoin=copied_from_history_dataset_collection_association_id == id,
+        remote_side=[id],
+        uselist=False,
+        back_populates='copied_to_history_dataset_collection_association',
+    )
+    copied_to_history_dataset_collection_association = relationship(
+        'HistoryDatasetCollectionAssociation',
+        back_populates='copied_from_history_dataset_collection_association',
+    )
+    implicit_input_collections = relationship('ImplicitlyCreatedDatasetCollectionInput',
+        primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
+                == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id),  # type: ignore
+        back_populates='dataset_collection',
+    )
+    implicit_collection_jobs = relationship(
+        'ImplicitCollectionJobs',
+        back_populates='history_dataset_collection_associations',
+        uselist=False
+    )
+    job = relationship(
+        'Job',
+        back_populates='history_dataset_collection_associations',
+        uselist=False,
+    )
+    job_state_summary = relationship(HistoryDatasetCollectionJobStateSummary,
+        primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
+            == HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id),  # type: ignore
+        foreign_keys=HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id,
+        uselist=False,
+    )
+    tags = relationship(
+        'HistoryDatasetCollectionTagAssociation',
+        order_by='HistoryDatasetCollectionTagAssociation.id',
+        back_populates='dataset_collection',
+    )
+    annotations = relationship(
+        'HistoryDatasetCollectionAssociationAnnotationAssociation',
+        order_by='HistoryDatasetCollectionAssociationAnnotationAssociation.id',
+        back_populates='history_dataset_collection',
+    )
+    ratings = relationship(
+        'HistoryDatasetCollectionRatingAssociation',
+        order_by='HistoryDatasetCollectionRatingAssociation.id',
+        back_populates='dataset_collection',
+    )
+    output_dataset_collection_instances = relationship(
+        'JobToOutputDatasetCollectionAssociation',
+        back_populates='dataset_collection_instance',
+    )
+
     editable_keys = ('name', 'deleted', 'visible')
 
     def __init__(

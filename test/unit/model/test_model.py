@@ -1609,6 +1609,108 @@ class TestHistoryDatasetAssociationTagAssociation(BaseTest):
             assert stored_obj.user.id == user.id
 
 
+class TestHistoryDatasetCollectionAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'history_dataset_collection_association'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        dataset_collection,
+        history,
+        history_dataset_collection_association,
+        job,
+        implicit_collection_jobs,
+    ):
+        name = 'a'
+        hid = 1
+        visible = True
+        deleted = True
+        implicit_output_name = 'b'
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+
+        obj = cls_()
+        obj.collection = dataset_collection
+        obj.history = history
+        obj.name = name
+        obj.hid = hid
+        obj.visible = visible
+        obj.deleted = deleted
+        obj.copied_from_history_dataset_collection_association = history_dataset_collection_association
+        obj.implicit_output_name = implicit_output_name
+        obj.job = job
+        obj.implicit_collection_jobs = implicit_collection_jobs
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.collection_id == dataset_collection.id
+            assert stored_obj.history_id == history.id
+            assert stored_obj.name == name
+            assert stored_obj.hid == hid
+            assert stored_obj.visible == visible
+            assert stored_obj.deleted == deleted
+            assert (stored_obj.copied_from_history_dataset_collection_association_id
+                == history_dataset_collection_association.id)
+            assert stored_obj.implicit_output_name == implicit_output_name
+            assert stored_obj.job_id == job.id
+            assert stored_obj.implicit_collection_jobs_id == implicit_collection_jobs.id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        dataset_collection,
+        history,
+        history_dataset_collection_association,
+        history_dataset_collection_association_factory,
+        job,
+        implicit_collection_jobs,
+        implicitly_created_dataset_collection_input,
+        history_dataset_collection_annotation_association,
+        history_dataset_collection_rating_association,
+        history_dataset_collection_tag_association,
+        job_to_output_dataset_collection_association,
+    ):
+        copied_to_hdca = history_dataset_collection_association_factory()
+
+        obj = cls_()
+        obj.collection = dataset_collection
+        obj.history = history
+        obj.copied_from_history_dataset_collection_association = history_dataset_collection_association
+        obj.copied_to_history_dataset_collection_association.append(copied_to_hdca)
+        obj.job = job
+        obj.implicit_collection_jobs = implicit_collection_jobs
+        obj.implicit_input_collections.append(implicitly_created_dataset_collection_input)
+        obj.tags.append(history_dataset_collection_tag_association)
+        obj.annotations.append(history_dataset_collection_annotation_association)
+        obj.ratings.append(history_dataset_collection_rating_association)
+        obj.output_dataset_collection_instances.append(job_to_output_dataset_collection_association)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.collection.id == dataset_collection.id
+            assert stored_obj.history.id == history.id
+            assert (stored_obj.copied_from_history_dataset_collection_association.id
+                == history_dataset_collection_association.id)
+            assert stored_obj.copied_to_history_dataset_collection_association == [copied_to_hdca]
+            assert stored_obj.job.id == job.id
+            assert stored_obj.implicit_collection_jobs.id == implicit_collection_jobs.id
+            assert stored_obj.implicit_input_collections == [implicitly_created_dataset_collection_input]
+            assert stored_obj.tags == [history_dataset_collection_tag_association]
+            assert stored_obj.annotations == [history_dataset_collection_annotation_association]
+            assert stored_obj.ratings == [history_dataset_collection_rating_association]
+            assert stored_obj.output_dataset_collection_instances == [job_to_output_dataset_collection_association]
+            assert stored_obj.job_state_summary  # this is a view; TODO: can we test this better?
+
+
 class TestHistoryDatasetCollectionAssociationAnnotationAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -1767,13 +1869,21 @@ class TestImplicitCollectionJobs(BaseTest):
             assert stored_obj.id == obj_id
             assert stored_obj.populated_state == populated_state
 
-    def test_relationships(self, session, cls_, implicit_collection_jobs_job_association):
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        implicit_collection_jobs_job_association,
+        history_dataset_collection_association,
+    ):
         obj = cls_()
         obj.jobs.append(implicit_collection_jobs_job_association)
+        obj.history_dataset_collection_associations.append(history_dataset_collection_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.jobs == [implicit_collection_jobs_job_association]
+            assert stored_obj.history_dataset_collection_associations == [history_dataset_collection_association]
 
 
 class TestImplicitCollectionJobsJobAssociation(BaseTest):
@@ -5070,14 +5180,31 @@ def history_dataset_association_tag_association(model, session):
 
 @pytest.fixture
 def history_dataset_collection_association(model, session):
-    hdca = model.HistoryDatasetCollectionAssociation()
-    yield from dbcleanup_wrapper(session, hdca)
+    instance = model.HistoryDatasetCollectionAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def history_dataset_collection_annotation_association(model, session):
+    instance = model.HistoryDatasetCollectionAssociationAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def history_dataset_collection_rating_association(
+    model,
+    session,
+    user,
+    history_dataset_collection_association,
+):
+    instance = model.HistoryDatasetCollectionRatingAssociation(user, history_dataset_collection_association)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def history_dataset_collection_tag_association(model, session):
-    hdcta = model.HistoryDatasetCollectionTagAssociation()
-    yield from dbcleanup_wrapper(session, hdcta)
+    instance = model.HistoryDatasetCollectionTagAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -5121,6 +5248,12 @@ def implicitly_converted_dataset_association(model, session, history_dataset_ass
 
 
 @pytest.fixture
+def implicitly_created_dataset_collection_input(model, session, history_dataset_collection_association):
+    instance = model.ImplicitlyCreatedDatasetCollectionInput(None, history_dataset_collection_association)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def job(model, session):
     j = model.Job()
     yield from dbcleanup_wrapper(session, j)
@@ -5135,6 +5268,12 @@ def job_export_history_archive(model, session):
 @pytest.fixture
 def job_to_implicit_output_dataset_collection_association(model, session, dataset_collection):
     instance = model.JobToImplicitOutputDatasetCollectionAssociation(None, dataset_collection)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def job_to_output_dataset_collection_association(model, session, history_dataset_collection_association):
+    instance = model.JobToOutputDatasetCollectionAssociation(None, history_dataset_collection_association)
     yield from dbcleanup_wrapper(session, instance)
 
 
