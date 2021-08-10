@@ -15,7 +15,7 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
-import ToolForm from "mvc/tool/tool-form";
+import ToolForm from "components/Tool/ToolForm";
 import FormWrapper from "mvc/form/form-wrapper";
 import Sharing from "components/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
@@ -41,17 +41,15 @@ import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson.vue";
 import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
 import QueryStringParsing from "utils/query-string-parsing";
-import DatasetError from "mvc/dataset/dataset-error";
+import DatasetError from "components/DatasetInformation/DatasetError";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citation/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import Confirmation from "components/login/Confirmation.vue";
-import LibraryFolderRouter from "components/Libraries/LibraryFolderRouter";
-import Vue from "vue";
-import store from "store";
-import VueRouterMain from "./VueRouterMain.vue";
+import Libraries from "components/Libraries";
+import { mountVueComponent } from "utils/mountVueComponent";
 
 /** Routes */
 export const getAnalysisRouter = (Galaxy) => {
@@ -110,24 +108,14 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         _display_vue_helper: function (component, propsData = {}, active_tab = null, noPadding = false) {
-            const instance = Vue.extend(component);
             const container = document.createElement("div");
             if (active_tab) {
                 container.active_tab = active_tab;
             }
             this.page.display(container, noPadding);
-            new instance({ store, propsData }).$mount(container);
-        },
-        _display_vue_router: function (router, propsData = {}, active_tab = null, noPadding = false) {
-            const container = document.createElement("div");
-            if (active_tab) {
-                container.active_tab = active_tab;
-            }
-            this.page.display(container, noPadding);
-            new Vue({
-                router: router,
-                render: (h) => h(VueRouterMain),
-            }).$mount(container);
+
+            const mountFn = mountVueComponent(component);
+            return mountFn(propsData, container);
         },
 
         show_tours: function (tour_id) {
@@ -161,10 +149,10 @@ export const getAnalysisRouter = (Galaxy) => {
             this._display_vue_helper(InteractiveTools);
         },
 
-        show_library_folder: function (folder_id) {
+        show_library_folder: function () {
             this.page.toolPanel?.component.hide(0);
             this.page.panels.right.hide();
-            this._display_vue_router(LibraryFolderRouter, { folder_id: folder_id });
+            this._display_vue_helper(Libraries);
         },
 
         show_cloud_auth: function () {
@@ -401,8 +389,9 @@ export const getAnalysisRouter = (Galaxy) => {
             this.page.display(new DatasetEditAttributes.View());
         },
 
-        show_dataset_error: function () {
-            this.page.display(new DatasetError.View());
+        show_dataset_error: function (params) {
+            const datasetId = params.dataset_id;
+            this._display_vue_helper(DatasetError, { datasetId: datasetId });
         },
 
         /**  */
@@ -439,7 +428,7 @@ export const getAnalysisRouter = (Galaxy) => {
             if (params.version) {
                 params.version = decodeUriComponent(params.version);
             }
-            this.page.display(new ToolForm.View(params));
+            this._display_vue_helper(ToolForm, params);
         },
 
         /** load the center panel iframe using the given url */

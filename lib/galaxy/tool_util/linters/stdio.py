@@ -34,10 +34,10 @@ def lint_stdio(tool_source, lint_ctx):
 def _lint_exit_code(child, lint_ctx):
     for key in child.attrib.keys():
         if key not in ["description", "level", "range"]:
-            lint_ctx.warn("Unknown attribute [%s] encountered on exit_code tag." % key)
+            lint_ctx.warn(f"Unknown attribute [{key}] encountered on exit_code tag.")
 
 
 def _lint_regex(child, lint_ctx):
     for key in child.attrib.keys():
         if key not in ["description", "level", "match", "source"]:
-            lint_ctx.warn("Unknown attribute [%s] encountered on regex tag." % key)
+            lint_ctx.warn(f"Unknown attribute [{key}] encountered on regex tag.")

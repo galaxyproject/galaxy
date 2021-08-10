@@ -130,7 +130,7 @@ class BaseJobRunner:
             try:
                 action_str = f'galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}'
                 action_timer = self.app.execution_timer_factory.get_timer(
-                    'internals.%s' % action_str,
+                    f'internals.{action_str}',
                     'job runner action %s for job ${job_id} executed' % (action_str)
                 )
                 method(arg)
@@ -540,7 +540,7 @@ class BaseJobRunner:
 
             job_wrapper.finish(tool_stdout, tool_stderr, exit_code, check_output_detected_state=check_output_detected_state, job_stdout=job_stdout, job_stderr=job_stderr)
         except Exception:
-            log.exception("({}/{}) Job wrapper finish method failed".format(job_id or '', external_job_id or ''))
+            log.exception(f"({job_id or ''}/{external_job_id or ''}) Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 
 
@@ -566,19 +566,19 @@ class JobState:
             id_tag = self.job_wrapper.get_id_tag()
             if files_dir is not None:
                 self.job_file = JobState.default_job_file(files_dir, id_tag)
-                self.output_file = os.path.join(files_dir, 'galaxy_%s.o' % id_tag)
-                self.error_file = os.path.join(files_dir, 'galaxy_%s.e' % id_tag)
+                self.output_file = os.path.join(files_dir, f'galaxy_{id_tag}.o')
+                self.error_file = os.path.join(files_dir, f'galaxy_{id_tag}.e')
                 self.exit_code_file = default_exit_code_file(files_dir, id_tag)
-            job_name = 'g%s' % id_tag
+            job_name = f'g{id_tag}'
             if self.job_wrapper.tool.old_id:
-                job_name += '_%s' % self.job_wrapper.tool.old_id
+                job_name += f'_{self.job_wrapper.tool.old_id}'
             if not self.redact_email_in_job_name and self.job_wrapper.user:
-                job_name += '_%s' % self.job_wrapper.user
-            self.job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
+                job_name += f'_{self.job_wrapper.user}'
+            self.job_name = ''.join(x if x in (f"{string.ascii_letters + string.digits}_") else '_' for x in job_name)
 
     @staticmethod
     def default_job_file(files_dir, id_tag):
-        return os.path.join(files_dir, 'galaxy_%s.sh' % id_tag)
+        return os.path.join(files_dir, f'galaxy_{id_tag}.sh')
 
     def read_exit_code(self):
         return read_exit_code_from(self.exit_code_file, self.job_wrapper.get_id_tag())
@@ -591,10 +591,10 @@ class JobState:
                 # TODO: Move this prefix stuff to a method so we don't have dispatch on attributes we may or may
                 # not have.
                 if not hasattr(self, "job_id"):
-                    prefix = "(%s)" % self.job_wrapper.get_id_tag()
+                    prefix = f"({self.job_wrapper.get_id_tag()})"
                 else:
                     prefix = f"({self.job_wrapper.get_id_tag()}/{self.job_id})"
-                log.debug("{} Unable to cleanup {}: {}".format(prefix, file, unicodify(e)))
+                log.debug(f"{prefix} Unable to cleanup {file}: {unicodify(e)}")
 
 
 class AsynchronousJobState(JobState):
@@ -672,7 +672,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         self.monitor_queue = Queue()
 
     def _init_monitor_thread(self):
-        name = "%s.monitor_thread" % self.runner_name
+        name = f"{self.runner_name}.monitor_thread"
         super()._init_monitor_thread(name=name, target=self.monitor, start=True, config=self.app.config)
 
     def handle_stop(self):
@@ -709,7 +709,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
 
     def shutdown(self):
         """Attempts to gracefully shut down the monitor thread"""
-        log.info("%s: Sending stop signal to monitor thread" % self.runner_name)
+        log.info(f"{self.runner_name}: Sending stop signal to monitor thread")
         self.monitor_queue.put(STOP_SIGNAL)
         # Call the parent's shutdown method to stop workers
         self.shutdown_monitor()

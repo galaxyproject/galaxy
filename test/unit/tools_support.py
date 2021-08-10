@@ -94,7 +94,7 @@ class UsesTools:
         self.app.config.drmaa_external_runjob_script = ""
         self.app.config.tool_secret = "testsecret"
         self.app.config.track_jobs_in_database = False
-        self.app.job_config["get_job_tool_configurations"] = lambda ids: [Bunch(handler=Bunch())]
+        self.app.job_config["get_job_tool_configurations"] = lambda ids, tool_classes: [Bunch(handler=Bunch())]
 
     def __setup_tool(self):
         tool_source = get_tool_source(self.tool_file)

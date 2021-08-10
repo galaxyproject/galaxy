@@ -220,10 +220,10 @@
                         </b-button>
                         <b-button
                             v-if="row.item.can_manage && !row.item.deleted"
-                            @click="navigateToPermission(row.item)"
                             size="sm"
                             class="lib-btn permission_lib_btn"
                             :title="`Permissions of ${row.item.name}`"
+                            :to="{ path: `${navigateToPermission(row.item)}` }"
                         >
                             <font-awesome-icon icon="users" />
                             Manage
@@ -241,17 +241,26 @@
                     </div>
                 </template>
             </b-table>
+            <!-- hide pagination if the table is loading-->
             <b-container>
-                <b-row class="justify-content-md-center">
+                <b-row align-v="center" class="justify-content-md-center">
                     <b-col md="auto">
+                        <div v-if="isBusy">
+                            <b-spinner small type="grow"></b-spinner>
+                            <b-spinner small type="grow"></b-spinner>
+                            <b-spinner small type="grow"></b-spinner>
+                        </div>
                         <b-pagination
-                            v-model="currentPage"
+                            v-else
+                            :value="currentPage"
                             :total-rows="total_rows"
                             :per-page="perPage"
+                            @input="changePage"
                             aria-controls="folder_list_body"
                         >
                         </b-pagination>
                     </b-col>
+
                     <b-col cols="1.5">
                         <table>
                             <tr>
@@ -304,7 +313,6 @@ function initialFolderState() {
         include_deleted: false,
         search_text: "",
         isAllSelectedMode: false,
-        currentPage: 1,
     };
 }
 export default {
@@ -312,6 +320,11 @@ export default {
         folder_id: {
             type: String,
             required: true,
+        },
+        page: {
+            type: Number,
+            default: 1,
+            required: false,
         },
     },
     components: {
@@ -323,6 +336,7 @@ export default {
         return {
             ...initialFolderState(),
             ...{
+                currentPage: null,
                 current_folder_id: null,
                 error: null,
                 isBusy: false,
@@ -338,11 +352,12 @@ export default {
     },
     created() {
         this.services = new Services({ root: this.root });
-        this.initFolder(this.folder_id);
+        this.getFolder(this.folder_id, this.page);
     },
     methods: {
-        initFolder(folder_id) {
+        getFolder(folder_id, page) {
             this.current_folder_id = folder_id;
+            this.currentPage = page;
             this.resetData();
             this.fetchFolderContents(this.include_deleted);
         },
@@ -390,7 +405,9 @@ export default {
             this.$refs.folder_content_table.items.forEach((row, index) => {
                 if (!row.isNewFolder && !row.deleted && !this.unselected.some((unsel) => unsel.id === row.id)) {
                     this.select_unselect_row(index);
-                    if (!this.selected.some((selectedItem) => selectedItem.id === row.id)) this.selected.push(row);
+                    if (!this.selected.some((selectedItem) => selectedItem.id === row.id)) {
+                        this.selected.push(row);
+                    }
                 }
             });
         },
@@ -412,13 +429,17 @@ export default {
             });
         },
         isAllSelectedOnPage() {
-            if (!this.$refs.folder_content_table) return false;
+            if (!this.$refs.folder_content_table) {
+                return false;
+            }
 
             // Since we cannot select new folders, toggle should clear all if all rows match, expect new folders
             let unselectable = 0;
 
             this.$refs.folder_content_table.computedItems.forEach((row) => {
-                if (row.isNewFolder || row.deleted) unselectable++;
+                if (row.isNewFolder || row.deleted) {
+                    unselectable++;
+                }
             });
 
             return this.selected.length + unselectable === this.$refs.folder_content_table.computedItems.length;
@@ -469,20 +490,28 @@ export default {
             this.select_unselect_row(index, unselect);
         },
         select_unselect_row(index, unselect = false) {
-            if (unselect) this.$refs.folder_content_table.unselectRow(index);
-            else this.$refs.folder_content_table.selectRow(index);
+            if (unselect) {
+                this.$refs.folder_content_table.unselectRow(index);
+            } else {
+                this.$refs.folder_content_table.selectRow(index);
+            }
         },
         bytesToString(raw_size) {
             return Utils.bytesToString(raw_size);
         },
         navigateToPermission(element) {
-            if (element.type === "file")
-                this.$router.push({ path: `${this.folder_id}/dataset/${element.id}/permissions` });
-            else if (element.type === "folder") this.$router.push({ path: `${element.id}/permissions` });
+            if (element.type === "file") {
+                return `/folders/${this.folder_id}/dataset/${element.id}/permissions`;
+            } else if (element.type === "folder") {
+                return `/folders/${element.id}/permissions`;
+            }
         },
         getMessage(element) {
-            if (element.type === "file") return element.message;
-            else if (element.type === "folder") return element.description;
+            if (element.type === "file") {
+                return element.message;
+            } else if (element.type === "folder") {
+                return element.description;
+            }
         },
         expandMessage(element) {
             this.expandedMessage.push(element.id);
@@ -496,7 +525,9 @@ export default {
         toggleEditMode(item) {
             item.editMode = !item.editMode;
             this.folderContents = this.folderContents.filter((item) => {
-                if (!item.isNewFolder) return item;
+                if (!item.isNewFolder) {
+                    return item;
+                }
             });
             this.refreshTable();
         },
@@ -537,7 +568,7 @@ export default {
                     Toast.error(`An error occurred! ${message} was not undeleted. Please try again.`);
                 }
             };
-            if (element.type === "folder")
+            if (element.type === "folder") {
                 this.services.undeleteFolder(
                     element,
                     (response) => {
@@ -547,7 +578,7 @@ export default {
                     },
                     onError
                 );
-            else
+            } else {
                 this.services.undeleteDataset(
                     element,
                     (response) => {
@@ -563,6 +594,10 @@ export default {
                     },
                     onError
                 );
+            }
+        },
+        changePage(page) {
+            this.$router.push({ name: `LibraryFolder`, params: { folder_id: this.folder_id, page: page } });
         },
 
         /*
@@ -607,11 +642,6 @@ export default {
         },
     },
     watch: {
-        currentPage: {
-            handler: function (value) {
-                this.fetchFolderContents(this.include_deleted);
-            },
-        },
         perPage: {
             handler: function (value) {
                 this.fetchFolderContents(this.include_deleted);
@@ -619,7 +649,7 @@ export default {
         },
     },
     beforeRouteUpdate(to, from, next) {
-        this.initFolder(to.params.folder_id);
+        this.getFolder(to.params.folder_id, to.params.page);
         next();
     },
 };

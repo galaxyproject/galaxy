@@ -40,7 +40,7 @@ class ToolDataApiTestCase(ApiTestCase):
         field = show_field_response.json()
         self._assert_has_keys(field, "files", "name", "fields", "fingerprint", "base_dir")
         files = field["files"]
-        assert len(files) == 2, "Length of files [%s] was not 2." % files
+        assert len(files) == 2, f"Length of files [{files}] was not 2."
 
     def test_download_field_file(self):
         show_field_response = self._get("tool_data/testalpha/fields/data1/files/entry.txt", admin=True)

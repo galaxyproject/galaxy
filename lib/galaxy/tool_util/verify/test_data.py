@@ -25,6 +25,7 @@ LIST_SEP = re.compile(r"\s*,\s*")
 
 
 class TestDataResolver:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, file_dirs=None, env_var='GALAXY_TEST_FILE_DIR', environ=os.environ):
         if file_dirs is None:
@@ -110,7 +111,7 @@ class GitDataResolver(FileDataResolver):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        print("Executing %s" % cmd)
+        print(f"Executing {cmd}")
         p = subprocess.Popen(cmd, **subprocess_kwds)
         stdout, stderr = p.communicate()
         if p.returncode != 0:

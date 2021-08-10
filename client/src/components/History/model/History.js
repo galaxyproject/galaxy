@@ -19,11 +19,21 @@ export class History extends dateMixin(ModelBase) {
 
     get statusDescription() {
         const status = [];
-        if (this.shared) status.push("Shared");
-        if (this.importable) status.push("Accessible");
-        if (this.published) status.push("Published");
-        if (this.isDeleted) status.push("Deleted");
-        if (this.purged) status.push("Purged");
+        if (this.shared) {
+            status.push("Shared");
+        }
+        if (this.importable) {
+            status.push("Accessible");
+        }
+        if (this.published) {
+            status.push("Published");
+        }
+        if (this.isDeleted) {
+            status.push("Deleted");
+        }
+        if (this.purged) {
+            status.push("Purged");
+        }
         return status.join(", ");
     }
 }

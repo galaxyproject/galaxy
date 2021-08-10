@@ -1,13 +1,13 @@
 <template>
     <div>
-        <PermissionsHeader v-if="library" :name="library.name" path="/" />
+        <PermissionsHeader v-if="library" :name="library.name" />
         <h2 class="text-center">Library permissions</h2>
         <PermissionsInputField
             v-if="access_library_role_list"
             :id="library_id"
             :permission_type="access_type"
             :initial_value="access_library_role_list"
-            :apiRootUrl="apiRootUrl"
+            :api-root-url="apiRootUrl"
             alert="User with <strong>any</strong> of these roles can access this library. If there are no access roles set on the library it is considered <strong>unrestricted</strong>."
             title="Roles that can access the library"
             @input="setUserPermissionsPreferences"
@@ -17,7 +17,7 @@
             :id="library_id"
             :permission_type="manage_type"
             :initial_value="manage_library_role_list"
-            :apiRootUrl="apiRootUrl"
+            :api-root-url="apiRootUrl"
             alert="User with <strong>any</strong> of these roles can manage permissions on this library (includes giving access)."
             title="Roles that can manage permissions on this library"
             @input="setUserPermissionsPreferences"
@@ -28,7 +28,7 @@
             :id="library_id"
             :permission_type="add_type"
             :initial_value="add_library_item_role_list"
-            :apiRootUrl="apiRootUrl"
+            :api-root-url="apiRootUrl"
             class="add_perm"
             alert="User with <strong>any</strong> of these roles can add items to this library (folders and datasets)."
             title="Roles that can add items to this library"
@@ -39,7 +39,7 @@
             :id="library_id"
             :permission_type="modify_type"
             :initial_value="modify_library_role_list"
-            :apiRootUrl="apiRootUrl"
+            :api-root-url="apiRootUrl"
             alert="User with  <strong>any</strong> of these roles can modify this library (name, synopsis, etc.)."
             title="Roles that can modify this library"
             @input="setUserPermissionsPreferences"

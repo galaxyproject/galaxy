@@ -28,7 +28,9 @@ describe("contentPayload operator", () => {
     });
 
     afterEach(async () => {
-        if (sub) sub.unsubscribe();
+        if (sub) {
+            sub.unsubscribe();
+        }
         await wipeDatabase();
     });
 

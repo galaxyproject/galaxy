@@ -2,6 +2,7 @@ import collections
 import os
 import unittest
 import uuid
+from tempfile import NamedTemporaryFile
 
 import pytest
 from sqlalchemy import inspect
@@ -10,6 +11,7 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
 from galaxy.model.database_utils import create_database
+from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.security import GalaxyRBACAgent
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -275,6 +277,19 @@ class MappingTests(BaseModelTestCase):
         library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
         tag_and_test(library_dataset_collection, model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections")
 
+    def test_collection_get_interface(self):
+        model = self.model
+        u = model.User(email="mary@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        d1 = model.HistoryDatasetAssociation(extension="txt", history=h1, create_dataset=True, sa_session=model.session)
+        c1 = model.DatasetCollection(collection_type="list")
+        elements = 100
+        dces = [model.DatasetCollectionElement(collection=c1, element=d1, element_identifier=f"{i}", element_index=i) for i in range(elements)]
+        self.persist(u, h1, d1, c1, *dces, flush=False, expunge=False)
+        model.session.flush()
+        for i in range(elements):
+            assert c1[i] == dces[i]
+
     def test_collections_in_histories(self):
         model = self.model
 
@@ -318,6 +333,54 @@ class MappingTests(BaseModelTestCase):
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
         # self.assertEqual(len(loaded_dataset_collection.datasets), 2)
         # assert loaded_dataset_collection.collection_type == "pair"
+
+    def test_nested_collection_attributes(self):
+        model = self.model
+        u = model.User(email="mary2@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        d1 = model.HistoryDatasetAssociation(extension="bam", history=h1, create_dataset=True, sa_session=model.session)
+        index = NamedTemporaryFile("w")
+        index.write("cool bam index")
+        index2 = NamedTemporaryFile("w")
+        index2.write("cool bam index 2")
+        metadata_dict = {"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name}), "bam_csi_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index2.name})}
+        d1.metadata.from_JSON_dict(json_dict=metadata_dict)
+        assert d1.metadata.bam_index
+        assert d1.metadata.bam_csi_index
+        assert isinstance(d1.metadata.bam_index, model.MetadataFile)
+        assert isinstance(d1.metadata.bam_csi_index, model.MetadataFile)
+        d2 = model.HistoryDatasetAssociation(extension="txt", history=h1, create_dataset=True, sa_session=model.session)
+        c1 = model.DatasetCollection(collection_type='paired')
+        dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="forward", element_index=0)
+        dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
+        c2 = model.DatasetCollection(collection_type="list:paired")
+        dce3 = model.DatasetCollectionElement(collection=c2, element=c1, element_identifier="inner_list", element_index=0)
+        c3 = model.DatasetCollection(collection_type="list:list")
+        c4 = model.DatasetCollection(collection_type="list:list:paired")
+        dce4 = model.DatasetCollectionElement(collection=c4, element=c2, element_identifier="outer_list", element_index=0)
+        model.session.add_all([d1, d2, c1, dce1, dce2, c2, dce3, c3, c4, dce4])
+        model.session.flush()
+        q = c2._get_nested_collection_attributes(element_attributes=('element_identifier',), hda_attributes=('extension',), dataset_attributes=('state',))
+        assert [(r.keys()) for r in q] == [['element_identifier_0', 'element_identifier_1', 'extension', 'state'], ['element_identifier_0', 'element_identifier_1', 'extension', 'state']]
+        assert q.all() == [('inner_list', 'forward', 'bam', 'new'), ('inner_list', 'reverse', 'txt', 'new')]
+        q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation,))
+        assert q.all() == [d1, d2]
+        q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation, model.Dataset))
+        assert q.all() == [(d1, d1.dataset), (d2, d2.dataset)]
+        # Assert properties that use _get_nested_collection_attributes return correct content
+        assert c2.dataset_instances == [d1, d2]
+        assert c2.dataset_elements == [dce1, dce2]
+        assert c2.dataset_action_tuples == []
+        assert c2.populated_optimized
+        assert c2.dataset_states_and_extensions_summary == ({'new'}, {'txt', 'bam'})
+        assert c2.element_identifiers_extensions_paths_and_metadata_files == [[('inner_list', 'forward'), 'bam', 'mock_dataset_14.dat', [('bai', 'mock_dataset_14.dat'), ('bam.csi', 'mock_dataset_14.dat')]], [('inner_list', 'reverse'), 'txt', 'mock_dataset_14.dat', []]]
+        assert c3.dataset_instances == []
+        assert c3.dataset_elements == []
+        assert c3.dataset_states_and_extensions_summary == (set(), set())
+        q = c4._get_nested_collection_attributes(element_attributes=('element_identifier',))
+        assert q.all() == [('outer_list', 'inner_list', 'forward'), ('outer_list', 'inner_list', 'reverse')]
+        assert c4.dataset_elements == [dce1, dce2]
+        assert c4.element_identifiers_extensions_and_paths == [(('outer_list', 'inner_list', 'forward'), 'bam', 'mock_dataset_14.dat'), (('outer_list', 'inner_list', 'reverse'), 'txt', 'mock_dataset_14.dat')]
 
     def test_default_disk_usage(self):
         model = self.model
@@ -471,6 +534,46 @@ class MappingTests(BaseModelTestCase):
         assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id], max_in_filter_length=1) == ["1", "2", "3", "4"]
 
         assert contents_iter_names(ids=[d1.id, d3.id]) == ["1", "3"]
+
+    def test_history_audit(self):
+        model = self.model
+        u = model.User(email="contents@foo.bar.baz", password="password")
+        h1 = model.History(name="HistoryAuditHistory", user=u)
+        h2 = model.History(name="HistoryAuditHistory", user=u)
+
+        def get_audit_table_entries(history):
+            return self.session().query(model.HistoryAudit.table).filter(
+                model.HistoryAudit.table.c.history_id == history.id).all()
+
+        def get_latest_entry(entries):
+            # key ensures result is correct if new columns are added
+            return max(entries, key=lambda x: x.update_time)
+
+        self.persist(u, h1, h2, expunge=False)
+        assert len(get_audit_table_entries(h1)) == 1
+        assert len(get_audit_table_entries(h2)) == 1
+
+        self.new_hda(h1, name="1")
+        self.new_hda(h2, name="2")
+        self.session().flush()
+        # db_next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
+
+        h1_audits = get_audit_table_entries(h1)
+        h2_audits = get_audit_table_entries(h2)
+        assert len(h1_audits) == 3
+        assert len(h2_audits) == 3
+
+        h1_latest = get_latest_entry(h1_audits)
+        h2_latest = get_latest_entry(h2_audits)
+
+        model.HistoryAudit.prune(self.session())
+
+        h1_audits = get_audit_table_entries(h1)
+        h2_audits = get_audit_table_entries(h2)
+        assert len(h1_audits) == 1
+        assert len(h2_audits) == 1
+        assert h1_audits[0] == h1_latest
+        assert h2_audits[0] == h2_latest
 
     def _non_empty_flush(self):
         model = self.model
@@ -806,10 +909,13 @@ class MockObjectStore:
         return True
 
     def get_filename(self, *args, **kwds):
-        return "dataest_14.dat"
+        return "mock_dataset_14.dat"
 
     def get_store_by(self, *args, **kwds):
         return 'id'
+
+    def update_from_file(self, *arg, **kwds):
+        pass
 
 
 def get_suite():

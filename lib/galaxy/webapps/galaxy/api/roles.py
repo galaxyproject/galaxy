@@ -3,24 +3,21 @@ API operations on Role objects.
 """
 import json
 import logging
-from typing import List
 
 from fastapi import (
     Body,
-)
-from pydantic import (
-    BaseModel,
 )
 
 from galaxy import web
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.roles import (
+from galaxy.managers.roles import RoleManager
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import (
     RoleDefinitionModel,
-    RoleManager,
+    RoleListModel,
     RoleModel,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.webapps.base.controller import url_for
 from . import (
     BaseGalaxyAPIController,
@@ -35,10 +32,6 @@ log = logging.getLogger(__name__)
 # Empty paths (e.g. /api/roles) only work if a prefix is defined right here.
 # https://github.com/tiangolo/fastapi/pull/415/files
 router = Router(tags=["roles"])
-
-
-class RoleListModel(BaseModel):
-    __root__: List[RoleModel]
 
 
 def role_to_model(trans, role):

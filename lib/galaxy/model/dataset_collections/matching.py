@@ -33,7 +33,7 @@ class CollectionsToMatch:
 class MatchingCollections:
     """ Structure holding the result of matching a list of collections
     together. This class being different than the class above and being
-    created in the dataset_collections_service layer may seem like
+    created in the DatasetCollectionManager layer may seem like
     overkill but I suspect in the future plugins will be subtypable for
     instance so matching collections will need to make heavy use of the
     dataset collection type registry managed by the dataset collections

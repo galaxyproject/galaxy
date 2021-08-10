@@ -107,6 +107,7 @@ class BaseController:
         """
         return trans.security.encode_all_ids(rval, recursive=recursive)
 
+    # TODO this will be replaced by lib.galaxy.managers.base.ModelFilterParser.build_filter_params
     def parse_filter_params(self, qdict, filter_attr_key='q', filter_value_key='qv', attr_op_split_char='-'):
         """
         """
@@ -168,7 +169,7 @@ class BaseUIController(BaseController):
             raise       # handled in the caller
         except Exception:
             log.exception("Exception in get_object check for %s %s:", class_name, str(id))
-            raise Exception('Server error retrieving {} id ( {} ).'.format(class_name, str(id)))
+            raise Exception(f'Server error retrieving {class_name} id ( {str(id)} ).')
 
     def message_exception(self, trans, message, sanitize=True):
         trans.response.status = 400
@@ -183,7 +184,7 @@ class BaseAPIController(BaseController):
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail="Invalid {} id ( {} ) specified: {}".format(class_name, str(id), util.unicodify(e)))
+            raise HTTPBadRequest(detail=f"Invalid {class_name} id ( {str(id)} ) specified: {util.unicodify(e)}")
         except exceptions.MessageException as e:
             raise HTTPBadRequest(detail=e.err_msg)
         except Exception as e:
@@ -211,11 +212,11 @@ class BaseAPIController(BaseController):
                 invalid.append(item)
         for item in util.listify(payload.get('in_groups', [])):
             try:
-                new_in_groups.append(get_id(item, trans.app.model.Group, trans.app.model.Group.table.c.name))
+                new_in_groups.append(get_id(item, trans.app.model.Group, trans.app.model.Group.name))
             except Exception:
                 invalid.append(item)
         if invalid:
-            msg = "The following value(s) for associated users and/or groups could not be parsed: %s." % ', '.join(invalid)
+            msg = f"The following value(s) for associated users and/or groups could not be parsed: {', '.join(invalid)}."
             msg += "  Valid values are email addresses of users, names of groups, or IDs of both."
             raise Exception(msg)
         payload['in_users'] = list(map(str, new_in_users))
@@ -231,6 +232,7 @@ class BaseAPIController(BaseController):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 
+    # TODO: this will be replaced by lib.galaxy.schema.FilterQueryParams.build_order_by
     def _parse_order_by(self, manager, order_by_string):
         ORDER_BY_SEP_CHAR = ','
         if ORDER_BY_SEP_CHAR in order_by_string:
@@ -304,7 +306,6 @@ class JSAppLauncher(BaseUIController):
     def _get_extended_config(self, trans):
         config = {
             'active_view': 'analysis',
-            'enable_cloud_launch': trans.app.config.get_bool('enable_cloud_launch', False),
             'enable_webhooks': True if trans.app.webhooks_registry.webhooks else False,
             'toolbox': trans.app.toolbox.to_dict(trans),
             'message_box_visible': trans.app.config.message_box_visible,
@@ -398,58 +399,6 @@ class SharableItemSecurityMixin:
         return managers_base.security_check(trans, item, check_ownership=check_ownership, check_accessible=check_accessible)
 
 
-class ExportsHistoryMixin:
-
-    def serve_ready_history_export(self, trans, jeha):
-        assert jeha.ready
-        if jeha.compressed:
-            trans.response.set_content_type('application/x-gzip')
-        else:
-            trans.response.set_content_type('application/x-tar')
-        disposition = 'attachment; filename="%s"' % jeha.export_name
-        trans.response.headers["Content-Disposition"] = disposition
-        archive = trans.app.object_store.get_filename(jeha.dataset)
-        return open(archive, mode='rb')
-
-    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None):
-        # Convert options to booleans.
-        if isinstance(gzip, str):
-            gzip = (gzip in ['True', 'true', 'T', 't'])
-        if isinstance(include_hidden, str):
-            include_hidden = (include_hidden in ['True', 'true', 'T', 't'])
-        if isinstance(include_deleted, str):
-            include_deleted = (include_deleted in ['True', 'true', 'T', 't'])
-
-        params = {
-            'history_to_export': history,
-            'compress': gzip,
-            'include_hidden': include_hidden,
-            'include_deleted': include_deleted
-        }
-
-        if directory_uri is None:
-            export_tool_id = '__EXPORT_HISTORY__'
-        else:
-            params['directory_uri'] = directory_uri
-            params['file_name'] = file_name or None
-            export_tool_id = '__EXPORT_HISTORY_TO_URI__'
-
-        # Run job to do export.
-        history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
-        job, _ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
-        return job
-
-
-class ImportsHistoryMixin:
-
-    def queue_history_import(self, trans, archive_type, archive_source):
-        # Run job to do import.
-        history_imp_tool = trans.app.toolbox.get_tool('__IMPORT_HISTORY__')
-        incoming = {'__ARCHIVE_SOURCE__': archive_source, '__ARCHIVE_TYPE__': archive_type}
-        job, _ = history_imp_tool.execute(trans, incoming=incoming)
-        return job
-
-
 class UsesLibraryMixinItems(SharableItemSecurityMixin):
 
     def get_library_folder(self, trans, id, check_ownership=False, check_accessible=True):
@@ -526,7 +475,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         ``library_contents.create`` will branch to this if called with 'from_hda_id'
         in its payload.
         """
-        log.debug('_copy_hda_to_library_folder: %s' % (str((from_hda_id, folder_id, ldda_message))))
+        log.debug(f'_copy_hda_to_library_folder: {str((from_hda_id, folder_id, ldda_message))}')
         # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
         # TODO: allow name and other, editable ldda attrs?
         if ldda_message:
@@ -800,7 +749,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
         # copy vis and alter title
         # TODO: need to handle custom db keys.
-        imported_visualization = visualization.copy(user=user, title="imported: " + visualization.title)
+        imported_visualization = visualization.copy(user=user, title=f"imported: {visualization.title}")
         trans.sa_session.add(imported_visualization)
         trans.sa_session.flush()
         return imported_visualization
@@ -1080,15 +1029,15 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         try:
             dataset_id = trans.security.decode_id(dataset_id)
         except (AttributeError, TypeError):
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         try:
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
         except Exception:
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         if not data:
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         if check_ownership:
             # Verify ownership.
@@ -1096,7 +1045,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             if not user:
                 error("Must be logged in to manage Galaxy items")
             if data.history.user != user:
-                error("%s is not owned by current user" % data.__class__.__name__)
+                error(f"{data.__class__.__name__} is not owned by current user")
 
         if check_accessible:
             current_user_roles = trans.get_current_user_roles()
@@ -1238,7 +1187,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         """ Imports a shared workflow """
         # Copy workflow.
         imported_stored = model.StoredWorkflow()
-        imported_stored.name = "imported: " + stored.name
+        imported_stored.name = f"imported: {stored.name}"
         workflow = stored.latest_workflow.copy(user=trans.user)
         workflow.stored_workflow = imported_stored
         imported_stored.latest_workflow = workflow
@@ -1292,15 +1241,15 @@ class UsesFormDefinitionsMixin:
         # Save a form_builder field object
         params = util.Params(kwd)
         if isinstance(field_obj, trans.model.UserAddress):
-            field_obj.desc = util.restore_text(params.get('%s_short_desc' % widget_name, ''))
-            field_obj.name = util.restore_text(params.get('%s_name' % widget_name, ''))
-            field_obj.institution = util.restore_text(params.get('%s_institution' % widget_name, ''))
-            field_obj.address = util.restore_text(params.get('%s_address' % widget_name, ''))
-            field_obj.city = util.restore_text(params.get('%s_city' % widget_name, ''))
-            field_obj.state = util.restore_text(params.get('%s_state' % widget_name, ''))
-            field_obj.postal_code = util.restore_text(params.get('%s_postal_code' % widget_name, ''))
-            field_obj.country = util.restore_text(params.get('%s_country' % widget_name, ''))
-            field_obj.phone = util.restore_text(params.get('%s_phone' % widget_name, ''))
+            field_obj.desc = util.restore_text(params.get(f'{widget_name}_short_desc', ''))
+            field_obj.name = util.restore_text(params.get(f'{widget_name}_name', ''))
+            field_obj.institution = util.restore_text(params.get(f'{widget_name}_institution', ''))
+            field_obj.address = util.restore_text(params.get(f'{widget_name}_address', ''))
+            field_obj.city = util.restore_text(params.get(f'{widget_name}_city', ''))
+            field_obj.state = util.restore_text(params.get(f'{widget_name}_state', ''))
+            field_obj.postal_code = util.restore_text(params.get(f'{widget_name}_postal_code', ''))
+            field_obj.country = util.restore_text(params.get(f'{widget_name}_country', ''))
+            field_obj.phone = util.restore_text(params.get(f'{widget_name}_phone', ''))
             trans.sa_session.add(field_obj)
             trans.sa_session.flush()
 
@@ -1436,7 +1385,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
     def _get_item_tag_assoc(self, trans, item_class_name, id, tag_name):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
-        log.debug("In get_item_tag_assoc with tagged_item %s" % tagged_item)
+        log.debug(f"In get_item_tag_assoc with tagged_item {tagged_item}")
         return self.get_tag_handler(trans)._get_item_tag_assoc(user, tagged_item, tag_name)
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
@@ -1471,7 +1420,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
 
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
         tags = all_tags_query.distinct().all()
-        tags = [((name + ':' + val) if val else name) for name, val in tags]
+        tags = [(f"{name}:{val}" if val else name) for name, val in tags]
         return sorted(tags)
 
 
@@ -1552,14 +1501,14 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
         """
         if isinstance(meta, dict):
             for a in meta:
-                yield from self._scan_json_block(meta[a], prefix + "/" + a)
+                yield from self._scan_json_block(meta[a], f"{prefix}/{a}")
         elif isinstance(meta, list):
             for i, a in enumerate(meta):
                 yield from self._scan_json_block(a, prefix + "[%d]" % (i))
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True
-            yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
+            yield prefix, (f"{meta}").encode("utf8", errors='replace')
 
 
 def sort_by_attr(seq, attr):

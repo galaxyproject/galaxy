@@ -74,7 +74,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         self.base_url = '/'.join((base_url, self.name)) if base_url else self.name
         self.static_path = self._get_static_path(self.path)
         if self.static_path and os.path.exists(os.path.join(self.static_path, 'logo.png')):
-            self.config['logo'] = self.static_path + '/logo.png'
+            self.config['logo'] = f"{self.static_path}/logo.png"
         template_cache_dir = context.get('template_cache_dir', None)
         additional_template_paths = context.get('additional_template_paths', [])
         self._set_up_template_plugin(template_cache_dir, additional_template_paths=additional_template_paths)
@@ -132,7 +132,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             match = path.split('/config/')[-1]
             return os.path.join('./static', match, 'static')
         else:
-            log.debug('Visualization has no static path: %s.' % path)
+            log.debug(f'Visualization has no static path: {path}.')
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
         """
@@ -305,7 +305,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         template.
         """
         render_vars['embedded'] = self._parse_embedded(embedded)
-        render_vars['static_url'] = url_for('/%s/' % self.static_path)
+        render_vars['static_url'] = url_for(f'/{self.static_path}/')
         render_vars.update(vars={})
         render_vars.update({
             "script_attributes": self.config['entry_point']['attr']

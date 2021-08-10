@@ -15,6 +15,7 @@ from collections.abc import Mapping
 from os.path import abspath
 
 from sqlalchemy.orm import object_session
+from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
 from galaxy.util import (
@@ -133,12 +134,13 @@ class MetadataCollection(Mapping):
                 self.parent._metadata[name] = self.spec[name].unwrap(value)
             else:
                 self.parent._metadata[name] = value
+            flag_modified(self.parent, '_metadata')
 
     def remove_key(self, name):
         if name in self.parent._metadata:
             del self.parent._metadata[name]
         else:
-            log.info("Attempted to delete invalid key '%s' from MetadataCollection" % name)
+            log.info(f"Attempted to delete invalid key '{name}' from MetadataCollection")
 
     def element_is_set(self, name):
         """
@@ -154,7 +156,7 @@ class MetadataCollection(Mapping):
         try:
             meta_val = self.parent._metadata[name]
         except KeyError:
-            log.debug("no metadata with name %s found" % (name))
+            log.debug(f"no metadata with name {name} found")
             return False
 
         meta_spec = self.parent.metadata.spec[name]
@@ -195,7 +197,7 @@ class MetadataCollection(Mapping):
             elif isinstance(json_dict, dict):
                 JSONified_dict = json_dict
             else:
-                raise ValueError("json_dict must be either a dictionary or a string, got %s." % (type(json_dict)))
+                raise ValueError(f"json_dict must be either a dictionary or a string, got {type(json_dict)}.")
         else:
             raise ValueError("You must provide either a filename or a json_dict")
 
@@ -226,6 +228,7 @@ class MetadataCollection(Mapping):
             dataset.validated_state = JSONified_dict['__validated_state__']
         if '__validated_state_message__' in JSONified_dict:
             dataset.validated_state_message = JSONified_dict['__validated_state_message__']
+        flag_modified(dataset, '_metadata')
 
     def to_JSON_dict(self, filename=None):
         meta_dict = {}

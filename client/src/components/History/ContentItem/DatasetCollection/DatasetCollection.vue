@@ -3,7 +3,7 @@
         v-if="dsc"
         v-bind="$attrs"
         v-on="$listeners"
-        class="dataset-collection"
+        class="dataset-collection history-content"
         :dsc="dsc"
         @update:dsc="onUpdate"
         @delete="onDelete"

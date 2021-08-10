@@ -50,7 +50,7 @@ class GenomeRegion:
         self.sequence = sequence
 
     def __str__(self):
-        return self.chrom + ":" + str(self.start) + "-" + str(self.end)
+        return f"{self.chrom}:{str(self.start)}-{str(self.end)}"
 
     @staticmethod
     def from_dict(obj_dict):

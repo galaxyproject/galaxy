@@ -46,7 +46,7 @@ def skip_unless_postgres():
 def skip_unless_executable(executable):
     if which(executable):
         return _identity
-    return pytest.mark.skip("PATH doesn't contain executable %s" % executable)
+    return pytest.mark.skip(f"PATH doesn't contain executable {executable}")
 
 
 def skip_unless_docker():

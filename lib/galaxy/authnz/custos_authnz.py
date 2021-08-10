@@ -110,11 +110,11 @@ class CustosAuthnz(IdentityProvider):
                             and len(trans.app.auth_manager.authenticators) == 0):
                         user = existing_user
                     else:
-                        message = "There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email
+                        message = f"There already exists a user with email {email}.  To associate this external login, you must first be logged in as that existing account."
                         log.exception(message)
                         raise exceptions.AuthenticationFailed(message)
                 else:
-                    login_redirect_url = login_redirect_url + 'root/login?confirm=true&custos_token=' + json.dumps(token)
+                    login_redirect_url = f"{login_redirect_url}root/login?confirm=true&custos_token={json.dumps(token)}"
                     return login_redirect_url, None
 
             custos_authnz_token = CustosAuthnzToken(user=user,
@@ -180,7 +180,7 @@ class CustosAuthnz(IdentityProvider):
             # Find CustosAuthnzToken record for this provider (should only be one)
             provider_tokens = [token for token in user.custos_auth if token.provider == self.config["provider"]]
             if len(provider_tokens) == 0:
-                raise Exception("User is not associated with provider {}".format(self.config["provider"]))
+                raise Exception(f"User is not associated with provider {self.config['provider']}")
             if len(provider_tokens) > 1:
                 for idx, token in enumerate(provider_tokens):
                     id_token_decoded = self._decode_token_no_signature(token.id_token)
@@ -190,13 +190,13 @@ class CustosAuthnz(IdentityProvider):
             trans.sa_session.flush()
             return True, "", disconnect_redirect_url
         except Exception as e:
-            return False, "Failed to disconnect provider {}: {}".format(provider, util.unicodify(e)), None
+            return False, f"Failed to disconnect provider {provider}: {util.unicodify(e)}", None
 
     def logout(self, trans, post_logout_redirect_url=None):
         try:
             redirect_url = self.config['end_session_endpoint']
             if post_logout_redirect_url is not None:
-                redirect_url += "?redirect_uri={}".format(quote(post_logout_redirect_url))
+                redirect_url += f"?redirect_uri={quote(post_logout_redirect_url)}"
             return redirect_url
         except Exception as e:
             log.error("Failed to generate logout redirect_url", exc_info=e)
@@ -224,12 +224,12 @@ class CustosAuthnz(IdentityProvider):
         else:
             client_secret = self.config['client_secret']
         token_endpoint = self.config['token_endpoint']
-        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']  # for custos
+        clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"  # for custos
         return oauth2_session.fetch_token(
             token_endpoint,
             client_secret=client_secret,
             authorization_response=trans.request.url,
-            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},  # for custos
+            headers={"Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"},  # for custos
             verify=self._get_verify_param())
 
     def _get_userinfo(self, oauth2_session):
@@ -263,10 +263,12 @@ class CustosAuthnz(IdentityProvider):
         self.config['credential_url'] = '/'.join([self.config['url'].rstrip('/'), 'credentials'])
         self._get_custos_credentials()
         # Set custos endpoints
-        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+        clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"
         eps = requests.get(self.config['well_known_oidc_config_uri'],
-                           headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
-                           verify=False, params={'client_id': self.config['client_id']})
+                           headers={"Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"},
+                           verify=False,
+                           params={'client_id': self.config['client_id']},
+                           timeout=util.DEFAULT_SOCKET_TIMEOUT)
         well_known_oidc_config = eps.json()
         self._load_well_known_oidc_config(well_known_oidc_config)
 
@@ -276,10 +278,11 @@ class CustosAuthnz(IdentityProvider):
         self._load_well_known_oidc_config(well_known_oidc_config)
 
     def _get_custos_credentials(self):
-        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+        clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"
         creds = requests.get(self.config['credential_url'],
-                            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
-                            verify=False, params={'client_id': self.config['client_id']})
+                            headers={"Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"},
+                            verify=False, params={'client_id': self.config['client_id']},
+                            timeout=util.DEFAULT_SOCKET_TIMEOUT)
         credentials = creds.json()
         self.config['iam_client_secret'] = credentials['iam_client_secret']
 
@@ -296,7 +299,8 @@ class CustosAuthnz(IdentityProvider):
     def _fetch_well_known_oidc_config(self, well_known_uri):
         try:
             return requests.get(well_known_uri,
-                                verify=self._get_verify_param()).json()
+                                verify=self._get_verify_param(),
+                                timeout=util.DEFAULT_SOCKET_TIMEOUT).json()
         except Exception:
             log.error(f"Failed to load well-known OIDC config URI: {well_known_uri}")
             raise

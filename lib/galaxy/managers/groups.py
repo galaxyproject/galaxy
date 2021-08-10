@@ -30,7 +30,7 @@ class GroupsManager:
         Displays a collection (list) of groups.
         """
         rval = []
-        for group in trans.sa_session.query(model.Group).filter(model.Group.table.c.deleted == false()):
+        for group in trans.sa_session.query(model.Group).filter(model.Group.deleted == false()):
             item = group.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(group.id)
             item['url'] = url_for('group', id=encoded_id)
@@ -95,7 +95,7 @@ class GroupsManager:
         return [self._decode_id(encoded_id) for encoded_id in encoded_ids]
 
     def _check_duplicated_group_name(self, trans: ProvidesAppContext, group_name: str) -> None:
-        if trans.sa_session.query(model.Group).filter(model.Group.table.c.name == group_name).first():
+        if trans.sa_session.query(model.Group).filter(model.Group.name == group_name).first():
             raise Conflict(f"A group with name '{group_name}' already exists")
 
     def _get_group(self, trans: ProvidesAppContext, encoded_id: EncodedDatabaseIdField) -> model.Group:
@@ -112,5 +112,5 @@ class GroupsManager:
 
     def _get_roles_by_encoded_ids(self, trans: ProvidesAppContext, encoded_role_ids: List[EncodedDatabaseIdField]) -> List[model.Role]:
         decoded_role_ids = self._decode_ids(encoded_role_ids)
-        roles = trans.sa_session.query(model.Role).filter(model.Role.table.c.id.in_(decoded_role_ids)).all()
+        roles = trans.sa_session.query(model.Role).filter(model.Role.id.in_(decoded_role_ids)).all()
         return roles

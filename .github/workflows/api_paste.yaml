@@ -3,6 +3,9 @@ on: [push, pull_request]
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_USE_UVICORN: false
+concurrency:
+  group: api-legacy-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: Test
@@ -12,7 +15,8 @@ jobs:
         python-version: ['3.7']
     services:
       postgres:
-        image: postgres:13
+        # Run tests on the oldest Galaxy-supported version
+        image: postgres:9.6
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

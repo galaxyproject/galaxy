@@ -46,7 +46,7 @@ def ordered_load(stream, merge_duplicate_keys=False):
             if key in mapping:
                 if not merge_duplicate_keys:
                     raise ConstructorError("while constructing a mapping", node.start_mark,
-                        "found duplicated key (%s)" % key, key_node.start_mark)
+                        f"found duplicated key ({key})", key_node.start_mark)
                 log.debug("Merging values for duplicate key '%s' into a list", key)
                 if merged_duplicate.get(key):
                     mapping[key].append(value)

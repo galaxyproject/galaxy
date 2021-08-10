@@ -246,6 +246,17 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``history_audit_table_prune_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time (in seconds) between attempts to remove old rows from the
+    history_audit database table. Set to 0 to disable pruning.
+:Default: ``3600``
+:Type: int
+
+
 ~~~~~~~~~~~~~
 ``file_path``
 ~~~~~~~~~~~~~
@@ -396,13 +407,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    The dependency resolvers config file specifies an ordering and
-    options for how Galaxy resolves tool dependencies (requirement
-    tags in Tool XML). The default ordering is to the use the Tool
-    Shed for tools installed that way, use local Galaxy packages, and
-    then use Conda if available. See
-    https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
-    for more information on these options.
+    Specifies the path to the standalone dependency resolvers
+    configuration file. This configuration can now be specified
+    directly in the Galaxy configuration, see the description of the
+    'dependency_resolvers' option for details.
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``dependency_resolvers_conf.xml``
@@ -1445,6 +1453,17 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_account_interface``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow users to manage their account data, change passwords or
+    delete their accounts.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``session_duration``
 ~~~~~~~~~~~~~~~~~~~~
@@ -1590,6 +1609,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_base_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Base path for interactive tools running at a subpath without a
+    subdomain. Defaults to "/".
+:Default: ``/``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``interactivetools_map``
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1600,6 +1630,29 @@
     <data_dir>.
 :Default: ``interactivetools_map.sqlite``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_prefix``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Prefix to use in the formation of the subdomain or path for
+    interactive tools
+:Default: ``interactivetool``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_shorten_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Shorten the uuid portion of the subdomain or path for interactive
+    tools. Especially useful for avoiding the need for wildcard
+    certificates by keeping subdomain under 63 chars
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2709,6 +2762,17 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``statsd_mock_calls``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Mock out statsd client calls - only used by testing infrastructure
+    really. Do not set this in production environments.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``library_import_dir``
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -3607,28 +3671,29 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``ftp_upload_dir``
-~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable Galaxy's "Upload via FTP" interface.  You'll need to
-    install and configure an FTP server (we've used ProFTPd since it
-    can use Galaxy's database for authentication) and set the
-    following two options. This should point to a directory containing
-    subdirectories matching users' identifier (defaults to e-mail),
-    where Galaxy will look for files.
-:Default: ``None``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``ftp_upload_site``
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    This should be the hostname of your FTP server, which will be
-    provided to users in the help text.
+    Enable Galaxy's "Upload via FTP" interface.  You'll need to
+    install and configure an FTP server (we've used ProFTPd since it
+    can use Galaxy's database for authentication) and set the
+    following two options. This will be provided to users in the help
+    text as 'log in to the FTP server at '. Thus, it should be the
+    hostname of your FTP server.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``ftp_upload_dir``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This should point to a directory containing subdirectories
+    matching users' identifier (defaults to e-mail), where Galaxy will
+    look for files.
 :Default: ``None``
 :Type: str
 
@@ -3816,6 +3881,9 @@
     definition of the resolvers to enable can be embedded into
     Galaxy's config with this option. This has no effect if a
     dependency_resolvers_config_file is used.
+    The syntax, available resolvers, and documentation of their
+    options is explained in detail in the documentation:
+    https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
 :Default: ``None``
 :Type: seq
 

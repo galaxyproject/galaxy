@@ -30,12 +30,12 @@ class BasicApp(Container):
     using BasicApp instead of StructuredApp below.
     """
     name: str
-    config: Any
+    config: Any  # 'galaxy.config.BaseAppConfiguration'
     application_stack: ApplicationStack
     model: SharedModelMapping
     security: IdEncodingHelper
     auth_manager: AuthManager
-    toolbox: Any
+    toolbox: Any  # 'galaxy.tools.ToolBox'
     security_agent: Any
     quota_agent: QuotaAgent
     datatypes_registry: Registry
@@ -52,16 +52,9 @@ class MinimalApp(BasicApp):
 
 
 class MinimalManagerApp(MinimalApp):
-    is_webapp: bool  # is_webapp will be set to true when building WSGI app
-    new_installation: bool
-    tag_handler: GalaxyTagHandler
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
-    model: GalaxyModelMapping
-    install_model: ModelMapping
-    security_agent: GalaxyRBACAgent
-    host_security_agent: HostAgent
-    dataset_collections_service: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
+    dataset_collection_manager: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
     history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
     hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
     workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
@@ -105,7 +98,6 @@ class StructuredApp(MinimalManagerApp):
     webhooks_registry: WebhooksRegistry
 
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
-    dataset_collections_service: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
     history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
     hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
     workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
@@ -127,4 +119,4 @@ class StructuredApp(MinimalManagerApp):
     interactivetool_manager: Any
     job_manager: Any  # galaxy.jobs.manager.JobManager
     user_manager: Any
-    api_keys_manager: Any
+    api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'

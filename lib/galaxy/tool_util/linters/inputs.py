@@ -1,8 +1,48 @@
+
 """This module contains a linting functions for tool inputs."""
-from galaxy.tools.parameters.dynamic_options import filter_types
 from galaxy.util import string_as_bool
 from ._util import is_datasource, is_valid_cheetah_placeholder
 from ..parser.util import _parse_name
+
+FILTER_TYPES = [
+    'data_meta',
+    'param_value',
+    'static_value',
+    'regexp',
+    'unique_value',
+    'multiple_splitter',
+    'attribute_value_splitter',
+    'add_value',
+    'remove_value',
+    'sort_by',
+]
+
+ATTRIB_VALIDATOR_COMPATIBILITY = {
+    "check": ["metadata"],
+    "expression": ["regex"],
+    "table_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table"],
+    "filename": ["dataset_metadata_in_file"],
+    "metadata_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "dataset_metadata_in_file"],
+    "metadata_column": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_file options"],
+    "line_startswith": ["dataset_metadata_in_file", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table"],
+    "min": ["in_range", "length"],
+    "max": ["in_range", "length"],
+    "exclude_min": ["in_range"],
+    "exclude_max": ["in_range"],
+    "split": ["dataset_metadata_in_file"],
+    "skip": ["metadata"]
+}
+
+PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
+    "integer": ["in_range", "expression"],
+    "float": ["in_range", "expression"],
+    "data": ["metadata", "unspecified_build", "dataset_ok_validator", "dataset_metadata_in_range", "dataset_metadata_in_file", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "expression"],
+    "data_collection": ["metadata", "unspecified_build", "dataset_ok_validator", "dataset_metadata_in_range", "dataset_metadata_in_file", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "expression"],
+    "text": ["regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"],
+    "select": ["no_options", "regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"],
+    "drill_down": ["no_options", "regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"],
+    "data_column": ["no_options", "regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"]
+}
 
 
 def lint_inputs(tool_xml, lint_ctx):
@@ -53,7 +93,7 @@ def lint_inputs(tool_xml, lint_ctx):
                     if ftype is None:
                         lint_ctx.error(f"Select parameter [{param_name}] contains filter without type.")
                         continue
-                    if ftype not in filter_types:
+                    if ftype not in FILTER_TYPES:
                         lint_ctx.error(f"Select parameter [{param_name}] contains filter with unknown type '{ftype}'.")
                         continue
                     if ftype in ['add_value', 'data_meta']:
@@ -107,8 +147,30 @@ def lint_inputs(tool_xml, lint_ctx):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with multiple="true"')
                 if string_as_bool(param_attrib.get("optional", "false")):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with optional="true"')
-
         # TODO: Validate type, much more...
+
+        # lint validators
+        validators = param.findall("./validator")
+        for validator in validators:
+            vtype = validator.attrib['type']
+            if param_type in PARAMETER_VALIDATOR_TYPE_COMPATIBILITY:
+                if vtype not in PARAMETER_VALIDATOR_TYPE_COMPATIBILITY[param_type]:
+                    lint_ctx.error(f"Parameter [{param_name}]: validator with an incompatible type '{vtype}'")
+            for attrib in ATTRIB_VALIDATOR_COMPATIBILITY:
+                if attrib in validator.attrib and vtype not in ATTRIB_VALIDATOR_COMPATIBILITY[attrib]:
+                    lint_ctx.error(f"Parameter [{param_name}]: attribute '{attrib}' is incompatible with validator of type '{vtype}'")
+            if vtype == "expression" and validator.text is None:
+                lint_ctx.error(f"Parameter [{param_name}]: expression validator without content")
+            if vtype != "expression" and validator.text is not None:
+                lint_ctx.warn(f"Parameter [{param_name}]: '{vtype}' validators are not expected to contain text (found '{validator.text}')")
+            if vtype == "regex" and "expression" not in validator.attrib:
+                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define an 'expression' attribute")
+            if vtype in ["in_range", "length", "dataset_metadata_in_range"] and ("min" not in validator.attrib or "max" not in validator.attrib):
+                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'min' or 'max' attribute(s)")
+            if vtype in ["metadata"] and ("check" not in validator.attrib or "skip" not in validator.attrib):
+                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'check' or 'skip' attribute(s)")
+            if vtype in ["value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table"] and "table_name" not in validator.attrib:
+                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'table_name' attribute")
 
     conditional_selects = tool_xml.findall("./inputs//conditional")
     for conditional in conditional_selects:
@@ -182,7 +244,7 @@ def lint_repeats(tool_xml, lint_ctx):
 
 def _find_with_attribute(element, tag, attribute, test_value=None):
     rval = []
-    for el in (element.findall('./%s' % tag) or []):
+    for el in (element.findall(f'./{tag}') or []):
         if attribute not in el.attrib:
             continue
         value = el.attrib[attribute]

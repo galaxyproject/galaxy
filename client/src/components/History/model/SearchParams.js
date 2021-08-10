@@ -71,10 +71,14 @@ export class SearchParams {
         const raw = this.filterText;
 
         const result = new Map();
-        if (!raw.length) return result;
+        if (!raw.length) {
+            return result;
+        }
 
         let matches = raw.match(pairSplitRE);
-        if (matches === null && raw.length) matches = [`name=${raw}`];
+        if (matches === null && raw.length) {
+            matches = [`name=${raw}`];
+        }
 
         const criteria = matches.reduce((result, pair) => {
             const [field, val] = pair.split("=");

@@ -98,7 +98,7 @@ class SelectField(BaseField):
         elif display == "radio":
             assert not(multiple), "Radio display only supported for single select"
         elif display is not None:
-            raise Exception("Unknown display type: %s" % display)
+            raise Exception(f"Unknown display type: {display}")
         self.display = display
 
     def add_option(self, text, value, selected=False):

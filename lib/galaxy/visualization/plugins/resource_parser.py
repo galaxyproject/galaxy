@@ -88,7 +88,7 @@ class ResourceParser:
             #   so: error if required, otherwise get a default (which itself defaults to None)
             if resource is None:
                 if param_config['required']:
-                    raise KeyError('required param %s not found in URL' % (param_name))
+                    raise KeyError(f'required param {param_name} not found in URL')
                 resource = self.parse_parameter_default(trans, param_config)
 
             resources[var_name_in_template] = resource
@@ -112,7 +112,7 @@ class ResourceParser:
 
                 except Exception as exception:
                     log.warning('Exception parsing visualization param from query: '
-                              + '{}, {}, ({}) {}'.format(param_name, config_val, str(type(exception)), str(exception)))
+                              + f'{param_name}, {config_val}, ({str(type(exception))}) {str(exception)}')
                     config_val = None
 
             # here - we've either had no value in the query_params or there was a failure to parse

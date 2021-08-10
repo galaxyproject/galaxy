@@ -117,8 +117,8 @@ export default {
         ToolSection,
     },
     props: {
-        nodes: {
-            type: Object,
+        getManager: {
+            type: Function,
             default: null,
         },
     },
@@ -254,6 +254,9 @@ export default {
         hasVisualizations() {
             return this.visualizationSection.elems.length > 0;
         },
+        nodes() {
+            return this.getManager && this.getManager().nodes;
+        },
     },
     created() {
         this.getVisualizations();
@@ -273,9 +276,9 @@ export default {
             const outputLabels = [];
             this.nodes &&
                 Object.values(this.nodes).forEach((node) => {
-                    node.outputs.forEach((output) => {
-                        if (output.activeLabel) {
-                            outputLabels.push(output.activeLabel);
+                    node.activeOutputs.getAll().forEach((output) => {
+                        if (output.label) {
+                            outputLabels.push(output.label);
                         }
                     });
                 });

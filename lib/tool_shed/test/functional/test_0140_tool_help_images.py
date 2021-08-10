@@ -28,11 +28,11 @@ class TestToolHelpImages(ShedTwillTestCase):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_htseq_count_repository(self):
@@ -75,7 +75,7 @@ class TestToolHelpImages(ShedTwillTestCase):
         changeset_revision = self.get_repository_tip(repository)
         self.display_manage_repository_page(repository)
         # Generate the image path.
-        image_path = 'src="/repository/static/images/%s/count_modes.png"' % self.security.encode_id(repository.id)
+        image_path = f'src="/repository/static/images/{self.security.encode_id(repository.id)}/count_modes.png"'
         # The repository uploaded in this test should only have one metadata revision, with one tool defined, which
         # should be the tool that contains a link to the image.
         repository_metadata = repository.metadata_revisions[0].metadata

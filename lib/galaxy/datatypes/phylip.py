@@ -39,7 +39,7 @@ class Phylip(Text):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if dataset.metadata.sequences:
-                dataset.blurb = "%s sequences" % util.commaify(str(dataset.metadata.sequences))
+                dataset.blurb = f"{util.commaify(str(dataset.metadata.sequences))} sequences"
             else:
                 dataset.blurb = nice_size(dataset.get_size())
         else:

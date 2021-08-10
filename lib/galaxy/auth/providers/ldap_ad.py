@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 def _get_subs(d, k, params):
     if k not in d or not d[k]:
-        raise ConfigurationError("Missing '%s' parameter in LDAP options" % k)
+        raise ConfigurationError(f"Missing '{k}' parameter in LDAP options")
     return str(d[k]).format(**params)
 
 

@@ -325,11 +325,11 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         job = self.__get_job(trans, id)
         if not job:
-            raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
+            raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")
         if job.state == job.states.PAUSED:
             job.resume()
         else:
-            exceptions.RequestParameterInvalidException("Job with id '%s' is not paused" % (job.tool_id))
+            exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
         return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
     @expose_api_anonymous
@@ -420,12 +420,12 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         job = self.__get_job(trans, id)
         if not job:
-            raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
+            raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")
         tool = self.app.toolbox.get_tool(job.tool_id, kwd.get('tool_version') or job.tool_version)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if not tool.is_workflow_compatible:
-            raise exceptions.ConfigDoesNotAllowException("Tool '%s' cannot be rerun." % (job.tool_id))
+            raise exceptions.ConfigDoesNotAllowException(f"Tool '{job.tool_id}' cannot be rerun.")
         return tool.to_json(trans, {}, job=job)
 
     def __dictify_associations(self, trans, *association_lists):

@@ -38,7 +38,7 @@ def nextval(migrate_engine, table, col='id'):
     elif migrate_engine.name in ['mysql', 'sqlite']:
         return "null"
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
 
 
 def localtimestamp(migrate_engine):
@@ -47,7 +47,7 @@ def localtimestamp(migrate_engine):
     elif migrate_engine.name == 'sqlite':
         return "current_date || ' ' || current_time"
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
 
 
 def boolean_false(migrate_engine):
@@ -56,7 +56,7 @@ def boolean_false(migrate_engine):
     elif migrate_engine.name == 'sqlite':
         return 0
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
 
 
 def upgrade(migrate_engine):
@@ -79,19 +79,19 @@ def upgrade(migrate_engine):
         user_id = row[2]
         username = row[3]
         repository_ids.append(int(repository_id))
-        role_names.append('{}_{}_admin'.format(str(name), str(username)))
+        role_names.append(f'{str(name)}_{str(username)}_admin')
         user_ids.append(int(user_id))
     # Insert a new record into the role table for each new role.
     for tup in zip(repository_ids, user_ids, role_names):
         repository_id, user_id, role_name = tup
         cmd = "INSERT INTO role VALUES ("
-        cmd += "%s, " % nextval(migrate_engine, 'role')
-        cmd += "%s, " % localtimestamp(migrate_engine)
-        cmd += "%s, " % localtimestamp(migrate_engine)
-        cmd += "'%s', " % role_name
+        cmd += f"{nextval(migrate_engine, 'role')}, "
+        cmd += f"{localtimestamp(migrate_engine)}, "
+        cmd += f"{localtimestamp(migrate_engine)}, "
+        cmd += f"'{role_name}', "
         cmd += "'A user or group member with this role can administer this repository.', "
-        cmd += "'%s', " % ROLE_TYPE
-        cmd += "%s" % boolean_false(migrate_engine)
+        cmd += f"'{ROLE_TYPE}', "
+        cmd += f"{boolean_false(migrate_engine)}"
         cmd += ");"
         migrate_engine.execute(cmd)
         # Get the id of the new role.
@@ -104,20 +104,20 @@ def upgrade(migrate_engine):
         if role_id:
             # Create a repository_role_association record to associate the repository with the new role.
             cmd = "INSERT INTO repository_role_association VALUES ("
-            cmd += "%s, " % nextval(migrate_engine, 'repository_role_association')
+            cmd += f"{nextval(migrate_engine, 'repository_role_association')}, "
             cmd += "%d, " % int(repository_id)
             cmd += "%d, " % int(role_id)
-            cmd += "%s, " % localtimestamp(migrate_engine)
-            cmd += "%s " % localtimestamp(migrate_engine)
+            cmd += f"{localtimestamp(migrate_engine)}, "
+            cmd += f"{localtimestamp(migrate_engine)} "
             cmd += ");"
             migrate_engine.execute(cmd)
             # Create a user_role_association record to associate the repository owner with the new role.
             cmd = "INSERT INTO user_role_association VALUES ("
-            cmd += "%s, " % nextval(migrate_engine, 'user_role_association')
+            cmd += f"{nextval(migrate_engine, 'user_role_association')}, "
             cmd += "%d, " % int(user_id)
             cmd += "%d, " % int(role_id)
-            cmd += "%s, " % localtimestamp(migrate_engine)
-            cmd += "%s " % localtimestamp(migrate_engine)
+            cmd += f"{localtimestamp(migrate_engine)}, "
+            cmd += f"{localtimestamp(migrate_engine)} "
             cmd += ");"
             migrate_engine.execute(cmd)
 
@@ -132,11 +132,11 @@ def downgrade(migrate_engine):
     for row in migrate_engine.execute(cmd):
         name = row[0]
         username = row[1]
-        role_names.append('{}_{}_admin'.format(str(name), str(username)))
+        role_names.append(f'{str(name)}_{str(username)}_admin')
     # Delete each role as well as all users associated with each role.
     for role_name in role_names:
         # Select the id of the record associated with the current role_name from the role table.
-        cmd = "SELECT id, name FROM role WHERE name = '%s';" % role_name
+        cmd = f"SELECT id, name FROM role WHERE name = '{role_name}';"
         row = migrate_engine.execute(cmd).fetchone()
         if row:
             role_id = row[0]

@@ -127,7 +127,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     for job in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
         tool.app.job_manager.enqueue(job, tool=tool, flush=False)
-        trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=tool_id)
+        trans.log_event(f"Added job to the job queue, id: {str(job.id)}", tool_id=tool_id)
     trans.sa_session.flush()
 
     if has_remaining_jobs:
@@ -248,7 +248,7 @@ class ExecutionTracker:
         if not hasattr(input_collection, "collection"):
             raise Exception("Referenced input parameter is not a collection.")
 
-        collection_type_description = self.trans.app.dataset_collections_service.collection_type_descriptions.for_collection_type(input_collection.collection.collection_type)
+        collection_type_description = self.trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(input_collection.collection.collection_type)
         subcollection_mapping_type = None
         if self.is_implicit_input(input_name):
             subcollection_mapping_type = self.collection_info.subcollection_mapping_type(input_name)
@@ -259,7 +259,7 @@ class ExecutionTracker:
         structure = self.collection_info.structure
         if hasattr(tool_output, "default_identifier_source"):
             # Switch the structure for outputs if the output specified a default_identifier_source
-            collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
+            collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
 
             source_collection = self.collection_info.collections.get(tool_output.default_identifier_source)
             if source_collection:
@@ -271,7 +271,7 @@ class ExecutionTracker:
         return structure
 
     def _mapped_output_structure(self, trans, tool_output):
-        collections_manager = trans.app.dataset_collections_service
+        collections_manager = trans.app.dataset_collection_manager
         output_structure = tool_output_to_structure(self.sliced_input_collection_structure, tool_output, collections_manager)
         # self.collection_info.structure - the mapping structure with default_identifier_source
         # used to determine the identifiers to use.
@@ -323,7 +323,7 @@ class ExecutionTracker:
                 continue
             output_collection_name = self.output_name(trans, history, params, output)
             effective_structure = self._mapped_output_structure(trans, output)
-            collection_instance = trans.app.dataset_collections_service.precreate_dataset_collection_instance(
+            collection_instance = trans.app.dataset_collection_manager.precreate_dataset_collection_instance(
                 trans=trans,
                 parent=history,
                 name=output_collection_name,

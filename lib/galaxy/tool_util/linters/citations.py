@@ -20,14 +20,14 @@ def lint_citations(tool_xml, lint_ctx):
     valid_citations = 0
     for citation in citations[0]:
         if citation.tag != "citation":
-            lint_ctx.warn("Unknown tag discovered in citations block [%s], will be ignored." % citation.tag)
+            lint_ctx.warn(f"Unknown tag discovered in citations block [{citation.tag}], will be ignored.")
             continue
         citation_type = citation.attrib.get("type")
         if citation_type not in ('bibtex', 'doi'):
             lint_ctx.warn("Unknown citation type discovered [%s], will be ignored.", citation_type)
             continue
         if citation.text is None or not citation.text.strip():
-            lint_ctx.error('Empty %s citation.' % citation_type)
+            lint_ctx.error(f'Empty {citation_type} citation.')
             continue
         valid_citations += 1
 

@@ -15,7 +15,7 @@ from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
-from .test_toolbox_filters import mock_trans
+from ..tool_util.toolbox.test_toolbox_filters import mock_trans
 from ..tools_support import UsesApp, UsesTools
 from ..unittest_utils.sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 
@@ -389,17 +389,17 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         assert section_by_label is section
         assert tool_panel_section_key == 'tid'
 
-    def test_get_tool_id(self):
+    def test_get_tool(self):
         self._init_tool()
         self._setup_two_versions_in_config()
         self._setup_two_versions()
-        assert self.toolbox.get_tool_id("test_tool") in [
+        assert self.toolbox.get_tool("test_tool").id in [
             "github.com/galaxyproject/example/test_tool/0.1",
             "github.com/galaxyproject/example/test_tool/0.2"
         ]
-        assert self.toolbox.get_tool_id("github.com/galaxyproject/example/test_tool/0.1") == "github.com/galaxyproject/example/test_tool/0.1"
-        assert self.toolbox.get_tool_id("github.com/galaxyproject/example/test_tool/0.2") == "github.com/galaxyproject/example/test_tool/0.2"
-        assert self.toolbox.get_tool_id("github.com/galaxyproject/example/test_tool/0.3") != "github.com/galaxyproject/example/test_tool/0.3"
+        assert self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.1").id == "github.com/galaxyproject/example/test_tool/0.1"
+        assert self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.2").id == "github.com/galaxyproject/example/test_tool/0.2"
+        assert self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.3").id != "github.com/galaxyproject/example/test_tool/0.3"
 
     def test_tool_dir(self):
         self._init_tool()

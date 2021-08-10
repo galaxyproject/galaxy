@@ -93,9 +93,9 @@ class ToursRegistryImpl:
                 tour = yaml.safe_load(f)
                 load_tour_steps(tour)
                 self.tours[tour_id] = tour
-                log.info("Loaded tour '%s'" % tour_id)
+                log.info(f"Loaded tour '{tour_id}'")
         except OSError:
-            log.exception("Tour '%s' could not be loaded, error reading file." % tour_id)
+            log.exception(f"Tour '{tour_id}' could not be loaded, error reading file.")
         except yaml.error.YAMLError:
             log.exception("Tour '%s' could not be loaded, error within file."
                 " Please check your yaml syntax." % tour_id)

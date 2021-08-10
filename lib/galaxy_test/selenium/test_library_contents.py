@@ -33,7 +33,7 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.assert_num_displayed_items_is(1)
 
         # check empty folder
-        new_folder_link = self.wait_for_xpath_visible('//a[contains(text(), "%s")]' % sub_folder_name)
+        new_folder_link = self.wait_for_xpath_visible(f'//a[contains(text(), "{sub_folder_name}")]')
         new_folder_link.click()
 
         # assert that 'empty folder message' is present

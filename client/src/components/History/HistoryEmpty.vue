@@ -1,7 +1,7 @@
 <template>
     <b-alert show>
         <h4 class="mb-1">
-            <i class="fa fa-info-circle"></i>
+            <i class="fa fa-info-circle empty-message"></i>
             <span>{{ message | l }}</span>
         </h4>
         <p>

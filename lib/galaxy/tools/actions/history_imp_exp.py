@@ -70,7 +70,7 @@ class ImportHistoryToolAction(ToolAction):
 
         # Queue the job for execution
         trans.app.job_manager.enqueue(job, tool=tool)
-        trans.log_event("Added import history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+        trans.log_event(f"Added import history job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
 
         return job, {}
 

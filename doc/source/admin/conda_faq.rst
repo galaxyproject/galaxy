@@ -53,22 +53,24 @@ The short answer is that as of 17.01, Galaxy should install Conda the first
 time it starts up and be configured to use it by default.
 
 The long answer is that Galaxy's tool dependency resolution is managed via
-``dependency_resolvers_conf.xml`` configuration file. This configuration
-file is discussed in detail in the :doc:`Dependency Resolvers <dependency_resolvers>`
+``dependency_resolvers`` option in the Galaxy configuration file (``galaxy.yml``). This
+option is discussed in detail in the :doc:`Dependency Resolvers <dependency_resolvers>`
 documentation. Most Galaxy administrators will be using Galaxy's default dependency
-resolvers configuration file (``config/dependency_resolvers_conf.xml.sample``). With
-release 16.04, Galaxy has enabled Conda dependency resolution by default when
-Conda was already installed on the system. As of 17.01, Galaxy will also install
-Conda as needed when starting up. Having Conda enabled in ``dependency_resolvers_conf.xml``
-means that Galaxy can look for tool dependencies using the Conda system when it
-attempts to run a job.
+resolvers configuration. With release 16.04, Galaxy has enabled Conda dependency
+resolution by default when Conda was already installed on the system. As of 17.01, Galaxy
+will also install Conda as needed when starting up. Having Conda enabled in
+``dependency_resolvers`` means that Galaxy can look for tool dependencies using the Conda
+system when it attempts to run a job.
 
-Note that the order of resolvers in the file matters and the ``<tool_shed_packages />``
-entry should remain first. This means that tools that have specified Tool Shed packages
-as their dependencies will work without a change.
+Note that the order of resolvers in the configuration option matters and that when
+upgrading older Galaxy servers with existing Tool Shed tools installed, the
+``tool_shed_packages`` entry should remain first. This means that tools that have
+specified Tool Shed packages as their dependencies will work without a change.
 
 The most common configuration settings related to Conda are listed in Table 1.
-See :doc:`Configuration Options <options>` for the complete list.
+See :doc:`Configuration Options <options>` for the complete list. Note that these options
+(without the ``conda_`` prefix) can also be set on a per-resolver basis under the
+``dependency_resolvers`` option.
 
 +-------------------------+------------------------------------+---------------------------+
 | Setting                 | Default setting                    | Meaning                   |
@@ -86,7 +88,7 @@ See :doc:`Configuration Options <options>` for the complete list.
 |                         |                                    | missing tool dependencies |
 |                         |                                    | before running a job      |
 +-------------------------+------------------------------------+---------------------------+
-| ``conda_prefix``        | ``<tool\_dependency\_dir>/_conda`` | The location on the       |
+| ``conda_prefix``        | ``<tool_dependency_dir>/_conda``   | The location on the       |
 |                         |                                    | filesystem where Conda    |
 |                         |                                    | packages and environments |
 |                         |                                    | are installed             |
@@ -116,13 +118,13 @@ available before the tool is executed on your system.
 
 To summarize, there are four ways to manage Conda dependencies for use
 with Galaxy. For all of these options, Conda dependency management must
-be configured in the ``dependency_resolvers_conf.xml`` and the ``galaxy.yml`` file.
+be configured in the ``dependency_resolvers`` option in the ``galaxy.yml`` file.
 
-#. Galaxy Admin Interface (>= 16.07) - Galaxy will install Conda tool
-   dependencies when tools are installed from the Tool Shed if the
-   option “When available, install externally managed dependencies (e.g.
-   Conda)? Beta” is checked. Admins may also view and manage Conda
-   dependencies via the Admin interface.
+#. Galaxy Admin Interface - Galaxy will install Conda tool dependencies when
+   tools are installed from the Tool Shed if the option **Install resolvable
+   dependencies** under **Show advanced settings** on the tool install dialog is
+   checked. Admins may also view and manage Conda dependencies via the **Manage
+   Dependencies** section of the  Admin interface.
 #. Manual Install - Conda dependencies may be installed by
    administrators from the command line. Conda (and thus the Conda
    environments) should be installed in the location specified by the
@@ -143,7 +145,9 @@ be configured in the ``dependency_resolvers_conf.xml`` and the ``galaxy.yml`` fi
    is not found, Galaxy will attempt to install the dependency using
    Conda if ``conda_auto_install`` is activated in the configuration.
 #. Via the API (>= 16.07) - The Galaxy community maintains an `ansible role`_
-   that uses BioBlend_ and the Galaxy API to install tools.
+   that uses BioBlend_ and the Galaxy API to install tools. Additionally, the
+   Ephemeris_ command shed-tools_ can be used to install tools via the API from
+   the command line.
 
 
 3. What is required to make use of this? Any specific packages, Galaxy revision, OS version, etc.?
@@ -196,7 +200,7 @@ requirements for a tool, and then determines for each requirement if it
 can be satisfied by any of the active resolver systems.
 
 The order in which resolvers are tried is listed in the
-``dependency_resolvers_conf.xml`` file. The default order is
+``dependency_resolvers`` configuration option. The default order is
 
 -  Tool Shed packages
 -  Packages manually installed by administrators
@@ -216,7 +220,7 @@ dependencies. Read more about selecting compatible versions on
 
 The Galaxy log will show which dependency resolution system is used
 to satisfy each tool dependency and you can specify priorities using the
-``dependency_resolvers_conf.xml`` file (see question 5 above). Starting from Galaxy
+``dependency_resolvers`` configuration option (see question 5 above). Starting from Galaxy
 release 16.07, you can see which dependency will be used (“resolved”) in the
 Admin panel (under Tool Management → Manage dependencies).
 
@@ -399,7 +403,7 @@ following command:
 
 .. code-block:: bash
 
-   $ <tool_dependency_dir/_conda/bin/conda install -c conda-forge conda==4.6.14
+   $ <tool_dependency_dir>/_conda/bin/conda install -c conda-forge conda==4.6.14
 
 The command can obviously be adapted to install any version of Conda. If the
 above command fails with an error like:
@@ -417,13 +421,15 @@ specification, which for the example error above would be ``python==3.6``:
 
 .. code-block:: bash
 
-   $ <tool_dependency_dir/_conda/bin/conda install -c conda-forge conda==4.6.14 python==3.6
+   $ <tool_dependency_dir>/_conda/bin/conda install -c conda-forge conda==4.6.14 python==3.6
 
 
 .. _Conda documentation: https://conda.io/docs/
 .. _Conda quick-start: https://conda.io/docs/user-guide/getting-started.html
 .. _ansible role: https://github.com/galaxyproject/ansible-galaxy-tools
 .. _BioBlend: https://github.com/galaxyproject/bioblend
+.. _Ephemeris: https://ephemeris.readthedocs.io/
+.. _shed-tools: https://ephemeris.readthedocs.io/en/latest/commands/shed-tools.html
 .. _Conda channels: https://conda.io/docs/user-guide/tasks/manage-channels.html
 .. _create a Conda package: https://conda.io/docs/user-guide/tasks/build-packages/recipe.html
 .. _submit: https://bioconda.github.io/#step-4-join-the-team

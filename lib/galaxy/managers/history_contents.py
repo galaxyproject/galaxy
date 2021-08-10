@@ -39,7 +39,7 @@ log = logging.getLogger(__name__)
 
 # into its own class to have it's own filters, etc.
 # TODO: but can't inherit from model manager (which assumes only one model)
-class HistoryContentsManager(containers.ContainerManagerMixin):
+class HistoryContentsManager(containers.ContainerManagerMixin, base.SortableManager):
 
     root_container_class = model.History
 
@@ -125,8 +125,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         """Return an ORM compatible order_by using the given string"""
         available = ['create_time', 'extension', 'hid', 'history_id', 'name', 'update_time']
         for attribute in available:
-            attribute_dsc = '%s-dsc' % attribute
-            attribute_asc = '%s-asc' % attribute
+            attribute_dsc = f'{attribute}-dsc'
+            attribute_asc = f'{attribute}-asc'
             if order_by_string in (attribute, attribute_dsc):
                 return desc(attribute)
             if order_by_string == attribute_asc:

@@ -101,7 +101,7 @@ class ToolBoxSearch:
             for tool_id in tool_ids_to_remove:
                 writer.delete_by_term('id', tool_id)
             for tool_id in tool_cache._new_tool_ids - indexed_tool_ids:
-                tool = tool_cache.get_tool_by_id(tool_id)
+                tool = self.toolbox.get_tool(tool_id)
                 if tool and tool.is_latest_version:
                     if tool.hidden:
                         # we check if there is an older tool we can return
@@ -190,7 +190,7 @@ class ToolBoxSearch:
         else:
             cleaned_query = ' '.join(token.text for token in self.rex(cleaned_query))
             # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
-            parsed_query = self.parser.parse('*' + cleaned_query + '*')
+            parsed_query = self.parser.parse(f"*{cleaned_query}*")
             hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby='')
             return [hit['id'] for hit in hits]
 
@@ -205,7 +205,7 @@ class ToolBoxSearch:
         ngrams = [token.text for token in token_analyzer(cleaned_query)]
         for query in ngrams:
             # Get the tool list with respective scores for each qgram
-            curr_hits = self.searcher.search(self.parser.parse('*' + query + '*'), limit=float(tool_search_limit))
+            curr_hits = self.searcher.search(self.parser.parse(f"*{query}*"), limit=float(tool_search_limit))
             for i, curr_hit in enumerate(curr_hits):
                 is_present = False
                 for prev_hit in hits_with_score:

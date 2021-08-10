@@ -474,12 +474,13 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     haveSearchDetails: function () {
         return (
             this.allFetched &&
-            this.all((
-                content // null (which is a valid returned annotation value)
-            ) =>
-                // will return false when using content.has( 'annotation' )
-                //TODO: a bit hacky - formalize
-                _.has(content.attributes, "annotation")
+            this.all(
+                (
+                    content // null (which is a valid returned annotation value)
+                ) =>
+                    // will return false when using content.has( 'annotation' )
+                    //TODO: a bit hacky - formalize
+                    _.has(content.attributes, "annotation")
             )
         );
     },

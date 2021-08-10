@@ -1,7 +1,9 @@
 name: macOS startup
 on: [push, pull_request]
+concurrency:
+  group: osx-first-startup-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-
   test:
     name: Startup test
     runs-on: macos-latest

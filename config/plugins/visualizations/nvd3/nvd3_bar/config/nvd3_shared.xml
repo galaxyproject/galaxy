@@ -26,6 +26,7 @@
             <label>Pick a series color</label>
             <name>color</name>
             <type>color</type>
+            <optional>true</optional>
         </input>
         <input>
             <label>Column of data point labels</label>

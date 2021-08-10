@@ -47,7 +47,7 @@ def pruneLD(plinktasks=None, cd='./', vclbase=None):
                 alog += lplog
                 alog.append('\n')
             except Exception:
-                alog.append('### {} Strange - no std out from plink when running command line\n{}\n'.format(timenow(), ' '.join(vcl)))
+                alog.append(f"### {timenow()} Strange - no std out from plink when running command line\n{' '.join(vcl)}\n")
     return alog
 
 
@@ -59,7 +59,7 @@ def makeLDreduced(basename, infpath=None, outfpath=None, plinke='plink', forcere
     inbase = os.path.join(infpath)
     plinktasks = []
     vclbase = [plinke, '--noweb']
-    plinktasks += [['--bfile', inbase, f'--indep-pairwise {winsize} {winmove} {r2thresh}', '--out %s' % outbase],
+    plinktasks += [['--bfile', inbase, f'--indep-pairwise {winsize} {winmove} {r2thresh}', f'--out {outbase}'],
                    ['--bfile', inbase, f'--extract {outbase}.prune.in --make-bed --out {outbase}']]
     vclbase = [plinke, '--noweb']
     pruneLD(plinktasks=plinktasks, cd=outfpath, vclbase=vclbase)
@@ -103,7 +103,7 @@ def main():
         print(f'{s1} {s2}')
         f.write(f'<div>{s1}\n{s2}\n<ol>')
         for data in flist:
-            f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
+            f.write(f'<li><a href="{os.path.split(data)[-1]}">{os.path.split(data)[-1]}</a></li>\n')
         f.write("</div></body></html>")
 
 

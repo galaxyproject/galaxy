@@ -30,7 +30,7 @@ def create_or_verify_database(url, engine_options=None):
     engine_options = engine_options or {}
     # Create engine and metadata
     if not database_exists(url):
-        message = "Creating database for URI [%s]" % url
+        message = f"Creating database for URI [{url}]"
         log.info(message)
         create_database(url)
 

@@ -239,7 +239,7 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
         if ((len(encoded_folder_id) % 16 == 1) and encoded_folder_id.startswith('F')):
             return encoded_folder_id[1:]
         else:
-            raise exceptions.MalformedId('Malformed folder id ( %s ) specified, unable to decode.' % str(encoded_folder_id))
+            raise exceptions.MalformedId(f'Malformed folder id ( {str(encoded_folder_id)} ) specified, unable to decode.')
 
     def _build_path(self, trans, folder):
         """

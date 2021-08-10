@@ -87,7 +87,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
                 rval, rstring = json.load(f)
         except OSError:
             rval = False
-            rstring = "Metadata results could not be read from '%s'" % filename_results_code
+            rstring = f"Metadata results could not be read from '{filename_results_code}'"
 
         if not rval:
             log.debug(f'setting metadata externally failed for {dataset.__class__.__name__} {dataset.id}: {rstring}')
@@ -202,11 +202,11 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             return ''
 
     def load_metadata(self, dataset, name, sa_session, working_directory, remote_metadata_directory=None):
-        metadata_output_path = os.path.join(working_directory, "metadata", "metadata_out_%s" % name)
+        metadata_output_path = os.path.join(working_directory, "metadata", f"metadata_out_{name}")
         self._load_metadata_from_path(dataset, metadata_output_path, working_directory, remote_metadata_directory)
 
     def external_metadata_set_successfully(self, dataset, name, sa_session, working_directory):
-        metadata_results_path = os.path.join(working_directory, "metadata", "metadata_results_%s" % name)
+        metadata_results_path = os.path.join(working_directory, "metadata", f"metadata_results_{name}")
         try:
             return self._metadata_results_from_file(dataset, metadata_results_path)
         except Exception:

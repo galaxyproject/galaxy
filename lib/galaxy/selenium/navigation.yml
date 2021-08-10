@@ -84,7 +84,7 @@ toolbox_filters:
   selectors:
     input:
       type: xpath
-      selector: "//span[contains(. ,'${description}')]/../div/div[@class=\"custom-control\"]"
+      selector: "//span[contains(. ,'${description}')]/../div/div/div[@class=\"custom-control\"]"
     submit: '#submit'
 
 change_user_email:
@@ -113,9 +113,11 @@ history_panel:
 
   item:
     selectors:
-      _: '#${history_content_type}-${id}'
+      # These now appear other places :_( - e.g. in the invocation view so we'll try
+      # prefixing ids with #current-history-panel but obviously we need to switch to classes or data
+      _: '#current-history-panel #${history_content_type}-${id}'
 
-      title: '${_} .title'
+      title: '${_} .content-title'
       hid: '${_} .hid'
       name: '${_} .name'
       details: '${_} .details'
@@ -143,9 +145,9 @@ history_panel:
 
   multi_operations:
     selectors:
-      show_button: '#current-history-panel .actions .show-selectors-btn'
-      action_button: '#current-history-panel .list-action-menu .list-action-menu-btn'
-      action_menu: '.list-action-menu div.dropdown-menu'
+      show_button: '.show-history-content-selectors-btn'
+      action_button: '.history-contents-list-action-menu-btn'
+      action_menu: '.list-action-menu .dropdown-menu'
 
     labels:
       build_pair: "Build Dataset Pair"
@@ -155,7 +157,7 @@ history_panel:
 
   collection_view:
     selectors:
-      _: '.list-panel.dataset-collection-panel'
+      _: '.dataset-collection-panel'
       back: '.navigation .back'
       title: '.dataset-collection-panel .controls .title .editable-text'
       title_input: '.dataset-collection-panel .controls .title input'
@@ -165,37 +167,49 @@ history_panel:
       list_items: '.dataset-collection-panel .list-items .list-item'
 
   selectors:
+    beta: 'section.history'
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
-    refresh_button: '#history-refresh-button'
+    refresh_button: '.history-refresh-button'
     name: '.title .name'
+    name_beta: '.history-title span:last-child'
     name_edit_input: '.name input'
-    contents: '#current-history-panel .list-items div.history-content'
+    name_edit_input_beta: '.history-title input'
+    contents: '#current-history-panel .history-content'
 
     empty_message: '.empty-message'
     size: '.history-size'
     tag_icon: '.actions .history-tag-btn'
-    tag_area: '.controls .tags-display'
-    tag_area_input: '.controls .tags-display .tags-input input'
+    tag_area: '.history-details .tags-display'
+    tag_area_input: '.history-details .tags-display .tags-input input'
     tag_close_btn: '.tags-display .ti-icon-close'
     tags: 'li.ti-tag.ti-valid .tag-name'
     annotation_icon: '.actions .history-annotate-btn'
-    annotation_area: '.controls .annotation-display'
-    annotation_editable_text: '.controls .annotation-display .annotation.editable-text'
-    annotation_edit: '.controls .annotation-display .annotation textarea'
-    annotation_done: '.controls .annotation-display .annotation button'
+    annotation_area: '.history-details .history-annotation'
+    annotation_editable_text: '.history-details .history-annotation .annotation.editable-text'
+    annotation_editable_text_beta: '.history-details .history-annotation.clickToEdit'
+    annotation_edit: '.history-details .history-annotation .annotation textarea'
+    annotation_edit_beta: '.history-details .history-annotation textarea'
+    annotation_done: '.history-details .history-annotation .annotation button'
 
     options_button: '#history-options-button'
-    options_button_icon: '#history-options-button span.fa-cog'
+    options_button_icon: '.history-details .menu-expand-button'
+    options_button_icon_beta: '.history-details .menu-expand-button'
+    options_button_copy_datasets_beta: '.copy-datasets-menu-item'
     options_menu: '#history-options-button-menu'
+    options_menu_item:
+      type: sizzle
+      selector: '#history-options-button-menu > a:contains("${option_label}")'
+
     options_show_history_structure:
       type: xpath
-      selector: '//a[text()="Show Structure"]'
-    options_show_export_history_to_file:
+      selector: '//a[contains(text(), "Show Structure")]'
+    options_show_export_history_to_file: 'a[title="Export History to File"]'
+    options_use_beta_history:
       type: xpath
-      selector: '//a[text()="Export History to File"]'
-    new_history_button: '#history-new-button'
-    multi_view_button: '#history-view-multi-button'
+      selector: '//a[text()="Use Beta History Panel"]'
+    new_history_button: '.history-new-button'
+    multi_view_button: '.history-view-multi-button'
 
     pagination_pages: '.list-pagination .pages'
     pagination_pages_options: '.list-pagination .pages option'
@@ -205,7 +219,7 @@ history_panel:
 
 
   text:
-    tooltip_name: 'Click to rename history'
+    tooltip_name: 'Rename history...'
     new_name: 'Unnamed history'
     new_size: '(empty)'
 
@@ -243,6 +257,8 @@ multi_history_view:
 
   selectors:
     _: '.multi-panel-history'
+    item: '.multi-panel-history #${history_content_type}-${id}'
+
     histories: '.middle .history-column'
     current_label: '.current-label'
     create_new_button: '.create-new'
@@ -361,9 +377,11 @@ registration:
 
 tool_form:
   selectors:
-    options: '#options [data-toggle="dropdown"]'
+    options: '.tool-dropdown'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
+    parameter_checkbox: 'div.ui-form-element[tour_id="${parameter}"] .ui-switch div'
+    parameter_input: 'div.ui-form-element[tour_id="${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[tour_id="${parameter}"] textarea'
     reference: '.formatted-reference'
     about: '.tool-footer'
@@ -378,6 +396,32 @@ workflows:
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
     search_box: "#workflow-search"
+    workflow_table: "#workflow-table"
+
+trs_search:
+  selectors:
+    search: "#trs-search-query"
+    search_result:
+      type: xpath
+      selector: "//td[contains(text(), '${workflow_name}')]"
+    import_button: ".workflow-import"
+    select_server_button: "#dropdownTrsServer"
+    import_version: '[data-version-name*="${version}"]'
+    select_server:
+      type: xpath
+      selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
+
+trs_import:
+  selectors:
+    input: "#trs-id-input"
+    # *= means attribute value contains "${version}"
+    # needed because dockstore uses branch or git tag, while workflowhub
+    # concatenates name and version
+    import_version: '[data-version-name*="${version}"]'
+    select_server_button: "#dropdownTrsServer"
+    select_server:
+      type: xpath
+      selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
 
 workflow_run:
 
@@ -481,6 +525,12 @@ invocations:
     steps_details: '.workflow-invocation-state-component .invocation-steps-details'
     step_title: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .step-title'
     step_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .portlet-operations'
+    step_output_collection: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details'
+    step_output_collection_toggle: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details .name'
+    step_output_collection_element_identifier:
+      type: xpath
+      selector: '//span[@class="name"][text()="${element_identifier}"]'
+    step_output_collection_element_datatype: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details .datatype .value'
     step_job_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details'
     step_job_table: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table'
     step_job_table_rows: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody tr'
@@ -634,7 +684,7 @@ libraries:
       import_dir_btn:
         type: xpath
         selector: '//button[contains(text(), "Import")]'
-      manage_dataset_permissions_btn: 'button[title="Permissions of ${name}"]'
+      manage_dataset_permissions_btn: 'a[title="Permissions of ${name}"]'
       make_private_btn: '#make-private'
       access_dataset_roles: '.access_dataset_roles .multiselect__tag span'
       private_dataset_icon: '.fa-key'

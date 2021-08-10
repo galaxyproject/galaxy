@@ -12,8 +12,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="bed" value="droPer1.bed"/>
-            <output name="output1" format="interval_index" value="droPer1.interval_index"/>
+            <param name="input1" ftype="bed" value="droPer1.bed"/>
+            <output name="output1" ftype="interval_index" value="droPer1.interval_index"/>
         </test>
     </tests>
     <help>

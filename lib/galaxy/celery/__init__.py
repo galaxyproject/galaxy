@@ -52,8 +52,25 @@ def get_broker():
         return config.amqp_internal_connection
 
 
+def get_history_audit_table_prune_interval():
+    config = get_config()
+    if config:
+        return config.history_audit_table_prune_interval
+    else:
+        return 3600
+
+
 broker = get_broker()
 celery_app = Celery('galaxy', broker=broker, include=['galaxy.celery.tasks'])
+prune_interval = get_history_audit_table_prune_interval()
+if prune_interval > 0:
+    celery_app.conf.beat_schedule = {
+        'prune-history-audit-table': {
+            'task': 'galaxy.celery.tasks.prune_history_audit_table',
+            'schedule': prune_interval,
+        },
+    }
+celery_app.conf.timezone = 'UTC'
 
 
 if __name__ == '__main__':
