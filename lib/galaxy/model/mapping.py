@@ -47,7 +47,6 @@ from galaxy.model.migrate.triggers.update_audit_table import install as install_
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
-from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 from galaxy.model.view.utils import install_views
 
 log = logging.getLogger(__name__)
@@ -223,23 +222,6 @@ model.Job.table = Table(
     Column("params", TrimmedString(255), index=True),
     Column("handler", TrimmedString(255), index=True))
 
-model.HistoryDatasetCollectionAssociation.table = Table(
-    "history_dataset_collection_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("collection_id", Integer, ForeignKey("dataset_collection.id"), index=True),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("name", TrimmedString(255)),
-    Column("hid", Integer),
-    Column("visible", Boolean),
-    Column("deleted", Boolean, default=False),
-    Column("copied_from_history_dataset_collection_association_id", Integer,
-        ForeignKey("history_dataset_collection_association.id"), nullable=True),
-    Column("implicit_output_name", Unicode(255), nullable=True),
-    Column("job_id", ForeignKey("job.id"), index=True, nullable=True),
-    Column("implicit_collection_jobs_id", ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now, index=True))
-
 model.LibraryDatasetCollectionAssociation.table = Table(
     "library_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -374,7 +356,7 @@ simple_mapping(model.HistoryDatasetAssociation,
                      == model.ExtendedMetadata.id)),
     hidden_beneath_collection_instance=relation(model.HistoryDatasetCollectionAssociation,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id
-                     == model.HistoryDatasetCollectionAssociation.table.c.id),
+                     == model.HistoryDatasetCollectionAssociation.id),
         uselist=False,
         backref="hidden_dataset_instances"),
     _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata),
@@ -557,50 +539,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
 #     ),
 # )
 
-simple_mapping(model.HistoryDatasetCollectionAssociation,
-    collection=relation(model.DatasetCollection),
-    history=relation(model.History,
-        backref='dataset_collections'),
-    copied_from_history_dataset_collection_association=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.copied_from_history_dataset_collection_association_id
-                     == model.HistoryDatasetCollectionAssociation.table.c.id),
-        remote_side=[model.HistoryDatasetCollectionAssociation.table.c.id],
-        backref='copied_to_history_dataset_collection_associations',
-        uselist=False),
-    implicit_input_collections=relation(model.ImplicitlyCreatedDatasetCollectionInput,
-        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id
-                     == model.ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id),
-        backref="dataset_collection",
-    ),
-    implicit_collection_jobs=relation(
-        model.ImplicitCollectionJobs,
-        backref=backref("history_dataset_collection_associations", uselist=True),
-        uselist=False,
-    ),
-    job=relation(
-        model.Job,
-        backref=backref("history_dataset_collection_associations", uselist=True),
-        uselist=False,
-    ),
-    job_state_summary=relation(HistoryDatasetCollectionJobStateSummary,
-        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id == HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id),
-        foreign_keys=HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id,
-        uselist=False
-    ),
-    tags=relation(model.HistoryDatasetCollectionTagAssociation,
-        order_by=model.HistoryDatasetCollectionTagAssociation.id,
-        back_populates='dataset_collection'),
-    annotations=relation(model.HistoryDatasetCollectionAssociationAnnotationAssociation,
-        order_by=model.HistoryDatasetCollectionAssociationAnnotationAssociation.id,
-        back_populates="history_dataset_collection"),
-    ratings=relation(model.HistoryDatasetCollectionRatingAssociation,
-        order_by=model.HistoryDatasetCollectionRatingAssociation.id,
-        back_populates="dataset_collection"),
-    output_dataset_collection_instances=relation(
-        model.JobToOutputDatasetCollectionAssociation,
-        back_populates='dataset_collection_instance'),
-)
-
 simple_mapping(model.LibraryDatasetCollectionAssociation,
     collection=relation(model.DatasetCollection),
     folder=relation(model.LibraryFolder,
@@ -780,6 +718,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
         back_populates='job', uselist=False),
     container=relation('JobContainerAssociation', back_populates='job', uselist=False),
     data_manager_association=relation('DataManagerJobAssociation', back_populates='job', uselist=False),
+    history_dataset_collection_associations=relation('HistoryDatasetCollectionAssociation', back_populates='job'),
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],
@@ -789,10 +728,10 @@ model.Job.any_output_dataset_deleted = column_property(  # type: ignore
            )
 )
 model.Job.any_output_dataset_collection_instances_deleted = column_property(  # type: ignore
-    exists([model.HistoryDatasetCollectionAssociation.table.c.id],
+    exists([model.HistoryDatasetCollectionAssociation.id],
            and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.job_id,
-                model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.dataset_collection_id,
-                model.HistoryDatasetCollectionAssociation.table.c.deleted == true())
+                model.HistoryDatasetCollectionAssociation.id == model.JobToOutputDatasetCollectionAssociation.dataset_collection_id,
+                model.HistoryDatasetCollectionAssociation.deleted == true())
            )
 )
 
