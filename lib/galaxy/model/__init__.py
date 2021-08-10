@@ -2763,7 +2763,29 @@ class HistoryUserShareAssociation(Base, UserShareAssociation):
         self.user = None
 
 
-class UserRoleAssociation(RepresentById):
+class UserRoleAssociation(Base, RepresentById):
+    __tablename__ = 'user_role_association'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    role_id = Column(Integer, ForeignKey('role.id'), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+
+    user = relationship('User', back_populates="roles")
+    role = relationship('Role', back_populates="users")
+
+    # TODO: this should be defined on the User model only
+    non_private_roles = relationship(
+        'User',
+        backref="non_private_roles",
+        viewonly=True,
+        primaryjoin=(lambda:
+            (User.table.c.id == UserRoleAssociation.user_id)  # type: ignore
+            & (UserRoleAssociation.role_id == Role.id)  # type: ignore
+            & not_(Role.name == User.table.c.email))  # type: ignore
+    )
+
     def __init__(self, user, role):
         self.user = user
         self.role = role
@@ -2802,6 +2824,7 @@ class Role(Base, Dictifiable, RepresentById):
     library_dataset_actions = relationship('LibraryDatasetPermissions', back_populates='role')
     library_dataset_dataset_actions = relationship(
         'LibraryDatasetDatasetAssociationPermissions', back_populates='role')
+    users = relationship('UserRoleAssociation', back_populates='role')
 
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
