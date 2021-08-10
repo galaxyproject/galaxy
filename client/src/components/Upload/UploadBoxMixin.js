@@ -228,7 +228,7 @@ export default {
                             })
                         );
                     },
-                    { mode: "file", multiple: true }
+                    { multiple: true }
                 );
             } else {
                 this.ftp.show(

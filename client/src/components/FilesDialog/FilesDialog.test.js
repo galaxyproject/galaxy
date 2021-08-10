@@ -80,7 +80,6 @@ describe("FilesDialog/FilesDialog.vue", () => {
         };
 
         await open_root_folder();
-        const table = getTable();
         const files = pdbResponse.filter((item) => item.class === "File");
 
         expect(wrapper.vm.hasValue).toBe(false);
@@ -89,7 +88,7 @@ describe("FilesDialog/FilesDialog.vue", () => {
         assert_shown_items(files.length, true);
 
         // select each rendered file
-        applyForEachFile((file) => table.$emit("clicked", file));
+        applyForEachFile((file) => clickOn(file));
 
         await flushPromises();
         // assert the number of selected files
@@ -104,7 +103,7 @@ describe("FilesDialog/FilesDialog.vue", () => {
         expect(wrapper.vm.hasValue).toBe(true);
 
         //    unselect each file
-        applyForEachFile((file) => table.$emit("clicked", file));
+        applyForEachFile((file) => clickOn(file));
 
         // assert that OK button is disables
         expect(wrapper.vm.hasValue).toBe(false);
