@@ -2,9 +2,9 @@
 
 import logging
 import os
+import urllib.parse
 
 import requests
-import urllib.parse
 
 try:
     import gitlab
