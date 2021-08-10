@@ -49,6 +49,7 @@ def main():
             break
     tool_app_config = ToolAppConfig('tool_app', '/tmp')
     app = ToolApp(sa_session=import_store.sa_session, tool_app_config=tool_app_config, datatypes_registry=datatypes_registry, object_store=object_store)
+    # TODO: could try to serialize just a minimal tool variant instead of the whole thing ?
     tool_source = get_tool_source(os.path.join(WORKING_DIRECTORY, 'tool.xml'))
     tool = create_tool_from_source(app, tool_source=tool_source)
 
