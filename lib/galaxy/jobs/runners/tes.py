@@ -50,7 +50,16 @@ class TESJobRunner(AsynchronousJobRunner):
         """
         super(TESJobRunner, self).__init__(app, nworkers, **kwargs)
         self.container_workdir = "/tmp"
-        self.galaxy_url = DEFAULT_GALAXY_URL
+        if(hasattr(app.config, "galaxy_infrastructure_url")):
+            self.galaxy_url = f"{app.config.galaxy_infrastructure_url.rstrip('/')}/"
+        else:
+            self.galaxy_url = DEFAULT_GALAXY_URL
+
+        self.running_states = ["RUNNING", "INITIALIZING", "QUEUED", "PAUSED"]
+        self.complete_states = ["COMPLETE"]
+        self.error_states = ["EXECUTOR_ERROR", "SYSTEM_ERROR", "CANCELED", "UNKNOWN"]
+        self.cancel_state = ["CANCELED"]
+
         self._init_monitor_thread()
         self._init_worker_threads()
 
@@ -62,8 +71,11 @@ class TESJobRunner(AsynchronousJobRunner):
         url = f"{master_addr}/v1/tasks"
         try:
             req = requests.post(url, json=task)
-            job_id = req.json()["id"]
-            return job_id
+            try:
+                job_id = req.json()["id"]
+                return job_id
+            except:
+                log.error(f"TES Server fialed to accept the job {req.json()}")
         except:
             log.error(f"{GENERIC_REMOTE_ERROR} on URL {master_addr}")
             
@@ -365,12 +377,6 @@ class TESJobRunner(AsynchronousJobRunner):
         galaxy_id_tag = job_wrapper.get_id_tag()
         master_addr = job_destination.params.get("tes_master_addr")
 
-        if(hasattr(job_wrapper.app, "galaxy_url")):
-            self.galaxy_url = f"{job_wrapper.app.galaxy_url.rstrip('/')}/"
-
-        if('galaxy_url' in job_destination.params):
-            self.galaxy_url = job_destination.params.get("galaxy_url")
-
         job_script = self.build_script(job_wrapper, client_args)
         job_id = self._send_task(master_addr, job_script)
 
@@ -389,19 +395,15 @@ class TESJobRunner(AsynchronousJobRunner):
         Utility for getting list of Output Files
         """
         output_paths = job_wrapper.get_output_fnames()
-        return [str(o) for o in output_paths]   # Force job_path from DatasetPath objects.
+        return [str(o) for o in output_paths]
 
-    def get_input_files(self, job_wrapper):
-        """"
-        Utility for getting list of Input Files
-        """
-        input_paths = job_wrapper.get_input_paths()
-        return [str(i) for i in input_paths]
-
-    def __finish_job(self, stdout, stderr, exit_code, job_wrapper):
+    def __finish_job(self, data, job_wrapper):
         """
         Utility for finishing job after completion
         """
+        stdout = self._concat_job_log(data, 'stdout')
+        stderr = self._concat_job_log(data, 'stderr')
+        exit_code = self._get_exit_codes(data)
         
         job_metrics_directory = os.path.join(job_wrapper.working_directory, "metadata")
         try:
@@ -423,7 +425,6 @@ class TESJobRunner(AsynchronousJobRunner):
         try:
             logs_data = data.get('logs')
             for log in logs_data:
-                # s += 'Step #{}\n'.format(i)
                 actual_log = log.get('logs')
                 for log_output in actual_log:
                     try:
@@ -435,15 +436,15 @@ class TESJobRunner(AsynchronousJobRunner):
         except:
             return s
 
-    def _concat_exit_codes(self, data):
+    def _get_exit_codes(self, data):
         """"
         Utility for getting out exit code of the job
         """
         if(data['state'] == "COMPLETE"):
-            return '0'
+            return 0
 
         else:
-            return '1'
+            return 1
 
     def check_watched_item(self, job_state):
         """
@@ -456,16 +457,11 @@ class TESJobRunner(AsynchronousJobRunner):
 
         data = self._get_job(master_addr, job_id, "FULL")
         state = data['state']
-
-        running_states = ["RUNNING", "INITIALIZING", "QUEUED", "PAUSED"]
-        complete_states = ["COMPLETE"]
-        error_states = ["EXECUTOR_ERROR", "SYSTEM_ERROR", "CANCELED", "UNKNOWN"]
-        cancel_state = ["CANCELED"]
         
-        job_running = state in running_states
-        job_complete = state in complete_states
-        job_failed = state in error_states
-        job_cancel = state in cancel_state
+        job_running = state in self.running_states
+        job_complete = state in self.complete_states
+        job_failed = state in self.error_states
+        job_cancel = state in self.cancel_state
 
         if job_running and job_state.running:
             return job_state
@@ -481,7 +477,8 @@ class TESJobRunner(AsynchronousJobRunner):
             if(job_cancel):
                 job_state.job_wrapper.change_state(model.Job.states.DELETED)
                 job_state.running = False              
-                self.__finish_job('', '', 0, job_state.job_wrapper)
+                self.__finish_job(data, job_state.job_wrapper)
+                return
 
         if job_complete:
             if job_state.job_wrapper.get_state() != model.Job.states.DELETED:
@@ -489,19 +486,13 @@ class TESJobRunner(AsynchronousJobRunner):
                 if external_metadata:
                     self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
                 
-                stdout = self._concat_job_log(data, 'stdout')
-                stderr = self._concat_job_log(data, 'stderr')
-                exit_code = self._concat_exit_codes(data)
-                self.__finish_job(stdout, stderr, exit_code, job_state.job_wrapper)
+                self.__finish_job(data, job_state.job_wrapper)
                 log.debug("(%s/%s) job has completed" % (galaxy_id_tag, job_id))
             return
 
         if job_failed:
             log.debug("(%s/%s) job failed" % (galaxy_id_tag, job_id))
-            stdout = self._concat_job_log(data, 'stdout')
-            stderr = self._concat_job_log(data, 'stderr')
-            exit_code = 1
-            self.__finish_job(stdout, stderr, exit_code, job_state.job_wrapper)
+            self.__finish_job(data, job_state.job_wrapper)
             return
 
         return job_state

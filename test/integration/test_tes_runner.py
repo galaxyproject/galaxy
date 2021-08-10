@@ -66,6 +66,7 @@ class BaseTESIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
         config["file_path"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config.path
         config["default_job_shell"] = '/bin/sh'
+        config["galaxy_infrastructure_url"] = "http://localhost:$GALAXY_WEB_PORT"
 
     @skip_without_tool('job_properties')
     def test_error_job(self):
