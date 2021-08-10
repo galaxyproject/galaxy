@@ -26,7 +26,7 @@
             />
         </template>
         <template v-slot:buttons>
-            <b-btn size="sm" class="float-left" v-if="undoShow" @click="load()">
+            <b-btn id="back-btn" size="sm" class="float-left" v-if="undoShow" @click="load()">
                 <font-awesome-icon :icon="['fas', 'caret-left']" />
                 Back
             </b-btn>
