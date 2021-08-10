@@ -8491,7 +8491,14 @@ class DataManagerJobAssociation(Base, RepresentById):
         self.data_manager_id = data_manager_id
 
 
-class UserPreference(RepresentById):
+class UserPreference(Base, RepresentById):
+    __tablename__ = 'user_preference'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    name = Column(Unicode(255), index=True)
+    value = Column(Text)
+
     def __init__(self, name=None, value=None):
         self.name = name
         self.value = value

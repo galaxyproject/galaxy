@@ -4131,6 +4131,32 @@ class TestUserGroupAssociation(BaseTest):
             assert stored_obj.group.id == group.id
 
 
+class TestUserPreference(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'user_preference'
+
+    def test_columns(self, session, cls_, user):
+        name, value = 'a', 'b'
+        obj = cls_(name, value)
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.name == name
+            assert stored_obj.value == value
+            assert stored_obj.user_id == user.id
+
+    def test_relationships(self, session, cls_, user):
+        obj = cls_()
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.user.id == user.id
+
+
 class TestUserQuotaAssociation(BaseTest):
 
     def test_table(self, cls_):
