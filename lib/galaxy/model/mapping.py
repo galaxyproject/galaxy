@@ -289,19 +289,6 @@ model.WorkflowInvocationOutputValue.table = Table(
     Column("value", MutableJSONType),
 )
 
-model.MetadataFile.table = Table(
-    "metadata_file", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("name", TEXT),
-    Column("hda_id", Integer, ForeignKey("history_dataset_association.id"), index=True, nullable=True),
-    Column("lda_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
-    Column("object_store_id", TrimmedString(255), index=True),
-    Column("uuid", UUIDType(), index=True),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("purged", Boolean, index=True, default=False))
-
 model.UserPreference.table = Table(
     "user_preference", metadata,
     Column("id", Integer, primary_key=True),
@@ -633,11 +620,6 @@ simple_mapping(model.WorkflowInvocationStep,
     output_datasets=relation(model.WorkflowInvocationStepOutputDatasetAssociation,
         back_populates='workflow_invocation_step'),
 )
-
-mapper_registry.map_imperatively(model.MetadataFile, model.MetadataFile.table, properties=dict(
-    history_dataset=relation(model.HistoryDatasetAssociation),
-    library_dataset=relation(model.LibraryDatasetDatasetAssociation)
-))
 
 simple_mapping(
     model.WorkflowInvocationOutputValue,

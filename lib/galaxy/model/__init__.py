@@ -7189,7 +7189,22 @@ class WorkflowInvocationStepOutputDatasetCollectionAssociation(Base, Dictifiable
     dict_collection_visible_keys = ['id', 'workflow_invocation_step_id', 'dataset_collection_id', 'output_name']
 
 
-class MetadataFile(StorableObject, RepresentById):
+class MetadataFile(Base, StorableObject, RepresentById):
+    __tablename__ = 'metadata_file'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(TEXT)
+    hda_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True, nullable=True)
+    lda_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, index=True, default=now, onupdate=now)
+    object_store_id = Column(TrimmedString(255), index=True)
+    uuid = Column(UUIDType(), index=True)
+    deleted = Column(Boolean, index=True, default=False)
+    purged = Column(Boolean, index=True, default=False)
+
+    history_dataset = relationship('HistoryDatasetAssociation')
+    library_dataset = relationship('LibraryDatasetDatasetAssociation')
 
     def __init__(self, dataset=None, name=None, uuid=None):
         super().__init__(id=None, uuid=uuid)
