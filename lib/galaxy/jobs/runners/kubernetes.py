@@ -83,7 +83,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
             k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=3),
             k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800),
-            k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=1800),
+            k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: not x or int(x) >= 0, default=None),
             k8s_interactivetools_use_ssl=dict(map=bool, default=False),
             k8s_interactivetools_ingress_annotations=dict(map=str),)
 
@@ -676,11 +676,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             elif active > 0 and failed <= max_pod_retries:
                 if not job_state.running:
                     if self.__job_pending_due_to_unschedulable_pod(job_state):
-                        creation_time_str = job.obj['metadata'].get('creationTimestamp')
-                        creation_time = datetime.strptime(creation_time_str, '%Y-%m-%dT%H:%M:%SZ')
-                        elapsed_seconds = (datetime.utcnow() - creation_time).total_seconds()
-                        if elapsed_seconds > self.runner_params['k8s_unschedulable_walltime_limit']:
-                            return self._handle_unschedulable_job(job, job_state)
+                        if self.runner_params.get('k8s_unschedulable_walltime_limit'):
+                            creation_time_str = job.obj['metadata'].get('creationTimestamp')
+                            creation_time = datetime.strptime(creation_time_str, '%Y-%m-%dT%H:%M:%SZ')
+                            elapsed_seconds = (datetime.utcnow() - creation_time).total_seconds()
+                            if elapsed_seconds > self.runner_params['k8s_unschedulable_walltime_limit']:
+                                return self._handle_unschedulable_job(job, job_state)
+                            else:
+                                pass
+                        else:
+                            pass
                     else:
                         job_state.running = True
                         job_state.job_wrapper.change_state(model.Job.states.RUNNING)

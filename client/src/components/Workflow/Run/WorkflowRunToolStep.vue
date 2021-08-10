@@ -1,6 +1,6 @@
 <template>
     <div :step-label="model.step_label">
-        <FormCard :title="title" icon="fa-wrench" :collapsible="true" :collapsed.sync="collapsed">
+        <FormCard :title="model.fixed_title" icon="fa-wrench" :collapsible="true" :collapsed.sync="collapsed">
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormDisplay
@@ -75,11 +75,6 @@ export default {
             if (this.validationScrollTo.length > 0) {
                 this.collapsed = false;
             }
-        },
-    },
-    computed: {
-        title() {
-            return `${this.model.name} ${this.model.description} (Galaxy Version ${this.model.version})`;
         },
     },
     methods: {

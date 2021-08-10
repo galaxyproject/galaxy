@@ -246,7 +246,7 @@ history_structure:
 edit_dataset_attributes:
   selectors:
     database_build_dropdown: '[data-label="Database/Build"]'
-    save_btn: '#submit_attributes'
+    save_btn: '#dataset-attributes-default-save'
 
   dbkey_dropdown_results:
     selectors:

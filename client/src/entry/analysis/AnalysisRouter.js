@@ -42,8 +42,8 @@ import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson.vue";
 import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
 import QueryStringParsing from "utils/query-string-parsing";
-import DatasetError from "mvc/dataset/dataset-error";
-import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
+import DatasetError from "components/DatasetInformation/DatasetError";
+import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import Citations from "components/Citation/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
@@ -140,10 +140,8 @@ export const getAnalysisRouter = (Galaxy) => {
             });
         },
 
-        show_user_form: function (form_id) {
-            const Galaxy = getGalaxyInstance();
-            const model = getUserPreferencesModel();
-            model.user_id = Galaxy.params.id;
+        show_user_form: function (form_id, params) {
+            const model = getUserPreferencesModel(params.id);
             this.page.display(new FormWrapper.View(_.extend(model[form_id], { active_tab: "user" })));
         },
 
@@ -387,16 +385,18 @@ export const getAnalysisRouter = (Galaxy) => {
             this._display_vue_helper(CustomBuilds);
         },
 
-        show_dataset_edit_attributes: function () {
-            this.page.display(new DatasetEditAttributes.View());
+        show_dataset_edit_attributes: function (params) {
+            const datasetId = params.dataset_id;
+            this._display_vue_helper(DatasetAttributes, { datasetId: datasetId });
         },
 
         show_collection_edit_attributes: function (collection_id) {
             this._display_vue_helper(CollectionEditView, { collection_id: collection_id });
         },
 
-        show_dataset_error: function () {
-            this.page.display(new DatasetError.View());
+        show_dataset_error: function (params) {
+            const datasetId = params.dataset_id;
+            this._display_vue_helper(DatasetError, { datasetId: datasetId });
         },
 
         /**  */

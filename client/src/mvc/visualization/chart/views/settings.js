@@ -2,11 +2,12 @@
 import _ from "underscore";
 import Backbone from "backbone";
 import Utils from "utils/utils";
-import Form from "mvc/form/form-view";
 import FormData from "mvc/form/form-data";
+import FormDisplay from "components/Form/FormDisplay";
+import { appendVueComponent } from "utils/mountVueComponent";
 
 export default Backbone.View.extend({
-    initialize: function (app, options) {
+    initialize: function (app) {
         var self = this;
         this.chart = app.chart;
         this.setElement("<div/>");
@@ -37,15 +38,13 @@ export default Backbone.View.extend({
                     input.value = model_value;
                 }
             });
-            this.form = new Form({
+            const instance = appendVueComponent(this.$el, FormDisplay, {
                 inputs: inputs,
-                onchange: function () {
-                    self.chart.settings.set(self.form.data.create());
-                    self.chart.trigger("redraw");
-                },
             });
-            this.chart.settings.set(this.form.data.create());
-            this.$el.append(this.form.$el);
+            instance.$on("onChange", (data) => {
+                this.chart.settings.set(data);
+                this.chart.trigger("redraw");
+            });
         }
     },
 });

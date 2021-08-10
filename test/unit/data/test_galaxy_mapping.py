@@ -1,5 +1,6 @@
 import collections
 import os
+import random
 import unittest
 import uuid
 from tempfile import NamedTemporaryFile
@@ -289,6 +290,42 @@ class MappingTests(BaseModelTestCase):
         model.session.flush()
         for i in range(elements):
             assert c1[i] == dces[i]
+
+    def test_dataset_instance_order(self):
+        model = self.model
+        u = model.User(email="mary@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        elements = []
+        list_pair = model.DatasetCollection(collection_type="list:paired")
+        for i in range(20):
+            pair = model.DatasetCollection(collection_type="pair")
+            forward = model.HistoryDatasetAssociation(extension="txt", history=h1, name=f"forward_{i}", create_dataset=True, sa_session=model.session)
+            reverse = model.HistoryDatasetAssociation(extension="bam", history=h1, name=f"reverse_{i}", create_dataset=True, sa_session=model.session)
+            dce1 = model.DatasetCollectionElement(collection=pair, element=forward, element_identifier=f"forward_{i}", element_index=1)
+            dce2 = model.DatasetCollectionElement(collection=pair, element=reverse, element_identifier=f"reverse_{i}", element_index=2)
+            to_persist = [(forward, reverse), (dce1, dce2)]
+            self.persist(pair)
+            for item in to_persist:
+                if i % 2:
+                    self.persist(item[0])
+                    self.persist(item[1])
+                else:
+                    self.persist(item[1])
+                    self.persist(item[0])
+            elements.append(model.DatasetCollectionElement(collection=list_pair, element=pair, element_index=i, element_identifier=str(i)))
+        self.persist(list_pair)
+        random.shuffle(elements)
+        for item in elements:
+            self.persist(item)
+        forward = []
+        reverse = []
+        for i, dataset_instance in enumerate(list_pair.dataset_instances):
+            if i % 2:
+                reverse.append(dataset_instance)
+            else:
+                forward.append(dataset_instance)
+        assert all(d.name == f"forward_{i}" for i, d in enumerate(forward))
+        assert all(d.name == f"reverse_{i}" for i, d in enumerate(reverse))
 
     def test_collections_in_histories(self):
         model = self.model
