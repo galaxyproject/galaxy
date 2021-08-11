@@ -4453,6 +4453,70 @@ class TestWorkerProcess(BaseTest):
             assert stored_obj.update_time == update_time
 
 
+class TestWorkflow(BaseTest):
+
+    # def test_table(self, cls_):
+    #     assert cls_.__tablename__ == 'workflow'
+
+    def test_columns(self, session, cls_, stored_workflow, workflow):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        name = 'a'
+        has_cycles = True
+        has_errors = True
+        reports_config = 'b'
+        creator_metadata = 'c'
+        license = 'd'
+        uuid = uuid4()
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.stored_workflow = stored_workflow
+        obj.parent_workflow_id = workflow.id
+        obj.name = name
+        obj.has_cycles = has_cycles
+        obj.has_errors = has_errors
+        obj.reports_config = reports_config
+        obj.creator_metadata = creator_metadata
+        obj.license = license
+        obj.uuid = uuid
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id, unique=True)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.stored_workflow_id == stored_workflow.id
+            assert stored_obj.parent_workflow_id == workflow.id
+            assert stored_obj.name == name
+            assert stored_obj.has_cycles == has_cycles
+            assert stored_obj.has_errors == has_errors
+            assert stored_obj.reports_config == reports_config
+            assert stored_obj.creator_metadata == creator_metadata
+            assert stored_obj.license == license
+            assert stored_obj.uuid == uuid
+
+    def test_relationships(self, session, cls_, stored_workflow, workflow, workflow_step_factory):
+        obj = cls_()
+        obj.stored_workflow = stored_workflow
+        obj.parent_workflow_id = workflow.id
+
+        # Setup workflow steps to test attribures: steps, parent_workflow_step
+        workflow_step = workflow_step_factory(workflow=obj)
+        parent_workflow_step = workflow_step_factory(subworkflow=obj)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id, unique=True)
+            assert stored_obj.stored_workflow_id == stored_workflow.id
+            assert stored_obj.parent_workflow_id == workflow.id
+            assert stored_obj.steps[0].id == workflow_step.id
+            assert stored_obj.step_count == 1
+            assert stored_obj.parent_workflow_steps[0].id == parent_workflow_step.id
+
+        delete_from_database(session, [workflow_step, parent_workflow_step])
+
+
 class TestWorkflowInvocation(BaseTest):
 
     def test_table(self, cls_):
@@ -6202,9 +6266,12 @@ def workflow_step_connection_factory(model):
 
 
 @pytest.fixture
-def workflow_step_factory(model):
+def workflow_step_factory(model, workflow):
     def make_instance(*args, **kwds):
-        return model.WorkflowStep(*args, **kwds)
+        instance = model.WorkflowStep()
+        instance.workflow = kwds.get('workflow', workflow)
+        instance.subworkflow = kwds.get('subworkflow')
+        return instance
     return make_instance
 
 
@@ -6260,13 +6327,18 @@ def delete_from_database(session, objects):
         session.execute(stmt)
 
 
-def get_stored_obj(session, cls, obj_id=None, where_clause=None):
+def get_stored_obj(session, cls, obj_id=None, where_clause=None, unique=False):
     # Either obj_id or where_clause must be provided, but not both
     assert bool(obj_id) ^ (where_clause is not None)
     if where_clause is None:
         where_clause = get_default_where_clause(cls, obj_id)
     stmt = select(cls).where(where_clause)
-    return session.execute(stmt).scalar_one()
+    result = session.execute(stmt)
+    # unique() is required if result contains joint eager loads against collections
+    # https://gerrit.sqlalchemy.org/c/sqlalchemy/sqlalchemy/+/2253
+    if unique:
+        result = result.unique()
+    return result.scalar_one()
 
 
 def get_default_where_clause(cls, obj_id):
