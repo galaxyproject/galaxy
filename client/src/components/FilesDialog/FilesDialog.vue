@@ -15,7 +15,7 @@
                 :multiple="multiple"
                 :filter="filter"
                 :select-all-icon="selectAllIcon"
-                :show-select-icon="undoShow"
+                :show-select-icon="undoShow && multiple"
                 :show-details="showDetails"
                 :show-time="showTime"
                 :show-navigate="showNavigate"
@@ -90,7 +90,6 @@ export default {
             hasValue: false,
             showTime: true,
             showDetails: true,
-            showSelectIcon: true,
             showNavigate: true,
             isBusy: false,
             currentDirectory: undefined,
