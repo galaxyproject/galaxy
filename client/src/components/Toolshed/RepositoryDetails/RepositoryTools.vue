@@ -34,10 +34,10 @@
 <script>
 export default {
     props: {
-      tools: {
-        type: Array,
-        required: true
-      },
+        tools: {
+            type: Array,
+            required: true,
+        },
     },
     data() {
         return {

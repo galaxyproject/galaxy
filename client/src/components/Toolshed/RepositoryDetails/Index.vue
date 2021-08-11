@@ -68,14 +68,14 @@ export default {
         RepositoryTools,
     },
     props: {
-      repo: {
-        type: Object,
-        required: true
-      },
-      toolshedUrl: {
-        type: String,
-        required: true
-      },
+        repo: {
+            type: Object,
+            required: true,
+        },
+        toolshedUrl: {
+            type: String,
+            required: true,
+        },
     },
     data() {
         return {

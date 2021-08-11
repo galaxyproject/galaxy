@@ -39,22 +39,22 @@ Vue.use(BootstrapVue);
 
 export default {
     props: {
-      toolshedUrl: {
-        type: String,
-        required: true,
-      },
-      toolshedUrls: {
-        type: Array,
-        required: true,
-      },
-      loading: {
-        type: Boolean,
-        required: true,
-      },
-      total: {
-        type: Number,
-        required: true
-      },
+        toolshedUrl: {
+            type: String,
+            required: true,
+        },
+        toolshedUrls: {
+            type: Array,
+            required: true,
+        },
+        loading: {
+            type: Boolean,
+            required: true,
+        },
+        total: {
+            type: Number,
+            required: true,
+        },
     },
     computed: {
         showDropdown() {

@@ -20,14 +20,14 @@ Vue.use(BootstrapVue);
 
 export default {
     props: {
-      installed: {
-        type: Boolean,
-        required: false
-      },
-      status: {
-        type: String,
-        required: true
-      }
+        installed: {
+            type: Boolean,
+            required: false,
+        },
+        status: {
+            type: String,
+            required: true,
+        },
     },
     data() {
         return {

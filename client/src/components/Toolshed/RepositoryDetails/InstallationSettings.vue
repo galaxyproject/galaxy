@@ -56,26 +56,26 @@ Vue.use(BootstrapVue);
 
 export default {
     props: {
-      repo: {
-        type: Object,
-        required: true,
-      },
-      changesetRevision: {
-        type: String,
-        required: true,
-      },
-      requiresPanel: {
-        type: Boolean,
-        required: true,
-      },
-      toolshedUrl: {
-        type: String,
-        required: true,
-      },
-      modalStatic: {
-        type: Boolean,
-        required: true,
-      },
+        repo: {
+            type: Object,
+            required: true,
+        },
+        changesetRevision: {
+            type: String,
+            required: true,
+        },
+        requiresPanel: {
+            type: Boolean,
+            required: true,
+        },
+        toolshedUrl: {
+            type: String,
+            required: true,
+        },
+        modalStatic: {
+            type: Boolean,
+            required: true,
+        },
     },
     data() {
         return {

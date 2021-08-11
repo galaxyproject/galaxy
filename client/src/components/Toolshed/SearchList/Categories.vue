@@ -25,14 +25,14 @@ Vue.use(BootstrapVue);
 
 export default {
     props: {
-      toolshedUrl: {
-        type: String,
-        required: true
-      },
-      loading: {
-        type: Boolean,
-        required: true
-      },
+        toolshedUrl: {
+            type: String,
+            required: true,
+        },
+        loading: {
+            type: Boolean,
+            required: true,
+        },
     },
     components: { LoadingSpan },
     data() {

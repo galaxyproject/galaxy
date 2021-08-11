@@ -21,10 +21,10 @@ import LoadingSpan from "components/LoadingSpan";
 
 export default {
     props: {
-      repo: {
-        type: Object,
-        required: true
-      }
+        repo: {
+            type: Object,
+            required: true,
+        },
     },
     components: {
         LoadingSpan,
@@ -39,7 +39,7 @@ export default {
     },
     created() {
         this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
         this.load();
     },
     methods: {

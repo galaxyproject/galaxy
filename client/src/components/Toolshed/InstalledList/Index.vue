@@ -70,13 +70,12 @@ export default {
         RepositoryDetails,
     },
     props: {
-      filter: {
-        type: String,
-        required: true
-      }
+        filter: {
+            type: String,
+            required: true,
+        },
     },
     data() {
-
         return {
             error: null,
             loading: true,
@@ -101,36 +100,36 @@ export default {
         numToolsheds() {
             const toolsheds = new Set();
             this.repositories.forEach((x) => {
-              toolsheds.add(x.tool_shed)
+                toolsheds.add(x.tool_shed);
             });
-            return toolsheds.size
+            return toolsheds.size;
         },
         fields() {
             const fields = [
-                  {
+                {
                     key: "name",
                     sortable: true,
                     sortByFormatted: (value, key, item) => {
-                      return `${this.isLatest(item)}_${value}`;
+                        return `${this.isLatest(item)}_${value}`;
                     },
-                  },
-                  {
+                },
+                {
                     key: "owner",
                     sortable: true,
-                  },
-                ];
+                },
+            ];
             if (this.numToolsheds > 1) {
                 fields.push({
-                  key: "tool_shed",
-                  sortable: true,
+                    key: "tool_shed",
+                    sortable: true,
                 });
             }
             return fields;
-        }
+        },
     },
     created() {
         this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
         this.load();
     },
     methods: {

@@ -59,7 +59,7 @@ export default {
     },
     created() {
         this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
         this.load();
     },
     destroyed() {

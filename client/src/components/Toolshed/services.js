@@ -128,7 +128,7 @@ export class Services {
     _groupByNameOwnerToolshed(incoming, filter, selectLatest) {
         if (selectLatest) {
             const getSortValue = (x, y) => {
-                return x == y ? 0 : x < y ? -1 : 1;
+                return x === y ? 0 : x < y ? -1 : 1;
             };
             incoming = incoming.sort((a, b) => {
                 return (
