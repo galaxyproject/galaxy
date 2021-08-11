@@ -107,6 +107,25 @@ export const directory1RecursiveResponse = [
         path: "directory1/subdirectory2/subdirectory2file",
     },
 ];
+
+export const directory2RecursiveResponse = [
+    {
+        class: "File",
+        name: "directory2file1",
+        size: 0,
+        ctime: "08/10/2021 07:57:11 PM",
+        uri: "gxfiles://pdb-gzip/directory2/directory2file1",
+        path: "directory2/directory2file1",
+    },
+    {
+        class: "File",
+        name: "directory2file2",
+        size: 0,
+        ctime: "08/10/2021 07:57:12 PM",
+        uri: "gxfiles://pdb-gzip/directory2/directory2file2",
+        path: "directory2/directory2file2",
+    },
+];
 export const directory1Response = [
     {
         class: "File",
