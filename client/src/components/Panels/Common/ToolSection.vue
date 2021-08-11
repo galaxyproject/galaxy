@@ -10,9 +10,7 @@
         <transition name="slide">
             <div v-if="opened">
                 <template v-for="[key, el] in category.elems.entries()">
-                    <div v-if="el.text" class="tool-panel-label" :key="key">
-                        {{ el.text }}
-                    </div>
+                    <ToolPanelLabel v-if="category.text" :definition="el" :key="key" />
                     <tool
                         v-else
                         class="ml-2"
@@ -30,9 +28,7 @@
         </transition>
     </div>
     <div v-else>
-        <div v-if="category.text" class="tool-panel-label">
-            {{ category.text }}
-        </div>
+        <ToolPanelLabel v-if="category.text" :definition="category" />
         <tool
             v-else
             :tool="category"
@@ -47,12 +43,14 @@
 
 <script>
 import Tool from "./Tool";
+import ToolPanelLabel from "./ToolPanelLabel";
 import ariaAlert from "utils/ariaAlert";
 
 export default {
     name: "ToolSection",
     components: {
         Tool,
+        ToolPanelLabel,
     },
     props: {
         category: {
