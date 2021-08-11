@@ -1,6 +1,7 @@
 """
 Job control via TES.
 """
+from lib.galaxy.jobs import JobWrapper
 from lib.galaxy.jobs.runners.util.job_script import job_script
 import logging
 import os
@@ -63,7 +64,7 @@ class TESJobRunner(AsynchronousJobRunner):
         self._init_monitor_thread()
         self._init_worker_threads()
 
-    def _send_task(self, master_addr, task):
+    def _send_task(self, master_addr:str, task:dict):
         """
             Send job-script to TES
         """
@@ -80,7 +81,7 @@ class TESJobRunner(AsynchronousJobRunner):
             log.error(f"{GENERIC_REMOTE_ERROR} on URL {master_addr}")
             
 
-    def _get_job(self, master_addr, job_id, view = "MINIMAL"):
+    def _get_job(self, master_addr:str, job_id:str, view:str = "MINIMAL"):
         """
             Get Job Status from TES Server
         """
@@ -93,7 +94,7 @@ class TESJobRunner(AsynchronousJobRunner):
             log.error(f"{LOST_REMOTE_ERROR} for job id {job_id}")
 
 
-    def _cancel_job(self, master_addr, job_id):
+    def _cancel_job(self, master_addr:str, job_id:str):
         """
             Cancel the Job on TES Server
         """
@@ -105,7 +106,7 @@ class TESJobRunner(AsynchronousJobRunner):
             log.error(f"{GENERIC_REMOTE_ERROR} for cancellation of job id {job_id}")
 
 
-    def get_upload_path(self, job_id, env=None):
+    def get_upload_path(self, job_id:str, env=None):
         """
             For getting upload URL for staging in the files
         """
@@ -134,7 +135,7 @@ class TESJobRunner(AsynchronousJobRunner):
         )
         return get_client_kwds
 
-    def find_referenced_subfiles(self, directory, command_line, extra_files):
+    def find_referenced_subfiles(self, directory:str, command_line:str, extra_files:list):
         """
         Return list of files below specified `directory` in job inputs. Could
         use more sophisticated logic (match quotes to handle spaces, handle
@@ -149,7 +150,7 @@ class TESJobRunner(AsynchronousJobRunner):
         pattern = r'''[\'\"]?(%s%s[^\s\'\"]+)[\'\"]?''' % (escape(directory), escape(sep))
         return self.find_pattern_references(pattern, command_line, extra_files)
 
-    def _read(self, path):
+    def _read(self, path:str):
         """
         Utility method to quickly read small files (config files and tool
         wrappers) into memory as bytes.
@@ -160,7 +161,7 @@ class TESJobRunner(AsynchronousJobRunner):
         finally:
             input.close()
 
-    def __items(self, command_line, extra_files):
+    def __items(self, command_line:str, extra_files:list):
         """
         Utility method to form the list in required format
         for getting input files using regex
@@ -173,7 +174,7 @@ class TESJobRunner(AsynchronousJobRunner):
         items.extend(config_files.values())
         return items
 
-    def find_pattern_references(self, pattern, command_line, extra_files):
+    def find_pattern_references(self, pattern:str, command_line:str, extra_files:list):
         """
         Finding the list of referenced file, using regex
         """
@@ -182,7 +183,7 @@ class TESJobRunner(AsynchronousJobRunner):
             referenced_files.update(findall(pattern, input_contents))
         return list(referenced_files)
 
-    def file_creation_executor(self, mounted_dir, work_dir):
+    def file_creation_executor(self, mounted_dir:str, work_dir:str):
         """
         Returns the executor for creation of files
         """
@@ -193,7 +194,7 @@ class TESJobRunner(AsynchronousJobRunner):
             }
         return file_executor
 
-    def job_executor(self, mounted_dir, remote_image, command_line, env):
+    def job_executor(self, mounted_dir:str, remote_image:str, command_line:str, env:dict):
         """
         Returns the executor for executing jobs
         """
@@ -205,7 +206,7 @@ class TESJobRunner(AsynchronousJobRunner):
             }
         return job_executor
 
-    def file_staging_out_executor(self, mounted_dir, command):
+    def file_staging_out_executor(self, mounted_dir:str, command:list):
         """
         Returns the executor for staging out of the files
         """
@@ -216,7 +217,7 @@ class TESJobRunner(AsynchronousJobRunner):
             }
         return staging_out_executor
     
-    def base_job_script(self, mounted_dir, work_dir, output_files, description):
+    def base_job_script(self, mounted_dir:str, work_dir:str, output_files:list, description:str):
         """
         Retruns the basic structure for job-script
         """
@@ -234,7 +235,7 @@ class TESJobRunner(AsynchronousJobRunner):
         
         return execution_script
 
-    def output_file_gen_script(self, output_files):
+    def output_file_gen_script(self, output_files:list):
         """
             Generates shell script for generating output files in container
         """
@@ -247,7 +248,7 @@ class TESJobRunner(AsynchronousJobRunner):
         script[-1] = '\n'
         return ' '.join(script)
 
-    def staging_out_command(self, script_path, output_files, api_url):
+    def staging_out_command(self, script_path:str, output_files:list, api_url:str):
         """
             Generates command for staging out of files
         """
@@ -258,7 +259,7 @@ class TESJobRunner(AsynchronousJobRunner):
         
         return command
 
-    def env_variables(self, job_wrapper):
+    def env_variables(self, job_wrapper:JobWrapper):
         """
             Get environment variables from job_wrapper
         """
@@ -269,14 +270,14 @@ class TESJobRunner(AsynchronousJobRunner):
         env_vars["_GALAXY_JOB_HOME_DIR"] = self.container_workdir
         return env_vars
 
-    def input_url(self, api_url, path):
+    def input_url(self, api_url:str, path:str):
         """
             Get URL for path
         """
         file_link = f"{api_url}&path={path}"
         return file_link
 
-    def input_descriptors(self, api_url, input_paths, type = "FILE"):
+    def input_descriptors(self, api_url:str, input_paths:list, type:str = "FILE"):
         """
             Get Input Descriptor for Jobfile
         """
@@ -290,7 +291,7 @@ class TESJobRunner(AsynchronousJobRunner):
             })
         return input_description
 
-    def get_job_directory_files(self, work_dir):
+    def get_job_directory_files(self, work_dir:str):
         """
         Get path for all the files from work directory
         """
@@ -301,7 +302,7 @@ class TESJobRunner(AsynchronousJobRunner):
         
         return paths
 
-    def build_script(self, job_wrapper, client_args):
+    def build_script(self, job_wrapper:JobWrapper, client_args:dict):
         """
         Returns the Job script with required configurations of the job
         """
@@ -348,7 +349,7 @@ class TESJobRunner(AsynchronousJobRunner):
         
         return job_script
 
-    def __get_inputs(self, job_wrapper):
+    def __get_inputs(self, job_wrapper:JobWrapper):
         """Returns the list about the details of input files."""
 
         input_files = []
@@ -359,7 +360,7 @@ class TESJobRunner(AsynchronousJobRunner):
 
         return input_files
 
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper:JobWrapper):
         """Submit the job to TES."""
 
         log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
@@ -390,14 +391,14 @@ class TESJobRunner(AsynchronousJobRunner):
         job_wrapper.set_job_destination(job_destination, job_id)
         self.monitor_job(job_state)
 
-    def get_output_files(self, job_wrapper):
+    def get_output_files(self, job_wrapper:JobWrapper):
         """
         Utility for getting list of Output Files
         """
         output_paths = job_wrapper.get_output_fnames()
         return [str(o) for o in output_paths]
 
-    def __finish_job(self, data, job_wrapper):
+    def __finish_job(self, data:dict, job_wrapper:JobWrapper):
         """
         Utility for finishing job after completion
         """
@@ -417,7 +418,7 @@ class TESJobRunner(AsynchronousJobRunner):
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 
-    def _concat_job_log(self, data, key):
+    def _concat_job_log(self, data:dict, key:str):
         """"
         Utility for concatination required job logs
         """
@@ -436,7 +437,7 @@ class TESJobRunner(AsynchronousJobRunner):
         except:
             return s
 
-    def _get_exit_codes(self, data):
+    def _get_exit_codes(self, data:dict):
         """"
         Utility for getting out exit code of the job
         """
@@ -446,7 +447,7 @@ class TESJobRunner(AsynchronousJobRunner):
         else:
             return 1
 
-    def check_watched_item(self, job_state):
+    def check_watched_item(self, job_state:TESJobState):
         """
         Called by the monitor thread to look at each watched job and deal
         with state changes.
@@ -497,9 +498,8 @@ class TESJobRunner(AsynchronousJobRunner):
 
         return job_state
 
-    def stop_job(self, job_wrapper):
+    def stop_job(self, job_wrapper:JobWrapper):
         """Attempts to delete a task from the task queue"""
-        #TODO: Need to check why this is getting called after the job completion in failed case
         job = job_wrapper.get_job()
 
         job_id = job.job_runner_external_id
@@ -509,7 +509,7 @@ class TESJobRunner(AsynchronousJobRunner):
         master_addr = job.destination_params.get('tes_master_addr')
         self._cancel_job(master_addr, job_id)
 
-    def recover(self, job, job_wrapper):
+    def recover(self, job:model.Job, job_wrapper:JobWrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         # TODO Check if we need any changes here
         job_id = job.get_job_runner_external_id()

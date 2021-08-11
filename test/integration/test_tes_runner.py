@@ -1,16 +1,10 @@
-"""Integration tests for the Kubernetes runner."""
-# Tested on docker for mac 18.06.1-ce-mac73 using the default kubernetes setup,
-# also works on minikube
+"""Integration tests for the TES runner."""
 import collections
 import json
 from lib.galaxy import config
 import os
-import string
-import subprocess
 import tempfile
 import time
-
-import pytest
 
 
 from galaxy.util import unicodify
@@ -19,7 +13,6 @@ from galaxy_test.base.populators import (
     skip_without_tool,
 )
 from galaxy_test.driver import integration_util
-from .test_containerized_jobs import MulledJobTestCases
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 Config = collections.namedtuple('Config', 'path')
@@ -50,8 +43,7 @@ class BaseTESIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
     
     def setUp(self):
         super().setUp()
-        self.galaxy_url = self.url
-        self._app.galaxy_url = self.galaxy_url
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
     
     @classmethod
@@ -85,3 +77,19 @@ class BaseTESIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
         assert details['exit_code'] == 1
         assert details['stdout'] == 'The bool is not true\n\n'
         assert 'The bool is very not true\n' in details['stderr']
+
+    @skip_without_tool('create_2')
+    def test_walltime_limit(self):
+        running_response = self.dataset_populator.run_tool(
+            'create_2',
+            {'sleep_time': 60},
+            self.history_id,
+            assert_ok=False
+        )
+        result = self.dataset_populator.wait_for_tool_run(run_response=running_response,
+                                                          history_id=self.history_id,
+                                                          assert_ok=False).json()
+        details = self.dataset_populator.get_job_details(result['jobs'][0]['id'], full=True).json()
+        assert details['state'] == 'error'
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, assert_ok=False)
+        assert hda_details['misc_info'] == 'Unable to reach the defined URL from TES Container'
