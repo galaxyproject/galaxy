@@ -106,8 +106,12 @@ class GroupRolesManager:
 
     def _serialize_group_role(self, encoded_group_id: EncodedDatabaseIdField, role: model.Role):
         encoded_role_id = self._app.security.encode_id(role.id)
+        try:
+            url  = url_for('role', group_id=encoded_group_id, id=encoded_role_id)
+        except AttributeError:
+            url  = "*deprecated attribute not filled in by FastAPI server*"
         return {
             "id": encoded_role_id,
             "name": role.name,
-            "url": url_for('group_role', group_id=encoded_group_id, id=encoded_role_id)
+            "url": url
         }
