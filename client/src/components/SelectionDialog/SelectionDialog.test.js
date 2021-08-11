@@ -45,7 +45,6 @@ describe("SelectionDialog.vue", () => {
     it("loads header correctly", async () => {
         await localVue.nextTick();
         expect(wrapper.get("#cool-search"));
-        expect(wrapper.get("#select-all"));
     });
 
     it("hideModal called on click cancel", async () => {
