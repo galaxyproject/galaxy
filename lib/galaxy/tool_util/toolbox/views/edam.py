@@ -9,7 +9,6 @@ from galaxy.tool_util.edam_util import (
     ROOT_TOPIC,
 )
 from galaxy.util import (
-    etree,
     ExecutionTimer,
 )
 from .interface import (
@@ -85,10 +84,12 @@ class EdamToolPanelView(ToolPanelView):
             if len(operations[term].keys()) == 0:
                 continue
 
-            elem = etree.Element('label')
-            elem.attrib['text'] = self.edam[term]['label']
-            elem.attrib['id'] = term
-            new_panel[f"label_{term}"] = ToolSectionLabel(elem)
+            label_dict = {
+                'type': 'label',
+                'text': self.edam[term]['label'],
+                'id': term,
+            }
+            new_panel[f"label_{term}"] = ToolSectionLabel(label_dict)
 
             for (term, tool_id, key, val, val_name) in operations[term].values():
                 section = new_panel.get_or_create_section(term, self.edam[term]['label'])
@@ -100,10 +101,12 @@ class EdamToolPanelView(ToolPanelView):
             if len(topics[term].keys()) == 0:
                 continue
 
-            elem = etree.Element('label')
-            elem.attrib['text'] = self.edam[term]['label']
-            elem.attrib['id'] = term
-            new_panel[f"label_{term}"] = ToolSectionLabel(elem)
+            label_dict = {
+                'type': 'label',
+                'text': self.edam[term]['label'],
+                'id': term,
+            }
+            new_panel[f"label_{term}"] = ToolSectionLabel(label_dict)
 
             for (term, tool_id, key, val, val_name) in topics[term].values():
                 section = new_panel.get_or_create_section(term, self.edam[term]['label'])
