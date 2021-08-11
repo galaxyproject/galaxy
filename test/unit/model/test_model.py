@@ -3601,6 +3601,115 @@ class TestRole(BaseTest):
             assert stored_obj.users == [user_role_association]
 
 
+class TestStoredWorkflow(BaseTest):
+
+    # def test_table(self, cls_):
+    #     assert cls_.__tablename__ == 'stored_workflow'
+    #     assert has_index(cls_.__table__, ('ix_stored_workflow_slug', 'slug',))
+
+    def test_columns(self, session, cls_, workflow, user):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        name = 'a'
+        deleted = True
+        hidden = True
+        importable = True
+        slug = 'b'
+        from_path = 'c'
+        published = True
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.user = user
+        obj.latest_workflow = workflow
+        obj.name = name
+        obj.deleted = deleted
+        obj.hidden = hidden
+        obj.importable = importable
+        obj.slug = slug
+        obj.from_path = from_path
+        obj.published = published
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id, unique=True)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.user_id == user.id
+            assert stored_obj.latest_workflow_id == workflow.id
+            assert stored_obj.name == name
+            assert stored_obj.deleted == deleted
+            assert stored_obj.hidden == hidden
+            assert stored_obj.importable == importable
+            assert stored_obj.slug == slug
+            assert stored_obj.from_path == from_path
+            assert stored_obj.published == published
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow,
+        user,
+        workflow_factory,
+        stored_workflow_tag_association,
+        stored_workflow_annotation_association,
+        stored_workflow_rating_association,
+        stored_workflow_tag_association_factory,
+        stored_workflow_user_share_association,
+    ):
+        obj = cls_()
+        obj.user = user
+        obj.latest_workflow = workflow
+        obj.tags.append(stored_workflow_tag_association)
+        obj.annotations.append(stored_workflow_annotation_association)
+        obj.ratings.append(stored_workflow_rating_association)
+        obj.users_shared_with.append(stored_workflow_user_share_association)
+
+        # setup workflow for testing workflows attribure
+        wf = workflow_factory()
+        wf.stored_workflow = obj
+
+        # setup owner tag association for testing owner_tags
+        tag_assoc2 = stored_workflow_tag_association_factory()
+        tag_assoc2.user = user
+        tag_assoc2.stored_workflow = obj
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id, unique=True)
+            assert stored_obj.user.id == user.id
+            assert stored_obj.latest_workflow.id == workflow.id
+            assert stored_obj.workflows[0].id == wf.id
+            assert stored_obj.annotations == [stored_workflow_annotation_association]
+            assert stored_obj.ratings == [stored_workflow_rating_association]
+            # This doesn't test the average amount, just the mapping.
+            assert stored_obj.average_rating == stored_workflow_rating_association.rating
+
+            assert len(stored_obj.tags) == 2
+            assert stored_workflow_tag_association in stored_obj.tags
+            assert tag_assoc2 in stored_obj.tags
+            assert stored_obj.owner_tags == [tag_assoc2]
+            assert stored_obj.users_shared_with == [stored_workflow_user_share_association]
+
+        delete_from_database(session, [wf])
+
+    def test_average_rating(self, session, stored_workflow, user, stored_workflow_rating_association_factory):
+        # StoredWorkflow has been expunged; to access its deferred properties,
+        # it needs to be added back to the session.
+        session.add(stored_workflow)
+        assert stored_workflow.average_rating is None  # With no ratings, we expect None.
+        # Create ratings
+        to_cleanup = []
+        for rating in (1, 2, 3, 4, 5):
+            sw_rating_assoc = stored_workflow_rating_association_factory(user, stored_workflow, rating)
+            persist(session, sw_rating_assoc)
+            to_cleanup.append(sw_rating_assoc)
+        assert stored_workflow.average_rating == 3.0  # Expect average after ratings added.
+        # Cleanup: remove ratings from database
+        delete_from_database(session, to_cleanup)
+
+
 class TestStoredWorkflowAnnotationAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -5953,9 +6062,27 @@ def stored_workflow(model, session, user):
 
 
 @pytest.fixture
+def stored_workflow_annotation_association(model, session):
+    haa = model.StoredWorkflowAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, haa)
+
+
+@pytest.fixture
+def stored_workflow_rating_association(model, session):
+    hda = model.StoredWorkflowRatingAssociation(None, None)
+    yield from dbcleanup_wrapper(session, hda)
+
+
+@pytest.fixture
 def stored_workflow_tag_association(model, session):
     swta = model.StoredWorkflowTagAssociation()
     yield from dbcleanup_wrapper(session, swta)
+
+
+@pytest.fixture
+def stored_workflow_user_share_association(model, session):
+    husa = model.StoredWorkflowUserShareAssociation()
+    yield from dbcleanup_wrapper(session, husa)
 
 
 @pytest.fixture
@@ -6216,6 +6343,20 @@ def library_folder_factory(model):
 def page_rating_association_factory(model):
     def make_instance(*args, **kwds):
         return model.PageRatingAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def stored_workflow_rating_association_factory(model):
+    def make_instance(*args, **kwds):
+        return model.StoredWorkflowRatingAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def stored_workflow_tag_association_factory(model):
+    def make_instance(*args, **kwds):
+        return model.StoredWorkflowTagAssociation(*args, **kwds)
     return make_instance
 
 
