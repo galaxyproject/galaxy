@@ -4591,9 +4591,16 @@ class TestWorkflowInvocationStep(BaseTest):
         implicit_collection_jobs,
         workflow_invocation_step_output_dataset_collection_association,
         workflow_invocation_step_output_dataset_association,
+        workflow_invocation_output_value,
     ):
         session.add(job)  # needed for a lazy load of an attr
         session.add(implicit_collection_jobs)  # needed for a lazy load of an attr
+
+        # setup workflow_invocation_output_value to test the output_value attribute
+        output_value = workflow_invocation_output_value
+        output_value.workflow_invocation = workflow_invocation
+        output_value.workflow_step = workflow_step
+        persist(session, output_value)
 
         obj = cls_()
         obj.workflow_invocation = workflow_invocation
@@ -4611,6 +4618,7 @@ class TestWorkflowInvocationStep(BaseTest):
             assert stored_obj.implicit_collection_jobs.id == implicit_collection_jobs.id
             assert stored_obj.output_dataset_collections == [workflow_invocation_step_output_dataset_collection_association]
             assert stored_obj.output_datasets == [workflow_invocation_step_output_dataset_association]
+            assert stored_obj.output_value.id == workflow_invocation_output_value.id
 
     def test_subworkflow_invocation_attribute(
         self,
@@ -4750,6 +4758,63 @@ class TestWorkflowInvocationOutputDatasetCollectionAssociation(BaseTest):
             assert stored_obj.workflow_step.id == workflow_step.id
             assert stored_obj.dataset_collection.id == history_dataset_collection_association.id
             assert stored_obj.workflow_output.id == workflow_output.id
+
+
+class TestWorkflowInvocationOutputValue(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow_invocation_output_value'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        workflow_invocation,
+        workflow_step,
+        workflow_output,
+    ):
+        value = 'a'
+        obj = cls_()
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+        obj.workflow_output = workflow_output
+        obj.value = value
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.workflow_invocation_id == workflow_invocation.id
+            assert stored_obj.workflow_step_id == workflow_step.id
+            assert stored_obj.workflow_output_id == workflow_output.id
+            assert stored_obj.value == value
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow_invocation,
+        workflow_step,
+        workflow_output,
+        workflow_invocation_step,
+    ):
+        # setup workflow_invocation_step to test the workflow_invocation_step attribute
+        workflow_invocation_step.workflow_invocation = workflow_invocation
+        workflow_invocation_step.workflow_step = workflow_step
+        persist(session, workflow_invocation_step)
+
+        obj = cls_()
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+        obj.workflow_output = workflow_output
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.workflow_invocation.id == workflow_invocation.id
+            assert stored_obj.workflow_step.id == workflow_step.id
+            assert stored_obj.workflow_output.id == workflow_output.id
+            assert stored_obj.workflow_invocation_step[0].id == workflow_invocation_step.id
+
+        delete_from_database(session, [workflow_invocation_step])
 
 
 class TestWorkflowInvocationStepOutputDatasetAssociation(BaseTest):
@@ -5942,6 +6007,12 @@ def workflow_invocation_output_dataset_association(model, session):
 @pytest.fixture
 def workflow_invocation_output_dataset_collection_association(model, session):
     instance = model.WorkflowInvocationOutputDatasetCollectionAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def workflow_invocation_output_value(model, session):
+    instance = model.WorkflowInvocationOutputValue()
     yield from dbcleanup_wrapper(session, instance)
 
 

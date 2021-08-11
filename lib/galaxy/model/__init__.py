@@ -7035,6 +7035,15 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
     output_datasets = relationship('WorkflowInvocationStepOutputDatasetAssociation',
         back_populates='workflow_invocation_step')
     workflow_invocation = relationship('WorkflowInvocation', back_populates='steps')
+    output_value = relationship('WorkflowInvocationOutputValue',
+        foreign_keys='[WorkflowInvocationStep.workflow_invocation_id, WorkflowInvocationStep.workflow_step_id]',
+        primaryjoin=(lambda: and_(
+            WorkflowInvocationStep.workflow_invocation_id == WorkflowInvocationOutputValue.workflow_invocation_id,  # type: ignore
+            WorkflowInvocationStep.workflow_step_id == WorkflowInvocationOutputValue.workflow_step_id,  # type: ignore
+        )),
+        back_populates='workflow_invocation_step',
+        viewonly=True
+    )
 
     subworkflow_invocation_id: column_property
 
@@ -7257,8 +7266,31 @@ class WorkflowInvocationOutputDatasetCollectionAssociation(Base, Dictifiable, Re
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
 
 
-class WorkflowInvocationOutputValue(Dictifiable, RepresentById):
+class WorkflowInvocationOutputValue(Base, Dictifiable, RepresentById):
     """Represents a link to a specified or computed workflow parameter."""
+    __tablename__ = 'workflow_invocation_output_value'
+
+    id = Column(Integer, primary_key=True)
+    workflow_invocation_id = Column(Integer, ForeignKey('workflow_invocation.id'), index=True)
+    workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'))
+    workflow_output_id = Column(Integer, ForeignKey('workflow_output.id'), index=True)
+    value = Column(MutableJSONType)
+
+    workflow_invocation = relationship('WorkflowInvocation', backref="output_values")
+
+    workflow_invocation_step = relationship('WorkflowInvocationStep',
+        foreign_keys='[WorkflowInvocationStep.workflow_invocation_id, WorkflowInvocationStep.workflow_step_id]',
+        primaryjoin=(lambda: and_(
+            WorkflowInvocationStep.workflow_invocation_id == WorkflowInvocationOutputValue.workflow_invocation_id,  # type: ignore
+            WorkflowInvocationStep.workflow_step_id == WorkflowInvocationOutputValue.workflow_step_id,  # type: ignore
+        )),
+        back_populates='output_value',
+        viewonly=True
+    )
+
+    workflow_step = relationship('WorkflowStep')
+    workflow_output = relationship('WorkflowOutput')
+
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'value']
 
 
