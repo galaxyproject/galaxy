@@ -4447,6 +4447,118 @@ class TestWorkerProcess(BaseTest):
             assert stored_obj.update_time == update_time
 
 
+class TestWorkflowInvocationStep(BaseTest):
+
+    # def test_table(self, cls_):
+    #     assert cls_.__tablename__ == 'workflow_invocation_step'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        workflow_invocation,
+        workflow_step,
+        job,
+        implicit_collection_jobs,
+    ):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        state, action = 'a', 'b'
+
+        session.add(job)  # needed for a lazy load of an attr
+        session.add(implicit_collection_jobs)  # needed for a lazy load of an attr
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+        obj.state = state
+        obj.job = job
+        obj.implicit_collection_jobs = implicit_collection_jobs
+        obj.action = action
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.workflow_invocation_id == workflow_invocation.id
+            assert stored_obj.workflow_step_id == workflow_step.id
+            assert stored_obj.state == state
+            assert stored_obj.job_id == job.id
+            assert stored_obj.implicit_collection_jobs_id == implicit_collection_jobs.id
+            assert stored_obj.action == action
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow_invocation,
+        workflow_step,
+        job,
+        implicit_collection_jobs,
+        workflow_invocation_step_output_dataset_collection_association,
+        workflow_invocation_step_output_dataset_association,
+    ):
+        session.add(job)  # needed for a lazy load of an attr
+        session.add(implicit_collection_jobs)  # needed for a lazy load of an attr
+
+        obj = cls_()
+        obj.workflow_invocation = workflow_invocation
+        obj.workflow_step = workflow_step
+        obj.job = job
+        obj.implicit_collection_jobs = implicit_collection_jobs
+        obj.output_dataset_collections.append(workflow_invocation_step_output_dataset_collection_association)
+        obj.output_datasets.append(workflow_invocation_step_output_dataset_association)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.workflow_invocation.id == workflow_invocation.id
+            assert stored_obj.workflow_step.id == workflow_step.id
+            assert stored_obj.job.id == job.id
+            assert stored_obj.implicit_collection_jobs.id == implicit_collection_jobs.id
+            assert stored_obj.output_dataset_collections == [workflow_invocation_step_output_dataset_collection_association]
+            assert stored_obj.output_datasets == [workflow_invocation_step_output_dataset_association]
+
+    def test_subworkflow_invocation_attribute(
+        self,
+        session,
+        cls_,
+        workflow_step,
+        workflow_invocation_to_subworkflow_invocation_association_factory,
+        workflow_invocation_factory,
+    ):
+        # use defaults to create 2 workflows
+        workflow_invocation1 = workflow_invocation_factory()
+        workflow_invocation2 = workflow_invocation_factory()  # this is the subworkflow invocation
+
+        # store to retrieve object ids
+        persist(session, workflow_invocation1)
+        persist(session, workflow_invocation2)
+        persist(session, workflow_step)
+
+        # setup assoc object and store
+        assoc = workflow_invocation_to_subworkflow_invocation_association_factory()
+        assoc.workflow_invocation_id = workflow_invocation1.id
+        assoc.subworkflow_invocation_id = workflow_invocation2.id
+        assoc.workflow_step_id = workflow_step.id
+        persist(session, assoc)
+
+        # setup main object under test
+        obj = cls_()
+        obj.workflow_invocation = workflow_invocation1
+        obj.workflow_step = workflow_step
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.subworkflow_invocation_id == workflow_invocation2.id
+
+        # finish cleanup
+        persisted = [workflow_invocation1, workflow_invocation2, workflow_step, assoc]
+        delete_from_database(session, persisted)
+
+
 class TestWorkflowInvocationOutputDatasetAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -5733,6 +5845,18 @@ def workflow_invocation_step(model, session, workflow_invocation, workflow_step)
 
 
 @pytest.fixture
+def workflow_invocation_step_output_dataset_collection_association(model, session):
+    instance = model.WorkflowInvocationStepOutputDatasetCollectionAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def workflow_invocation_step_output_dataset_association(model, session):
+    instance = model.WorkflowInvocationStepOutputDatasetAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def workflow_output(model, session, workflow_step):
     wo = model.WorkflowOutput(workflow_step)
     yield from dbcleanup_wrapper(session, wo)
@@ -5845,9 +5969,18 @@ def workflow_factory(model):
 
 
 @pytest.fixture
-def workflow_invocation_factory(model):
+def workflow_invocation_factory(model, workflow):
+    def make_instance(**kwds):
+        instance = model.WorkflowInvocation()
+        instance.workflow = kwds.get('workflow', workflow)
+        return instance
+    return make_instance
+
+
+@pytest.fixture
+def workflow_invocation_to_subworkflow_invocation_association_factory(model):
     def make_instance(*args, **kwds):
-        return model.WorkflowInvocation(*args, **kwds)
+        return model.WorkflowInvocationToSubworkflowInvocationAssociation(*args, **kwds)
     return make_instance
 
 
