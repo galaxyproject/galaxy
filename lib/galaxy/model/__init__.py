@@ -6047,13 +6047,42 @@ class StoredWorkflow(HasTags, Dictifiable, RepresentById):
         return rval
 
 
-class Workflow(Dictifiable, RepresentById):
+class Workflow(Base, Dictifiable, RepresentById):
     """
     Workflow represents a revision of a :class:`galaxy.model.StoredWorkflow`.
     A new instance is created for each workflow revision and provides a common parent for the workflow steps.
 
     See :class:`galaxy.model.WorkflowStep` for more information
     """
+    __tablename__ = 'workflow'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    # workflows will belong to either a stored workflow or a parent/nesting workflow.
+    stored_workflow_id = Column(Integer, ForeignKey('stored_workflow.id'), index=True, nullable=True)
+    parent_workflow_id = Column(Integer, ForeignKey('workflow.id'), index=True, nullable=True)
+    name = Column(TEXT)
+    has_cycles = Column(Boolean)
+    has_errors = Column(Boolean)
+    reports_config = Column(MutableJSONType)
+    creator_metadata = Column(MutableJSONType)
+    license = Column(TEXT)
+    uuid = Column(UUIDType, nullable=True)
+
+    steps = relationship('WorkflowStep',
+        backref='workflow',
+        primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),  # type: ignore
+        order_by=lambda: asc(WorkflowStep.order_index),  # type: ignore
+        cascade="all, delete-orphan",
+        lazy=False)
+    parent_workflow_steps = relationship(
+        'WorkflowStep',
+        primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),  # type: ignore
+        back_populates='subworkflow')
+
+    step_count: column_property
+
     dict_collection_visible_keys = ['name', 'has_cycles', 'has_errors']
     dict_element_visible_keys = ['name', 'has_cycles', 'has_errors']
     input_step_types = ['data_input', 'data_collection_input', 'parameter_input']
@@ -8789,4 +8818,9 @@ WorkflowInvocationStep.subworkflow_invocation_id = column_property(
         WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == WorkflowInvocationStep.workflow_invocation_id,
         WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id == WorkflowInvocationStep.workflow_step_id,
     )).scalar_subquery(),
+)
+
+Workflow.step_count = column_property(
+    select(func.count(WorkflowStep.id)).where(Workflow.id == WorkflowStep.workflow_id).scalar_subquery(),
+    deferred=True
 )

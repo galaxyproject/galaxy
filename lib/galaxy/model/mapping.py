@@ -9,7 +9,6 @@ from typing import Optional, Type
 
 from sqlalchemy import (
     and_,
-    asc,
     Boolean,
     Column,
     DateTime,
@@ -230,22 +229,6 @@ model.StoredWorkflow.table = Table(
     Index('ix_stored_workflow_slug', 'slug', mysql_length=200),
 )
 
-model.Workflow.table = Table(
-    "workflow", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    # workflows will belong to either a stored workflow or a parent/nesting workflow.
-    Column("stored_workflow_id", Integer, ForeignKey("stored_workflow.id"), index=True, nullable=True),
-    Column("parent_workflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=True),
-    Column("name", TEXT),
-    Column("has_cycles", Boolean),
-    Column("has_errors", Boolean),
-    Column("reports_config", MutableJSONType),
-    Column("creator_metadata", MutableJSONType),
-    Column("license", TEXT),
-    Column("uuid", UUIDType, nullable=True))
-
 
 # With the tables defined we can define the mappers and setup the
 # relationships between the model objects.
@@ -453,23 +436,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
 #     ),
 # )
 
-mapper_registry.map_imperatively(model.Workflow, model.Workflow.table, properties=dict(
-    steps=relation(model.WorkflowStep,
-        backref='workflow',
-        primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.workflow_id),
-        order_by=asc(model.WorkflowStep.order_index),
-        cascade="all, delete-orphan",
-        lazy=False),
-    step_count=column_property(
-        select(func.count(model.WorkflowStep.id)).where(model.Workflow.table.c.id == model.WorkflowStep.workflow_id).scalar_subquery(),
-        deferred=True
-    ),
-    parent_workflow_steps=relation(
-        model.WorkflowStep,
-        primaryjoin=(lambda: model.Workflow.id == model.WorkflowStep.subworkflow_id),  # type: ignore
-        back_populates='subworkflow'),
-))
-
 mapper_registry.map_imperatively(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
     user=relation(model.User,
         primaryjoin=(model.User.table.c.id == model.StoredWorkflow.table.c.user_id),
@@ -477,11 +443,11 @@ mapper_registry.map_imperatively(model.StoredWorkflow, model.StoredWorkflow.tabl
     workflows=relation(model.Workflow,
         backref='stored_workflow',
         cascade="all, delete-orphan",
-        primaryjoin=(model.StoredWorkflow.table.c.id == model.Workflow.table.c.stored_workflow_id),
+        primaryjoin=(model.StoredWorkflow.table.c.id == model.Workflow.stored_workflow_id),
         order_by=-model.Workflow.id),
     latest_workflow=relation(model.Workflow,
         post_update=True,
-        primaryjoin=(model.StoredWorkflow.table.c.latest_workflow_id == model.Workflow.table.c.id),
+        primaryjoin=(model.StoredWorkflow.table.c.latest_workflow_id == model.Workflow.id),
         lazy=False),
     tags=relation(model.StoredWorkflowTagAssociation,
         order_by=model.StoredWorkflowTagAssociation.id,
