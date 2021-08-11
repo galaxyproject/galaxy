@@ -132,7 +132,9 @@ export default {
                 Vue.set(item, "_rowVariant", _rowVariant);
             }
             this.allSelected = this.checkIfAllSelected();
-            this.selectAllIcon = getIcon(this.allSelected, this.currentDirectory.url);
+            if (this.currentDirectory.url) {
+                this.selectAllIcon = getIcon(this.allSelected, this.currentDirectory.url);
+            }
         },
         /** Collects selected datasets in value array **/
         clicked: function (record) {
@@ -231,11 +233,7 @@ export default {
         checkIfAllSelected() {
             const isAllSelected = this.items.every(({ id }) => this.model.exists(id) || this.isDirectorySelected(id));
 
-            if (
-                isAllSelected &&
-                !this.isDirectorySelected(this.currentDirectory.id) &&
-                !this.currentDirectory.isRootNode
-            ) {
+            if (isAllSelected && !this.isDirectorySelected(this.currentDirectory.id)) {
                 // if all selected, select current folder
                 this.selectedDirectories.push(this.currentDirectory);
             }
@@ -276,7 +274,6 @@ export default {
                                     label: item.label,
                                     details: item.doc,
                                     isLeaf: false,
-                                    isRootNode: true,
                                     url: item.uri_root,
                                     labelTitle: item.uri_root,
                                 };
