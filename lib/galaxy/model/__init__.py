@@ -1811,6 +1811,8 @@ class ImplicitCollectionJobs(Base, RepresentById):
     jobs = relationship('ImplicitCollectionJobsJobAssociation', back_populates='implicit_collection_jobs')
     history_dataset_collection_associations = relationship('HistoryDatasetCollectionAssociation',
         back_populates='implicit_collection_jobs')
+    workflow_invocation_step = relationship('WorkflowInvocationStep',
+        back_populates='implicit_collection_jobs', uselist=False)
 
     class populated_states(str, Enum):
         NEW = 'new'  # New implicit jobs object, unpopulated job associations
@@ -6960,7 +6962,33 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, Re
     dict_element_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
 
 
-class WorkflowInvocationStep(Dictifiable, RepresentById):
+class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
+    __tablename__ = 'workflow_invocation_step'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    workflow_invocation_id = Column(Integer,
+        ForeignKey('workflow_invocation.id'), index=True, nullable=False)
+    workflow_step_id = Column(Integer,
+        ForeignKey('workflow_step.id'), index=True, nullable=False)
+    state = Column(TrimmedString(64), index=True)
+    job_id = Column(Integer, ForeignKey('job.id'), index=True, nullable=True)
+    implicit_collection_jobs_id = Column(Integer,
+        ForeignKey('implicit_collection_jobs.id'), index=True, nullable=True)
+    action = Column(MutableJSONType, nullable=True)
+
+    workflow_step = relationship('WorkflowStep')
+    job = relationship('Job', back_populates='workflow_invocation_step', uselist=False)
+    implicit_collection_jobs = relationship('ImplicitCollectionJobs', back_populates='workflow_invocation_step', uselist=False)
+    output_dataset_collections = relationship(
+        'WorkflowInvocationStepOutputDatasetCollectionAssociation',
+        back_populates='workflow_invocation_step')
+    output_datasets = relationship('WorkflowInvocationStepOutputDatasetAssociation',
+        back_populates='workflow_invocation_step')
+
+    subworkflow_invocation_id: column_property
+
     dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'subworkflow_invocation_id', 'state', 'action']
     dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'subworkflow_invocation_id', 'state', 'action']
 
@@ -8666,4 +8694,12 @@ History.average_rating = column_property(
 Visualization.average_rating = column_property(
     select(func.avg(VisualizationRatingAssociation.rating)).where(VisualizationRatingAssociation.visualization_id == Visualization.id).scalar_subquery(),
     deferred=True
+)
+
+# Must be defined after WorkflowInvocationToSubworkflowInvocationAssociation
+WorkflowInvocationStep.subworkflow_invocation_id = column_property(
+    select(WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id).where(and_(
+        WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == WorkflowInvocationStep.workflow_invocation_id,
+        WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id == WorkflowInvocationStep.workflow_step_id,
+    )).scalar_subquery(),
 )

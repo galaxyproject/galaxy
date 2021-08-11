@@ -258,18 +258,6 @@ model.WorkflowInvocation.table = Table(
     Column('uuid', UUIDType()),
     Column("history_id", Integer, ForeignKey("history.id"), index=True))
 
-model.WorkflowInvocationStep.table = Table(
-    "workflow_invocation_step", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True, nullable=False),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
-    Column("state", TrimmedString(64), index=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=True),
-    Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
-    Column("action", MutableJSONType, nullable=True))
-
 model.WorkflowInvocationOutputValue.table = Table(
     "workflow_invocation_output_value", metadata,
     Column("id", Integer, primary_key=True),
@@ -572,31 +560,14 @@ mapper_registry.map_imperatively(model.WorkflowInvocation, model.WorkflowInvocat
         back_populates='subworkflow_invocation'),
 ))
 
-simple_mapping(model.WorkflowInvocationStep,
-    workflow_step=relation(model.WorkflowStep),
-    job=relation(model.Job, backref=backref('workflow_invocation_step', uselist=False), uselist=False),
-    implicit_collection_jobs=relation(model.ImplicitCollectionJobs, backref=backref('workflow_invocation_step', uselist=False), uselist=False),
-    subworkflow_invocation_id=column_property(
-        select(model.WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id).where(and_(
-            model.WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == model.WorkflowInvocationStep.table.c.workflow_invocation_id,
-            model.WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id == model.WorkflowInvocationStep.table.c.workflow_step_id,
-        )).scalar_subquery(),
-    ),
-    output_dataset_collections=relation(
-        model.WorkflowInvocationStepOutputDatasetCollectionAssociation,
-        back_populates='workflow_invocation_step'),
-    output_datasets=relation(model.WorkflowInvocationStepOutputDatasetAssociation,
-        back_populates='workflow_invocation_step'),
-)
-
 simple_mapping(
     model.WorkflowInvocationOutputValue,
     workflow_invocation=relation(model.WorkflowInvocation, backref="output_values"),
     workflow_invocation_step=relation(model.WorkflowInvocationStep,
-        foreign_keys=[model.WorkflowInvocationStep.table.c.workflow_invocation_id, model.WorkflowInvocationStep.table.c.workflow_step_id],
+        foreign_keys=[model.WorkflowInvocationStep.workflow_invocation_id, model.WorkflowInvocationStep.workflow_step_id],
         primaryjoin=and_(
-            model.WorkflowInvocationStep.table.c.workflow_invocation_id == model.WorkflowInvocationOutputValue.table.c.workflow_invocation_id,
-            model.WorkflowInvocationStep.table.c.workflow_step_id == model.WorkflowInvocationOutputValue.table.c.workflow_step_id,
+            model.WorkflowInvocationStep.workflow_invocation_id == model.WorkflowInvocationOutputValue.table.c.workflow_invocation_id,
+            model.WorkflowInvocationStep.workflow_step_id == model.WorkflowInvocationOutputValue.table.c.workflow_step_id,
         ),
         backref='output_value',
         viewonly=True
@@ -647,6 +618,7 @@ mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     container=relation('JobContainerAssociation', back_populates='job', uselist=False),
     data_manager_association=relation('DataManagerJobAssociation', back_populates='job', uselist=False),
     history_dataset_collection_associations=relation('HistoryDatasetCollectionAssociation', back_populates='job'),
+    workflow_invocation_step=relation('WorkflowInvocationStep', back_populates='job', uselist=False),
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],
