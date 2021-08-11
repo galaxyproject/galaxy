@@ -6601,10 +6601,10 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
     non_terminal_states = [states.NEW, states.READY]
 
-    def __init__(self):
-        self.subworkflow_invocations = []
-        self.step_states = []
-        self.steps = []
+    def __init__(self):  # TODO no need
+        self.subworkflow_invocations = []  # TODO instrumented attribute / overwritten
+        self.step_states = []  # TODO instrumented attribute / overwritten
+        self.steps = []  # TODO instrumented attribute / overwritten
         self.workflow_id = None
 
     def create_subworkflow_invocation_for_step(self, step):
