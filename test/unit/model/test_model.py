@@ -4455,8 +4455,8 @@ class TestWorkerProcess(BaseTest):
 
 class TestWorkflow(BaseTest):
 
-    # def test_table(self, cls_):
-    #     assert cls_.__tablename__ == 'workflow'
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow'
 
     def test_columns(self, session, cls_, stored_workflow, workflow):
         create_time = datetime.now()
