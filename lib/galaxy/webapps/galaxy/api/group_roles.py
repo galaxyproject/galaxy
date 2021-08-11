@@ -1,11 +1,10 @@
 """
 API operations on Group objects.
 """
-
-from lib.galaxy.schema.schema import GroupRoleListModel, GroupRoleModel
 import logging
 
 from fastapi import Path
+from lib.galaxy.schema.schema import GroupRoleListModel, GroupRoleModel
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.group_roles import GroupRolesManager
@@ -17,8 +16,8 @@ from galaxy.web import (
 from . import (
     BaseGalaxyAPIController,
     depends,
-    Router,
-    DependsOnTrans
+    DependsOnTrans,
+    Router
 )
 
 
