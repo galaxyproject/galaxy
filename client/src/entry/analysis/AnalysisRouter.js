@@ -399,6 +399,7 @@ export const getAnalysisRouter = (Galaxy) => {
             this._display_vue_helper(DatasetError, { datasetId: datasetId });
         },
 
+  
         /**  */
         home: function (params) {
             // TODO: to router, remove Globals
