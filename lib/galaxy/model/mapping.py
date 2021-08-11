@@ -28,7 +28,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.orm import backref, class_mapper, column_property, deferred, object_session, relation
+from sqlalchemy.orm import class_mapper, column_property, deferred, object_session, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import exists
 
@@ -245,18 +245,6 @@ model.Workflow.table = Table(
     Column("creator_metadata", MutableJSONType),
     Column("license", TEXT),
     Column("uuid", UUIDType, nullable=True))
-
-model.WorkflowInvocation.table = Table(
-    "workflow_invocation", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now, index=True),
-    Column("workflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=False),
-    Column("state", TrimmedString(64), index=True),
-    Column("scheduler", TrimmedString(255), index=True),
-    Column("handler", TrimmedString(255), index=True),
-    Column('uuid', UUIDType()),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True))
 
 model.WorkflowInvocationOutputValue.table = Table(
     "workflow_invocation_output_value", metadata,
@@ -531,34 +519,6 @@ mapper_registry.map_imperatively(model.StoredWorkflow, model.StoredWorkflow.tabl
 #   StoredWorkflow.users_shared_with
 # returns a list of users that workflow is shared with.
 model.StoredWorkflow.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-mapper_registry.map_imperatively(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict(
-    history=relation(model.History, backref=backref('workflow_invocations', uselist=True)),
-    input_parameters=relation(model.WorkflowRequestInputParameter, back_populates='workflow_invocation'),
-    step_states=relation(model.WorkflowRequestStepState, backref='workflow_invocation'),
-    input_step_parameters=relation(model.WorkflowRequestInputStepParameter,
-        backref='workflow_invocation'),
-    input_datasets=relation(model.WorkflowRequestToInputDatasetAssociation,
-        backref='workflow_invocation'),
-    input_dataset_collections=relation(model.WorkflowRequestToInputDatasetCollectionAssociation,
-        backref='workflow_invocation'),
-    subworkflow_invocations=relation(model.WorkflowInvocationToSubworkflowInvocationAssociation,
-        primaryjoin=(model.WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == model.WorkflowInvocation.table.c.id),
-        backref=backref("parent_workflow_invocation", uselist=False),
-        uselist=True,
-    ),
-    steps=relation(model.WorkflowInvocationStep,
-        backref="workflow_invocation"),
-    workflow=relation(model.Workflow),
-    output_dataset_collections=relation(model.WorkflowInvocationOutputDatasetCollectionAssociation,
-        back_populates='workflow_invocation'),
-    output_datasets=relation(model.WorkflowInvocationOutputDatasetAssociation,
-        back_populates='workflow_invocation'),
-    parent_workflow_invocation_association=relation(model.WorkflowInvocationToSubworkflowInvocationAssociation,
-        primaryjoin=(
-            model.WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id == model.WorkflowInvocation.table.c.id),
-        back_populates='subworkflow_invocation'),
-))
 
 simple_mapping(
     model.WorkflowInvocationOutputValue,
