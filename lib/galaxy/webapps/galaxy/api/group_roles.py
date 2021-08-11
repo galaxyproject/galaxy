@@ -15,9 +15,9 @@ from galaxy.web import (
     require_admin,
 )
 from . import (
-    BaseGalaxyAPIController, 
-    depends, 
-    Router, 
+    BaseGalaxyAPIController,
+    depends,
+    Router,
     DependsOnTrans
 )
 
@@ -46,13 +46,13 @@ class FastAPIGroupRoles:
     @router.get('/api/groups/{group_id}/roles',
                 require_admin=True,
                 summary='Displays a collection (list) of groups.')
-    def index(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam) -> GroupRoleListModel:
+    def indexAfe(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam) -> GroupRoleListModel:
         return self.manager.index(trans, group_id)
 
     @router.get('/api/groups/{group_id}/roles/{role_id}',
                 require_admin=True,
                 summary='Displays information about a group role.')
-    def show(self,  trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam, role_id: EncodedDatabaseIdField = RoleIDParam) -> GroupRoleModel:
+    def show(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam, role_id: EncodedDatabaseIdField = RoleIDParam) -> GroupRoleModel:
         return self.manager.show(trans, role_id, group_id)
 
     @router.put('/api/groups/{group_id}/roles/{role_id}',
@@ -62,8 +62,8 @@ class FastAPIGroupRoles:
         return self.manager.update(trans, role_id, group_id)
 
     @router.delete('/api/groups/{group_id}/roles/{role_id}',
-                    require_admin=True,
-                    summary='Removes a role from a group')
+                   require_admin=True,
+                   summary='Removes a role from a group')
     def delete(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam, role_id: EncodedDatabaseIdField = RoleIDParam):
         return self.manager.delete(trans, role_id, group_id)
 

@@ -1909,7 +1909,8 @@ class GroupRoleModel(BaseModel):
     id: EncodedDatabaseIdField = RoleIdField
     name: str = RoleNameField
     url: str = Field(title="URL", description="URL for the group role")
-    
+
+
 class GroupRoleListModel(BaseModel):
     __root__: List[GroupRoleModel]
 
