@@ -33,7 +33,7 @@ kamaki
 watchdog
 
 # Error reporters optional modules
-python-gitlab
+python-gitlab>=2.10.0
 pygithub
 influxdb
 
