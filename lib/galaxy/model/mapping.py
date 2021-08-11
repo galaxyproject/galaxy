@@ -246,15 +246,6 @@ model.Workflow.table = Table(
     Column("license", TEXT),
     Column("uuid", UUIDType, nullable=True))
 
-model.WorkflowInvocationOutputValue.table = Table(
-    "workflow_invocation_output_value", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
-    Column("value", MutableJSONType),
-)
-
 
 # With the tables defined we can define the mappers and setup the
 # relationships between the model objects.
@@ -519,22 +510,6 @@ mapper_registry.map_imperatively(model.StoredWorkflow, model.StoredWorkflow.tabl
 #   StoredWorkflow.users_shared_with
 # returns a list of users that workflow is shared with.
 model.StoredWorkflow.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-simple_mapping(
-    model.WorkflowInvocationOutputValue,
-    workflow_invocation=relation(model.WorkflowInvocation, backref="output_values"),
-    workflow_invocation_step=relation(model.WorkflowInvocationStep,
-        foreign_keys=[model.WorkflowInvocationStep.workflow_invocation_id, model.WorkflowInvocationStep.workflow_step_id],
-        primaryjoin=and_(
-            model.WorkflowInvocationStep.workflow_invocation_id == model.WorkflowInvocationOutputValue.table.c.workflow_invocation_id,
-            model.WorkflowInvocationStep.workflow_step_id == model.WorkflowInvocationOutputValue.table.c.workflow_step_id,
-        ),
-        backref='output_value',
-        viewonly=True
-    ),
-    workflow_step=relation(model.WorkflowStep),
-    workflow_output=relation(model.WorkflowOutput),
-)
 
 # Set up proxy so that
 #   Page.users_shared_with
