@@ -32,7 +32,20 @@ export default {
         LoadingSpan,
         RepositoryDetails,
     },
-    props: ["query", "scrolled", "toolshedUrl"],
+    props: {
+      query: {
+        type: String,
+        required: true
+      },
+      scrolled: {
+        type: Boolean,
+        required: true,
+      },
+      toolshedUrl: {
+        type: String,
+        required: true
+      },
+    },
     data() {
         return {
             repositories: [],

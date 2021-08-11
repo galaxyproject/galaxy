@@ -67,7 +67,16 @@ export default {
         InstallationButton,
         RepositoryTools,
     },
-    props: ["repo", "toolshedUrl"],
+    props: {
+      repo: {
+        type: Object,
+        required: true
+      },
+      toolshedUrl: {
+        type: String,
+        required: true
+      },
+    },
     data() {
         return {
             repoChecked: "fa fa-check text-success",

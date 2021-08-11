@@ -20,7 +20,12 @@ import RepositoryDetails from "../RepositoryDetails/Index.vue";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
-    props: ["repo"],
+    props: {
+      repo: {
+        type: Object,
+        required: true
+      }
+    },
     components: {
         LoadingSpan,
         RepositoryDetails,

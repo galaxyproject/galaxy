@@ -60,7 +60,6 @@ import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
 import Monitor from "./Monitor";
 import RepositoryDetails from "./Details";
-import {getGalaxyInstance} from "../../../app";
 
 Vue.use(BootstrapVue);
 
@@ -70,7 +69,12 @@ export default {
         Monitor,
         RepositoryDetails,
     },
-    props: ["filter"],
+    props: {
+      filter: {
+        type: String,
+        required: true
+      }
+    },
     data() {
 
         return {
