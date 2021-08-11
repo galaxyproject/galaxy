@@ -2343,6 +2343,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
     default_permissions = relationship('DefaultHistoryPermissions', back_populates='history')
     users_shared_with = relationship('HistoryUserShareAssociation', back_populates='history')
     galaxy_sessions = relationship('GalaxySessionToHistoryAssociation', back_populates='history')
+    workflow_invocations = relationship('WorkflowInvocation', back_populates='history')
 
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
@@ -6588,7 +6589,48 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
         self.order_index = None
 
 
-class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
+class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
+    __tablename__ = 'workflow_invocation'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now, index=True)
+    workflow_id = Column(Integer, ForeignKey('workflow.id'), index=True, nullable=False)
+    state = Column(TrimmedString(64), index=True)
+    scheduler = Column(TrimmedString(255), index=True)
+    handler = Column(TrimmedString(255), index=True)
+    uuid = Column(UUIDType())
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+
+    history = relationship('History', back_populates='workflow_invocations')
+    input_parameters = relationship('WorkflowRequestInputParameter',
+        back_populates='workflow_invocation')
+    step_states = relationship('WorkflowRequestStepState', back_populates='workflow_invocation')
+    input_step_parameters = relationship('WorkflowRequestInputStepParameter',
+        back_populates='workflow_invocation')
+    input_datasets = relationship('WorkflowRequestToInputDatasetAssociation',
+        back_populates='workflow_invocation')
+    input_dataset_collections = relationship('WorkflowRequestToInputDatasetCollectionAssociation',
+        back_populates='workflow_invocation')
+    subworkflow_invocations = relationship('WorkflowInvocationToSubworkflowInvocationAssociation',
+        primaryjoin=(lambda:
+            WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id  # type: ignore
+                == WorkflowInvocation.id),  # type: ignore
+        back_populates='parent_workflow_invocation',
+        uselist=True,
+    )
+    steps = relationship('WorkflowInvocationStep', back_populates='workflow_invocation')
+    workflow = relationship('Workflow')
+    output_dataset_collections = relationship('WorkflowInvocationOutputDatasetCollectionAssociation',
+        back_populates='workflow_invocation')
+    output_datasets = relationship('WorkflowInvocationOutputDatasetAssociation',
+        back_populates='workflow_invocation')
+    parent_workflow_invocation_association = relationship('WorkflowInvocationToSubworkflowInvocationAssociation',
+        primaryjoin=(lambda:
+            WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id  # type: ignore
+                == WorkflowInvocation.id),  # type: ignore
+        back_populates='subworkflow_invocation')
+
     dict_collection_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
     dict_element_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
 
@@ -6957,7 +6999,13 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, Re
         uselist=False,
     )
     workflow_step = relationship('WorkflowStep')
-
+    parent_workflow_invocation = relationship('WorkflowInvocation',
+        primaryjoin=(lambda:
+            WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id  # type: ignore
+                == WorkflowInvocation.id),  # type: ignore
+        back_populates='subworkflow_invocations',
+        uselist=False,
+    )
     dict_collection_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
     dict_element_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
 
@@ -6986,6 +7034,7 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
         back_populates='workflow_invocation_step')
     output_datasets = relationship('WorkflowInvocationStepOutputDatasetAssociation',
         back_populates='workflow_invocation_step')
+    workflow_invocation = relationship('WorkflowInvocation', back_populates='steps')
 
     subworkflow_invocation_id: column_property
 
@@ -7106,6 +7155,7 @@ class WorkflowRequestStepState(Base, Dictifiable, RepresentById):
     workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'))
     value = Column(MutableJSONType)
     workflow_step = relationship('WorkflowStep')
+    workflow_invocation = relationship('WorkflowInvocation', back_populates='step_states')
 
     dict_collection_visible_keys = ['id', 'name', 'value', 'workflow_step_id']
 
@@ -7126,8 +7176,10 @@ class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, RepresentById)
     workflow_invocation_id = Column(Integer, ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id = Column(Integer, ForeignKey("workflow_step.id"))
     dataset_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True)
+
     workflow_step = relationship('WorkflowStep')
     dataset = relationship('HistoryDatasetAssociation')
+    workflow_invocation = relationship('WorkflowInvocation', back_populates='input_datasets')
 
     history_content_type = "dataset"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
@@ -7145,6 +7197,7 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Base, Dictifiable, Repr
     dataset_collection_id = Column(Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
     workflow_step = relationship('WorkflowStep')
     dataset_collection = relationship('HistoryDatasetCollectionAssociation')
+    workflow_invocation = relationship('WorkflowInvocation', back_populates='input_dataset_collections')
 
     history_content_type = "dataset_collection"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
@@ -7159,7 +7212,9 @@ class WorkflowRequestInputStepParameter(Base, Dictifiable, RepresentById):
     workflow_invocation_id = Column(Integer, ForeignKey('workflow_invocation.id'), index=True)
     workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'))
     parameter_value = Column(MutableJSONType)
+
     workflow_step = relationship('WorkflowStep')
+    workflow_invocation = relationship('WorkflowInvocation', back_populates='input_step_parameters')
 
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value']
 

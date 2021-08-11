@@ -1288,6 +1288,7 @@ class TestHistory(BaseTest):
         default_history_permissions,
         history_user_share_association,
         galaxy_session_history_association,
+        workflow_invocation,
     ):
         obj = cls_()
         obj.user = user
@@ -1303,6 +1304,7 @@ class TestHistory(BaseTest):
         obj.default_permissions.append(default_history_permissions)
         obj.users_shared_with.append(history_user_share_association)
         obj.galaxy_sessions.append(galaxy_session_history_association)
+        obj.workflow_invocations.append(workflow_invocation)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -1322,6 +1324,7 @@ class TestHistory(BaseTest):
             assert stored_obj.users_shared_with == [history_user_share_association]
             assert stored_obj.default_permissions == [default_history_permissions]
             assert stored_obj.galaxy_sessions == [galaxy_session_history_association]
+            assert stored_obj.workflow_invocations == [workflow_invocation]
 
     def test_average_rating(self, session, history, user, history_rating_association_factory):
         # History has been expunged; to access its deferred properties,
@@ -4452,8 +4455,8 @@ class TestWorkerProcess(BaseTest):
 
 class TestWorkflowInvocation(BaseTest):
 
-    # def test_table(self, cls_):
-    #     assert cls_.__tablename__ == 'workflow_invocation'
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'workflow_invocation'
 
     def test_columns(self, session, cls_, workflow, history):
         create_time = datetime.now()
@@ -4863,15 +4866,21 @@ class TestWorkflowInvocationToSubworkflowInvocationAssociation(BaseTest):
         workflow_invocation,
         workflow_step,
         workflow,
+        workflow_invocation_factory,
     ):
+        parent_workflow_invocation = workflow_invocation_factory()
+        persist(session, parent_workflow_invocation)
+
         obj = cls_()
         obj.subworkflow_invocation = workflow_invocation  # We need only 1 instance, so we use the fixture
         obj.workflow_step = workflow_step
+        obj.parent_workflow_invocation = parent_workflow_invocation
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.subworkflow_invocation.id == workflow_invocation.id
             assert stored_obj.workflow_step.id == workflow_step.id
+            assert stored_obj.parent_workflow_invocation.id == parent_workflow_invocation.id
 
 
 class TestWorkflowOutput(BaseTest):
