@@ -60,6 +60,7 @@ import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
 import Monitor from "./Monitor";
 import RepositoryDetails from "./Details";
+import {getGalaxyInstance} from "../../../app";
 
 Vue.use(BootstrapVue);
 
@@ -71,21 +72,9 @@ export default {
     },
     props: ["filter"],
     data() {
+
         return {
             error: null,
-            fields: [
-                {
-                    key: "name",
-                    sortable: true,
-                    sortByFormatted: (value, key, item) => {
-                        return `${this.isLatest(item)}_${value}`;
-                    },
-                },
-                {
-                    key: "owner",
-                    sortable: true,
-                },
-            ],
             loading: true,
             message: null,
             messageVariant: null,
@@ -105,6 +94,35 @@ export default {
         showMessage() {
             return !!this.message;
         },
+        numToolsheds() {
+            const toolsheds = new Set();
+            this.repositories.forEach((x) => {
+              toolsheds.add(x.tool_shed)
+            });
+            return toolsheds.size
+        },
+        fields() {
+            const fields = [
+                  {
+                    key: "name",
+                    sortable: true,
+                    sortByFormatted: (value, key, item) => {
+                      return `${this.isLatest(item)}_${value}`;
+                    },
+                  },
+                  {
+                    key: "owner",
+                    sortable: true,
+                  },
+                ];
+            if (this.numToolsheds > 1) {
+                fields.push({
+                  key: "tool_shed",
+                  sortable: true,
+                });
+            }
+            return fields;
+        }
     },
     created() {
         this.root = getAppRoot();

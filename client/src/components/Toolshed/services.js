@@ -134,6 +134,7 @@ export class Services {
                 return (
                     getSortValue(a.name, b.name) ||
                     getSortValue(a.owner, b.owner) ||
+                    getSortValue(a.tool_shed, b.tool_shed) ||
                     getSortValue(parseInt(b.ctx_rev), parseInt(a.ctx_rev))
                 );
             });
@@ -141,7 +142,7 @@ export class Services {
         const hash = {};
         const repositories = [];
         incoming.forEach((x) => {
-            const hashCode = `${x.name}_${x.owner}`;
+            const hashCode = `${x.name}_${x.owner}_${x.tool_shed}`;
             if (!filter || filter(x)) {
                 if (!hash[hashCode]) {
                     hash[hashCode] = true;
