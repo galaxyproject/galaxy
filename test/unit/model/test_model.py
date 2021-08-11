@@ -4450,6 +4450,91 @@ class TestWorkerProcess(BaseTest):
             assert stored_obj.update_time == update_time
 
 
+class TestWorkflowInvocation(BaseTest):
+
+    # def test_table(self, cls_):
+    #     assert cls_.__tablename__ == 'workflow_invocation'
+
+    def test_columns(self, session, cls_, workflow, history):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        state = 'a'
+        scheduler = 'b'
+        handler = 'c'
+        uuid = uuid4()
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.workflow = workflow
+        obj.state = state
+        obj.scheduler = scheduler
+        obj.handler = handler
+        obj.uuid = uuid
+        obj.history = history
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.workflow_id == workflow.id
+            assert stored_obj.state == state
+            assert stored_obj.scheduler == scheduler
+            assert stored_obj.handler == handler
+            assert stored_obj.uuid == uuid
+            assert stored_obj.history_id == history.id
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow,
+        history,
+        workflow_invocation_output_dataset_association,
+        workflow_invocation_output_dataset_collection_association,
+        workflow_invocation_step,
+        workflow_invocation_to_subworkflow_invocation_association_factory,
+        workflow_request_input_parameter,
+        workflow_request_input_step_parameter,
+        workflow_request_step_state,
+        workflow_request_to_input_dataset_association,
+        workflow_request_to_input_dataset_collection_association,
+    ):
+        subworkflow_invocation_assoc = workflow_invocation_to_subworkflow_invocation_association_factory()
+        parent_workflow_invocation_assoc = workflow_invocation_to_subworkflow_invocation_association_factory()
+
+        obj = cls_()
+        obj.workflow = workflow
+        obj.history = history
+        obj.input_parameters.append(workflow_request_input_parameter)
+        obj.step_states.append(workflow_request_step_state)
+        obj.input_step_parameters.append(workflow_request_input_step_parameter)
+        obj.input_datasets.append(workflow_request_to_input_dataset_association)
+        obj.input_dataset_collections.append(workflow_request_to_input_dataset_collection_association)
+        obj.subworkflow_invocations.append(subworkflow_invocation_assoc)
+        obj.steps.append(workflow_invocation_step)
+        obj.output_dataset_collections.append(workflow_invocation_output_dataset_collection_association)
+        obj.output_datasets.append(workflow_invocation_output_dataset_association)
+        obj.parent_workflow_invocation_association.append(parent_workflow_invocation_assoc)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.workflow.id == workflow.id
+            assert stored_obj.history.id == history.id
+
+            assert stored_obj.input_parameters == [workflow_request_input_parameter]
+            assert stored_obj.step_states == [workflow_request_step_state]
+            assert stored_obj.input_step_parameters == [workflow_request_input_step_parameter]
+            assert stored_obj.input_datasets == [workflow_request_to_input_dataset_association]
+            assert stored_obj.input_dataset_collections == [workflow_request_to_input_dataset_collection_association]
+            assert stored_obj.subworkflow_invocations == [subworkflow_invocation_assoc]
+            assert stored_obj.steps == [workflow_invocation_step]
+            assert stored_obj.output_dataset_collections == [workflow_invocation_output_dataset_collection_association]
+            assert stored_obj.output_datasets == [workflow_invocation_output_dataset_association]
+            assert stored_obj.parent_workflow_invocation_association == [parent_workflow_invocation_assoc]
+
+
 class TestWorkflowInvocationStep(BaseTest):
 
     def test_table(self, cls_):
@@ -5840,6 +5925,18 @@ def workflow_invocation(model, session, workflow):
 
 
 @pytest.fixture
+def workflow_invocation_output_dataset_association(model, session):
+    instance = model.WorkflowInvocationOutputDatasetAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def workflow_invocation_output_dataset_collection_association(model, session):
+    instance = model.WorkflowInvocationOutputDatasetCollectionAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def workflow_invocation_step(model, session, workflow_invocation, workflow_step):
     wis = model.WorkflowInvocationStep()
     wis.workflow_invocation = workflow_invocation
@@ -5863,6 +5960,36 @@ def workflow_invocation_step_output_dataset_association(model, session):
 def workflow_output(model, session, workflow_step):
     wo = model.WorkflowOutput(workflow_step)
     yield from dbcleanup_wrapper(session, wo)
+
+
+@pytest.fixture
+def workflow_request_input_parameter(model, session):
+    instance = model.WorkflowRequestInputParameter()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def workflow_request_input_step_parameter(model, session):
+    instance = model.WorkflowRequestInputStepParameter()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def workflow_request_step_state(model, session):
+    instance = model.WorkflowRequestStepState()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def workflow_request_to_input_dataset_association(model, session):
+    instance = model.WorkflowRequestToInputDatasetAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def workflow_request_to_input_dataset_collection_association(model, session):
+    instance = model.WorkflowRequestToInputDatasetCollectionAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
