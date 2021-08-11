@@ -438,6 +438,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         expected = Counter([])
         actual = Counter([converter["tool_id"] for converter in converters.json()])
         assert actual == expected
+
     def test_collection_tools_tag_propagation(self):
         elements = [{"src": "files", "tags": ["name:element_tag"]}]
         targets = [{
