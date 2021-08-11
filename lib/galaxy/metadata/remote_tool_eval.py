@@ -2,6 +2,7 @@ import os
 from typing import NamedTuple
 
 from galaxy import model
+from galaxy.job_execution.setup import JobIO
 from galaxy.metadata.set_metadata import (
     get_metadata_params,
     get_object_store,
@@ -44,18 +45,19 @@ def main():
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
     object_store = get_object_store()
     import_store = store.imported_store_for_metadata(WORKING_DIRECTORY)
-    for job in import_store.sa_session.objects:
-        if isinstance(job, Job):
-            break
+    job = next(iter(import_store.sa_session.objects_by_class_and_id[Job].values()))
     tool_app_config = ToolAppConfig('tool_app', '/tmp')
     app = ToolApp(sa_session=import_store.sa_session, tool_app_config=tool_app_config, datatypes_registry=datatypes_registry, object_store=object_store)
     # TODO: could try to serialize just a minimal tool variant instead of the whole thing ?
     tool_source = get_tool_source(os.path.join(WORKING_DIRECTORY, 'tool.xml'))
     tool = create_tool_from_source(app, tool_source=tool_source)
+    job_io = JobIO.from_json(os.path.join(WORKING_DIRECTORY, 'job_io.json'), sa_session=import_store.sa_session, job=job)
 
-    tool_evaluator = evaluation.RemoteToolEvaluator(app=app, tool=tool, job=job, local_working_directory=WORKING_DIRECTORY)
+    tool_evaluator = evaluation.RemoteToolEvaluator(app=app, tool=tool, job=job, local_working_directory=WORKING_DIRECTORY, job_io=job_io)
     tool_evaluator.setup()
-    tool_evaluator.build()
+    with open(os.path.join(WORKING_DIRECTORY, 'tool_script.sh'), 'w') as out:
+        command_line, extra_filenames, environment_variables = tool_evaluator.build()
+        out.write(command_line)
 
 
 if __name__ == "__main__":

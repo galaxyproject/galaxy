@@ -214,7 +214,7 @@ class MockObjectStore:
 
 
 # Poor man's mocking. Need to get a real mocking library as real Galaxy development
-# dependnecy.
+# dependency.
 @contextmanager
 def _mock_tool_evaluator(mock_constructor):
     name = evaluation.ToolEvaluator.__name__

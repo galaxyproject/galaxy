@@ -7,6 +7,7 @@ from typing import Any, Dict
 
 from pkg_resources import resource_string
 
+from galaxy.job_execution.setup import JobIO
 from galaxy.util import (
     RWXR_XR_X,
     unicodify,
@@ -106,11 +107,11 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     return template.safe_substitute(template_params)
 
 
-def check_script_integrity(config):
-    return getattr(config, "check_job_script_integrity", DEFAULT_INTEGRITY_CHECK)
-
-
-def write_script(path, contents, config, mode=RWXR_XR_X):
+def write_script(
+        path,
+        contents,
+        job_io: JobIO,
+        mode=RWXR_XR_X):
     dir = os.path.dirname(path)
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -118,17 +119,14 @@ def write_script(path, contents, config, mode=RWXR_XR_X):
     with open(path, 'w', encoding='utf-8') as f:
         f.write(unicodify(contents))
     os.chmod(path, mode)
-    _handle_script_integrity(path, config)
+    if job_io.check_job_script_integrity:
+        _handle_script_integrity(path, job_io.check_job_script_integrity_count, job_io.check_job_script_integrity_sleep)
 
 
-def _handle_script_integrity(path, config):
-    if not check_script_integrity(config):
-        return
+def _handle_script_integrity(path, check_job_script_integrity_count, check_job_script_integrity_sleep):
 
     script_integrity_verified = False
-    count = getattr(config, "check_job_script_integrity_count", DEFAULT_INTEGRITY_COUNT)
-    sleep_amt = getattr(config, "check_job_script_integrity_sleep", DEFAULT_INTEGRITY_SLEEP)
-    for _ in range(count):
+    for _ in range(check_job_script_integrity_count):
         try:
             returncode = subprocess.call([path], env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
             if returncode == 42:
@@ -150,14 +148,13 @@ def _handle_script_integrity(path, config):
         except Exception as exc:
             log.debug("Script not available yet: %s", unicodify(exc))
 
-        time.sleep(sleep_amt)
+        time.sleep(check_job_script_integrity_sleep)
 
     if not script_integrity_verified:
         raise Exception(f"Failed to write job script '{path}', could not verify job script integrity.")
 
 
 __all__ = (
-    'check_script_integrity',
     'job_script',
     'write_script',
     'INTEGRITY_INJECTION',

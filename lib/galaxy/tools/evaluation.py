@@ -7,7 +7,11 @@ from typing import Any, Dict, List
 
 from galaxy import model
 from galaxy.files import ProvidesUserFileSourcesUserContext
-from galaxy.job_execution.setup import ensure_configs_directory
+from galaxy.job_execution.setup import (
+    ensure_configs_directory,
+    JobIO,
+)
+from galaxy.jobs import SharedComputeEnvironment
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.tools import global_tool_errors
@@ -88,6 +92,7 @@ What won't work:
 - Can't just serialize param_dict and overwrite inputs (I think), too many custom methods that could be called
 
 """
+
 
 class ToolEvaluator:
     """ An abstraction linking together a tool and a job runtime to evaluate
@@ -666,18 +671,16 @@ class RemoteToolEvaluator(ToolEvaluator):
     Evaluates tool inputs without access to database
     """
 
+    def __init__(self, app, tool, job, local_working_directory, job_io: JobIO):
+        super().__init__(app, tool, job, local_working_directory)
+        self.job_io = job_io
+        self._compute_environment = None
+
     @property
     def compute_environment(self):
-        return Bunch(
-            working_directory=lambda: self.local_working_directory, 
-            galaxy_url=lambda: 'bla',
-            input_path_rewrite= lambda dataset: False,
-            output_path_rewrite= lambda dataset: False,
-            home_directory= lambda: '/tmp',
-            tmp_directory= lambda: '/tmp',
-            tool_directory= lambda: '/tmp',
-            new_file_path= lambda: '/tmp',
-            )
+        if self._compute_environment is None:
+            self._compute_environment = SharedComputeEnvironment(job_io=self.job_io, job=self.job)
+        return self._compute_environment
 
     def setup(self):
         job = self.job
@@ -709,7 +712,6 @@ class RemoteToolEvaluator(ToolEvaluator):
 
     def __populate_non_job_params(self, param_dict):
         pass
-
 
     def __populate_interactivetools(self, param_dict):
         pass

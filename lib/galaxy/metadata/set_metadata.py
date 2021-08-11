@@ -166,8 +166,6 @@ def set_metadata_portable():
         stdio_exit_codes = list(map(ToolStdioExitCode, stdio_exit_code_dicts))
         stdio_regexes = list(map(ToolStdioRegex, stdio_regex_dicts))
 
-
-
         outputs_directory = os.path.join(tool_job_working_directory, "outputs")
         if not os.path.exists(outputs_directory):
             outputs_directory = tool_job_working_directory

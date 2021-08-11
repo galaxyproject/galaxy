@@ -7,7 +7,6 @@ from os.path import (
 
 from galaxy import util
 from galaxy.jobs.runners.util.job_script import (
-    check_script_integrity,
     INTEGRITY_INJECTION,
     write_script,
 )
@@ -55,14 +54,8 @@ def build_command(
     base_command_line = job_wrapper.get_command_line()
     # job_id = job_wrapper.job_id
     # log.debug( 'Tool evaluation for job (%s) produced command-line: %s' % ( job_id, base_command_line ) )
-    if not base_command_line:
-        raise Exception("Attempting to run a tool with empty command definition.")
 
     commands_builder = CommandsBuilder(base_command_line)
-
-    # All job runners currently handle this case which should never occur
-    if not commands_builder.commands:
-        return None
 
     # Version, dependency resolution, and task splitting are prepended to the
     # command - so they need to appear in the following order to ensure that
@@ -101,6 +94,8 @@ def build_command(
         else:
             commands_builder = CommandsBuilder(externalized_commands)
 
+    __handle_remote_command_line_building(commands_builder, job_wrapper)
+
     # Don't need to create a separate tool working directory for Pulsar
     # jobs - that is handled by Pulsar.
     if create_tool_working_directory:
@@ -133,14 +128,13 @@ def build_command(
 def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh", container=None):
     local_container_script = join(job_wrapper.working_directory, script_name)
     tool_commands = commands_builder.build()
-    config = job_wrapper.app.config
     integrity_injection = ""
     # Setting shell to none in job_conf.xml disables creating a tool command script,
     # set -e doesn't work for composite commands but this is necessary for Windows jobs
     # for instance.
     if shell and shell.lower() == 'none':
         return tool_commands
-    if check_script_integrity(config):
+    if job_wrapper.job_io.check_job_script_integrity:
         integrity_injection = INTEGRITY_INJECTION
     set_e = ""
     if job_wrapper.strict_shell:
@@ -155,7 +149,13 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         source_command,
         tool_commands,
     )
-    write_script(local_container_script, script_contents, config)
+    if commands_builder.raw_command:
+        # if no raw_command the command will be built as a job prolog, so we don't need to write the script
+        write_script(
+            local_container_script,
+            script_contents,
+            job_io=job_wrapper.job_io,
+        )
     commands = f"{shell} {local_container_script}"
     # TODO: Cleanup for_pulsar hack.
     # - Integrate Pulsar sending tool_stdout/tool_stderr back
@@ -180,6 +180,11 @@ def __handle_version_command(commands_builder, job_wrapper):
     write_version_cmd = job_wrapper.write_version_cmd
     if write_version_cmd:
         commands_builder.prepend_command(write_version_cmd)
+
+
+def __handle_remote_command_line_building(commands_builder, job_wrapper):
+    if getattr(job_wrapper, 'remote_command_line', False):
+        commands_builder.prepend_commands(('cd .. && PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/metadata/remote_tool_eval.py && cd -',))
 
 
 def __handle_task_splitting(commands_builder, job_wrapper):
@@ -254,7 +259,8 @@ class CommandsBuilder:
     def __init__(self, initial_command=''):
         # Remove trailing semi-colon so we can start hacking up this command.
         # TODO: Refactor to compose a list and join with ';', would be more clean.
-        initial_command = util.unicodify(initial_command)
+        self.raw_command = initial_command
+        initial_command = util.unicodify(initial_command or '')
         commands = initial_command.rstrip("; ")
         self.commands = commands
 

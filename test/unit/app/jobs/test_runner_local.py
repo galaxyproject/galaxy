@@ -189,8 +189,9 @@ class MockJobWrapper:
     def change_state(self, state, job=None):
         self.state = state
 
-    def get_output_fnames(self):
-        return []
+    @property
+    def job_io(self):
+        return bunch.Bunch(get_output_fnames=lambda: [], check_job_script_integrity=False)
 
     def get_job(self):
         return self.job

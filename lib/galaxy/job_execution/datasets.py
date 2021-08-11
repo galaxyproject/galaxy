@@ -123,7 +123,7 @@ class TaskPathRewriter:
 
 
 def get_path_rewriter(outputs_to_working_directory, working_directory=None, outputs_directory=None):
-        if outputs_to_working_directory:
-            return OutputsToWorkingDirectoryPathRewriter(working_directory, outputs_directory)
-        else:
-            return NullDatasetPathRewriter()
+    if outputs_to_working_directory:
+        return OutputsToWorkingDirectoryPathRewriter(working_directory, outputs_directory)
+    else:
+        return NullDatasetPathRewriter()

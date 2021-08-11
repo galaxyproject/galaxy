@@ -11,7 +11,15 @@ from json import (
     dumps,
     load,
 )
-from typing import Any, cast, Dict, List, Optional, Union
+from typing import (
+    Any,
+    cast,
+    Dict,
+    DefaultDict,
+    List,
+    Optional,
+    Union,
+)
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
@@ -67,7 +75,11 @@ class SessionlessContext:
         def find(obj_id):
             return self.objects.get(model_class, {}).get(obj_id) or None
 
-        return Bunch(find=find, get=find)
+        def filter_by(*args, **kwargs):
+            # TODO: Hack for history export archive, should support this too
+            return Bunch(first=lambda: None)
+
+        return Bunch(find=find, get=find, filter_by=filter_by)
 
 
 class ModelImportStore(metaclass=abc.ABCMeta):
@@ -1079,7 +1091,7 @@ class ModelExportStore(metaclass=abc.ABCMeta):
 
 class DirectoryModelExportStore(ModelExportStore):
 
-    def __init__(self, export_directory, app=None, for_edit=False, serialize_dataset_objects=None, export_files=None, strip_metadata_files=True, serialize_jobs=True, encode_ids=True):
+    def __init__(self, export_directory, app=None, for_edit=False, serialize_dataset_objects=None, export_files=None, strip_metadata_files=True, serialize_jobs=True):
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
         :param app: Galaxy App or app-like object. Must be provided if `for_edit` and/or `serialize_dataset_objects` are True
@@ -1092,11 +1104,6 @@ class DirectoryModelExportStore(ModelExportStore):
         if not os.path.exists(export_directory):
             os.makedirs(export_directory)
 
-        if encode_ids is False:
-            class security:
-                def encode_id(self, obj_id, kind=None):
-                    return obj_id
-
         sessionless = False
         if app is not None:
             self.app = app
@@ -1106,7 +1113,6 @@ class DirectoryModelExportStore(ModelExportStore):
             sessionless = True
             security = IdEncodingHelper(id_secret="randomdoesntmatter")
 
-        self.encode_ids = encode_ids
         self.serialize_jobs = serialize_jobs
         self.sessionless = sessionless
         self.security = security

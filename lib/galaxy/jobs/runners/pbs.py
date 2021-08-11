@@ -286,7 +286,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         env_setup_commands = [stage_commands]
         script = self.get_job_file(job_wrapper, exit_code_path=ecfile, env_setup_commands=env_setup_commands, shell=job_wrapper.shell)
         job_file = f"{self.app.config.cluster_files_directory}/{job_wrapper.job_id}.sh"
-        self.write_executable_script(job_file, script)
+        self.write_executable_script(job_file, script, job_io=job_wrapper.job_io)
         # job was deleted while we were preparing it
         if job_wrapper.get_state() in (model.Job.states.DELETED, model.Job.states.STOPPED):
             log.debug(f"Job {job_wrapper.job_id} deleted/stopped by user before it entered the PBS queue")
