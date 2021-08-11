@@ -632,6 +632,13 @@ class UpdateHistoryContentsBatchPayload(Model):
             "otherwise cannot delete uploading files, so it will raise an error."
         ),
     )
+    visible: Optional[bool] = Field(
+        default=False,
+        title="Visible",
+        description=(
+            "Show or hide history contents"
+        ),
+    )
 
 
 class HistoryBase(BaseModel):
