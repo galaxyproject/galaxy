@@ -2885,6 +2885,48 @@ class TestLibraryDatasetDatasetAssociationTagAssociation(BaseTest):
             assert stored_obj.user.id == user.id
 
 
+class TestLibraryDatasetDatasetInfoAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'library_dataset_dataset_info_association'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        library_dataset_dataset_association,
+        form_definition,
+        form_values,
+    ):
+        deleted = True
+        obj = cls_(library_dataset_dataset_association, form_definition, form_values)
+        obj.deleted = deleted
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.library_dataset_dataset_association_id == library_dataset_dataset_association.id
+            assert stored_obj.form_definition_id == form_definition.id
+            assert stored_obj.form_values_id == form_values.id
+            assert stored_obj.deleted == deleted
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        library_dataset_dataset_association,
+        form_definition,
+        form_values,
+    ):
+        obj = cls_(library_dataset_dataset_association, form_definition, form_values)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.library_dataset_dataset_association.id == library_dataset_dataset_association.id
+            assert stored_obj.template.id == form_definition.id
+            assert stored_obj.info.id == form_values.id
+
+
 class TestLibraryDatasetPermissions(BaseTest):
 
     def test_table(self, cls_):

@@ -4958,7 +4958,31 @@ class LibraryFolderInfoAssociation(Base, RepresentById):
         self.inheritable = inheritable
 
 
-class LibraryDatasetDatasetInfoAssociation(RepresentById):
+class LibraryDatasetDatasetInfoAssociation(Base, RepresentById):
+    __tablename__ = 'library_dataset_dataset_info_association'
+
+    id = Column(Integer, primary_key=True)
+    library_dataset_dataset_association_id = Column(Integer,
+        ForeignKey('library_dataset_dataset_association.id'), nullable=True, index=True)
+    form_definition_id = Column(Integer, ForeignKey('form_definition.id'), index=True)
+    form_values_id = Column(Integer, ForeignKey('form_values.id'), index=True)
+    deleted = Column(Boolean, index=True, default=False)
+
+    library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation',
+        primaryjoin=(lambda:
+            (LibraryDatasetDatasetInfoAssociation.library_dataset_dataset_association_id
+             == LibraryDatasetDatasetAssociation.id)
+            & (not_(LibraryDatasetDatasetInfoAssociation.deleted))
+        ),
+        backref="info_association")
+
+    template = relationship('FormDefinition',
+        primaryjoin=(lambda:
+            LibraryDatasetDatasetInfoAssociation.form_definition_id == FormDefinition.id))  # type: ignore
+    info = relationship('FormValues',
+        primaryjoin=(lambda:
+            LibraryDatasetDatasetInfoAssociation.form_values_id == FormValues.id))  # type: ignore
+
     def __init__(self, library_dataset_dataset_association, form_definition, info):
         # TODO: need to figure out if this should be inheritable to the associated LibraryDataset
         self.library_dataset_dataset_association = library_dataset_dataset_association
