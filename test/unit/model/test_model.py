@@ -1926,6 +1926,63 @@ class TestImplicitCollectionJobsJobAssociation(BaseTest):
             assert stored_obj.job.id == job.id
 
 
+class TestImplicitlyConvertedDatasetAssociation(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'implicitly_converted_dataset_association'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        history_dataset_association,
+        library_dataset_dataset_association,
+    ):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        deleted = True
+        metadata_safe = False
+        type = 'a'
+
+        # Test this combination (dataset/parent, hda/ldda); assume this is sufficient for other combinations.
+        obj = cls_(parent=library_dataset_dataset_association, dataset=history_dataset_association)
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.deleted = deleted
+        obj.metadata_safe = metadata_safe
+        obj.type = type
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.hda_id == history_dataset_association.id
+            assert stored_obj.ldda_id is None
+            assert stored_obj.hda_parent_id is None
+            assert stored_obj.ldda_parent_id == library_dataset_dataset_association.id
+            assert stored_obj.deleted == deleted
+            assert stored_obj.metadata_safe == metadata_safe
+            assert stored_obj.type == type
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        history_dataset_association,
+        library_dataset_dataset_association,
+    ):
+        # Switch hda and ldda (different from test_columns() setup)
+        obj = cls_(parent=history_dataset_association, dataset=library_dataset_dataset_association)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.dataset is None
+            assert stored_obj.dataset_ldda.id == library_dataset_dataset_association.id
+            assert stored_obj.parent_hda.id == history_dataset_association.id
+            assert stored_obj.parent_ldda is None
+
+
 class TestImplicitlyCreatedDatasetCollectionInput(BaseTest):
 
     def test_table(self, cls_):
