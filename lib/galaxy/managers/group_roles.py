@@ -24,7 +24,7 @@ class GroupRolesManager:
     def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
-    def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField):
+    def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField) -> GroupRoleListModel:
         """
         Returns a collection roles associated with the given group.
         """
@@ -110,8 +110,8 @@ class GroupRolesManager:
         except AttributeError:
             url = "*deprecated attribute not filled in by FastAPI server*"
 
-        return GroupRoleModel(**{
-            "id": encoded_role_id,
-            "name": role.name,
-            "url": url
-        })
+        return GroupRoleModel(
+            id=encoded_role_id,
+            name=role.name,
+            url=url
+        )
