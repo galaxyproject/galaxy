@@ -1908,7 +1908,7 @@ RoleNameIdTuple = Tuple[str, EncodedDatabaseIdField]
 class GroupRoleModel(BaseModel):
     id: EncodedDatabaseIdField = RoleIdField
     name: str = RoleNameField
-    url: str = Field(title="URL", description="URL for the group role")
+    url: RelativeUrl = RelativeUrlField
 
 
 class GroupRoleListModel(BaseModel):
