@@ -30,7 +30,6 @@
                         </template>
                         <template v-slot:cell(actions)="row">
                             <InstallationButton
-                                :installed="row.item.installed"
                                 :status="row.item.status"
                                 @onInstall="setupRepository(row.item)"
                                 @onUninstall="uninstallRepository(row.item)"
