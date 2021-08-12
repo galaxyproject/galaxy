@@ -15,8 +15,6 @@ from sqlalchemy import (
     desc,
     false,
     ForeignKey,
-    func,
-    Index,
     Integer,
     not_,
     Numeric,
@@ -211,24 +209,6 @@ model.Job.table = Table(
     Column("params", TrimmedString(255), index=True),
     Column("handler", TrimmedString(255), index=True))
 
-model.StoredWorkflow.table = Table(
-    "stored_workflow", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now, index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=False),
-    Column("latest_workflow_id", Integer,
-        ForeignKey("workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk'), index=True),
-    Column("name", TEXT),
-    Column("deleted", Boolean, default=False),
-    Column("hidden", Boolean, default=False),
-    Column("importable", Boolean, default=False),
-    Column("slug", TEXT),
-    Column("from_path", TEXT),
-    Column("published", Boolean, index=True, default=False),
-    Index('ix_stored_workflow_slug', 'slug', mysql_length=200),
-)
-
 
 # With the tables defined we can define the mappers and setup the
 # relationships between the model objects.
@@ -348,8 +328,8 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
         primaryjoin=(
             (model.StoredWorkflowMenuEntry.user_id == model.User.table.c.id)
-            & (model.StoredWorkflowMenuEntry.stored_workflow_id == model.StoredWorkflow.table.c.id)
-            & not_(model.StoredWorkflow.table.c.deleted)
+            & (model.StoredWorkflowMenuEntry.stored_workflow_id == model.StoredWorkflow.id)
+            & not_(model.StoredWorkflow.deleted)
         ),
         backref="user",
         cascade="all, delete-orphan",
@@ -369,6 +349,8 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     data_manager_histories=relation(model.DataManagerHistoryAssociation, back_populates='user'),
     workflows_shared_by_others=relation(model.StoredWorkflowUserShareAssociation, back_populates='user'),
     roles=relation(model.UserRoleAssociation, back_populates='user'),
+    stored_workflows=relation(model.StoredWorkflow, back_populates='user',
+        primaryjoin=(lambda: model.User.table.c.id == model.StoredWorkflow.user_id)),  # type: ignore
 ))
 
 # Set up proxy so that this syntax is possible:
@@ -435,42 +417,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, mod
 #         uselist=True,
 #     ),
 # )
-
-mapper_registry.map_imperatively(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
-    user=relation(model.User,
-        primaryjoin=(model.User.table.c.id == model.StoredWorkflow.table.c.user_id),
-        backref='stored_workflows'),
-    workflows=relation(model.Workflow,
-        backref='stored_workflow',
-        cascade="all, delete-orphan",
-        primaryjoin=(model.StoredWorkflow.table.c.id == model.Workflow.stored_workflow_id),
-        order_by=-model.Workflow.id),
-    latest_workflow=relation(model.Workflow,
-        post_update=True,
-        primaryjoin=(model.StoredWorkflow.table.c.latest_workflow_id == model.Workflow.id),
-        lazy=False),
-    tags=relation(model.StoredWorkflowTagAssociation,
-        order_by=model.StoredWorkflowTagAssociation.id,
-        back_populates="stored_workflow"),
-    owner_tags=relation(model.StoredWorkflowTagAssociation,
-        primaryjoin=(
-            and_(model.StoredWorkflow.table.c.id == model.StoredWorkflowTagAssociation.stored_workflow_id,
-                 model.StoredWorkflow.table.c.user_id == model.StoredWorkflowTagAssociation.user_id)
-        ),
-        viewonly=True,
-        order_by=model.StoredWorkflowTagAssociation.id),
-    annotations=relation(model.StoredWorkflowAnnotationAssociation,
-        order_by=model.StoredWorkflowAnnotationAssociation.id,
-        back_populates="stored_workflow"),
-    ratings=relation(model.StoredWorkflowRatingAssociation,
-        order_by=model.StoredWorkflowRatingAssociation.id,
-        back_populates="stored_workflow"),
-    average_rating=column_property(
-        select(func.avg(model.StoredWorkflowRatingAssociation.rating)).where(model.StoredWorkflowRatingAssociation.stored_workflow_id == model.StoredWorkflow.table.c.id).scalar_subquery(),
-        deferred=True
-    ),
-    users_shared_with=relation(model.StoredWorkflowUserShareAssociation, back_populates='stored_workflow'),
-))
 
 # Set up proxy so that
 #   StoredWorkflow.users_shared_with

@@ -3603,9 +3603,9 @@ class TestRole(BaseTest):
 
 class TestStoredWorkflow(BaseTest):
 
-    # def test_table(self, cls_):
-    #     assert cls_.__tablename__ == 'stored_workflow'
-    #     assert has_index(cls_.__table__, ('ix_stored_workflow_slug', 'slug',))
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'stored_workflow'
+        assert has_index(cls_.__table__, ('slug',))
 
     def test_columns(self, session, cls_, workflow, user):
         create_time = datetime.now()

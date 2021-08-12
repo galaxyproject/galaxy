@@ -5995,7 +5995,7 @@ class UCI:
         self.user = None
 
 
-class StoredWorkflow(HasTags, Dictifiable, RepresentById):
+class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     """
     StoredWorkflow represents the root node of a tree of objects that compose a workflow, including workflow revisions, steps, and subworkflows.
     It is responsible for the metadata associated with a workflow including owner, name, published, and create/update time.
@@ -6003,6 +6003,56 @@ class StoredWorkflow(HasTags, Dictifiable, RepresentById):
     Each time a workflow is modified a revision is created, represented by a new :class:`galaxy.model.Workflow` instance.
     See :class:`galaxy.model.Workflow` for more information
     """
+    __tablename__ = 'stored_workflow'
+    __table_args__ = (
+        Index('ix_stored_workflow_slug', 'slug', mysql_length=200),
+    )
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now, index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True, nullable=False)
+    latest_workflow_id = Column(Integer,
+        ForeignKey('workflow.id', use_alter=True, name='stored_workflow_latest_workflow_id_fk'), index=True)
+    name = Column(TEXT)
+    deleted = Column(Boolean, default=False)
+    hidden = Column(Boolean, default=False)
+    importable = Column(Boolean, default=False)
+    slug = Column(TEXT)
+    from_path = Column(TEXT)
+    published = Column(Boolean, index=True, default=False)
+
+    user = relationship('User',
+        primaryjoin=(lambda: User.table.c.id == StoredWorkflow.user_id),  # type: ignore
+        back_populates='stored_workflows')
+    workflows = relationship('Workflow',
+        back_populates='stored_workflow',
+        cascade="all, delete-orphan",
+        primaryjoin=(lambda: StoredWorkflow.id == Workflow.stored_workflow_id),  # type: ignore
+        order_by='-Workflow.id')
+    latest_workflow = relationship('Workflow',
+        post_update=True,
+        primaryjoin=(lambda: StoredWorkflow.latest_workflow_id == Workflow.id),  # type: ignore
+        lazy=False)
+    tags = relationship('StoredWorkflowTagAssociation',
+        order_by='StoredWorkflowTagAssociation.id',
+        back_populates="stored_workflow")
+    owner_tags = relationship('StoredWorkflowTagAssociation',
+        primaryjoin=(lambda:
+            and_(StoredWorkflow.id == StoredWorkflowTagAssociation.stored_workflow_id,  # type: ignore
+                StoredWorkflow.user_id == StoredWorkflowTagAssociation.user_id)  # type: ignore
+        ),
+        viewonly=True,
+        order_by='StoredWorkflowTagAssociation.id')
+    annotations = relationship('StoredWorkflowAnnotationAssociation',
+        order_by='StoredWorkflowAnnotationAssociation.id',
+        back_populates="stored_workflow")
+    ratings = relationship('StoredWorkflowRatingAssociation',
+        order_by='StoredWorkflowRatingAssociation.id',
+        back_populates="stored_workflow")
+    users_shared_with = relationship('StoredWorkflowUserShareAssociation', back_populates='stored_workflow')
+
+    average_rating: column_property
 
     dict_collection_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted', 'hidden']
     dict_element_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted', 'hidden']
@@ -6080,6 +6130,9 @@ class Workflow(Base, Dictifiable, RepresentById):
         'WorkflowStep',
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),  # type: ignore
         back_populates='subworkflow')
+    stored_workflow = relationship('StoredWorkflow',
+        primaryjoin=(lambda: StoredWorkflow.id == Workflow.stored_workflow_id),  # type: ignore
+        back_populates='workflows')
 
     step_count: column_property
 
@@ -8822,5 +8875,10 @@ WorkflowInvocationStep.subworkflow_invocation_id = column_property(
 
 Workflow.step_count = column_property(
     select(func.count(WorkflowStep.id)).where(Workflow.id == WorkflowStep.workflow_id).scalar_subquery(),
+    deferred=True
+)
+
+StoredWorkflow.average_rating = column_property(
+    select(func.avg(StoredWorkflowRatingAssociation.rating)).where(StoredWorkflowRatingAssociation.stored_workflow_id == StoredWorkflow.id).scalar_subquery(),
     deferred=True
 )
