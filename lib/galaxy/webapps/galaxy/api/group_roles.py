@@ -45,7 +45,7 @@ class FastAPIGroupRoles:
     @router.get('/api/groups/{group_id}/roles',
                 require_admin=True,
                 summary='Displays a collection (list) of groups.')
-    def indexAfe(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam) -> GroupRoleListModel:
+    def index(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam) -> GroupRoleListModel:
         return self.manager.index(trans, group_id)
 
     @router.get('/api/groups/{group_id}/roles/{role_id}',
