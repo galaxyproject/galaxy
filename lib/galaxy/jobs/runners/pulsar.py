@@ -395,7 +395,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 job_directory_path = tool_env.get("job_directory_path")
                 if job_directory_path:
                     config_files.append(job_directory_path)
-
+            tool_directory_required_files = job_wrapper.tool.required_files
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 input_files=input_files,
@@ -414,6 +414,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 job_directory_files=job_directory_files,
                 container=None if not remote_container else remote_container.container_id,
                 guest_ports=job_wrapper.guest_ports,
+                tool_directory_required_files=tool_directory_required_files,
             )
             job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
             log.info(f"Pulsar job submitted with job_id {job_id}")

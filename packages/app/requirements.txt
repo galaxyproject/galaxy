@@ -9,7 +9,7 @@ celery
 kombu
 Beaker
 pykwalify
-pulsar-galaxy-lib
+pulsar-galaxy-lib>=0.14.7
 gxformat2
 Mako
 sqlitedict
