@@ -1,16 +1,23 @@
 <template>
     <DatasetProvider :id="hda_id" v-slot="{ item: dataset, loading }">
         <div v-if="!loading">
-            <b-row>
-                <b-col>
+            <tr>
+                <td>
                     <h3>Dataset Information</h3>
-                </b-col>
-                <b-col cols="10">
-                    <a title="Edit dataset attributes" :href="`/datasets/edit?dataset_id=${dataset.id}`" target="_top">
+                </td>
+                <td>
+                    <b-button
+                        class="edit-button"
+                        variant="light"
+                        size="sm"
+                        title="Edit dataset attributes"
+                        :href="`/datasets/edit?dataset_id=${dataset.id}`"
+                        target="_top"
+                    >
                         <font-awesome-icon icon="edit" />
-                    </a>
-                </b-col>
-            </b-row>
+                    </b-button>
+                </td>
+            </tr>
             <table id="dataset-details" class="tabletip info_data_table">
                 <tbody>
                     <tr>
@@ -105,3 +112,8 @@ export default {
     },
 };
 </script>
+<style>
+.edit-button {
+    margin-left: 20%;
+}
+</style>
