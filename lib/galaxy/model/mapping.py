@@ -118,19 +118,6 @@ model.Dataset.table = Table(
     Column('total_size', Numeric(15, 0)),
     Column('uuid', UUIDType()))
 
-model.ImplicitlyConvertedDatasetAssociation.table = Table(
-    "implicitly_converted_dataset_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("hda_id", Integer, ForeignKey("history_dataset_association.id"), index=True, nullable=True),
-    Column("ldda_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True),
-    Column("hda_parent_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("ldda_parent_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("metadata_safe", Boolean, index=True, default=True),
-    Column("type", TrimmedString(255)))
-
 model.LibraryDatasetDatasetAssociation.table = Table(
     "library_dataset_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -254,6 +241,14 @@ simple_mapping(model.HistoryDatasetAssociation,
     creating_job_associations=relation(
         model.JobToOutputDatasetAssociation, back_populates='dataset'),
     history=relation(model.History, back_populates='datasets'),
+    implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
+        primaryjoin=(lambda: model.ImplicitlyConvertedDatasetAssociation.hda_parent_id  # type: ignore
+            == model.HistoryDatasetAssociation.id),  # type: ignore
+        back_populates='parent_hda'),
+    implicitly_converted_parent_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
+        primaryjoin=(lambda: model.ImplicitlyConvertedDatasetAssociation.hda_id  # type: ignore
+            == model.HistoryDatasetAssociation.id),  # type: ignore
+        back_populates='dataset')
 )
 
 simple_mapping(model.Dataset,
@@ -280,21 +275,6 @@ simple_mapping(model.Dataset,
     job_export_history_archive=relation(model.JobExportHistoryArchive, back_populates='dataset'),
     genome_index_tool_data=relation(model.GenomeIndexToolData, back_populates='dataset'),
 )
-
-mapper_registry.map_imperatively(model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDatasetAssociation.table, properties=dict(
-    parent_hda=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id
-                     == model.HistoryDatasetAssociation.table.c.id),
-        backref='implicitly_converted_datasets'),
-    dataset_ldda=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_id
-                     == model.LibraryDatasetDatasetAssociation.table.c.id),
-        backref="implicitly_converted_parent_datasets"),
-    dataset=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_id
-                     == model.HistoryDatasetAssociation.table.c.id),
-        backref="implicitly_converted_parent_datasets")
-))
 
 # Set up proxy so that
 #   History.users_shared_with
@@ -376,7 +356,7 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.L
                      == model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id),
         backref='copied_from_library_dataset_dataset_association'),
     implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id
+        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.ldda_parent_id
                      == model.LibraryDatasetDatasetAssociation.table.c.id),
         backref='parent_ldda'),
     tags=relation(model.LibraryDatasetDatasetAssociationTagAssociation,
@@ -393,6 +373,10 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.L
         model.JobToInputLibraryDatasetAssociation, back_populates='dataset'),
     creating_job_associations=relation(
         model.JobToOutputLibraryDatasetAssociation, back_populates='dataset'),
+    implicitly_converted_parent_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
+        primaryjoin=(lambda: model.ImplicitlyConvertedDatasetAssociation.ldda_id  # type: ignore
+            == model.LibraryDatasetDatasetAssociation.id),  # type: ignore
+        back_populates='dataset_ldda'),
 ))
 
 mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetInfoAssociation.table, properties=dict(

@@ -4970,7 +4970,32 @@ class LibraryDatasetDatasetInfoAssociation(RepresentById):
         return True  # always allow inheriting, used for replacement
 
 
-class ImplicitlyConvertedDatasetAssociation(RepresentById):
+class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
+    __tablename__ = 'implicitly_converted_dataset_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    hda_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True, nullable=True)
+    ldda_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
+    hda_parent_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    ldda_parent_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True)
+    deleted = Column(Boolean, index=True, default=False)
+    metadata_safe = Column(Boolean, index=True, default=True)
+    type = Column(TrimmedString(255))
+
+    parent_hda = relationship('HistoryDatasetAssociation',
+        primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_parent_id  # type: ignore
+            == HistoryDatasetAssociation.id),  # type: ignore
+        back_populates='implicitly_converted_datasets')
+    dataset_ldda = relationship('LibraryDatasetDatasetAssociation',
+        primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.ldda_id  # type: ignore
+            == LibraryDatasetDatasetAssociation.id),  # type: ignore
+        back_populates='implicitly_converted_parent_datasets')
+    dataset = relationship('HistoryDatasetAssociation',
+        primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_id  # type: ignore
+            == HistoryDatasetAssociation.id),  # type: ignore
+        back_populates='implicitly_converted_parent_datasets')
 
     def __init__(self, id=None, parent=None, dataset=None, file_type=None, deleted=False, purged=False, metadata_safe=True):
         self.id = id
