@@ -4,11 +4,11 @@ API operations on Group objects.
 import logging
 
 from fastapi import Path
-from lib.galaxy.schema.schema import GroupRoleListModel, GroupRoleModel
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.group_roles import GroupRolesManager
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import GroupRoleListModel, GroupRoleModel
 from galaxy.web import (
     expose_api,
     require_admin,

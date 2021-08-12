@@ -1,11 +1,8 @@
 import logging
 from typing import (
     Any,
-    Dict,
     Optional,
 )
-
-from lib.galaxy.schema.schema import GroupRoleListModel, GroupRoleModel
 
 from galaxy import model
 from galaxy.app import MinimalManagerApp
@@ -15,6 +12,7 @@ from galaxy.exceptions import (
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import GroupRoleListModel, GroupRoleModel
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -37,7 +35,7 @@ class GroupRolesManager:
             rval.append(group_role)
         return GroupRoleListModel(__root__=rval)
 
-    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField) -> Dict[str, Any]:
+    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
         """
         Returns information about a group role.
         """
