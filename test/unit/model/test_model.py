@@ -4370,6 +4370,152 @@ class TestTransferJob(BaseTest):
             assert stored_obj.transfer_job == [genome_index_tool_data]
 
 
+class TestUser(BaseTest):
+
+    # def test_table(self, cls_):
+    #     assert cls_.__tablename__ == 'user'
+
+    def test_columns(self, session, cls_, form_values):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        email = get_random_string()
+        username = get_random_string()
+        password = 'c'
+        last_password_change = update_time
+        external = True
+        deleted = True
+        purged = True
+        disk_usage = 1
+        active = False
+        activation_token = 'd'
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.email = email
+        obj.username = username
+        obj.password = password
+        obj.last_password_change = last_password_change
+        obj.external = external
+        obj.values = form_values
+        obj.deleted = deleted
+        obj.purged = purged
+        obj.disk_usage = disk_usage
+        obj.active = active
+        obj.activation_token = activation_token
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.email == email
+            assert stored_obj.username == username
+            assert stored_obj.password == password
+            assert stored_obj.last_password_change == last_password_change
+            assert stored_obj.external == external
+            assert stored_obj.form_values_id == form_values.id
+            assert stored_obj.deleted == deleted
+            assert stored_obj.purged == purged
+            assert stored_obj.disk_usage == disk_usage
+            assert stored_obj.active == active
+            assert stored_obj.activation_token == activation_token
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        form_values,
+        user_address,
+        cloud_authz,
+        custos_authnz_token,
+        default_user_permissions,
+        user_group_association,
+        history_factory,
+        galaxy_session,
+        page_user_share_association,
+        user_quota_association,
+        user_authnz_token,
+        user_preference,
+        api_keys,
+        page,
+        password_reset_token,
+        history_user_share_association,
+        data_manager_history_association,
+        stored_workflow_user_share_association,
+        user_role_association,
+        stored_workflow,
+        stored_workflow_menu_entry_factory,
+    ):
+        history1 = history_factory(deleted=False)
+        history2 = history_factory(deleted=True)
+
+        obj = cls_()
+
+        obj.email = get_random_string()
+        obj.username = get_random_string()
+        obj.password = 'a'
+        obj.values = form_values
+        obj.addresses.append(user_address)
+        obj.cloudauthz.append(cloud_authz)
+        obj.custos_auth.append(custos_authnz_token)
+        obj.default_permissions.append(default_user_permissions)
+        obj.groups.append(user_group_association)
+        obj.histories.append(history1)
+        obj.histories.append(history2)
+        obj.galaxy_sessions.append(galaxy_session)
+        obj.pages_shared_by_others.append(page_user_share_association)
+        obj.quotas.append(user_quota_association)
+        obj.social_auth.append(user_authnz_token)
+
+        swme = stored_workflow_menu_entry_factory()
+        swme.stored_workflow = stored_workflow
+        swme.user = obj
+
+        user_preference.name = 'a'
+        obj._preferences.set(user_preference)
+
+        obj.api_keys.append(api_keys)
+        obj.pages.append(page)
+        obj.reset_tokens.append(password_reset_token)
+        obj.histories_shared_by_others.append(history_user_share_association)
+        obj.data_manager_histories.append(data_manager_history_association)
+        obj.workflows_shared_by_others.append(stored_workflow_user_share_association)
+        obj.roles.append(user_role_association)
+        obj.stored_workflows.append(stored_workflow)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.values.id == form_values.id
+            assert stored_obj.addresses == [user_address]
+            assert stored_obj.cloudauthz == [cloud_authz]
+            assert stored_obj.custos_auth == [custos_authnz_token]
+            assert stored_obj.default_permissions == [default_user_permissions]
+            assert stored_obj.groups == [user_group_association]
+
+            assert len(stored_obj.histories) == 2
+            assert history1 in stored_obj.histories
+            assert history2 in stored_obj.histories
+
+            assert stored_obj.active_histories == [history1]
+            assert stored_obj.galaxy_sessions == [galaxy_session]
+            assert stored_obj.pages_shared_by_others == [page_user_share_association]
+            assert stored_obj.quotas == [user_quota_association]
+            assert stored_obj.social_auth == [user_authnz_token]
+            assert stored_obj.stored_workflow_menu_entries == [swme]
+            assert user_preference in stored_obj._preferences.values()
+            assert stored_obj.api_keys == [api_keys]
+            assert stored_obj.pages == [page]
+            assert stored_obj.reset_tokens == [password_reset_token]
+            assert stored_obj.histories_shared_by_others == [history_user_share_association]
+            assert stored_obj.data_manager_histories == [data_manager_history_association]
+            assert stored_obj.workflows_shared_by_others == [stored_workflow_user_share_association]
+            assert stored_obj.roles == [user_role_association]
+            assert stored_obj.stored_workflows == [stored_workflow]
+
+        delete_from_database(session, [history1, history2, swme])
+
+
 class TestUserAction(BaseTest):
 
     def test_table(self, cls_):
@@ -5877,6 +6023,12 @@ def session(model):
 # Fixtures yielding persisted instances of models, deleted from the database on test exit.
 
 @pytest.fixture
+def api_keys(model, session):
+    instance = model.APIKeys()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def cleanup_event(model, session):
     ce = model.CleanupEvent()
     yield from dbcleanup_wrapper(session, ce)
@@ -5886,6 +6038,18 @@ def cleanup_event(model, session):
 def cloud_authz(model, session, user, user_authnz_token):
     ca = model.CloudAuthz(user.id, 'a', 'b', user_authnz_token.id, 'c')
     yield from dbcleanup_wrapper(session, ca)
+
+
+@pytest.fixture
+def custos_authnz_token(model, session, user, user_authnz_token):
+    instance = model.CustosAuthnzToken(user, None, None, None, None, None, None, None)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def data_manager_history_association(model, session):
+    instance = model.DataManagerHistoryAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -5943,6 +6107,12 @@ def default_quota_association(model, session, quota):
     type_ = model.DefaultQuotaAssociation.types.REGISTERED
     dqa = model.DefaultQuotaAssociation(type_, quota)
     yield from dbcleanup_wrapper(session, dqa)
+
+
+@pytest.fixture
+def default_user_permissions(model, session, user, role):
+    instance = model.DefaultUserPermissions(user, None, role)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6299,6 +6469,14 @@ def page_user_share_association(model, session):
 
 
 @pytest.fixture
+def password_reset_token(model, session, user):
+    token = get_random_string()
+    instance = model.PasswordResetToken(user, token)
+    where_clause = type(instance).token == token
+    yield from dbcleanup_wrapper(session, instance, where_clause)
+
+
+@pytest.fixture
 def post_job_action(model, session):
     pja = model.PostJobAction('a')
     yield from dbcleanup_wrapper(session, pja)
@@ -6390,9 +6568,33 @@ def user(model, session):
 
 
 @pytest.fixture
+def user_address(model, session, user):
+    instance = model.UserAddress()
+    instance.name = 'a'
+    instance.address = 'b'
+    instance.city = 'c'
+    instance.state = 'd'
+    instance.postal_code = 'e'
+    instance.country = 'f'
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def user_authnz_token(model, session, user):
     t = model.UserAuthnzToken('a', 'b', 'c', 1, 'd', user)
     yield from dbcleanup_wrapper(session, t)
+
+
+@pytest.fixture
+def user_group_association(model, session):
+    instance = model.UserGroupAssociation(None, None)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def user_preference(model, session):
+    instance = model.UserPreference()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6567,6 +6769,16 @@ def dataset_collection_factory(model):
 
 
 @pytest.fixture
+def history_factory(model):
+    def make_instance(**kwds):
+        instance = model.History()
+        if 'deleted' in kwds:
+            instance.deleted = kwds['deleted']
+        return instance
+    return make_instance
+
+
+@pytest.fixture
 def history_dataset_association_factory(model):
     def make_instance(*args, **kwds):
         return model.HistoryDatasetAssociation(*args, **kwds)
@@ -6616,6 +6828,13 @@ def library_folder_factory(model):
 def page_rating_association_factory(model):
     def make_instance(*args, **kwds):
         return model.PageRatingAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def stored_workflow_menu_entry_factory(model):
+    def make_instance(*args, **kwds):
+        return model.StoredWorkflowMenuEntry(*args, **kwds)
     return make_instance
 
 
@@ -6691,8 +6910,8 @@ def workflow_step_factory(model, workflow):
 
 # Mics. helpers.
 
-def dbcleanup_wrapper(session, obj):
-    with dbcleanup(session, obj):
+def dbcleanup_wrapper(session, obj, where_clause=None):
+    with dbcleanup(session, obj, where_clause):
         yield obj
 
 
