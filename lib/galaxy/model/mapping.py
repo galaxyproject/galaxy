@@ -151,15 +151,6 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("message", TrimmedString(255)))
 
-model.LibraryDatasetDatasetInfoAssociation.table = Table(
-    "library_dataset_dataset_info_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("library_dataset_dataset_association_id", Integer,
-        ForeignKey("library_dataset_dataset_association.id"), nullable=True, index=True),
-    Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False))
-
 model.Job.table = Table(
     "job", metadata,
     Column("id", Integer, primary_key=True),
@@ -377,20 +368,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.L
         primaryjoin=(lambda: model.ImplicitlyConvertedDatasetAssociation.ldda_id  # type: ignore
             == model.LibraryDatasetDatasetAssociation.id),  # type: ignore
         back_populates='dataset_ldda'),
-))
-
-mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetInfoAssociation.table, properties=dict(
-    library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(
-            (model.LibraryDatasetDatasetInfoAssociation.table.c.library_dataset_dataset_association_id
-             == model.LibraryDatasetDatasetAssociation.table.c.id)
-            & (not_(model.LibraryDatasetDatasetInfoAssociation.table.c.deleted))
-        ),
-        backref="info_association"),
-    template=relation(model.FormDefinition,
-        primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_definition_id == model.FormDefinition.id)),
-    info=relation(model.FormValues,
-        primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.id))
 ))
 
 # simple_mapping(
