@@ -1,10 +1,17 @@
 <template>
     <div v-if="isSection && hasElements" class="tool-panel-section">
-        <div :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]">
-            <a @click="toggleMenu()" href="javascript:void(0)" role="button">
+        <div
+            :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
+            :title="title"
+            v-b-tooltip.topright.hover
+            @mouseover="hover = true"
+            @mouseleave="hover = false"
+        >
+            <a class="title-link" @click="toggleMenu()" href="javascript:void(0)">
                 <span class="name">
                     {{ this.name }}
                 </span>
+                <ToolPanelLinks :links="links" :show="hover" />
             </a>
         </div>
         <transition name="slide">
@@ -45,12 +52,14 @@
 import Tool from "./Tool";
 import ToolPanelLabel from "./ToolPanelLabel";
 import ariaAlert from "utils/ariaAlert";
+import ToolPanelLinks from "./ToolPanelLinks";
 
 export default {
     name: "ToolSection",
     components: {
         Tool,
         ToolPanelLabel,
+        ToolPanelLinks,
     },
     props: {
         category: {
@@ -91,6 +100,7 @@ export default {
     data() {
         return {
             opened: this.expanded || this.checkFilter(),
+            hover: false,
         };
     },
     watch: {
@@ -113,6 +123,12 @@ export default {
         },
         hasElements() {
             return this.category.elems && this.category.elems.length > 0;
+        },
+        title() {
+            return this.category.description;
+        },
+        links() {
+            return this.category.links || {};
         },
     },
     methods: {

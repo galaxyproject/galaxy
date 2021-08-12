@@ -80,6 +80,18 @@ class EdamToolPanelView(ToolPanelView):
                             topics[t][tool_id] = (term, tool_id, key, val, val_name)
 
         new_panel = ToolPanelElements()
+
+        def populate_section(term, tool_id, key, val, val_name):
+            edam_def = self.edam[term]
+            description = edam_def['definition']
+            label = edam_def['label']
+            links = {
+                'edam_browser': f"https://edamontology.github.io/edam-browser/#{term}",
+            }
+            section = new_panel.get_or_create_section(term, label, description=description, links=links)
+            toolbox_registry.add_tool_to_tool_panel_view(val, section)
+            new_panel.record_section_for_tool_id(tool_id, key, val_name)
+
         for term in sorted(operations.keys(), key=lambda x: self._sort_edam_key(x)):
             if len(operations[term].keys()) == 0:
                 continue
@@ -87,15 +99,16 @@ class EdamToolPanelView(ToolPanelView):
             label_dict = {
                 'type': 'label',
                 'text': self.edam[term]['label'],
+                'description': self.edam[term]['definition'],
+                'links': {
+                    'edam_browser': f"https://edamontology.github.io/edam-browser/#{term}",
+                },
                 'id': term,
             }
             new_panel[f"label_{term}"] = ToolSectionLabel(label_dict)
 
             for (term, tool_id, key, val, val_name) in operations[term].values():
-                section = new_panel.get_or_create_section(term, self.edam[term]['label'])
-
-                toolbox_registry.add_tool_to_tool_panel_view(val, section)
-                new_panel.record_section_for_tool_id(tool_id, key, val_name)
+                populate_section(term, tool_id, key, val, val_name)
 
         for term in sorted(topics.keys(), key=lambda x: self._sort_edam_key(x)):
             if len(topics[term].keys()) == 0:
@@ -104,14 +117,16 @@ class EdamToolPanelView(ToolPanelView):
             label_dict = {
                 'type': 'label',
                 'text': self.edam[term]['label'],
+                'description': self.edam[term]['definition'],
+                'links': {
+                    'edam_browser': f"https://edamontology.github.io/edam-browser/#{term}",
+                },
                 'id': term,
             }
             new_panel[f"label_{term}"] = ToolSectionLabel(label_dict)
 
             for (term, tool_id, key, val, val_name) in topics[term].values():
-                section = new_panel.get_or_create_section(term, self.edam[term]['label'])
-                toolbox_registry.add_tool_to_tool_panel_view(val, section)
-                new_panel.record_section_for_tool_id(tool_id, key, val_name)
+                populate_section(term, tool_id, key, val, val_name)
 
         section = new_panel.get_or_create_section('uncategorized', 'Uncategorized')
         for (tool_id, key, val, val_name) in uncategorized:
