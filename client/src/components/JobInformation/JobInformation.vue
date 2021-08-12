@@ -23,7 +23,9 @@
                 </tr>
                 <tr v-if="job && showWorkflowInfo">
                     <td>Created by workflow?</td>
-                    <td id="created-by-workflow">{{ job.workflow_invocation_step != None }}</td>
+                    <td id="created-by-workflow">
+                        {{ job.workflow_invocation_step && Object.keys(job.workflow_invocation_step).length !== 0 }}
+                    </td>
                 </tr>
                 <tr
                     v-if="
