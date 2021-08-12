@@ -35,7 +35,7 @@ class GroupRolesManager:
             rval.append(group_role)
         return GroupRoleListModel(__root__=rval)
 
-    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
+    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField) -> GroupRoleModel:
         """
         Returns information about a group role.
         """
@@ -48,7 +48,7 @@ class GroupRolesManager:
 
         return self._serialize_group_role(group_id, role)
 
-    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
+    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField) -> GroupRoleModel:
         """
         Adds a role to a group if it is not already associated.
         """
@@ -61,7 +61,7 @@ class GroupRolesManager:
 
         return self._serialize_group_role(group_id, role)
 
-    def delete(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
+    def delete(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField) -> GroupRoleModel:
         """
         Removes a role from a group.
         """

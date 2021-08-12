@@ -57,13 +57,13 @@ class FastAPIGroupRoles:
     @router.put('/api/groups/{group_id}/roles/{role_id}',
                 require_admin=True,
                 summary='Adds a role to a group')
-    def update(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam, role_id: EncodedDatabaseIdField = RoleIDParam):
+    def update(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam, role_id: EncodedDatabaseIdField = RoleIDParam) -> GroupRoleModel:
         return self.manager.update(trans, role_id, group_id)
 
     @router.delete('/api/groups/{group_id}/roles/{role_id}',
                    require_admin=True,
                    summary='Removes a role from a group')
-    def delete(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam, role_id: EncodedDatabaseIdField = RoleIDParam):
+    def delete(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam, role_id: EncodedDatabaseIdField = RoleIDParam) -> GroupRoleModel:
         return self.manager.delete(trans, role_id, group_id)
 
 
