@@ -28,3 +28,7 @@ def parse_serialization_params(
     if keys:
         key_list = keys.split(',')
     return dict(view=view, keys=key_list, default_view=default_view)
+
+
+def fastapi_deprecation_message():
+    return "*deprecated attribute not filled in by FastAPI server*"

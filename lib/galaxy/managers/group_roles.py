@@ -14,6 +14,7 @@ from galaxy.managers.context import ProvidesAppContext
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import GroupRoleListModel, GroupRoleModel
 from galaxy.web import url_for
+from galaxy.webapps.galaxy.api.common import fastapi_deprecation_message
 
 log = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ class GroupRolesManager:
         try:
             url = url_for('group_role', group_id=encoded_group_id, id=encoded_role_id)
         except AttributeError:
-            url = "*deprecated attribute not filled in by FastAPI server*"
+            url = fastapi_deprecation_message()
 
         return GroupRoleModel(
             id=encoded_role_id,
