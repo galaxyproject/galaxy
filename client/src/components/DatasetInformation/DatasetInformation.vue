@@ -1,7 +1,16 @@
 <template>
     <DatasetProvider :id="hda_id" v-slot="{ item: dataset, loading }">
         <div v-if="!loading">
-            <h3>Dataset Information (<a :href="'/datasets/edit?dataset_id=' + dataset.id" target="_top">edit</a>)</h3>
+            <b-row>
+                <b-col>
+                    <h3>Dataset Information</h3>
+                </b-col>
+                <b-col cols="10">
+                    <a title="Edit dataset attributes" :href="`/datasets/edit?dataset_id=${dataset.id}`" target="_top">
+                        <font-awesome-icon icon="edit" />
+                    </a>
+                </b-col>
+            </b-row>
             <table id="dataset-details" class="tabletip info_data_table">
                 <tbody>
                     <tr>
@@ -71,7 +80,11 @@ import Utils from "utils/utils";
 import UtcDate from "components/UtcDate";
 import DecodedId from "../DecodedId";
 import { DatasetProvider } from "../WorkflowInvocationState/providers";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
 
+library.add(faEdit);
 export default {
     props: {
         hda_id: {
@@ -80,6 +93,7 @@ export default {
         },
     },
     components: {
+        FontAwesomeIcon,
         DatasetProvider,
         DecodedId,
         UtcDate,

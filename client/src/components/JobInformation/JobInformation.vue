@@ -6,7 +6,10 @@
                 <tr v-if="job && job.tool_id">
                     <td>Galaxy Tool ID:</td>
                     <td id="galaxy-tool-id">
-                        {{ job.tool_id }} (<a :href="'/root?tool_id=' + job.tool_id" target="_top">run</a>)
+                        {{ job.tool_id }}
+                        <a title="run" :href="`/root?tool_id=${job.tool_id}`" target="_top">
+                            <font-awesome-icon icon="play" />
+                        </a>
                         <copy-to-clipboard
                             message="Tool ID was copied to your clipboard"
                             :text="job.tool_id"
@@ -22,14 +25,23 @@
                     <td>Created by workflow?</td>
                     <td id="created-by-workflow">{{ job.workflow_invocation_step != None }}</td>
                 </tr>
-                <tr v-if="job && job.workflow_invocation_step && showWorkflowInfo">
+                <tr
+                    v-if="
+                        job &&
+                        job.workflow_invocation_step &&
+                        job.workflow_invocation_step.stored_workflow_id &&
+                        showWorkflowInfo
+                    "
+                >
                     <td>Workflow ID:</td>
                     <td id="workflow-id">
-                        {{ job.workflow_invocation_step.stored_workflow_id }} (<a
-                            :href="'/workflow/display_by_id?id=' + job.workflow_invocation_step.stored_workflow_id"
+                        {{ job.workflow_invocation_step.stored_workflow_id }}
+                        <a
+                            title="view"
+                            :href="`/workflow/display_by_id?id=${job.workflow_invocation_step.stored_workflow_id}`"
                             target="_top"
-                            >view</a
-                        >)
+                            ><font-awesome-icon icon="eye" />
+                        </a>
                     </td>
                 </tr>
                 <tr v-if="job && job.workflow_invocation_step && showWorkflowInfo">
@@ -44,7 +56,7 @@
                 </tr>
                 <tr v-if="job && includeTimes">
                     <td>Updated</td>
-                    <td id="created" v-if="job.update_time">
+                    <td id="updated" v-if="job.update_time">
                         <UtcDate :date="job.update_time" mode="pretty" />
                     </td>
                 </tr>
@@ -73,9 +85,10 @@
                 <tr v-if="job && job.id">
                     <td>Job API ID:</td>
                     <td id="encoded-job-id">
-                        {{ job.id }} <decoded-id :id="job.id" /> (<a :href="'/root?job_id=' + job.id" target="_top"
-                            >rerun</a
-                        >)
+                        {{ job.id }} <decoded-id :id="job.id" />
+                        <a title="rerun" :href="'/root?job_id=' + job.id" target="_top"
+                            ><font-awesome-icon icon="redo"
+                        /></a>
                     </td>
                 </tr>
                 <tr v-if="job && job.copied_from_job_id">
@@ -98,9 +111,14 @@ import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import { formatDuration, intervalToDuration } from "date-fns";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlay, faRedo, faEye } from "@fortawesome/free-solid-svg-icons";
 
+library.add(faPlay, faRedo, faEye);
 export default {
     components: {
+        FontAwesomeIcon,
         CodeRow,
         DecodedId,
         UtcDate,

@@ -1,5 +1,5 @@
 <template>
-    <font-awesome-icon :title="title" :icon="['far', 'copy']" @click="copy(text, message)" />
+    <font-awesome-icon class="cursor-pointer" :title="title" :icon="['far', 'copy']" @click="copy(text, message)" />
 </template>
 
 <script>
@@ -36,3 +36,8 @@ export default {
     },
 };
 </script>
+<style>
+.cursor-pointer {
+    cursor: pointer;
+}
+</style>
