@@ -1342,6 +1342,164 @@ class TestHistory(BaseTest):
         delete_from_database(session, to_cleanup)
 
 
+class TestHistoryDatasetAssociation(BaseTest):
+
+    # def test_table(self, cls_):
+    #     assert cls_.__tablename__ == 'history_dataset_association'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        history,
+        dataset,
+        library_dataset_dataset_association,
+        extended_metadata,
+        history_dataset_collection_association,
+        history_dataset_association_factory,
+    ):
+        copied_from_hda = history_dataset_association_factory()
+        parent = history_dataset_association_factory()
+
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        state = 'a'
+        name = 'b'
+        info = 'c'
+        blurb = 'd'
+        peek = 'e'
+        tool_version = 'f'
+        extension = 'g'
+        _metadata = 'h'
+        designation = 'i'
+        deleted = False
+        visible = False
+        version = 1
+        hid = 2
+        purged = False
+        validated_state = 'j'
+        validated_state_message = 'k'
+
+        obj = cls_()
+        obj.history = history
+        obj.dataset = dataset
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.state = state
+        obj.copied_from_history_dataset_association = copied_from_hda
+        obj.copied_from_library_dataset_dataset_association = library_dataset_dataset_association
+        obj.name = name
+        obj.info = info
+        obj.blurb = blurb
+        obj.peek = peek
+        obj.tool_version = tool_version
+        obj.extension = extension
+        obj._metadata = _metadata
+        obj.parent_id = parent.id
+        obj.designation = designation
+        obj.deleted = deleted
+        obj.visible = visible
+        obj.extended_metadata = extended_metadata
+        obj.version = version
+        obj.hid = hid
+        obj.purged = purged
+        obj.validated_state = validated_state
+        obj.validated_state_message = validated_state_message
+        obj.hidden_beneath_collection_instance = history_dataset_collection_association
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.history_id == history.id
+            assert stored_obj.dataset_id == dataset.id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.state == state
+            assert stored_obj.copied_from_history_dataset_association_id == copied_from_hda.id
+            assert stored_obj.copied_from_library_dataset_dataset_association_id == library_dataset_dataset_association.id
+            assert stored_obj.name == name
+            assert stored_obj.info == info
+            assert stored_obj.blurb == blurb
+            assert stored_obj.peek == peek
+            assert stored_obj.tool_version == tool_version
+            assert stored_obj.extension == extension
+            assert stored_obj._metadata == _metadata
+            assert stored_obj.parent_id == parent.id
+            assert stored_obj.designation == designation
+            assert stored_obj.deleted == deleted
+            assert stored_obj.visible == visible
+            assert stored_obj.extended_metadata_id == extended_metadata.id
+            assert stored_obj.version == version
+            assert stored_obj.hid == hid
+            assert stored_obj.purged == purged
+            assert stored_obj.validated_state == validated_state
+            assert stored_obj.validated_state_message == validated_state_message
+            assert stored_obj.hidden_beneath_collection_instance_id == history_dataset_collection_association.id
+
+        delete_from_database(session, [copied_from_hda, parent])
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        history,
+        dataset,
+        extended_metadata,
+        history_dataset_collection_association,
+        history_dataset_association_factory,
+        history_dataset_association_tag_association,
+        history_dataset_association_annotation_association,
+        history_dataset_association_rating_association,
+        job_to_input_dataset_association,
+        job_to_output_dataset_association,
+        implicitly_converted_dataset_association_factory,
+        library_dataset_dataset_association_factory,
+    ):
+        copied_from_hda = history_dataset_association_factory()
+        copied_from_ldda = library_dataset_dataset_association_factory()
+        copied_to_ldda = library_dataset_dataset_association_factory()
+
+        icda = implicitly_converted_dataset_association_factory()
+        icpda = implicitly_converted_dataset_association_factory()
+
+        obj = cls_()
+        obj.history = history
+        obj.dataset = dataset
+        obj.copied_from_history_dataset_association = copied_from_hda
+        obj.copied_from_library_dataset_dataset_association = copied_from_ldda
+        obj.extended_metadata = extended_metadata
+        obj.validated_state = 'a'
+        obj.hidden_beneath_collection_instance = history_dataset_collection_association
+        obj.copied_to_library_dataset_dataset_associations.append(copied_to_ldda)
+        obj.tags.append(history_dataset_association_tag_association)
+        obj.annotations.append(history_dataset_association_annotation_association)
+        obj.ratings.append(history_dataset_association_rating_association)
+        obj.dependent_jobs.append(job_to_input_dataset_association)
+        obj.creating_job_associations.append(job_to_output_dataset_association)
+        obj.implicitly_converted_datasets.append(icda)
+        obj.implicitly_converted_parent_datasets.append(icpda)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.history.id == history.id
+            assert stored_obj.dataset.id == dataset.id
+            assert stored_obj.copied_from_history_dataset_association.id == copied_from_hda.id
+            assert stored_obj.copied_from_library_dataset_dataset_association.id == copied_from_ldda.id
+            assert stored_obj.extended_metadata.id == extended_metadata.id
+            assert stored_obj.hidden_beneath_collection_instance.id == history_dataset_collection_association.id
+            assert stored_obj.copied_to_library_dataset_dataset_associations == [copied_to_ldda]
+            assert stored_obj.tags == [history_dataset_association_tag_association]
+            assert stored_obj.annotations == [history_dataset_association_annotation_association]
+            assert stored_obj.ratings == [history_dataset_association_rating_association]
+            assert stored_obj.dependent_jobs == [job_to_input_dataset_association]
+            assert stored_obj.creating_job_associations == [job_to_output_dataset_association]
+            assert stored_obj.implicitly_converted_datasets == [icda]
+            assert stored_obj.implicitly_converted_parent_datasets == [icpda]
+
+        delete_from_database(session, [copied_from_hda, copied_from_ldda, copied_to_ldda, icda, icpda])
+
+
 class TestHistoryDatasetAssociationHistory(BaseTest):
 
     def test_table(self, cls_):
@@ -6212,9 +6370,27 @@ def history_dataset_association(model, session, dataset):
 
 
 @pytest.fixture
+def history_dataset_annotation_association(model, session):
+    instance = model.HistoryDatasetAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def history_dataset_association_annotation_association(model, session):
+    instance = model.HistoryDatasetAssociationAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def history_dataset_association_rating_association(model, session):
+    instance = model.HistoryDatasetAssociationRatingAssociation(None, None)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def history_dataset_association_tag_association(model, session):
-    hdata = model.HistoryDatasetAssociationTagAssociation()
-    yield from dbcleanup_wrapper(session, hdata)
+    instance = model.HistoryDatasetAssociationTagAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6311,6 +6487,12 @@ def job_to_implicit_output_dataset_collection_association(model, session, datase
 
 
 @pytest.fixture
+def job_to_input_dataset_association(model, session, history_dataset_association):
+    instance = model.JobToInputDatasetAssociation(None, history_dataset_association)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def job_to_input_library_dataset_association(model, session, library_dataset_dataset_association):
     instance = model.JobToInputLibraryDatasetAssociation(None, library_dataset_dataset_association)
     yield from dbcleanup_wrapper(session, instance)
@@ -6319,6 +6501,12 @@ def job_to_input_library_dataset_association(model, session, library_dataset_dat
 @pytest.fixture
 def job_to_output_dataset_collection_association(model, session, history_dataset_collection_association):
     instance = model.JobToOutputDatasetCollectionAssociation(None, history_dataset_collection_association)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def job_to_output_dataset_association(model, session, history_dataset_association):
+    instance = model.JobToOutputDatasetAssociation(None, history_dataset_association)
     yield from dbcleanup_wrapper(session, instance)
 
 
