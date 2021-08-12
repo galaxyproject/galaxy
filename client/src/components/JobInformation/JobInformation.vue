@@ -7,7 +7,7 @@
                     <td>Galaxy Tool ID:</td>
                     <td id="galaxy-tool-id">
                         {{ job.tool_id }}
-                        <a title="run" :href="`/root?tool_id=${job.tool_id}`" target="_top">
+                        <a title="run" :href="`${getAppRoot()}root?tool_id=${job.tool_id}`" target="_top">
                             <font-awesome-icon icon="play" />
                         </a>
                         <copy-to-clipboard
@@ -40,7 +40,7 @@
                         {{ job.workflow_invocation_step.stored_workflow_id }}
                         <a
                             title="view"
-                            :href="`/workflow/display_by_id?id=${job.workflow_invocation_step.stored_workflow_id}`"
+                            :href="`${getAppRoot()}workflow/display_by_id?id=${job.workflow_invocation_step.stored_workflow_id}`"
                             target="_top"
                             ><font-awesome-icon icon="eye" />
                         </a>
@@ -88,7 +88,7 @@
                     <td>Job API ID:</td>
                     <td id="encoded-job-id">
                         {{ job.id }} <decoded-id :id="job.id" />
-                        <a title="rerun" :href="'/root?job_id=' + job.id" target="_top"
+                        <a title="rerun" :href="`${getAppRoot()}root?job_id=${job.id}`" target="_top"
                             ><font-awesome-icon icon="redo"
                         /></a>
                     </td>
@@ -115,9 +115,9 @@ import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import { formatDuration, intervalToDuration } from "date-fns";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlay, faRedo, faEye } from "@fortawesome/free-solid-svg-icons";
+import { faPlay, faRedo } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faPlay, faRedo, faEye);
+library.add(faPlay, faRedo);
 export default {
     components: {
         FontAwesomeIcon,

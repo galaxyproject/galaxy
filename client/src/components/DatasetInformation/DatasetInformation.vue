@@ -11,7 +11,7 @@
                         variant="light"
                         size="sm"
                         title="Edit dataset attributes"
-                        :href="`/datasets/edit?dataset_id=${dataset.id}`"
+                        :href="`${root}datasets/edit?dataset_id=${dataset.id}`"
                         target="_top"
                     >
                         <font-awesome-icon icon="edit" />
@@ -60,11 +60,10 @@
                         <td>History API ID</td>
                         <td>
                             <div id="history_id">
-                                {{ dataset.history_id }} <decoded-id :id="dataset.history_id" /> (<a
-                                    :href="'/histories/view?id=' + dataset.history_id"
-                                    target="_top"
-                                    >view</a
-                                >)
+                                {{ dataset.history_id }} <decoded-id :id="dataset.history_id" />
+                                <a title="view" :href="`${root}histories/view?id=${dataset.history_id}`" target="_top"
+                                    ><font-awesome-icon icon="eye"
+                                /></a>
                             </div>
                         </td>
                     </tr>
@@ -89,15 +88,21 @@ import DecodedId from "../DecodedId";
 import { DatasetProvider } from "../WorkflowInvocationState/providers";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faEye } from "@fortawesome/free-solid-svg-icons";
+import { getAppRoot } from "onload/loadConfig";
 
-library.add(faEdit);
+library.add(faEdit, faEye);
 export default {
     props: {
         hda_id: {
             type: String,
             required: true,
         },
+    },
+    data() {
+        return {
+            root: getAppRoot(),
+        };
     },
     components: {
         FontAwesomeIcon,
