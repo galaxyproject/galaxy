@@ -5,7 +5,7 @@
             <table id="dataset-details" class="tabletip info_data_table">
                 <tbody>
                     <tr>
-                        <td>Number in history</td>
+                        <td>Number in History</td>
                         <td id="number">{{ dataset.hid }}</td>
                     </tr>
                     <tr>
