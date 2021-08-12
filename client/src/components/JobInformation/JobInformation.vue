@@ -40,7 +40,9 @@
                         {{ job.workflow_invocation_step.stored_workflow_id }}
                         <a
                             title="view"
-                            :href="`${getAppRoot()}workflow/display_by_id?id=${job.workflow_invocation_step.stored_workflow_id}`"
+                            :href="`${getAppRoot()}workflow/display_by_id?id=${
+                                job.workflow_invocation_step.stored_workflow_id
+                            }`"
                             target="_top"
                             ><font-awesome-icon icon="eye" />
                         </a>
