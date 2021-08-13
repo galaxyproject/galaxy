@@ -155,8 +155,8 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
         disable_dependency_resolution(config)
-        containers_resolvers_config_path = os.path.join(cls.jobs_directory, "container_resolvers.yml")
-        with open(containers_resolvers_config_path, "w") as f:
+        container_resolvers_config_path = os.path.join(cls.jobs_directory, "container_resolvers.yml")
+        with open(container_resolvers_config_path, "w") as f:
             f.write("""
 - type: mapping
   mappings:
@@ -164,7 +164,7 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
       tool_id: mulled_example_broken_no_requirements
       identifier: 'quay.io/biocontainers/bwa:0.7.15--0'
 """)
-        config["containers_resolvers_config_file"] = containers_resolvers_config_path
+        config["container_resolvers_config_file"] = container_resolvers_config_path
 
     @classmethod
     def setUpClass(cls):
