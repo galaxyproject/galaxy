@@ -40,6 +40,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     desc,
+    false,
     ForeignKey,
     func,
     Index,
@@ -3184,7 +3185,47 @@ class StorableObject:
             sa_session.flush()
 
 
-class Dataset(StorableObject, RepresentById, _HasTable):
+class Dataset(Base, StorableObject, RepresentById, _HasTable):
+    __tablename__ = 'dataset'
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey("job.id"), index=True, nullable=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, index=True, default=now, onupdate=now)
+    state = Column(TrimmedString(64), index=True)
+    deleted = Column(Boolean, index=True, default=False)
+    purged = Column(Boolean, index=True, default=False)
+    purgable = Column(Boolean, default=True)
+    object_store_id = Column(TrimmedString(255), index=True)
+    external_filename = Column(TEXT)
+    _extra_files_path = Column(TEXT)
+    created_from_basename = Column(TEXT)
+    file_size = Column(Numeric(15, 0))
+    total_size = Column(Numeric(15, 0))
+    uuid = Column(UUIDType())
+
+    actions = relationship('DatasetPermissions', back_populates='dataset')
+    job = relationship('Job', primaryjoin=(lambda: Dataset.job_id == Job.id))  # type: ignore
+    active_history_associations = relationship('HistoryDatasetAssociation',
+        primaryjoin=(lambda:
+            (Dataset.id == HistoryDatasetAssociation.dataset_id)  # type: ignore
+            & (HistoryDatasetAssociation.deleted == false())  # type: ignore
+            & (HistoryDatasetAssociation.purged == false())),  # type: ignore
+        viewonly=True)
+    purged_history_associations = relationship('HistoryDatasetAssociation',
+        primaryjoin=(lambda:
+            (Dataset.id == HistoryDatasetAssociation.dataset_id)  # type: ignore
+            & (HistoryDatasetAssociation.purged == true())),  # type: ignore
+        viewonly=True)
+    active_library_associations = relationship('LibraryDatasetDatasetAssociation',
+        primaryjoin=(lambda:
+            (Dataset.id == LibraryDatasetDatasetAssociation.dataset_id)  # type: ignore
+            & (LibraryDatasetDatasetAssociation.deleted == false())),  # type: ignore
+        viewonly=True)
+    hashes = relationship('DatasetHash', back_populates='dataset')
+    sources = relationship('DatasetSource', back_populates='dataset')
+    job_export_history_archive = relationship('JobExportHistoryArchive', back_populates='dataset')
+    genome_index_tool_data = relationship('GenomeIndexToolData', back_populates='dataset')
 
     class states(str, Enum):
         NEW = 'new'

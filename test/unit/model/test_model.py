@@ -377,8 +377,8 @@ class TestDataManagerJobAssociation(BaseTest):
 
 class TestDataset(BaseTest):
 
-    # def test_table(self, cls_):
-    #    assert cls_.__tablename__ == 'dataset'
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'dataset'
 
     def test_columns(self, session, cls_, job):
         create_time = datetime.now()
