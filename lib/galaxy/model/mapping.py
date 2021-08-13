@@ -19,7 +19,7 @@ from sqlalchemy import (
     not_,
     Numeric,
     select,
-    String, Table,
+    Table,
     TEXT,
     true,
 )
@@ -34,7 +34,6 @@ from galaxy.model import mapper_registry
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.custom_types import (
     JSONType,
-    MutableJSONType,
     TrimmedString,
     UUIDType,
 )
@@ -151,42 +150,6 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("message", TrimmedString(255)))
 
-model.Job.table = Table(
-    "job", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now, index=True),
-    Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("library_folder_id", Integer, ForeignKey("library_folder.id"), index=True),
-    Column("tool_id", String(255)),
-    Column("tool_version", TEXT, default="1.0.0"),
-    Column("galaxy_version", String(64), default=None),
-    Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True),
-    Column("state", String(64), index=True),
-    Column("info", TrimmedString(255)),
-    Column("copied_from_job_id", Integer, nullable=True),
-    Column("command_line", TEXT),
-    Column("dependencies", MutableJSONType, nullable=True),
-    Column("job_messages", MutableJSONType, nullable=True),
-    Column("param_filename", String(1024)),
-    Column("runner_name", String(255)),
-    Column("job_stdout", TEXT),
-    Column("job_stderr", TEXT),
-    Column("tool_stdout", TEXT),
-    Column("tool_stderr", TEXT),
-    Column("exit_code", Integer, nullable=True),
-    Column("traceback", TEXT),
-    Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True, nullable=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=True),
-    Column("job_runner_name", String(255)),
-    Column("job_runner_external_id", String(255), index=True),
-    Column("destination_id", String(255), nullable=True),
-    Column("destination_params", MutableJSONType, nullable=True),
-    Column("object_store_id", TrimmedString(255), index=True),
-    Column("imported", Boolean, default=False, index=True),
-    Column("params", TrimmedString(255), index=True),
-    Column("handler", TrimmedString(255), index=True))
-
 
 # With the tables defined we can define the mappers and setup the
 # relationships between the model objects.
@@ -244,7 +207,7 @@ simple_mapping(model.HistoryDatasetAssociation,
 
 simple_mapping(model.Dataset,
     actions=relation(model.DatasetPermissions, back_populates='dataset'),
-    job=relation(model.Job, primaryjoin=(model.Dataset.table.c.job_id == model.Job.table.c.id)),
+    job=relation(model.Job, primaryjoin=(model.Dataset.table.c.job_id == model.Job.id)),
     active_history_associations=relation(model.HistoryDatasetAssociation,
         primaryjoin=(
             (model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)
@@ -394,50 +357,16 @@ model.Page.users_shared_with_dot_users = association_proxy('users_shared_with', 
 # returns a list of users that visualization is shared with.
 model.Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
-mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
-    # user=relation( model.User.mapper ),
-    user=relation(model.User),
-    galaxy_session=relation(model.GalaxySession),
-    history=relation(model.History, backref="jobs"),
-    library_folder=relation(model.LibraryFolder, lazy=True),
-    parameters=relation(model.JobParameter, lazy=True),
-    input_datasets=relation(model.JobToInputDatasetAssociation, back_populates="job"),
-    input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, back_populates="job", lazy=True),
-    input_dataset_collection_elements=relation(model.JobToInputDatasetCollectionElementAssociation,
-        back_populates="job", lazy=True),
-    output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation,
-        back_populates="job", lazy=True),
-    output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation,
-        back_populates="job", lazy=True),
-    post_job_actions=relation(model.PostJobActionAssociation, backref="job", lazy=False),
-    input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation, back_populates="job"),
-    output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation,
-        back_populates="job", lazy=True),
-    external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True, backref='job'),
-    tasks=relation(model.Task, back_populates='job'),
-    output_datasets=relation(model.JobToOutputDatasetAssociation, back_populates='job'),
-    state_history=relation(model.JobStateHistory, back_populates='job'),
-    text_metrics=relation(model.JobMetricText, back_populates='job'),
-    numeric_metrics=relation(model.JobMetricNumeric, back_populates='job'),
-    job=relation(model.GenomeIndexToolData, back_populates='job'),  # TODO review attr naming (the functionality IS correct)
-    interactivetool_entry_points=relation(model.InteractiveToolEntryPoint, back_populates='job', uselist=True),
-    implicit_collection_jobs_association=relation(model.ImplicitCollectionJobsJobAssociation,
-        back_populates='job', uselist=False),
-    container=relation('JobContainerAssociation', back_populates='job', uselist=False),
-    data_manager_association=relation('DataManagerJobAssociation', back_populates='job', uselist=False),
-    history_dataset_collection_associations=relation('HistoryDatasetCollectionAssociation', back_populates='job'),
-    workflow_invocation_step=relation('WorkflowInvocationStep', back_populates='job', uselist=False),
-))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],
-           and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.job_id,
+           and_(model.Job.id == model.JobToOutputDatasetAssociation.job_id,
                 model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.dataset_id,
                 model.HistoryDatasetAssociation.table.c.deleted == true())
            )
 )
 model.Job.any_output_dataset_collection_instances_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetCollectionAssociation.id],
-           and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.job_id,
+           and_(model.Job.id == model.JobToOutputDatasetCollectionAssociation.job_id,
                 model.HistoryDatasetCollectionAssociation.id == model.JobToOutputDatasetCollectionAssociation.dataset_collection_id,
                 model.HistoryDatasetCollectionAssociation.deleted == true())
            )

@@ -2256,8 +2256,8 @@ class TestInteractiveToolEntryPoint(BaseTest):
 
 class TestJob(BaseTest):
 
-    # def test_table(self, cls_):
-    #     assert cls_.__tablename__ == 'job'
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'job'
 
     def test_columns(
         self,
