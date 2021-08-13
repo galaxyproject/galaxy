@@ -129,7 +129,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             try:
                 param_claim = self.runner_params['k8s_data_volume_claim'].split(":")
                 princip_claim_name = param_claim[0]
-                base_mount = param_claim[1]
             except Exception as e:
                 log.debug('Failed to parse `k8s_data_volume_claim` parameter in the kubernetes runner configuration')
                 raise e
@@ -480,16 +479,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             for i in list(inputs):
                 file_path = str(i)
                 subpath = file_path.lstrip(base_mount).lstrip('/').rstrip('/')
-                volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath })
+                volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
             for o in list(outputs):
                 file_path = str(o).rstrip('/').split('/')
                 file_path = "/".join(file_path[:-1])
                 subpath = str(file_path).lstrip(base_mount).lstrip('/')
-                volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath })
+                volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
             wd_subpath = str(job_wrapper.working_directory).lstrip(base_mount).lstrip('/').rstrip('/')
             volume_mounts.append({'name': claim_name,
                                   'mountPath': str(job_wrapper.working_directory),
-                                  'subPath': wd_subpath })
+                                  'subPath': wd_subpath})
             return volume_mounts
         else:
             return {}
