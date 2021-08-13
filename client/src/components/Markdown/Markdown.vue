@@ -293,10 +293,3 @@ export default {
     },
 };
 </script>
-<style scoped>
-.markdown-export {
-    bottom: 0;
-    right: 0;
-    opacity: 0.5;
-}
-</style>
