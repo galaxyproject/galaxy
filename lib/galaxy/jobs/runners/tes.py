@@ -248,11 +248,11 @@ class TESJobRunner(AsynchronousJobRunner):
         script[-1] = '\n'
         return ' '.join(script)
 
-    def staging_out_command(self, script_path:str, output_files:list, api_url:str):
+    def staging_out_command(self, script_path:str, output_files:list, api_url:str, work_dir:str):
         """
             Generates command for staging out of files
         """
-        command = ["python", script_path, api_url]
+        command = ["python", script_path, api_url, work_dir]
 
         for file in output_files:
             command.append(file)
@@ -266,6 +266,10 @@ class TESJobRunner(AsynchronousJobRunner):
         env_vars = {}
         for variable in job_wrapper.environment_variables:
             env_vars[variable['name']] = variable['value']
+
+        for variable in job_wrapper.job_destination.env:
+            env_vars[variable['name']] = variable['value']
+
         env_vars["_GALAXY_JOB_TMP_DIR"] = self.container_workdir
         env_vars["_GALAXY_JOB_HOME_DIR"] = self.container_workdir
         return env_vars
@@ -334,7 +338,7 @@ class TESJobRunner(AsynchronousJobRunner):
             )
 
         env_var = self.env_variables(job_wrapper)
-        staging_out_command = self.staging_out_command(script_path, output_files, client_args['files_endpoint'])
+        staging_out_command = self.staging_out_command(script_path, output_files, client_args['files_endpoint'], job_wrapper.working_directory)
         
         job_script = self.base_job_script(mount_path, work_dir, output_files, job_wrapper.tool.description)
         
