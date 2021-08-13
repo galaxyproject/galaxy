@@ -794,14 +794,88 @@ class TaskMetricNumeric(Base, BaseJobMetric, RepresentById):
     task = relationship('Task', back_populates='numeric_metrics')
 
 
-class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
-    dict_collection_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version']
-    dict_element_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version', 'command_version']
-
+class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     """
     A job represents a request to run a tool given input datasets, tool
     parameters, and output datasets.
     """
+    __tablename__ = 'job'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now, index=True)
+    history_id = Column(Integer, ForeignKey('history.id'), index=True)
+    library_folder_id = Column(Integer, ForeignKey('library_folder.id'), index=True)
+    tool_id = Column(String(255))
+    tool_version = Column(TEXT, default='1.0.0')
+    galaxy_version = Column(String(64), default=None)
+    dynamic_tool_id = Column(Integer, ForeignKey('dynamic_tool.id'), index=True, nullable=True)
+    state = Column(String(64), index=True)
+    info = Column(TrimmedString(255))
+    copied_from_job_id = Column(Integer, nullable=True)
+    command_line = Column(TEXT)
+    dependencies = Column(MutableJSONType, nullable=True)
+    job_messages = Column(MutableJSONType, nullable=True)
+    param_filename = Column(String(1024))
+    runner_name = Column(String(255))
+    job_stdout = Column(TEXT)
+    job_stderr = Column(TEXT)
+    tool_stdout = Column(TEXT)
+    tool_stderr = Column(TEXT)
+    exit_code = Column(Integer, nullable=True)
+    traceback = Column(TEXT)
+    session_id = Column(Integer, ForeignKey('galaxy_session.id'), index=True, nullable=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True, nullable=True)
+    job_runner_name = Column(String(255))
+    job_runner_external_id = Column(String(255), index=True)
+    destination_id = Column(String(255), nullable=True)
+    destination_params = Column(MutableJSONType, nullable=True)
+    object_store_id = Column(TrimmedString(255), index=True)
+    imported = Column(Boolean, default=False, index=True)
+    params = Column(TrimmedString(255), index=True)
+    handler = Column(TrimmedString(255), index=True)
+
+    user = relationship('User')
+    galaxy_session = relationship('GalaxySession')
+    history = relationship('History', backref='jobs')
+    library_folder = relationship('LibraryFolder', lazy=True)
+    parameters = relationship('JobParameter', lazy=True)
+    input_datasets = relationship('JobToInputDatasetAssociation', back_populates='job')
+    input_dataset_collections = relationship('JobToInputDatasetCollectionAssociation',
+        back_populates='job', lazy=True)
+    input_dataset_collection_elements = relationship('JobToInputDatasetCollectionElementAssociation',
+        back_populates='job', lazy=True)
+    output_dataset_collection_instances = relationship('JobToOutputDatasetCollectionAssociation',
+        back_populates='job', lazy=True)
+    output_dataset_collections = relationship('JobToImplicitOutputDatasetCollectionAssociation',
+        back_populates='job', lazy=True)
+    post_job_actions = relationship('PostJobActionAssociation', backref='job', lazy=False)
+    input_library_datasets = relationship('JobToInputLibraryDatasetAssociation',
+        back_populates='job')
+    output_library_datasets = relationship('JobToOutputLibraryDatasetAssociation',
+        back_populates='job', lazy=True)
+    external_output_metadata = relationship('JobExternalOutputMetadata', lazy=True, backref='job')
+    tasks = relationship('Task', back_populates='job')
+    output_datasets = relationship('JobToOutputDatasetAssociation', back_populates='job')
+    state_history = relationship('JobStateHistory', back_populates='job')
+    text_metrics = relationship('JobMetricText', back_populates='job')
+    numeric_metrics = relationship('JobMetricNumeric', back_populates='job')
+    job = relationship('GenomeIndexToolData', back_populates='job')  # TODO review attr naming (the functionality IS correct)
+    interactivetool_entry_points = relationship('InteractiveToolEntryPoint',
+        back_populates='job', uselist=True)
+    implicit_collection_jobs_association = relationship('ImplicitCollectionJobsJobAssociation',
+        back_populates='job', uselist=False)
+    container = relationship('JobContainerAssociation', back_populates='job', uselist=False)
+    data_manager_association = relationship('DataManagerJobAssociation',
+        back_populates='job', uselist=False)
+    history_dataset_collection_associations = relationship('HistoryDatasetCollectionAssociation',
+        back_populates='job')
+    workflow_invocation_step = relationship('WorkflowInvocationStep',
+        back_populates='job', uselist=False)
+
+    dict_collection_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version']
+    dict_element_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version', 'command_version']
+
     _numeric_metric = JobMetricNumeric
     _text_metric = JobMetricText
 
