@@ -837,7 +837,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
     user = relationship('User')
     galaxy_session = relationship('GalaxySession')
-    history = relationship('History', backref='jobs')
+    history = relationship('History', back_populates='jobs')
     library_folder = relationship('LibraryFolder', lazy=True)
     parameters = relationship('JobParameter', lazy=True)
     input_datasets = relationship('JobToInputDatasetAssociation', back_populates='job')
@@ -849,12 +849,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         back_populates='job', lazy=True)
     output_dataset_collections = relationship('JobToImplicitOutputDatasetCollectionAssociation',
         back_populates='job', lazy=True)
-    post_job_actions = relationship('PostJobActionAssociation', backref='job', lazy=False)
+    post_job_actions = relationship('PostJobActionAssociation', back_populates='job', lazy=False)
     input_library_datasets = relationship('JobToInputLibraryDatasetAssociation',
         back_populates='job')
     output_library_datasets = relationship('JobToOutputLibraryDatasetAssociation',
         back_populates='job', lazy=True)
-    external_output_metadata = relationship('JobExternalOutputMetadata', lazy=True, backref='job')
+    external_output_metadata = relationship('JobExternalOutputMetadata', lazy=True, back_populates='job')
     tasks = relationship('Task', back_populates='job')
     output_datasets = relationship('JobToOutputDatasetAssociation', back_populates='job')
     state_history = relationship('JobStateHistory', back_populates='job')
@@ -1956,6 +1956,7 @@ class PostJobActionAssociation(Base, RepresentById):
     job_id = Column(Integer, ForeignKey('job.id'), index=True, nullable=False)
     post_job_action_id = Column(Integer, ForeignKey('post_job_action.id'), index=True, nullable=False)
     post_job_action = relationship('PostJobAction')
+    job = relationship('Job', back_populates='post_job_actions')
 
     def __init__(self, pja, job=None, job_id=None):
         if job is not None:
@@ -1981,8 +1982,10 @@ class JobExternalOutputMetadata(Base, RepresentById):
     filename_kwds = Column(String(255))
     filename_override_metadata = Column(String(255))
     job_runner_external_pid = Column(String(255))
+
     history_dataset_association = relationship('HistoryDatasetAssociation', lazy=False)
     library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation', lazy=False)
+    job = relationship('Job', back_populates='external_output_metadata')
 
     def __init__(self, job=None, dataset=None):
         self.job = job
@@ -2418,6 +2421,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
     users_shared_with = relationship('HistoryUserShareAssociation', back_populates='history')
     galaxy_sessions = relationship('GalaxySessionToHistoryAssociation', back_populates='history')
     workflow_invocations = relationship('WorkflowInvocation', back_populates='history')
+    jobs = relationship('Job', back_populates='history')
 
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
@@ -6245,7 +6249,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     uuid = Column(UUIDType, nullable=True)
 
     steps = relationship('WorkflowStep',
-        backref='workflow',
+        back_populates='workflow',
         primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),  # type: ignore
         order_by=lambda: asc(WorkflowStep.order_index),  # type: ignore
         cascade="all, delete-orphan",
@@ -6437,6 +6441,10 @@ class WorkflowStep(Base, RepresentById):
     )
     output_connections = relationship('WorkflowStepConnection',
         primaryjoin=(lambda: WorkflowStepConnection.output_step_id == WorkflowStep.id)  # type: ignore
+    )
+    workflow = relationship('Workflow',
+        primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),  # type: ignore
+        back_populates='steps',
     )
 
     STEP_TYPE_TO_INPUT_TYPE = {
@@ -6836,6 +6844,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
             WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id  # type: ignore
                 == WorkflowInvocation.id),  # type: ignore
         back_populates='subworkflow_invocation')
+    output_values = relationship('WorkflowInvocationOutputValue', back_populates='workflow_invocation')
 
     dict_collection_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
     dict_element_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
@@ -7482,7 +7491,7 @@ class WorkflowInvocationOutputValue(Base, Dictifiable, RepresentById):
     workflow_output_id = Column(Integer, ForeignKey('workflow_output.id'), index=True)
     value = Column(MutableJSONType)
 
-    workflow_invocation = relationship('WorkflowInvocation', backref="output_values")
+    workflow_invocation = relationship('WorkflowInvocation', back_populates="output_values")
 
     workflow_invocation_step = relationship('WorkflowInvocationStep',
         foreign_keys='[WorkflowInvocationStep.workflow_invocation_id, WorkflowInvocationStep.workflow_step_id]',
@@ -8219,6 +8228,9 @@ class Visualization(Base, RepresentById):
     ratings = relationship('VisualizationRatingAssociation',
         order_by='VisualizationRatingAssociation.id',
         back_populates="visualization")
+    users_shared_with = relationship('VisualizationUserShareAssociation',
+        back_populates='visualization')
+
     # `average_rating` added at the bottom of this module
     # (cannot be added before VisualizationRatingAssociation is defined)
     average_rating: column_property
@@ -8303,7 +8315,7 @@ class VisualizationUserShareAssociation(Base, UserShareAssociation):
     visualization_id = Column(Integer, ForeignKey('visualization.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user = relationship('User', backref='visualizations_shared_by_others')
-    visualization = relationship('Visualization', backref='users_shared_with')
+    visualization = relationship('Visualization', back_populates='users_shared_with')
 
     def __init__(self):
         self.visualization = None

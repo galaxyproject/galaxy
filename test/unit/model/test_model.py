@@ -1289,6 +1289,7 @@ class TestHistory(BaseTest):
         history_user_share_association,
         galaxy_session_history_association,
         workflow_invocation,
+        job,
     ):
         obj = cls_()
         obj.user = user
@@ -1305,6 +1306,7 @@ class TestHistory(BaseTest):
         obj.users_shared_with.append(history_user_share_association)
         obj.galaxy_sessions.append(galaxy_session_history_association)
         obj.workflow_invocations.append(workflow_invocation)
+        obj.jobs.append(job)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -1325,6 +1327,7 @@ class TestHistory(BaseTest):
             assert stored_obj.default_permissions == [default_history_permissions]
             assert stored_obj.galaxy_sessions == [galaxy_session_history_association]
             assert stored_obj.workflow_invocations == [workflow_invocation]
+            assert stored_obj.jobs == [job]
 
     def test_average_rating(self, session, history, user, history_rating_association_factory):
         # History has been expunged; to access its deferred properties,
@@ -5144,6 +5147,7 @@ class TestVisualization(BaseTest):
         visualization_annotation_association,
         visualization_rating_association,
         visualization_revision_factory,
+        visualization_user_share_association,
     ):
         revision2 = visualization_revision_factory()
         persist(session, revision2)
@@ -5155,6 +5159,7 @@ class TestVisualization(BaseTest):
         obj.tags.append(visualization_tag_association)
         obj.annotations.append(visualization_annotation_association)
         obj.ratings.append(visualization_rating_association)
+        obj.users_shared_with.append(visualization_user_share_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -5164,6 +5169,7 @@ class TestVisualization(BaseTest):
             assert stored_obj.tags == [visualization_tag_association]
             assert stored_obj.annotations == [visualization_annotation_association]
             assert stored_obj.ratings == [visualization_rating_association]
+            assert stored_obj.users_shared_with == [visualization_user_share_association]
             # This doesn't test the average amount, just the mapping.
             assert stored_obj.average_rating == visualization_rating_association.rating
 
@@ -5433,6 +5439,7 @@ class TestWorkflowInvocation(BaseTest):
         workflow_request_step_state,
         workflow_request_to_input_dataset_association,
         workflow_request_to_input_dataset_collection_association,
+        workflow_invocation_output_value,
     ):
         subworkflow_invocation_assoc = workflow_invocation_to_subworkflow_invocation_association_factory()
         parent_workflow_invocation_assoc = workflow_invocation_to_subworkflow_invocation_association_factory()
@@ -5450,6 +5457,7 @@ class TestWorkflowInvocation(BaseTest):
         obj.output_dataset_collections.append(workflow_invocation_output_dataset_collection_association)
         obj.output_datasets.append(workflow_invocation_output_dataset_association)
         obj.parent_workflow_invocation_association.append(parent_workflow_invocation_assoc)
+        obj.output_values.append(workflow_invocation_output_value)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -5466,6 +5474,7 @@ class TestWorkflowInvocation(BaseTest):
             assert stored_obj.output_dataset_collections == [workflow_invocation_output_dataset_collection_association]
             assert stored_obj.output_datasets == [workflow_invocation_output_dataset_association]
             assert stored_obj.parent_workflow_invocation_association == [parent_workflow_invocation_assoc]
+            assert stored_obj.output_values == [workflow_invocation_output_value]
 
 
 class TestWorkflowInvocationStep(BaseTest):
@@ -7094,6 +7103,12 @@ def visualization_revision(model, session, visualization):
 @pytest.fixture
 def visualization_tag_association(model, session):
     vta = model.VisualizationTagAssociation()
+    yield from dbcleanup_wrapper(session, vta)
+
+
+@pytest.fixture
+def visualization_user_share_association(model, session):
+    vta = model.VisualizationUserShareAssociation()
     yield from dbcleanup_wrapper(session, vta)
 
 
