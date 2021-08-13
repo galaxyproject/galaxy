@@ -484,7 +484,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 file_path = str(o).rstrip('/').split('/')
                 file_path = "/".join(file_path[:-1])
                 subpath = str(file_path).lstrip(base_mount).lstrip('/')
-                volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
+                # Avoid mounting the same output directory twice for two output files using same dir
+                if subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
+                    volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
             wd_subpath = str(job_wrapper.working_directory).lstrip(base_mount).lstrip('/').rstrip('/')
             volume_mounts.append({'name': claim_name,
                                   'mountPath': str(job_wrapper.working_directory),
