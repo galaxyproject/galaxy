@@ -64,6 +64,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
+from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import (
     aliased,
     column_property,
@@ -74,6 +75,7 @@ from sqlalchemy.orm import (
     registry,
     relationship,
 )
+from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 import galaxy.exceptions
@@ -425,14 +427,80 @@ class JobLike:
         raise NotImplementedError("Attempt to set stdout, must set tool_stderr or job_stderr")
 
 
-class User(Dictifiable, RepresentById):
+class User(Base, Dictifiable, RepresentById):
     use_pbkdf2 = True
     bootstrap_admin_user = False
-    api_keys: 'List[APIKeys]'
+    # api_keys: 'List[APIKeys]'  already declared as relationship()
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.
     """
+
+    __tablename__ = 'galaxy_user'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    email = Column(TrimmedString(255), index=True, nullable=False)
+    username = Column(TrimmedString(255), index=True, unique=True)
+    password = Column(TrimmedString(255), nullable=False)
+    last_password_change = Column(DateTime, default=now)
+    external = Column(Boolean, default=False)
+    form_values_id = Column(Integer, ForeignKey('form_values.id'), index=True)
+    deleted = Column(Boolean, index=True, default=False)
+    purged = Column(Boolean, index=True, default=False)
+    disk_usage = Column(Numeric(15, 0), index=True)
+    # Column("person_metadata", JSONType),  # TODO: add persistent, configurable metadata rep for workflow creator
+    active = Column(Boolean, index=True, default=True, nullable=False)
+    activation_token = Column(TrimmedString(64), nullable=True, index=True)
+
+    addresses = relationship('UserAddress',
+        back_populates='user',
+        order_by='desc(UserAddress.update_time)')
+    cloudauthz = relationship('CloudAuthz', back_populates='user')
+    custos_auth = relationship('CustosAuthnzToken', back_populates='user')
+    default_permissions = relationship('DefaultUserPermissions', back_populates='user')
+    groups = relationship('UserGroupAssociation', back_populates='user')
+    histories = relationship('History',
+        backref='user',
+        order_by='desc(History.update_time)')
+    active_histories = relationship('History',
+        primaryjoin=(lambda: (History.user_id == User.id) & (not_(History.deleted))),  # type: ignore
+        viewonly=True,
+        order_by='desc(History.update_time)')
+    galaxy_sessions = relationship('GalaxySession',
+        backref='user',
+        order_by='desc(GalaxySession.update_time)')
+    pages_shared_by_others = relationship('PageUserShareAssociation', back_populates='user')
+    quotas = relationship('UserQuotaAssociation', back_populates='user')
+    social_auth = relationship('UserAuthnzToken', back_populates='user')
+    stored_workflow_menu_entries = relationship('StoredWorkflowMenuEntry',
+        primaryjoin=(lambda:
+            (StoredWorkflowMenuEntry.user_id == User.id)  # type: ignore
+            & (StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)  # type: ignore
+            & not_(StoredWorkflow.deleted)  # type: ignore
+        ),
+        backref='user',
+        cascade='all, delete-orphan',
+        collection_class=ordering_list('order_index'))
+    _preferences = relationship('UserPreference',
+        backref='user',
+        collection_class=attribute_mapped_collection('name'))
+    values = relationship('FormValues',
+        primaryjoin=(lambda: User.form_values_id == FormValues.id))  # type: ignore
+    # Add type hint (will this work w/SA?)
+    api_keys: 'List[APIKeys]' = relationship('APIKeys',
+        back_populates='user',
+        order_by='desc(APIKeys.create_time)')
+    pages = relationship('Page', back_populates='user')
+    reset_tokens = relationship('PasswordResetToken', back_populates='user')
+    histories_shared_by_others = relationship('HistoryUserShareAssociation', back_populates='user')
+    data_manager_histories = relationship('DataManagerHistoryAssociation', back_populates='user')
+    workflows_shared_by_others = relationship('StoredWorkflowUserShareAssociation', back_populates='user')
+    roles = relationship('UserRoleAssociation', back_populates='user')
+    stored_workflows = relationship('StoredWorkflow', back_populates='user',
+        primaryjoin=(lambda: User.id == StoredWorkflow.user_id))  # type: ignore
+
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
     dict_collection_visible_keys = ['id', 'email', 'username', 'deleted', 'active', 'last_password_change']
     # attributes that will be accessed and returned when calling to_dict( view='element' )
@@ -2858,9 +2926,9 @@ class UserRoleAssociation(Base, RepresentById):
         backref="non_private_roles",
         viewonly=True,
         primaryjoin=(lambda:
-            (User.table.c.id == UserRoleAssociation.user_id)  # type: ignore
+            (User.id == UserRoleAssociation.user_id)  # type: ignore
             & (UserRoleAssociation.role_id == Role.id)  # type: ignore
-            & not_(Role.name == User.table.c.email))  # type: ignore
+            & not_(Role.name == User.email))  # type: ignore
     )
 
     def __init__(self, user, role):
@@ -6147,7 +6215,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     published = Column(Boolean, index=True, default=False)
 
     user = relationship('User',
-        primaryjoin=(lambda: User.table.c.id == StoredWorkflow.user_id),  # type: ignore
+        primaryjoin=(lambda: User.id == StoredWorkflow.user_id),  # type: ignore
         back_populates='stored_workflows')
     workflows = relationship('Workflow',
         back_populates='stored_workflow',
@@ -7975,7 +8043,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
 
     @classmethod
     def get_users_by_email(cls, email):
-        return cls.user_query().filter(func.lower(User.table.c.email) == email.lower())
+        return cls.user_query().filter(func.lower(User.email) == email.lower())
 
     @classmethod
     def get_social_auth(cls, provider, uid):

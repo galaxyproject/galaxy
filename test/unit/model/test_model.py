@@ -4733,8 +4733,8 @@ class TestTransferJob(BaseTest):
 
 class TestUser(BaseTest):
 
-    # def test_table(self, cls_):
-    #     assert cls_.__tablename__ == 'user'
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'galaxy_user'
 
     def test_columns(self, session, cls_, form_values):
         create_time = datetime.now()
