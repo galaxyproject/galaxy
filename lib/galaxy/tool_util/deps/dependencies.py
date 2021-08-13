@@ -16,6 +16,7 @@ class AppInfo:
         library_import_dir=None,
         enable_mulled_containers=False,
         container_resolvers_config_file=None,
+        container_resolvers_config_dict=None,
         involucro_path=None,
         involucro_auto_init=True,
         mulled_channels=DEFAULT_CHANNELS,
@@ -30,6 +31,7 @@ class AppInfo:
         self.library_import_dir = library_import_dir
         self.enable_mulled_containers = enable_mulled_containers
         self.container_resolvers_config_file = container_resolvers_config_file
+        self.container_resolvers_config_dict = container_resolvers_config_dict
         self.involucro_path = involucro_path
         self.involucro_auto_init = involucro_auto_init
         self.mulled_channels = mulled_channels

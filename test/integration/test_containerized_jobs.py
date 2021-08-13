@@ -183,6 +183,25 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
         assert "0.7.15-r1140" in output
 
 
+class InlineContainerConfigurationTestCase(MappingContainerResolverTestCase):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls.jobs_directory = cls._test_driver.mkdtemp()
+        config["jobs_directory"] = cls.jobs_directory
+        config["job_config_file"] = cls.job_config_file
+        disable_dependency_resolution(config)
+        container_resolvers_config = [{
+            'type': 'mapping',
+            'mappings': [{
+                'container_type': 'docker',
+                'tool_id': 'mulled_example_broken_no_requirements',
+                'identifier': 'quay.io/biocontainers/bwa:0.7.15--0',
+            }],
+        }]
+        config["container_resolvers"] = container_resolvers_config
+
+
 # Singularity 2.4 in the official Vagrant issue has some problems running this test
 # case by default because subdirectories of /tmp don't bind correctly. Overridding
 # TMPDIR can fix this.

@@ -1178,6 +1178,7 @@ class ConfiguresGalaxyMixin:
             library_import_dir=self.config.library_import_dir,
             enable_mulled_containers=self.config.enable_mulled_containers,
             container_resolvers_config_file=self.config.container_resolvers_config_file,
+            container_resolvers_config_dict=self.config.container_resolvers,
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,
             mulled_channels=self.config.mulled_channels,

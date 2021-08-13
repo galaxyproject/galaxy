@@ -692,6 +692,22 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~
+``container_resolvers``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying a container_resolvers_config_file, the
+    definition of the resolvers to enable can be embedded into
+    Galaxy's config with this option. This has no effect if a
+    container_resolvers_config_file is used.
+    The syntax, available resolvers, and documentation of their
+    options is explained in detail in the documentation:
+    https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+:Default: ``None``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~~~
 ``involucro_path``
 ~~~~~~~~~~~~~~~~~~
