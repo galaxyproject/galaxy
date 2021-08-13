@@ -504,14 +504,14 @@ mapping:
           Container availability will vary by tool, this option will only be used
           for job destinations with Docker or Singularity enabled.
 
-      containers_resolvers_config_file:
+      container_resolvers_config_file:
         type: str
         required: false
         desc: |
           Container resolvers configuration (beta). Set up a file describing
           container resolvers to use when discovering containers for Galaxy. If
-          this is set to None, the default containers loaded is determined by
-          enable_mulled_containers.
+          this is set to None, the default container resolvers loaded is
+          determined by enable_mulled_containers.
 
       involucro_path:
         type: str

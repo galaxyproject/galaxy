@@ -194,12 +194,12 @@ class ContainerRegistry:
         self.mulled_resolution_cache = mulled_resolution_cache
 
     def __build_container_resolvers(self, app_info):
-        conf_file = getattr(app_info, 'containers_resolvers_config_file', None)
+        conf_file = getattr(app_info, 'container_resolvers_config_file', None)
         if not conf_file:
-            return self.__default_containers_resolvers()
+            return self.__default_container_resolvers()
         if not os.path.exists(conf_file):
             log.debug("Unable to find config file '%s'", conf_file)
-            return self.__default_containers_resolvers()
+            return self.__default_container_resolvers()
         plugin_source = plugin_config.plugin_source_from_path(conf_file)
         return self._parse_resolver_conf(plugin_source)
 
@@ -209,7 +209,7 @@ class ContainerRegistry:
         }
         return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
 
-    def __default_containers_resolvers(self):
+    def __default_container_resolvers(self):
         default_resolvers = [
             ExplicitContainerResolver(self.app_info),
             ExplicitSingularityContainerResolver(self.app_info),
