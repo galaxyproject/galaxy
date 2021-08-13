@@ -2254,6 +2254,209 @@ class TestInteractiveToolEntryPoint(BaseTest):
             assert stored_obj.job.id == job.id
 
 
+class TestJob(BaseTest):
+
+    # def test_table(self, cls_):
+    #     assert cls_.__tablename__ == 'job'
+
+    def test_columns(
+        self,
+        session,
+        cls_,
+        history,
+        library_folder,
+        dynamic_tool,
+        galaxy_session,
+        user,
+    ):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        tool_id = 'a'
+        tool_version = 'b'
+        galaxy_version = 'c'
+        state = 'd'
+        info = 'e'
+        copied_from_job_id = 1
+        command_line = 'f'
+        dependencies = 'g'
+        job_messages = 'h'
+        param_filename = 'i'
+        runner_name = 'j'
+        job_stdout = 'k'
+        job_stderr = 'm'
+        tool_stdout = 'n'
+        tool_stderr = 'o'
+        exit_code = 2
+        traceback = 'p'
+        job_runner_name = 'q'
+        job_runner_external_id = 'r'
+        destination_id = 's'
+        destination_params = 'u'
+        object_store_id = 'v'
+        imported = False
+        params = 'w'
+        handler = 'x'
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.history = history
+        obj.library_folder = library_folder
+        obj.tool_id = tool_id
+        obj.tool_version = tool_version
+        obj.galaxy_version = galaxy_version
+        obj.dynamic_tool_id = dynamic_tool.id
+        obj.state = state
+        obj.info = info
+        obj.copied_from_job_id = copied_from_job_id
+        obj.command_line = command_line
+        obj.dependencies = dependencies
+        obj.job_messages = job_messages
+        obj.param_filename = param_filename
+        obj.runner_name = runner_name
+        obj.job_stdout = job_stdout
+        obj.job_stderr = job_stderr
+        obj.tool_stdout = tool_stdout
+        obj.tool_stderr = tool_stderr
+        obj.exit_code = exit_code
+        obj.traceback = traceback
+        obj.galaxy_session = galaxy_session
+        obj.user = user
+        obj.job_runner_name = job_runner_name
+        obj.job_runner_external_id = job_runner_external_id
+        obj.destination_id = destination_id
+        obj.destination_params = destination_params
+        obj.object_store_id = object_store_id
+        obj.imported = imported
+        obj.params = params
+        obj.handler = handler
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id, unique=True)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.history_id == history.id
+            assert stored_obj.library_folder_id == library_folder.id
+            assert stored_obj.tool_id == tool_id
+            assert stored_obj.tool_version == tool_version
+            assert stored_obj.galaxy_version == galaxy_version
+            assert stored_obj.dynamic_tool_id == dynamic_tool.id
+            assert stored_obj.state == state
+            assert stored_obj.info == info
+            assert stored_obj.copied_from_job_id == copied_from_job_id
+            assert stored_obj.command_line == command_line
+            assert stored_obj.dependencies == dependencies
+            assert stored_obj.job_messages == job_messages
+            assert stored_obj.param_filename == param_filename
+            assert stored_obj.runner_name == runner_name
+            assert stored_obj.job_stdout == job_stdout
+            assert stored_obj.job_stderr == job_stderr
+            assert stored_obj.tool_stdout == tool_stdout
+            assert stored_obj.tool_stderr == tool_stderr
+            assert stored_obj.exit_code == exit_code
+            assert stored_obj.traceback == traceback
+            assert stored_obj.session_id == galaxy_session.id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.job_runner_name == job_runner_name
+            assert stored_obj.job_runner_external_id == job_runner_external_id
+            assert stored_obj.destination_id == destination_id
+            assert stored_obj.destination_params == destination_params
+            assert stored_obj.object_store_id == object_store_id
+            assert stored_obj.imported == imported
+            assert stored_obj.params == params
+            assert stored_obj.handler == handler
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        history,
+        library_folder,
+        dynamic_tool,
+        galaxy_session,
+        user,
+        job_parameter,
+        job_to_input_dataset_association,
+        job_to_input_dataset_collection_association,
+        job_to_input_dataset_collection_element_association,
+        job_to_output_dataset_collection_association,
+        job_to_implicit_output_dataset_collection_association,
+        post_job_action_association,
+        job_to_input_library_dataset_association,
+        job_to_output_library_dataset_association,
+        job_external_output_metadata,
+        task,
+        job_to_output_dataset_association,
+        job_state_history,
+        job_metric_text,
+        job_metric_numeric,
+        genome_index_tool_data,
+        interactive_tool_entry_point,
+        implicit_collection_jobs_job_association,
+        job_container_association,
+        data_manager_job_association,
+        history_dataset_collection_association,
+        workflow_invocation_step,
+    ):
+        obj = cls_()
+        obj.history = history
+        obj.library_folder = library_folder
+        obj.galaxy_session = galaxy_session
+        obj.user = user
+        obj.parameters.append(job_parameter)
+        obj.input_datasets.append(job_to_input_dataset_association)
+        obj.input_dataset_collections.append(job_to_input_dataset_collection_association)
+        obj.input_dataset_collection_elements.append(job_to_input_dataset_collection_element_association)
+        obj.output_dataset_collection_instances.append(job_to_output_dataset_collection_association)
+        obj.output_dataset_collections.append(job_to_implicit_output_dataset_collection_association)
+        obj.post_job_actions.append(post_job_action_association)
+        obj.input_library_datasets.append(job_to_input_library_dataset_association)
+        obj.output_library_datasets.append(job_to_output_library_dataset_association)
+        obj.external_output_metadata.append(job_external_output_metadata)
+        obj.tasks.append(task)
+        obj.output_datasets.append(job_to_output_dataset_association)
+        obj.state_history.append(job_state_history)
+        obj.text_metrics.append(job_metric_text)
+        obj.numeric_metrics.append(job_metric_numeric)
+        obj.job.append(genome_index_tool_data)
+        obj.interactivetool_entry_points.append(interactive_tool_entry_point)
+        obj.implicit_collection_jobs_association = implicit_collection_jobs_job_association
+        obj.container = job_container_association
+        obj.data_manager_association = data_manager_job_association
+        obj.history_dataset_collection_associations.append(history_dataset_collection_association)
+        obj.workflow_invocation_step = workflow_invocation_step
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id, unique=True)
+            assert stored_obj.history_id == history.id
+            assert stored_obj.library_folder_id == library_folder.id
+            assert stored_obj.session_id == galaxy_session.id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.parameters == [job_parameter]
+            assert stored_obj.input_datasets == [job_to_input_dataset_association]
+            assert stored_obj.input_dataset_collections == [job_to_input_dataset_collection_association]
+            assert stored_obj.input_dataset_collection_elements == [job_to_input_dataset_collection_element_association]
+            assert stored_obj.output_dataset_collection_instances == [job_to_output_dataset_collection_association]
+            assert stored_obj.output_dataset_collections == [job_to_implicit_output_dataset_collection_association]
+            assert stored_obj.post_job_actions == [post_job_action_association]
+            assert stored_obj.input_library_datasets == [job_to_input_library_dataset_association]
+            assert stored_obj.output_library_datasets == [job_to_output_library_dataset_association]
+            assert stored_obj.external_output_metadata == [job_external_output_metadata]
+            assert stored_obj.tasks == [task]
+            assert stored_obj.output_datasets == [job_to_output_dataset_association]
+            assert job_state_history in stored_obj.state_history  # sufficient for test
+            assert stored_obj.text_metrics == [job_metric_text]
+            assert stored_obj.numeric_metrics == [job_metric_numeric]
+            assert stored_obj.job == [genome_index_tool_data]
+            assert stored_obj.interactivetool_entry_points == [interactive_tool_entry_point]
+            assert stored_obj.implicit_collection_jobs_association == implicit_collection_jobs_job_association
+            assert stored_obj.container == job_container_association
+            assert stored_obj.data_manager_association == data_manager_job_association
+            assert stored_obj.history_dataset_collection_associations == [history_dataset_collection_association]
+            assert stored_obj.workflow_invocation_step == workflow_invocation_step
+
+
 class TestJobContainerAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -6211,6 +6414,12 @@ def data_manager_history_association(model, session):
 
 
 @pytest.fixture
+def data_manager_job_association(model, session):
+    instance = model.DataManagerJobAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def dataset(model, session):
     d = model.Dataset()
     yield from dbcleanup_wrapper(session, d)
@@ -6469,15 +6678,57 @@ def implicitly_created_dataset_collection_input(model, session, history_dataset_
 
 
 @pytest.fixture
+def interactive_tool_entry_point(model, session):
+    instance = model.InteractiveToolEntryPoint()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def job(model, session):
     j = model.Job()
     yield from dbcleanup_wrapper(session, j)
 
 
 @pytest.fixture
+def job_container_association(model, session):
+    instance = model.JobContainerAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def job_export_history_archive(model, session):
     jeha = model.JobExportHistoryArchive()
     yield from dbcleanup_wrapper(session, jeha)
+
+
+@pytest.fixture
+def job_external_output_metadata(model, session, job, history_dataset_association):
+    instance = model.JobExternalOutputMetadata(job, history_dataset_association)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def job_metric_numeric(model, session):
+    instance = model.JobMetricNumeric(None, None, None)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def job_metric_text(model, session):
+    instance = model.JobMetricText(None, None, None)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def job_parameter(model, session):
+    instance = model.JobParameter(None, None)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def job_state_history(model, session, job):
+    instance = model.JobStateHistory(job)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6489,6 +6740,18 @@ def job_to_implicit_output_dataset_collection_association(model, session, datase
 @pytest.fixture
 def job_to_input_dataset_association(model, session, history_dataset_association):
     instance = model.JobToInputDatasetAssociation(None, history_dataset_association)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def job_to_input_dataset_collection_association(model, session, history_dataset_collection_association):
+    instance = model.JobToInputDatasetCollectionAssociation(None, history_dataset_collection_association)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def job_to_input_dataset_collection_element_association(model, session, dataset_collection_element):
+    instance = model.JobToInputDatasetCollectionElementAssociation(None, dataset_collection_element)
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6668,6 +6931,12 @@ def password_reset_token(model, session, user):
 def post_job_action(model, session):
     pja = model.PostJobAction('a')
     yield from dbcleanup_wrapper(session, pja)
+
+
+@pytest.fixture
+def post_job_action_association(model, session, post_job_action, job):
+    instance = model.PostJobActionAssociation(post_job_action, job)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
