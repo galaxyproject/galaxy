@@ -9061,6 +9061,38 @@ Dataset.table = Table(
     Column('total_size', Numeric(15, 0)),
     Column('uuid', UUIDType()))
 
+HistoryDatasetAssociation.table = Table(
+    'history_dataset_association', mapper_registry.metadata,
+    Column('id', Integer, primary_key=True),
+    Column('history_id', Integer, ForeignKey('history.id'), index=True),
+    Column('dataset_id', Integer, ForeignKey('dataset.id'), index=True),
+    Column('create_time', DateTime, default=now),
+    Column('update_time', DateTime, default=now, onupdate=now, index=True),
+    Column('state', TrimmedString(64), index=True, key='_state'),
+    Column('copied_from_history_dataset_association_id', Integer,
+           ForeignKey('history_dataset_association.id'), nullable=True),
+    Column('copied_from_library_dataset_dataset_association_id', Integer,
+           ForeignKey('library_dataset_dataset_association.id'), nullable=True),
+    Column('name', TrimmedString(255)),
+    Column('info', TrimmedString(255)),
+    Column('blurb', TrimmedString(255)),
+    Column('peek', TEXT, key='_peek'),
+    Column('tool_version', TEXT),
+    Column('extension', TrimmedString(64)),
+    Column('metadata', JSONType, key='_metadata'),
+    Column('parent_id', Integer, ForeignKey('history_dataset_association.id'), nullable=True),
+    Column('designation', TrimmedString(255)),
+    Column('deleted', Boolean, index=True, default=False),
+    Column('visible', Boolean),
+    Column('extended_metadata_id', Integer, ForeignKey('extended_metadata.id'), index=True),
+    Column('version', Integer, default=1, nullable=True, index=True),
+    Column('hid', Integer),
+    Column('purged', Boolean, index=True, default=False),
+    Column('validated_state', TrimmedString(64), default='unvalidated', nullable=False),
+    Column('validated_state_message', TEXT),
+    Column('hidden_beneath_collection_instance_id',
+           ForeignKey('history_dataset_collection_association.id'), nullable=True))
+
 # ----------------------------------------------------------------------------------------
 # The following statements must not precede the mapped models defined above.
 
