@@ -71,6 +71,7 @@ from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import (
     aliased,
     column_property,
+    deferred,
     joinedload,
     object_session,
     Query,
@@ -9155,6 +9156,58 @@ mapper_registry.map_imperatively(
         genome_index_tool_data=relationship(GenomeIndexToolData, back_populates='dataset'),
     )
 )
+
+mapper_registry.map_imperatively(
+    HistoryDatasetAssociation,
+    HistoryDatasetAssociation.table,
+    properties=dict(
+        dataset=relationship(Dataset,
+            primaryjoin=(Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id),
+            lazy=False,
+            backref='history_associations'),
+        copied_from_history_dataset_association=relationship(HistoryDatasetAssociation,
+            primaryjoin=(HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id
+                == HistoryDatasetAssociation.table.c.id),
+            remote_side=[HistoryDatasetAssociation.table.c.id],
+            uselist=False,
+            backref='copied_to_history_dataset_associations'),
+        copied_to_library_dataset_dataset_associations=relationship(LibraryDatasetDatasetAssociation,
+            primaryjoin=(HistoryDatasetAssociation.table.c.id
+                == LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id),
+            backref='copied_from_history_dataset_association'),
+        tags=relationship(HistoryDatasetAssociationTagAssociation,
+            order_by=HistoryDatasetAssociationTagAssociation.id,
+            back_populates='history_dataset_association'),
+        annotations=relationship(HistoryDatasetAssociationAnnotationAssociation,
+            order_by=HistoryDatasetAssociationAnnotationAssociation.id,
+            back_populates="hda"),
+        ratings=relationship(HistoryDatasetAssociationRatingAssociation,
+            order_by=HistoryDatasetAssociationRatingAssociation.id,
+            back_populates="history_dataset_association"),
+        extended_metadata=relationship(ExtendedMetadata,
+            primaryjoin=(HistoryDatasetAssociation.table.c.extended_metadata_id
+                == ExtendedMetadata.id)),
+        hidden_beneath_collection_instance=relationship(HistoryDatasetCollectionAssociation,
+            primaryjoin=(HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id
+                == HistoryDatasetCollectionAssociation.id),
+            uselist=False,
+            backref="hidden_dataset_instances"),
+        _metadata=deferred(HistoryDatasetAssociation.table.c._metadata),
+        dependent_jobs=relationship(JobToInputDatasetAssociation, back_populates='dataset'),
+        creating_job_associations=relationship(
+            JobToOutputDatasetAssociation, back_populates='dataset'),
+        history=relationship(History, back_populates='datasets'),
+        implicitly_converted_datasets=relationship(ImplicitlyConvertedDatasetAssociation,
+            primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_parent_id  # type: ignore
+                == HistoryDatasetAssociation.id),  # type: ignore
+            back_populates='parent_hda'),
+        implicitly_converted_parent_datasets=relationship(ImplicitlyConvertedDatasetAssociation,
+            primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_id  # type: ignore
+                == HistoryDatasetAssociation.id),  # type: ignore
+            back_populates='dataset')
+    )
+)
+
 
 # ----------------------------------------------------------------------------------------
 # The following statements must not precede the mapped models defined above.

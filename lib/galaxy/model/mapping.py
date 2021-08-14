@@ -35,54 +35,6 @@ def simple_mapping(model, **kwds):
     mapper_registry.map_imperatively(model, model.table, properties=kwds)
 
 
-simple_mapping(model.HistoryDatasetAssociation,
-    dataset=relation(model.Dataset,
-        primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id),
-        lazy=False,
-        backref='history_associations'),
-    # .history defined in History mapper
-    copied_from_history_dataset_association=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id
-                     == model.HistoryDatasetAssociation.table.c.id),
-        remote_side=[model.HistoryDatasetAssociation.table.c.id],
-        uselist=False,
-        backref='copied_to_history_dataset_associations'),
-    copied_to_library_dataset_dataset_associations=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.id
-                     == model.LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id),
-        backref='copied_from_history_dataset_association'),
-    tags=relation(model.HistoryDatasetAssociationTagAssociation,
-        order_by=model.HistoryDatasetAssociationTagAssociation.id,
-        back_populates='history_dataset_association'),
-    annotations=relation(model.HistoryDatasetAssociationAnnotationAssociation,
-        order_by=model.HistoryDatasetAssociationAnnotationAssociation.id,
-        back_populates="hda"),
-    ratings=relation(model.HistoryDatasetAssociationRatingAssociation,
-        order_by=model.HistoryDatasetAssociationRatingAssociation.id,
-        back_populates="history_dataset_association"),
-    extended_metadata=relation(model.ExtendedMetadata,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.extended_metadata_id
-                     == model.ExtendedMetadata.id)),
-    hidden_beneath_collection_instance=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id
-                     == model.HistoryDatasetCollectionAssociation.id),
-        uselist=False,
-        backref="hidden_dataset_instances"),
-    _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata),
-    dependent_jobs=relation(model.JobToInputDatasetAssociation, back_populates='dataset'),
-    creating_job_associations=relation(
-        model.JobToOutputDatasetAssociation, back_populates='dataset'),
-    history=relation(model.History, back_populates='datasets'),
-    implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
-        primaryjoin=(lambda: model.ImplicitlyConvertedDatasetAssociation.hda_parent_id  # type: ignore
-            == model.HistoryDatasetAssociation.id),  # type: ignore
-        back_populates='parent_hda'),
-    implicitly_converted_parent_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
-        primaryjoin=(lambda: model.ImplicitlyConvertedDatasetAssociation.hda_id  # type: ignore
-            == model.HistoryDatasetAssociation.id),  # type: ignore
-        back_populates='dataset')
-)
-
 mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
     dataset=relation(model.Dataset,
         primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.dataset_id == model.Dataset.table.c.id),
