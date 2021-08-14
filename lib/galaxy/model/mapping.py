@@ -10,10 +10,8 @@ from typing import Optional, Type
 from sqlalchemy import (
     and_,
     select,
-    true,
 )
-from sqlalchemy.orm import class_mapper, column_property, object_session, relation
-from sqlalchemy.sql import exists
+from sqlalchemy.orm import class_mapper, object_session, relation
 
 from galaxy import model
 from galaxy.model import mapper_registry
@@ -27,21 +25,6 @@ from galaxy.model.view.utils import install_views
 log = logging.getLogger(__name__)
 
 metadata = mapper_registry.metadata
-
-model.Job.any_output_dataset_deleted = column_property(  # type: ignore
-    exists([model.HistoryDatasetAssociation],
-           and_(model.Job.id == model.JobToOutputDatasetAssociation.job_id,
-                model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.dataset_id,
-                model.HistoryDatasetAssociation.table.c.deleted == true())
-           )
-)
-model.Job.any_output_dataset_collection_instances_deleted = column_property(  # type: ignore
-    exists([model.HistoryDatasetCollectionAssociation.id],
-           and_(model.Job.id == model.JobToOutputDatasetCollectionAssociation.job_id,
-                model.HistoryDatasetCollectionAssociation.id == model.JobToOutputDatasetCollectionAssociation.dataset_collection_id,
-                model.HistoryDatasetCollectionAssociation.deleted == true())
-           )
-)
 
 class_mapper(model.HistoryDatasetCollectionAssociation).add_property(
     "creating_job_associations", relation(model.JobToOutputDatasetCollectionAssociation, viewonly=True))

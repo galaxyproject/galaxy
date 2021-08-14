@@ -81,6 +81,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm.decl_api import DeclarativeMeta
+from sqlalchemy.sql import exists
 
 import galaxy.exceptions
 import galaxy.model.metadata
@@ -9257,6 +9258,22 @@ mapper_registry.map_imperatively(
 
 # ----------------------------------------------------------------------------------------
 # The following statements must not precede the mapped models defined above.
+
+Job.any_output_dataset_collection_instances_deleted = column_property(  # type: ignore
+    exists([HistoryDatasetCollectionAssociation.id], and_(
+        Job.id == JobToOutputDatasetCollectionAssociation.job_id,
+        HistoryDatasetCollectionAssociation.id == JobToOutputDatasetCollectionAssociation.dataset_collection_id,
+        HistoryDatasetCollectionAssociation.deleted == true())
+    )
+)
+
+Job.any_output_dataset_deleted = column_property(  # type: ignore
+    exists([HistoryDatasetAssociation], and_(
+        Job.id == JobToOutputDatasetAssociation.job_id,
+        HistoryDatasetAssociation.table.c.id == JobToOutputDatasetAssociation.dataset_id,
+        HistoryDatasetAssociation.table.c.deleted == true())
+    )
+)
 
 History.average_rating = column_property(
     select(func.avg(HistoryRatingAssociation.rating)).where(HistoryRatingAssociation.history_id == History.id).scalar_subquery(),
