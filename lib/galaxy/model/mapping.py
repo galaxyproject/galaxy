@@ -9,15 +9,8 @@ from typing import Optional, Type
 
 from sqlalchemy import (
     and_,
-    Boolean,
-    Column,
-    DateTime,
     false,
-    ForeignKey,
-    Integer,
     select,
-    Table,
-    TEXT,
     true,
 )
 from sqlalchemy.orm import class_mapper, column_property, deferred, object_session, relation
@@ -26,10 +19,6 @@ from sqlalchemy.sql import exists
 from galaxy import model
 from galaxy.model import mapper_registry
 from galaxy.model.base import SharedModelMapping
-from galaxy.model.custom_types import (
-    JSONType,
-    TrimmedString,
-)
 from galaxy.model.migrate.triggers.update_audit_table import install as install_timestamp_triggers
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
@@ -39,39 +28,6 @@ from galaxy.model.view.utils import install_views
 log = logging.getLogger(__name__)
 
 metadata = mapper_registry.metadata
-
-model.LibraryDatasetDatasetAssociation.table = Table(
-    "library_dataset_dataset_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("library_dataset_id", Integer, ForeignKey("library_dataset.id"), index=True),
-    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now, index=True),
-    Column("state", TrimmedString(64), index=True, key="_state"),
-    Column("copied_from_history_dataset_association_id", Integer,
-        ForeignKey("history_dataset_association.id", use_alter=True, name='history_dataset_association_dataset_id_fkey'),
-        nullable=True),
-
-    Column("copied_from_library_dataset_dataset_association_id", Integer,
-        ForeignKey("library_dataset_dataset_association.id", use_alter=True, name='library_dataset_dataset_association_id_fkey'),
-        nullable=True),
-
-    Column("name", TrimmedString(255), index=True),
-    Column("info", TrimmedString(255)),
-    Column("blurb", TrimmedString(255)),
-    Column("peek", TEXT, key="_peek"),
-    Column("tool_version", TEXT),
-    Column("extension", TrimmedString(64)),
-    Column("metadata", JSONType, key="_metadata"),
-    Column("parent_id", Integer, ForeignKey("library_dataset_dataset_association.id"), nullable=True),
-    Column("designation", TrimmedString(255)),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("validated_state", TrimmedString(64), default='unvalidated', nullable=False),
-    Column("validated_state_message", TEXT),
-    Column("visible", Boolean),
-    Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("message", TrimmedString(255)))
 
 
 # With the tables defined we can define the mappers and setup the
