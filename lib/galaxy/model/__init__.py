@@ -40,6 +40,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     desc,
+    false,
     ForeignKey,
     func,
     Index,
@@ -9037,7 +9038,7 @@ class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base):
     icda_id = Column(Integer, ForeignKey('implicitly_converted_dataset_association.id'), index=True)
 
 
-# The following models (HDA, LDDA, Dataset) are mapped imperatively (for details see discussion in PR #12064)
+# The following models (Dataset, HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
 # TLDR: there are issues ('metadata' property, Galaxy object wrapping) that need to be addressed separately
 # before these models can be mapped declaratively. Keeping them in the mapping module breaks the auth package
 # tests (which import model directly bypassing the mapping module); fixing that is possible by importing
@@ -9125,6 +9126,35 @@ LibraryDatasetDatasetAssociation.table = Table(
     Column('extended_metadata_id', Integer, ForeignKey('extended_metadata.id'), index=True),
     Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True),
     Column('message', TrimmedString(255)))
+
+mapper_registry.map_imperatively(
+    Dataset,
+    Dataset.table,
+    properties=dict(
+        actions=relationship(DatasetPermissions, back_populates='dataset'),
+        job=relationship(Job, primaryjoin=(Dataset.table.c.job_id == Job.id)),
+        active_history_associations=relationship(HistoryDatasetAssociation,
+            primaryjoin=(
+                (Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id)
+                & (HistoryDatasetAssociation.table.c.deleted == false())
+                & (HistoryDatasetAssociation.table.c.purged == false())),
+            viewonly=True),
+        purged_history_associations=relationship(HistoryDatasetAssociation,
+            primaryjoin=(
+                (Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id)
+                & (HistoryDatasetAssociation.table.c.purged == true())),
+            viewonly=True),
+        active_library_associations=relationship(LibraryDatasetDatasetAssociation,
+            primaryjoin=(
+                (Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id)
+                & (LibraryDatasetDatasetAssociation.table.c.deleted == false())),
+            viewonly=True),
+        hashes=relationship(DatasetHash, back_populates='dataset'),
+        sources=relationship(DatasetSource, back_populates='dataset'),
+        job_export_history_archive=relationship(JobExportHistoryArchive, back_populates='dataset'),
+        genome_index_tool_data=relationship(GenomeIndexToolData, back_populates='dataset'),
+    )
+)
 
 # ----------------------------------------------------------------------------------------
 # The following statements must not precede the mapped models defined above.

@@ -9,7 +9,6 @@ from typing import Optional, Type
 
 from sqlalchemy import (
     and_,
-    false,
     select,
     true,
 )
@@ -82,31 +81,6 @@ simple_mapping(model.HistoryDatasetAssociation,
         primaryjoin=(lambda: model.ImplicitlyConvertedDatasetAssociation.hda_id  # type: ignore
             == model.HistoryDatasetAssociation.id),  # type: ignore
         back_populates='dataset')
-)
-
-simple_mapping(model.Dataset,
-    actions=relation(model.DatasetPermissions, back_populates='dataset'),
-    job=relation(model.Job, primaryjoin=(model.Dataset.table.c.job_id == model.Job.id)),
-    active_history_associations=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(
-            (model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)
-            & (model.HistoryDatasetAssociation.table.c.deleted == false())
-            & (model.HistoryDatasetAssociation.table.c.purged == false())),
-        viewonly=True),
-    purged_history_associations=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(
-            (model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)
-            & (model.HistoryDatasetAssociation.table.c.purged == true())),
-        viewonly=True),
-    active_library_associations=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(
-            (model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id)
-            & (model.LibraryDatasetDatasetAssociation.table.c.deleted == false())),
-        viewonly=True),
-    hashes=relation(model.DatasetHash, back_populates='dataset'),
-    sources=relation(model.DatasetSource, back_populates='dataset'),
-    job_export_history_archive=relation(model.JobExportHistoryArchive, back_populates='dataset'),
-    genome_index_tool_data=relation(model.GenomeIndexToolData, back_populates='dataset'),
 )
 
 mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
