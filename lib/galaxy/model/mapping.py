@@ -12,7 +12,7 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import class_mapper, column_property, deferred, object_session, relation
+from sqlalchemy.orm import class_mapper, column_property, object_session, relation
 from sqlalchemy.sql import exists
 
 from galaxy import model
@@ -27,64 +27,6 @@ from galaxy.model.view.utils import install_views
 log = logging.getLogger(__name__)
 
 metadata = mapper_registry.metadata
-
-
-# With the tables defined we can define the mappers and setup the
-# relationships between the model objects.
-def simple_mapping(model, **kwds):
-    mapper_registry.map_imperatively(model, model.table, properties=kwds)
-
-
-mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
-    dataset=relation(model.Dataset,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.dataset_id == model.Dataset.table.c.id),
-        backref='library_associations'),
-    library_dataset=relation(model.LibraryDataset,
-        foreign_keys=model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id),
-    # user=relation( model.User.mapper ),
-    user=relation(model.User),
-    copied_from_library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
-                     == model.LibraryDatasetDatasetAssociation.table.c.id),
-        remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id],
-        uselist=False,
-        backref='copied_to_library_dataset_dataset_associations'),
-    copied_to_history_dataset_associations=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.id
-                     == model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id),
-        backref='copied_from_library_dataset_dataset_association'),
-    implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.ldda_parent_id
-                     == model.LibraryDatasetDatasetAssociation.table.c.id),
-        backref='parent_ldda'),
-    tags=relation(model.LibraryDatasetDatasetAssociationTagAssociation,
-                  order_by=model.LibraryDatasetDatasetAssociationTagAssociation.id,
-                  back_populates='library_dataset_dataset_association'),
-    extended_metadata=relation(model.ExtendedMetadata,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.id)
-    ),
-    _metadata=deferred(model.LibraryDatasetDatasetAssociation.table.c._metadata),
-    actions=relation(
-        model.LibraryDatasetDatasetAssociationPermissions,
-        back_populates='library_dataset_dataset_association'),
-    dependent_jobs=relation(
-        model.JobToInputLibraryDatasetAssociation, back_populates='dataset'),
-    creating_job_associations=relation(
-        model.JobToOutputLibraryDatasetAssociation, back_populates='dataset'),
-    implicitly_converted_parent_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
-        primaryjoin=(lambda: model.ImplicitlyConvertedDatasetAssociation.ldda_id  # type: ignore
-            == model.LibraryDatasetDatasetAssociation.id),  # type: ignore
-        back_populates='dataset_ldda'),
-))
-
-# simple_mapping(
-#     model.ImplicitCollectionJobsHistoryDatasetCollectionAssociation,
-#     history_dataset_collection_associations=relation(
-#         model.HistoryDatasetCollectionAssociation,
-#         backref=backref("implicit_collection_jobs_association", uselist=False),
-#         uselist=True,
-#     ),
-# )
 
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],

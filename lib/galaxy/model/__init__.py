@@ -9208,6 +9208,52 @@ mapper_registry.map_imperatively(
     )
 )
 
+mapper_registry.map_imperatively(
+    LibraryDatasetDatasetAssociation,
+    LibraryDatasetDatasetAssociation.table,
+    properties=dict(
+        dataset=relationship(Dataset,
+            primaryjoin=(LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.table.c.id),
+            backref='library_associations'),
+        library_dataset=relationship(LibraryDataset,
+            foreign_keys=LibraryDatasetDatasetAssociation.table.c.library_dataset_id),
+        user=relationship(User),
+        copied_from_library_dataset_dataset_association=relationship(LibraryDatasetDatasetAssociation,
+            primaryjoin=(
+                LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
+                == LibraryDatasetDatasetAssociation.table.c.id),
+            remote_side=[LibraryDatasetDatasetAssociation.table.c.id],
+            uselist=False,
+            backref='copied_to_library_dataset_dataset_associations'),
+        copied_to_history_dataset_associations=relationship(HistoryDatasetAssociation,
+            primaryjoin=(LibraryDatasetDatasetAssociation.table.c.id
+                == HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id),
+            backref='copied_from_library_dataset_dataset_association'),
+        implicitly_converted_datasets=relationship(ImplicitlyConvertedDatasetAssociation,
+            primaryjoin=(ImplicitlyConvertedDatasetAssociation.ldda_parent_id
+                         == LibraryDatasetDatasetAssociation.table.c.id),
+            backref='parent_ldda'),
+        tags=relationship(LibraryDatasetDatasetAssociationTagAssociation,
+                      order_by=LibraryDatasetDatasetAssociationTagAssociation.id,
+                      back_populates='library_dataset_dataset_association'),
+        extended_metadata=relationship(ExtendedMetadata,
+            primaryjoin=(LibraryDatasetDatasetAssociation.table.c.extended_metadata_id
+                == ExtendedMetadata.id)
+        ),
+        _metadata=deferred(LibraryDatasetDatasetAssociation.table.c._metadata),
+        actions=relationship(
+            LibraryDatasetDatasetAssociationPermissions,
+            back_populates='library_dataset_dataset_association'),
+        dependent_jobs=relationship(
+            JobToInputLibraryDatasetAssociation, back_populates='dataset'),
+        creating_job_associations=relationship(
+            JobToOutputLibraryDatasetAssociation, back_populates='dataset'),
+        implicitly_converted_parent_datasets=relationship(ImplicitlyConvertedDatasetAssociation,
+            primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.ldda_id  # type: ignore
+                == LibraryDatasetDatasetAssociation.id),  # type: ignore
+            back_populates='dataset_ldda'),
+    )
+)
 
 # ----------------------------------------------------------------------------------------
 # The following statements must not precede the mapped models defined above.
