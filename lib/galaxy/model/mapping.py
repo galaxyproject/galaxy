@@ -15,7 +15,6 @@ from sqlalchemy import (
     false,
     ForeignKey,
     Integer,
-    Numeric,
     select,
     Table,
     TEXT,
@@ -30,7 +29,6 @@ from galaxy.model.base import SharedModelMapping
 from galaxy.model.custom_types import (
     JSONType,
     TrimmedString,
-    UUIDType,
 )
 from galaxy.model.migrate.triggers.update_audit_table import install as install_timestamp_triggers
 from galaxy.model.orm.engine_factory import build_engine
@@ -74,25 +72,6 @@ model.HistoryDatasetAssociation.table = Table(
     Column("validated_state_message", TEXT),
     Column("hidden_beneath_collection_instance_id",
            ForeignKey("history_dataset_collection_association.id"), nullable=True))
-
-
-model.Dataset.table = Table(
-    "dataset", metadata,
-    Column("id", Integer, primary_key=True),
-    Column('job_id', Integer, ForeignKey('job.id'), index=True, nullable=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
-    Column("state", TrimmedString(64), index=True),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("purged", Boolean, index=True, default=False),
-    Column("purgable", Boolean, default=True),
-    Column("object_store_id", TrimmedString(255), index=True),
-    Column("external_filename", TEXT),
-    Column("_extra_files_path", TEXT),
-    Column("created_from_basename", TEXT),
-    Column('file_size', Numeric(15, 0)),
-    Column('total_size', Numeric(15, 0)),
-    Column('uuid', UUIDType()))
 
 model.LibraryDatasetDatasetAssociation.table = Table(
     "library_dataset_dataset_association", metadata,

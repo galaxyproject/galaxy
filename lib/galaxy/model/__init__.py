@@ -52,6 +52,7 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     select,
     String,
+    Table,
     TEXT,
     Text,
     text,
@@ -133,11 +134,8 @@ AUTO_PROPAGATED_TAGS = ["name"]
 
 
 if TYPE_CHECKING:
-    from sqlalchemy.schema import Table
-
     class _HasTable:
         table: Table
-
 else:
     _HasTable = object
 
@@ -9038,6 +9036,30 @@ class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base):
     cleanup_event_id = Column(Integer, ForeignKey('cleanup_event.id'), index=True, nullable=True)
     icda_id = Column(Integer, ForeignKey('implicitly_converted_dataset_association.id'), index=True)
 
+
+# The following models (HDA, LDDA, Dataset) are mapped imperatively (for details see discussion in PR #12064)
+# TLDR: there are issues ('metadata' property, Galaxy object wrapping) that need to be addressed separately
+# before these models can be mapped declaratively. Keeping them in the mapping module breaks the auth package
+# tests (which import model directly bypassing the mapping module); fixing that is possible by importing
+# mapping into the test; however, having all models mapped in the same module is cleaner.
+
+Dataset.table = Table(
+    'dataset', mapper_registry.metadata,
+    Column('id', Integer, primary_key=True),
+    Column('job_id', Integer, ForeignKey('job.id'), index=True, nullable=True),
+    Column('create_time', DateTime, default=now),
+    Column('update_time', DateTime, index=True, default=now, onupdate=now),
+    Column('state', TrimmedString(64), index=True),
+    Column('deleted', Boolean, index=True, default=False),
+    Column('purged', Boolean, index=True, default=False),
+    Column('purgable', Boolean, default=True),
+    Column('object_store_id', TrimmedString(255), index=True),
+    Column('external_filename', TEXT),
+    Column('_extra_files_path', TEXT),
+    Column('created_from_basename', TEXT),
+    Column('file_size', Numeric(15, 0)),
+    Column('total_size', Numeric(15, 0)),
+    Column('uuid', UUIDType()))
 
 # ----------------------------------------------------------------------------------------
 # The following statements must not precede the mapped models defined above.
