@@ -64,6 +64,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import (
     aliased,
@@ -8946,6 +8947,9 @@ def _prepare_metadata_for_serialization(id_encoder, serialization_options, metad
     return processed_metadata
 
 
+# The following CleanupEvent* models could be defined as tables only;
+# however making them models keeps things simple and consistent.
+
 class CleanupEvent(Base):
     __tablename__ = 'cleanup_event'
 
@@ -9035,38 +9039,21 @@ class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base):
     icda_id = Column(Integer, ForeignKey('implicitly_converted_dataset_association.id'), index=True)
 
 
-# Must be defined after PageRatingAssociation has been mapped
-Page.average_rating = column_property(
-    select(func.avg(PageRatingAssociation.rating)).where(PageRatingAssociation.page_id == Page.id).scalar_subquery(),
-    deferred=True
-)
-# Must be defined after HistoryUserShareAssociation has been mapped
-History.users_shared_with_count = column_property(
-    select(func.count(HistoryUserShareAssociation.id)).where(History.id == HistoryUserShareAssociation.history_id).scalar_subquery(),
-    deferred=True
-)
-# Must be defined after HistoryRatingAssociation has been mapped
+# ----------------------------------------------------------------------------------------
+# The following statements must not precede the mapped models defined above.
+
 History.average_rating = column_property(
     select(func.avg(HistoryRatingAssociation.rating)).where(HistoryRatingAssociation.history_id == History.id).scalar_subquery(),
     deferred=True
 )
 
-# Must be defined after VisualizationRatingAssociation has been mapped
-Visualization.average_rating = column_property(
-    select(func.avg(VisualizationRatingAssociation.rating)).where(VisualizationRatingAssociation.visualization_id == Visualization.id).scalar_subquery(),
+History.users_shared_with_count = column_property(
+    select(func.count(HistoryUserShareAssociation.id)).where(History.id == HistoryUserShareAssociation.history_id).scalar_subquery(),
     deferred=True
 )
 
-# Must be defined after WorkflowInvocationToSubworkflowInvocationAssociation
-WorkflowInvocationStep.subworkflow_invocation_id = column_property(
-    select(WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id).where(and_(
-        WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == WorkflowInvocationStep.workflow_invocation_id,
-        WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id == WorkflowInvocationStep.workflow_step_id,
-    )).scalar_subquery(),
-)
-
-Workflow.step_count = column_property(
-    select(func.count(WorkflowStep.id)).where(Workflow.id == WorkflowStep.workflow_id).scalar_subquery(),
+Page.average_rating = column_property(
+    select(func.avg(PageRatingAssociation.rating)).where(PageRatingAssociation.page_id == Page.id).scalar_subquery(),
     deferred=True
 )
 
@@ -9074,3 +9061,44 @@ StoredWorkflow.average_rating = column_property(
     select(func.avg(StoredWorkflowRatingAssociation.rating)).where(StoredWorkflowRatingAssociation.stored_workflow_id == StoredWorkflow.id).scalar_subquery(),
     deferred=True
 )
+
+Visualization.average_rating = column_property(
+    select(func.avg(VisualizationRatingAssociation.rating)).where(VisualizationRatingAssociation.visualization_id == Visualization.id).scalar_subquery(),
+    deferred=True
+)
+
+Workflow.step_count = column_property(
+    select(func.count(WorkflowStep.id)).where(Workflow.id == WorkflowStep.workflow_id).scalar_subquery(),
+    deferred=True
+)
+
+WorkflowInvocationStep.subworkflow_invocation_id = column_property(
+    select(WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id).where(and_(
+        WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == WorkflowInvocationStep.workflow_invocation_id,
+        WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id == WorkflowInvocationStep.workflow_step_id,
+    )).scalar_subquery(),
+)
+
+# Set up proxy so that
+#   History.users_shared_with
+# returns a list of users that history is shared with.
+History.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
+
+# Set up proxy so that
+#   Page.users_shared_with
+# returns a list of users that page is shared with.
+Page.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
+
+# Set up proxy so that
+#   StoredWorkflow.users_shared_with
+# returns a list of users that workflow is shared with.
+StoredWorkflow.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
+
+# Set up proxy so that this syntax is possible:
+# <user_obj>.preferences[pref_name] = pref_value
+User.preferences = association_proxy('_preferences', 'value', creator=UserPreference)  # type: ignore
+
+# Set up proxy so that
+#   Visualization.users_shared_with
+# returns a list of users that visualization is shared with.
+Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore

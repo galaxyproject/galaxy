@@ -21,7 +21,6 @@ from sqlalchemy import (
     TEXT,
     true,
 )
-from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import class_mapper, column_property, deferred, object_session, relation
 from sqlalchemy.sql import exists
 
@@ -208,67 +207,6 @@ simple_mapping(model.Dataset,
     genome_index_tool_data=relation(model.GenomeIndexToolData, back_populates='dataset'),
 )
 
-# Set up proxy so that
-#   History.users_shared_with
-# returns a list of users that history is shared with.
-model.History.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-# mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
-#     addresses=relation(model.UserAddress,
-#         back_populates='user',
-#         order_by=desc(model.UserAddress.update_time)),
-#     cloudauthz=relation(model.CloudAuthz, back_populates='user'),
-#     custos_auth=relation(model.CustosAuthnzToken, back_populates='user'),
-#     default_permissions=relation(model.DefaultUserPermissions, back_populates='user'),
-#     groups=relation(model.UserGroupAssociation, back_populates='user'),
-#     histories=relation(model.History,
-#         backref="user",
-#         order_by=desc(model.History.update_time)),
-#     active_histories=relation(model.History,
-#         primaryjoin=(
-#             (model.History.user_id == model.User.table.c.id)
-#             & (not_(model.History.deleted))
-#         ),
-#         viewonly=True,
-#         order_by=desc(model.History.update_time)),
-#     galaxy_sessions=relation(model.GalaxySession,
-#         backref="user",
-#         order_by=desc(model.GalaxySession.update_time)),
-#     pages_shared_by_others=relation(model.PageUserShareAssociation, back_populates='user'),
-#     quotas=relation(model.UserQuotaAssociation, back_populates='user'),
-#     social_auth=relation(model.UserAuthnzToken, back_populates='user'),
-#     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
-#         primaryjoin=(
-#             (model.StoredWorkflowMenuEntry.user_id == model.User.table.c.id)
-#             & (model.StoredWorkflowMenuEntry.stored_workflow_id == model.StoredWorkflow.id)
-#             & not_(model.StoredWorkflow.deleted)
-#         ),
-#         backref="user",
-#         cascade="all, delete-orphan",
-#         collection_class=ordering_list('order_index')),
-#     _preferences=relation(model.UserPreference,
-#         backref="user",
-#         collection_class=attribute_mapped_collection('name')),
-#     values=relation(model.FormValues,
-#         primaryjoin=(model.User.table.c.form_values_id == model.FormValues.id)),
-#     api_keys=relation(model.APIKeys,
-#         back_populates="user",
-#         order_by=desc(model.APIKeys.create_time)),
-#     pages=relation(model.Page, back_populates='user'),
-#     reset_tokens=relation(model.PasswordResetToken, back_populates='user'),
-#     histories_shared_by_others=relation(
-#         model.HistoryUserShareAssociation, back_populates='user'),
-#     data_manager_histories=relation(model.DataManagerHistoryAssociation, back_populates='user'),
-#     workflows_shared_by_others=relation(model.StoredWorkflowUserShareAssociation, back_populates='user'),
-#     roles=relation(model.UserRoleAssociation, back_populates='user'),
-#     stored_workflows=relation(model.StoredWorkflow, back_populates='user',
-#         primaryjoin=(lambda: model.User.table.c.id == model.StoredWorkflow.user_id)),  # type: ignore
-# ))
-
-# Set up proxy so that this syntax is possible:
-# <user_obj>.preferences[pref_name] = pref_value
-model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)  # type: ignore
-
 mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
     dataset=relation(model.Dataset,
         primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.dataset_id == model.Dataset.table.c.id),
@@ -319,21 +257,6 @@ mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.L
 #         uselist=True,
 #     ),
 # )
-
-# Set up proxy so that
-#   StoredWorkflow.users_shared_with
-# returns a list of users that workflow is shared with.
-model.StoredWorkflow.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-# Set up proxy so that
-#   Page.users_shared_with
-# returns a list of users that page is shared with.
-model.Page.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-# Set up proxy so that
-#   Visualization.users_shared_with
-# returns a list of users that visualization is shared with.
-model.Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],
