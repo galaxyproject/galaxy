@@ -89,7 +89,6 @@
 </template>
 
 <script>
-import Scroller from "vue-scrollto";
 import { getGalaxyInstance } from "app";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import { allowCachedJobs } from "./utilities";
@@ -287,7 +286,7 @@ export default {
                     if ([true, "true"].includes(config.enable_tool_recommendations)) {
                         this.showRecommendation = true;
                     }
-                    Scroller.scrollTo("body");
+                    document.querySelector(".center-panel").scrollTop = 0;
                 },
                 (e) => {
                     this.showExecuting = false;

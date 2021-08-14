@@ -2,7 +2,7 @@
 import _ from "underscore";
 import Backbone from "backbone";
 import Utils from "utils/utils";
-import FormData from "mvc/form/form-data";
+import { visitInputs } from "components/Form/utilities";
 import FormDisplay from "components/Form/FormDisplay";
 import { appendVueComponent } from "utils/mountVueComponent";
 
@@ -32,7 +32,7 @@ export default Backbone.View.extend({
         }
         this.$el.empty();
         if (_.size(inputs) > 0) {
-            FormData.visitInputs(inputs, function (input, name) {
+            visitInputs(inputs, function (input, name) {
                 var model_value = self.chart.settings.get(name);
                 if (model_value !== undefined && !input.hidden) {
                     input.value = model_value;
