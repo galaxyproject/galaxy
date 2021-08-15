@@ -1,6 +1,7 @@
 """
-Details of how the data model objects are mapped onto the relational database
-are encapsulated here.
+This module no longer contains the mapping of data model classes to the
+relational database.
+The module will be revised during migration from SQLAlchemy Migrate to Alembic.
 """
 
 import logging
