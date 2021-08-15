@@ -1,6 +1,7 @@
 """
 Job control via TES.
 """
+import re
 from lib.galaxy.jobs import JobWrapper
 from lib.galaxy.jobs.runners.util.job_script import job_script
 import logging
@@ -306,6 +307,22 @@ class TESJobRunner(AsynchronousJobRunner):
         
         return paths
 
+    def get_docker_image(self, job_wrapper:JobWrapper):
+        """
+            For getting the docker image to be used
+        """
+        remote_container = self._find_container(job_wrapper)
+        remote_image = "vipchhabra99/pulsar-lib"
+
+        if(hasattr(job_wrapper.job_destination, "params")):
+            if("default_docker_image" in job_wrapper.job_destination.params):
+                remote_image = job_wrapper.job_destination.params.get("default_docker_image")
+
+        if(hasattr(remote_container, "container_id")):
+            remote_image = remote_container.container_id
+        
+        return remote_image
+
     def build_script(self, job_wrapper:JobWrapper, client_args:dict):
         """
         Returns the Job script with required configurations of the job
@@ -322,11 +339,7 @@ class TESJobRunner(AsynchronousJobRunner):
         extra_files = job_wrapper.extra_filenames
         tool_files = self.find_referenced_subfiles(tool_dir, job_wrapper.command_line, extra_files)
 
-        remote_container = self._find_container(job_wrapper)
-        remote_image = "vipchhabra99/pulsar-lib"
-
-        if(hasattr(remote_container, "container_id")):
-            remote_image = remote_container.container_id
+        remote_image = self.get_docker_image(job_wrapper)
 
         command_line = build_command(
                 self,
@@ -384,6 +397,10 @@ class TESJobRunner(AsynchronousJobRunner):
 
         job_script = self.build_script(job_wrapper, client_args)
         job_id = self._send_task(master_addr, job_script)
+
+        if(job_id == None):
+            log.debug(f"Unable to set job on TES instance {master_addr}")
+            return
 
         job_state = TESJobState(
             job_id=job_id,
