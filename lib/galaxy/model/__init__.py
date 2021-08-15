@@ -503,6 +503,8 @@ class User(Base, Dictifiable, RepresentById):
     stored_workflows = relationship('StoredWorkflow', back_populates='user',
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id))  # type: ignore
 
+    preferences: association_proxy  # defined at the end of this module
+
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
     dict_collection_visible_keys = ['id', 'email', 'username', 'deleted', 'active', 'last_password_change']
     # attributes that will be accessed and returned when calling to_dict( view='element' )
@@ -2495,10 +2497,13 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
     )
-    # `users_shared_with_count` and `average_rating` added at the bottom of this module
-    # (cannot be added before HistoryUserShareAssociation and HistoryRatingAssociation are defined)
-    users_shared_with_count: column_property
-    average_rating: column_property
+    users_shared_with_count: column_property  # defined at the end of this module
+    average_rating: column_property  # defined at the end of this module
+
+    # Set up proxy so that
+    #   History.users_shared_with
+    # returns a list of users that history is shared with.
+    users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
 
     dict_collection_visible_keys = ['id', 'name', 'published', 'deleted']
     dict_element_visible_keys = ['id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
@@ -6251,6 +6256,11 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
 
     average_rating: column_property
 
+    # Set up proxy so that
+    #   StoredWorkflow.users_shared_with
+    # returns a list of users that workflow is shared with.
+    users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
+
     dict_collection_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted', 'hidden']
     dict_element_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted', 'hidden']
 
@@ -8182,9 +8192,13 @@ class Page(Base, Dictifiable, RepresentById):
     users_shared_with = relationship(
         'PageUserShareAssociation',
         back_populates='page')
-    # `average_rating` added at the bottom of this module
-    # (cannot be added before PageRatingAssociation is defined)
-    average_rating: column_property
+
+    average_rating: column_property  # defined at the end of this module
+
+    # Set up proxy so that
+    #   Page.users_shared_with
+    # returns a list of users that page is shared with.
+    users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
 
     dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted', 'username']
 
@@ -8292,9 +8306,13 @@ class Visualization(Base, RepresentById):
     ratings = relationship('VisualizationRatingAssociation',
         order_by='VisualizationRatingAssociation.id',
         back_populates="visualization")
-    # `average_rating` added at the bottom of this module
-    # (cannot be added before VisualizationRatingAssociation is defined)
-    average_rating: column_property
+
+    average_rating: column_property  # defined at the end of this module
+
+    # Set up proxy so that
+    #   Visualization.users_shared_with
+    # returns a list of users that visualization is shared with.
+    users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
 
     def __init__(self, id=None, user=None, type=None, title=None, dbkey=None, slug=None, latest_revision=None):
         self.id = id
@@ -9315,26 +9333,6 @@ WorkflowInvocationStep.subworkflow_invocation_id = column_property(
     )).scalar_subquery(),
 )
 
-# Set up proxy so that
-#   History.users_shared_with
-# returns a list of users that history is shared with.
-History.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-# Set up proxy so that
-#   Page.users_shared_with
-# returns a list of users that page is shared with.
-Page.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-# Set up proxy so that
-#   StoredWorkflow.users_shared_with
-# returns a list of users that workflow is shared with.
-StoredWorkflow.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
-User.preferences = association_proxy('_preferences', 'value', creator=UserPreference)  # type: ignore
-
-# Set up proxy so that
-#   Visualization.users_shared_with
-# returns a list of users that visualization is shared with.
-Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
+User.preferences = association_proxy('_preferences', 'value', creator=UserPreference)
