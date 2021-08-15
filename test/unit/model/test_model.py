@@ -6420,14 +6420,14 @@ def api_keys(model, session):
 
 @pytest.fixture
 def cleanup_event(model, session):
-    ce = model.CleanupEvent()
-    yield from dbcleanup_wrapper(session, ce)
+    instance = model.CleanupEvent()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def cloud_authz(model, session, user, user_authnz_token):
-    ca = model.CloudAuthz(user.id, 'a', 'b', user_authnz_token.id, 'c')
-    yield from dbcleanup_wrapper(session, ca)
+    instance = model.CloudAuthz(user.id, 'a', 'b', user_authnz_token.id, 'c')
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6450,59 +6450,59 @@ def data_manager_job_association(model, session):
 
 @pytest.fixture
 def dataset(model, session):
-    d = model.Dataset()
-    yield from dbcleanup_wrapper(session, d)
+    instance = model.Dataset()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def dataset_collection(model, session):
-    dc = model.DatasetCollection(collection_type='a')
-    yield from dbcleanup_wrapper(session, dc)
+    instance = model.DatasetCollection(collection_type='a')
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def dataset_collection_element(
         model, session, dataset_collection, history_dataset_association):
-    dce = model.DatasetCollectionElement(
+    instance = model.DatasetCollectionElement(
         collection=dataset_collection, element=history_dataset_association)
-    yield from dbcleanup_wrapper(session, dce)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def dataset_hash(model, session):
-    dh = model.DatasetHash()
-    yield from dbcleanup_wrapper(session, dh)
+    instance = model.DatasetHash()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def dataset_permission(model, session, dataset):
-    d = model.DatasetPermissions('a', dataset)
-    yield from dbcleanup_wrapper(session, d)
+    instance = model.DatasetPermissions('a', dataset)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def dataset_source(model, session):
-    d = model.DatasetSource()
-    yield from dbcleanup_wrapper(session, d)
+    instance = model.DatasetSource()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def dataset_source_hash(model, session):
-    d = model.DatasetSourceHash()
-    yield from dbcleanup_wrapper(session, d)
+    instance = model.DatasetSourceHash()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def default_history_permissions(model, session, history, role):
-    dha = model.DefaultHistoryPermissions(history, 'a', role)
-    yield from dbcleanup_wrapper(session, dha)
+    instance = model.DefaultHistoryPermissions(history, 'a', role)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def default_quota_association(model, session, quota):
     type_ = model.DefaultQuotaAssociation.types.REGISTERED
-    dqa = model.DefaultQuotaAssociation(type_, quota)
-    yield from dbcleanup_wrapper(session, dqa)
+    instance = model.DefaultQuotaAssociation(type_, quota)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6513,98 +6513,98 @@ def default_user_permissions(model, session, user, role):
 
 @pytest.fixture
 def deferred_job(model, session):
-    dj = model.DeferredJob()
-    yield from dbcleanup_wrapper(session, dj)
+    instance = model.DeferredJob()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def dynamic_tool(model, session):
-    dt = model.DynamicTool()
-    yield from dbcleanup_wrapper(session, dt)
+    instance = model.DynamicTool()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def extended_metadata(model, session):
-    em = model.ExtendedMetadata(None)
-    yield from dbcleanup_wrapper(session, em)
+    instance = model.ExtendedMetadata(None)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def extended_metadata_index(model, session, extended_metadata):
-    emi = model.ExtendedMetadataIndex(extended_metadata, None, None)
-    yield from dbcleanup_wrapper(session, emi)
+    instance = model.ExtendedMetadataIndex(extended_metadata, None, None)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def form_definition(model, session, form_definition_current):
-    fd = model.FormDefinition(name='a', form_definition_current=form_definition_current)
-    yield from dbcleanup_wrapper(session, fd)
+    instance = model.FormDefinition(name='a', form_definition_current=form_definition_current)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def form_definition_current(model, session):
-    fdc = model.FormDefinitionCurrent()
-    yield from dbcleanup_wrapper(session, fdc)
+    instance = model.FormDefinitionCurrent()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def form_values(model, session):
-    fv = model.FormValues()
-    yield from dbcleanup_wrapper(session, fv)
+    instance = model.FormValues()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def galaxy_session(model, session, user):
-    s = model.GalaxySession()
-    yield from dbcleanup_wrapper(session, s)
+    instance = model.GalaxySession()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def galaxy_session_history_association(model, session, galaxy_session, history):
-    sha = model.GalaxySessionToHistoryAssociation(galaxy_session, history)
-    yield from dbcleanup_wrapper(session, sha)
+    instance = model.GalaxySessionToHistoryAssociation(galaxy_session, history)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def genome_index_tool_data(model, session):
-    gitd = model.GenomeIndexToolData()
-    yield from dbcleanup_wrapper(session, gitd)
+    instance = model.GenomeIndexToolData()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def group(model, session):
-    g = model.Group()
-    yield from dbcleanup_wrapper(session, g)
+    instance = model.Group()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def group_quota_association(model, session):
-    gqa = model.GroupQuotaAssociation(None, None)
-    yield from dbcleanup_wrapper(session, gqa)
+    instance = model.GroupQuotaAssociation(None, None)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def group_role_association(model, session):
-    gra = model.GroupRoleAssociation(None, None)
-    yield from dbcleanup_wrapper(session, gra)
+    instance = model.GroupRoleAssociation(None, None)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def history(model, session):
-    h = model.History()
-    yield from dbcleanup_wrapper(session, h)
+    instance = model.History()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def history_annotation_association(model, session):
-    haa = model.HistoryAnnotationAssociation()
-    yield from dbcleanup_wrapper(session, haa)
+    instance = model.HistoryAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def history_dataset_association(model, session, dataset):
-    hda = model.HistoryDatasetAssociation(dataset=dataset)
-    yield from dbcleanup_wrapper(session, hda)
+    instance = model.HistoryDatasetAssociation(dataset=dataset)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6662,42 +6662,42 @@ def history_dataset_collection_tag_association(model, session):
 
 @pytest.fixture
 def history_rating_association(model, session, user, history):
-    hda = model.HistoryRatingAssociation(user, history)
-    yield from dbcleanup_wrapper(session, hda)
+    instance = model.HistoryRatingAssociation(user, history)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def history_tag_association(model, session):
-    hta = model.HistoryTagAssociation()
-    yield from dbcleanup_wrapper(session, hta)
+    instance = model.HistoryTagAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def history_user_share_association(model, session):
-    husa = model.HistoryUserShareAssociation()
-    yield from dbcleanup_wrapper(session, husa)
+    instance = model.HistoryUserShareAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def implicit_collection_jobs(model, session):
-    icj = model.ImplicitCollectionJobs(populated_state='new')
-    yield from dbcleanup_wrapper(session, icj)
+    instance = model.ImplicitCollectionJobs(populated_state='new')
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def implicit_collection_jobs_job_association(model, session):
-    icjja = model.ImplicitCollectionJobsJobAssociation()
-    icjja.order_index = 1
-    yield from dbcleanup_wrapper(session, icjja)
+    instance = model.ImplicitCollectionJobsJobAssociation()
+    instance.order_index = 1
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def implicitly_converted_dataset_association(model, session, history_dataset_association):
-    icda = model.ImplicitlyConvertedDatasetAssociation(
+    instance = model.ImplicitlyConvertedDatasetAssociation(
         dataset=history_dataset_association,
         parent=history_dataset_association,  # using the same dataset; should work here.
     )
-    yield from dbcleanup_wrapper(session, icda)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6714,8 +6714,8 @@ def interactive_tool_entry_point(model, session):
 
 @pytest.fixture
 def job(model, session):
-    j = model.Job()
-    yield from dbcleanup_wrapper(session, j)
+    instance = model.Job()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6726,8 +6726,8 @@ def job_container_association(model, session):
 
 @pytest.fixture
 def job_export_history_archive(model, session):
-    jeha = model.JobExportHistoryArchive()
-    yield from dbcleanup_wrapper(session, jeha)
+    instance = model.JobExportHistoryArchive()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6810,20 +6810,20 @@ def job_to_output_library_dataset_association(model, session, library_dataset_da
 
 @pytest.fixture
 def library(model, session):
-    lb = model.Library()
-    yield from dbcleanup_wrapper(session, lb)
+    instance = model.Library()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def library_folder(model, session):
-    lf = model.LibraryFolder()
-    yield from dbcleanup_wrapper(session, lf)
+    instance = model.LibraryFolder()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def library_dataset(model, session):
-    ld = model.LibraryDataset()
-    yield from dbcleanup_wrapper(session, ld)
+    instance = model.LibraryDataset()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6840,8 +6840,8 @@ def library_dataset_collection_annotation_association(model, session):
 
 @pytest.fixture
 def library_dataset_collection_association(model, session):
-    ldca = model.LibraryDatasetCollectionAssociation()
-    yield from dbcleanup_wrapper(session, ldca)
+    instance = model.LibraryDatasetCollectionAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6852,20 +6852,20 @@ def library_dataset_collection_rating_association(model, session):
 
 @pytest.fixture
 def library_dataset_collection_tag_association(model, session):
-    ldcta = model.LibraryDatasetCollectionTagAssociation()
-    yield from dbcleanup_wrapper(session, ldcta)
+    instance = model.LibraryDatasetCollectionTagAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def library_dataset_dataset_association(model, session):
-    ldda = model.LibraryDatasetDatasetAssociation()
-    yield from dbcleanup_wrapper(session, ldda)
+    instance = model.LibraryDatasetDatasetAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def library_dataset_dataset_association_tag_association(model, session):
-    lddata = model.LibraryDatasetDatasetAssociationTagAssociation()
-    yield from dbcleanup_wrapper(session, lddata)
+    instance = model.LibraryDatasetDatasetAssociationTagAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6883,82 +6883,82 @@ def library_dataset_dataset_info_association(
 
 @pytest.fixture
 def library_dataset_permission(model, session, library_dataset, role):
-    ldp = model.LibraryDatasetPermissions('a', library_dataset, role)
-    yield from dbcleanup_wrapper(session, ldp)
+    instance = model.LibraryDatasetPermissions('a', library_dataset, role)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def library_dataset_dataset_association_permission(model, session, library_dataset_dataset_association, role):
-    lddp = model.LibraryDatasetDatasetAssociationPermissions('a', library_dataset_dataset_association, role)
-    yield from dbcleanup_wrapper(session, lddp)
+    instance = model.LibraryDatasetDatasetAssociationPermissions('a', library_dataset_dataset_association, role)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def library_folder_info_association(model, session, library_folder, form_definition, form_values):
-    lfia = model.LibraryFolderInfoAssociation(library_folder, form_definition, form_values)
-    yield from dbcleanup_wrapper(session, lfia)
+    instance = model.LibraryFolderInfoAssociation(library_folder, form_definition, form_values)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def library_folder_permission(model, session, library_folder, role):
-    lfp = model.LibraryFolderPermissions('a', library_folder, role)
-    yield from dbcleanup_wrapper(session, lfp)
+    instance = model.LibraryFolderPermissions('a', library_folder, role)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def library_info_association(model, session, library, form_definition, form_values):
-    lia = model.LibraryInfoAssociation(library, form_definition, form_values)
-    yield from dbcleanup_wrapper(session, lia)
+    instance = model.LibraryInfoAssociation(library, form_definition, form_values)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def library_permission(model, session, library, role):
-    lp = model.LibraryPermissions('a', library, role)
-    yield from dbcleanup_wrapper(session, lp)
+    instance = model.LibraryPermissions('a', library, role)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def metadata_file(model, session):
-    mf = model.MetadataFile()
-    yield from dbcleanup_wrapper(session, mf)
+    instance = model.MetadataFile()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def page(model, session, user):
-    p = model.Page()
-    p.user = user
-    yield from dbcleanup_wrapper(session, p)
+    instance = model.Page()
+    instance.user = user
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def page_revision(model, session, page):
-    pr = model.PageRevision()
-    pr.page = page
-    yield from dbcleanup_wrapper(session, pr)
+    instance = model.PageRevision()
+    instance.page = page
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def page_annotation_association(model, session):
-    paa = model.PageAnnotationAssociation()
-    yield from dbcleanup_wrapper(session, paa)
+    instance = model.PageAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def page_rating_association(model, session):
-    pra = model.PageRatingAssociation(None, None)
-    yield from dbcleanup_wrapper(session, pra)
+    instance = model.PageRatingAssociation(None, None)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def page_tag_association(model, session):
-    pta = model.PageTagAssociation()
-    yield from dbcleanup_wrapper(session, pta)
+    instance = model.PageTagAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def page_user_share_association(model, session):
-    pra = model.PageUserShareAssociation()
-    yield from dbcleanup_wrapper(session, pra)
+    instance = model.PageUserShareAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6971,8 +6971,8 @@ def password_reset_token(model, session, user):
 
 @pytest.fixture
 def post_job_action(model, session):
-    pja = model.PostJobAction('a')
-    yield from dbcleanup_wrapper(session, pja)
+    instance = model.PostJobAction('a')
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -6983,87 +6983,87 @@ def post_job_action_association(model, session, post_job_action, job):
 
 @pytest.fixture
 def quota(model, session):
-    q = model.Quota(get_random_string(), 'b')
-    yield from dbcleanup_wrapper(session, q)
+    instance = model.Quota(get_random_string(), 'b')
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def role(model, session):
-    r = model.Role()
-    yield from dbcleanup_wrapper(session, r)
+    instance = model.Role()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def stored_workflow(model, session, user):
-    w = model.StoredWorkflow()
-    w.user = user
-    yield from dbcleanup_wrapper(session, w)
+    instance = model.StoredWorkflow()
+    instance.user = user
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def stored_workflow_annotation_association(model, session):
-    haa = model.StoredWorkflowAnnotationAssociation()
-    yield from dbcleanup_wrapper(session, haa)
+    instance = model.StoredWorkflowAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def stored_workflow_rating_association(model, session):
-    hda = model.StoredWorkflowRatingAssociation(None, None)
-    yield from dbcleanup_wrapper(session, hda)
+    instance = model.StoredWorkflowRatingAssociation(None, None)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def stored_workflow_tag_association(model, session):
-    swta = model.StoredWorkflowTagAssociation()
-    yield from dbcleanup_wrapper(session, swta)
+    instance = model.StoredWorkflowTagAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def stored_workflow_user_share_association(model, session):
-    husa = model.StoredWorkflowUserShareAssociation()
-    yield from dbcleanup_wrapper(session, husa)
+    instance = model.StoredWorkflowUserShareAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def tag(model, session):
-    t = model.Tag()
-    yield from dbcleanup_wrapper(session, t)
+    instance = model.Tag()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def task(model, session, job):
-    t = model.Task(job, 'a', 'b')
-    yield from dbcleanup_wrapper(session, t)
+    instance = model.Task(job, 'a', 'b')
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def task_metric_numeric(model, session):
-    tmn = model. TaskMetricNumeric('a', 'b', 9)
-    yield from dbcleanup_wrapper(session, tmn)
+    instance = model. TaskMetricNumeric('a', 'b', 9)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def task_metric_text(model, session):
-    tmt = model. TaskMetricText('a', 'b', 'c')
-    yield from dbcleanup_wrapper(session, tmt)
+    instance = model. TaskMetricText('a', 'b', 'c')
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def tool_tag_association(model, session):
-    tta = model.ToolTagAssociation()
-    yield from dbcleanup_wrapper(session, tta)
+    instance = model.ToolTagAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def transfer_job(model, session):
-    tj = model.TransferJob()
-    yield from dbcleanup_wrapper(session, tj)
+    instance = model.TransferJob()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def user(model, session):
-    u = model.User(email='test@example.com', password='password')
-    yield from dbcleanup_wrapper(session, u)
+    instance = model.User(email='test@example.com', password='password')
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -7080,8 +7080,8 @@ def user_address(model, session, user):
 
 @pytest.fixture
 def user_authnz_token(model, session, user):
-    t = model.UserAuthnzToken('a', 'b', 'c', 1, 'd', user)
-    yield from dbcleanup_wrapper(session, t)
+    instance = model.UserAuthnzToken('a', 'b', 'c', 1, 'd', user)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -7098,8 +7098,8 @@ def user_preference(model, session):
 
 @pytest.fixture
 def user_quota_association(model, session):
-    uqa = model.UserQuotaAssociation(None, None)
-    yield from dbcleanup_wrapper(session, uqa)
+    instance = model.UserQuotaAssociation(None, None)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -7110,33 +7110,33 @@ def user_role_association(model, session, user, role):
 
 @pytest.fixture
 def visualization(model, session, user):
-    v = model.Visualization()
-    v.user = user
-    yield from dbcleanup_wrapper(session, v)
+    instance = model.Visualization()
+    instance.user = user
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def visualization_annotation_association(model, session):
-    vaa = model.VisualizationAnnotationAssociation()
-    yield from dbcleanup_wrapper(session, vaa)
+    instance = model.VisualizationAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def visualization_rating_association(model, session, user, visualization):
-    vaa = model.VisualizationRatingAssociation(user, visualization)
-    yield from dbcleanup_wrapper(session, vaa)
+    instance = model.VisualizationRatingAssociation(user, visualization)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def visualization_revision(model, session, visualization):
-    vr = model.VisualizationRevision(visualization=visualization)
-    yield from dbcleanup_wrapper(session, vr)
+    instance = model.VisualizationRevision(visualization=visualization)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def visualization_tag_association(model, session):
-    vta = model.VisualizationTagAssociation()
-    yield from dbcleanup_wrapper(session, vta)
+    instance = model.VisualizationTagAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -7147,15 +7147,15 @@ def visualization_user_share_association(model, session):
 
 @pytest.fixture
 def workflow(model, session):
-    w = model.Workflow()
-    yield from dbcleanup_wrapper(session, w)
+    instance = model.Workflow()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def workflow_invocation(model, session, workflow):
-    wi = model.WorkflowInvocation()
-    wi.workflow = workflow
-    yield from dbcleanup_wrapper(session, wi)
+    instance = model.WorkflowInvocation()
+    instance.workflow = workflow
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -7178,10 +7178,10 @@ def workflow_invocation_output_value(model, session):
 
 @pytest.fixture
 def workflow_invocation_step(model, session, workflow_invocation, workflow_step):
-    wis = model.WorkflowInvocationStep()
-    wis.workflow_invocation = workflow_invocation
-    wis.workflow_step = workflow_step
-    yield from dbcleanup_wrapper(session, wis)
+    instance = model.WorkflowInvocationStep()
+    instance.workflow_invocation = workflow_invocation
+    instance.workflow_step = workflow_step
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -7198,8 +7198,8 @@ def workflow_invocation_step_output_dataset_association(model, session):
 
 @pytest.fixture
 def workflow_output(model, session, workflow_step):
-    wo = model.WorkflowOutput(workflow_step)
-    yield from dbcleanup_wrapper(session, wo)
+    instance = model.WorkflowOutput(workflow_step)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
@@ -7234,27 +7234,27 @@ def workflow_request_to_input_dataset_collection_association(model, session):
 
 @pytest.fixture
 def workflow_step(model, session, workflow):
-    s = model.WorkflowStep()
-    s.workflow = workflow
-    yield from dbcleanup_wrapper(session, s)
+    instance = model.WorkflowStep()
+    instance.workflow = workflow
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def workflow_step_connection(model, session):
-    wsc = model.WorkflowStepConnection()
-    yield from dbcleanup_wrapper(session, wsc)
+    instance = model.WorkflowStepConnection()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def workflow_step_input(model, session, workflow_step):
-    wsi = model.WorkflowStepInput(workflow_step)
-    yield from dbcleanup_wrapper(session, wsi)
+    instance = model.WorkflowStepInput(workflow_step)
+    yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def workflow_step_tag_association(model, session):
-    wsta = model.WorkflowStepTagAssociation()
-    yield from dbcleanup_wrapper(session, wsta)
+    instance = model.WorkflowStepTagAssociation()
+    yield from dbcleanup_wrapper(session, instance)
 
 
 # Fixtures yielding factory functions.
