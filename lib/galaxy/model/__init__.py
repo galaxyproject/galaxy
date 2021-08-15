@@ -4639,7 +4639,7 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
     genome_build = Column(TrimmedString(40))
 
     folders = relationship('LibraryFolder',
-        primaryjoin=('LibraryFolder.id == LibraryFolder.parent_id'),
+        primaryjoin=(lambda: LibraryFolder.id == LibraryFolder.parent_id),  # type: ignore
         order_by=asc(name),
         back_populates='parent')
     parent = relationship('LibraryFolder', back_populates='folders', remote_side=[id])
@@ -4656,7 +4656,7 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
         viewonly=True)
 
     datasets = relationship('LibraryDataset',
-        primaryjoin=('LibraryDataset.folder_id == LibraryFolder.id'),
+        primaryjoin=(lambda: LibraryDataset.folder_id == LibraryFolder.id),  # type: ignore
         # order_by=asc(text('LibraryDataset._name')),  # TODO: uncomment after mapping LibraryDataset
         lazy=True,
         viewonly=True)
@@ -7740,7 +7740,7 @@ class FormDefinition(Base, Dictifiable, RepresentById):
     form_definition_current = relationship(
         'FormDefinitionCurrent',
         back_populates='forms',
-        primaryjoin=('FormDefinitionCurrent.id == FormDefinition.form_definition_current_id'))
+        primaryjoin=(lambda: FormDefinitionCurrent.id == FormDefinition.form_definition_current_id))  # type: ignore
 
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField]
@@ -7798,11 +7798,11 @@ class FormDefinitionCurrent(Base, RepresentById):
         'FormDefinition',
         back_populates='form_definition_current',
         cascade='all, delete-orphan',
-        primaryjoin=('FormDefinitionCurrent.id == FormDefinition.form_definition_current_id'))
+        primaryjoin=(lambda: FormDefinitionCurrent.id == FormDefinition.form_definition_current_id))  # type: ignore
     latest_form = relationship(
         'FormDefinition',
         post_update=True,
-        primaryjoin=('FormDefinitionCurrent.latest_form_id == model.FormDefinition.id'))
+        primaryjoin=(lambda: FormDefinitionCurrent.latest_form_id == FormDefinition.id))  # type: ignore
 
     def __init__(self, form_definition=None):
         self.latest_form = form_definition
@@ -7818,7 +7818,7 @@ class FormValues(Base, RepresentById):
     content = Column(MutableJSONType)
     form_definition = relationship(
         'FormDefinition',
-        primaryjoin=('FormValues.form_definition_id == FormDefinition.id'))
+        primaryjoin=(lambda: FormValues.form_definition_id == FormDefinition.id))  # type: ignore
 
     def __init__(self, form_def=None, content=None):
         self.form_definition = form_def
@@ -8213,12 +8213,12 @@ class Page(Base, Dictifiable, RepresentById):
     revisions = relationship(
         'PageRevision',
         cascade="all, delete-orphan",
-        primaryjoin=('Page.id == PageRevision.page_id'),
+        primaryjoin=(lambda: Page.id == PageRevision.page_id),  # type: ignore
         back_populates='page')
     latest_revision = relationship(
         'PageRevision',
         post_update=True,
-        primaryjoin=('Page.latest_revision_id == PageRevision.id'),
+        primaryjoin=(lambda: Page.latest_revision_id == PageRevision.id),  # type: ignore
         lazy=False)
     tags = relationship(
         'PageTagAssociation',
@@ -8279,9 +8279,8 @@ class PageRevision(Base, Dictifiable, RepresentById):
     title = Column(TEXT)
     content = Column(TEXT)
     content_format = Column(TrimmedString(32))
-    page = relationship(
-        'Page',
-        primaryjoin=('Page.id == PageRevision.page_id'))
+    page = relationship('Page',
+        primaryjoin=(lambda: Page.id == PageRevision.page_id))  # type: ignore
     DEFAULT_CONTENT_FORMAT = 'html'
     dict_element_visible_keys = ['id', 'page_id', 'title', 'content', 'content_format']
 
