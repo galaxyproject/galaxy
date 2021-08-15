@@ -932,7 +932,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     state_history = relationship('JobStateHistory', back_populates='job')
     text_metrics = relationship('JobMetricText', back_populates='job')
     numeric_metrics = relationship('JobMetricNumeric', back_populates='job')
-    job = relationship('GenomeIndexToolData', back_populates='job')  # TODO review attr naming (the functionality IS correct)
+    job = relationship('GenomeIndexToolData', back_populates='job')
     interactivetool_entry_points = relationship('InteractiveToolEntryPoint',
         back_populates='job', uselist=True)
     implicit_collection_jobs_association = relationship('ImplicitCollectionJobsJobAssociation',
@@ -1803,7 +1803,8 @@ class JobToOutputDatasetAssociation(Base, RepresentById):
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
     dataset_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
     name = Column(String(255))
-    dataset = relationship('HistoryDatasetAssociation', lazy=False, back_populates='creating_job_associations')
+    dataset = relationship('HistoryDatasetAssociation',
+        lazy=False, back_populates='creating_job_associations')
     job = relationship('Job', back_populates='output_datasets')
 
     def __init__(self, name, dataset):
@@ -1816,7 +1817,8 @@ class JobToInputDatasetCollectionAssociation(Base, RepresentById):
 
     id = Column(Integer, primary_key=True)
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
-    dataset_collection_id = Column(Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    dataset_collection_id = Column(Integer,
+        ForeignKey('history_dataset_collection_association.id'), index=True)
     dataset_version = Column(Integer)
     name = Column(String(255))
     dataset_collection = relationship('HistoryDatasetCollectionAssociation', lazy=False)
@@ -1832,7 +1834,8 @@ class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
 
     id = Column(Integer, primary_key=True)
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
-    dataset_collection_element_id = Column(Integer, ForeignKey('dataset_collection_element.id'), index=True)
+    dataset_collection_element_id = Column(Integer,
+        ForeignKey('dataset_collection_element.id'), index=True)
     name = Column(Unicode(255))
     dataset_collection_element = relationship('DatasetCollectionElement', lazy=False)
     job = relationship('Job', back_populates='input_dataset_collection_elements')
@@ -1849,7 +1852,8 @@ class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
 
     id = Column(Integer, primary_key=True)
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
-    dataset_collection_id = Column(Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    dataset_collection_id = Column(Integer,
+        ForeignKey('history_dataset_collection_association.id'), index=True)
     name = Column(Unicode(255))
     dataset_collection_instance = relationship(
         'HistoryDatasetCollectionAssociation',
@@ -1934,14 +1938,16 @@ class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
     __tablename__ = 'implicitly_created_dataset_collection_inputs'
 
     id = Column(Integer, primary_key=True)
-    dataset_collection_id = Column(Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
-    input_dataset_collection_id = Column(Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    dataset_collection_id = Column(Integer,
+        ForeignKey('history_dataset_collection_association.id'), index=True)
+    input_dataset_collection_id = Column(Integer,
+        ForeignKey('history_dataset_collection_association.id'), index=True)
     name = Column(Unicode(255))
 
     input_dataset_collection = relationship('HistoryDatasetCollectionAssociation',
-        primaryjoin=(
-            lambda: HistoryDatasetCollectionAssociation.id == ImplicitlyCreatedDatasetCollectionInput.input_dataset_collection_id  # type: ignore
-        ))
+        primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
+            == ImplicitlyCreatedDatasetCollectionInput.input_dataset_collection_id)  # type: ignore
+    )
     dataset_collection = relationship('HistoryDatasetCollectionAssociation',
         primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
             == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id),  # type: ignore
@@ -1957,7 +1963,8 @@ class ImplicitCollectionJobs(Base, RepresentById):
 
     id = Column(Integer, primary_key=True)
     populated_state = Column(TrimmedString(64), default='new', nullable=False)
-    jobs = relationship('ImplicitCollectionJobsJobAssociation', back_populates='implicit_collection_jobs')
+    jobs = relationship('ImplicitCollectionJobsJobAssociation',
+        back_populates='implicit_collection_jobs')
     history_dataset_collection_associations = relationship('HistoryDatasetCollectionAssociation',
         back_populates='implicit_collection_jobs')
     workflow_invocation_step = relationship('WorkflowInvocationStep',
@@ -2047,8 +2054,10 @@ class JobExternalOutputMetadata(Base, RepresentById):
 
     id = Column(Integer, primary_key=True)
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
-    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True, nullable=True)
-    library_dataset_dataset_association_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
+    history_dataset_association_id = Column(Integer,
+        ForeignKey('history_dataset_association.id'), index=True, nullable=True)
+    library_dataset_dataset_association_id = Column(Integer,
+        ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
     is_valid = Column(Boolean, default=True)
     filename_in = Column(String(255))
     filename_out = Column(String(255))
@@ -2308,7 +2317,6 @@ class DeferredJob(Base, RepresentById):
     state = Column(String(64), index=True)
     plugin = Column(String(128), index=True)
     params = Column(MutableJSONType)
-    # TODO review attr naming: DeferredJob.deferred_job (that points to a GenomeIndexToolData object) is confusing.
     deferred_job = relationship('GenomeIndexToolData', back_populates='deferred')
 
     class states(str, Enum):
@@ -2454,7 +2462,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         order_by=lambda: desc(JobExportHistoryArchive.id))  # type: ignore
     active_datasets = relationship('HistoryDatasetAssociation',
         primaryjoin=(
-            lambda: and_(HistoryDatasetAssociation.history_id == History.id, not_(HistoryDatasetAssociation.deleted))  # type: ignore
+            lambda: and_(HistoryDatasetAssociation.history_id  # type: ignore
+                == History.id, not_(HistoryDatasetAssociation.deleted))  # type: ignore
         ),
         order_by=lambda: asc(HistoryDatasetAssociation.hid),  # type: ignore
         viewonly=True)
@@ -2475,8 +2484,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         viewonly=True)
     visible_dataset_collections = relationship('HistoryDatasetCollectionAssociation',
         primaryjoin=(
-            lambda: and_(HistoryDatasetCollectionAssociation.history_id == History.id,  # type: ignore
-             not_(HistoryDatasetCollectionAssociation.deleted), HistoryDatasetCollectionAssociation.visible)  # type: ignore
+            lambda: and_(
+                HistoryDatasetCollectionAssociation.history_id == History.id,  # type: ignore
+                not_(HistoryDatasetCollectionAssociation.deleted),  # type: ignore
+                HistoryDatasetCollectionAssociation.visible)  # type: ignore
         ),
         order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),  # type: ignore
         viewonly=True)
@@ -3199,7 +3210,8 @@ class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
     library_dataset_dataset_association_id = Column(
         Integer, ForeignKey('library_dataset_dataset_association.id'), nullable=True, index=True)
     role_id = Column(Integer, ForeignKey('role.id'), index=True)
-    library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation', back_populates='actions')
+    library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation',
+        back_populates='actions')
     role = relationship('Role', back_populates='library_dataset_dataset_actions')
 
     def __init__(self, action, library_item, role):
@@ -4457,7 +4469,8 @@ class HistoryDatasetAssociationHistory(Base, RepresentById):
     __tablename__ = 'history_dataset_association_history'
 
     id = Column(Integer, primary_key=True)
-    history_dataset_association_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True)
+    history_dataset_association_id = Column(Integer,
+        ForeignKey("history_dataset_association.id"), index=True)
     update_time = Column(DateTime, default=now)
     version = Column(Integer)
     name = Column(TrimmedString(255))
@@ -4492,7 +4505,8 @@ class HistoryDatasetAssociationDisplayAtAuthorization(Base, RepresentById):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, index=True, default=now, onupdate=now)
-    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    history_dataset_association_id = Column(Integer,
+        ForeignKey('history_dataset_association.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     site = Column(TrimmedString(255))
     history_dataset_association = relationship('HistoryDatasetAssociation')
@@ -4508,8 +4522,10 @@ class HistoryDatasetAssociationSubset(Base, RepresentById):
     __tablename__ = 'history_dataset_association_subset'
 
     id = Column(Integer, primary_key=True)
-    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
-    history_dataset_association_subset_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    history_dataset_association_id = Column(Integer,
+        ForeignKey('history_dataset_association.id'), index=True)
+    history_dataset_association_subset_id = Column(Integer,
+        ForeignKey('history_dataset_association.id'), index=True)
     location = Column(Unicode(255), index=True)
 
     hda = relationship('HistoryDatasetAssociation',
@@ -4539,7 +4555,7 @@ class Library(Base, Dictifiable, HasName, RepresentById):
     synopsis = Column(TEXT)
     root_folder = relationship('LibraryFolder', back_populates='library_root')
     actions = relationship('LibraryPermissions', back_populates='library')
-    info_association = relationship('LibraryInfoAssociation', back_populates='library')  # TODO: should this be plural?
+    info_association = relationship('LibraryInfoAssociation', back_populates='library')
 
     permitted_actions = get_permitted_actions(filter='LIBRARY')
     dict_collection_visible_keys = ['id', 'name']
@@ -4736,7 +4752,8 @@ class LibraryDataset(Base, RepresentById):
     id = Column(Integer, primary_key=True)
     # current version of dataset, if null, there is not a current version selected
     library_dataset_dataset_association_id = Column(Integer,
-        ForeignKey('library_dataset_dataset_association.id', use_alter=True, name='library_dataset_dataset_association_id_fk'),
+        ForeignKey('library_dataset_dataset_association.id',
+            use_alter=True, name='library_dataset_dataset_association_id_fk'),
         nullable=True, index=True)
     folder_id = Column(Integer, ForeignKey('library_folder.id'), index=True)
     # not currently being used, but for possible future use
@@ -5154,7 +5171,8 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
     hda_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True, nullable=True)
-    ldda_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
+    ldda_id = Column(Integer,
+        ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
     hda_parent_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
     ldda_parent_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True)
     deleted = Column(Boolean, index=True, default=False)
@@ -5942,11 +5960,15 @@ class DatasetCollectionElement(Base, Dictifiable, RepresentById):
 
     id = Column(Integer, primary_key=True)
     # Parent collection id describing what collection this element belongs to.
-    dataset_collection_id = Column(Integer, ForeignKey('dataset_collection.id'), index=True, nullable=False)
+    dataset_collection_id = Column(Integer,
+        ForeignKey('dataset_collection.id'), index=True, nullable=False)
     # Child defined by this association - HDA, LDDA, or another dataset association...
-    hda_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True, nullable=True)
-    ldda_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
-    child_collection_id = Column(Integer, ForeignKey('dataset_collection.id'), index=True, nullable=True)
+    hda_id = Column(Integer,
+        ForeignKey('history_dataset_association.id'), index=True, nullable=True)
+    ldda_id = Column(Integer,
+        ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
+    child_collection_id = Column(Integer,
+        ForeignKey('dataset_collection.id'), index=True, nullable=True)
     # Element index and identifier to define this parent-child relationship.
     element_index = Column(Integer)
     element_identifier = Column(Unicode(255))
@@ -6215,7 +6237,8 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     update_time = Column(DateTime, default=now, onupdate=now, index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True, nullable=False)
     latest_workflow_id = Column(Integer,
-        ForeignKey('workflow.id', use_alter=True, name='stored_workflow_latest_workflow_id_fk'), index=True)
+        ForeignKey('workflow.id', use_alter=True, name='stored_workflow_latest_workflow_id_fk'),
+        index=True)
     name = Column(TEXT)
     deleted = Column(Boolean, default=False)
     hidden = Column(Boolean, default=False)
@@ -6252,7 +6275,8 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     ratings = relationship('StoredWorkflowRatingAssociation',
         order_by='StoredWorkflowRatingAssociation.id',
         back_populates="stored_workflow")
-    users_shared_with = relationship('StoredWorkflowUserShareAssociation', back_populates='stored_workflow')
+    users_shared_with = relationship('StoredWorkflowUserShareAssociation',
+        back_populates='stored_workflow')
 
     average_rating: column_property
 
@@ -6914,7 +6938,8 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
         back_populates='workflow_invocation')
     output_datasets = relationship('WorkflowInvocationOutputDatasetAssociation',
         back_populates='workflow_invocation')
-    parent_workflow_invocation_association = relationship('WorkflowInvocationToSubworkflowInvocationAssociation',
+    parent_workflow_invocation_association = relationship(
+        'WorkflowInvocationToSubworkflowInvocationAssociation',
         primaryjoin=(lambda:
             WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id  # type: ignore
                 == WorkflowInvocation.id),  # type: ignore
@@ -7277,13 +7302,16 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, Re
     __tablename__ = 'workflow_invocation_to_subworkflow_invocation_association'
 
     id = Column(Integer, primary_key=True)
-    workflow_invocation_id = Column(Integer, ForeignKey('workflow_invocation.id', name='fk_wfi_swi_wfi'), index=True)
-    subworkflow_invocation_id = Column(Integer, ForeignKey('workflow_invocation.id', name='fk_wfi_swi_swi'), index=True)
+    workflow_invocation_id = Column(Integer,
+        ForeignKey('workflow_invocation.id', name='fk_wfi_swi_wfi'), index=True)
+    subworkflow_invocation_id = Column(Integer,
+        ForeignKey('workflow_invocation.id', name='fk_wfi_swi_swi'), index=True)
     workflow_step_id = Column(Integer, ForeignKey('workflow_step.id', name='fk_wfi_swi_ws'))
 
     subworkflow_invocation = relationship('WorkflowInvocation',
         primaryjoin=(lambda:
-            WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id == WorkflowInvocation.id),  # type: ignore
+            WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id  # type: ignore
+                == WorkflowInvocation.id),  # type: ignore
         back_populates='parent_workflow_invocation_association',
         uselist=False,
     )
@@ -7317,7 +7345,8 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
 
     workflow_step = relationship('WorkflowStep')
     job = relationship('Job', back_populates='workflow_invocation_step', uselist=False)
-    implicit_collection_jobs = relationship('ImplicitCollectionJobs', back_populates='workflow_invocation_step', uselist=False)
+    implicit_collection_jobs = relationship('ImplicitCollectionJobs',
+        back_populates='workflow_invocation_step', uselist=False)
     output_dataset_collections = relationship(
         'WorkflowInvocationStepOutputDatasetCollectionAssociation',
         back_populates='workflow_invocation_step')
@@ -7327,7 +7356,8 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
     output_value = relationship('WorkflowInvocationOutputValue',
         foreign_keys='[WorkflowInvocationStep.workflow_invocation_id, WorkflowInvocationStep.workflow_step_id]',
         primaryjoin=(lambda: and_(
-            WorkflowInvocationStep.workflow_invocation_id == WorkflowInvocationOutputValue.workflow_invocation_id,  # type: ignore
+            WorkflowInvocationStep.workflow_invocation_id  # type: ignore
+            == WorkflowInvocationOutputValue.workflow_invocation_id,  # type: ignore
             WorkflowInvocationStep.workflow_step_id == WorkflowInvocationOutputValue.workflow_step_id,  # type: ignore
         )),
         back_populates='workflow_invocation_step',
@@ -7492,10 +7522,12 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Base, Dictifiable, Repr
     name = Column(String(255))
     workflow_invocation_id = Column(Integer, ForeignKey('workflow_invocation.id'), index=True)
     workflow_step_id = Column(Integer, ForeignKey('workflow_step.id'))
-    dataset_collection_id = Column(Integer, ForeignKey('history_dataset_collection_association.id'), index=True)
+    dataset_collection_id = Column(Integer,
+        ForeignKey('history_dataset_collection_association.id'), index=True)
     workflow_step = relationship('WorkflowStep')
     dataset_collection = relationship('HistoryDatasetCollectionAssociation')
-    workflow_invocation = relationship('WorkflowInvocation', back_populates='input_dataset_collections')
+    workflow_invocation = relationship('WorkflowInvocation',
+        back_populates='input_dataset_collections')
 
     history_content_type = "dataset_collection"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
@@ -7541,12 +7573,17 @@ class WorkflowInvocationOutputDatasetCollectionAssociation(Base, Dictifiable, Re
     __tablename__ = 'workflow_invocation_output_dataset_collection_association'
 
     id = Column(Integer, primary_key=True)
-    workflow_invocation_id = Column(Integer, ForeignKey('workflow_invocation.id', name='fk_wiodca_wii'), index=True)
-    workflow_step_id = Column(Integer, ForeignKey('workflow_step.id', name='fk_wiodca_wsi'), index=True)
-    dataset_collection_id = Column(Integer, ForeignKey('history_dataset_collection_association.id', name='fk_wiodca_dci'), index=True)
-    workflow_output_id = Column(Integer, ForeignKey('workflow_output.id', name='fk_wiodca_woi'), index=True)
+    workflow_invocation_id = Column(Integer,
+        ForeignKey('workflow_invocation.id', name='fk_wiodca_wii'), index=True)
+    workflow_step_id = Column(Integer,
+        ForeignKey('workflow_step.id', name='fk_wiodca_wsi'), index=True)
+    dataset_collection_id = Column(Integer,
+        ForeignKey('history_dataset_collection_association.id', name='fk_wiodca_dci'), index=True)
+    workflow_output_id = Column(Integer,
+        ForeignKey('workflow_output.id', name='fk_wiodca_woi'), index=True)
 
-    workflow_invocation = relationship('WorkflowInvocation', back_populates='output_dataset_collections')
+    workflow_invocation = relationship('WorkflowInvocation',
+        back_populates='output_dataset_collections')
     workflow_step = relationship('WorkflowStep')
     dataset_collection = relationship('HistoryDatasetCollectionAssociation')
     workflow_output = relationship('WorkflowOutput')
@@ -7588,10 +7625,12 @@ class WorkflowInvocationStepOutputDatasetAssociation(Base, Dictifiable, Represen
     __tablename__ = 'workflow_invocation_step_output_dataset_association'
 
     id = Column(Integer, primary_key=True)
-    workflow_invocation_step_id = Column(Integer, ForeignKey('workflow_invocation_step.id'), index=True)
+    workflow_invocation_step_id = Column(Integer,
+        ForeignKey('workflow_invocation_step.id'), index=True)
     dataset_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
     output_name = Column(String(255), nullable=True)
-    workflow_invocation_step = relationship('WorkflowInvocationStep', back_populates='output_datasets')
+    workflow_invocation_step = relationship('WorkflowInvocationStep',
+        back_populates='output_datasets')
     dataset = relationship('HistoryDatasetAssociation')
 
     dict_collection_visible_keys = ['id', 'workflow_invocation_step_id', 'dataset_id', 'output_name']
@@ -7607,10 +7646,12 @@ class WorkflowInvocationStepOutputDatasetCollectionAssociation(Base, Dictifiable
     workflow_step_id = Column(
         Integer, ForeignKey('workflow_step.id', name='fk_wisodca_wsi'), index=True)
     dataset_collection_id = Column(
-        Integer, ForeignKey('history_dataset_collection_association.id', name='fk_wisodca_dci'), index=True)
+        Integer,
+        ForeignKey('history_dataset_collection_association.id', name='fk_wisodca_dci'), index=True)
     output_name = Column(String(255), nullable=True)
 
-    workflow_invocation_step = relationship('WorkflowInvocationStep', back_populates='output_dataset_collections')
+    workflow_invocation_step = relationship('WorkflowInvocationStep',
+        back_populates='output_dataset_collections')
     dataset_collection = relationship('HistoryDatasetCollectionAssociation')
 
     dict_collection_visible_keys = ['id', 'workflow_invocation_step_id', 'dataset_collection_id', 'output_name']
@@ -7621,8 +7662,10 @@ class MetadataFile(Base, StorableObject, RepresentById):
 
     id = Column(Integer, primary_key=True)
     name = Column(TEXT)
-    hda_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True, nullable=True)
-    lda_id = Column(Integer, ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
+    hda_id = Column(Integer,
+        ForeignKey('history_dataset_association.id'), index=True, nullable=True)
+    lda_id = Column(Integer,
+        ForeignKey('library_dataset_dataset_association.id'), index=True, nullable=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, index=True, default=now, onupdate=now)
     object_store_id = Column(TrimmedString(255), index=True)
@@ -7689,8 +7732,8 @@ class FormDefinition(Base, Dictifiable, RepresentById):
     update_time = Column(DateTime, default=now, onupdate=now)
     name = Column(TrimmedString(255), nullable=False)
     desc = Column(TEXT)
-    form_definition_current_id = Column(
-        Integer, ForeignKey('form_definition_current.id', use_alter=True), index=True, nullable=False)
+    form_definition_current_id = Column(Integer,
+        ForeignKey('form_definition_current.id', use_alter=True), index=True, nullable=False)
     fields = Column(MutableJSONType)
     type = Column(TrimmedString(255), index=True)
     layout = Column(MutableJSONType)
@@ -8159,8 +8202,8 @@ class Page(Base, Dictifiable, RepresentById):
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True, nullable=False)
-    latest_revision_id = Column(
-        Integer, ForeignKey('page_revision.id', use_alter=True, name='page_latest_revision_id_fk'), index=True)
+    latest_revision_id = Column(Integer,
+        ForeignKey('page_revision.id', use_alter=True, name='page_latest_revision_id_fk'), index=True)
     title = Column(TEXT)
     deleted = Column(Boolean, index=True, default=False)
     importable = Column(Boolean, index=True, default=False)
@@ -8507,7 +8550,8 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
     __tablename__ = 'history_dataset_association_tag_association'
 
     id = Column(Integer, primary_key=True)
-    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    history_dataset_association_id = Column(Integer,
+        ForeignKey('history_dataset_association.id'), index=True)
     tag_id = Column(Integer, ForeignKey('tag.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column(TrimmedString(255), index=True)
@@ -8663,7 +8707,8 @@ class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
     )
 
     id = Column(Integer, primary_key=True)
-    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    history_dataset_association_id = Column(Integer,
+        ForeignKey('history_dataset_association.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     annotation = Column(TEXT)
     hda = relationship('HistoryDatasetAssociation', back_populates='annotations')
@@ -8784,7 +8829,8 @@ class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, Represen
     __tablename__ = 'history_dataset_association_rating_association'
 
     id = Column(Integer, primary_key=True)
-    history_dataset_association_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
+    history_dataset_association_id = Column(Integer,
+        ForeignKey('history_dataset_association.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     rating = Column(Integer, index=True)
     history_dataset_association = relationship('HistoryDatasetAssociation', back_populates='ratings')
@@ -9297,27 +9343,32 @@ Job.any_output_dataset_deleted = column_property(
 )
 
 History.average_rating = column_property(
-    select(func.avg(HistoryRatingAssociation.rating)).where(HistoryRatingAssociation.history_id == History.id).scalar_subquery(),
+    select(func.avg(HistoryRatingAssociation.rating)).where(
+        HistoryRatingAssociation.history_id == History.id).scalar_subquery(),
     deferred=True
 )
 
 History.users_shared_with_count = column_property(
-    select(func.count(HistoryUserShareAssociation.id)).where(History.id == HistoryUserShareAssociation.history_id).scalar_subquery(),
+    select(func.count(HistoryUserShareAssociation.id)).where(
+        History.id == HistoryUserShareAssociation.history_id).scalar_subquery(),
     deferred=True
 )
 
 Page.average_rating = column_property(
-    select(func.avg(PageRatingAssociation.rating)).where(PageRatingAssociation.page_id == Page.id).scalar_subquery(),
+    select(func.avg(PageRatingAssociation.rating)).where(
+        PageRatingAssociation.page_id == Page.id).scalar_subquery(),
     deferred=True
 )
 
 StoredWorkflow.average_rating = column_property(
-    select(func.avg(StoredWorkflowRatingAssociation.rating)).where(StoredWorkflowRatingAssociation.stored_workflow_id == StoredWorkflow.id).scalar_subquery(),
+    select(func.avg(StoredWorkflowRatingAssociation.rating)).where(
+        StoredWorkflowRatingAssociation.stored_workflow_id == StoredWorkflow.id).scalar_subquery(),
     deferred=True
 )
 
 Visualization.average_rating = column_property(
-    select(func.avg(VisualizationRatingAssociation.rating)).where(VisualizationRatingAssociation.visualization_id == Visualization.id).scalar_subquery(),
+    select(func.avg(VisualizationRatingAssociation.rating)).where(
+        VisualizationRatingAssociation.visualization_id == Visualization.id).scalar_subquery(),
     deferred=True
 )
 
