@@ -458,21 +458,21 @@ class User(Base, Dictifiable, RepresentById):
 
     addresses = relationship('UserAddress',
         back_populates='user',
-        order_by='desc(UserAddress.update_time)')
+        order_by=lambda: desc(UserAddress.update_time))  # type: ignore
     cloudauthz = relationship('CloudAuthz', back_populates='user')
     custos_auth = relationship('CustosAuthnzToken', back_populates='user')
     default_permissions = relationship('DefaultUserPermissions', back_populates='user')
     groups = relationship('UserGroupAssociation', back_populates='user')
     histories = relationship('History',
         backref='user',
-        order_by='desc(History.update_time)')
+        order_by=lambda: desc(History.update_time))  # type: ignore
     active_histories = relationship('History',
         primaryjoin=(lambda: (History.user_id == User.id) & (not_(History.deleted))),  # type: ignore
         viewonly=True,
-        order_by='desc(History.update_time)')
+        order_by=lambda: desc(History.update_time))  # type: ignore
     galaxy_sessions = relationship('GalaxySession',
         backref='user',
-        order_by='desc(GalaxySession.update_time)')
+        order_by=lambda: desc(GalaxySession.update_time))  # type: ignore
     pages_shared_by_others = relationship('PageUserShareAssociation', back_populates='user')
     quotas = relationship('UserQuotaAssociation', back_populates='user')
     social_auth = relationship('UserAuthnzToken', back_populates='user')
@@ -493,7 +493,7 @@ class User(Base, Dictifiable, RepresentById):
     # Add type hint (will this work w/SA?)
     api_keys: 'List[APIKeys]' = relationship('APIKeys',
         back_populates='user',
-        order_by='desc(APIKeys.create_time)')
+        order_by=lambda: desc(APIKeys.create_time))  # type: ignore
     pages = relationship('Page', back_populates='user')
     reset_tokens = relationship('PasswordResetToken', back_populates='user')
     histories_shared_by_others = relationship('HistoryUserShareAssociation', back_populates='user')
@@ -4657,14 +4657,14 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
 
     datasets = relationship('LibraryDataset',
         primaryjoin=(lambda: LibraryDataset.folder_id == LibraryFolder.id),  # type: ignore
-        # order_by=asc(text('LibraryDataset._name')),  # TODO: uncomment after mapping LibraryDataset
+        order_by=(lambda: asc(LibraryDataset._name)),  # type: ignore
         lazy=True,
         viewonly=True)
 
     active_datasets = relationship('LibraryDataset',
         primaryjoin=(
             'and_(LibraryDataset.folder_id == LibraryFolder.id, not_(LibraryDataset.deleted))'),
-        # order_by=asc(text('LibraryDataset._name')),  # TODO: uncomment after mapping LibraryDataset
+        order_by=(lambda: asc(LibraryDataset._name)),  # type: ignore
         lazy=True,
         viewonly=True)
 
@@ -5243,7 +5243,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
     elements = relationship('DatasetCollectionElement',
         primaryjoin=(lambda: DatasetCollection.id == DatasetCollectionElement.dataset_collection_id),  # type: ignore
         back_populates='collection',
-        order_by='DatasetCollectionElement.element_index')
+        order_by=lambda: DatasetCollectionElement.element_index)  # type: ignore
     output_dataset_collections = relationship(
         'JobToImplicitOutputDatasetCollectionAssociation', back_populates='dataset_collection')
 
@@ -5680,17 +5680,17 @@ class HistoryDatasetCollectionAssociation(
     )
     tags = relationship(
         'HistoryDatasetCollectionTagAssociation',
-        order_by='HistoryDatasetCollectionTagAssociation.id',
+        order_by=lambda: HistoryDatasetCollectionTagAssociation.id,  # type: ignore
         back_populates='dataset_collection',
     )
     annotations = relationship(
         'HistoryDatasetCollectionAssociationAnnotationAssociation',
-        order_by='HistoryDatasetCollectionAssociationAnnotationAssociation.id',
+        order_by=lambda: HistoryDatasetCollectionAssociationAnnotationAssociation.id,  # type: ignore
         back_populates='history_dataset_collection',
     )
     ratings = relationship(
         'HistoryDatasetCollectionRatingAssociation',
-        order_by='HistoryDatasetCollectionRatingAssociation.id',
+        order_by=lambda: HistoryDatasetCollectionRatingAssociation.id,  # type: ignore
         back_populates='dataset_collection',
     )
     output_dataset_collection_instances = relationship(
@@ -5919,13 +5919,13 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
     folder = relationship('LibraryFolder', back_populates='dataset_collections')
 
     tags = relationship('LibraryDatasetCollectionTagAssociation',
-        order_by='LibraryDatasetCollectionTagAssociation.id',
+        order_by=lambda: LibraryDatasetCollectionTagAssociation.id,  # type: ignore
         back_populates='dataset_collection')
     annotations = relationship('LibraryDatasetCollectionAnnotationAssociation',
-        order_by='LibraryDatasetCollectionAnnotationAssociation.id',
+        order_by=lambda: LibraryDatasetCollectionAnnotationAssociation.id,  # type: ignore
         back_populates="dataset_collection")
     ratings = relationship('LibraryDatasetCollectionRatingAssociation',
-        order_by='LibraryDatasetCollectionRatingAssociation.id',
+        order_by=lambda: LibraryDatasetCollectionRatingAssociation.id,  # type: ignore
         back_populates="dataset_collection")
 
     editable_keys = ('name', 'deleted')
@@ -6254,13 +6254,13 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
         back_populates='stored_workflow',
         cascade="all, delete-orphan",
         primaryjoin=(lambda: StoredWorkflow.id == Workflow.stored_workflow_id),  # type: ignore
-        order_by='-Workflow.id')
+        order_by=lambda: -Workflow.id)  # type: ignore
     latest_workflow = relationship('Workflow',
         post_update=True,
         primaryjoin=(lambda: StoredWorkflow.latest_workflow_id == Workflow.id),  # type: ignore
         lazy=False)
     tags = relationship('StoredWorkflowTagAssociation',
-        order_by='StoredWorkflowTagAssociation.id',
+        order_by=lambda: StoredWorkflowTagAssociation.id,  # type: ignore
         back_populates="stored_workflow")
     owner_tags = relationship('StoredWorkflowTagAssociation',
         primaryjoin=(lambda:
@@ -6268,12 +6268,12 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
                 StoredWorkflow.user_id == StoredWorkflowTagAssociation.user_id)  # type: ignore
         ),
         viewonly=True,
-        order_by='StoredWorkflowTagAssociation.id')
+        order_by=lambda: StoredWorkflowTagAssociation.id)  # type: ignore
     annotations = relationship('StoredWorkflowAnnotationAssociation',
-        order_by='StoredWorkflowAnnotationAssociation.id',
+        order_by=lambda: StoredWorkflowAnnotationAssociation.id,  # type: ignore
         back_populates="stored_workflow")
     ratings = relationship('StoredWorkflowRatingAssociation',
-        order_by='StoredWorkflowRatingAssociation.id',
+        order_by=lambda: StoredWorkflowRatingAssociation.id,  # type: ignore
         back_populates="stored_workflow")
     users_shared_with = relationship('StoredWorkflowUserShareAssociation',
         back_populates='stored_workflow')
@@ -8222,15 +8222,15 @@ class Page(Base, Dictifiable, RepresentById):
         lazy=False)
     tags = relationship(
         'PageTagAssociation',
-        order_by='PageTagAssociation.id',
+        order_by=lambda: PageTagAssociation.id,  # type: ignore
         back_populates='page')
     annotations = relationship(
         'PageAnnotationAssociation',
-        order_by='PageAnnotationAssociation.id',
+        order_by=lambda: PageAnnotationAssociation.id,  # type: ignore
         back_populates='page')
     ratings = relationship(
         'PageRatingAssociation',
-        order_by='PageRatingAssociation.id',
+        order_by=lambda: PageRatingAssociation.id,  # type: ignore
         back_populates='page')
     users_shared_with = relationship(
         'PageUserShareAssociation',
@@ -8340,13 +8340,13 @@ class Visualization(Base, RepresentById):
         primaryjoin=(lambda: Visualization.latest_revision_id == VisualizationRevision.id),  # type: ignore
         lazy=False)
     tags = relationship('VisualizationTagAssociation',
-        order_by='VisualizationTagAssociation.id',
+        order_by=lambda: VisualizationTagAssociation.id,  # type: ignore
         back_populates="visualization")
     annotations = relationship('VisualizationAnnotationAssociation',
-        order_by='VisualizationAnnotationAssociation.id',
+        order_by=lambda: VisualizationAnnotationAssociation.id,  # type: ignore
         back_populates="visualization")
     ratings = relationship('VisualizationRatingAssociation',
-        order_by='VisualizationRatingAssociation.id',
+        order_by=lambda: VisualizationRatingAssociation.id,  # type: ignore
         back_populates="visualization")
 
     average_rating: column_property  # defined at the end of this module
