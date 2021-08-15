@@ -943,6 +943,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     workflow_invocation_step = relationship('WorkflowInvocationStep',
         back_populates='job', uselist=False)
 
+    any_output_dataset_collection_instances_deleted: column_property  # defined at the end of this module
+    any_output_dataset_deleted: column_property  # defined at the end of this module
+
     dict_collection_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version']
     dict_element_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version', 'command_version']
 
@@ -9199,12 +9202,12 @@ mapper_registry.map_imperatively(
             JobToOutputDatasetAssociation, back_populates='dataset'),
         history=relationship(History, back_populates='datasets'),
         implicitly_converted_datasets=relationship(ImplicitlyConvertedDatasetAssociation,
-            primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_parent_id  # type: ignore
-                == HistoryDatasetAssociation.id),  # type: ignore
+            primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_parent_id
+                == HistoryDatasetAssociation.id),
             back_populates='parent_hda'),
         implicitly_converted_parent_datasets=relationship(ImplicitlyConvertedDatasetAssociation,
-            primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_id  # type: ignore
-                == HistoryDatasetAssociation.id),  # type: ignore
+            primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_id
+                == HistoryDatasetAssociation.id),
             back_populates='dataset')
     )
 )
@@ -9250,8 +9253,8 @@ mapper_registry.map_imperatively(
         creating_job_associations=relationship(
             JobToOutputLibraryDatasetAssociation, back_populates='dataset'),
         implicitly_converted_parent_datasets=relationship(ImplicitlyConvertedDatasetAssociation,
-            primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.ldda_id  # type: ignore
-                == LibraryDatasetDatasetAssociation.id),  # type: ignore
+            primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.ldda_id
+                == LibraryDatasetDatasetAssociation.id),
             back_populates='dataset_ldda'),
     )
 )
@@ -9259,7 +9262,7 @@ mapper_registry.map_imperatively(
 # ----------------------------------------------------------------------------------------
 # The following statements must not precede the mapped models defined above.
 
-Job.any_output_dataset_collection_instances_deleted = column_property(  # type: ignore
+Job.any_output_dataset_collection_instances_deleted = column_property(
     exists([HistoryDatasetCollectionAssociation.id], and_(
         Job.id == JobToOutputDatasetCollectionAssociation.job_id,
         HistoryDatasetCollectionAssociation.id == JobToOutputDatasetCollectionAssociation.dataset_collection_id,
@@ -9267,7 +9270,7 @@ Job.any_output_dataset_collection_instances_deleted = column_property(  # type: 
     )
 )
 
-Job.any_output_dataset_deleted = column_property(  # type: ignore
+Job.any_output_dataset_deleted = column_property(
     exists([HistoryDatasetAssociation], and_(
         Job.id == JobToOutputDatasetAssociation.job_id,
         HistoryDatasetAssociation.table.c.id == JobToOutputDatasetAssociation.dataset_id,
