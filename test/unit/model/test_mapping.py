@@ -7456,7 +7456,7 @@ def workflow_step_factory(model, workflow):
     return make_instance
 
 
-# Mics. helpers.
+# Test utilities
 
 def dbcleanup_wrapper(session, obj, where_clause=None):
     with dbcleanup(session, obj, where_clause):
@@ -7502,6 +7502,12 @@ def delete_from_database(session, objects):
     May be called at the end of a test if use of a context manager is impractical.
     (Assume all objects have the id field as their primary key.)
     """
+    # Ensure we have a list of objects
+    try:
+        objects = list(objects)
+    except TypeError:
+        objects = [objects]
+
     for obj in objects:
         table = obj.__table__
         stmt = delete(table).where(table.c.id == obj.id)
