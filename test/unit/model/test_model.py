@@ -441,8 +441,8 @@ class TestDataset(BaseTest):
         obj = cls_()
         obj.job = job
         obj.actions.append(dataset_permission)
-        obj.history_associations.append(history_dataset_association)  # TODO: mappend via backref, map explicitly after HDA is mapped
-        obj.library_associations.append(library_dataset_dataset_association)  # TODO: mappend via backref, map explicitly after LDDA is mapped
+        obj.history_associations.append(history_dataset_association)
+        obj.library_associations.append(library_dataset_dataset_association)
         obj.hashes.append(dataset_hash)
         obj.sources.append(dataset_source)
 
@@ -1344,10 +1344,7 @@ class TestHistory(BaseTest):
         obj = cls_()
         obj.user = user
         obj.datasets.append(history_dataset_association)
-
-        # TODO: this is mappend via backref: change to back_populates after mapping HDCA
         obj.dataset_collections.append(history_dataset_collection_association)
-
         obj.exports.append(job_export_history_archive)
         obj.tags.append(history_tag_association)
         obj.annotations.append(history_annotation_association)
@@ -2119,7 +2116,7 @@ class TestImplicitCollectionJobsJobAssociation(BaseTest):
         order_index = 1
         obj = cls_()
         obj.implicit_collection_jobs = implicit_collection_jobs
-        session.add(job)  # TODO review this after remapping Job (required to lazy-load attr)
+        session.add(job)
         obj.job = job
         obj.order_index = order_index
 
@@ -2133,7 +2130,7 @@ class TestImplicitCollectionJobsJobAssociation(BaseTest):
     def test_relationships(self, session, cls_, implicit_collection_jobs, job):
         obj = cls_()
         obj.implicit_collection_jobs = implicit_collection_jobs
-        session.add(job)  # TODO review this after remapping Job (required to lazy-load attr)
+        session.add(job)
         obj.job = job
         obj.order_index = 1
 
@@ -2528,8 +2525,7 @@ class TestJobContainerAssociation(BaseTest):
         created_time = datetime.now()
         modified_time = created_time + timedelta(hours=1)
 
-        session.add(job)  # TODO review this after remapping Job (required to lazy-load `container` attr)
-
+        session.add(job)
         obj = cls_(job, container_type, container_name, container_info)
         obj.created_time = created_time
         obj.modified_time = modified_time
@@ -2545,7 +2541,7 @@ class TestJobContainerAssociation(BaseTest):
             assert stored_obj.modified_time == modified_time
 
     def test_relationships(self, session, cls_, job):
-        session.add(job)  # TODO review this after remapping Job (required to lazy-load `container` attr)
+        session.add(job)
         obj = cls_(job, None, None, None)
 
         with dbcleanup(session, obj) as obj_id:
@@ -3602,7 +3598,7 @@ class TestLibraryFolder(BaseTest):
         obj.info_association.append(library_folder_info_association)
 
         # There's no back reference, so dataset does not update folder; so we have to flush to the database
-        # via dbcleanup() context manager. TODO: ..but why is there no back reference?
+        # via dbcleanup() context manager.
         library_dataset.folder = obj
 
         with dbcleanup(session, obj) as obj_id, dbcleanup(session, library_dataset):
@@ -5154,7 +5150,6 @@ class TestUserRoleAssociation(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.user.id == user.id
             assert stored_obj.role.id == role.id
-            # TODO non_private_roles should be defined on the User only (test to be added to TestUser)
 
 
 class TestVisualization(BaseTest):
