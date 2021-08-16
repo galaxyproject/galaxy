@@ -6643,14 +6643,14 @@ def history_annotation_association(model, session):
 
 
 @pytest.fixture
-def history_dataset_association(model, session, dataset):
-    instance = model.HistoryDatasetAssociation(dataset=dataset)
+def history_dataset_annotation_association(model, session):
+    instance = model.HistoryDatasetAnnotationAssociation()
     yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
-def history_dataset_annotation_association(model, session):
-    instance = model.HistoryDatasetAnnotationAssociation()
+def history_dataset_association(model, session, dataset):
+    instance = model.HistoryDatasetAssociation(dataset=dataset)
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6673,14 +6673,14 @@ def history_dataset_association_tag_association(model, session):
 
 
 @pytest.fixture
-def history_dataset_collection_association(model, session):
-    instance = model.HistoryDatasetCollectionAssociation()
+def history_dataset_collection_annotation_association(model, session):
+    instance = model.HistoryDatasetCollectionAssociationAnnotationAssociation()
     yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
-def history_dataset_collection_annotation_association(model, session):
-    instance = model.HistoryDatasetCollectionAssociationAnnotationAssociation()
+def history_dataset_collection_association(model, session):
+    instance = model.HistoryDatasetCollectionAssociation()
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6832,14 +6832,14 @@ def job_to_input_library_dataset_association(model, session, library_dataset_dat
 
 
 @pytest.fixture
-def job_to_output_dataset_collection_association(model, session, history_dataset_collection_association):
-    instance = model.JobToOutputDatasetCollectionAssociation(None, history_dataset_collection_association)
+def job_to_output_dataset_association(model, session, history_dataset_association):
+    instance = model.JobToOutputDatasetAssociation(None, history_dataset_association)
     yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
-def job_to_output_dataset_association(model, session, history_dataset_association):
-    instance = model.JobToOutputDatasetAssociation(None, history_dataset_association)
+def job_to_output_dataset_collection_association(model, session, history_dataset_collection_association):
+    instance = model.JobToOutputDatasetCollectionAssociation(None, history_dataset_collection_association)
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6852,12 +6852,6 @@ def job_to_output_library_dataset_association(model, session, library_dataset_da
 @pytest.fixture
 def library(model, session):
     instance = model.Library()
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
-def library_folder(model, session):
-    instance = model.LibraryFolder()
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6904,6 +6898,12 @@ def library_dataset_dataset_association(model, session):
 
 
 @pytest.fixture
+def library_dataset_dataset_association_permission(model, session, library_dataset_dataset_association, role):
+    instance = model.LibraryDatasetDatasetAssociationPermissions('a', library_dataset_dataset_association, role)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def library_dataset_dataset_association_tag_association(model, session):
     instance = model.LibraryDatasetDatasetAssociationTagAssociation()
     yield from dbcleanup_wrapper(session, instance)
@@ -6929,8 +6929,8 @@ def library_dataset_permission(model, session, library_dataset, role):
 
 
 @pytest.fixture
-def library_dataset_dataset_association_permission(model, session, library_dataset_dataset_association, role):
-    instance = model.LibraryDatasetDatasetAssociationPermissions('a', library_dataset_dataset_association, role)
+def library_folder(model, session):
+    instance = model.LibraryFolder()
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6972,13 +6972,6 @@ def page(model, session, user):
 
 
 @pytest.fixture
-def page_revision(model, session, page):
-    instance = model.PageRevision()
-    instance.page = page
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
 def page_annotation_association(model, session):
     instance = model.PageAnnotationAssociation()
     yield from dbcleanup_wrapper(session, instance)
@@ -6987,6 +6980,13 @@ def page_annotation_association(model, session):
 @pytest.fixture
 def page_rating_association(model, session):
     instance = model.PageRatingAssociation(None, None)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def page_revision(model, session, page):
+    instance = model.PageRevision()
+    instance.page = page
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -7226,14 +7226,14 @@ def workflow_invocation_step(model, session, workflow_invocation, workflow_step)
 
 
 @pytest.fixture
-def workflow_invocation_step_output_dataset_collection_association(model, session):
-    instance = model.WorkflowInvocationStepOutputDatasetCollectionAssociation()
+def workflow_invocation_step_output_dataset_association(model, session):
+    instance = model.WorkflowInvocationStepOutputDatasetAssociation()
     yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
-def workflow_invocation_step_output_dataset_association(model, session):
-    instance = model.WorkflowInvocationStepOutputDatasetAssociation()
+def workflow_invocation_step_output_dataset_collection_association(model, session):
+    instance = model.WorkflowInvocationStepOutputDatasetCollectionAssociation()
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -7315,16 +7315,6 @@ def dataset_collection_factory(model):
 
 
 @pytest.fixture
-def history_factory(model):
-    def make_instance(**kwds):
-        instance = model.History()
-        if 'deleted' in kwds:
-            instance.deleted = kwds['deleted']
-        return instance
-    return make_instance
-
-
-@pytest.fixture
 def history_dataset_association_factory(model):
     def make_instance(*args, **kwds):
         return model.HistoryDatasetAssociation(*args, **kwds)
@@ -7335,6 +7325,16 @@ def history_dataset_association_factory(model):
 def history_dataset_collection_association_factory(model):
     def make_instance(*args, **kwds):
         return model.HistoryDatasetCollectionAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def history_factory(model):
+    def make_instance(**kwds):
+        instance = model.History()
+        if 'deleted' in kwds:
+            instance.deleted = kwds['deleted']
+        return instance
     return make_instance
 
 

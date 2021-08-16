@@ -1,0 +1,135 @@
+def api_keys(model, session):
+def cleanup_event(model, session):
+def cloud_authz(model, session, user, user_authnz_token):
+def custos_authnz_token(model, session, user, user_authnz_token):
+def data_manager_history_association(model, session):
+def data_manager_job_association(model, session):
+def dataset(model, session):
+def dataset_collection(model, session):
+def dataset_collection_element(
+def dataset_hash(model, session):
+def dataset_permission(model, session, dataset):
+def dataset_source(model, session):
+def dataset_source_hash(model, session):
+def default_history_permissions(model, session, history, role):
+def default_quota_association(model, session, quota):
+def default_user_permissions(model, session, user, role):
+def deferred_job(model, session):
+def dynamic_tool(model, session):
+def extended_metadata(model, session):
+def extended_metadata_index(model, session, extended_metadata):
+def form_definition(model, session, form_definition_current):
+def form_definition_current(model, session):
+def form_values(model, session):
+def galaxy_session(model, session, user):
+def galaxy_session_history_association(model, session, galaxy_session, history):
+def genome_index_tool_data(model, session):
+def group(model, session):
+def group_quota_association(model, session):
+def group_role_association(model, session):
+def history(model, session):
+def history_annotation_association(model, session):
+def history_dataset_annotation_association(model, session):
+def history_dataset_association(model, session, dataset):
+def history_dataset_association_annotation_association(model, session):
+def history_dataset_association_rating_association(model, session):
+def history_dataset_association_tag_association(model, session):
+def history_dataset_collection_annotation_association(model, session):
+def history_dataset_collection_association(model, session):
+def history_dataset_collection_rating_association(
+def history_dataset_collection_tag_association(model, session):
+def history_rating_association(model, session, user, history):
+def history_tag_association(model, session):
+def history_user_share_association(model, session):
+def implicit_collection_jobs(model, session):
+def implicit_collection_jobs_job_association(model, session):
+def implicitly_converted_dataset_association(model, session, history_dataset_association):
+def implicitly_created_dataset_collection_input(model, session, history_dataset_collection_association):
+def interactive_tool_entry_point(model, session):
+def job(model, session):
+def job_container_association(model, session):
+def job_export_history_archive(model, session):
+def job_external_output_metadata(model, session, job, history_dataset_association):
+def job_metric_numeric(model, session):
+def job_metric_text(model, session):
+def job_parameter(model, session):
+def job_state_history(model, session, job):
+def job_to_implicit_output_dataset_collection_association(model, session, dataset_collection):
+def job_to_input_dataset_association(model, session, history_dataset_association):
+def job_to_input_dataset_collection_association(model, session, history_dataset_collection_association):
+def job_to_input_dataset_collection_element_association(model, session, dataset_collection_element):
+def job_to_input_library_dataset_association(model, session, library_dataset_dataset_association):
+def job_to_output_dataset_association(model, session, history_dataset_association):
+def job_to_output_dataset_collection_association(model, session, history_dataset_collection_association):
+def job_to_output_library_dataset_association(model, session, library_dataset_dataset_association):
+def library(model, session):
+def library_dataset(model, session):
+def library_dataset_annotation_association(model, session):
+def library_dataset_collection_annotation_association(model, session):
+def library_dataset_collection_association(model, session):
+def library_dataset_collection_rating_association(model, session):
+def library_dataset_collection_tag_association(model, session):
+def library_dataset_dataset_association(model, session):
+def library_dataset_dataset_association_permission(model, session, library_dataset_dataset_association, role):
+def library_dataset_dataset_association_tag_association(model, session):
+def library_dataset_dataset_info_association(
+def library_dataset_permission(model, session, library_dataset, role):
+def library_folder(model, session):
+def library_folder_info_association(model, session, library_folder, form_definition, form_values):
+def library_folder_permission(model, session, library_folder, role):
+def library_info_association(model, session, library, form_definition, form_values):
+def library_permission(model, session, library, role):
+def metadata_file(model, session):
+def page(model, session, user):
+def page_annotation_association(model, session):
+def page_rating_association(model, session):
+def page_revision(model, session, page):
+def page_tag_association(model, session):
+def page_user_share_association(model, session):
+def password_reset_token(model, session, user):
+def post_job_action(model, session):
+def post_job_action_association(model, session, post_job_action, job):
+def quota(model, session):
+def role(model, session):
+def stored_workflow(model, session, user):
+def stored_workflow_annotation_association(model, session):
+def stored_workflow_rating_association(model, session):
+def stored_workflow_tag_association(model, session):
+def stored_workflow_user_share_association(model, session):
+def tag(model, session):
+def task(model, session, job):
+def task_metric_numeric(model, session):
+def task_metric_text(model, session):
+def tool_tag_association(model, session):
+def transfer_job(model, session):
+def user(model, session):
+def user_address(model, session, user):
+def user_authnz_token(model, session, user):
+def user_group_association(model, session):
+def user_preference(model, session):
+def user_quota_association(model, session):
+def user_role_association(model, session, user, role):
+def visualization(model, session, user):
+def visualization_annotation_association(model, session):
+def visualization_rating_association(model, session, user, visualization):
+def visualization_revision(model, session, visualization):
+def visualization_tag_association(model, session):
+def visualization_user_share_association(model, session):
+def workflow(model, session):
+def workflow_invocation(model, session, workflow):
+def workflow_invocation_output_dataset_association(model, session):
+def workflow_invocation_output_dataset_collection_association(model, session):
+def workflow_invocation_output_value(model, session):
+def workflow_invocation_step(model, session, workflow_invocation, workflow_step):
+def workflow_invocation_step_output_dataset_association(model, session):
+def workflow_invocation_step_output_dataset_collection_association(model, session):
+def workflow_output(model, session, workflow_step):
+def workflow_request_input_parameter(model, session):
+def workflow_request_input_step_parameter(model, session):
+def workflow_request_step_state(model, session):
+def workflow_request_to_input_dataset_association(model, session):
+def workflow_request_to_input_dataset_collection_association(model, session):
+def workflow_step(model, session, workflow):
+def workflow_step_connection(model, session):
+def workflow_step_input(model, session, workflow_step):
+def workflow_step_tag_association(model, session):
