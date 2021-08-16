@@ -353,7 +353,7 @@ class TestDataManagerJobAssociation(BaseTest):
         obj = cls_()
         obj.create_time = create_time
         obj.update_time = update_time
-        session.add(job)
+        session.add(job)  # must be bound to a session for lazy load of attributes
         obj.job = job
         obj.data_manager_id = data_manager_id
 
@@ -366,7 +366,7 @@ class TestDataManagerJobAssociation(BaseTest):
             assert stored_obj.data_manager_id == data_manager_id
 
     def test_relationships(self, session, cls_, job):
-        session.add(job)
+        session.add(job)  # must be bound to a session for lazy load of attributes
         obj = cls_(job=job)
 
         with dbcleanup(session, obj) as obj_id:
@@ -2109,7 +2109,7 @@ class TestImplicitCollectionJobsJobAssociation(BaseTest):
         order_index = 1
         obj = cls_()
         obj.implicit_collection_jobs = implicit_collection_jobs
-        session.add(job)
+        session.add(job)  # must be bound to a session for lazy load of attributes
         obj.job = job
         obj.order_index = order_index
 
@@ -2123,7 +2123,7 @@ class TestImplicitCollectionJobsJobAssociation(BaseTest):
     def test_relationships(self, session, cls_, implicit_collection_jobs, job):
         obj = cls_()
         obj.implicit_collection_jobs = implicit_collection_jobs
-        session.add(job)
+        session.add(job)  # must be bound to a session for lazy load of attributes
         obj.job = job
         obj.order_index = 1
 
@@ -2518,7 +2518,7 @@ class TestJobContainerAssociation(BaseTest):
         created_time = datetime.now()
         modified_time = created_time + timedelta(hours=1)
 
-        session.add(job)
+        session.add(job)  # must be bound to a session for lazy load of attributes
         obj = cls_(job, container_type, container_name, container_info)
         obj.created_time = created_time
         obj.modified_time = modified_time
@@ -2534,7 +2534,7 @@ class TestJobContainerAssociation(BaseTest):
             assert stored_obj.modified_time == modified_time
 
     def test_relationships(self, session, cls_, job):
-        session.add(job)
+        session.add(job)  # must be bound to a session for lazy load of attributes
         obj = cls_(job, None, None, None)
 
         with dbcleanup(session, obj) as obj_id:
@@ -3024,7 +3024,7 @@ class TestLibrary(BaseTest):
     ):
         obj = cls_(None, None, None, library_folder)
         obj.actions.append(library_permission)
-        session.add(library_info_association)  # must be bound to a session for lazy load of attr. `library` (https://docs.sqlalchemy.org/en/14/errors.html#error-bhk3)
+        session.add(library_info_association)  # must be bound to a session for lazy load of attributes
         obj.info_association.append(library_info_association)
 
         with dbcleanup(session, obj) as obj_id:
@@ -5719,8 +5719,8 @@ class TestWorkflowInvocationStep(BaseTest):
         update_time = create_time + timedelta(hours=1)
         state, action = 'a', 'b'
 
-        session.add(job)  # needed for a lazy load of an attr
-        session.add(implicit_collection_jobs)  # needed for a lazy load of an attr
+        session.add(job)  # must be bound to a session for lazy load of attributes
+        session.add(implicit_collection_jobs)  # must be bound to a session for lazy load of attributes
 
         obj = cls_()
         obj.create_time = create_time
@@ -5756,8 +5756,8 @@ class TestWorkflowInvocationStep(BaseTest):
         workflow_invocation_step_output_dataset_association,
         workflow_invocation_output_value,
     ):
-        session.add(job)  # needed for a lazy load of an attr
-        session.add(implicit_collection_jobs)  # needed for a lazy load of an attr
+        session.add(job)  # must be bound to a session for lazy load of attributes
+        session.add(implicit_collection_jobs)  # must be bound to a session for lazy load of attributes
 
         # setup workflow_invocation_output_value to test the output_value attribute
         output_value = workflow_invocation_output_value
