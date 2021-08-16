@@ -450,7 +450,7 @@ class TestDataset(BaseTest):
         hda.purged = True
         obj.history_associations.append(hda)
 
-        with dbcleanup(session, obj) as obj_id, dbcleanup(session, hda):
+        with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.job.id == job.id
             assert stored_obj.actions == [dataset_permission]
@@ -462,6 +462,8 @@ class TestDataset(BaseTest):
             assert stored_obj.library_associations == [library_dataset_dataset_association]
             assert len(stored_obj.history_associations) == 2
             # TODO: test membership in history_associations by id
+
+        delete_from_database(session, hda)
 
 
 class TestDatasetCollection(BaseTest):
@@ -549,7 +551,7 @@ class TestDatasetCollectionElement(BaseTest):
             assert stored_obj.element_index == element_index
             assert stored_obj.element_identifier == element_identifier
 
-        delete_from_database(session, [parent_collection])  # because this won't be removed automatically
+        delete_from_database(session, parent_collection)
 
     def test_relationships(
         self,
@@ -575,7 +577,7 @@ class TestDatasetCollectionElement(BaseTest):
             assert stored_obj.child_collection.id == dataset_collection.id
             assert stored_obj.collection.id == parent_collection.id
 
-        delete_from_database(session, [parent_collection])  # because this won't be removed automatically
+        delete_from_database(session, parent_collection)
 
 
 class TestDatasetHash(BaseTest):
@@ -1563,6 +1565,7 @@ class TestHistoryDatasetAssociation(BaseTest):
         copied_to_ldda = library_dataset_dataset_association_factory()
         icda = implicitly_converted_dataset_association_factory()
         icpda = implicitly_converted_dataset_association_factory()
+        persisted = [copied_from_hda, copied_to_hda, copied_from_ldda, copied_to_ldda, icda, icpda]
 
         obj = cls_()
         obj.history = history
@@ -1601,7 +1604,7 @@ class TestHistoryDatasetAssociation(BaseTest):
             assert stored_obj.implicitly_converted_datasets == [icda]
             assert stored_obj.implicitly_converted_parent_datasets == [icpda]
 
-        delete_from_database(session, [copied_from_hda, copied_from_ldda, copied_to_ldda, icda, icpda])
+        delete_from_database(session, persisted)
 
 
 class TestHistoryDatasetAssociationAnnotationAssociation(BaseTest):
@@ -1744,7 +1747,7 @@ class TestHistoryDatasetAssociationSubset(BaseTest):
             assert stored_obj.history_dataset_association_subset_id == hda_subset.id
             assert stored_obj.location == location
 
-        delete_from_database(session, [hda_subset])
+        delete_from_database(session, hda_subset)
 
     def test_relationships(
         self,
@@ -1763,7 +1766,7 @@ class TestHistoryDatasetAssociationSubset(BaseTest):
             assert stored_obj.hda.id == history_dataset_association.id
             assert stored_obj.subset.id == hda_subset.id
 
-        delete_from_database(session, [hda_subset])
+        delete_from_database(session, hda_subset)
 
 
 class TestHistoryDatasetAssociationTagAssociation(BaseTest):
@@ -1900,6 +1903,8 @@ class TestHistoryDatasetCollectionAssociation(BaseTest):
             assert stored_obj.output_dataset_collection_instances == [job_to_output_dataset_collection_association]
             assert stored_obj.job_state_summary  # this is a view; TODO: can we test this better?
             assert stored_obj.hidden_dataset_instances == [history_dataset_association]
+
+        delete_from_database(session, copied_to_hdca)
 
 
 class TestHistoryDatasetCollectionAssociationAnnotationAssociation(BaseTest):
@@ -3094,13 +3099,16 @@ class TestLibraryDataset(BaseTest):
         ldda = library_dataset_dataset_association_factory()
         ldda.library_dataset = obj
         obj.actions.append(library_dataset_permission)
+        persist(session, ldda)
 
-        with dbcleanup(session, obj) as obj_id, dbcleanup(session, ldda):
+        with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.library_dataset_dataset_association.id == library_dataset_dataset_association.id
             assert stored_obj.folder.id == library_folder.id
             assert stored_obj.expired_datasets[0].id == ldda.id
             assert stored_obj.actions == [library_dataset_permission]
+
+        delete_from_database(session, ldda)
 
 
 class TestLibraryDatasetCollectionAnnotationAssociation(BaseTest):
@@ -3598,10 +3606,10 @@ class TestLibraryFolder(BaseTest):
         obj.info_association.append(library_folder_info_association)
 
         # There's no back reference, so dataset does not update folder; so we have to flush to the database
-        # via dbcleanup() context manager.
         library_dataset.folder = obj
+        persist(session, library_dataset)
 
-        with dbcleanup(session, obj) as obj_id, dbcleanup(session, library_dataset):
+        with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.parent.id == library_folder.id
             assert stored_obj.folders == [folder1]
@@ -3613,6 +3621,8 @@ class TestLibraryFolder(BaseTest):
             assert stored_obj.active_datasets[0].id == library_dataset.id
             assert stored_obj.dataset_collections == [library_dataset_collection_association]
             assert stored_obj.info_association == [library_folder_info_association]
+
+        delete_from_database(session, folder1)
 
 
 class TestLibraryFolderInfoAssociation(BaseTest):
@@ -4365,9 +4375,15 @@ class TestStoredWorkflow(BaseTest):
             assert stored_obj.owner_tags == [tag_assoc2]
             assert stored_obj.users_shared_with == [stored_workflow_user_share_association]
 
-        delete_from_database(session, [wf])
+        delete_from_database(session, [wf, tag_assoc2])
 
-    def test_average_rating(self, session, stored_workflow, user, stored_workflow_rating_association_factory):
+    def test_average_rating(
+        self,
+        session,
+        stored_workflow,
+        user,
+        stored_workflow_rating_association_factory
+    ):
         # StoredWorkflow has been expunged; to access its deferred properties,
         # it needs to be added back to the session.
         session.add(stored_workflow)
@@ -5234,6 +5250,8 @@ class TestVisualization(BaseTest):
             assert stored_obj.average_rating == visualization_rating_association.rating
             assert stored_obj.users_shared_with == [visualization_user_share_association]
 
+        delete_from_database(session, revision2)
+
     def test_average_rating(self, session, visualization, user, visualization_rating_association_factory):
         # Visualization has been expunged; to access its deferred properties,
         # it needs to be added back to the session.
@@ -5568,6 +5586,8 @@ class TestWorkflowInvocation(BaseTest):
             assert stored_obj.output_datasets == [workflow_invocation_output_dataset_association]
             assert stored_obj.parent_workflow_invocation_association == [parent_workflow_invocation_assoc]
             assert stored_obj.output_values == [workflow_invocation_output_value]
+
+        delete_from_database(session, [subworkflow_invocation_assoc, parent_workflow_invocation_assoc])
 
 
 class TestWorkflowInvocationOutputDatasetAssociation(BaseTest):
@@ -5954,7 +5974,7 @@ class TestWorkflowInvocationToSubworkflowInvocationAssociation(BaseTest):
             assert stored_obj.subworkflow_invocation_id == subworkflow_invocation.id
             assert stored_obj.workflow_step_id == workflow_step.id
 
-        delete_from_database(session, [subworkflow_invocation])
+        delete_from_database(session, subworkflow_invocation)
 
     def test_relationships(
         self,
@@ -5978,6 +5998,8 @@ class TestWorkflowInvocationToSubworkflowInvocationAssociation(BaseTest):
             assert stored_obj.subworkflow_invocation.id == workflow_invocation.id
             assert stored_obj.workflow_step.id == workflow_step.id
             assert stored_obj.parent_workflow_invocation.id == parent_workflow_invocation.id
+
+        delete_from_database(session, parent_workflow_invocation)
 
 
 class TestWorkflowOutput(BaseTest):
@@ -6227,7 +6249,7 @@ class TestWorkflowStep(BaseTest):
             assert stored_obj.uuid == uuid
             assert stored_obj.label == label
 
-        delete_from_database(session, [subworkflow])
+        delete_from_database(session, subworkflow)
 
     def test_relationships(
         self,
@@ -6241,9 +6263,9 @@ class TestWorkflowStep(BaseTest):
         subworkflow = workflow_factory()
         workflow_step_connection_in = workflow_step_connection_factory()
         workflow_step_connection_out = workflow_step_connection_factory()
-        extra_objects = [subworkflow, workflow_step_connection_in, workflow_step_connection_out]
-        for eo in extra_objects:
-            persist(session, eo)
+        persist(session, subworkflow)
+        persist(session, workflow_step_connection_in)
+        persist(session, workflow_step_connection_out)
 
         obj = cls_()
         obj.workflow = workflow
@@ -6260,7 +6282,8 @@ class TestWorkflowStep(BaseTest):
             assert stored_obj.parent_workflow_input_connections == [workflow_step_connection_in]
             assert stored_obj.output_connections == [workflow_step_connection_out]
 
-        delete_from_database(session, extra_objects)
+        persisted = [subworkflow, workflow_step_connection_in, workflow_step_connection_out]
+        delete_from_database(session, persisted)
 
 
 class TestWorkflowStepAnnotationAssociation(BaseTest):
@@ -7502,10 +7525,8 @@ def delete_from_database(session, objects):
     May be called at the end of a test if use of a context manager is impractical.
     (Assume all objects have the id field as their primary key.)
     """
-    # Ensure we have a list of objects
-    try:
-        objects = list(objects)
-    except TypeError:
+    # Ensure we have a list of objects (check for list explicitly: a model can be iterable)
+    if not isinstance(objects, list):
         objects = [objects]
 
     for obj in objects:
