@@ -42,7 +42,9 @@ class ContainerFinder:
 
     def __init__(self, app_info, mulled_resolution_cache=None):
         self.app_info = app_info
-        self.container_registry = ContainerRegistry(app_info, mulled_resolution_cache=mulled_resolution_cache)
+        self.mulled_resolution_cache = mulled_resolution_cache
+        self.default_container_registry = ContainerRegistry(app_info, mulled_resolution_cache=mulled_resolution_cache)
+        self.destination_container_registeries = {}
 
     def _enabled_container_types(self, destination_info):
         return [t for t in ALL_CONTAINER_TYPES if self.__container_type_enabled(t, destination_info)]
@@ -51,11 +53,26 @@ class ContainerFinder:
         """Regardless of destination properties - find best container for tool.
 
         Given container types and container.ToolInfo description of the tool."""
-        return self.container_registry.find_best_container_description(enabled_container_types, tool_info, **kwds)
+        return self.default_container_registry.find_best_container_description(enabled_container_types, tool_info, **kwds)
 
     def resolve(self, enabled_container_types, tool_info, **kwds):
         """Regardless of destination properties - find ResolvedContainerDescription for tool."""
-        return self.container_registry.resolve(enabled_container_types, tool_info, **kwds)
+        return self.default_container_registry.resolve(enabled_container_types, tool_info, **kwds)
+
+    def _container_registry_for_destination(self, destination_info):
+        destination_id = destination_info.get("id")  # Probably not the way to get the ID?
+        destination_container_registry = None
+        if destination_id and destination_id not in self.destination_container_registeries:
+            if 'container_resolvers' in destination_info:
+                destination_container_registry = ContainerRegistry(self.app_info, destination_info=destination_info, mulled_resolution_cache=self.mulled_resolution_cache)
+                self.destination_container_registeries[destination_id] = destination_container_registry
+        elif not destination_id and 'container_resolvers' in destination_info:
+            destination_container_registry = ContainerRegistry(self.app_info, destination_info=destination_info, mulled_resolution_cache=self.mulled_resolution_cache)
+
+        if destination_container_registry is None and destination_id and destination_id in self.destination_container_registeries:
+            destination_container_registry = self.destination_container_registeries[destination_id]
+
+        return destination_container_registry or self.default_container_registry
 
     def find_container(self, tool_info, destination_info, job_info):
         enabled_container_types = self._enabled_container_types(destination_info)
@@ -102,7 +119,8 @@ class ContainerFinder:
                     return container
 
         # Otherwise lets see if we can find container for the tool.
-        container_description = self.find_best_container_description(enabled_container_types, tool_info)
+        container_registry = self._container_registry_for_destination(destination_info)
+        container_description = container_registry.find_best_container_description(enabled_container_types, tool_info)
         container = __destination_container(container_description)
         if container:
             return container
@@ -124,7 +142,7 @@ class ContainerFinder:
         return NULL_CONTAINER
 
     def resolution_cache(self):
-        return self.container_registry.get_resolution_cache()
+        return self.default_container_registry.get_resolution_cache()
 
     def __overridden_container_id(self, container_type, destination_info):
         if not self.__container_type_enabled(container_type, destination_info):
@@ -186,25 +204,33 @@ class NullContainerFinder:
 class ContainerRegistry:
     """Loop through enabled ContainerResolver plugins and find first match."""
 
-    def __init__(self, app_info, mulled_resolution_cache=None):
+    def __init__(self, app_info, destination_info=None, mulled_resolution_cache=None):
         self.resolver_classes = self.__resolvers_dict()
         self.enable_mulled_containers = app_info.enable_mulled_containers
         self.app_info = app_info
-        self.container_resolvers = self.__build_container_resolvers(app_info)
+        self.container_resolvers = self.__build_container_resolvers(app_info, destination_info)
         self.mulled_resolution_cache = mulled_resolution_cache
 
-    def __build_container_resolvers(self, app_info):
-        conf_file = getattr(app_info, 'container_resolvers_config_file', None)
-        conf_dict = getattr(app_info, 'container_resolvers_config_dict', None)
+    def __build_container_resolvers(self, app_info, destination_info):
+        app_conf_file = getattr(app_info, 'container_resolvers_config_file', None)
+        app_conf_dict = getattr(app_info, 'container_resolvers_config_dict', None)
+
+        if destination_info is not None:
+            conf_file = destination_info.get('container_resolvers_config_file', app_conf_file)
+            conf_dict = destination_info.get('container_resolvers', app_conf_dict)
+        else:
+            conf_file = app_conf_file
+            conf_dict = app_conf_dict
+
         plugin_source = None
-        if conf_file and not os.path.exists(conf_file):
+        if conf_dict:
+            log.debug("Loading container resolution config inline from Galaxy or job configuration file")
+            plugin_source = plugin_config.plugin_source_from_dict(conf_dict)
+        elif conf_file and not os.path.exists(conf_file):
             log.warning(f"Unable to find config file '{conf_file}'")
         elif conf_file:
             log.debug("Loading container resolution config from file '{conf_file}'")
             plugin_source = plugin_config.plugin_source_from_path(conf_file)
-        elif conf_dict:
-            log.debug("Loading container resolution config inline from Galaxy configuration file")
-            plugin_source = plugin_config.plugin_source_from_dict(conf_dict)
         if plugin_source:
             return self._parse_resolver_conf(plugin_source)
         return self.__default_container_resolvers()
