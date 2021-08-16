@@ -819,7 +819,7 @@ class TestDynamicTool(BaseTest):
         tool_version = 'c'
         tool_path = 'd'
         tool_directory = 'e'
-        uuid = None
+        uuid = uuid4()
         active = True
         hidden = True
         value = 'f'
@@ -833,7 +833,7 @@ class TestDynamicTool(BaseTest):
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
-            assert stored_obj.uuid
+            assert stored_obj.uuid == uuid
             assert stored_obj.create_time == create_time
             assert stored_obj.update_time == update_time
             assert stored_obj.tool_id == tool_id
@@ -5986,7 +5986,7 @@ class TestWorkflowOutput(BaseTest):
         assert cls_.__tablename__ == 'workflow_output'
 
     def test_columns(self, session, cls_, workflow_step):
-        output_name, label, uuid = 'a', 'b', None
+        output_name, label, uuid = 'a', 'b', uuid4()
         obj = cls_(workflow_step, output_name, label, uuid)
 
         with dbcleanup(session, obj) as obj_id:
@@ -5995,7 +5995,7 @@ class TestWorkflowOutput(BaseTest):
             assert stored_obj.workflow_step_id == workflow_step.id
             assert stored_obj.output_name == output_name
             assert stored_obj.label == label
-            assert stored_obj.uuid
+            assert stored_obj.uuid == uuid
 
     def test_relationships(self, session, cls_, workflow_step):
         obj = cls_(workflow_step)
@@ -6186,6 +6186,7 @@ class TestWorkflowStep(BaseTest):
         config = 'g'
         order_index = 'h'
         label = 'k'
+        uuid = uuid4()
 
         subworkflow = workflow_factory()
         persist(session, subworkflow)
@@ -6205,6 +6206,7 @@ class TestWorkflowStep(BaseTest):
         obj.config = config
         obj.order_index = order_index
         obj.label = label
+        obj.uuid = uuid
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -6222,7 +6224,7 @@ class TestWorkflowStep(BaseTest):
             assert stored_obj.position == position
             assert stored_obj.config == config
             assert stored_obj.order_index == order_index
-            assert stored_obj.uuid  # set in constructor
+            assert stored_obj.uuid == uuid
             assert stored_obj.label == label
 
         delete_from_database(session, [subworkflow])
