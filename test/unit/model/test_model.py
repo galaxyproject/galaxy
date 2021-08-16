@@ -1173,6 +1173,52 @@ class TestGenomeIndexToolData(BaseTest):
             assert stored_obj.user.id == user.id
 
 
+class TestGroup(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'galaxy_group'
+
+    def test_columns(self, session, cls_):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        name = get_unique_value()
+        deleted = True
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.name = name
+        obj.deleted = deleted
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.name == name
+            assert stored_obj.deleted == deleted
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        group_quota_association,
+        group_role_association,
+        user_group_association,
+    ):
+        obj = cls_(name=get_unique_value())
+        obj.quotas.append(group_quota_association)
+        obj.roles.append(group_role_association)
+        obj.users.append(user_group_association)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.quotas == [group_quota_association]
+            assert stored_obj.roles == [group_role_association]
+            assert stored_obj.users == [user_group_association]
+
+
 class TestGroupQuotaAssociation(BaseTest):
 
     def test_table(self, cls_):
