@@ -1379,19 +1379,7 @@ class TestHistory(BaseTest):
             assert stored_obj.jobs == [job]
 
     def test_average_rating(self, session, history, user, history_rating_association_factory):
-        # History has been expunged; to access its deferred properties,
-        # it needs to be added back to the session.
-        session.add(history)
-        assert history.average_rating is None  # With no ratings, we expect None.
-        # Create ratings
-        to_cleanup = []
-        for rating in (1, 2, 3, 4, 5):
-            history_rating_assoc = history_rating_association_factory(user, history, rating)
-            persist(session, history_rating_assoc)
-            to_cleanup.append(history_rating_assoc)
-        assert history.average_rating == 3.0  # Expect average after ratings added.
-        # Cleanup: remove ratings from database
-        delete_from_database(session, to_cleanup)
+        _run_average_rating_test(session, history, user, history_rating_association_factory)
 
 
 class TestHistoryAnnotationAssociation(BaseTest):
@@ -3947,19 +3935,7 @@ class TestPage(BaseTest):
             assert stored_obj.average_rating == page_rating_association.rating
 
     def test_average_rating(self, session, page, user, page_rating_association_factory):
-        # Page has been expunged; to access its deferred properties,
-        # it needs to be added back to the session.
-        session.add(page)
-        assert page.average_rating is None  # With no ratings, we expect None.
-        # Create ratings
-        to_cleanup = []
-        for rating in (1, 2, 3, 4, 5):
-            page_rating_assoc = page_rating_association_factory(user, page, rating)
-            persist(session, page_rating_assoc)
-            to_cleanup.append(page_rating_assoc)
-        assert page.average_rating == 3.0  # Expect average after ratings added.
-        # Cleanup: remove ratings from database
-        delete_from_database(session, to_cleanup)
+        _run_average_rating_test(session, page, user, page_rating_association_factory)
 
 
 class TestPageAnnotationAssociation(BaseTest):
@@ -4384,19 +4360,7 @@ class TestStoredWorkflow(BaseTest):
         user,
         stored_workflow_rating_association_factory
     ):
-        # StoredWorkflow has been expunged; to access its deferred properties,
-        # it needs to be added back to the session.
-        session.add(stored_workflow)
-        assert stored_workflow.average_rating is None  # With no ratings, we expect None.
-        # Create ratings
-        to_cleanup = []
-        for rating in (1, 2, 3, 4, 5):
-            sw_rating_assoc = stored_workflow_rating_association_factory(user, stored_workflow, rating)
-            persist(session, sw_rating_assoc)
-            to_cleanup.append(sw_rating_assoc)
-        assert stored_workflow.average_rating == 3.0  # Expect average after ratings added.
-        # Cleanup: remove ratings from database
-        delete_from_database(session, to_cleanup)
+        _run_average_rating_test(session, stored_workflow, user, stored_workflow_rating_association_factory)
 
 
 class TestStoredWorkflowAnnotationAssociation(BaseTest):
@@ -5253,19 +5217,7 @@ class TestVisualization(BaseTest):
         delete_from_database(session, revision2)
 
     def test_average_rating(self, session, visualization, user, visualization_rating_association_factory):
-        # Visualization has been expunged; to access its deferred properties,
-        # it needs to be added back to the session.
-        session.add(visualization)
-        assert visualization.average_rating is None  # With no ratings, we expect None.
-        # Create ratings
-        to_cleanup = []
-        for rating in (1, 2, 3, 4, 5):
-            visualization_rating_assoc = visualization_rating_association_factory(user, visualization, rating)
-            persist(session, visualization_rating_assoc)
-            to_cleanup.append(visualization_rating_assoc)
-        assert visualization.average_rating == 3.0  # Expect average after ratings added.
-        # Cleanup: remove ratings from database
-        delete_from_database(session, to_cleanup)
+        _run_average_rating_test(session, visualization, user, visualization_rating_association_factory)
 
 
 class TestVisualizationAnnotationAssociation(BaseTest):
@@ -7572,3 +7524,19 @@ def has_index(table, fields):
 def get_unique_value():
     """Generate unique values to accommodate unique constraints."""
     return uuid4().hex
+
+
+def _run_average_rating_test(session, obj, user, obj_rating_association_factory):
+    # obj has been expunged; to access its deferred properties,
+    # it needs to be added back to the session.
+    session.add(obj)
+    assert obj.average_rating is None  # With no ratings, we expect None.
+    # Create ratings
+    to_cleanup = []
+    for rating in (1, 2, 3, 4, 5):
+        obj_rating_assoc = obj_rating_association_factory(user, obj, rating)
+        persist(session, obj_rating_assoc)
+        to_cleanup.append(obj_rating_assoc)
+    assert obj.average_rating == 3.0  # Expect average after ratings added.
+    # Cleanup: remove ratings from database
+    delete_from_database(session, to_cleanup)
