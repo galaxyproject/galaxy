@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from ase.io import read as ase_read
 
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
@@ -673,65 +674,64 @@ class PQR(GenericMolFile):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-@build_sniff_from_prefix
+
 class Cell(GenericMolFile):
     """
     CELL format.
     """
-    file_ext = "cell"
-    #MetadataElement(name="chain_ids", default=[], desc="Chain IDs", readonly=False, visible=True)
 
-    def sniff_prefix(self, file_prefix):
+    file_ext = "cell"
+    MetadataElement(
+        name="atom_data",
+        default=[],
+        desc="Atom Positions",
+        readonly=False,
+        visible=True,
+    )
+
+    def sniff(self, filename):
         """
         Try to guess if the file is a CELL file.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('Si.cell')
-        >>> PDB().sniff(fname)
+        >>> Cell().sniff(fname)
         True
-        >>> fname = get_test_fname('drugbank_drugs.cml')
-        >>> PDB().sniff(fname)
+        >>> fname = get_test_fname('Si.cif')
+        >>> Cell().sniff(fname)
         False
         """
-        headers = iter_headers(file_prefix, sep=' ', count=10, comment_designator='#')
-        for line in headers:
-            if line == '':
-                continue
-            first_content = line[0].strip()
-            return True if first_content == '%BLOCK' else False
-
+        try:
+            ase_data = ase_read(filename, format="castep-cell")
+            return True if ase_data else False
+        except ValueError:
+            return False
 
     def set_meta(self, dataset, **kwd):
         """
-        Find Chain_IDs for metadata.
+        Find Atom IDs for metadata.
         """
-        """
+        ase_data = ase_read(dataset.file_name, format="castep-cell")
         try:
-            chain_ids = set()
-            with open(dataset.file_name) as fh:
-                for line in fh:
-                    if line.startswith('ATOM  ') or line.startswith('HETATM'):
-                        if line[21] != ' ':
-                            chain_ids.add(line[21])
-            dataset.metadata.chain_ids = list(chain_ids)
+            atom_data = [
+                str(sym) + str(pos)
+                for sym, pos in zip(
+                    ase_data.get_chemical_symbols(), ase_data.get_positions()
+                )
+            ]
+            dataset.metadata.atom_data = atom_data
         except Exception as e:
-            log.error('Error finding chain_ids: %s', unicodify(e))
+            log.error("Error finding atom_data: %s", unicodify(e))
             raise
-        """
-        pass
 
-    """
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            atom_numbers = count_special_lines("^ATOM", dataset.file_name)
-            hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
-            chain_ids = ','.join(dataset.metadata.chain_ids) if len(dataset.metadata.chain_ids) > 0 else 'None'
+            ase_data = ase_read(dataset.file_name, format="castep-cell")
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = f"{atom_numbers} atoms and {hetatm_numbers} HET-atoms\nchain_ids: {chain_ids}"
+            dataset.blurb = f"CASTEP cell file containing {ase_data.get_global_number_of_atoms()} atoms"
         else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-    """
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
 
 class grd(Text):
