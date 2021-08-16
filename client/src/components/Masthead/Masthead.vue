@@ -30,7 +30,7 @@ export default {
     props: {
         displayGalaxyBrand: {
             type: Boolean,
-            default: true,
+            default: false,
         },
         brand: {
             type: String,

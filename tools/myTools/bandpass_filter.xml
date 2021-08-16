@@ -1,0 +1,24 @@
+<tool id="bandpass_filter" name="带通滤波" version="0.1.0">
+  <description> for each column in a file</description>
+  <command>python '${__tool_directory__}/bandpass_filter.py' '$input1' '$low' '$high' '$N' '$hz' '$output'</command>
+  <inputs>
+    <param format="tabular" name="input1" type="data" label="输入文件1"/>
+    <param name="high" type="text" value="5000" label="频率上限"/>
+    <param name="low" type="text" value="2000" label="频率下限" />
+    <param name="N" type = "text" value='5' label="滤波器阶数"/>
+    <param name="hz" type="text" value='51200' label="采样频率"/>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="output" label="输出文件"/>
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" value="fa_gc_content_input.fa"/>
+      <output name="out_file1" file="fa_gc_content_output.txt"/>
+    </test>
+  </tests>
+  <help>
+    这个工具用于计算列区间有效值
+  </help>
+</tool>

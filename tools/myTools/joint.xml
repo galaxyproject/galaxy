@@ -1,0 +1,24 @@
+<tool id="joint" name="文件拼接" version="0.1.0">
+  <description>splice one file behind another</description>
+  <command>python '${__tool_directory__}/joint.py' '$input1' '$input2' '$output'</command>
+  <inputs>
+    <param format="tabular" name="input1" type="data" label="输入文件1"/>
+    <param format="tabular" name="input2" type="data" label="输入文件2"/>
+    
+  </inputs>
+  <outputs>
+    <data format="tabular" name="output" label="输出文件"/>
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" value="fa_gc_content_input.fa"/>
+      <output name="out_file1" file="fa_gc_content_output.txt"/>
+    </test>
+  </tests>
+
+  <help>
+    这个工具用于拼接两个文件，将“输入文件2”拼接再“输入文件1”后面。
+  </help>
+
+</tool>

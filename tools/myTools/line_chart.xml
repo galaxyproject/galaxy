@@ -1,0 +1,24 @@
+<tool id="line_chart" name="折线图" version="0.1.0">
+  <description> for each column in a file  </description>
+  <command>python '${__tool_directory__}/line_chart.py' '$input1'  '$output' '$start' '$end' '$title'</command>
+  <inputs>
+    <param format="tabular" name="input1" type="data" label="输入文件1"/>
+    <param name="start" type="text" value="0" label="起始行标"/>
+    <param name="end" type="text" value="50" label="终止行标"/>
+    <param name='title' type="text" value='Figure' label="图片标题"/>
+  </inputs>
+  <outputs>
+    <data format="jpg" name="output" label="输出文件"/>
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" value="fa_gc_content_input.fa"/>
+      <output name="out_file1" file="fa_gc_content_output.txt"/>
+    </test>
+  </tests>
+
+  <help>
+    这个工具用于计算整列平均值
+  </help>
+</tool>

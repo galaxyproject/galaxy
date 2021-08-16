@@ -1,0 +1,24 @@
+<tool id="spectrum_analysis" name="频谱分析" version="0.1.0">
+  <description>for each column in a file</description>
+  <command>perl '${__tool_directory__}/spectrum_analysis.py' '$input' '$hz' '$output'</command>
+  <inputs>
+    <param format="fasta" name="输入" type="data" label="输入文件"/>
+    <param name="hz" type="text" value="51200" label="采样频率"/>
+
+  </inputs>
+  <outputs>
+    <data format="tabular" name="输出" />
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" value="fa_gc_content_input.fa"/>
+      <output name="out_file1" file="fa_gc_content_output.txt"/>
+    </test>
+  </tests>
+
+  <help>
+频谱分析
+  </help>
+
+</tool>

@@ -1,0 +1,22 @@
+<tool id="test01" name="test01" version="0.1.0">
+  <description>for each sequence in a file</description>
+  <command>perl '${__tool_directory__}/toolExample.pl' '$input' '$output'</command>
+  <inputs>
+    <param format="fasta" name="输入" type="data" label="Source file"/>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="输出" />
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" value="fa_gc_content_input.fa"/>
+      <output name="out_file1" file="fa_gc_content_output.txt"/>
+    </test>
+  </tests>
+
+  <help>
+This tool computes GC content from a FASTA file.
+  </help>
+
+</tool>
