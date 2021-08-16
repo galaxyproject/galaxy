@@ -12,9 +12,6 @@ from galaxy.exceptions import (
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.schema.schema import GroupRoleListModel, GroupRoleModel
-from galaxy.web import url_for
-from galaxy.webapps.galaxy.api.common import fastapi_deprecation_message
 
 log = logging.getLogger(__name__)
 
@@ -25,18 +22,14 @@ class GroupRolesManager:
     def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
-    def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField) -> GroupRoleListModel:
+    def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField):
         """
         Returns a collection roles associated with the given group.
         """
         group = self._get_group(trans, group_id)
-        rval = []
-        for gra in group.roles:
-            group_role = self._serialize_group_role(group_id, gra.role)
-            rval.append(group_role)
-        return GroupRoleListModel(__root__=rval)
+        return group.roles
 
-    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField) -> GroupRoleModel:
+    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
         """
         Returns information about a group role.
         """
@@ -46,10 +39,10 @@ class GroupRolesManager:
         group_role = self._get_group_role(trans, group, role)
         if group_role is None:
             raise ObjectNotFound(f"Role {role.name} not in group {group.name}")
+        return role
+        # return self._serialize_group_role(group_id, role)
 
-        return self._serialize_group_role(group_id, role)
-
-    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField) -> GroupRoleModel:
+    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
         """
         Adds a role to a group if it is not already associated.
         """
@@ -59,10 +52,9 @@ class GroupRolesManager:
         group_role = self._get_group_role(trans, group, role)
         if group_role is None:
             self._add_role_to_group(trans, group, role)
+        return role
 
-        return self._serialize_group_role(group_id, role)
-
-    def delete(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField) -> GroupRoleModel:
+    def delete(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
         """
         Removes a role from a group.
         """
@@ -73,7 +65,7 @@ class GroupRolesManager:
         if group_role is None:
             raise ObjectNotFound(f"Role {role.name} not in group {group.name}")
         self._remove_role_from_group(trans, group_role)
-        return self._serialize_group_role(group_id, role)
+        return role
 
     def _get_group(self, trans: ProvidesAppContext, encoded_group_id: EncodedDatabaseIdField) -> Any:
         decoded_group_id = decode_id(self._app, encoded_group_id)
@@ -103,16 +95,3 @@ class GroupRolesManager:
     def _remove_role_from_group(self, trans: ProvidesAppContext, group_role: model.GroupRoleAssociation):
         trans.sa_session.delete(group_role)
         trans.sa_session.flush()
-
-    def _serialize_group_role(self, encoded_group_id: EncodedDatabaseIdField, role: model.Role):
-        encoded_role_id = self._app.security.encode_id(role.id)
-        try:
-            url = url_for('group_role', group_id=encoded_group_id, id=encoded_role_id)
-        except AttributeError:
-            url = fastapi_deprecation_message()
-
-        return GroupRoleModel(
-            id=encoded_role_id,
-            name=role.name,
-            url=url
-        )

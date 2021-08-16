@@ -1,9 +1,11 @@
 """
 API operations on Group objects.
 """
+
 import logging
 
 from fastapi import Path
+from routes.util import url_for
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.group_roles import GroupRolesManager
@@ -13,6 +15,7 @@ from galaxy.web import (
     expose_api,
     require_admin,
 )
+from galaxy.webapps.galaxy.api.common import fastapi_deprecation_message
 from . import (
     BaseGalaxyAPIController,
     depends,
@@ -38,6 +41,20 @@ RoleIDParam: EncodedDatabaseIdField = Path(
 )
 
 
+def group_role_to_model(trans, encoded_group_id, role):
+    encoded_role_id = trans.security.encode_id(role.id)
+    try:
+        url = url_for('group_role', group_id=encoded_group_id, id=encoded_role_id)
+    except AttributeError:
+        url = fastapi_deprecation_message()
+
+    return GroupRoleModel(
+        id=encoded_role_id,
+        name=role.name,
+        url=url
+    )
+
+
 @router.cbv
 class FastAPIGroupRoles:
     manager: GroupRolesManager = depends(GroupRolesManager)
@@ -46,25 +63,29 @@ class FastAPIGroupRoles:
                 require_admin=True,
                 summary='Displays a collection (list) of groups.')
     def index(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam) -> GroupRoleListModel:
-        return self.manager.index(trans, group_id)
+        group_roles = self.manager.index(trans, group_id)
+        return GroupRoleListModel(__root__=[group_role_to_model(trans, group_id, gr.role) for gr in group_roles])
 
     @router.get('/api/groups/{group_id}/roles/{role_id}',
                 require_admin=True,
                 summary='Displays information about a group role.')
     def show(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam, role_id: EncodedDatabaseIdField = RoleIDParam) -> GroupRoleModel:
-        return self.manager.show(trans, role_id, group_id)
+        role = self.manager.show(trans, role_id, group_id)
+        return group_role_to_model(trans, group_id, role)
 
     @router.put('/api/groups/{group_id}/roles/{role_id}',
                 require_admin=True,
                 summary='Adds a role to a group')
     def update(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam, role_id: EncodedDatabaseIdField = RoleIDParam) -> GroupRoleModel:
-        return self.manager.update(trans, role_id, group_id)
+        role = self.manager.update(trans, role_id, group_id)
+        return group_role_to_model(trans, group_id, role)
 
     @router.delete('/api/groups/{group_id}/roles/{role_id}',
                    require_admin=True,
                    summary='Removes a role from a group')
     def delete(self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam, role_id: EncodedDatabaseIdField = RoleIDParam) -> GroupRoleModel:
-        return self.manager.delete(trans, role_id, group_id)
+        role = self.manager.delete(trans, role_id, group_id)
+        return group_role_to_model(trans, group_id, role)
 
 
 class GroupRolesAPIController(BaseGalaxyAPIController):
