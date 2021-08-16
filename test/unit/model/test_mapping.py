@@ -784,10 +784,10 @@ class TestDeferredJob(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'deferred_job'
 
-    def test_columns(self, session, cls_, model):
+    def test_columns(self, session, cls_):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        state, plugin, params = model.DeferredJob.states.NEW, 'a', 'b'
+        state, plugin, params = 'a', 'b', 'c'
         obj = cls_(state, plugin, params)
         obj.create_time = create_time
         obj.update_time = update_time
@@ -2082,8 +2082,8 @@ class TestImplicitCollectionJobs(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'implicit_collection_jobs'
 
-    def test_columns(self, session, cls_, model):
-        populated_state = model.ImplicitCollectionJobs.populated_states.NEW
+    def test_columns(self, session, cls_):
+        populated_state = 'a'
         obj = cls_()
         obj.populated_state = populated_state
 
@@ -4620,11 +4620,11 @@ class TestTask(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'task'
 
-    def test_columns(self, session, cls_, model, job):
+    def test_columns(self, session, cls_, job):
         create_time = datetime.now()
         execution_time = create_time + timedelta(hours=1)
         update_time = execution_time + timedelta(hours=1)
-        state = model.Task.states.WAITING
+        state = 'p'
         command_line = 'a'
         param_filename = 'b'
         runner_name = 'c'
@@ -4780,10 +4780,10 @@ class TestTransferJob(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'transfer_job'
 
-    def test_columns(self, session, cls_, model):
+    def test_columns(self, session, cls_):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        state, path, info, pid, socket, params = model.TransferJob.states.NEW, 'a', 'b', 2, 3, 'c'
+        state, path, info, pid, socket, params = 'd', 'a', 'b', 2, 3, 'c'
         obj = cls_(state, path, info, pid, socket, params)
         obj.create_time = create_time
         obj.update_time = update_time
