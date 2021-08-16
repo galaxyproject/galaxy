@@ -1,13 +1,64 @@
 <template>
-    <div ref="form" />
+    <div>
+        <div v-for="input, index) in inputs" :key="index">
+            <div v-if="input.type == 'repeat'">
+                <p class="font-weight-bold mb-2">{{ input.title }}</p>
+                <FormCard v-for="(cache, cacheId) in input.cache"
+                    :key="cacheId"
+                    :title="repeatTitle(cacheId, input.title)"
+                >
+                    <template v-slot:operations>
+                        <b-button
+                            role="button"
+                            variant="link"
+                            size="sm"
+                            class="float-right"
+                            v-b-tooltip.hover.bottom
+                        >
+                            <font-awesome-icon icon="trash-alt" />
+                        </b-button>
+                    </template>
+                    <template v-slot:body>
+                        <FormNode 
+                            :inputs="cache"
+                        />
+                    </template>
+                </FormCard>
+                <b-button>
+                    <font-awesome-icon icon="plus" class="mr-1" />
+                    <span>Insert {{ input.title }}</span>
+                </b-button>
+            </div>
+            <FormElement
+                v-else
+                :id="input.name"
+                :title="input.label"
+                :value="input.value"
+                :help="input.help"
+                :area="input.area"
+                :type="input.type"
+            />
+        </div>
+    </div>
 </template>
 
 <script>
-import _ from "underscore";
-import Form from "mvc/form/form-view";
 import { visitInputs } from "components/Form/utilities";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
+import FormCard from "components/Form/FormCard";
+import FormElement from "components/Form/FormElement";
+
+library.add(faPlus, faTrashAlt);
 
 export default {
+    name: "FormNode",
+    components: {
+        FontAwesomeIcon,
+        FormCard,
+        FormElement,
+    },
     props: {
         id: {
             type: String,
@@ -53,38 +104,35 @@ export default {
     },
     watch: {
         id() {
-            this.onRender();
+            //this.onRender();
         },
         validationScrollTo() {
-            this.onHighlight(this.validationScrollTo);
+            //this.onHighlight(this.validationScrollTo);
         },
         validation() {
-            this.onHighlight(this.validation, true);
-            this.$emit("onValidation", this.validation);
+            //this.onHighlight(this.validation, true);
+            //this.$emit("onValidation", this.validation);
         },
         inputs() {
-            this.$nextTick(() => {
+            /*this.$nextTick(() => {
                 this.form.update(this.inputs);
-            });
+            });*/
         },
         errors() {
-            this.$nextTick(() => {
+            /*this.$nextTick(() => {
                 this.form.errors(this.errors);
-            });
+            });*/
         },
         replaceParams() {
-            this.onReplaceParams();
+            //this.onReplaceParams();
         },
     },
-    mounted() {
-        this.onRender();
-    },
-    beforeDestroy() {
-        this.form.off();
+    created() {
+        console.log(this.inputs);
     },
     computed: {
         validation() {
-            let batch_n = -1;
+            /*let batch_n = -1;
             let batch_src = null;
             for (const job_input_id in this.formData) {
                 const input_value = this.formData[job_input_id];
@@ -136,13 +184,16 @@ export default {
                         ];
                     }
                 }
-            }
+            }*/
             return null;
         },
     },
     methods: {
+        repeatTitle(index, title) {
+            return `${index + 1}: ${title}`;
+        },
         onReplaceParams() {
-            if (this.replaceParams) {
+            /*if (this.replaceParams) {
                 this.params = {};
                 visitInputs(this.inputs, (input, name) => {
                     this.params[name] = input;
@@ -155,14 +206,14 @@ export default {
                     }
                 });
                 this.form.trigger("change");
-            }
+            }*/
         },
         onChange(refreshRequest) {
-            this.formData = this.form.data.create();
-            this.$emit("onChange", this.formData, refreshRequest);
+            //this.formData = this.form.data.create();
+            //this.$emit("onChange", this.formData, refreshRequest);
         },
         onRender() {
-            this.$nextTick(() => {
+            /*this.$nextTick(() => {
                 const el = this.$refs["form"];
                 this.form = new Form({
                     el,
@@ -176,14 +227,14 @@ export default {
                     },
                 });
                 this.onChange();
-            });
+            });*/
         },
         onHighlight(validation, silent = false) {
-            this.form.trigger("reset");
+            /*this.form.trigger("reset");
             if (validation && validation.length == 2) {
                 const input_id = this.form.data.match(validation[0]);
                 this.form.highlight(input_id, validation[1], silent);
-            }
+            }*/
         },
     },
 };

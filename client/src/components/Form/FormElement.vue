@@ -6,8 +6,8 @@
         </div>
         <div class="ui-form-title">{{ title }}</div>
         <div class="ui-form-field">
-            <FormInput v-if="type == 'text'" :id="id" :area="area" v-model="currentValue" />
-            <FormBoolean v-else-if="type == 'boolean'" :id="id" v-model="currentValue" />
+            <FormBoolean v-if="type == 'boolean'" :id="id" v-model="currentValue" />
+            <FormInput v-else :id="id" :area="area" v-model="currentValue" />
             <span class="ui-form-info form-text text-muted mt-2">{{ help }}</span>
         </div>
     </div>
