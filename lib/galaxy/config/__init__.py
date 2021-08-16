@@ -491,13 +491,15 @@ class CommonConfigurationMixin:
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     deprecated_options = ('database_file', 'track_jobs_in_database', 'blacklist_file', 'whitelist_file',
-                          'sanitize_whitelist_file', 'user_library_import_symlink_whitelist', 'fetch_url_whitelist')
+                          'sanitize_whitelist_file', 'user_library_import_symlink_whitelist', 'fetch_url_whitelist',
+                          'containers_resolvers_config_file')
     renamed_options = {
         'blacklist_file': 'email_domain_blocklist_file',
         'whitelist_file': 'email_domain_allowlist_file',
         'sanitize_whitelist_file': 'sanitize_allowlist_file',
         'user_library_import_symlink_whitelist': 'user_library_import_symlink_allowlist',
         'fetch_url_whitelist': 'fetch_url_allowlist',
+        'containers_resolvers_config_file': 'container_resolvers_config_file',
     }
     default_config_file_name = 'galaxy.yml'
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
@@ -728,8 +730,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             # self, populate config_dict
             self.config_dict["conda_mapping_files"] = [self.local_conda_mapping_file, _default_mapping]
 
-        if self.containers_resolvers_config_file:
-            self.containers_resolvers_config_file = self._in_config_dir(self.containers_resolvers_config_file)
+        if self.container_resolvers_config_file:
+            self.container_resolvers_config_file = self._in_config_dir(self.container_resolvers_config_file)
 
         # tool_dependency_dir can be "none" (in old configs). If so, set it to None
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
@@ -1175,7 +1177,8 @@ class ConfiguresGalaxyMixin:
             container_image_cache_path=self.config.container_image_cache_path,
             library_import_dir=self.config.library_import_dir,
             enable_mulled_containers=self.config.enable_mulled_containers,
-            containers_resolvers_config_file=self.config.containers_resolvers_config_file,
+            container_resolvers_config_file=self.config.container_resolvers_config_file,
+            container_resolvers_config_dict=self.config.container_resolvers,
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,
             mulled_channels=self.config.mulled_channels,

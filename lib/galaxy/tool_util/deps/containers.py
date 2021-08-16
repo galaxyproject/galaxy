@@ -194,14 +194,20 @@ class ContainerRegistry:
         self.mulled_resolution_cache = mulled_resolution_cache
 
     def __build_container_resolvers(self, app_info):
-        conf_file = getattr(app_info, 'containers_resolvers_config_file', None)
-        if not conf_file:
-            return self.__default_containers_resolvers()
-        if not os.path.exists(conf_file):
-            log.debug("Unable to find config file '%s'", conf_file)
-            return self.__default_containers_resolvers()
-        plugin_source = plugin_config.plugin_source_from_path(conf_file)
-        return self._parse_resolver_conf(plugin_source)
+        conf_file = getattr(app_info, 'container_resolvers_config_file', None)
+        conf_dict = getattr(app_info, 'container_resolvers_config_dict', None)
+        plugin_source = None
+        if conf_file and not os.path.exists(conf_file):
+            log.warning(f"Unable to find config file '{conf_file}'")
+        elif conf_file:
+            log.debug("Loading container resolution config from file '{conf_file}'")
+            plugin_source = plugin_config.plugin_source_from_path(conf_file)
+        elif conf_dict:
+            log.debug("Loading container resolution config inline from Galaxy configuration file")
+            plugin_source = plugin_config.plugin_source_from_dict(conf_dict)
+        if plugin_source:
+            return self._parse_resolver_conf(plugin_source)
+        return self.__default_container_resolvers()
 
     def _parse_resolver_conf(self, plugin_source):
         extra_kwds = {
@@ -209,7 +215,7 @@ class ContainerRegistry:
         }
         return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
 
-    def __default_containers_resolvers(self):
+    def __default_container_resolvers(self):
         default_resolvers = [
             ExplicitContainerResolver(self.app_info),
             ExplicitSingularityContainerResolver(self.app_info),
