@@ -90,6 +90,7 @@ class CustosAuthnz(IdentityProvider):
         else:
             userinfo = self._get_userinfo(oauth2_session)
         email = userinfo['email']
+        username = userinfo.get('preferred_username', self._generate_username(trans, email))
         user_id = userinfo['sub']
 
         # Create or update custos_authnz_token record
@@ -113,9 +114,13 @@ class CustosAuthnz(IdentityProvider):
                         message = "There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email
                         log.exception(message)
                         raise exceptions.AuthenticationFailed(message)
-                else:
-                    login_redirect_url = login_redirect_url + 'root/login?confirm=true&custos_token=' + json.dumps(token)
+                elif self.config['provider'] == 'custos':
+                    login_redirect_url = f"{login_redirect_url}root/login?confirm=true&custos_token={json.dumps(token)}"
                     return login_redirect_url, None
+                else:
+                    user = trans.app.user_manager.create(email=email, username=username)
+                    if trans.app.config.user_activation_on:
+                        trans.app.user_manager.send_activation_email(trans, email, username)
 
             custos_authnz_token = CustosAuthnzToken(user=user,
                                    external_user_id=user_id,
@@ -133,7 +138,7 @@ class CustosAuthnz(IdentityProvider):
             custos_authnz_token.refresh_expiration_time = refresh_expiration_time
         trans.sa_session.add(custos_authnz_token)
         trans.sa_session.flush()
-        return login_redirect_url, custos_authnz_token.user
+        return "/", custos_authnz_token.user
 
     def create_user(self, token, trans, login_redirect_url):
         token_dict = json.loads(token)
