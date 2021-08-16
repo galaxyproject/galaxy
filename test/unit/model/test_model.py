@@ -42,7 +42,6 @@ TestFoo(BaseTest):  # BaseTest is parent class
             assert stored_obj.user.id == user_id
 """
 
-import random
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from uuid import uuid4
@@ -77,7 +76,7 @@ class TestAPIKeys(BaseTest):
         assert cls_.__tablename__ == 'api_keys'
 
     def test_columns(self, session, cls_, user):
-        create_time, user_id, key = datetime.now(), user.id, get_random_string()
+        create_time, user_id, key = datetime.now(), user.id, get_unique_value()
         obj = cls_(user_id=user_id, key=key, create_time=create_time)
 
         with dbcleanup(session, obj) as obj_id:
@@ -88,7 +87,7 @@ class TestAPIKeys(BaseTest):
             assert stored_obj.key == key
 
     def test_relationships(self, session, cls_, user):
-        obj = cls_(user_id=user.id, key=get_random_string())
+        obj = cls_(user_id=user.id, key=get_unique_value())
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -1052,7 +1051,7 @@ class TestGalaxySession(BaseTest):
         remote_host = 'a'
         remote_addr = 'b'
         referer = 'c'
-        session_key = 'd'
+        session_key = get_unique_value()
         is_valid = True
         disk_usage = 9
         last_action = update_time + timedelta(hours=1)
@@ -1087,6 +1086,7 @@ class TestGalaxySession(BaseTest):
 
     def test_relationships(self, session, cls_, user, history, galaxy_session_history_association):
         obj = cls_(user=user, current_history=history)
+        obj.session_key = get_unique_value()
         obj.histories.append(galaxy_session_history_association)
 
         with dbcleanup(session, obj) as obj_id:
@@ -3994,7 +3994,7 @@ class TestPasswordResetToken(BaseTest):
         assert cls_.__tablename__ == 'password_reset_token'
 
     def test_columns_and_relationships(self, session, cls_, user):
-        token = get_random_string()
+        token = get_unique_value()
         expiration_time = datetime.now()
         obj = cls_(user, token)
         obj.expiration_time = expiration_time
@@ -4088,7 +4088,7 @@ class TestPSACode(BaseTest):
         assert has_unique_constraint(cls_.__table__, ('code', 'email'))
 
     def test_columns(self, session, cls_):
-        email, code = 'a', get_random_string()
+        email, code = 'a', get_unique_value()
         obj = cls_(email, code)
 
         with dbcleanup(session, obj) as obj_id:
@@ -4139,7 +4139,7 @@ class TestQuota(BaseTest):
         assert cls_.__tablename__ == 'quota'
 
     def test_columns(self, session, cls_):
-        name, description, amount, operation = get_random_string(), 'b', 42, '+'
+        name, description, amount, operation = get_unique_value(), 'b', 42, '+'
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(name, description, amount, operation)
@@ -4164,7 +4164,7 @@ class TestQuota(BaseTest):
             assoc_object.quota = obj
             getattr(obj, assoc_attribute).append(assoc_object)
 
-        obj = cls_(None, None, 1, '+')
+        obj = cls_(get_unique_value(), None, 1, '+')
         add_association(default_quota_association, 'default')
         add_association(group_quota_association, 'groups')
         add_association(user_quota_association, 'users')
@@ -4182,7 +4182,7 @@ class TestRole(BaseTest):
         assert cls_.__tablename__ == 'role'
 
     def test_columns(self, session, cls_):
-        name, description, type_, deleted = get_random_string(), 'b', cls_.types.SYSTEM, True
+        name, description, type_, deleted = get_unique_value(), 'b', cls_.types.SYSTEM, True
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(name, description, type_, deleted)
@@ -4211,7 +4211,7 @@ class TestRole(BaseTest):
         library_dataset_dataset_association_permission,
         user_role_association,
     ):
-        name, description, type_ = get_random_string(), 'b', cls_.types.SYSTEM
+        name, description, type_ = get_unique_value(), 'b', cls_.types.SYSTEM
         obj = cls_(name, description, type_)
         obj.dataset_actions.append(dataset_permission)
         obj.library_actions.append(library_permission)
@@ -4759,8 +4759,8 @@ class TestUser(BaseTest):
     def test_columns(self, session, cls_, form_values):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        email = get_random_string()
-        username = get_random_string()
+        email = get_unique_value()
+        username = get_unique_value()
         password = 'c'
         last_password_change = update_time
         external = True
@@ -4834,8 +4834,8 @@ class TestUser(BaseTest):
 
         obj = cls_()
 
-        obj.email = get_random_string()
-        obj.username = get_random_string()
+        obj.email = get_unique_value()
+        obj.username = get_unique_value()
         obj.password = 'a'
         obj.values = form_values
         obj.addresses.append(user_address)
@@ -4974,7 +4974,7 @@ class TestUserAuthnzToken(BaseTest):
         assert has_unique_constraint(cls_.__table__, ('provider', 'uid'))
 
     def test_columns(self, session, cls_, user):
-        provider, uid, extra_data, lifetime, assoc_type = get_random_string(), 'b', 'c', 1, 'd'
+        provider, uid, extra_data, lifetime, assoc_type = get_unique_value(), 'b', 'c', 1, 'd'
         obj = cls_(provider, uid, extra_data, lifetime, assoc_type, user)
 
         with dbcleanup(session, obj) as obj_id:
@@ -4988,7 +4988,7 @@ class TestUserAuthnzToken(BaseTest):
             assert stored_obj.assoc_type == assoc_type
 
     def test_relationships(self, session, cls_, user, cloud_authz):
-        obj = cls_(get_random_string(), None, user=user)
+        obj = cls_(get_unique_value(), None, user=user)
         obj.cloudauthz.append(cloud_authz)
 
         with dbcleanup(session, obj) as obj_id:
@@ -5331,7 +5331,7 @@ class TestWorkerProcess(BaseTest):
         assert has_unique_constraint(cls_.__table__, ('server_name', 'hostname'))
 
     def test_columns(self, session, cls_):
-        server_name, hostname = get_random_string(), 'a'
+        server_name, hostname = get_unique_value(), 'a'
         update_time = datetime.now()
         obj = cls_(server_name, hostname)
         obj.update_time = update_time
@@ -6414,7 +6414,7 @@ def session(model):
 
 @pytest.fixture
 def api_keys(model, session):
-    instance = model.APIKeys()
+    instance = model.APIKeys(key=get_unique_value())
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6555,7 +6555,7 @@ def form_values(model, session):
 
 @pytest.fixture
 def galaxy_session(model, session, user):
-    instance = model.GalaxySession()
+    instance = model.GalaxySession(session_key=get_unique_value())
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6573,7 +6573,7 @@ def genome_index_tool_data(model, session):
 
 @pytest.fixture
 def group(model, session):
-    instance = model.Group()
+    instance = model.Group(name=get_unique_value())
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6963,7 +6963,7 @@ def page_user_share_association(model, session):
 
 @pytest.fixture
 def password_reset_token(model, session, user):
-    token = get_random_string()
+    token = get_unique_value()
     instance = model.PasswordResetToken(user, token)
     where_clause = type(instance).token == token
     yield from dbcleanup_wrapper(session, instance, where_clause)
@@ -6983,13 +6983,13 @@ def post_job_action_association(model, session, post_job_action, job):
 
 @pytest.fixture
 def quota(model, session):
-    instance = model.Quota(get_random_string(), 'b')
+    instance = model.Quota(get_unique_value(), 'b')
     yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
 def role(model, session):
-    instance = model.Role()
+    instance = model.Role(name=get_unique_value())
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -7062,7 +7062,7 @@ def transfer_job(model, session):
 
 @pytest.fixture
 def user(model, session):
-    instance = model.User(email='test@example.com', password='password')
+    instance = model.User(email=get_unique_value(), password='password')
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -7499,6 +7499,6 @@ def has_index(table, fields):
             return True
 
 
-def get_random_string():
+def get_unique_value():
     """Generate unique values to accommodate unique constraints."""
-    return str(random.random())
+    return uuid4().hex
