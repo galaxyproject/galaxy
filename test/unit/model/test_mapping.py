@@ -7479,7 +7479,7 @@ def dbcleanup(session, obj, where_clause=None):
     finally:
         table = obj.__table__
         if where_clause is None:
-            where_clause = get_default_where_clause(type(obj), obj_id)
+            where_clause = _get_default_where_clause(type(obj), obj_id)
         stmt = delete(table).where(where_clause)
         session.execute(stmt)
 
@@ -7518,7 +7518,7 @@ def get_stored_obj(session, cls, obj_id=None, where_clause=None, unique=False):
     # Either obj_id or where_clause must be provided, but not both
     assert bool(obj_id) ^ (where_clause is not None)
     if where_clause is None:
-        where_clause = get_default_where_clause(cls, obj_id)
+        where_clause = _get_default_where_clause(cls, obj_id)
     stmt = select(cls).where(where_clause)
     result = session.execute(stmt)
     # unique() is required if result contains joint eager loads against collections
@@ -7528,7 +7528,7 @@ def get_stored_obj(session, cls, obj_id=None, where_clause=None, unique=False):
     return result.scalar_one()
 
 
-def get_default_where_clause(cls, obj_id):
+def _get_default_where_clause(cls, obj_id):
     where_clause = cls.__table__.c.id == obj_id
     return where_clause
 
