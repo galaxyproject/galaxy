@@ -137,7 +137,7 @@ class LocalJobRunner(BaseJobRunner):
             stderr = self._job_io_for_db(stderr_file)
             stdout_file.close()
             stderr_file.close()
-            log.debug('execution finished: %s' % job_file)
+            log.debug(f'execution finished: {job_file}')
         except Exception:
             log.exception("failure running job %d", job_wrapper.job_id)
             self._fail_job_local(job_wrapper, "failure running job")
@@ -162,7 +162,7 @@ class LocalJobRunner(BaseJobRunner):
             # metadata internal or job not complete yet
             pid = job.get_job_runner_external_id()
         if pid in [None, '']:
-            log.warning("stop_job(): %s: no PID in database for job, unable to stop" % job.id)
+            log.warning(f"stop_job(): {job.id}: no PID in database for job, unable to stop")
             return
         pid = int(pid)
         if not check_pg(pid):

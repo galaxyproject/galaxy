@@ -227,7 +227,7 @@ var HistoryViewEdit = _super.extend(
             var nameSelector = "> .controls .name";
             $where
                 .find(nameSelector)
-                .attr("title", _l("Click to rename history"))
+                .attr("title", _l("Rename history..."))
                 .tooltip({ placement: "bottom" })
                 .make_text_editable({
                     on_finish: function (newName) {
@@ -485,7 +485,7 @@ var HistoryViewEdit = _super.extend(
         // ------------------------------------------------------------------------ panel events
         /** event map */
         events: _.extend(_.clone(_super.prototype.events), {
-            "click .show-selectors-btn": "toggleSelectors",
+            "click .show-history-content-selectors-btn": "toggleSelectors",
             "click .toggle-deleted-link": function (ev) {
                 this.toggleShowDeleted();
             },

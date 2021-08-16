@@ -103,21 +103,21 @@ class LintContext:
         for message in self.error_messages:
             self.found_errors = True
             print_linter_info()
-            print(".. ERROR: %s" % message)
+            print(f".. ERROR: {message}")
 
         if self.level != LEVEL_ERROR:
             for message in self.warn_messages:
                 self.found_warns = True
                 print_linter_info()
-                print(".. WARNING: %s" % message)
+                print(f".. WARNING: {message}")
 
         if self.level == LEVEL_ALL:
             for message in self.info_messages:
                 print_linter_info()
-                print(".. INFO: %s" % message)
+                print(f".. INFO: {message}")
             for message in self.valid_messages:
                 print_linter_info()
-                print(".. CHECK: %s" % message)
+                print(f".. CHECK: {message}")
 
     def __handle_message(self, message_list, message, *args):
         if args:

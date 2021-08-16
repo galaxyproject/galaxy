@@ -359,7 +359,7 @@ class DatasetAssociationManager(base.ModelManager,
                 trans.sa_session.flush()
                 self.set_metadata(trans, dataset_assoc)
         else:
-            raise exceptions.InsufficientPermissionsException('Changing datatype "%s" is not allowed.' % (data.extension))
+            raise exceptions.InsufficientPermissionsException(f'Changing datatype "{data.extension}" is not allowed.')
 
     def set_metadata(self, trans, dataset_assoc, overwrite=False, validate=True):
         """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
@@ -415,7 +415,7 @@ class DatasetAssociationManager(base.ModelManager,
                 return role_id
 
             def parameters_roles_or_none(role_type):
-                encoded_role_ids = kwd.get(role_type, kwd.get("%s_ids[]" % role_type, None))
+                encoded_role_ids = kwd.get(role_type, kwd.get(f"{role_type}_ids[]", None))
                 if encoded_role_ids is not None:
                     return list(map(to_role_id, encoded_role_ids))
                 else:
@@ -489,7 +489,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
             'genome_build': lambda i, k, **c: i.dbkey,
 
             # derived (not mapped) attributes
-            'data_type': lambda i, k, **c: i.datatype.__class__.__module__ + '.' + i.datatype.__class__.__name__,
+            'data_type': lambda i, k, **c: f"{i.datatype.__class__.__module__}.{i.datatype.__class__.__name__}",
 
             'converted': self.serialize_converted_datasets,
             # TODO: metadata/extra files
@@ -636,7 +636,7 @@ class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSeriali
         # prefix each key within and return
         prefixed = {}
         for key, val in metadata.items():
-            prefixed_key = 'metadata_' + key
+            prefixed_key = f"metadata_{key}"
             prefixed[prefixed_key] = val
         return prefixed
 

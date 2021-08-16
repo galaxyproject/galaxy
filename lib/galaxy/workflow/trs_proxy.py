@@ -78,15 +78,15 @@ class TrsProxy:
         return self._get(trs_api_url)
 
     def get_versions(self, trs_server, tool_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd) + "/versions"
+        trs_api_url = f"{self._get_tool_api_endpoint(trs_server, tool_id, **kwd)}/versions"
         return self._get(trs_api_url)
 
     def get_version(self, trs_server, tool_id, version_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd) + "/versions/" + version_id
+        trs_api_url = f"{self._get_tool_api_endpoint(trs_server, tool_id, **kwd)}/versions/{version_id}"
         return self._get(trs_api_url)
 
     def get_version_descriptor(self, trs_server, tool_id, version_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd) + "/versions/" + version_id + "/%s/descriptor" % GA4GH_GALAXY_DESCRIPTOR
+        trs_api_url = f"{self._get_tool_api_endpoint(trs_server, tool_id, **kwd)}/versions/{version_id}/{GA4GH_GALAXY_DESCRIPTOR}/descriptor"
         return self._get(trs_api_url)["content"]
 
     def _quote(self, tool_id, **kwd):
@@ -113,10 +113,10 @@ class TrsProxy:
 
     def _get_api_endpoint(self, trs_server, **kwd):
         trs_url = self._server_dict[trs_server]["api_url"]
-        trs_api_endpoint = trs_url + "/" + "ga4gh/trs/v2/tools"
+        trs_api_endpoint = f"{trs_url}/ga4gh/trs/v2/tools"
         return trs_api_endpoint
 
     def _get_tool_api_endpoint(self, trs_server, tool_id, **kwd):
         tool_id = self._quote(tool_id, **kwd)
-        trs_api_url = self._get_api_endpoint(trs_server, **kwd) + "/" + tool_id
+        trs_api_url = f"{self._get_api_endpoint(trs_server, **kwd)}/{tool_id}"
         return trs_api_url

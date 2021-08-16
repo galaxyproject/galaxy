@@ -1,4 +1,4 @@
-<containers_resolvers>
+<container_resolvers>
   <explicit />
   <!-- explicit: resolves container URI for a job through explict container
        tags in the tool XML wrapper. -->
@@ -63,4 +63,4 @@
   <!-- Specify a fallback container for tools/jobs that don't match the above
        resolvers. -->
 
-</containers_resolvers>
+</container_resolvers>

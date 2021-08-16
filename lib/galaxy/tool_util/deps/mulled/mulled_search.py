@@ -81,7 +81,7 @@ class QuaySearch():
 
                 # get all repositories with suggested keywords
                 for suggestion in suggestions:
-                    search_string = "*%s*" % suggestion
+                    search_string = f"*{suggestion}*"
                     query = QueryParser(
                         "title", self.index.schema).parse(search_string)
                     results_tmp = searcher.search(query)
@@ -123,14 +123,14 @@ class CondaSearch():
 
         """
         if run_command is None:
-            raise Exception("Invalid search destination. " + deps_error_message("conda"))
+            raise Exception(f"Invalid search destination. {deps_error_message('conda')}")
         raw_out, err, exit_code = run_command(
             'search', '-c',
             self.channel,
             search_string,
             use_exception_handler=True)
         if exit_code != 0:
-            logging.info('Search failed with: %s' % err)
+            logging.info(f'Search failed with: {err}')
             return []
         return [{'package': n.split()[0], 'version': n.split()[1], 'build': n.split()[2]} for n in raw_out.split('\n')[2:-1]]
 
@@ -145,29 +145,23 @@ class GitHubSearch():
         Takes search_string variable and return results from the bioconda-recipes github repository in JSON format
         """
         response = requests.get(
-            "https://api.github.com/search/code?q=%s+in:path+repo:bioconda/bioconda-recipes+path:recipes" % search_string, timeout=MULLED_SOCKET_TIMEOUT).json()
-        return response
+            f"https://api.github.com/search/code?q={search_string}+in:path+repo:bioconda/bioconda-recipes+path:recipes", timeout=MULLED_SOCKET_TIMEOUT)
+        response.raise_for_status()
+        return response.json()
 
-    def process_json(self, json, search_string):
+    def process_json(self, json_response, search_string):
         """
         Take JSON input and process it, returning the required data
         """
-        json = json['items'][0:10]  # get top ten results
-
-        results = []
-
-        for result in json:
-            results.append({'name': result['name'], 'path': result['path']})
-        return results
+        top_10_items = json_response['items'][0:10]  # get top ten results
+        return [{'name': result['name'], 'path': result['path']} for result in top_10_items]
 
     def recipe_present(self, search_string):
         """
         Check if a recipe exists in bioconda-recipes which matches search_string exactly
         """
-        if requests.get("https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/%s" % search_string, timeout=MULLED_SOCKET_TIMEOUT).status_code == 200:
-            return True
-        else:
-            return False
+        response = requests.get(f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{search_string}", timeout=MULLED_SOCKET_TIMEOUT)
+        return response.status_code == 200
 
 
 def get_package_hash(packages, versions):
@@ -188,7 +182,7 @@ def get_package_hash(packages, versions):
     if versions:
         hash_results['version_hash'] = package_hash.split(':')[1]
 
-    r = requests.get("https://quay.io/api/v1/repository/biocontainers/%s" % hash_results['package_hash'], timeout=MULLED_SOCKET_TIMEOUT)
+    r = requests.get(f"https://quay.io/api/v1/repository/biocontainers/{hash_results['package_hash']}", timeout=MULLED_SOCKET_TIMEOUT)
     if r.status_code == 200:
         hash_results['container_present'] = True
         if versions:  # now test if the version hash is listed in the repository tags
@@ -238,12 +232,12 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
                               (organization, result['package'], result['version'])])  # NOT a real solution
         for results in json.get('conda', {}).values():
             for result in results:
-                lines.append(['conda', result['package'], '{}--{}'.format(result['version'], result['build']),
-                              'conda install -c {} {}={}={}\n'.format(channel, result['package'], result['version'], result['build'])])
+                lines.append(['conda', result['package'], f"{result['version']}--{result['build']}",
+                              f"conda install -c {channel} {result['package']}={result['version']}={result['build']}\n"])
         for results in json.get('singularity', {}).values():
             for result in results:
                 lines.append(['singularity', result['package'], result['version'],
-                              'wget https://depot.galaxyproject.org/singularity/{}:{}\n'.format(result['package'], result['version'])])
+                              f"wget https://depot.galaxyproject.org/singularity/{result['package']}:{result['version']}\n"])
 
         col_width0, col_width1, col_width2 = (max(len(
             line[n]) for line in lines) + 2 for n in (0, 1, 2))  # def max col widths for the output
@@ -260,7 +254,7 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
         lines = [['QUERY', 'LOCATION\n']]
         for recipe in json['github_recipe_present']['recipes']:
             lines.append(
-                [recipe, "https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/%s\n" % recipe])
+                [recipe, f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{recipe}\n"])
 
         col_width0 = max(len(line[0]) for line in lines) + 2
 
@@ -276,7 +270,7 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
         for search_string, results in json.get('github', {}).items():
             for result in results:
                 lines.append([search_string, result['name'],
-                              'https://github.com/bioconda/bioconda-recipes/tree/master/%s\n' % result['path']])
+                              f"https://github.com/bioconda/bioconda-recipes/tree/master/{result['path']}\n"])
 
         # def max col widths for the output
         col_width0, col_width1 = (
@@ -288,7 +282,7 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
 
 
 def deps_error_message(package):
-    return "Required dependency [%s] is not installed. Run 'pip install galaxy-tool-util[mulled]'." % package
+    return f"Required dependency [{package}] is not installed. Run 'pip install galaxy-tool-util[mulled]'."
 
 
 def main(argv=None):

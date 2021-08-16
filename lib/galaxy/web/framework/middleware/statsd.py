@@ -38,8 +38,8 @@ class StatsdMiddleware:
         self.galaxy_stasd_client.timing(page, dt)
         try:
             times = QUERY_COUNT_LOCAL.times
-            self.galaxy_stasd_client.timing("sql." + page, sum(times) * 1000.)
-            self.galaxy_stasd_client.incr("sqlqueries." + page, len(times))
+            self.galaxy_stasd_client.timing(f"sql.{page}", sum(times) * 1000.)
+            self.galaxy_stasd_client.incr(f"sqlqueries.{page}", len(times))
         except AttributeError:
             # Not logging query counts, skip
             pass

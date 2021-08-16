@@ -148,7 +148,7 @@ def _to_cwl_tool_object(tool_path=None, tool_object=None, cwl_tool_object=None, 
         path = tool_directory
         if path is None:
             path = os.getcwd()
-        uri = ref_resolver.file_uri(path) + "/"
+        uri = f"{ref_resolver.file_uri(path)}/"
         sourceline.add_lc_filename(tool_object, uri)
         raw_process_reference = schema_loader.raw_process_reference_for_object(
             tool_object,
@@ -226,7 +226,7 @@ def check_requirements(rec, tool=True):
                 else:
                     possible = SUPPORTED_WORKFLOW_REQUIREMENTS
                 if r["class"] not in possible:
-                    raise Exception("Unsupported requirement %s" % r["class"])
+                    raise Exception(f"Unsupported requirement {r['class']}")
         for d in rec:
             check_requirements(rec[d], tool=tool)
     if isinstance(rec, list):
@@ -596,7 +596,7 @@ class JobProxy:
             else:
                 cwl_job.run()
             if not self._ok:
-                raise Exception("Final process state not ok, [%s]" % self._process_status)
+                raise Exception(f"Final process state not ok, [{self._process_status}]")
             return self._final_output
         else:
             return self.cwl_job().collect_outputs(tool_working_directory, rcode)
@@ -613,7 +613,7 @@ class JobProxy:
 
     def _output_extra_files_dir(self, output_name):
         output_id = self.output_id(output_name)
-        return os.path.join(self._job_directory, "outputs", "dataset_%s_files" % output_id)
+        return os.path.join(self._job_directory, "outputs", f"dataset_{output_id}_files")
 
     def output_id(self, output_name):
         output_id = self._output_dict[output_name]["id"]
@@ -797,7 +797,7 @@ class WorkflowProxy:
             if self.jsonld_id_to_label(input["id"]) == label:
                 return i
 
-        raise Exception("Failed to find index for label %s" % label)
+        raise Exception(f"Failed to find index for label {label}")
 
     def jsonld_id_to_label(self, id):
         if "#" in self.cwl_id:
@@ -972,7 +972,7 @@ class InputProxy:
         cwl_source_id = cwl_input.get("source", None)
         if cwl_source_id is None:
             if "valueFrom" not in cwl_input and "default" not in cwl_input:
-                msg = "Workflow step input must define a source, a valueFrom, or a default value. Obtained [%s]." % cwl_input
+                msg = f"Workflow step input must define a source, a valueFrom, or a default value. Obtained [{cwl_input}]."
                 raise MessageException(msg)
 
         assert cwl_input_id
@@ -1118,7 +1118,7 @@ def _outer_field_to_input_instance(field):
     name, label, description = _field_metadata(field)
 
     case_name = "_cwl__type_"
-    case_label = "Specify Parameter %s As" % label
+    case_label = f"Specify Parameter {label} As"
 
     def value_input(type_description):
         value_name = "_cwl__value_"
@@ -1258,8 +1258,8 @@ class InputInstance:
         if itemwise and self.array:
             as_dict = dict(
                 type="repeat",
-                name="%s_repeat" % self.name,
-                title="%s" % self.name,
+                name=f"{self.name}_repeat",
+                title=f"{self.name}",
                 blocks=[
                     self.to_dict(itemwise=False)
                 ]

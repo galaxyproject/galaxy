@@ -17,6 +17,16 @@
     <outputs>
         <data format="tabix" name="output1"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" ftype="encodepeak" value="encode.broad.peak"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="110" delta="10"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

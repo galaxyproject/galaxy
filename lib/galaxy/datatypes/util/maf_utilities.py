@@ -51,7 +51,7 @@ def get_species_in_block(block):
 
 
 def tool_fail(msg="Unknown Error"):
-    sys.exit("Fatal Error: %s" % msg)
+    sys.exit(f"Fatal Error: {msg}")
 
 
 class TempFileHandler:
@@ -604,7 +604,7 @@ def get_starts_ends_fields_from_gene_bed(line):
     fields = line.split()
     # Requires atleast 12 BED columns
     if len(fields) < 12:
-        raise Exception("Not a proper 12 column BED line (%s)." % line)
+        raise Exception(f"Not a proper 12 column BED line ({line}).")
     tx_start = int(fields[1])
     strand = fields[5]
     if strand != '-':
@@ -688,7 +688,7 @@ def get_fasta_header(component, attributes=None, suffix=None):
     if suffix:
         header = f"{header}{suffix}"
     else:
-        header = "{}{}".format(header, src_split(component.src)[0])
+        header = f"{header}{src_split(component.src)[0]}"
     return header
 
 

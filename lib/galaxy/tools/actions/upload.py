@@ -26,7 +26,7 @@ class BaseUploadToolAction(ToolAction):
 
         persisting_uploads_timer = ExecutionTimer()
         incoming = upload_common.persist_uploads(incoming, trans)
-        log.debug("Persisted uploads %s" % persisting_uploads_timer)
+        log.debug(f"Persisted uploads {persisting_uploads_timer}")
         rval = self._setup_job(tool, trans, incoming, dataset_upload_inputs, history)
         return rval
 
@@ -37,7 +37,7 @@ class BaseUploadToolAction(ToolAction):
         """Wrapper around upload_common.create_job with a timer."""
         create_job_timer = ExecutionTimer()
         rval = upload_common.create_job(*args, **kwds)
-        log.debug("Created upload job %s" % create_job_timer)
+        log.debug(f"Created upload job {create_job_timer}")
         return rval
 
 
@@ -52,7 +52,7 @@ class UploadToolAction(BaseUploadToolAction):
 
         json_file_path = upload_common.create_paramfile(trans, uploaded_datasets)
         data_list = [ud.data for ud in uploaded_datasets]
-        log.debug("Checked uploads %s" % check_timer)
+        log.debug(f"Checked uploads {check_timer}")
         return self._create_job(
             trans, incoming, tool, json_file_path, data_list, history=history
         )
@@ -144,10 +144,10 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
         return
 
     tags = target.get("tags", [])
-    collections_service = trans.app.dataset_collections_service
-    collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
+    collections_manager = trans.app.dataset_collection_manager
+    collection_type_description = collections_manager.collection_type_descriptions.for_collection_type(collection_type)
     structure = UninitializedTree(collection_type_description)
-    hdca = collections_service.precreate_dataset_collection_instance(
+    hdca = collections_manager.precreate_dataset_collection_instance(
         trans, history, name, structure=structure, tags=tags
     )
     outputs.append(hdca)

@@ -609,8 +609,8 @@ steps:
 
     def workflow_editor_connect(self, source, sink, screenshot_partial=None):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        source_element = self.driver.find_element_by_css_selector("#" + source_id)
-        sink_element = self.driver.find_element_by_css_selector("#" + sink_id)
+        source_element = self.driver.find_element_by_css_selector(f"#{source_id}")
+        sink_element = self.driver.find_element_by_css_selector(f"#{sink_id}")
 
         ac = self.action_chains()
         ac = ac.move_to_element(source_element).click_and_hold()

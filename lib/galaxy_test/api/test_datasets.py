@@ -1,4 +1,3 @@
-import json
 import textwrap
 
 from galaxy_test.base.populators import (
@@ -98,7 +97,7 @@ class DatasetsApiTestCase(ApiTestCase):
 
     def test_show(self):
         hda1 = self.dataset_populator.new_dataset(self.history_id)
-        show_response = self._get("datasets/%s" % (hda1["id"]))
+        show_response = self._get(f"datasets/{hda1['id']}")
         self._assert_status_code_is(show_response, 200)
         self.__assert_matches_hda(hda1, show_response.json())
 
@@ -115,7 +114,7 @@ class DatasetsApiTestCase(ApiTestCase):
         """)
         hda1 = self.dataset_populator.new_dataset(self.history_id, content=contents)
         self.dataset_populator.wait_for_history(self.history_id)
-        display_response = self._get("histories/{}/contents/{}/display".format(self.history_id, hda1["id"]), {
+        display_response = self._get(f"histories/{self.history_id}/contents/{hda1['id']}/display", {
             'raw': 'True'
         })
         self._assert_status_code_is(display_response, 200)
@@ -123,12 +122,13 @@ class DatasetsApiTestCase(ApiTestCase):
 
     def test_tag_change(self):
         hda_id = self.dataset_populator.new_dataset(self.history_id)['id']
-        payload = json.dumps({
+        payload = {
             'item_id': hda_id,
             'item_class': 'HistoryDatasetAssociation',
             'item_tags': ['cool:tag_a', 'cool:tag_b', 'tag_c', 'name:tag_d', '#tag_e'],
-        })
-        put_response = self._put("tags", payload)
+        }
+
+        put_response = self._put("tags", data=payload, json=True)
         self._assert_status_code_is_ok(put_response)
         updated_hda = self._get(
             f"histories/{self.history_id}/contents/{hda_id}").json()

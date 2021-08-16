@@ -20,7 +20,7 @@
                                 <b-row align-v="center">
                                     <b-col cols="auto">
                                         <b-button v-b-tooltip.hover title="Rerun" :href="runUrl">
-                                            <span class="fa fa-refresh" />
+                                            <span class="fa fa-redo" />
                                         </b-button>
                                     </b-col>
                                     <b-col>

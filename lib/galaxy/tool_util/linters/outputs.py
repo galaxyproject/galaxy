@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool outputs."""
+from galaxy.util import string_as_bool
 from ._util import is_valid_cheetah_placeholder
 
 
@@ -17,7 +18,7 @@ def lint_output(tool_xml, lint_ctx):
 
     for output in list(outputs[0]):
         if output.tag not in ["data", "collection"]:
-            lint_ctx.warn("Unknown element found in outputs [%s]" % output.tag)
+            lint_ctx.warn(f"Unknown element found in outputs [{output.tag}]")
             continue
         num_outputs += 1
         if "name" not in output.attrib:
@@ -38,8 +39,6 @@ def lint_output(tool_xml, lint_ctx):
                 lint_ctx.warn("Collection output with undefined 'type' found.")
             if "structured_like" in output.attrib and "inherit_format" in output.attrib:
                 format_set = True
-        if "format_source" in output.attrib:
-            format_set = True
         for sub in output:
             if __check_pattern(sub):
                 format_set = True
@@ -47,34 +46,42 @@ def lint_output(tool_xml, lint_ctx):
                 format_set = True
 
         if not format_set:
-            lint_ctx.warn("Tool {} output {} doesn't define an output format.".format(output.tag, output.attrib.get("name", "with missing name")))
+            lint_ctx.warn(f"Tool {output.tag} output {output.attrib.get('name', 'with missing name')} doesn't define an output format.")
 
     lint_ctx.info("%d outputs found.", num_outputs)
 
 
 def __check_format(node, lint_ctx, allow_ext=False):
     """
-    check if format/ext attribute is set in a given node
+    check if format/ext/format_source attribute is set in a given node
     issue a warning if the value is input
     return true (node defines format/ext) / false (else)
     """
-    fmt = None
+    if "format_source" in node.attrib and ("ext" in node.attrib or "format" in node.attrib):
+        lint_ctx.warn(f"Tool {node.tag} output {node.attrib.get('name', 'with missing name')} should use either format_source or format/ext")
+    if "format_source" in node.attrib:
+        return True
     # if allowed (e.g. for discover_datasets), ext takes precedence over format
+    fmt = None
     if allow_ext:
         fmt = node.attrib.get("ext")
     if fmt is None:
         fmt = node.attrib.get("format")
     if fmt == "input":
-        lint_ctx.warn("Using format='input' on %s, format_source attribute is less ambiguous and should be used instead." % node.tag)
+        lint_ctx.warn(f"Using format='input' on {node.tag}, format_source attribute is less ambiguous and should be used instead.")
     return fmt is not None
 
 
 def __check_pattern(node):
     """
-    check if pattern attribute is set and defines the extension
+    check if
+    - pattern attribute is set and defines the extension or
+    - from_tool_provided_metadata is true
     """
     if node.tag != "discover_datasets":
         return False
+    if "from_tool_provided_metadata" in node.attrib and string_as_bool(node.attrib.get("from_tool_provided_metadata", "false")):
+        return True
     if "pattern" not in node.attrib:
         return False
     if node.attrib["pattern"] == "__default__":

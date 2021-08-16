@@ -1113,7 +1113,7 @@ class Cleanup:
     def conn(self):
         if self.__conn is None:
             url = make_url(galaxy.config.get_database_url(self.config))
-            log.info('Connecting to database with URL: %s' % url)
+            log.info(f'Connecting to database with URL: {url}')
             args = url.translate_connect_args(username='user')
             args.update(url.query)
             assert url.get_dialect().name == 'postgresql', 'This script can only be used with PostgreSQL.'

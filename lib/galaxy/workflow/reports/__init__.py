@@ -14,4 +14,4 @@ def generate_report(trans, invocation, runtime_report_config_json=None, plugin_t
     elif target_format == "pdf":
         return plugin.generate_report_pdf(trans, invocation, runtime_report_config_json=runtime_report_config_json)
     else:
-        raise RequestParameterInvalidException("Unknown report format [%s]" % target_format)
+        raise RequestParameterInvalidException(f"Unknown report format [{target_format}]")

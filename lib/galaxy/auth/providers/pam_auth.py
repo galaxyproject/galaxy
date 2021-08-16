@@ -64,7 +64,7 @@ class PAM(AuthProvider):
         auto_register_email = None
         force_fail = False
         if not options['redact_username_in_logs']:
-            log.debug("use username: {} use email {} email {} username {}".format(options.get('login-use-username'), options.get('login-use-email', False), email, username))
+            log.debug(f"use username: {options.get('login-use-username')} use email {options.get('login-use-email', False)} email {email} username {username}")
         # check email based login first because if email exists in Galaxy DB
         # we will be given the "public name" as username
         if string_as_bool(options.get('login-use-email', False)) and email is not None:
@@ -95,7 +95,7 @@ class PAM(AuthProvider):
                 elif options.get('maildomain', None) is not None:
                     # we can register a user with this username and mail domain
                     # if auto registration is enabled
-                    auto_register_email = '{}@{}'.format(username, options['maildomain'])
+                    auto_register_email = f"{username}@{options['maildomain']}"
                 auto_register_username = username
             else:
                 log.debug('PAM authenticate: username login selected but no username provided')
@@ -142,10 +142,10 @@ class PAM(AuthProvider):
             authenticated = p_auth.authenticate(pam_username, password, service=pam_service)
 
         if authenticated:
-            log.debug('PAM authentication successful for {}'.format('redacted' if options['redact_username_in_logs'] else pam_username))
+            log.debug(f"PAM authentication successful for {'redacted' if options['redact_username_in_logs'] else pam_username}")
             return True, auto_register_email, auto_register_username
         else:
-            log.debug('PAM authentication failed for {}'.format('redacted' if options['redact_username_in_logs'] else pam_username))
+            log.debug(f"PAM authentication failed for {'redacted' if options['redact_username_in_logs'] else pam_username}")
             return False, '', ''
 
     def authenticate_user(self, user, password, options):

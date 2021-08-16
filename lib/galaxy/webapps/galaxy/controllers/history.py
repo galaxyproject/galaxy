@@ -41,8 +41,6 @@ from galaxy.web.framework.helpers import (
 from galaxy.webapps.base.controller import (
     BaseUIController,
     ERROR,
-    ExportsHistoryMixin,
-    ImportsHistoryMixin,
     INFO,
     SharableMixin,
     SUCCESS,
@@ -120,7 +118,7 @@ class HistoryListGrid(grids.Grid):
             key="free-text-search", visible=False, filterable="standard")
     )
     global_actions = [
-        grids.GridAction("Import from file", dict(controller="", action="histories/import"))
+        grids.GridAction("Import history", dict(controller="", action="histories/import"))
     ]
     operations = [
         grids.GridOperation("Switch", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=True),
@@ -236,8 +234,7 @@ class HistoryAllPublishedGrid(grids.Grid):
         return query.filter(self.model_class.published == true()).filter(self.model_class.slug != null()).filter(self.model_class.deleted == false())
 
 
-class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
-                        ExportsHistoryMixin, ImportsHistoryMixin):
+class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings):
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_export_view: histories.HistoryExportView = depends(histories.HistoryExportView)
     history_serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
@@ -329,7 +326,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             try:
                 if history.users_shared_with:
                     raise exceptions.ObjectAttributeInvalidException(
-                        "History (%s) has been shared with others, unshare it before deleting it." % history.name
+                        f"History ({history.name}) has been shared with others, unshare it before deleting it."
                     )
                 if purge:
                     self.history_manager.purge(history)
@@ -341,16 +338,16 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 message_parts.append(unicodify(e))
                 status = ERROR
             else:
-                trans.log_event("History (%s) marked as deleted" % history.name)
+                trans.log_event(f"History ({history.name}) marked as deleted")
                 n_deleted += 1
 
         if n_deleted:
             part = "Deleted %d %s" % (n_deleted, iff(n_deleted != 1, "histories", "history"))
             if purge and trans.app.config.allow_user_dataset_purge:
-                part += " and removed {} dataset{} from disk".format(iff(n_deleted != 1, "their", "its"), iff(n_deleted != 1, 's', ''))
+                part += f" and removed {iff(n_deleted != 1, 'their', 'its')} dataset{iff(n_deleted != 1, 's', '')} from disk"
             elif purge:
                 part += " but the datasets were not removed from disk because that feature is not enabled in this Galaxy instance"
-            message_parts.append("%s.  " % part)
+            message_parts.append(f"{part}.  ")
         if deleted_current:
             # if this history is the current history for this session,
             # - attempt to find the most recently used, undeleted history and switch to it.
@@ -653,7 +650,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         """
         history_id = kwd.get('id')
         if not history_id:
-            return self.message_exception(trans, 'Invalid history id (%s) received' % str(history_id))
+            return self.message_exception(trans, f'Invalid history id ({str(history_id)}) received')
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         if trans.request.method == 'GET':
             inputs = []
@@ -718,7 +715,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
                     if not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset):
                         raise exceptions.InternalServerError('An error occurred and the dataset is NOT private.')
-        return {'message': 'Success, requested permissions have been changed in %s.' % ("all histories" if all_histories else history.name)}
+        return {'message': f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}."}
 
     @web.expose
     @web.require_login("share histories with other users")
@@ -909,7 +906,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     send_to_user = None
 
             if not send_to_user:
-                send_to_err += "%s is not a valid Galaxy user.  " % string
+                send_to_err += f"{string} is not a valid Galaxy user.  "
             elif send_to_user == user:
                 send_to_err += "You cannot send histories to yourself.  "
             else:
@@ -1033,7 +1030,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         histories = histories or {}
         if not histories:
             send_to_err += "No users have been specified or no histories can be sent without changing permissions or associating a sharing role. "
-            return trans.response.send_redirect(web.url_for("/histories/list?status=error&message=%s" % send_to_err))
+            return trans.response.send_redirect(web.url_for(f"/histories/list?status=error&message={send_to_err}"))
         else:
             shared_histories = []
             for send_to_user, send_to_user_histories in histories.items():
@@ -1046,7 +1043,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     trans.sa_session.flush()
                     if history not in shared_histories:
                         shared_histories.append(history)
-            return trans.response.send_redirect(web.url_for("/histories/sharing?id=%s" % trans.security.encode_id(shared_histories[0].id)))
+            return trans.response.send_redirect(web.url_for(f"/histories/sharing?id={trans.security.encode_id(shared_histories[0].id)}"))
 
     # ......................................................................... actions/orig. async
     @web.expose
@@ -1059,7 +1056,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 hda.purge_usage_from_quota(trans.user)
                 hda.purged = True
                 trans.sa_session.add(hda)
-                trans.log_event("HDA id %s has been purged" % hda.id)
+                trans.log_event(f"HDA id {hda.id} has been purged")
                 trans.sa_session.flush()
                 if hda.dataset.user_can_purge:
                     try:
@@ -1107,7 +1104,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         # Get history to export.
         #
         jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
-        return self.serve_ready_history_export(trans, jeha)
+        return self.history_manager.serve_ready_history_export(trans, jeha)
 
     @web.expose
     @web.json
@@ -1158,7 +1155,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 'title': 'Change history name(s)',
                 'inputs': [{
                     'name': 'name_%i' % i,
-                    'label': 'Current: %s' % h.name,
+                    'label': f'Current: {h.name}',
                     'value': h.name
                 } for i, h in enumerate(histories)]
             }
@@ -1178,8 +1175,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     h.name = new_name
                     trans.sa_session.add(h)
                     trans.sa_session.flush()
-                    trans.log_event('History renamed: id: {}, renamed to: {}'.format(str(h.id), new_name))
-                    messages.append('History \'' + cur_name + '\' renamed to \'' + new_name + '\'.')
+                    trans.log_event(f'History renamed: id: {str(h.id)}, renamed to: {new_name}')
+                    messages.append(f"History '{cur_name}' renamed to '{new_name}'.")
             message = sanitize_text(' '.join(messages)) if messages else 'History names remain unchanged.'
             return {'message': message, 'status': 'success'}
 

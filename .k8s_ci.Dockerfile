@@ -10,7 +10,6 @@
 # - run playbook with client build steps only
 # - remove build artifacts + files not needed in container
 # Stage 3:
-# - install python-virtualenv
 # - create galaxy user + group + directory
 # - copy galaxy files from stage 2.1 and 2.2
 # - finalize container (set path, user...)
@@ -21,7 +20,7 @@ ARG SERVER_DIR=$ROOT_DIR/server
 
 # For much faster build time override this with image0 (Dockerfile.0 build):
 #   docker build --build-arg BASE=<image0 name>...
-ARG STAGE1_BASE=ubuntu:20.04
+ARG STAGE1_BASE=python:3.7-slim
 ARG FINAL_STAGE_BASE=$STAGE1_BASE
 # NOTE: the value of GALAXY_USER must be also hardcoded in COPY in final stage
 ARG GALAXY_USER=galaxy
@@ -41,21 +40,15 @@ ENV LANG=en_US.UTF-8
 
 # Install build dependencies + ansible
 RUN set -xe; \
-    echo "force-unsafe-io" > /etc/dpkg/dpkg.cfg.d/02apt-speedup \
-    && echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
+    echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
     && apt-get -qq update && apt-get install -y --no-install-recommends \
         locales locales-all \
-        apt-transport-https \
         git \
         make \
-        libpython3.6 \
-        python3-dev \
-        python3-virtualenv \
-        software-properties-common \
-        ssh \
+        libc-dev \
+        bzip2 \
         gcc \
-    && apt-get -qq update && apt-get install -y --no-install-recommends \
-        ansible \
+    && pip install --no-cache virtualenv 'ansible<2.10' \
     && apt-get autoremove -y && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
@@ -76,7 +69,7 @@ COPY . $SERVER_DIR/
 FROM stage1 AS server_build
 ARG SERVER_DIR
 
-RUN ansible-playbook -i localhost, playbook.yml -v -e galaxy_build_client=False
+RUN ansible-playbook -i localhost, playbook.yml -v -e galaxy_build_client=False -e galaxy_virtualenv_command=virtualenv
 
 RUN cat /galaxy/server/lib/galaxy/dependencies/conditional-requirements.txt | grep psycopg2-binary | xargs /galaxy/server/.venv/bin/pip install
 
@@ -101,7 +94,7 @@ RUN find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
 FROM stage1 AS client_build
 ARG SERVER_DIR
 
-RUN ansible-playbook -i localhost, playbook.yml -v --tags "galaxy_build_client"
+RUN ansible-playbook -i localhost, playbook.yml -v --tags "galaxy_build_client" -e galaxy_virtualenv_command=virtualenv
 
 WORKDIR $SERVER_DIR
 RUN rm -rf \
@@ -128,17 +121,26 @@ ARG GALAXY_USER
 ENV LC_ALL=en_US.UTF-8
 ENV LANG=en_US.UTF-8
 
-# Install python-virtualenv
+# Install procps (contains kill, ps etc.), less, curl, vim-tiny and nano-tiny
+# for convenience and debugging purposes. Nano and vim commands are aliased
+# to their tiny variants using the debian alternatives system.
+# Bzip2 and virtualenv are installed for backwards compatibility with older
+# versions of this image which was based on Ubuntu and contained these
+# utilities.
 RUN set -xe; \
-    echo "force-unsafe-io" > /etc/dpkg/dpkg.cfg.d/02apt-speedup \
-    && echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
+    echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
     && apt-get -qq update && apt-get install -y --no-install-recommends \
         locales \
-        libpython3.6 \
-        python3-virtualenv \
         vim-tiny \
         nano-tiny \
         curl \
+        procps \
+        less \
+        bzip2 \
+    && update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 0 \
+    && update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 0 \
+    && echo "set nocompatible" >> /usr/share/vim/vimrc.tiny \
+    && echo "$LANG UTF-8" > /etc/locale.gen \
     && locale-gen $LANG && update-locale LANG=$LANG \
     && apt-get autoremove -y && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
@@ -160,6 +162,7 @@ EXPOSE 8080
 USER $GALAXY_USER
 
 ENV PATH="$SERVER_DIR/.venv/bin:${PATH}"
+ENV GALAXY_CONFIG_CONDA_AUTO_INIT=False
 
 # [optional] to run:
 CMD uwsgi --yaml config/galaxy.yml

@@ -14,10 +14,10 @@ def get_rules_specification():
 def _ensure_rule_contains_keys(rule, keys):
     for key, instance_class in keys.items():
         if key not in rule:
-            raise ValueError("Rule of type [{}] does not contain key [{}].".format(rule["type"], key))
+            raise ValueError(f"Rule of type [{rule['type']}] does not contain key [{key}].")
         value = rule[key]
         if not isinstance(value, instance_class):
-            raise ValueError("Rule of type [{}] does not contain correct value type for key [{}].".format(rule["type"], key))
+            raise ValueError(f"Rule of type [{rule['type']}] does not contain correct value type for key [{key}].")
 
 
 def _ensure_key_value_in(rule, key, values):
@@ -107,7 +107,7 @@ class AddColumnGroupTagValueRuleDefinition(BaseRuleDefinition):
 
     def apply(self, rule, data, sources):
         rule_value = rule["value"]
-        tag_prefix = "group:%s:" % rule_value
+        tag_prefix = f"group:{rule_value}:"
 
         new_rows = []
         for index, row in enumerate(data):
@@ -560,9 +560,9 @@ class RuleSet:
     @property
     def display(self):
         message = "Rules:\n"
-        message += "".join("- %s\n" % r for r in self.raw_rules)
+        message += "".join(f"- {r}\n" for r in self.raw_rules)
         message += "Column Definitions:\n"
-        message += "".join("- %s\n" % m for m in self.raw_mapping)
+        message += "".join(f"- {m}\n" for m in self.raw_mapping)
         return message
 
 

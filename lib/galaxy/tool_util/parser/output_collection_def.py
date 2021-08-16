@@ -64,7 +64,7 @@ def dataset_collection_description(**kwargs):
     if discover_via == "tool_provided_metadata":
         for key in ["pattern", "sort_by"]:
             if kwargs.get(key):
-                raise Exception("Cannot specify attribute [%s] if from_provided_metadata is True" % key)
+                raise Exception(f"Cannot specify attribute [{key}] if from_provided_metadata is True")
         return ToolProvidedMetadataDatasetCollection(**kwargs)
     else:
         return FilePatternDatasetCollectionDescription(**kwargs)
@@ -81,6 +81,7 @@ class DatasetCollectionDescription:
         self.assign_primary_output = asbool(kwargs.get('assign_primary_output', False))
         self.directory = kwargs.get("directory", None)
         self.recurse = False
+        self.match_relative_path = kwargs.get("match_relative_path", False)
 
     def to_dict(self):
         return {
@@ -111,6 +112,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
         super().__init__(**kwargs)
         pattern = kwargs.get("pattern", "__default__")
         self.recurse = asbool(kwargs.get("recurse", False))
+        self.match_relative_path = asbool(kwargs.get("match_relative_path", False))
         if pattern in NAMED_PATTERNS:
             pattern = NAMED_PATTERNS.get(pattern)
         self.pattern = pattern

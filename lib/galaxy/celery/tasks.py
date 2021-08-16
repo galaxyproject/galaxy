@@ -34,7 +34,7 @@ def recalculate_user_disk_usage(session: scoped_session, user_id=None):
             user.calculate_and_set_disk_usage()
             log.info(f"New user disk usage is {user.disk_usage}")
         else:
-            log.error("Recalculate user disk usage task failed, user %s not found" % user_id)
+            log.error(f"Recalculate user disk usage task failed, user {user_id} not found")
     else:
         log.error("Recalculate user disk usage task received without user_id.")
 

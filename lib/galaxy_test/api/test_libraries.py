@@ -22,7 +22,7 @@ class LibrariesApiTestCase(ApiTestCase):
 
     def test_create(self):
         data = dict(name="CreateTestLibrary")
-        create_response = self._post("libraries", data=data, admin=True)
+        create_response = self._post("libraries", data=data, admin=True, json=True)
         self._assert_status_code_is(create_response, 200)
         library = create_response.json()
         self._assert_has_keys(library, "name")
@@ -30,14 +30,14 @@ class LibrariesApiTestCase(ApiTestCase):
 
     def test_delete(self):
         library = self.library_populator.new_library("DeleteTestLibrary")
-        create_response = self._delete("libraries/%s" % library["id"], admin=True)
+        create_response = self._delete(f"libraries/{library['id']}", admin=True)
         self._assert_status_code_is(create_response, 200)
         library = create_response.json()
         self._assert_has_keys(library, "deleted")
         assert library["deleted"] is True
         # Test undeleting
         data = dict(undelete=True)
-        create_response = self._delete("libraries/%s" % library["id"], data=data, admin=True)
+        create_response = self._delete(f"libraries/{library['id']}", data=data, admin=True, json=True)
         library = create_response.json()
         self._assert_status_code_is(create_response, 200)
         assert library["deleted"] is False
@@ -45,21 +45,21 @@ class LibrariesApiTestCase(ApiTestCase):
     def test_nonadmin(self):
         # Anons can't create libs
         data = dict(name="CreateTestLibrary")
-        create_response = self._post("libraries", data=data, admin=False, anon=True)
+        create_response = self._post("libraries", data=data, admin=False, anon=True, json=True)
         self._assert_status_code_is(create_response, 403)
         # Anons can't delete libs
         library = self.library_populator.new_library("AnonDeleteTestLibrary")
-        create_response = self._delete("libraries/%s" % library["id"], admin=False, anon=True)
+        create_response = self._delete(f"libraries/{library['id']}", admin=False, anon=True)
         self._assert_status_code_is(create_response, 403)
         # Anons can't update libs
         data = dict(name="ChangedName", description="ChangedDescription", synopsis='ChangedSynopsis')
-        create_response = self._patch("libraries/%s" % library["id"], data=data, admin=False, anon=True)
+        create_response = self._patch(f"libraries/{library['id']}", data=data, admin=False, anon=True)
         self._assert_status_code_is(create_response, 403)
 
     def test_update(self):
         library = self.library_populator.new_library("UpdateTestLibrary")
         data = dict(name='ChangedName', description='ChangedDescription', synopsis='ChangedSynopsis')
-        create_response = self._patch("libraries/%s" % library["id"], data=data, admin=True)
+        create_response = self._patch(f"libraries/{library['id']}", data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
         library = create_response.json()
         self._assert_has_keys(library, 'name', 'description', 'synopsis')
@@ -67,13 +67,70 @@ class LibrariesApiTestCase(ApiTestCase):
         assert library['description'] == 'ChangedDescription'
         assert library['synopsis'] == 'ChangedSynopsis'
 
-    def test_create_private_library_permissions(self):
-        library = self.library_populator.new_library("PermissionTestLibrary")
+    def test_create_private_library_legacy_permissions(self):
+        library = self.library_populator.new_library("LegacyPermissionTestLibrary")
         library_id = library["id"]
         role_id = self.library_populator.user_private_role_id()
         self.library_populator.set_permissions(library_id, role_id)
         create_response = self._create_folder(library)
         self._assert_status_code_is(create_response, 200)
+
+        with self._different_user():
+            create_response = self._create_folder(library)
+            self._assert_status_code_is(create_response, 403)
+
+    def test_create_private_library_permissions(self):
+        library = self.library_populator.new_library("PermissionTestLibrary")
+        library_id = library["id"]
+        role_id = self.library_populator.user_private_role_id()
+        self.library_populator.set_permissions_with_action(library_id, role_id, action="set_permissions")
+        create_response = self._create_folder(library)
+        self._assert_status_code_is(create_response, 200)
+
+        with self._different_user():
+            create_response = self._create_folder(library)
+            self._assert_status_code_is(create_response, 403)
+
+    def test_get_library_current_permissions(self):
+        library = self.library_populator.new_library("GetCurrentPermissionTestLibrary")
+        library_id = library["id"]
+        current = self.library_populator.get_permissions(library_id, scope="current")
+        self._assert_has_keys(current, "access_library_role_list", "modify_library_role_list", "manage_library_role_list", "add_library_item_role_list")
+
+        role_id = self.library_populator.user_private_role_id()
+        self.library_populator.set_permissions_with_action(library_id, role_id, action="set_permissions")
+        current = self.library_populator.get_permissions(library_id, scope="current")
+        assert role_id in current["access_library_role_list"][0]
+        assert role_id in current["modify_library_role_list"][0]
+        assert role_id in current["manage_library_role_list"][0]
+        assert role_id in current["add_library_item_role_list"][0]
+
+    def test_get_library_available_permissions(self):
+        library = self.library_populator.new_library("GetAvailablePermissionTestLibrary")
+        library_id = library["id"]
+        role_id = self.library_populator.user_private_role_id()
+        # As we can manage this library our role will be available
+        current = self.library_populator.get_permissions(library_id, scope="available")
+        available_role_ids = [role["id"] for role in current["roles"]]
+        assert role_id in available_role_ids
+
+    def test_get_library_available_permissions_with_query(self):
+        library = self.library_populator.new_library("GetAvailablePermissionWithQueryTestLibrary")
+        library_id = library["id"]
+
+        with self._different_user():
+            email = self.library_populator.user_email()
+
+        # test at least 2 user roles should be available now
+        current = self.library_populator.get_permissions(library_id, scope="available")
+        available_role_ids = [role["id"] for role in current["roles"]]
+        assert len(available_role_ids) > 1
+
+        # test query for specific role/email
+        current = self.library_populator.get_permissions(library_id, scope="available", q=email)
+        available_role_emails = [role["name"] for role in current["roles"]]
+        assert current["total"] == 1
+        assert available_role_emails[0] == email
 
     def test_create_dataset_denied(self):
         library = self.library_populator.new_private_library("ForCreateDatasets")
@@ -84,7 +141,7 @@ class LibrariesApiTestCase(ApiTestCase):
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
         with self._different_user():
             payload = {'from_hda_id': hda_id}
-            create_response = self._post("folders/%s/contents" % folder_id, payload)
+            create_response = self._post(f"folders/{folder_id}/contents", payload)
             self._assert_status_code_is(create_response, 403)
 
     def test_show_private_dataset_permissions(self):
@@ -177,7 +234,7 @@ class LibrariesApiTestCase(ApiTestCase):
             'upload_option': 'upload_file',
             'files_0|url_paste': FILE_URL,
         }
-        create_response = self._post("libraries/%s/contents" % library['id'], payload)
+        create_response = self._post(f"libraries/{library['id']}/contents", payload)
         self._assert_status_code_is(create_response, 400)
         assert create_response.json() == "Requested extension 'xxx' unknown, cannot upload dataset."
 
@@ -258,7 +315,7 @@ class LibrariesApiTestCase(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
         payload = {'from_hda_id': hda_id}
-        create_response = self._post("folders/%s/contents" % folder_id, payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
 
@@ -274,11 +331,11 @@ class LibrariesApiTestCase(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3 sub")['id']
         payload = {'from_hda_id': hda_id}
-        create_response = self._post("folders/%s/contents" % subfolder_id, payload)
+        create_response = self._post(f"folders/{subfolder_id}/contents", payload)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
         dataset_update_time = create_response.json()['update_time']
-        container_fetch_response = self.galaxy_interactor.get("folders/%s/contents" % folder_id)
+        container_fetch_response = self.galaxy_interactor.get(f"folders/{folder_id}/contents")
         container_update_time = container_fetch_response.json()['folder_contents'][0]['update_time']
         assert dataset_update_time == container_update_time, container_fetch_response
 
@@ -305,7 +362,7 @@ class LibrariesApiTestCase(ApiTestCase):
     def test_invalid_update_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForInvalidUpdateDataset", wait=True).json()
         data = {'file_ext': 'nonexisting_type'}
-        create_response = self._patch("libraries/datasets/{}".format(ld["id"]), data=data)
+        create_response = self._patch(f"libraries/datasets/{ld['id']}", data=data)
         self._assert_status_code_is(create_response, 400)
         assert 'This Galaxy does not recognize the datatype of:' in create_response.json()['err_msg']
 
@@ -329,7 +386,7 @@ class LibrariesApiTestCase(ApiTestCase):
     def test_import_paired_collection(self):
         ld = self._create_dataset_in_folder_in_library("ForHistoryImport").json()
         history_id = self.dataset_populator.new_history()
-        url = "histories/%s/contents" % history_id
+        url = f"histories/{history_id}/contents"
         collection_name = 'Paired-end data (from library)'
         payload = {
             'name': collection_name,
@@ -354,7 +411,7 @@ class LibrariesApiTestCase(ApiTestCase):
     def _import_to_history(self, visible=True):
         ld = self._create_dataset_in_folder_in_library("ForHistoryImport").json()
         history_id = self.dataset_populator.new_history()
-        url = "histories/%s/contents" % history_id
+        url = f"histories/{history_id}/contents"
         collection_name = 'new_collection_name'
         element_identifer = 'new_element_identifier'
         payload = {
@@ -386,7 +443,7 @@ class LibrariesApiTestCase(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=["xxx", "yyy"], direct_upload=True).json()["outputs"][0]["id"]
         payload = {'from_hdca_id': hdca_id, 'create_type': 'file', 'folder_id': folder_id}
-        create_response = self._post("libraries/%s/contents" % library['id'], payload)
+        create_response = self._post(f"libraries/{library['id']}/contents", payload)
         self._assert_status_code_is(create_response, 200)
 
     def test_create_datasets_in_folder_from_collection(self):
@@ -397,14 +454,14 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_status_code_is(folder_response, 200)
         folder_id = folder_response.json()[0]['id']
         payload = {'from_hdca_id': hdca_id}
-        create_response = self._post("folders/%s/contents" % folder_id, payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload)
         self._assert_status_code_is(create_response, 200)
         assert len(create_response.json()) == 2
         # Also test that anything different from a flat dataset collection list
         # is refused
         hdca_pair_id = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id).json()["outputs"][0]['id']
         payload = {'from_hdca_id': hdca_pair_id}
-        create_response = self._post("folders/%s/contents" % folder_id, payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload)
         self._assert_status_code_is(create_response, 501)
         assert create_response.json()['err_msg'] == 'Cannot add nested collections to library. Please flatten your collection first.'
 
@@ -414,14 +471,14 @@ class LibrariesApiTestCase(ApiTestCase):
             create_type="folder",
             name="New Folder",
         )
-        return self._post("libraries/%s/contents" % library["id"], data=create_data)
+        return self._post(f"libraries/{library['id']}/contents", data=create_data)
 
     def _create_subfolder(self, containing_folder_id):
         create_data = dict(
             description="new subfolder desc",
             name="New Subfolder",
         )
-        return self._post("folders/%s" % containing_folder_id, data=create_data)
+        return self._post(f"folders/{containing_folder_id}", data=create_data, json=True)
 
     def _create_dataset_in_folder_in_library(self, library_name, content="1 2 3", wait=False):
         library = self.library_populator.new_private_library(library_name)
@@ -431,5 +488,5 @@ class LibrariesApiTestCase(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content=content, wait=wait)['id']
         payload = {'from_hda_id': hda_id, 'create_type': 'file', 'folder_id': folder_id}
-        ld = self._post("libraries/%s/contents" % folder_id, payload)
+        ld = self._post(f"libraries/{folder_id}/contents", payload)
         return ld

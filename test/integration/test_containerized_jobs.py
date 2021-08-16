@@ -155,8 +155,8 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
         disable_dependency_resolution(config)
-        containers_resolvers_config_path = os.path.join(cls.jobs_directory, "container_resolvers.yml")
-        with open(containers_resolvers_config_path, "w") as f:
+        container_resolvers_config_path = os.path.join(cls.jobs_directory, "container_resolvers.yml")
+        with open(container_resolvers_config_path, "w") as f:
             f.write("""
 - type: mapping
   mappings:
@@ -164,7 +164,7 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
       tool_id: mulled_example_broken_no_requirements
       identifier: 'quay.io/biocontainers/bwa:0.7.15--0'
 """)
-        config["containers_resolvers_config_file"] = containers_resolvers_config_path
+        config["container_resolvers_config_file"] = container_resolvers_config_path
 
     @classmethod
     def setUpClass(cls):
@@ -181,6 +181,25 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
         self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
         output = self.dataset_populator.get_history_dataset_content(self.history_id, timeout=EXTENDED_TIMEOUT)
         assert "0.7.15-r1140" in output
+
+
+class InlineContainerConfigurationTestCase(MappingContainerResolverTestCase):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls.jobs_directory = cls._test_driver.mkdtemp()
+        config["jobs_directory"] = cls.jobs_directory
+        config["job_config_file"] = cls.job_config_file
+        disable_dependency_resolution(config)
+        container_resolvers_config = [{
+            'type': 'mapping',
+            'mappings': [{
+                'container_type': 'docker',
+                'tool_id': 'mulled_example_broken_no_requirements',
+                'identifier': 'quay.io/biocontainers/bwa:0.7.15--0',
+            }],
+        }]
+        config["container_resolvers"] = container_resolvers_config
 
 
 # Singularity 2.4 in the official Vagrant issue has some problems running this test

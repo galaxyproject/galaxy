@@ -181,29 +181,40 @@ export function fetchMenu(options = {}) {
         tooltip: _l("Support, contact, and community"),
         menu: [
             {
+                title: _l("Galaxy Help"),
+                url: options.helpsite_url,
+                target: "_blank",
+                hidden: !options.helpsite_url,
+            },
+            {
                 title: _l("Support"),
                 url: options.support_url,
                 target: "_blank",
+                hidden: !options.support_url,
             },
             {
                 title: _l("Search"),
                 url: options.search_url,
                 target: "_blank",
+                hidden: !options.search_url,
             },
             {
                 title: _l("Mailing Lists"),
                 url: options.mailing_lists,
                 target: "_blank",
+                hidden: !options.mailing_lists,
             },
             {
                 title: _l("Videos"),
                 url: options.screencasts_url,
                 target: "_blank",
+                hidden: !options.screencasts_url,
             },
             {
                 title: _l("Wiki"),
                 url: options.wiki_url,
                 target: "_blank",
+                hidden: !options.wiki_url,
             },
             {
                 title: _l("How to Cite Galaxy"),
@@ -219,22 +230,14 @@ export function fetchMenu(options = {}) {
                 url: versionUserDocumentationUrl,
                 target: "_blank",
             },
+            {
+                title: _l("Terms and Conditions"),
+                url: options.terms_url,
+                target: "_blank",
+                hidden: !options.terms_url,
+            },
         ],
     };
-    if (options.terms_url) {
-        helpTab.menu.push({
-            title: _l("Terms and Conditions"),
-            url: options.terms_url,
-            target: "_blank",
-        });
-    }
-    if (options.helpsite_url) {
-        helpTab.menu.unshift({
-            title: _l("Galaxy Help"),
-            url: options.helpsite_url,
-            target: "_blank",
-        });
-    }
     menu.push(helpTab);
 
     //

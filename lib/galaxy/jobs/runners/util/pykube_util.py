@@ -12,12 +12,14 @@ try:
         Service,
         Ingress,
     )
+    from pykube.exceptions import HTTPError
 except ImportError as exc:
     KubeConfig = None
     Ingress = None
     Job = None
     Pod = None
     Service = None
+    HTTPError = None
     K8S_IMPORT_MESSAGE = ('The Python pykube package is required to use '
                           'this feature, please install it or correct the '
                           'following error:\nImportError %s' % str(exc))
@@ -83,12 +85,12 @@ def find_job_object_by_name(pykube_api, job_name, namespace=None):
 
 
 def find_pod_object_by_name(pykube_api, job_name, namespace=None):
-    return Pod.objects(pykube_api).filter(selector="job-name=" + job_name, namespace=namespace)
+    return Pod.objects(pykube_api).filter(selector=f"job-name={job_name}", namespace=namespace)
 
 
 def is_pod_unschedulable(pykube_api, pod, namespace=None):
-    is_unschedulable = bool(len([c for c in pod.obj['status']['conditions'] if c.get("reason") == "Unschedulable"]))
-    if pod.obj['status']['phase'] == "Pending" and is_unschedulable:
+    is_unschedulable = any(c.get("reason") == "Unschedulable" for c in pod.obj['status'].get('conditions', []))
+    if pod.obj['status'].get('phase') == "Pending" and is_unschedulable:
         return True
 
     return False
@@ -145,7 +147,7 @@ def job_object_dict(params, job_prefix, spec):
         "apiVersion": params.get('k8s_job_api_version', DEFAULT_JOB_API_VERSION),
         "kind": "Job",
         "metadata": {
-                "generateName": job_prefix + "-",
+                "generateName": f"{job_prefix}-",
                 "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
         },
         "spec": spec,
@@ -213,6 +215,7 @@ __all__ = (
     "find_job_object_by_name",
     "find_pod_object_by_name",
     "galaxy_instance_id",
+    "HTTPError",
     "is_pod_unschedulable",
     "Job",
     "Service",

@@ -407,13 +407,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    The dependency resolvers config file specifies an ordering and
-    options for how Galaxy resolves tool dependencies (requirement
-    tags in Tool XML). The default ordering is to the use the Tool
-    Shed for tools installed that way, use local Galaxy packages, and
-    then use Conda if available. See
-    https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
-    for more information on these options.
+    Specifies the path to the standalone dependency resolvers
+    configuration file. This configuration can now be specified
+    directly in the Galaxy configuration, see the description of the
+    'dependency_resolvers' option for details.
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``dependency_resolvers_conf.xml``
@@ -682,17 +679,33 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``containers_resolvers_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``container_resolvers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Container resolvers configuration (beta). Set up a file describing
     container resolvers to use when discovering containers for Galaxy.
-    If this is set to None, the default containers loaded is
+    If this is set to None, the default container resolvers loaded is
     determined by enable_mulled_containers.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``container_resolvers``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying a container_resolvers_config_file, the
+    definition of the resolvers to enable can be embedded into
+    Galaxy's config with this option. This has no effect if a
+    container_resolvers_config_file is used.
+    The syntax, available resolvers, and documentation of their
+    options is explained in detail in the documentation:
+    https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~
@@ -1454,6 +1467,17 @@
     expires. Enter 0 to disable password expiration.
 :Default: ``0``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_account_interface``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow users to manage their account data, change passwords or
+    delete their accounts.
+:Default: ``true``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~
@@ -3663,28 +3687,29 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``ftp_upload_dir``
-~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable Galaxy's "Upload via FTP" interface.  You'll need to
-    install and configure an FTP server (we've used ProFTPd since it
-    can use Galaxy's database for authentication) and set the
-    following two options. This should point to a directory containing
-    subdirectories matching users' identifier (defaults to e-mail),
-    where Galaxy will look for files.
-:Default: ``None``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``ftp_upload_site``
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    This should be the hostname of your FTP server, which will be
-    provided to users in the help text.
+    Enable Galaxy's "Upload via FTP" interface.  You'll need to
+    install and configure an FTP server (we've used ProFTPd since it
+    can use Galaxy's database for authentication) and set the
+    following two options. This will be provided to users in the help
+    text as 'log in to the FTP server at '. Thus, it should be the
+    hostname of your FTP server.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``ftp_upload_dir``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This should point to a directory containing subdirectories
+    matching users' identifier (defaults to e-mail), where Galaxy will
+    look for files.
 :Default: ``None``
 :Type: str
 
@@ -3872,6 +3897,9 @@
     definition of the resolvers to enable can be embedded into
     Galaxy's config with this option. This has no effect if a
     dependency_resolvers_config_file is used.
+    The syntax, available resolvers, and documentation of their
+    options is explained in detail in the documentation:
+    https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
 :Default: ``None``
 :Type: seq
 
@@ -4437,7 +4465,7 @@
     filtering
     (https://galaxyproject.org/user-defined-toolbox-filters/)
     functions.
-:Default: ``galaxy.tools.filters,galaxy.tools.toolbox.filters``
+:Default: ``galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters``
 :Type: str
 
 

@@ -15,8 +15,8 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
-import ToolForm from "mvc/tool/tool-form";
-import FormWrapper from "mvc/form/form-wrapper";
+import ToolForm from "components/Tool/ToolForm";
+import FormGeneric from "components/Form/FormGeneric";
 import Sharing from "components/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
 import DatasetList from "components/Dataset/DatasetList.vue";
@@ -41,17 +41,15 @@ import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson.vue";
 import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
 import QueryStringParsing from "utils/query-string-parsing";
-import DatasetError from "mvc/dataset/dataset-error";
-import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
+import DatasetError from "components/DatasetInformation/DatasetError";
+import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import Citations from "components/Citation/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import Confirmation from "components/login/Confirmation.vue";
-import LibraryFolderRouter from "components/Libraries/LibraryFolderRouter";
-import Vue from "vue";
-import store from "store";
-import VueRouterMain from "./VueRouterMain.vue";
+import Libraries from "components/Libraries";
+import { mountVueComponent } from "utils/mountVueComponent";
 
 /** Routes */
 export const getAnalysisRouter = (Galaxy) => {
@@ -110,24 +108,13 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         _display_vue_helper: function (component, propsData = {}, active_tab = null, noPadding = false) {
-            const instance = Vue.extend(component);
             const container = document.createElement("div");
             if (active_tab) {
                 container.active_tab = active_tab;
             }
             this.page.display(container, noPadding);
-            new instance({ store, propsData }).$mount(container);
-        },
-        _display_vue_router: function (router, propsData = {}, active_tab = null, noPadding = false) {
-            const container = document.createElement("div");
-            if (active_tab) {
-                container.active_tab = active_tab;
-            }
-            this.page.display(container, noPadding);
-            new Vue({
-                router: router,
-                render: (h) => h(VueRouterMain),
-            }).$mount(container);
+            const mountFn = mountVueComponent(component);
+            return mountFn(propsData, container);
         },
 
         show_tours: function (tour_id) {
@@ -152,17 +139,17 @@ export const getAnalysisRouter = (Galaxy) => {
 
         show_user_form: function (form_id, params) {
             const model = getUserPreferencesModel(params.id);
-            this.page.display(new FormWrapper.View(_.extend(model[form_id], { active_tab: "user" })));
+            this._display_vue_helper(FormGeneric, _.extend(model[form_id], { active_tab: "user" }));
         },
 
         show_interactivetool_list: function () {
             this._display_vue_helper(InteractiveTools);
         },
 
-        show_library_folder: function (folder_id) {
+        show_library_folder: function () {
             this.page.toolPanel?.component.hide(0);
             this.page.panels.right.hide();
-            this._display_vue_router(LibraryFolderRouter, { folder_id: folder_id });
+            this._display_vue_helper(Libraries);
         },
 
         show_cloud_auth: function () {
@@ -186,13 +173,11 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_visualizations_edit: function () {
-            this.page.display(
-                new FormWrapper.View({
-                    url: `visualization/edit?id=${QueryStringParsing.get("id")}`,
-                    redirect: "visualizations/list",
-                    active_tab: "visualization",
-                })
-            );
+            this._display_vue_helper(FormGeneric, {
+                url: `visualization/edit?id=${QueryStringParsing.get("id")}`,
+                redirect: "visualizations/list",
+                active_tab: "visualization",
+            });
         },
 
         show_visualizations_sharing: function () {
@@ -243,12 +228,10 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_histories_rename: function () {
-            this.page.display(
-                new FormWrapper.View({
-                    url: `history/rename?id=${QueryStringParsing.get("id")}`,
-                    redirect: "histories/list",
-                })
-            );
+            this._display_vue_helper(FormGeneric, {
+                url: `history/rename?id=${QueryStringParsing.get("id")}`,
+                redirect: "histories/list",
+            });
         },
 
         show_histories_sharing: function () {
@@ -280,12 +263,10 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_histories_permissions: function () {
-            this.page.display(
-                new FormWrapper.View({
-                    url: `history/permissions?id=${QueryStringParsing.get("id")}`,
-                    redirect: "histories/list",
-                })
-            );
+            this._display_vue_helper(FormGeneric, {
+                url: `history/permissions?id=${QueryStringParsing.get("id")}`,
+                redirect: "histories/list",
+            });
         },
 
         show_datasets: function () {
@@ -310,23 +291,19 @@ export const getAnalysisRouter = (Galaxy) => {
             if (invocation_id) {
                 url += `?invocation_id=${invocation_id}`;
             }
-            this.page.display(
-                new FormWrapper.View({
-                    url: url,
-                    redirect: "pages/list",
-                    active_tab: "user",
-                })
-            );
+            this._display_vue_helper(FormGeneric, {
+                url: url,
+                redirect: "pages/list",
+                active_tab: "user",
+            });
         },
 
         show_pages_edit: function () {
-            this.page.display(
-                new FormWrapper.View({
-                    url: `page/edit?id=${QueryStringParsing.get("id")}`,
-                    redirect: "pages/list",
-                    active_tab: "user",
-                })
-            );
+            this._display_vue_helper(FormGeneric, {
+                url: `page/edit?id=${QueryStringParsing.get("id")}`,
+                redirect: "pages/list",
+                active_tab: "user",
+            });
         },
 
         show_pages_sharing: function () {
@@ -346,16 +323,14 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_workflows_create: function () {
-            this.page.display(
-                new FormWrapper.View({
-                    url: "workflow/create",
-                    redirect: "workflow/editor",
-                    active_tab: "workflow",
-                    submit_title: "Create",
-                    submit_icon: "fa-check",
-                    cancel_redirect: "workflows/list",
-                })
-            );
+            this._display_vue_helper(FormGeneric, {
+                url: "workflow/create",
+                redirect: "workflow/editor",
+                active_tab: "workflow",
+                submitTitle: "Create",
+                submitIcon: "fa-check",
+                cancelRedirect: "workflows/list",
+            });
         },
 
         show_workflows_run: function () {
@@ -395,12 +370,14 @@ export const getAnalysisRouter = (Galaxy) => {
             this._display_vue_helper(CustomBuilds);
         },
 
-        show_dataset_edit_attributes: function () {
-            this.page.display(new DatasetEditAttributes.View());
+        show_dataset_edit_attributes: function (params) {
+            const datasetId = params.dataset_id;
+            this._display_vue_helper(DatasetAttributes, { datasetId: datasetId });
         },
 
-        show_dataset_error: function () {
-            this.page.display(new DatasetError.View());
+        show_dataset_error: function (params) {
+            const datasetId = params.dataset_id;
+            this._display_vue_helper(DatasetError, { datasetId: datasetId });
         },
 
         /**  */
@@ -437,7 +414,7 @@ export const getAnalysisRouter = (Galaxy) => {
             if (params.version) {
                 params.version = decodeUriComponent(params.version);
             }
-            this.page.display(new ToolForm.View(params));
+            this._display_vue_helper(ToolForm, params);
         },
 
         /** load the center panel iframe using the given url */

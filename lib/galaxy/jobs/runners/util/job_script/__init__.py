@@ -153,7 +153,7 @@ def _handle_script_integrity(path, config):
         time.sleep(sleep_amt)
 
     if not script_integrity_verified:
-        raise Exception("Failed to write job script '%s', could not verify job script integrity." % path)
+        raise Exception(f"Failed to write job script '{path}', could not verify job script integrity.")
 
 
 __all__ = (

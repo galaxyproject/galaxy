@@ -346,10 +346,10 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             return os.path.join(base, rel_path)
 
         # S3 folders are marked by having trailing '/' so add it now
-        rel_path = '%s/' % rel_path
+        rel_path = f'{rel_path}/'
 
         if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -572,7 +572,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             # self._push_to_os(s3_dir, from_string='')
             # If instructed, create the dataset in cache & in S3
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
                 self._push_to_os(rel_path, from_string='')
 

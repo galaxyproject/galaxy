@@ -13,8 +13,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="gff" value="gff_filter_by_feature_count_out2.gff"/>
-            <output name="output1" format="bgzip" value="bgzip_filter_by_feature_count_out2.bgzip"/>
+            <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
+            <output name="output1" ftype="bgzip" value="bgzip_filter_by_feature_count_out2.bgzip"/>
         </test>
     </tests>
     <help>

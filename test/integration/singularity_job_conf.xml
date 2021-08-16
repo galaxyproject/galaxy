@@ -15,7 +15,7 @@
     </destinations>
 
     <tools>
-        <tool id="upload1" destination="local_upload" />
+        <tool class="local" destination="local_upload" />
     </tools>
 
 </job_conf>

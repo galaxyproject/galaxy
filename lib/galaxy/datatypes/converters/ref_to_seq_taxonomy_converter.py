@@ -17,7 +17,7 @@ def __main__():
             if line and not line.startswith('#'):
                 fields = line.split('\t')
                 # make sure the 2nd field (taxonomy) ends with a ;
-                outfile.write('{}\t{};\n'.format(fields[0], re.sub(';$', '', fields[1])))
+                outfile.write(f"{fields[0]}\t{re.sub(';$', '', fields[1])};\n")
 
 
 if __name__ == "__main__":

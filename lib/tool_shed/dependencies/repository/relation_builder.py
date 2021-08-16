@@ -225,7 +225,7 @@ class RelationBuilder:
                                 rd_only_if_compiling_contained_td = 'False'
                             message = "The revision %s defined for repository %s owned by %s is invalid, so repository " % \
                                 (str(rd_changeset_revision), str(rd_name), str(rd_owner))
-                            message += "dependencies defined for repository %s will be ignored." % str(repository_name)
+                            message += f"dependencies defined for repository {str(repository_name)} will be ignored."
                             log.debug(message)
                 else:
                     repository_components_tuple = container_util.get_components_from_key(key)
@@ -233,7 +233,7 @@ class RelationBuilder:
                     toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[0:4]
                     message = "The revision %s defined for repository %s owned by %s is invalid, so repository " % \
                         (str(rd_changeset_revision), str(rd_name), str(rd_owner))
-                    message += "dependencies defined for repository %s will be ignored." % str(repository_name)
+                    message += f"dependencies defined for repository {str(repository_name)} will be ignored."
                     log.debug(message)
         return updated_key_rd_dicts
 

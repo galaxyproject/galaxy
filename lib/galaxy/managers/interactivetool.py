@@ -27,9 +27,9 @@ class InteractiveToolSqlite:
             conn = sqlite3.connect(self.sqlite_filename)
             try:
                 c = conn.cursor()
-                select = '''SELECT token, host, port, info
-                            FROM %s
-                            WHERE key=? and key_type=?''' % (DATABASE_TABLE_NAME)
+                select = f'''SELECT token, host, port, info
+                            FROM {DATABASE_TABLE_NAME}
+                            WHERE key=? and key_type=?'''
                 c.execute(select, (key, key_type,))
                 try:
                     token, host, port, info = c.fetchone()
@@ -71,7 +71,7 @@ class InteractiveToolSqlite:
                                   )''' % (DATABASE_TABLE_NAME))
                 except Exception:
                     pass
-                delete = '''DELETE FROM %s WHERE key=? and key_type=?''' % (DATABASE_TABLE_NAME)
+                delete = f'''DELETE FROM {DATABASE_TABLE_NAME} WHERE key=? and key_type=?'''
                 c.execute(delete, (key, key_type,))
                 insert = '''INSERT INTO %s
                             (key, key_type, token, host, port, info)
@@ -94,12 +94,12 @@ class InteractiveToolSqlite:
         with external resources. Remove entries that match all provided key=values
         """
         assert kwd, ValueError("You must provide some values to key upon")
-        delete = 'DELETE FROM %s WHERE' % (DATABASE_TABLE_NAME)
+        delete = f'DELETE FROM {DATABASE_TABLE_NAME} WHERE'
         value_list = []
         for i, (key, value) in enumerate(kwd.items()):
             if i != 0:
                 delete += ' and'
-            delete += ' %s=?' % (key)
+            delete += f' {key}=?'
             value_list.append(value)
         with FileLock(self.sqlite_filename):
             conn = sqlite3.connect(self.sqlite_filename)
@@ -286,7 +286,7 @@ class InteractiveToolManager:
             else:
                 rval = f'/{rval}/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/'
         if entry_point.entry_url:
-            rval = '{}/{}'.format(rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
+            rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
         if rval[0] != "/":
             rval = f'/{rval}'
         return rval

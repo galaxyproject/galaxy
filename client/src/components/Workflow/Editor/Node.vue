@@ -146,6 +146,7 @@ export default {
             outputTerminals: {},
             errors: null,
             label: null,
+            annotation: null,
             config_form: {},
             showLoading: true,
             highlight: false,
@@ -300,59 +301,39 @@ export default {
                 };
             });
             this.initData(data);
-            Vue.nextTick(() => {
-                this.updateData(data);
-                this.$emit("onActivate", this);
-            });
-        },
-        setAnnotation(annotation) {
-            if (this.annotationTimeout) {
-                clearTimeout(this.annotationTimeout);
-            }
-            this.annotationTimeout = setTimeout(() => {
-                if (annotation !== this.annotation) {
-                    this.annotation = annotation;
-                    this.$emit("onChange");
-                }
-            }, 100);
-        },
-        setLabel(label) {
-            if (this.labelTimeout) {
-                clearTimeout(this.labelTimeout);
-            }
-            this.labelTimeout = setTimeout(() => {
-                if (label !== this.label) {
-                    this.label = label;
-                    this.$emit("onChange");
-                }
-            }, 100);
-        },
-        setData(data) {
-            this.config_form = data.config_form;
-            this.content_id = data.config_form?.id || data.content_id;
-            this.tool_state = data.tool_state;
-            this.errors = data.errors;
-            this.annotation = data.annotation;
-            this.tooltip = data.tooltip || "";
-            this.postJobActions = data.post_job_actions || {};
-            this.label = data.label;
-            this.uuid = data.uuid;
-            this.inputs = data.inputs ? data.inputs.slice() : [];
-            this.outputs = data.outputs ? data.outputs.slice() : [];
-        },
-        initData(data) {
-            this.setData(data);
-            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
-            this.showLoading = false;
-        },
-        updateData(data) {
-            this.setData(data);
-            // Create array of new output names
-            const outputNames = this.outputs.map((output) => output.name);
-            this.activeOutputs.filterOutputs(outputNames);
+
             // emit change completion event
             this.showLoading = false;
             this.$emit("onChange");
+            this.$emit("onActivate", this);
+        },
+        setAnnotation(annotation) {
+            this.annotation = annotation;
+            this.$emit("onChange");
+        },
+        setLabel(label) {
+            this.label = label;
+            this.$emit("onChange");
+        },
+        setData(data) {
+            this.config_form = data.config_form;
+            this.tool_state = data.tool_state;
+            this.errors = data.errors;
+            this.tooltip = data.tooltip || "";
+            this.postJobActions = data.post_job_actions || {};
+            this.inputs = data.inputs ? data.inputs.slice() : [];
+            this.outputs = data.outputs ? data.outputs.slice() : [];
+            const outputNames = this.outputs.map((output) => output.name);
+            this.activeOutputs.filterOutputs(outputNames);
+        },
+        initData(data) {
+            this.uuid = data.uuid;
+            this.content_id = data.config_form?.id || data.content_id;
+            this.annotation = data.annotation;
+            this.label = data.label;
+            this.setData(data);
+            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
+            this.showLoading = false;
         },
         labelOutput(outputName, label) {
             return this.activeOutputs.labelOutput(outputName, label);
@@ -392,6 +373,7 @@ export default {
         makeInactive() {
             // Keep inactive nodes stacked from most to least recently active
             // by moving element to the end of parent's node list
+            document.activeElement.blur();
             const element = this.element;
             ((p) => {
                 p.removeChild(element);

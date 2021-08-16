@@ -495,7 +495,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             log.exception("Error getting metadata_file (%s) for dataset (%s) from history (%s)",
                           metadata_file, history_content_id, history_id)
             trans.response.status = 500
-            rval = "Could not get metadata for dataset: %s" % util.unicodify(e)
+            rval = f"Could not get metadata for dataset: {util.unicodify(e)}"
         return rval
 
     @web.expose_api_anonymous

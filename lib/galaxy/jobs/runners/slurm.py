@@ -85,7 +85,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     job_info_values.append(v)
                 except ValueError:
                     # Some value may contain spaces (e.g. `Comment=** time_limit (60m) min_nodes (1) **`)
-                    job_info_values[-1] += ' ' + job_info
+                    job_info_values[-1] += f" {job_info}"
             job_info_dict = dict(zip(job_info_keys, job_info_values))
             return job_info_dict['JobState']
 

@@ -30,7 +30,7 @@ class OpenIDProvider:
             op_endpoint_url = op_endpoint_url.text
         never_associate_with_user = string_as_bool(provider_elem.get('never_associate_with_user', 'False'))
         assert (provider_id and provider_name and op_endpoint_url), Exception("OpenID Provider improperly configured")
-        assert provider_id not in RESERVED_PROVIDER_IDS, Exception('Specified OpenID Provider uses a reserved id: %s' % (provider_id))
+        assert provider_id not in RESERVED_PROVIDER_IDS, Exception(f'Specified OpenID Provider uses a reserved id: {provider_id}')
         sreg_required = []
         sreg_optional = []
         use_for = {}
@@ -108,7 +108,7 @@ class OpenIDProviders:
         try:
             return cls.from_elem(parse_xml(filename).getroot())
         except Exception as e:
-            log.error('Failed to load OpenID Providers: %s' % (e))
+            log.error(f'Failed to load OpenID Providers: {e}')
             return cls()
 
     @classmethod
@@ -121,7 +121,7 @@ class OpenIDProviders:
                 providers[provider.id] = provider
                 log.debug(f'Loaded OpenID provider: {provider.name} ({provider.id})')
             except Exception as e:
-                log.error('Failed to add OpenID provider: %s' % (e))
+                log.error(f'Failed to add OpenID provider: {e}')
         return cls(providers)
 
     def __init__(self, providers=None):

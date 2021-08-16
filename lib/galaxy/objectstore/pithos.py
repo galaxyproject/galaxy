@@ -51,8 +51,7 @@ def parse_config_xml(config_xml):
             required = tuple((k, element.get(k)) for k in required_attrs)
             for k, v in required:
                 if not v:
-                    msg = 'No value for {tag}:{k} in XML tree'.format(
-                        tag=tag, k=k)
+                    msg = f'No value for {tag}:{k} in XML tree'
                     log.error(msg)
                     raise Exception(msg)
             optional = tuple((k, element.get(k)) for k in optional_attrs)
@@ -157,8 +156,7 @@ class PithosObjectStore(ConcreteObjectStore):
         if alt_name:
             if not safe_relpath(alt_name):
                 log.warning(
-                    'alt_name would locate path outside dir: {}'.format(
-                        alt_name))
+                    f'alt_name would locate path outside dir: {alt_name}')
                 raise ObjectInvalid("The requested object is invalid")
             # alt_name can contain parent directory references, but S3 will not
             # follow them, so if they are valid we normalize them out
@@ -181,7 +179,7 @@ class PithosObjectStore(ConcreteObjectStore):
         rel_path = f'{rel_path}/'
 
         if not dir_only:
-            an = alt_name if alt_name else 'dataset_{}.dat'.format(self._get_object_id(obj))
+            an = alt_name if alt_name else f'dataset_{self._get_object_id(obj)}.dat'
             rel_path = os.path.join(rel_path, an)
         return rel_path
 
@@ -283,7 +281,7 @@ class PithosObjectStore(ConcreteObjectStore):
             else:
                 rel_path = os.path.join(
                     rel_path,
-                    alt_name if alt_name else 'dataset_{}.dat'.format(self._get_object_id(obj)))
+                    alt_name if alt_name else f'dataset_{self._get_object_id(obj)}.dat')
                 new_file = os.path.join(self.staging_path, rel_path)
                 open(new_file, 'w').close()
                 self.pithos.upload_from_string(rel_path, '')
@@ -295,8 +293,7 @@ class PithosObjectStore(ConcreteObjectStore):
         """
         if not self._exists(obj, **kwargs):
             raise ObjectNotFound(
-                'objectstore.empty, object does not exist: {obj}, '
-                'kwargs: {kwargs}'.format(obj=obj, kwargs=kwargs))
+                f'objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}')
         return bool(self._size(obj, **kwargs))
 
     def _size(self, obj, **kwargs):
@@ -347,10 +344,9 @@ class PithosObjectStore(ConcreteObjectStore):
                 self.pithos.del_object(path)
         except OSError:
             log.exception(
-                '{} delete error'.format(self._get_filename(obj, **kwargs)))
+                f'{self._get_filename(obj, **kwargs)} delete error')
         except ClientError as ce:
-            log.exception('Could not delete {path} from Pithos, {err}'.format(
-                path=path, err=ce))
+            log.exception(f'Could not delete {path} from Pithos, {ce}')
         return False
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
@@ -391,8 +387,7 @@ class PithosObjectStore(ConcreteObjectStore):
                 self._pull_into_cache(path)
                 return cache_path
         raise ObjectNotFound(
-            'objectstore.get_filename, no cache_path: {obj}, '
-            'kwargs: {kwargs}'.format(obj=obj, kwargs=kwargs))
+            f'objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}')
 
     def _update_from_file(self, obj, **kwargs):
         """Update the store when a file is updated"""

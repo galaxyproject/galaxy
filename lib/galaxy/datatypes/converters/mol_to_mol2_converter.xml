@@ -14,6 +14,17 @@
     <outputs>
         <data name="output" format="mol2"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="mol" value="chebi_57262.v3k.mol"/>
+            <output name="output" ftype="mol2">
+                <assert_contents>
+                    <has_text text="CHEBI:57262"/>
+                    <has_text text="BOND"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
     <help>
 <![CDATA[
 ]]>

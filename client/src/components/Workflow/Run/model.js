@@ -1,6 +1,6 @@
 import _ from "underscore";
 
-import FormData from "mvc/form/form-data";
+import { visitInputs } from "components/Form/utilities";
 import WorkflowIcons from "components/Workflow/icons";
 import Utils from "utils/utils";
 
@@ -44,20 +44,11 @@ export class WorkflowRunModel {
                     citations: null,
                     collapsible: true,
                     collapsed: i > 0 && !isDataStep(step),
-                    sustain_version: true,
-                    sustain_repeats: true,
-                    sustain_conditionals: true,
-                    narrow: true,
                     text_enable: "Edit",
                     text_disable: "Undo",
                     cls_enable: "fa fa-edit",
                     cls_disable: "fa fa-undo",
                     errors: step.messages,
-                    initial_errors: true,
-                    cls: "ui-portlet-section",
-                    hide_operations: true,
-                    needs_refresh: false,
-                    always_refresh: step.step_type != "tool",
                 },
                 step
             );
@@ -73,7 +64,7 @@ export class WorkflowRunModel {
 
         // build linear index of step input pairs
         _.each(this.steps, (step, i) => {
-            FormData.visitInputs(step.inputs, (input, name) => {
+            visitInputs(step.inputs, (input, name) => {
                 this.parms[i][name] = input;
             });
         });
@@ -104,7 +95,7 @@ export class WorkflowRunModel {
                     if (connection) {
                         input.type = "hidden";
                         input.help = input.step_linked ? `${input.help}, ` : "";
-                        input.help += `Output dataset '${connection.output_name}' from step ${parseInt(i) + 1}`;
+                        input.help += `Connected to '${connection.output_name}' from Step ${parseInt(i) + 1}`;
                         input.step_linked = input.step_linked || [];
                         input.step_linked.push({ index: step.index, step_type: step.step_type });
                     }
@@ -123,6 +114,7 @@ export class WorkflowRunModel {
                 color: `hsl( ${++wp_count * 100}, 70%, 30% )`,
                 style: "ui-form-wp-source",
                 links: [],
+                optional: true,
             });
         };
 
@@ -158,7 +150,7 @@ export class WorkflowRunModel {
         _.each(this.steps, (step, i) => {
             if (step.step_type == "tool") {
                 var data_resolved = true;
-                FormData.visitInputs(step.inputs, (input, name, context) => {
+                visitInputs(step.inputs, (input, name, context) => {
                     var is_runtime_value = input.value && input.value.__class__ == "RuntimeValue";
                     var is_data_input = ["data", "data_collection"].indexOf(input.type) != -1;
                     var data_ref = context[input.data_ref];

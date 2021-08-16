@@ -49,7 +49,7 @@ class Image(data.Data):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = 'Image in %s format' % dataset.extension
+            dataset.peek = f'Image in {dataset.extension} format'
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
@@ -205,24 +205,24 @@ class Pdf(Image):
 
 
 def create_applet_tag_peek(class_name, archive, params):
-    text = """
-<object classid="java:{}"
+    text = f"""
+<object classid="java:{class_name}"
       type="application/x-java-applet"
       height="30" width="200" align="center" >
-      <param name="archive" value="{}"/>""".format(class_name, archive)
+      <param name="archive" value="{archive}"/>"""
     for name, value in params.items():
         text += f"""<param name="{name}" value="{value}"/>"""
-    text += """
+    text += f"""
 <object classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93"
         height="30" width="200" >
-        <param name="code" value="{}" />
-        <param name="archive" value="{}"/>""".format(class_name, archive)
+        <param name="code" value="{class_name}" />
+        <param name="archive" value="{archive}"/>"""
     for name, value in params.items():
         text += f"""<param name="{name}" value="{value}"/>"""
     text += """<div class="errormessage">You must install and enable Java in your browser in order to access this applet.<div></object>
 </object>
 """
-    return """<div><p align="center">%s</p></div>""" % text
+    return f"""<div><p align="center">{text}</p></div>"""
 
 
 @build_sniff_from_prefix
@@ -354,12 +354,12 @@ class Gmaj(data.Data):
         if not dataset.dataset.purged:
             if hasattr(dataset, 'history_id'):
                 params = {
-                    "bundle": "display?id=%s&tofile=yes&toext=.zip" % dataset.id,
+                    "bundle": f"display?id={dataset.id}&tofile=yes&toext=.zip",
                     "buttonlabel": "Launch GMAJ",
                     "nobutton": "false",
                     "urlpause": "100",
                     "debug": "false",
-                    "posturl": "history_add_to?%s" % "&".join("{}={}".format(x[0], quote_plus(str(x[1]))) for x in [('copy_access_from', dataset.id), ('history_id', dataset.history_id), ('ext', 'maf'), ('name', 'GMAJ Output on data %s' % dataset.hid), ('info', 'Added by GMAJ'), ('dbkey', dataset.dbkey)])
+                    "posturl": "history_add_to?%s" % "&".join("{}={}".format(x[0], quote_plus(str(x[1]))) for x in [('copy_access_from', dataset.id), ('history_id', dataset.history_id), ('ext', 'maf'), ('name', f'GMAJ Output on data {dataset.hid}'), ('info', 'Added by GMAJ'), ('dbkey', dataset.dbkey)])
                 }
                 class_name = "edu.psu.bx.gmaj.MajApplet.class"
                 archive = "/static/gmaj/gmaj.jar"
@@ -440,7 +440,7 @@ class Analyze75(Binary):
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
+                rval.append(f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>")
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
@@ -600,10 +600,10 @@ class Laj(data.Text):
         if not dataset.dataset.purged:
             if hasattr(dataset, 'history_id'):
                 params = {
-                    "alignfile1": "display?id=%s" % dataset.id,
+                    "alignfile1": f"display?id={dataset.id}",
                     "buttonlabel": "Launch LAJ",
                     "title": "LAJ in Galaxy",
-                    "posturl": quote_plus("history_add_to?%s" % "&".join(f"{key}={value}" for key, value in {'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id}.items())),
+                    "posturl": quote_plus(f"history_add_to?{'&'.join(f'{key}={value}' for key, value in {'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id}.items())}"),
                     "noseq": "true"
                 }
                 class_name = "edu.psu.cse.bio.laj.LajApplet.class"

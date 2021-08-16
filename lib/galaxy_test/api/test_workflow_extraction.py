@@ -445,7 +445,7 @@ test_data:
     def _history_contents(self, history_id=None):
         if history_id is None:
             history_id = self.history_id
-        return self._get("histories/%s/contents" % history_id).json()
+        return self._get(f"histories/{history_id}/contents").json()
 
     def __copy_content_to_history(self, history_id, content):
         if content["history_content_type"] == "dataset":
@@ -453,14 +453,14 @@ test_data:
                 source="hda",
                 content=content["id"]
             )
-            response = self._post("histories/%s/contents/datasets" % history_id, payload)
+            response = self._post(f"histories/{history_id}/contents/datasets", payload)
 
         else:
             payload = dict(
                 source="hdca",
                 content=content["id"]
             )
-            response = self._post("histories/%s/contents/dataset_collections" % history_id, payload)
+            response = self._post(f"histories/{history_id}/contents/dataset_collections", payload)
         self._assert_status_code_is(response, 200)
         return response.json()
 
@@ -546,7 +546,7 @@ test_data:
         self._assert_status_code_is(create_workflow_response, 200)
 
         new_workflow_id = create_workflow_response.json()["id"]
-        download_response = self._get("workflows/%s/download" % new_workflow_id)
+        download_response = self._get(f"workflows/{new_workflow_id}/download")
         self._assert_status_code_is(download_response, 200)
         downloaded_workflow = download_response.json()
         return downloaded_workflow

@@ -1,4 +1,4 @@
-"""This module contains a linting functions for general aspects of the tool."""
+"""This module contains linting functions for general aspects of the tool."""
 import re
 
 import packaging.version
@@ -18,6 +18,10 @@ PROFILE_INFO_DEFAULT_MSG = "Tool targets 16.01 Galaxy profile."
 PROFILE_INFO_SPECIFIED_MSG = "Tool specifies profile version [%s]."
 PROFILE_INVALID_MSG = "Tool specifies an invalid profile version [%s]."
 
+WARN_WHITESPACE_MSG = "%s contains whitespace, this may cause errors: [%s]."
+WARN_ID_WHITESPACE_MSG = (
+    "Tool ID contains whitespace - this is discouraged: [%s].")
+
 lint_tool_types = ["*"]
 
 
@@ -29,12 +33,16 @@ def lint_general(tool_source, lint_ctx):
         lint_ctx.error(ERROR_VERSION_MSG)
     elif isinstance(parsed_version, packaging.version.LegacyVersion):
         lint_ctx.warn(WARN_VERSION_MSG % version)
+    elif version != version.strip():
+        lint_ctx.warn(WARN_WHITESPACE_MSG % ('Tool version', version))
     else:
         lint_ctx.valid(VALID_VERSION_MSG % version)
 
     name = tool_source.parse_name()
     if not name:
         lint_ctx.error(ERROR_NAME_MSG)
+    elif name != name.strip():
+        lint_ctx.warn(WARN_WHITESPACE_MSG % ('Tool name', name))
     else:
         lint_ctx.valid(VALID_NAME_MSG % name)
 
@@ -53,5 +61,12 @@ def lint_general(tool_source, lint_ctx):
     else:
         lint_ctx.valid(PROFILE_INFO_SPECIFIED_MSG % profile)
 
+    requirements, containers = tool_source.parse_requirements_and_containers()
+    for r in requirements:
+        # Warn requirement attributes with leading/trailing whitespace:
+        if r.version != r.version.strip():
+            lint_ctx.warn(
+                WARN_WHITESPACE_MSG % ('Requirement version', r.version))
+
     if re.search(r"\s", tool_id):
-        lint_ctx.warn("Tool id contains a space - this is discouraged.")
+        lint_ctx.warn(WARN_ID_WHITESPACE_MSG % tool_id)

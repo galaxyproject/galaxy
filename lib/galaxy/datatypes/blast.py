@@ -103,40 +103,40 @@ class BlastXml(GenericXml):
             old_header = None
             for f in split_files:
                 if not os.path.isfile(f):
-                    log.warning("BLAST XML file %s missing, retry in 1s..." % f)
+                    log.warning(f"BLAST XML file {f} missing, retry in 1s...")
                     sleep(1)
                 if not os.path.isfile(f):
-                    log.error("BLAST XML file %s missing" % f)
-                    raise ValueError("BLAST XML file %s missing" % f)
+                    log.error(f"BLAST XML file {f} missing")
+                    raise ValueError(f"BLAST XML file {f} missing")
                 h = open(f)
                 header = h.readline()
                 if not header:
                     h.close()
                     # Retry, could be transient error with networked file system...
-                    log.warning("BLAST XML file %s empty, retry in 1s..." % f)
+                    log.warning(f"BLAST XML file {f} empty, retry in 1s...")
                     sleep(1)
                     h = open(f)
                     header = h.readline()
                     if not header:
-                        log.error("BLAST XML file %s was empty" % f)
-                        raise ValueError("BLAST XML file %s was empty" % f)
+                        log.error(f"BLAST XML file {f} was empty")
+                        raise ValueError(f"BLAST XML file {f} was empty")
                 if header.strip() != '<?xml version="1.0"?>':
                     out.write(header)  # for diagnosis
                     h.close()
-                    raise ValueError("%s is not an XML file!" % f)
+                    raise ValueError(f"{f} is not an XML file!")
                 line = h.readline()
                 header += line
                 if line.strip() not in ['<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "http://www.ncbi.nlm.nih.gov/dtd/NCBI_BlastOutput.dtd">',
                                         '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "NCBI_BlastOutput.dtd">']:
                     out.write(header)  # for diagnosis
                     h.close()
-                    raise ValueError("%s is not a BLAST XML file!" % f)
+                    raise ValueError(f"{f} is not a BLAST XML file!")
                 while True:
                     line = h.readline()
                     if not line:
                         out.write(header)  # for diagnosis
                         h.close()
-                        raise ValueError("BLAST XML file %s ended prematurely" % f)
+                        raise ValueError(f"BLAST XML file {f} ended prematurely")
                     header += line
                     if "<Iteration>" in line:
                         break
@@ -145,7 +145,7 @@ class BlastXml(GenericXml):
                         # Write what we have to the merged file for diagnostics
                         out.write(header)
                         h.close()
-                        raise ValueError("The header in BLAST XML file %s is too long" % f)
+                        raise ValueError(f"The header in BLAST XML file {f} is too long")
                 if "<BlastOutput>" not in header:
                     h.close()
                     raise ValueError(f"{f} is not a BLAST XML file:\n{header}\n...")
