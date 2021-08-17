@@ -38,11 +38,6 @@ export const aggregateCacheUpdates = (monitor, cfg = {}) => (src$) => {
         keyField = "hid",
         keyDirection = SEEK.DESC,
 
-        // interval in which we create new monitors
-        // if we chunk the inputs then we won't make as many
-        // might be easier on memory
-        // inputChunk = Math.floor(pageSize / 2),
-
         // reduces duplicate updates to the skiplist
         // which can be expensive
         updateGroupLifetime = 2 * debouncePeriod,
@@ -59,7 +54,6 @@ export const aggregateCacheUpdates = (monitor, cfg = {}) => (src$) => {
     // avoids creating a new monitor for every single key emission
     // chunk to ceiling if descending, floor if ascending
     const monitorInputKey$ = targetKey$.pipe(
-        // chunk(inputChunk, keyDirection == SEEK.DESC, "monitorInputKey"),
         distinctUntilChanged(),
         show(debug, (key) => console.log("monitorInputKey", key)),
     );

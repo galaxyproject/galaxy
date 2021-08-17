@@ -12,7 +12,6 @@
                 </template>
             </HistoryPanel>
 
-            <!-- still loading -->
             <div v-else class="flex-grow-1 loadingBackground h-100">
                 <span class="sr-only" v-localize>Loading History...</span>
             </div>

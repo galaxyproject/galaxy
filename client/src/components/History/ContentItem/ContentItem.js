@@ -13,7 +13,6 @@ import Dataset from "./Dataset";
 import DatasetCollection from "./DatasetCollection";
 import Subdataset from "./Subdataset";
 import Subcollection from "./Subcollection";
-import "./styles.scss";
 
 export default {
     template: `
@@ -59,8 +58,8 @@ export default {
             if (this.suppressFocus) {
                 return;
             }
-            const scrollContainer = this.$el.closest(".scroller");
-            const el = scrollContainer.querySelector(`[tabindex="${index}"]`);
+            const ul = this.$el.closest(".scroller");
+            const el = ul.querySelector(`[tabindex="${index}"]`);
             if (el) {
                 el.focus();
             }

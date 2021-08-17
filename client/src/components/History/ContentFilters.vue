@@ -1,7 +1,7 @@
 <template>
     <b-input-group v-if="params">
         <DebouncedInput v-model.trim="filterText" v-slot="{ value, input }">
-            <b-form-input size="sm" :value="value" @input="input" :placeholder="'Content Filter' | localize" />
+            <b-form-input size="sm" :value="value" @input="input" :placeholder="'Search Filter' | localize" />
         </DebouncedInput>
 
         <b-input-group-append>

@@ -23,7 +23,7 @@ import { Subject } from "rxjs";
  */
 // prettier-ignore
 export function processContentStreams(payloadOperator, sources = {}, settings = {}) {
-    const { debouncePeriod, debug = true } = settings;
+    const { debouncePeriod, debug = false } = settings;
 
     // clean incoming source streams
     const parent$ = sources.parent$.pipe(
@@ -35,7 +35,6 @@ export function processContentStreams(payloadOperator, sources = {}, settings = 
         show(debug, (params) => console.log('processContentStreams: params changed', params)),
     );
     const pos$ = sources.scrollPos$.pipe(
-        // debounceTime(debouncePeriod),
         show(debug, (pos) => console.log('processContentStreams: pos changed', pos)),
         distinctUntilChanged(ScrollPos.equals),
     );
