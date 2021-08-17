@@ -98,7 +98,8 @@ class GroupRolesAPIController(BaseGalaxyAPIController):
         GET /api/groups/{encoded_group_id}/roles
         Displays a collection (list) of groups.
         """
-        return self.manager.index(trans, group_id)
+        group_roles = self.manager.index(trans, group_id)
+        return GroupRoleListModel(__root__=[group_role_to_model(trans, group_id, gr.role) for gr in group_roles])
 
     @require_admin
     @expose_api
@@ -107,7 +108,8 @@ class GroupRolesAPIController(BaseGalaxyAPIController):
         GET /api/groups/{encoded_group_id}/roles/{encoded_role_id}
         Displays information about a group role.
         """
-        return self.manager.show(trans, id, group_id)
+        role = self.manager.show(trans, id, group_id)
+        return group_role_to_model(trans, group_id, role)
 
     @require_admin
     @expose_api
@@ -116,7 +118,8 @@ class GroupRolesAPIController(BaseGalaxyAPIController):
         PUT /api/groups/{encoded_group_id}/roles/{encoded_role_id}
         Adds a role to a group
         """
-        return self.manager.update(trans, id, group_id)
+        role = self.manager.update(trans, id, group_id)
+        return group_role_to_model(trans, group_id, role)
 
     @require_admin
     @expose_api
@@ -125,4 +128,5 @@ class GroupRolesAPIController(BaseGalaxyAPIController):
         DELETE /api/groups/{encoded_group_id}/roles/{encoded_role_id}
         Removes a role from a group
         """
-        return self.manager.delete(trans, id, group_id)
+        role = self.manager.delete(trans, id, group_id)
+        return group_role_to_model(trans, group_id, role)
