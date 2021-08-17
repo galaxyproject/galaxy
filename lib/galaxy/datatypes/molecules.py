@@ -1,7 +1,9 @@
 import logging
 import os
 import re
+
 from ase.io import read as ase_read
+from ase.io.extxyz import XYZError
 
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
@@ -729,6 +731,130 @@ class Cell(GenericMolFile):
             ase_data = ase_read(dataset.file_name, format="castep-cell")
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = f"CASTEP cell file containing {ase_data.get_global_number_of_atoms()} atoms"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+
+class CIF(GenericMolFile):
+    """
+    CIF format.
+    """
+
+    file_ext = "cif"
+    MetadataElement(
+        name="atom_data",
+        default=[],
+        desc="Atom Positions",
+        readonly=False,
+        visible=True,
+    )
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is a CIF file.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.cif')
+        >>> CIF().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.cell')
+        >>> CIF().sniff(fname)
+        False
+        """
+        try:
+            ase_data = ase_read(filename, format="cif")
+            return True if ase_data else False
+        except (ValueError, AssertionError):
+            return False
+
+    def set_meta(self, dataset, **kwd):
+        """
+        Find Atom IDs for metadata.
+        """
+        ase_data = ase_read(dataset.file_name, format="cif")
+        try:
+            atom_data = [
+                str(sym) + str(pos)
+                for sym, pos in zip(
+                    ase_data.get_chemical_symbols(), ase_data.get_positions()
+                )
+            ]
+            dataset.metadata.atom_data = atom_data
+        except Exception as e:
+            log.error("Error finding atom_data: %s", unicodify(e))
+            raise
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            ase_data = ase_read(dataset.file_name, format="cif")
+            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.blurb = (
+                f"CIF file containing {ase_data.get_global_number_of_atoms()} atoms"
+            )
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+
+class XYZ(GenericMolFile):
+    """
+    XYZ format.
+    """
+
+    file_ext = "xyz"
+    MetadataElement(
+        name="atom_data",
+        default=[],
+        desc="Atom Positions",
+        readonly=False,
+        visible=True,
+    )
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is a XYZ file.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.xyz')
+        >>> XYZ().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.cell')
+        >>> XYZ().sniff(fname)
+        False
+        """
+        try:
+            ase_data = ase_read(
+                filename, format="extxyz"
+            )  # use extxyz ("extended XYZ") as basic xyz format won't throw errors
+            return True if ase_data else False
+        except (TypeError, XYZError):
+            return False
+
+    def set_meta(self, dataset, **kwd):
+        """
+        Find Atom IDs for metadata.
+        """
+        try:
+            ase_data = ase_read(dataset.file_name, format="xyz")
+            atom_data = [
+                str(sym) + str(pos)
+                for sym, pos in zip(
+                    ase_data.get_chemical_symbols(), ase_data.get_positions()
+                )
+            ]
+            dataset.metadata.atom_data = atom_data
+        except Exception as e:
+            log.error("Error finding atom_data: %s", unicodify(e))
+            raise
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            ase_data = ase_read(dataset.file_name, format="xyz")
+            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.blurb = (
+                f"XYZ file containing {ase_data.get_global_number_of_atoms()} atoms"
+            )
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
