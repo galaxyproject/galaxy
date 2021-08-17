@@ -463,8 +463,8 @@ class TestDataset(BaseTest):
             assert stored_obj.hashes == [dataset_hash]
             assert stored_obj.sources == [dataset_source]
             assert stored_obj.library_associations == [library_dataset_dataset_association]
-            assert len(stored_obj.history_associations) == 2
-            # TODO: test membership in history_associations by id
+            assert are_same_entity_collections(
+                stored_obj.history_associations, [hda, history_dataset_association])
 
         delete_from_database(session, hda)
 
@@ -4380,10 +4380,8 @@ class TestStoredWorkflow(BaseTest):
             assert stored_obj.ratings == [stored_workflow_rating_association]
             # This doesn't test the average amount, just the mapping.
             assert stored_obj.average_rating == stored_workflow_rating_association.rating
-
-            assert len(stored_obj.tags) == 2
-            assert stored_workflow_tag_association in stored_obj.tags
-            assert tag_assoc2 in stored_obj.tags
+            assert are_same_entity_collections(
+                stored_obj.tags, [stored_workflow_tag_association, tag_assoc2])
             assert stored_obj.owner_tags == [tag_assoc2]
             assert stored_obj.users_shared_with == [stored_workflow_user_share_association]
 
@@ -4943,11 +4941,7 @@ class TestUser(BaseTest):
             assert stored_obj.custos_auth == [custos_authnz_token]
             assert stored_obj.default_permissions == [default_user_permissions]
             assert stored_obj.groups == [user_group_association]
-
-            assert len(stored_obj.histories) == 2
-            assert history1 in stored_obj.histories
-            assert history2 in stored_obj.histories
-
+            assert are_same_entity_collections(stored_obj.histories, [history1, history2])
             assert stored_obj.active_histories == [history1]
             assert stored_obj.galaxy_sessions == [galaxy_session]
             assert stored_obj.pages_shared_by_others == [page_user_share_association]
@@ -7636,6 +7630,26 @@ def has_index(table, fields):
 def get_unique_value():
     """Generate unique values to accommodate unique constraints."""
     return uuid4().hex
+
+
+def are_same_entity_collections(collection1, collection2):
+    """
+    The 2 arguments are collections of instances of models that have an `id`
+    attribute as their primary key.
+    Returns `True` if collections are the same size and contain the same
+    instances. Instance equality is determined by the object's `id` attribute,
+    not its Python object identifier.
+    """
+    if len(collection1) != len(collection2):
+        return False
+
+    collection1.sort(key=lambda item: item.id)
+    collection2.sort(key=lambda item: item.id)
+
+    for item1, item2 in zip(collection1, collection2):
+        if item1.id != item2.id:
+            return False
+    return True
 
 
 def _run_average_rating_test(session, obj, user, obj_rating_association_factory):
