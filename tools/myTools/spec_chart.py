@@ -4,6 +4,7 @@
 import sys
 import matplotlib.pyplot as plt
 import math
+import numpy as np
 
 max_col_num = 12
 
@@ -17,7 +18,6 @@ def __main__():
         outfile = open(sys.argv[2],'wb')
         start = int(sys.argv[3])
         end = sys.argv[4]
-
         if(end!='end'):
             end = int(end)
         title = sys.argv[5]
@@ -48,10 +48,13 @@ def __main__():
     if(sub_fig_num%col_num!=0):
         row_num+=1
 
+
     plt.figure(figsize=(col_num*5,row_num*5))
+    
     for idx,col in enumerate(content):
         plt.subplot(row_num,col_num,idx+1)
-        plt.plot(col)
+        x = np.linspace(0,51200/2,len(col))
+        plt.plot(x,col)
 
     plt.savefig(outfile)
 

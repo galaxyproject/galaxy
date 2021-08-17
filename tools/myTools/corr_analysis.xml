@@ -1,0 +1,27 @@
+<tool id="corr_analysis" name="相关性分析" version="0.1.0">
+    <description>for each column in a file</description>
+    <command>python '${__tool_directory__}/corr_analysis.py' '$input' '$output' '$has_title' '$col1' '$col2' '$div'</command>
+    <inputs>
+      <param format="tabular" name="input" type="data" label="输入文件"/>
+      <param name="col1" type="text" label="列编号1" value="0" />
+      <param name="col2" type="text" label="列编号2" value="1"/>
+      <param name="div"  type="text" label="取值跨度" value='800'/>
+      <param name='has_title' type='select' label='是否存在标题'>
+        <option value='f'>False</option>
+        <option value="t">True</option>
+      </param>
+
+    </inputs>
+    <outputs>
+      <data format="json" name="output" label="输出" />
+    </outputs>
+    <tests>
+      <test>
+        <param name="input" value="fa_gc_content_input.fa"/>
+        <output name="out_file1" file="fa_gc_content_output.txt"/>
+      </test>
+    </tests>
+    <help>
+        相关性分析
+    </help>
+  </tool>

@@ -1,10 +1,11 @@
 <template>
     <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-center">
-        <b-navbar-brand :href="brandLink" aria-label="homepage">
+       <!-- 注释此处，用于去除页面导航栏左侧图标 -->
+        <!-- <b-navbar-brand :href="brandLink" aria-label="homepage">
             <img alt="logo" class="navbar-brand-image" :src="brandImage" />
             <img alt="logo" class="navbar-brand-image" :src="brandImageSecondary" v-if="brandImageSecondary" />
             <span class="navbar-brand-title">{{ brandTitle }}</span>
-        </b-navbar-brand>
+        </b-navbar-brand> -->
         <b-navbar-nav>
             <masthead-item
                 v-for="(tab, idx) in tabs"
@@ -30,7 +31,7 @@ export default {
     props: {
         displayGalaxyBrand: {
             type: Boolean,
-            default: false,
+            default: true,
         },
         brand: {
             type: String,

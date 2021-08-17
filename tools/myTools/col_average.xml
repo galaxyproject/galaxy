@@ -1,10 +1,13 @@
 <tool id="col_average" name="列平均值" version="0.1.0">
   <description>for each sequence in a file</description>
-  <command>python '${__tool_directory__}/col_average.py' '$input1' '$sec' '$output'</command>
+  <command>python '${__tool_directory__}/col_average.py' '$input1' '$sec' '$output' '$has_title'</command>
   <inputs>
     <param format="tabular" name="input1" type="data" label="输入文件1"/>
     <param name="sec" type="text" value="50000" label="计算区间"/>
-    
+    <param name='has_title' type='select' label='是否存在标题'>
+      <option value="" selected="f">False</option>
+      <option value="t">True</option>
+    </param>
   </inputs>
   <outputs>
     <data format="tabular" name="output" label="输出文件"/>

@@ -15,10 +15,12 @@ def __main__():
         infile1 = open(sys.argv[1])
         v2 = int(sys.argv[2])
         outfile = open(sys.argv[3],"w")
+        has_title = sys.argv[4]
     except Exception:
         stop_err("无法打开或创建文件失败！")
     sec = int(v2)
-    title = infile1.readline()#去标题
+    if(has_title is 't'):
+        line = infile1.readline()#去标题
     while True:
         counters = [[] for i in range(12)]
         num = 0
@@ -30,7 +32,7 @@ def __main__():
             items = line.split()
             num += 1
             for index, v in enumerate(items):
-                counters[index].append(int(v))
+                counters[index].append(float(v))
                 pass
             pass
         if num>0:

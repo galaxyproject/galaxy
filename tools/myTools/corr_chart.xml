@@ -1,0 +1,22 @@
+<tool id="corr_chart" name="相关图" version="0.1.0">
+    <description> for each column in a file  </description>
+    <command>python '${__tool_directory__}/corr_chart.py' '$input1'  '$output' '$title' </command>
+    <inputs>
+        <param format="json" name="input1" type="data" label="输入文件1" />
+        <param name='title' type="text" value='相关性分析' label="图片标题" />
+    </inputs>
+    <outputs>
+        <data format="jpg" name="output" label="输出文件" />
+    </outputs>
+
+    <tests>
+        <test>
+            <param name="input" value="fa_gc_content_input.fa" />
+            <output name="out_file1" file="fa_gc_content_output.txt" />
+        </test>
+    </tests>
+
+    <help>
+      这个工具用于计算整列平均值
+    </help>
+</tool>

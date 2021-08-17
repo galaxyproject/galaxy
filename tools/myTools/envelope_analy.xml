@@ -1,0 +1,28 @@
+<tool id="envelope_analy" name="包络谱分析" version="0.1.0">
+    <description>for each column in a file</description>
+    <command>python '${__tool_directory__}/envelope_analy.py' '$input' '$d' '$output' '$has_title' '$c'</command>
+    <inputs>
+      <param format="tabular" name="input" type="data" label="输入文件"/>
+      <param name="d" type="text" value="100" label="包络跨度"/>
+      <param name='c' type='text' value='0' label="指定包络分析的列编码，从0开始"/>
+      <param name='has_title' type='select' label='是否存在标题'>
+        <option value='f'>False</option>
+        <option value="t">True</option>
+      </param>
+    </inputs>
+    <outputs>
+      <data format="tabular" name="output" label="输出" />
+    </outputs>
+  
+    <tests>
+      <test>
+        <param name="input" value="fa_gc_content_input.fa"/>
+        <output name="out_file1" file="fa_gc_content_output.txt"/>
+      </test>
+    </tests>
+  
+    <help>
+  频谱分析
+    </help>
+  
+  </tool>

@@ -12,16 +12,20 @@ def __main__():
         infile1 = open(sys.argv[1])
         infile2 = open(sys.argv[2])
         outfile = open(sys.argv[3],'w')
+        has_title1 = sys.argv[4]
+        has_title2 = sys.argv[5]
     except Exception:
         stop_err("无法打开或者创建文件失败！")
-    
-    title1 = infile1.readline()
-    title2 = infile2.readline()#去标题
+    if(has_title1=='t'):
+        title1 = infile1.readline()
+    if(has_title2=='f'):
+        title2 = infile2.readline()#去标题
 
-    title_items = title1.strip().split()
-    for item in title_items:
-        outfile.write("%s\t"%item)
-    outfile.write('\n')
+    # 不留标题
+    # title_items = title1.strip().split()
+    # for item in title_items:
+    #     outfile.write("%s\t"%item)
+    # outfile.write('\n')
 
     for line in infile1:
         print(line,file=outfile)

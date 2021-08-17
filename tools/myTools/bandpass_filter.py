@@ -25,11 +25,13 @@ def __main__():
         N = int(sys.argv[4])
         shz = int(sys.argv[5])
         outfile = open(sys.argv[6], "w")
+        has_title = sys.argv[7]
     except Exception:
         stop_err("无法打开或创建文件失败！")
 
     content = [[] for i in range(col_num)]  # 最多支持12个通道（列）数据
-    title = infile1.readline()  # 标题
+    if(has_title is 't'):
+        title = infile1.readline()  # 标题
     for line in infile1:
         items = line.split()
         for index, item in enumerate(items):
@@ -47,10 +49,11 @@ def __main__():
             pass
         pass
 
-    title_item = title.strip().split()
-    for item in title_item:
-        outfile.write("%s\t"%item)
-    outfile.write('\n')
+    # 不要标题
+    # title_item = title.strip().split()
+    # for item in title_item:
+    #     outfile.write("%s\t"%item)
+    # outfile.write('\n')
 
     if(len(filted)>0 and len(filted[0])>0):
         row_num = len(filted[0])

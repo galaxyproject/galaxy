@@ -1,13 +1,16 @@
 <tool id="spectrum_analysis" name="频谱分析" version="0.1.0">
   <description>for each column in a file</description>
-  <command>perl '${__tool_directory__}/spectrum_analysis.py' '$input' '$hz' '$output'</command>
+  <command>python '${__tool_directory__}/spectrum_analysis.py' '$input' '$hz' '$output' '$has_title'</command>
   <inputs>
-    <param format="fasta" name="输入" type="data" label="输入文件"/>
+    <param format="tabular" name="input" type="data" label="输入文件"/>
     <param name="hz" type="text" value="51200" label="采样频率"/>
-
+    <param name='has_title' type='select' label='是否存在标题'>
+      <option value='f'>False</option>
+      <option value="t">True</option>
+    </param>
   </inputs>
   <outputs>
-    <data format="tabular" name="输出" />
+    <data format="tabular" name="output" label="输出" />
   </outputs>
 
   <tests>
