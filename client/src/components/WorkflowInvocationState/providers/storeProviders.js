@@ -107,7 +107,7 @@ export const SuitableConvertersProvider = {
     mixins: [SimpleProviderMixin],
     computed: {
         url() {
-            return prependPath(`/api/dataset_collections/suitable_converters/${this.id}`);
+            return prependPath(`/api/dataset_collections/${this.id}/suitable_converters`);
         },
     },
 };

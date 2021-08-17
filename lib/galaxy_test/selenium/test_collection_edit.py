@@ -13,7 +13,7 @@ class CollectionEditTestCase(SeleniumTestCase):
     @selenium_test
     def test_change_dbkey_simple_list(self):
         self.create_simple_list_collection()
-        self.switch_to_beta_history()
+        self.use_beta_history()
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
         dbkeyValue = "Additional"
@@ -22,7 +22,7 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.change_dbkey_value_and_click_submit(dbkeyValue, dbkeyNew)
         self.components.history_panel.options_use_legacy_history.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(4)
-        self.switch_to_beta_history()
+        self.use_beta_history()
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
         self.check_current_dbkey_value(dbkeyNew)
@@ -39,10 +39,6 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.screenshot("collection_builder_list")
         self.collection_builder_create()
         self.history_panel_wait_for_hid_ok(2)
-
-    def switch_to_beta_history(self):
-        self.click_history_options()
-        self.components.history_panel.options_use_beta_history.wait_for_and_click()
 
     def open_collection_edit_view(self):
         self.components.history_panel.collection_menu_edit_attributes.wait_for_and_click()

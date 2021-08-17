@@ -556,7 +556,7 @@ def populate_api_routes(webapp, app):
                           conditions=dict(method=["GET"]))
 
     webapp.mapper.connect("api_suitable_converters",
-                          "/api/dataset_collections/suitable_converters/{id}",
+                          "/api/dataset_collections/{id}/suitable_converters",
                           controller='dataset_collections',
                           action='suitable_converters',
                           conditions=dict(method=['GET']))

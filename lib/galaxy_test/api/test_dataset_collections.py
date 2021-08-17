@@ -376,7 +376,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         ])
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
-        converters = self._get("dataset_collections/suitable_converters/" + hdca_list_id)
+        converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
         expected = Counter([
             'CONVERTER_bed_to_fli_0',
             'CONVERTER_interval_to_bed_0',
@@ -410,7 +410,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         ])
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
-        converters = self._get("dataset_collections/suitable_converters/" + hdca_list_id)
+        converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
         expected = Counter(['tabular_to_csv'])
         actual = Counter([converter["tool_id"] for converter in converters.json()])
         assert actual == expected
@@ -434,7 +434,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         ])
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
-        converters = self._get("dataset_collections/suitable_converters/" + hdca_list_id)
+        converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
         expected = Counter([])
         actual = Counter([converter["tool_id"] for converter in converters.json()])
         assert actual == expected
