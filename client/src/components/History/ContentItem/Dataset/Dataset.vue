@@ -4,6 +4,7 @@
         v-bind="$attrs"
         v-on="$listeners"
         :dataset="dataset"
+        :row-key="rowKey"
         @update:dataset="onUpdate"
         @delete="onDelete"
         @undelete="onUndelete"
@@ -26,6 +27,7 @@ export default {
     },
     props: {
         item: { type: Object, required: true },
+        rowKey: { type: [Number, String], required: false, default: "" },
     },
     computed: {
         dataset() {

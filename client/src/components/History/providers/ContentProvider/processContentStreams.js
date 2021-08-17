@@ -1,9 +1,9 @@
 /**
- * General plumbing for the 2 types of content providers. This funcction emits 3 observables:
+ * General plumbing for the 2 types of content providers. This function returns 3 observables:
  * loading, scrolling, and payload. Payload's the most important and the operator that genrates the
  * payload from the inputs is passed in as a parameter to this factory.
  */
-import { debounceTime, distinctUntilChanged, share, startWith, switchMap } from "rxjs/operators";
+import { distinctUntilChanged, share, startWith, switchMap } from "rxjs/operators";
 import { activity, whenAny, show } from "utils/observable";
 import { propMatch } from "./helpers";
 import { SearchParams, ScrollPos } from "../../model";
@@ -23,7 +23,7 @@ import { Subject } from "rxjs";
  */
 // prettier-ignore
 export function processContentStreams(payloadOperator, sources = {}, settings = {}) {
-    const { debouncePeriod, debug = false } = settings;
+    const { debouncePeriod, debug = true } = settings;
 
     // clean incoming source streams
     const parent$ = sources.parent$.pipe(
@@ -35,7 +35,7 @@ export function processContentStreams(payloadOperator, sources = {}, settings = 
         show(debug, (params) => console.log('processContentStreams: params changed', params)),
     );
     const pos$ = sources.scrollPos$.pipe(
-        debounceTime(debouncePeriod),
+        // debounceTime(debouncePeriod),
         show(debug, (pos) => console.log('processContentStreams: pos changed', pos)),
         distinctUntilChanged(ScrollPos.equals),
     );
@@ -48,7 +48,7 @@ export function processContentStreams(payloadOperator, sources = {}, settings = 
         activity(debouncePeriod),
         startWith(true)
     );
-    
+
     const resetPos$ = new Subject();
 
     // The actual loader, when history or params change we poll against the api and

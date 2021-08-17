@@ -11,18 +11,25 @@
 import Placeholder from "./Placeholder";
 import Dataset from "./Dataset";
 import DatasetCollection from "./DatasetCollection";
-// import SubDataset from "./SubDataset";
+import Subdataset from "./Subdataset";
 import Subcollection from "./Subcollection";
+import "./styles.scss";
 
 export default {
     template: `
         <component :is="contentItemComponent"
-            class="content-item p-1"
+            :data-ci-type="contentItemComponent"
+            class="content-item"
             :class="{ loading }"
             :tabindex="index"
+            :writable="writable"
             v-on="$listeners"
-            v-bind="bindProps"
-            @mouseover.native.self.stop="setFocus(index)"
+            v-bind="$attrs"
+            :item="item"
+            :index="index"
+            :row-key="rowKey"
+            :writable="writable"
+            @mouseover.native.stop="setFocus(index)"
             @keydown.native.arrow-up.self.stop="setFocus(index - 1)"
             @keydown.native.arrow-down.self.stop="setFocus(index + 1)"
         />
@@ -32,13 +39,15 @@ export default {
         Placeholder,
         Dataset,
         DatasetCollection,
-        // SubDataset,
+        Subdataset,
         Subcollection,
     },
 
     props: {
         item: { type: Object, required: true },
-        index: { type: Number, required: true },
+        index: { type: Number, required: false, default: null },
+        rowKey: { type: [Number, String], required: false, default: "" },
+        writable: { type: Boolean, required: false, default: true },
     },
 
     data: () => ({
@@ -50,8 +59,8 @@ export default {
             if (this.suppressFocus) {
                 return;
             }
-            const ul = this.$el.closest(".scroller");
-            const el = ul.querySelector(`[tabindex="${index}"]`);
+            const scrollContainer = this.$el.closest(".scroller");
+            const el = scrollContainer.querySelector(`[tabindex="${index}"]`);
             if (el) {
                 el.focus();
             }
@@ -65,9 +74,6 @@ export default {
         contentItemComponent() {
             // override me
             return "Placeholder";
-        },
-        bindProps() {
-            return { ...this.$props, ...this.$attrs };
         },
     },
 

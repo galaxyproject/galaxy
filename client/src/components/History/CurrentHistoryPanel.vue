@@ -2,20 +2,17 @@
     <CurrentUser class="d-flex flex-column" v-slot="{ user }">
         <UserHistories v-if="user" :user="user" v-slot="{ currentHistory, histories, handlers }">
             <HistoryPanel v-if="currentHistory" :history="currentHistory" v-on="handlers" id="current-history-panel">
-                <template v-slot:nav>
-                    <div>
-                        <HistorySelector
-                            :histories="histories"
-                            :current-history="currentHistory"
-                            :show-modal="showModal"
-                            @update:currentHistory="handlers.setCurrentHistory"
-                            @hideModal="showModalHandler"
-                        />
-                        <HistoriesMenu v-on="handlers" @selectHistoryModal="showModalHandler" />
-                    </div>
+                <template v-slot:globalNav>
+                    <HistoriesMenu
+                        v-on="handlers"
+                        :histories="histories"
+                        :current-history="currentHistory"
+                        title="Current History"
+                    />
                 </template>
             </HistoryPanel>
 
+            <!-- still loading -->
             <div v-else class="flex-grow-1 loadingBackground h-100">
                 <span class="sr-only" v-localize>Loading History...</span>
             </div>
@@ -27,7 +24,6 @@
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "./providers/UserHistories";
 import HistoryPanel from "./HistoryPanel";
-import HistorySelector from "./HistorySelector";
 import HistoriesMenu from "./HistoriesMenu";
 
 export default {
@@ -35,18 +31,12 @@ export default {
         CurrentUser,
         UserHistories,
         HistoryPanel,
-        HistorySelector,
         HistoriesMenu,
     },
-    data() {
-        return {
-            showModal: false,
-        };
-    },
-    methods: {
-        showModalHandler(event) {
-            this.showModal = !this.showModal;
-        },
-    },
+    // data() {
+    //     return {
+    //         showModal: false,
+    //     };
+    // },
 };
 </script>

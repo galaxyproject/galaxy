@@ -14,7 +14,7 @@ import {
     timeoutWith,
     ignoreElements,
 } from "rxjs/operators";
-import { chunk, show, debounceBurst, shareButDie } from "utils/observable";
+import { show, debounceBurst, shareButDie } from "utils/observable";
 import { SearchParams } from "../../model/SearchParams";
 import { processContentUpdate, newUpdateMap, buildContentResult, getKeyForUpdateMap } from "./aggregation";
 import { SEEK } from "../../caching/enums";
@@ -41,7 +41,7 @@ export const aggregateCacheUpdates = (monitor, cfg = {}) => (src$) => {
         // interval in which we create new monitors
         // if we chunk the inputs then we won't make as many
         // might be easier on memory
-        inputChunk = Math.floor(pageSize / 2),
+        // inputChunk = Math.floor(pageSize / 2),
 
         // reduces duplicate updates to the skiplist
         // which can be expensive
@@ -59,7 +59,7 @@ export const aggregateCacheUpdates = (monitor, cfg = {}) => (src$) => {
     // avoids creating a new monitor for every single key emission
     // chunk to ceiling if descending, floor if ascending
     const monitorInputKey$ = targetKey$.pipe(
-        chunk(inputChunk, keyDirection == SEEK.DESC), 
+        // chunk(inputChunk, keyDirection == SEEK.DESC, "monitorInputKey"),
         distinctUntilChanged(),
         show(debug, (key) => console.log("monitorInputKey", key)),
     );
@@ -76,10 +76,10 @@ export const aggregateCacheUpdates = (monitor, cfg = {}) => (src$) => {
     // when we're just going to change it again shortly
     const groupedUpdates$ = cacheUpdates$.pipe(
         groupBy(
-            update => update.key, 
-            update => update, 
+            update => update.key,
+            update => update,
             updateByKey$ => updateByKey$.pipe(
-                timeoutWith(updateGroupLifetime, EMPTY), 
+                timeoutWith(updateGroupLifetime, EMPTY),
                 ignoreElements()
             )
         ),
@@ -104,7 +104,7 @@ export const aggregateCacheUpdates = (monitor, cfg = {}) => (src$) => {
         withLatestFrom(targetKey$),
     );
 
-    // query skiplist with scroll position (transformed into a key from the skiplist) 
+    // query skiplist with scroll position (transformed into a key from the skiplist)
     // to produce list of nearby content
     const contentList$ = contentListInputs$.pipe(
         map(buildContentResult({ pageSize, keyDirection, getKey })),

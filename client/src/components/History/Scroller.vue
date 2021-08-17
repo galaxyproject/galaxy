@@ -3,9 +3,14 @@
         <!-- mousewheel moves up and down linearly, allows for fine-tuning of view by moving just a
         few rows at a time -->
         <div ref="listing" class="listing">
-            <ul>
-                <li v-for="(item, index) in itemWindow" :key="getItemKey(item, index)">
-                    <slot :item="item" :index="index" :row-key="getItemKey(item, index)">
+            <ul class="list-unstyled m-0">
+                <li
+                    v-for="(item, index) in itemWindow"
+                    :key="getItemKey(item)"
+                    :data-row-index="index"
+                    :data-row-key="getItemKey(item)"
+                >
+                    <slot :item="item" :index="index" :row-key="getItemKey(item)">
                         <pre>{{ item }}</pre>
                     </slot>
                 </li>
@@ -15,6 +20,7 @@
         <!-- big blank scroll region uses scroll bar to drag view to entirely new region, calculated
         by visual height of the scroller knob --->
         <div
+            v-if="overlayActive"
             v-show="showScroller"
             ref="scrollSliderContainer"
             class="scrollSliderContainer"
@@ -22,6 +28,12 @@
             @scroll="onScroll"
         >
             <div ref="scrollSlider"></div>
+        </div>
+
+        <!-- debugging overlay -->
+        <div v-if="debug" class="debugOverlay">
+            <pre>{{ $attrs }}</pre>
+            <pre>{{ debugProps }}</pre>
         </div>
     </div>
 </template>
@@ -75,10 +87,26 @@ export default {
 
             // width of scroll bar container
             sbWidth: 30,
+
+            // whether to activate the 2nd scrollbar which does a fast-seek on large histories
+            overlayActive: true,
         };
     },
 
     computed: {
+        debugProps() {
+            return {
+                manualStartIndex: this.manualStartIndex,
+                keyField: this.keyField,
+                contentsLength: this.contents.length,
+                startKeyIndex: this.startKeyIndex,
+                totalMatches: this.totalMatches,
+                topRows: this.topRows,
+                bottomRows: this.bottomRows,
+                pageSize: this.pageSize,
+            };
+        },
+
         // The index to start rendering content at, can be manually adjusted with
         // the mouse wheel, and must be updated when new contents come in
         itemStartIndex() {
@@ -144,7 +172,7 @@ export default {
         // non-reactive data
         this.suppressEvents = false;
         this.suppressionTimeout = null;
-        this.debouncedUpdateCursor = debounce(this.updateCursor, 100);
+        // this.debouncedUpdateCursor = debounce(this.updateCursor, 100);
         this.debouncedAdjustScrollTop = debounce(this.adjustScrollTop, 100);
     },
 
@@ -193,7 +221,8 @@ export default {
         // value which we send out on scrollPos
 
         onScroll() {
-            this.debouncedUpdateCursor();
+            // this.debouncedUpdateCursor();
+            this.updateCursor();
         },
 
         // determines cursor from scrollTop, need to wait until after render to calculate
@@ -290,22 +319,15 @@ export default {
 </script>
 
 <style lang="scss">
+@import "scss/mixins.scss";
+
+.scrollContainer,
+.listing,
+.scrollSliderContainer {
+    @include absfill();
+}
+
 .scrollContainer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    .listing,
-    .scrollSliderContainer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-    }
-
     .listing {
         overflow-y: scroll;
         z-index: 0;
@@ -326,14 +348,14 @@ export default {
         }
     }
 
-    ul {
-        list-style: none;
-    }
-
-    ul,
-    li {
-        padding: 0;
-        margin: 0;
+    .debugOverlay {
+        background: rgba(255, 255, 255, 0.75);
+        z-index: 2;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: auto;
     }
 }
 </style>
