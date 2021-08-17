@@ -266,8 +266,11 @@ class TestCleanupEventMetadataFileAssociation(BaseTest):
 
     def test_columns(self, session, cls_, cleanup_event, metadata_file):
         create_time = datetime.now()
-        obj = cls_(create_time=create_time, cleanup_event_id=cleanup_event.id, metadata_file_id=metadata_file.id)
-
+        obj = cls_(
+            create_time=create_time,
+            cleanup_event_id=cleanup_event.id,
+            metadata_file_id=metadata_file.id
+        )
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
@@ -512,7 +515,8 @@ class TestDatasetCollection(BaseTest):
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.elements == [dataset_collection_element]
-            assert stored_obj.output_dataset_collections == [job_to_implicit_output_dataset_collection_association]
+            assert (stored_obj.output_dataset_collections
+                == [job_to_implicit_output_dataset_collection_association])
 
 
 class TestDatasetCollectionElement(BaseTest):
@@ -645,7 +649,7 @@ class TestDatasetSource(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'dataset_source'
 
-    def test_columns(self, session, cls_, dataset, dataset_source_hash):
+    def test_columns(self, session, cls_, dataset):
         source_uri, extra_files_path, transform = 'a', 'b', 'c'
         obj = cls_()
         obj.dataset = dataset
@@ -1508,7 +1512,8 @@ class TestHistoryDatasetAssociation(BaseTest):
             assert stored_obj.update_time == update_time
             assert stored_obj.state == state
             assert stored_obj.copied_from_history_dataset_association_id == copied_from_hda.id
-            assert stored_obj.copied_from_library_dataset_dataset_association_id == library_dataset_dataset_association.id
+            assert (stored_obj.copied_from_library_dataset_dataset_association_id
+                == library_dataset_dataset_association.id)
             assert stored_obj.name == name
             assert stored_obj.info == info
             assert stored_obj.blurb == blurb
@@ -1526,7 +1531,8 @@ class TestHistoryDatasetAssociation(BaseTest):
             assert stored_obj.purged == purged
             assert stored_obj.validated_state == validated_state
             assert stored_obj.validated_state_message == validated_state_message
-            assert stored_obj.hidden_beneath_collection_instance_id == history_dataset_collection_association.id
+            assert (stored_obj.hidden_beneath_collection_instance_id
+                == history_dataset_collection_association.id)
 
         delete_from_database(session, [copied_from_hda, parent])
 
@@ -1581,7 +1587,8 @@ class TestHistoryDatasetAssociation(BaseTest):
             assert stored_obj.copied_from_history_dataset_association.id == copied_from_hda.id
             assert stored_obj.copied_from_library_dataset_dataset_association.id == copied_from_ldda.id
             assert stored_obj.extended_metadata.id == extended_metadata.id
-            assert stored_obj.hidden_beneath_collection_instance.id == history_dataset_collection_association.id
+            assert (stored_obj.hidden_beneath_collection_instance.id
+                == history_dataset_collection_association.id)
             assert stored_obj.copied_to_library_dataset_dataset_associations == [copied_to_ldda]
             assert stored_obj.copied_to_history_dataset_associations == [copied_to_hda]
             assert stored_obj.tags == [history_dataset_association_tag_association]
@@ -1719,7 +1726,6 @@ class TestHistoryDatasetAssociationSubset(BaseTest):
         session,
         cls_,
         history_dataset_association,
-        history,
         history_dataset_association_factory,
     ):
         hda_subset = history_dataset_association_factory()
@@ -1888,7 +1894,8 @@ class TestHistoryDatasetCollectionAssociation(BaseTest):
             assert stored_obj.tags == [history_dataset_collection_tag_association]
             assert stored_obj.annotations == [history_dataset_collection_annotation_association]
             assert stored_obj.ratings == [history_dataset_collection_rating_association]
-            assert stored_obj.output_dataset_collection_instances == [job_to_output_dataset_collection_association]
+            assert (stored_obj.output_dataset_collection_instances
+                == [job_to_output_dataset_collection_association])
             assert stored_obj.job_state_summary  # this is a view; TODO: can we test this better?
             assert stored_obj.hidden_dataset_instances == [history_dataset_association]
 
@@ -2096,7 +2103,8 @@ class TestImplicitCollectionJobs(BaseTest):
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.jobs == [implicit_collection_jobs_job_association]
-            assert stored_obj.history_dataset_collection_associations == [history_dataset_collection_association]
+            assert (stored_obj.history_dataset_collection_associations
+                == [history_dataset_collection_association])
             assert stored_obj.workflow_invocation_step.id == workflow_invocation_step.id
 
 
@@ -2485,9 +2493,12 @@ class TestJob(BaseTest):
             assert stored_obj.parameters == [job_parameter]
             assert stored_obj.input_datasets == [job_to_input_dataset_association]
             assert stored_obj.input_dataset_collections == [job_to_input_dataset_collection_association]
-            assert stored_obj.input_dataset_collection_elements == [job_to_input_dataset_collection_element_association]
-            assert stored_obj.output_dataset_collection_instances == [job_to_output_dataset_collection_association]
-            assert stored_obj.output_dataset_collections == [job_to_implicit_output_dataset_collection_association]
+            assert (stored_obj.input_dataset_collection_elements
+                == [job_to_input_dataset_collection_element_association])
+            assert (stored_obj.output_dataset_collection_instances
+                == [job_to_output_dataset_collection_association])
+            assert (stored_obj.output_dataset_collections
+                == [job_to_implicit_output_dataset_collection_association])
             assert stored_obj.post_job_actions == [post_job_action_association]
             assert stored_obj.input_library_datasets == [job_to_input_library_dataset_association]
             assert stored_obj.output_library_datasets == [job_to_output_library_dataset_association]
@@ -2499,10 +2510,12 @@ class TestJob(BaseTest):
             assert stored_obj.numeric_metrics == [job_metric_numeric]
             assert stored_obj.job == [genome_index_tool_data]
             assert stored_obj.interactivetool_entry_points == [interactive_tool_entry_point]
-            assert stored_obj.implicit_collection_jobs_association == implicit_collection_jobs_job_association
+            assert (stored_obj.implicit_collection_jobs_association
+                == implicit_collection_jobs_job_association)
             assert stored_obj.container == job_container_association
             assert stored_obj.data_manager_association == data_manager_job_association
-            assert stored_obj.history_dataset_collection_associations == [history_dataset_collection_association]
+            assert (stored_obj.history_dataset_collection_associations
+                == [history_dataset_collection_association])
             assert stored_obj.workflow_invocation_step == workflow_invocation_step
 
 
@@ -2620,7 +2633,8 @@ class TestJobExternalOutputMetadata(BaseTest):
         obj = cls_(job, library_dataset_dataset_association)
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.library_dataset_dataset_association_id == library_dataset_dataset_association.id
+            assert (stored_obj.library_dataset_dataset_association_id
+                == library_dataset_dataset_association.id)
 
     def test_relationships(
         self,
@@ -2660,7 +2674,7 @@ class TestJobImportHistoryArchive(BaseTest):
             assert stored_obj.history_id == history.id
             assert stored_obj. archive_dir == archive_dir
 
-    def test_relationships(self, session, cls_, job, history, dataset):
+    def test_relationships(self, session, cls_, job, history):
         obj = cls_(job, history)
 
         with dbcleanup(session, obj) as obj_id:
@@ -2957,7 +2971,8 @@ class TestJobToOutputDatasetCollectionAssociation(BaseTest):
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.job.id == job.id
-            assert stored_obj.dataset_collection_instance.id == history_dataset_collection_association.id
+            assert (stored_obj.dataset_collection_instance.id
+                == history_dataset_collection_association.id)
 
 
 class TestJobToOutputLibraryDatasetAssociation(BaseTest):
@@ -3039,7 +3054,7 @@ class TestLibraryDataset(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'library_dataset'
 
-    def test_columns(self, session, cls_, library_dataset_dataset_association, library_folder):
+    def test_columns(self, session, cls_, library_folder):
         order_id = 9
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
@@ -3091,7 +3106,8 @@ class TestLibraryDataset(BaseTest):
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.library_dataset_dataset_association.id == library_dataset_dataset_association.id
+            assert (stored_obj.library_dataset_dataset_association.id
+                == library_dataset_dataset_association.id)
             assert stored_obj.folder.id == library_folder.id
             assert stored_obj.expired_datasets[0].id == ldda.id
             assert stored_obj.actions == [library_dataset_permission]
@@ -3114,7 +3130,8 @@ class TestLibraryDatasetCollectionAnnotationAssociation(BaseTest):
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
-            assert stored_obj.library_dataset_collection_id == library_dataset_collection_association.id
+            assert (stored_obj.library_dataset_collection_id
+                == library_dataset_collection_association.id)
             assert stored_obj.user_id == user.id
             assert stored_obj.annotation == annotation
 
@@ -3189,7 +3206,8 @@ class TestLibraryDatasetCollectionRatingAssociation(BaseTest):
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
-            assert stored_obj.library_dataset_collection_id == library_dataset_collection_association.id
+            assert (stored_obj.library_dataset_collection_id
+                == library_dataset_collection_association.id)
             assert stored_obj.user_id == user.id
             assert stored_obj.rating == rating
 
@@ -3216,7 +3234,8 @@ class TestLibraryDatasetCollectionTagAssociation(BaseTest):
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
-            assert stored_obj.library_dataset_collection_id == library_dataset_collection_association.id
+            assert (stored_obj.library_dataset_collection_id
+                == library_dataset_collection_association.id)
             assert stored_obj.tag_id == tag.id
             assert stored_obj.user_id == user.id
             assert stored_obj.user_tname == user_tname
@@ -3250,7 +3269,6 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
         library_dataset_dataset_association_factory,
         extended_metadata,
         user,
-        model,
     ):
         create_time = datetime.now()
         state = 'a'
@@ -3303,8 +3321,10 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
             assert stored_obj.dataset_id == dataset.id
             assert stored_obj.create_time == create_time
             assert stored_obj.update_time >= create_time  # this is sufficient for testing
-            assert stored_obj.copied_from_history_dataset_association_id == history_dataset_association.id
-            assert stored_obj.copied_from_library_dataset_dataset_association_id == copied_from_ldda.id
+            assert (stored_obj.copied_from_history_dataset_association_id
+                == history_dataset_association.id)
+            assert (stored_obj.copied_from_library_dataset_dataset_association_id
+                == copied_from_ldda.id)
             assert stored_obj.state == state
             assert stored_obj.name == name
             assert stored_obj.info == info
@@ -3375,8 +3395,10 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.library_dataset.id == library_dataset.id
             assert stored_obj.dataset.id == dataset.id
-            assert stored_obj.copied_from_history_dataset_association.id == history_dataset_association.id
-            assert stored_obj.copied_from_library_dataset_dataset_association.id == copied_from_ldda.id
+            assert (stored_obj.copied_from_history_dataset_association.id
+                == history_dataset_association.id)
+            assert (stored_obj.copied_from_library_dataset_dataset_association.id
+                == copied_from_ldda.id)
             assert stored_obj.extended_metadata.id == extended_metadata.id
             assert stored_obj.user.id == user.id
             assert stored_obj.tags == [library_dataset_dataset_association_tag_association]
@@ -3386,7 +3408,8 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
             assert stored_obj.implicitly_converted_datasets == [icda]
             assert stored_obj.implicitly_converted_parent_datasets == [icpda]
             assert stored_obj.dependent_jobs == [job_to_input_library_dataset_association]
-            assert stored_obj.creating_job_associations == [job_to_output_library_dataset_association]
+            assert (stored_obj.creating_job_associations
+                == [job_to_output_library_dataset_association])
             assert stored_obj.info_association == [library_dataset_dataset_info_association]
 
         delete_from_database(session, persisted)
@@ -3411,7 +3434,8 @@ class TestLibraryDatasetDatasetAssociationPermissions(BaseTest):
             assert stored_obj.create_time == create_time
             assert stored_obj.update_time == update_time
             assert stored_obj.action == action
-            assert stored_obj.library_dataset_dataset_association_id == library_dataset_dataset_association.id
+            assert (stored_obj.library_dataset_dataset_association_id
+                == library_dataset_dataset_association.id)
             assert stored_obj.role_id == role.id
 
     def test_relationships(self, session, cls_, library_dataset_dataset_association, role):
@@ -3419,7 +3443,8 @@ class TestLibraryDatasetDatasetAssociationPermissions(BaseTest):
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.library_dataset_dataset_association.id == library_dataset_dataset_association.id
+            assert (stored_obj.library_dataset_dataset_association.id
+                == library_dataset_dataset_association.id)
             assert stored_obj.role.id == role.id
 
 
@@ -3437,7 +3462,8 @@ class TestLibraryDatasetDatasetAssociationTagAssociation(BaseTest):
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
-            assert stored_obj.library_dataset_dataset_association_id == library_dataset_dataset_association.id
+            assert (stored_obj.library_dataset_dataset_association_id
+                == library_dataset_dataset_association.id)
             assert stored_obj.tag_id == tag.id
             assert stored_obj.user_id == user.id
             assert stored_obj.user_tname == user_tname
@@ -3450,7 +3476,8 @@ class TestLibraryDatasetDatasetAssociationTagAssociation(BaseTest):
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.library_dataset_dataset_association.id == library_dataset_dataset_association.id
+            assert (stored_obj.library_dataset_dataset_association.id
+                == library_dataset_dataset_association.id)
             assert stored_obj.tag.id == tag.id
             assert stored_obj.user.id == user.id
 
@@ -3475,7 +3502,8 @@ class TestLibraryDatasetDatasetInfoAssociation(BaseTest):
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
-            assert stored_obj.library_dataset_dataset_association_id == library_dataset_dataset_association.id
+            assert (stored_obj.library_dataset_dataset_association_id
+                == library_dataset_dataset_association.id)
             assert stored_obj.form_definition_id == form_definition.id
             assert stored_obj.form_values_id == form_values.id
             assert stored_obj.deleted == deleted
@@ -3492,7 +3520,8 @@ class TestLibraryDatasetDatasetInfoAssociation(BaseTest):
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.library_dataset_dataset_association.id == library_dataset_dataset_association.id
+            assert (stored_obj.library_dataset_dataset_association.id
+                == library_dataset_dataset_association.id)
             assert stored_obj.template.id == form_definition.id
             assert stored_obj.info.id == form_values.id
 
@@ -4186,8 +4215,14 @@ class TestQuota(BaseTest):
             assert stored_obj.operation == operation
             assert stored_obj.deleted is False
 
-    def test_relationships(self, session, cls_, default_quota_association, group_quota_association, user_quota_association):
-
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        default_quota_association,
+        group_quota_association,
+        user_quota_association
+    ):
         def add_association(assoc_object, assoc_attribute):
             assoc_object.quota = obj
             getattr(obj, assoc_attribute).append(assoc_object)
@@ -4256,7 +4291,8 @@ class TestRole(BaseTest):
             assert stored_obj.library_actions == [library_permission]
             assert stored_obj.library_folder_actions == [library_folder_permission]
             assert stored_obj.library_dataset_actions == [library_dataset_permission]
-            assert stored_obj.library_dataset_dataset_actions == [library_dataset_dataset_association_permission]
+            assert (stored_obj.library_dataset_dataset_actions
+                == [library_dataset_dataset_association_permission])
             assert stored_obj.users == [user_role_association]
 
 
@@ -4360,7 +4396,8 @@ class TestStoredWorkflow(BaseTest):
         user,
         stored_workflow_rating_association_factory
     ):
-        _run_average_rating_test(session, stored_workflow, user, stored_workflow_rating_association_factory)
+        _run_average_rating_test(
+            session, stored_workflow, user, stored_workflow_rating_association_factory)
 
 
 class TestStoredWorkflowAnnotationAssociation(BaseTest):
@@ -4553,14 +4590,19 @@ class TestTag(BaseTest):
             getattr(obj, assoc_attribute).append(assoc_object)
 
         add_association(history_tag_association, 'tagged_histories')
-        add_association(history_dataset_association_tag_association, 'tagged_history_dataset_associations')
-        add_association(library_dataset_dataset_association_tag_association, 'tagged_library_dataset_dataset_associations')
+        add_association(
+            history_dataset_association_tag_association, 'tagged_history_dataset_associations')
+        add_association(
+            library_dataset_dataset_association_tag_association,
+            'tagged_library_dataset_dataset_associations')
         add_association(page_tag_association, 'tagged_pages')
         add_association(workflow_step_tag_association, 'tagged_workflow_steps')
         add_association(stored_workflow_tag_association, 'tagged_stored_workflows')
         add_association(visualization_tag_association, 'tagged_visualizations')
-        add_association(history_dataset_collection_tag_association, 'tagged_history_dataset_collections')
-        add_association(library_dataset_collection_tag_association, 'tagged_library_dataset_collections')
+        add_association(
+            history_dataset_collection_tag_association, 'tagged_history_dataset_collections')
+        add_association(
+            library_dataset_collection_tag_association, 'tagged_library_dataset_collections')
         add_association(tool_tag_association, 'tagged_tools')
 
         with dbcleanup(session, obj) as obj_id:
@@ -4568,14 +4610,18 @@ class TestTag(BaseTest):
             assert stored_obj.parent.id == parent_tag.id
             assert stored_obj.children == [child_tag]
             assert stored_obj.tagged_histories == [history_tag_association]
-            assert stored_obj.tagged_history_dataset_associations == [history_dataset_association_tag_association]
-            assert stored_obj.tagged_library_dataset_dataset_associations == [library_dataset_dataset_association_tag_association]
+            assert (stored_obj.tagged_history_dataset_associations
+                == [history_dataset_association_tag_association])
+            assert (stored_obj.tagged_library_dataset_dataset_associations
+                == [library_dataset_dataset_association_tag_association])
             assert stored_obj.tagged_pages == [page_tag_association]
             assert stored_obj.tagged_workflow_steps == [workflow_step_tag_association]
             assert stored_obj.tagged_stored_workflows == [stored_workflow_tag_association]
             assert stored_obj.tagged_visualizations == [visualization_tag_association]
-            assert stored_obj.tagged_history_dataset_collections == [history_dataset_collection_tag_association]
-            assert stored_obj.tagged_library_dataset_collections == [library_dataset_collection_tag_association]
+            assert (stored_obj.tagged_history_dataset_collections
+                == [history_dataset_collection_tag_association])
+            assert (stored_obj.tagged_library_dataset_collections
+                == [library_dataset_collection_tag_association])
             assert stored_obj.tagged_tools == [tool_tag_association]
 
 
@@ -4917,7 +4963,8 @@ class TestUser(BaseTest):
             assert stored_obj.workflows_shared_by_others == [stored_workflow_user_share_association]
             assert stored_obj.roles == [user_role_association]
             assert stored_obj.stored_workflows == [stored_workflow]
-            assert stored_obj.visualizations_shared_by_others == [visualization_user_share_association]
+            assert (stored_obj.visualizations_shared_by_others
+                == [visualization_user_share_association])
 
         delete_from_database(session, [history1, history2, swme])
 
@@ -5216,8 +5263,15 @@ class TestVisualization(BaseTest):
 
         delete_from_database(session, revision2)
 
-    def test_average_rating(self, session, visualization, user, visualization_rating_association_factory):
-        _run_average_rating_test(session, visualization, user, visualization_rating_association_factory)
+    def test_average_rating(
+        self,
+        session,
+        visualization,
+        user,
+        visualization_rating_association_factory
+    ):
+        _run_average_rating_test(
+            session, visualization, user, visualization_rating_association_factory)
 
 
 class TestVisualizationAnnotationAssociation(BaseTest):
@@ -5504,8 +5558,10 @@ class TestWorkflowInvocation(BaseTest):
         workflow_request_to_input_dataset_collection_association,
         workflow_invocation_output_value,
     ):
-        subworkflow_invocation_assoc = workflow_invocation_to_subworkflow_invocation_association_factory()
-        parent_workflow_invocation_assoc = workflow_invocation_to_subworkflow_invocation_association_factory()
+        subworkflow_invocation_assoc = \
+            workflow_invocation_to_subworkflow_invocation_association_factory()
+        parent_workflow_invocation_assoc = \
+            workflow_invocation_to_subworkflow_invocation_association_factory()
 
         obj = cls_()
         obj.workflow = workflow
@@ -5514,10 +5570,12 @@ class TestWorkflowInvocation(BaseTest):
         obj.step_states.append(workflow_request_step_state)
         obj.input_step_parameters.append(workflow_request_input_step_parameter)
         obj.input_datasets.append(workflow_request_to_input_dataset_association)
-        obj.input_dataset_collections.append(workflow_request_to_input_dataset_collection_association)
+        obj.input_dataset_collections.append(
+            workflow_request_to_input_dataset_collection_association)
         obj.subworkflow_invocations.append(subworkflow_invocation_assoc)
         obj.steps.append(workflow_invocation_step)
-        obj.output_dataset_collections.append(workflow_invocation_output_dataset_collection_association)
+        obj.output_dataset_collections.append(
+            workflow_invocation_output_dataset_collection_association)
         obj.output_datasets.append(workflow_invocation_output_dataset_association)
         obj.parent_workflow_invocation_association.append(parent_workflow_invocation_assoc)
         obj.output_values.append(workflow_invocation_output_value)
@@ -5531,15 +5589,19 @@ class TestWorkflowInvocation(BaseTest):
             assert stored_obj.step_states == [workflow_request_step_state]
             assert stored_obj.input_step_parameters == [workflow_request_input_step_parameter]
             assert stored_obj.input_datasets == [workflow_request_to_input_dataset_association]
-            assert stored_obj.input_dataset_collections == [workflow_request_to_input_dataset_collection_association]
+            assert (stored_obj.input_dataset_collections
+                == [workflow_request_to_input_dataset_collection_association])
             assert stored_obj.subworkflow_invocations == [subworkflow_invocation_assoc]
             assert stored_obj.steps == [workflow_invocation_step]
-            assert stored_obj.output_dataset_collections == [workflow_invocation_output_dataset_collection_association]
+            assert (stored_obj.output_dataset_collections
+                == [workflow_invocation_output_dataset_collection_association])
             assert stored_obj.output_datasets == [workflow_invocation_output_dataset_association]
-            assert stored_obj.parent_workflow_invocation_association == [parent_workflow_invocation_assoc]
+            assert (stored_obj.parent_workflow_invocation_association
+                == [parent_workflow_invocation_assoc])
             assert stored_obj.output_values == [workflow_invocation_output_value]
 
-        delete_from_database(session, [subworkflow_invocation_assoc, parent_workflow_invocation_assoc])
+        delete_from_database(
+            session, [subworkflow_invocation_assoc, parent_workflow_invocation_assoc])
 
 
 class TestWorkflowInvocationOutputDatasetAssociation(BaseTest):
@@ -5770,7 +5832,8 @@ class TestWorkflowInvocationStep(BaseTest):
         obj.workflow_step = workflow_step
         obj.job = job
         obj.implicit_collection_jobs = implicit_collection_jobs
-        obj.output_dataset_collections.append(workflow_invocation_step_output_dataset_collection_association)
+        obj.output_dataset_collections.append(
+            workflow_invocation_step_output_dataset_collection_association)
         obj.output_datasets.append(workflow_invocation_step_output_dataset_association)
 
         with dbcleanup(session, obj) as obj_id:
@@ -5779,8 +5842,10 @@ class TestWorkflowInvocationStep(BaseTest):
             assert stored_obj.workflow_step.id == workflow_step.id
             assert stored_obj.job.id == job.id
             assert stored_obj.implicit_collection_jobs.id == implicit_collection_jobs.id
-            assert stored_obj.output_dataset_collections == [workflow_invocation_step_output_dataset_collection_association]
-            assert stored_obj.output_datasets == [workflow_invocation_step_output_dataset_association]
+            assert (stored_obj.output_dataset_collections
+                == [workflow_invocation_step_output_dataset_collection_association])
+            assert (stored_obj.output_datasets
+                == [workflow_invocation_step_output_dataset_association])
             assert stored_obj.output_value.id == workflow_invocation_output_value.id
 
     def test_subworkflow_invocation_attribute(
@@ -5826,7 +5891,13 @@ class TestWorkflowInvocationStepOutputDatasetAssociation(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'workflow_invocation_step_output_dataset_association'
 
-    def test_columns(self, session, cls_, workflow_invocation_step, history_dataset_association):
+    def test_columns(
+        self,
+        session,
+        cls_,
+        workflow_invocation_step,
+        history_dataset_association
+    ):
         output_name = 'a'
         obj = cls_()
         obj.workflow_invocation_step = workflow_invocation_step
@@ -5840,7 +5911,13 @@ class TestWorkflowInvocationStepOutputDatasetAssociation(BaseTest):
             assert stored_obj.dataset_id == history_dataset_association.id
             assert stored_obj.output_name == output_name
 
-    def test_relationships(self, session, cls_, workflow_invocation_step, history_dataset_association):
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow_invocation_step,
+        history_dataset_association
+    ):
         obj = cls_()
         obj.workflow_invocation_step = workflow_invocation_step
         obj.dataset = history_dataset_association
@@ -5934,7 +6011,6 @@ class TestWorkflowInvocationToSubworkflowInvocationAssociation(BaseTest):
         cls_,
         workflow_invocation,
         workflow_step,
-        workflow,
         workflow_invocation_factory,
     ):
         parent_workflow_invocation = workflow_invocation_factory()
@@ -6068,7 +6144,14 @@ class TestWorkflowRequestToInputDatasetAssociation(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'workflow_request_to_input_dataset'
 
-    def test_columns(self, session, cls_, workflow_step, workflow_invocation, history_dataset_association):
+    def test_columns(
+        self,
+        session,
+        cls_,
+        workflow_step,
+        workflow_invocation,
+        history_dataset_association
+    ):
         name = 'a'
         obj = cls_()
         obj.name = name
@@ -6083,7 +6166,14 @@ class TestWorkflowRequestToInputDatasetAssociation(BaseTest):
             assert stored_obj.workflow_step_id == workflow_step.id
             assert stored_obj.dataset_id == history_dataset_association.id
 
-    def test_relationships(self, session, cls_, workflow_step, workflow_invocation, history_dataset_association):
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        workflow_step,
+        workflow_invocation,
+        history_dataset_association
+    ):
         obj = cls_()
         obj.workflow_invocation = workflow_invocation
         obj.workflow_step = workflow_step
@@ -6449,7 +6539,7 @@ def cloud_authz(model, session, user, user_authnz_token):
 
 
 @pytest.fixture
-def custos_authnz_token(model, session, user, user_authnz_token):
+def custos_authnz_token(model, session, user):
     instance = model.CustosAuthnzToken(user, None, None, None, None, None, None, None)
     yield from dbcleanup_wrapper(session, instance)
 
@@ -6572,7 +6662,7 @@ def form_values(model, session):
 
 
 @pytest.fixture
-def galaxy_session(model, session, user):
+def galaxy_session(model, session):
     instance = model.GalaxySession(session_key=get_unique_value())
     yield from dbcleanup_wrapper(session, instance)
 
@@ -6668,7 +6758,8 @@ def history_dataset_collection_rating_association(
     user,
     history_dataset_collection_association,
 ):
-    instance = model.HistoryDatasetCollectionRatingAssociation(user, history_dataset_collection_association)
+    instance = model.HistoryDatasetCollectionRatingAssociation(
+        user, history_dataset_collection_association)
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6719,8 +6810,13 @@ def implicitly_converted_dataset_association(model, session, history_dataset_ass
 
 
 @pytest.fixture
-def implicitly_created_dataset_collection_input(model, session, history_dataset_collection_association):
-    instance = model.ImplicitlyCreatedDatasetCollectionInput(None, history_dataset_collection_association)
+def implicitly_created_dataset_collection_input(
+    model,
+    session,
+    history_dataset_collection_association
+):
+    instance = model.ImplicitlyCreatedDatasetCollectionInput(
+        None, history_dataset_collection_association)
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6791,8 +6887,13 @@ def job_to_input_dataset_association(model, session, history_dataset_association
 
 
 @pytest.fixture
-def job_to_input_dataset_collection_association(model, session, history_dataset_collection_association):
-    instance = model.JobToInputDatasetCollectionAssociation(None, history_dataset_collection_association)
+def job_to_input_dataset_collection_association(
+    model,
+    session,
+    history_dataset_collection_association
+):
+    instance = model.JobToInputDatasetCollectionAssociation(
+        None, history_dataset_collection_association)
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6815,8 +6916,13 @@ def job_to_output_dataset_association(model, session, history_dataset_associatio
 
 
 @pytest.fixture
-def job_to_output_dataset_collection_association(model, session, history_dataset_collection_association):
-    instance = model.JobToOutputDatasetCollectionAssociation(None, history_dataset_collection_association)
+def job_to_output_dataset_collection_association(
+    model,
+    session,
+    history_dataset_collection_association
+):
+    instance = model.JobToOutputDatasetCollectionAssociation(
+        None, history_dataset_collection_association)
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -6875,8 +6981,14 @@ def library_dataset_dataset_association(model, session):
 
 
 @pytest.fixture
-def library_dataset_dataset_association_permission(model, session, library_dataset_dataset_association, role):
-    instance = model.LibraryDatasetDatasetAssociationPermissions('a', library_dataset_dataset_association, role)
+def library_dataset_dataset_association_permission(
+    model,
+    session,
+    library_dataset_dataset_association,
+    role
+):
+    instance = model.LibraryDatasetDatasetAssociationPermissions(
+        'a', library_dataset_dataset_association, role)
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -7085,7 +7197,7 @@ def user(model, session):
 
 
 @pytest.fixture
-def user_address(model, session, user):
+def user_address(model, session):
     instance = model.UserAddress()
     instance.name = 'a'
     instance.address = 'b'
@@ -7316,14 +7428,14 @@ def history_factory(model):
 
 
 @pytest.fixture
-def history_rating_association_factory(model, user, history):
+def history_rating_association_factory(model):
     def make_instance(*args, **kwds):
         return model.HistoryRatingAssociation(*args, **kwds)
     return make_instance
 
 
 @pytest.fixture
-def implicitly_converted_dataset_association_factory(model, user, history_dataset_association):
+def implicitly_converted_dataset_association_factory(model, history_dataset_association):
     def make_instance(*args, **kwds):
         instance = model.ImplicitlyConvertedDatasetAssociation(
             dataset=history_dataset_association,
