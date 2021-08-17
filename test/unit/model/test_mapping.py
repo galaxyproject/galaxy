@@ -2629,6 +2629,10 @@ class TestJobExternalOutputMetadata(BaseTest):
             assert stored_obj.filename_override_metadata == filename_override_metadata
             assert stored_obj.job_runner_external_pid == job_runner_external_pid
 
+        # Expunge from session: we're creating and storing a new object that will recieve
+        # the same primary key. This will trigger a SAWarning, since this identity already
+        # exists in SQLAlchemy's identity map.
+        session.expunge(stored_obj)
         # Now pass an ldda (w/no extra fields, since we've just tested them)
         obj = cls_(job, library_dataset_dataset_association)
         with dbcleanup(session, obj) as obj_id:
@@ -2651,6 +2655,8 @@ class TestJobExternalOutputMetadata(BaseTest):
             assert stored_obj.job.id == job.id
             assert stored_obj.dataset.id == history_dataset_association.id
 
+        # Expunge: see comment in test_columns()
+        session.expunge(stored_obj)
         # Now pass an ldda
         obj = cls_(job, library_dataset_dataset_association)
         with dbcleanup(session, obj) as obj_id:
