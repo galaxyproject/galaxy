@@ -37,10 +37,9 @@ class GroupRolesManager:
         group = self._get_group(trans, group_id)
         role = self._get_role(trans, role_id)
         group_role = self._get_group_role(trans, group, role)
-        if group_role is None:
+        if not group_role:
             raise ObjectNotFound(f"Role {role.name} not in group {group.name}")
         return role
-        # return self._serialize_group_role(group_id, role)
 
     def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
         """
@@ -50,7 +49,7 @@ class GroupRolesManager:
         group = self._get_group(trans, group_id)
         role = self._get_role(trans, role_id)
         group_role = self._get_group_role(trans, group, role)
-        if group_role is None:
+        if not group_role:
             self._add_role_to_group(trans, group, role)
         return role
 
@@ -62,7 +61,7 @@ class GroupRolesManager:
         group = self._get_group(trans, group_id)
         role = self._get_role(trans, role_id)
         group_role = self._get_group_role(trans, group, role)
-        if group_role is None:
+        if not group_role:
             raise ObjectNotFound(f"Role {role.name} not in group {group.name}")
         self._remove_role_from_group(trans, group_role)
         return role
@@ -70,14 +69,14 @@ class GroupRolesManager:
     def _get_group(self, trans: ProvidesAppContext, encoded_group_id: EncodedDatabaseIdField) -> Any:
         decoded_group_id = decode_id(self._app, encoded_group_id)
         group = trans.sa_session.query(model.Group).get(decoded_group_id)
-        if group is None:
+        if not group:
             raise ObjectNotFound(f"Group with id {encoded_group_id} was not found.")
         return group
 
     def _get_role(self, trans: ProvidesAppContext, encoded_role_id: EncodedDatabaseIdField) -> model.Role:
         decoded_role_id = decode_id(self._app, encoded_role_id)
         role = trans.sa_session.query(model.Role).get(decoded_role_id)
-        if role is None:
+        if not role:
             raise ObjectNotFound(f"Role with id {encoded_role_id} was not found.")
         return role
 
