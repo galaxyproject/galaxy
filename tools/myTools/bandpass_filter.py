@@ -51,15 +51,17 @@ def __main__():
         pass
 
     # 标题
-    title_items = title_line.strip().split()
+    
 
     if(len(filted) > 0 and len(filted[0]) > 0):
         row_num = len(filted[0])
         pass
     with open(out_path, 'w') as out_f:
-        for item in title_items:
-            out_f.write("%s\t" % item)
-        out_f.write('\n')
+        if has_title is 't':
+            title_items = title_line.strip().split()
+            for item in title_items:
+                out_f.write("%s\t" % item)
+            out_f.write('\n')
 
         for i in range(row_num):
             for col in filted:

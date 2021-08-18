@@ -1,5 +1,5 @@
 # 相关性分析
-# # 傅里叶变换，将时域数据转为频域数据!
+# 傅里叶变换，将时域数据转为频域数据!
 # 2021.8.9
 
 import sys
@@ -52,8 +52,6 @@ def __main__():
         col2.append(ori2[index]*1000)
         index+=div
     
-    
-
     title1 = title_split[idx1]+"(*1000)"
     title2 = title_split[idx2]+"(*1000)"
 

@@ -71,10 +71,11 @@ def __main__():
         rst.append(col[1:])
 
     with open(out_path, 'w') as f:
-        title_items = title_line.strip().split()
-        for itm in title_items:
-            f.write("%s\t" % itm)
-        f.write('\n')
+        if has_title is 't':
+            title_items = title_line.strip().split()
+            for itm in title_items:
+                f.write("%s\t" % itm)
+            f.write('\n')
         if len(rst) > 0 and len(rst[0]) > 0:
             row_num = len(rst[0])
         for row in range(row_num):

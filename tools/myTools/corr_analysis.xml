@@ -7,8 +7,8 @@
       <param name="col2" type="text" label="列编号2" value="1"/>
       <param name="div"  type="text" label="取值跨度" value='800'/>
       <param name='has_title' type='select' label='是否存在标题'>
-        <option value='f'>False</option>
         <option value="t">True</option>
+        <option value='f'>False</option>
       </param>
 
     </inputs>

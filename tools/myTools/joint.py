@@ -25,13 +25,14 @@ def __main__():
 
     if(has_title1 == 't'):
         title_line1 = in_f1.readline()
+        title_itms = title_line1.strip().split()
+        for itm in title_itms:
+            out_f.write("%s\t" % itm)
+        out_f.write('\n')
     if(has_title2 == 'f'):
         title_line2 = in_f2.readline()  # 去标题
 
-    title_itms = title_line1.strip().split()
-    for itm in title_itms:
-        out_f.write("%s\t" % itm)
-    out_f.write('\n')
+    
 
     for line in in_f1:
         print(line, file=out_f)

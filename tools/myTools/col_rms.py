@@ -24,10 +24,10 @@ def __main__():
 
     if(has_title is 't'):
         title_line = in_f1.readline()  # 去标题
-    title_itms = title_line.strip().split()
-    for itm in title_itms:
-        out_f.write("%s\t" % itm)
-    out_f.write('\n')
+        title_itms = title_line.strip().split()
+        for itm in title_itms:
+            out_f.write("%s\t" % itm)
+        out_f.write('\n')
 
     while True:
         counters = [[] for i in range(12)]

@@ -21,10 +21,10 @@ def __main__():
         stop_err("无法打开或创建文件失败！")
     if(has_title is 't'):
         title_line = in_f.readline()  # 去标题
-    title_itms = title_line.strip().split()
-    for itm in title_itms:
-        out_f.write("%s\t" % itm)
-    out_f.write('\n')
+        title_itms = title_line.strip().split()
+        for itm in title_itms:
+            out_f.write("%s\t" % itm)
+        out_f.write('\n')
     while True:
         counters = [[] for i in range(12)]
         num = 0
