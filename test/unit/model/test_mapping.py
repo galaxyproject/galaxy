@@ -1,45 +1,63 @@
 """
-TODO: documentaion on writing model tests goes here
+This module contains tests for column- and relationship-mapped attributes of
+models, table names, as well as table-level indexes and constraints. These
+tests do not address any business logic defined in the model.
 
-Example:
+Tests are grouped into classes, one for each model (tests do NOT share class instances:
+https://docs.pytest.org/en/6.2.x/getting-started.html#group-multiple-tests-in-a-class)
 
-TestFoo(BaseTest):  # BaseTest is parent class
 
-    # test table-level properties (e.g. table name, indexes, unique constraints)
-    def test_table(self, cls_):  # cls_ is fixture defined in parent class, returns class under test.
-        assert cls_.__tablename__ == 'foo'  # assert table name
-        assert has_index(cls.__table__, ('foo',))  # second arg is a tuple containg field names
+Example of a simple model and its tests:
+
+class Planet(Base):
+    __tablename__ = 'planet'
+    __table_args__ = (Index('index_name', 'name'),)
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    star_id = Column(Integer, ForeignKey('star.id'))
+
+    star = relationship('Star')
+    satellites = relationship('Satellite')
+
+    def __init__(self, name):
+        self.name = name
+
+
+class TestPlanet(BaseTest):  # BaseTest is a base class; we need it to get the type of the model under test
+
+    # test table name and table-level indexes and constraints
+    def test_table(self, cls_):  # cls_ is a fixture defined in BaseTest, returns the type under test.
+        assert cls_.__tablename__ == 'planet'  # verify table name
+        assert has_index(cls.__table__, ('name',))  # verify index; second arg is a tuple containg field names
 
     # test column-mapped fields
-    def test_columns(self, session, cls_):
-        some_foo, some_bar = 42, 'stuff'  # create test values here
-        obj = cls_(foo=some_foo)  # pass test values to constructor
-        obj.bar = some_bar  # assign test values to obj if can't pass to constructor
+    def test_columns(self, session, cls_, star):  # star is a fixture that provides a persisted instance of Star
+        name = 'Saturn'  # create test values
+        obj = cls_(name=name)  # pass test values to constructor
+        obj.star = star  # assign test values to obj if can't pass to constructor
 
         with dbcleanup(session, obj) as obj_id:  # use context manager to ensure obj is deleted from db on exit.
             stored_obj = get_stored_obj(session, cls_, obj_id)  # retrieve data from db and create new obj.
             # check ALL column-mapped fields
             assert stored_obj.id == obj_id
-            assert stored_obj.create_time == create_time
-            assert stored_obj.user_id == user_id
-            assert stored_obj.key == key
+            assert stored_obj.name == name
+            assert stored_obj.star_id == star.id  # test the column attribute star_id
 
     # test relationship-mapped fields
-    def test_relationships(self, session, cls_):
-        obj = cls_()  # use minimal possible constructor
+    def test_relationships(self, session, cls_, star, satellite):  # satellite is a fixture for Satellite
+        obj = cls_(name=name)  # use minimal possible constructor
+        obj.star = star  # assign test values to test relationship-mapped attributes (not passed to constructor)
+        obj.satellites.append(satellite)  # add a related object
 
-        with dbcleanup(session, obj) as obj_id:
+        with dbcleanup(session, obj) as obj_id:  # same as in previous test: store, then retrieve
             stored_obj = get_stored_obj(session, cls_, obj_id)
             # check ALL relationship-mapped fields
+            assert stored_obj.star.id == star.id  # test the relationship attribute star.id  (note the dot operator)
+            assert stored_obj.satellites == [satellite]  # verify collecion of related objects
 
-# TODO: ADD MORE EXAMPLES!
-- point to TestLibraryDataset for example of using more than one object of same type (and, thus,
-    not being able to use a fixture.
-- TestPage: how to call cleanup explicitly (see average_ratings)
-# TODO: explain why we test for columns:
-            assert stored_obj.user_id == user_id
-            and for relationships:
-            assert stored_obj.user.id == user_id
+
+See other model tests in this module for examples of more complex setups.
 """
 
 from contextlib import contextmanager
