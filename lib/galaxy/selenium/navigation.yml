@@ -116,6 +116,7 @@ history_panel:
       # These now appear other places :_( - e.g. in the invocation view so we'll try
       # prefixing ids with #current-history-panel but obviously we need to switch to classes or data
       _: '#current-history-panel #${history_content_type}-${id}'
+      by_state_and_hid: '.beta.history .listing [data-hid="${hid}"][data-state="${state}"]'
 
       title: '${_} .content-title'
       hid: '${_} .hid'
@@ -168,6 +169,7 @@ history_panel:
 
   selectors:
     beta: 'section.history'
+    by_attribute: '.beta.history [${name}="${value}"]'
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
     refresh_button: '.history-refresh-button'

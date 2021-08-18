@@ -82,6 +82,7 @@
                                     :selected="isSelected(item)"
                                     @update:selected="setSelected(item, $event)"
                                     @viewCollection="$emit('viewCollection', item)"
+                                    :data-hid="item.hid"
                                 />
                             </template>
                         </Scroller>

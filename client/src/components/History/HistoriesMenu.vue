@@ -28,7 +28,7 @@
                 <span v-localize>Change the Current History</span>
             </b-dropdown-item>
 
-            <b-dropdown-item @click="$emit('createNewHistory')">
+            <b-dropdown-item data-description="create new history" @click="$emit('createNewHistory')">
                 <Icon class="mr-1" icon="plus" />
                 <span v-localize>Create a New History</span>
             </b-dropdown-item>

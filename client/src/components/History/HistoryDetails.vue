@@ -5,8 +5,8 @@ Emit new History model object when done via .sync syntax
 
 <template>
     <section class="history-details d-flex">
-        <div class="flex-grow-1">
-            <h3>{{ historyName || "(History Name)" }}</h3>
+        <div class="flex-grow-1 overflow-hidden">
+            <h3 data-description="history name display">{{ historyName || "(History Name)" }}</h3>
             <h5 class="history-size">{{ history.size | niceFileSize }}</h5>
 
             <!-- display title, annotation, tags -->
@@ -23,6 +23,7 @@ Emit new History model object when done via .sync syntax
                     placeholder="History Name"
                     trim
                     max-rows="4"
+                    data-description="history name input"
                 ></b-textarea>
 
                 <b-textarea
@@ -31,6 +32,7 @@ Emit new History model object when done via .sync syntax
                     placeholder="Annotation (optional)"
                     trim
                     max-rows="4"
+                    data-description="history annotation input"
                 ></b-textarea>
 
                 <HistoryTags class="mt-3" :history="history" />

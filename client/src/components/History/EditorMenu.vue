@@ -6,6 +6,7 @@
             :pressed="editing"
             icon="pen"
             @click="$emit('update:editing', !editing)"
+            data-description="history editor toggle"
         />
 
         <template v-if="editing">
@@ -16,6 +17,7 @@
                 :class="{ disabled: !valid }"
                 icon="save"
                 @click="$emit('save')"
+                data-description="history editor save button"
             />
 
             <!-- revert -->
