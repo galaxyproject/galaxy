@@ -7,8 +7,8 @@
     <param name="end" type="text" value="end" label="终止行标"/>
     <param name='title' type="text" value='Figure' label="图片标题"/>
     <param name='has_title' type='select' label='是否存在标题'>
-      <option value='f'>False</option>
       <option value="t">True</option>
+      <option value='f'>False</option>
     </param>
   </inputs>
   <outputs>
