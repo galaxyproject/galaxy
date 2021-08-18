@@ -26,6 +26,10 @@ api_tags_metadata = [
         "description": "Operations with genome data.",
     },
     {
+        "name": "group_roles",
+        "description": "Operations with group roles.",
+    },
+    {
         "name": "licenses",
         "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",
     },
