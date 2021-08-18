@@ -46,17 +46,9 @@ import SuitableConvertersTab from "./SuitableConvertersTab";
 import { GenomeProvider, SuitableConvertersProvider } from "../../WorkflowInvocationState/providers";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faDatabase } from "@fortawesome/free-solid-svg-icons";
-import { faTable } from "@fortawesome/free-solid-svg-icons";
-import { faBars } from "@fortawesome/free-solid-svg-icons";
-import { faUser } from "@fortawesome/free-solid-svg-icons";
-import { faCog } from "@fortawesome/free-solid-svg-icons";
+import { faDatabase, faTable, faBars, faUser, faCog } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faDatabase);
-library.add(faTable);
-library.add(faBars);
-library.add(faCog);
-library.add(faUser);
+library.add(faDatabase, faTable, faBars, faUser, faCog);
 
 Vue.use(BootstrapVue);
 export default {
