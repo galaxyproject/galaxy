@@ -20,6 +20,7 @@ Services.mockImplementation(() => {
                 {
                     name: "name_0",
                     description: "description_0",
+                    tool_shed: "toolshed_1",
                     tool_shed_status: {
                         latest_installable_revision: false,
                     },
@@ -27,6 +28,7 @@ Services.mockImplementation(() => {
                 {
                     name: "name_1",
                     description: "description_1",
+                    tool_shed: "toolshed_2",
                     tool_shed_status: {
                         latest_installable_revision: true,
                     },
@@ -58,5 +60,6 @@ describe("InstalledList", () => {
         expect(links.length).toBe(3);
         const badge = links.at(1).find(".badge");
         expect(badge.text()).toBe("Newer version available!");
+        expect(wrapper.find('th[role="columnheader"][aria-colindex="3"] > div').text()).toBe("Tool Shed");
     });
 });
