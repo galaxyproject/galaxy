@@ -6,7 +6,7 @@ import zipfile
 from io import BytesIO
 
 import pytest
-from requests import get
+from requests import get, put
 
 from galaxy.util import galaxy_root_path
 from galaxy_test.base import rules_test_data
@@ -307,6 +307,40 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         tool_info = tool_show_response.json()
         self._assert_has_keys(tool_info, "inputs", "outputs", "panel_section_id")
         return tool_info
+
+    @skip_without_tool("model_attributes")
+    @uses_test_history(require_new=False)
+    def test_model_attributes_sanitization(self, history_id):
+        cool_name_with_quote = "cool name with a quo\"te"
+        cool_name_without_quote = "cool name with a quo__dq__te"
+
+        current_user = self._get("users/current").json()
+        user_info_url = self._api_url(f"users/{current_user['id']}/information/inputs", use_key=True)
+        put_response = put(user_info_url, data=json.dumps({"address_0|desc": cool_name_with_quote}))
+        put_response.raise_for_status()
+
+        response = get(user_info_url).json()
+        self.assertEqual(len(response["addresses"]), 1)
+        self.assertEqual(response["addresses"][0]["desc"], cool_name_with_quote)
+
+        hda1 = self.dataset_populator.new_dataset(history_id, content='1\t2\t3', name=cool_name_with_quote)
+        assert hda1["name"] == cool_name_with_quote
+
+        rval = self._run(
+            tool_id="model_attributes",
+            inputs={"input1": dataset_to_param(hda1)},
+            history_id=history_id,
+            assert_ok=True,
+            wait_for_job=True,
+        )
+        sanitized_dataset_name = self.dataset_populator.get_history_dataset_content(history_id, dataset=rval["outputs"][0])
+        assert sanitized_dataset_name.strip() == cool_name_without_quote
+
+        sanitized_email = self.dataset_populator.get_history_dataset_content(history_id, dataset=rval["outputs"][1])
+        assert '"' not in sanitized_email
+
+        sanitized_address = self.dataset_populator.get_history_dataset_content(history_id, dataset=rval["outputs"][2])
+        assert sanitized_address.strip() == cool_name_without_quote
 
     @skip_without_tool("composite_output")
     def test_test_data_filepath_security(self):
