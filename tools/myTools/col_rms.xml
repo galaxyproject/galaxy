@@ -2,21 +2,21 @@
   <description>for each column in a file</description>
   <command>python '${__tool_directory__}/col_rms.py' '$input1' '$sec' '$output' '$has_title'</command>
   <inputs>
-    <param format="tabular" name="input1" type="data" label="输入文件1"/>
-    <param name="sec" type="text" value="50000" label="计算区间"/>
+    <param format="tabular" name="input1" type="data" label="输入文件1" />
+    <param name="sec" type="text" value="50000" label="计算区间" />
     <param name='has_title' type='select' label='是否存在标题'>
-      <option value='f'>False</option>
       <option value="t">True</option>
+      <option value='f'>False</option>
     </param>
   </inputs>
   <outputs>
-    <data format="tabular" name="output" label="输出文件"/>
+    <data format="tabular" name="output" label="输出文件" />
   </outputs>
 
   <tests>
     <test>
-      <param name="input" value="fa_gc_content_input.fa"/>
-      <output name="out_file1" file="fa_gc_content_output.txt"/>
+      <param name="input" value="fa_gc_content_input.fa" />
+      <output name="out_file1" file="fa_gc_content_output.txt" />
     </test>
   </tests>
   <help>
