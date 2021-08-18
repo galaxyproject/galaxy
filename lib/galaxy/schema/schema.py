@@ -1909,6 +1909,17 @@ class RoleListModel(BaseModel):
 # Keeping it as a Tuple for now for backward compatibility
 RoleNameIdTuple = Tuple[str, EncodedDatabaseIdField]
 
+# Group_Roles -----------------------------------------------------------------
+
+
+class GroupRoleModel(BaseModel):
+    id: EncodedDatabaseIdField = RoleIdField
+    name: str = RoleNameField
+    url: RelativeUrl = RelativeUrlField
+
+
+class GroupRoleListModel(BaseModel):
+    __root__: List[GroupRoleModel]
 
 # Libraries -----------------------------------------------------------------
 

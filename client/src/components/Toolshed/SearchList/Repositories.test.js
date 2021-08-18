@@ -33,7 +33,7 @@ describe("Repositories", () => {
     it("test repository details loading", async () => {
         const wrapper = mount(Repositories, {
             propsData: {
-                query: true,
+                query: "toolname",
                 scrolled: false,
                 toolshedUrl: "toolshedUrl",
             },
