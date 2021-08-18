@@ -2,7 +2,8 @@
     <div class="unified-panel">
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-text">Tools</div>
+                <div class="panel-header-text">工具</div>
+                <!-- <div class="panel-header-text">Tools</div> -->
             </div>
         </div>
         <div class="unified-panel-controls">

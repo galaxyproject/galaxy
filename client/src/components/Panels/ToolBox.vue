@@ -5,7 +5,8 @@
                 <div class="panel-header-buttons">
                     <favorites-button :query="query" @onFavorites="onFavorites" v-if="isUser" />
                 </div>
-                <div class="panel-header-text">Tools</div>
+                <div class="panel-header-text">工具</div>
+                <!-- <div class="panel-header-text">Tools</div> -->
             </div>
         </div>
         <div class="unified-panel-controls">
@@ -111,7 +112,8 @@ export default {
         workflows() {
             return [
                 {
-                    title: _l("All workflows"),
+                    // title: _l("All workflows"), //中文化
+                    title: _l("全部工作流"),
                     href: `${getAppRoot()}workflows/list`,
                     id: "list",
                 },

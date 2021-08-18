@@ -24,11 +24,11 @@
                         <span class="float-right">
                             <b-button id="workflow-create" class="m-1" @click="createWorkflow">
                                 <font-awesome-icon icon="plus" />
-                                Create
+                                创建<!-- Create -->
                             </b-button>
                             <b-button id="workflow-import" class="m-1" @click="importWorkflow">
                                 <font-awesome-icon icon="upload" />
-                                Import
+                                导入<!-- Import -->
                             </b-button>
                         </span>
                     </b-col>
@@ -74,10 +74,12 @@
                     </template>
                 </b-table>
                 <div v-if="showNotFound">
-                    No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
+                    <!-- No matching entries found for:  -->
+                    找不到以下项的匹配项：<span class="font-weight-bold">{{ this.filter }}</span
                     >.
                 </div>
-                <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div>
+                <div v-if="showNotAvailable">未找到工作流。您可以创建或导入新工作流。</div>
+                <!-- <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div> -->
             </div>
         </div>
     </div>
@@ -114,25 +116,30 @@ export default {
             error: null,
             fields: [
                 {
+                    label:"名称",
                     key: "name",
                     sortable: true,
                 },
                 {
+                    label: "标签",
                     key: "tags",
                     sortable: true,
                 },
                 {
-                    label: "Updated",
+                    // label: "Updated",
+                    label: "更新时间",
                     key: "update_time",
                     sortable: true,
                 },
                 {
-                    label: "Sharing",
+                    // label: "Sharing",
+                    label:"分享",
                     key: "published",
                     sortable: true,
                 },
                 {
-                    label: "Bookmarked",
+                    // label: "Bookmarked",
+                    label:"书签",
                     key: "show_in_tool_panel",
                     sortable: true,
                 },

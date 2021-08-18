@@ -8,8 +8,8 @@
     <param name="N" type="text" value='5' label="滤波器阶数" />
     <param name="hz" type="text" value='51200' label="采样频率" />
     <param name='has_title' type='select' label='是否存在标题'>
-      <option value='f'>False</option>
-      <option value="t">True</option>
+      <option value='t'>True</option>
+      <option value="f">False</option>
     </param>
   </inputs>
   <outputs>
@@ -23,6 +23,6 @@
     </test>
   </tests>
   <help>
-    这个工具用于计算列区间有效值
+    带通滤波
   </help>
 </tool>

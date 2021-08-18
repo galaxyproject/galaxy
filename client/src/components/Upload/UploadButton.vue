@@ -19,7 +19,8 @@
         </div>
         <span class="position-relative">
             <font-awesome-icon icon="upload" class="mr-1" />
-            <b v-localize>Upload Data</b>
+            <b v-localize>上传数据</b>
+            <!-- <b v-localize>Upload Data</b> -->
         </span>
     </b-button>
 </template>
