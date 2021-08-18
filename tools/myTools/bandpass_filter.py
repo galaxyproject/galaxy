@@ -68,7 +68,6 @@ def __main__():
             out_f.write('\n')
     pass  # end of __main()__
 
-
 if __name__ == "__main__":
     __main__()
     pass

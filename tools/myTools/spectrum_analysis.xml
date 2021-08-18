@@ -5,8 +5,8 @@
     <param format="tabular" name="input" type="data" label="输入文件"/>
     <param name="hz" type="text" value="51200" label="采样频率"/>
     <param name='has_title' type='select' label='是否存在标题'>
-      <option value='f'>False</option>
       <option value="t">True</option>
+      <option value='f'>False</option>
     </param>
   </inputs>
   <outputs>
