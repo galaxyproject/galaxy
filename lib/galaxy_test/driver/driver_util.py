@@ -265,6 +265,7 @@ def setup_galaxy_config(
 
     config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
+    config.update(database_conf(tmpdir, prefix="DATA_TABLES", prefer_template_database=prefer_template_database))
     if asbool(os.environ.get("GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE")):
         object_store_config = os.path.join(tmpdir, "object_store_conf.yml")
         with open(object_store_config, "w") as f:

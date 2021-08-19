@@ -1317,6 +1317,8 @@ class ConfiguresGalaxyMixin:
 
         # Database data tables
         data_tables_db_url = self.config.data_table_database_connection
+        log.info(f"Data table database using its own connection: {data_tables_db_url}")
+        log.info(f"Checking database migration: {check_migrate_databases}")
         if check_migrate_databases:
             # Initialize data table database / check for appropriate schema version.
             from galaxy.model.data_tables.migrate.check import create_or_verify_database

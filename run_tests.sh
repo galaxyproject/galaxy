@@ -180,6 +180,8 @@ at the time of running this script.
 
 Functional Test Environment Variables
 
+DATA_TABLES_TEST_DBURI          Database connection string used for functional
+                                test database for Galaxy data tables.
 GALAXY_TEST_DBURI               Database connection string used for functional
                                 test database for Galaxy.
 GALAXY_TEST_INSTALL_DBURI       Database connection string used for functional
