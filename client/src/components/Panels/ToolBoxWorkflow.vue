@@ -7,7 +7,8 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+            <!-- <tool-search placeholder="search tools" @onQuery="onQuery" @onResults="onResults" /> -->
+            <tool-search placeholder="查找工具" @onQuery="onQuery" @onResults="onResults" />
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">

@@ -14,41 +14,50 @@
         <div v-if="workflow.shared" class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a class="dropdown-item" href="#" @click.prevent="onCopy">
                 <span class="fa fa-copy fa-fw mr-1" />
-                <span>Copy</span>
+                <!-- <span>Copy</span> -->
+                <span>复制</span>
             </a>
             <a class="dropdown-item" :href="urlViewShared">
                 <span class="fa fa-eye fa-fw mr-1" />
-                <span>View</span>
+                <!-- <span>View</span> -->
+                <span>预览</span>
             </a>
         </div>
         <div v-else class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a class="dropdown-item" :href="urlEdit">
                 <span class="fa fa-edit fa-fw mr-1" />
-                <span>Edit</span>
+                <!-- <span>Edit</span> -->
+                <span>编辑</span>
             </a>
             <a class="dropdown-item" href="#" @click.prevent="onCopy">
                 <span class="fa fa-copy fa-fw mr-1" />
-                <span>Copy</span>
+                <!-- <span>Copy</span> -->
+                <span>复制</span>
             </a>
             <a class="dropdown-item" :href="urlDownload">
                 <span class="fa fa-download fa-fw mr-1" />
-                <span>Download</span>
+                <!-- <span>Download</span> -->
+                <span>下载</span>
             </a>
             <a class="dropdown-item" href="#" @click.prevent="onRename">
                 <span class="fa fa-signature fa-fw mr-1" />
-                <span>Rename</span>
+                <!-- <span>Rename</span> -->
+                <span>重命名</span>
             </a>
             <a class="dropdown-item" :href="urlShare">
                 <span class="fa fa-share-alt fa-fw mr-1" />
-                <span>Share</span>
+                <!-- <span>Share</span> -->
+                <span>分享</span>
             </a>
             <a class="dropdown-item" :href="urlView">
                 <span class="fa fa-eye fa-fw mr-1" />
-                <span>View</span>
+                <!-- <span>View</span> -->
+                <span>预览</span>
             </a>
             <a class="dropdown-item" href="#" @click.prevent="onDelete">
                 <span class="fa fa-trash fa-fw mr-1" />
-                <span>Delete</span>
+                <!-- <span>Delete</span> -->
+                <span>删除</span>
             </a>
         </div>
     </div>

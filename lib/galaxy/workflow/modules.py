@@ -593,14 +593,16 @@ class InputProxy:
 
 
 def optional_param(optional):
-    bool_source = dict(name="optional", label="Optional", type="boolean", checked=optional)
+    # bool_source = dict(name="optional", label="Optional", type="boolean", checked=optional)
+    bool_source = dict(name="optional", label="可选项", type="boolean", checked=optional)
     optional_value = BooleanToolParameter(None, bool_source)
     return optional_value
 
 
 def format_param(trans, formats):
     formats_val = "" if not formats else ",".join(formats)
-    source = dict(type="text", label="Format(s)", name="format", value=formats_val, optional=True, options=formats, help="Leave empty to auto-generate filtered list at runtime based on connections.")
+    # source = dict(type="text", label="Format(s)", name="format", value=formats_val, optional=True, options=formats, help="Leave empty to auto-generate filtered list at runtime based on connections.")
+    source = dict(type="text", label="格式化", name="format", value=formats_val, optional=True, options=formats, help="保留为空可在运行时根据连接自动生成筛选列表。")
     source["options"] = [{"value": v, "label": v} for v in trans.app.datatypes_registry.datatypes_by_extension.keys()]
     format_value = TextToolParameter(None, source)
     return format_value
@@ -1903,22 +1905,26 @@ def load_module_sections(trans):
     module_sections = {}
     module_sections['inputs'] = {
         "name": "inputs",
-        "title": "Inputs",
+        # "title": "Inputs",
+        "title": "输入",
         "modules": [
             {
                 "name": "data_input",
                 "title": "Input Dataset",
-                "description": "Input dataset"
+                # "description": "Input dataset" # cn
+                "description": "输入数据集"
             },
             {
                 "name": "data_collection_input",
                 "title": "Input Dataset Collection",
-                "description": "Input dataset collection"
+                # "description": "Input dataset collection"
+                "description": "输入数据集集合"
             },
             {
                 "name": "parameter_input",
                 "title": "Parameter Input",
-                "description": "Simple inputs used for workflow logic"
+                # "description": "Simple inputs used for workflow logic"
+                "description": "用于工作流逻辑的简单输入"
             },
         ],
     }

@@ -10,7 +10,8 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+            <!-- <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" /> -->
+            <tool-search :query="query" placeholder="查找工具" @onQuery="onQuery" @onResults="onResults" />
             <upload-button />
             <div class="py-2" v-if="hasResults">
                 <b-button @click="onToggle" size="sm" class="w-100">

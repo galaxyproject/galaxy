@@ -147,10 +147,10 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
             return [
                 '<div id="quota-meter" class="quota-meter" style="background-color: transparent">',
                 '<div class="quota-meter-text" data-placement="left" data-original-title="This value is recalculated when you log out." style="color: white">',
-                data.nice_total_disk_usage ? _l("Using ") + data.nice_total_disk_usage : "",
+                data.nice_total_disk_usage ? _l("已用 ") + data.nice_total_disk_usage : "", 
                 "</div>",
                 "</div>",
-            ].join("");
+            ].join("");//_l("Using ")中文化
         },
 
         toString: function () {

@@ -639,7 +639,8 @@ HistoryViewEdit.prototype.templates = (() => {
             "<% if( shown ){ %>",
             '<span class="shown-count">',
             "<%- shown %> ",
-            _l("shown"),
+            // _l("shown"), //中文化
+            _l("显示"),
             "</span>",
             "<% } %>",
 
@@ -647,12 +648,14 @@ HistoryViewEdit.prototype.templates = (() => {
             '<span class="deleted-count">',
             "<% if( view.model.contents.includeDeleted ){ %>",
             '<a class="toggle-deleted-link" href="javascript:void(0);">',
-            _l("hide deleted"),
+            // _l("hide deleted"),//中文化
+            _l("隐藏删除"),
             "</a>",
             "<% } else { %>",
             "<%- history.contents_active.deleted %> ",
             '<a class="toggle-deleted-link" href="javascript:void(0);">',
-            _l("deleted"),
+            // _l("deleted"),//中文化
+            _l("已删除"),
             "</a>",
             "<% } %>",
             "</span>",
@@ -662,12 +665,14 @@ HistoryViewEdit.prototype.templates = (() => {
             '<span class="hidden-count">',
             "<% if( view.model.contents.includeHidden ){ %>",
             '<a class="toggle-hidden-link" href="javascript:void(0);">',
-            _l("hide hidden"),
+            // _l("hide hidden"),//中文化
+            _l("不显示隐藏"),
             "</a>",
             "<% } else { %>",
             "<%- history.contents_active.hidden %> ",
             '<a class="toggle-hidden-link" href="javascript:void(0);">',
-            _l("hidden"),
+            // _l("hidden"),//中文化
+            _l("隐藏"),
             "</a>",
             "<% } %>",
             "</span>",

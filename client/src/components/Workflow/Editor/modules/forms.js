@@ -141,22 +141,26 @@ function _addLabelAnnotation(self, node) {
         skipOnClone: true,
         type: "text",
         name: "__annotation",
-        label: "Step Annotation",
+        // label: "Step Annotation",
+        label:"步骤备注",
         fixed: true,
         value: node.annotation,
         area: true,
         onchange: function (new_annotation) {
             node.setAnnotation(new_annotation);
         },
-        help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed.",
+        // help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed.",
+        help:"为此步骤添加注释，在查看工作流时，能够看到这个注释。"
     });
     inputs.unshift({
         skipOnClone: true,
         type: "text",
         name: "__label",
-        label: "Label",
+        // label: "Label", //cn
+        label: "标签",
         value: node.label,
-        help: _l("Add a step label."),
+        // help: _l("Add a step label."),
+        help:_l("添加一个步骤标签"),
         fixed: true,
         onchange: function (new_label) {
             node.setLabel(new_label);
@@ -217,7 +221,8 @@ function _visit(head, head_list, output, node) {
 }
 
 function _makeRenameHelp(name_labels) {
-    let help_section = `This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables/">here</a> for more information. Valid input variables are:`;
+    // let help_section = `This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables/">here</a> for more information. Valid input variables are:`;
+    let help_section = `此操作将重命名输出数据集。点击<a href="https://galaxyproject.org/learn/advanced-workflow/variables/">这里</a>获取更多信息。 有效的输入变量是:`;
     const li = `
         <ul>
             ${name_labels
@@ -267,11 +272,13 @@ function _makeSection(self, node, output) {
         flat: true,
         inputs: [
             {
-                label: "Label",
+                // label: "Label",
+                label:"标签",
                 name: `__label__${output.name}`,
                 type: "text",
                 value: activeOutput && activeOutput.label,
-                help: "This will provide a short name to describe the output - this must be unique across workflows.",
+                // help: "This will provide a short name to describe the output - this must be unique across workflows.",
+                help:"这将提供一个简短的名称来描述输出-这在整个工作流中必须是唯一的。",
                 fixed: true,
                 onchange: (newLabel) => {
                     self.form.data.create();
@@ -290,7 +297,8 @@ function _makeSection(self, node, output) {
             {
                 action: "RenameDatasetAction",
                 pja_arg: "newname",
-                label: "Rename dataset",
+                // label: "Rename dataset",
+                label:"重命名数据集",
                 type: "text",
                 value: "",
                 ignore: "",
@@ -299,12 +307,14 @@ function _makeSection(self, node, output) {
             {
                 action: "ChangeDatatypeAction",
                 pja_arg: "newtype",
-                label: "Change datatype",
+                // label: "Change datatype",
+                label:"更改数据格式",
                 type: "select",
                 ignore: "__empty__",
                 value: "__empty__",
                 options: extensions,
-                help: "This action will change the datatype of the output to the indicated datatype.",
+                // help: "This action will change the datatype of the output to the indicated datatype.",
+                help:"此操作将把输出的数据类型更改为指定的数据类型。",
                 onchange: function (datatype) {
                     node.changeOutputDatatype(output.name, datatype);
                 },
@@ -312,20 +322,24 @@ function _makeSection(self, node, output) {
             {
                 action: "TagDatasetAction",
                 pja_arg: "tags",
-                label: "Add Tags",
+                // label: "Add Tags",
+                label:"添加标记",
                 type: "text",
                 value: "",
                 ignore: "",
-                help: "This action will set tags for the dataset.",
+                // help: "This action will set tags for the dataset.",
+                help:"此操作将为数据集设置一个标记",
             },
             {
                 action: "RemoveTagDatasetAction",
                 pja_arg: "tags",
-                label: "Remove Tags",
+                // label: "Remove Tags",
+                label:"移除标记",
                 type: "text",
                 value: "",
                 ignore: "",
-                help: "This action will remove tags for the dataset.",
+                // help: "This action will remove tags for the dataset.",
+                help:"此操作将移除数据集的标记",
             },
             {
                 title: _l("Assign columns"),

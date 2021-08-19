@@ -546,15 +546,20 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     def create(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
             return {
-                'title': 'Create Workflow',
+                # 'title': 'Create Workflow', //cn
+                'title': '创建工作流',
                 'inputs': [{
                     'name': 'workflow_name',
-                    'label': 'Name',
-                    'value': 'Unnamed workflow'
+                    # 'label': 'Name',
+                    'label': '名称',
+                    # 'value': 'Unnamed workflow'
+                    'value': '未命名工作流'
                 }, {
                     'name': 'workflow_annotation',
-                    'label': 'Annotation',
-                    'help': 'A description of the workflow; annotation is shown alongside shared or published workflows.'
+                    # 'label': 'Annotation',
+                    'label': '备注',
+                    # 'help': 'A description of the workflow; annotation is shown alongside shared or published workflows.'
+                    'help':'工作流程的描述；注释显示在共享或发布的工作流旁边。'
                 }]}
         else:
             user = trans.get_user()

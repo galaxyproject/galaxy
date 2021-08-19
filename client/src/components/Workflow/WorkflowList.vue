@@ -14,11 +14,12 @@
                             id="workflow-search"
                             class="m-1"
                             name="query"
-                            placeholder="Search Workflows"
+                            placeholder="查找工作流"
                             autocomplete="off"
                             type="text"
                             v-model="filter"
                         />
+                        <!-- placeholder="Search Workflows" -->
                     </b-col>
                     <b-col>
                         <span class="float-right">

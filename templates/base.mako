@@ -14,7 +14,8 @@
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
         <title>
-            Galaxy
+            ## Galaxy
+            Fen
             %if app.config.brand:
             | ${app.config.brand}
             %endif
