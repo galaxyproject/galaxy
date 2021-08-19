@@ -28,7 +28,6 @@ import { STATES } from "../model";
 export default {
     props: {
         item: { type: Object, required: true },
-        index: { type: Number, required: true },
     },
     computed: {
         dsc() {

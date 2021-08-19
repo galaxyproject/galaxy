@@ -1,5 +1,3 @@
-// Caches expanded/selected Sets in sessionStorage
-
 export function saveSet(key, setObject) {
     try {
         const setToArray = Array.from(setObject);

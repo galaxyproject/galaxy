@@ -59,7 +59,10 @@
                         <font-awesome-icon v-if="row.item.shared" v-b-tooltip.hover title="Shared" icon="share-alt" />
                     </template>
                     <template v-slot:cell(show_in_tool_panel)="row">
-                        <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
+                        <b-form-checkbox
+                            :checked="row.item.show_in_tool_panel"
+                            @change="(checked) => bookmarkWorkflow(row.item, checked)"
+                        />
                     </template>
                     <template v-slot:cell(update_time)="data">
                         <UtcDate :date="data.value" mode="elapsed" />
@@ -192,14 +195,13 @@ export default {
         executeWorkflow: function (workflow) {
             window.location = `${this.root}workflows/run?id=${workflow.id}`;
         },
-        bookmarkWorkflow: function (workflow) {
+        bookmarkWorkflow: function (workflow, checked) {
             // This reloads the whole page, so that the workflow appears in the tool panel.
             // Ideally we would notify only the tool panel of a change
             const id = workflow.id;
-            const show_in_tool_panel = workflow.show_in_tool_panel;
             const tags = workflow.tags;
             const data = {
-                show_in_tool_panel: !show_in_tool_panel,
+                show_in_tool_panel: checked,
                 tags: tags,
             };
             this.services

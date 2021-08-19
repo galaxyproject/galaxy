@@ -43,6 +43,10 @@ export default {
             "loadUserHistories",
             "secureHistory",
         ]),
+
+        updateCurrentHistory(updates) {
+            this.updateHistory({ ...updates, id: this.currentHistory.id });
+        },
     },
     watch: {
         // when user changes reload histories
@@ -81,7 +85,11 @@ export default {
                 // save new history params should be an object with an id property and any additional
                 // properties that are to be updated on the server. A full history object is not required
                 updateHistory: this.updateHistory,
-                updateCurrentHistory: () => this.updateHistory(this.currentHistory),
+                updateCurrentHistory: this.updateCurrentHistory,
+
+                // also conform to .sync event name format
+                "update:history": this.updateHistory,
+                "update:currentHistory": this.updateCurrentHistory,
 
                 // delete history then clear currentHistoryId
                 deleteHistory: (history) => this.deleteHistory({ history }),

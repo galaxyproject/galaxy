@@ -1,5 +1,5 @@
 <template>
-    <b-modal ref="copyModal" v-model="showModal" :title="title" title-tag="h2">
+    <b-modal v-bind="$attrs" v-on="$listeners" :title="title" title-tag="h2">
         <transition name="fade">
             <b-alert :show="currentUser.isAnonymous" variant="warning" v-localize>
                 As an anonymous user, unless you login or register, you will lose your current history after copying
@@ -51,7 +51,6 @@ import { mapActions, mapGetters } from "vuex";
 export default {
     props: {
         history: { type: History, required: true },
-        value: { type: Boolean, required: false, default: false },
     },
     data() {
         return {
@@ -80,16 +79,6 @@ export default {
         },
         formValid() {
             return this.newNameValid;
-        },
-        showModal: {
-            get() {
-                return this.value;
-            },
-            set(newVal, oldVal) {
-                if (newVal !== oldVal) {
-                    this.$emit("input", newVal);
-                }
-            },
         },
     },
     methods: {
