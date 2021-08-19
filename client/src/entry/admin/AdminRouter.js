@@ -1,7 +1,7 @@
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
-import FormWrapper from "mvc/form/form-wrapper";
+import FormGeneric from "components/Form/FormGeneric";
 import GridView from "mvc/grid/grid-view";
 import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
@@ -164,7 +164,7 @@ export const getAdminRouter = (Galaxy, options) => {
                     title: _l("Reset passwords"),
                     url: `admin/reset_user_password${id}`,
                     icon: "fa-user",
-                    submit_title: "Save new password",
+                    submitTitle: "Save new password",
                     redirect: "admin/users",
                 },
                 manage_roles_and_groups_for_user: {
@@ -225,7 +225,7 @@ export const getAdminRouter = (Galaxy, options) => {
                     redirect: "admin/forms",
                 },
             };
-            this.page.display(new FormWrapper.View(form_defs[form_id]));
+            this._display_vue_helper(FormGeneric, form_defs[form_id]);
         },
     });
 };

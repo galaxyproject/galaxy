@@ -1,9 +1,13 @@
-import { DatasetCollection } from "../../model";
+import { SearchParams, DatasetCollection } from "../../model";
 import { ContentProvider, processContentStreams } from "../ContentProvider";
 import { collectionPayload } from "./collectionPayload";
 
 export default {
     mixins: [ContentProvider],
+
+    props: {
+        params: { type: SearchParams, default: () => new SearchParams({ showHidden: false }) },
+    },
 
     computed: {
         dsc() {

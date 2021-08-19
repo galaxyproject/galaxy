@@ -39,8 +39,7 @@
         <div v-show="isCanvas">
             <SidePanel id="left" side="left">
                 <template v-slot:panel>
-                    <ToolBoxWorkflow
-                        :toolbox="toolbox"
+                    <ProviderAwareToolBoxWorkflow
                         :module-sections="moduleSections"
                         :data-managers="dataManagers"
                         :workflows="workflows"
@@ -113,7 +112,7 @@
                                 />
                             </div>
                         </div>
-                        <div class="unified-panel-body workflow-right">
+                        <div class="unified-panel-body workflow-right" ref="right-panel">
                             <div class="m-1">
                                 <FormTool
                                     v-if="hasActiveNodeTool"
@@ -186,7 +185,7 @@ import WorkflowOptions from "./Options";
 import FormDefault from "./Forms/FormDefault";
 import FormTool from "./Forms/FormTool";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
-import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
+import ProviderAwareToolBoxWorkflow from "components/Panels/ProviderAwareToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
 import reportDefault from "./reportDefault";
@@ -205,7 +204,7 @@ export default {
         MarkdownEditor,
         SidePanel,
         StateUpgradeModal,
-        ToolBoxWorkflow,
+        ProviderAwareToolBoxWorkflow,
         FormDefault,
         FormTool,
         WorkflowOptions,
@@ -238,10 +237,6 @@ export default {
             required: true,
         },
         workflows: {
-            type: Array,
-            required: true,
-        },
-        toolbox: {
             type: Array,
             required: true,
         },
@@ -335,6 +330,7 @@ export default {
                 node.makeActive();
                 this.activeNode = node;
                 this.canvasManager.drawOverview();
+                this.$refs["right-panel"].scrollTop = 0;
             }
         },
         onDeactivate() {

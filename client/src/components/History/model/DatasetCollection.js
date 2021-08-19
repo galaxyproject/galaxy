@@ -7,11 +7,11 @@
 
 import { Content } from "./Content";
 import { JobStateSummary } from "./JobStateSummary";
+import { scrubModelProps } from "utils/safeAssign";
 
 export class DatasetCollection extends Content {
     loadProps(raw = {}) {
         if (!raw.contents_url) {
-            // console.log("ouch", raw);
             throw new Error("missing contents_url", raw);
         }
         super.loadProps(raw);
@@ -64,8 +64,28 @@ export class DatasetCollection extends Content {
     get jobSummary() {
         return new JobStateSummary(this);
     }
+
+    clone() {
+        const newProps = cleanDscProps(this);
+        return new DatasetCollection(newProps);
+    }
+
+    patch(newProps) {
+        const cleanProps = cleanDscProps({ ...this, ...newProps });
+        return new DatasetCollection(cleanProps);
+    }
+
+    equals(other) {
+        return DatasetCollection.equals(this, other);
+    }
 }
 
 DatasetCollection.equals = function (a, b) {
     return JSON.stringify(a) == JSON.stringify(b);
+};
+
+const scrubber = scrubModelProps(DatasetCollection);
+export const cleanDscProps = (props = {}) => {
+    const cleanProps = JSON.parse(JSON.stringify(props));
+    return scrubber(cleanProps);
 };

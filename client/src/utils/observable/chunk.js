@@ -3,14 +3,24 @@ import { map } from "rxjs/operators";
 /**
  * Bust incoming numeric source values into blocks of designated size.
  *
- * @param {*} chunkSize
+ * @param {Number|Object} cfg object or numeric chunksize
  * @param {*} ceil
  */
 // prettier-ignore
-export const chunk = (chunkSize, ceil = false) => {
+export const chunk = (cfg) => {
+    const settings = Number.isInteger(cfg) ? { chunkSize: Math.round(cfg) } : cfg;
+    const { chunkSize = 0, ceil = false, debug = false, label } = settings;
+    if (chunkSize == 0) {
+        throw new Error("Please provide a chunk size");
+    }
+
     return map((chunkMe) => {
-        const rawVal = chunkMe / chunkSize;
-        return chunkSize * (ceil ? Math.ceil(rawVal) : Math.floor(rawVal));
+        const rawVal = 1.0 * chunkMe / chunkSize;
+        const result = chunkSize * (ceil ? Math.ceil(rawVal) : Math.floor(rawVal));
+        if (debug) {
+            console.log(`chunk: ${label}`, chunkMe, result, settings);
+        }
+        return result;
     })
 };
 

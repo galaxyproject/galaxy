@@ -117,6 +117,10 @@ def preprocess_volumes(volumes_raw_str, container_type):
     ro for Singularity iff no subdirectories are rw (Singularity does not allow ro
     parent directories with rw subdirectories).
 
+    >>> preprocess_volumes(None, DOCKER_CONTAINER_TYPE)
+    []
+    >>> preprocess_volumes("", DOCKER_CONTAINER_TYPE)
+    []
     >>> preprocess_volumes("/a/b", DOCKER_CONTAINER_TYPE)
     ['/a/b:rw']
     >>> preprocess_volumes("/a/b:ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
@@ -130,6 +134,9 @@ def preprocess_volumes(volumes_raw_str, container_type):
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
     ['/a/b', '/a/b/c']
     """
+
+    if not volumes_raw_str:
+        return []
 
     volumes_raw_strs = [v.strip() for v in volumes_raw_str.split(",")]
     volumes = []

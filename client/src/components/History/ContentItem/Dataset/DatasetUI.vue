@@ -8,7 +8,7 @@ either through the props, and make updates through the events -->
 <template>
     <div
         class="dataset history-content"
-        :id="typedId"
+        :id="typeId"
         :class="{ expanded, collapsed, selected }"
         :data-state="dataset.state"
         @keydown.arrow-left.self.stop="$emit('update:expanded', false)"
@@ -16,73 +16,101 @@ either through the props, and make updates through the events -->
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
     >
         <!-- name, state buttons, menus -->
-        <nav class="content-top-menu" @click.stop="$emit('update:expanded', !expanded)">
-            <div class="content-status-indicators" @click.stop>
-                <b-check
-                    class="selector"
-                    v-if="showSelection"
-                    :checked="selected"
-                    @change="$emit('update:selected', $event)"
+        <nav class="p-1 d-flex align-items-center cursor-pointer" @click.stop="$emit('update:expanded', !expanded)">
+            <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                <div class="pl-1" v-if="showSelectionBox">
+                    <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)"></b-check>
+                </div>
+
+                <StatusIcon
+                    v-if="!collapsed"
+                    class="status-icon px-1"
+                    :state="dataset.state"
+                    @click.stop="onStatusClick"
                 />
-                <StatusIcon v-if="!ok" class="status-icon px-1" :state="dataset.state" @click.stop="onStatusClick" />
-                <StateBtn
-                    v-if="!dataset.visible"
+
+                <IconButton
+                    v-if="!collapsed && !dataset.visible"
                     class="px-1"
                     state="hidden"
                     title="Unhide"
-                    icon="fa fa-eye-slash"
+                    icon="eye-slash"
                     @click.stop="$emit('unhide')"
                 />
-                <StateBtn
-                    v-if="dataset.isDeleted && !dataset.purged"
+
+                <IconButton
+                    v-if="!collapsed && dataset.isDeleted && !dataset.purged"
                     class="px-1"
                     state="deleted"
                     title="Undelete"
-                    icon="fas fa-trash-restore"
+                    icon="trash-restore"
                     @click.stop="$emit('undelete')"
                 />
+
+                <div class="content-title p-1 overflow-hidden">
+                    <h5 class="text-truncate" v-if="collapsed">
+                        <!-- <span class="hid">{{ dataset.hid }}</span> -->
+                        <span class="name">{{ dataset.title }}</span>
+                    </h5>
+                </div>
             </div>
 
-            <div class="content-title">
-                <h5 class="text-truncate">
-                    <span class="hid">{{ dataset.hid }}</span>
-                    <span v-if="collapsed || !dataset.canEditName" class="name">{{ dataset.title }}</span>
-                </h5>
-            </div>
-
-            <div class="content-item-menu">
+            <div class="d-flex">
                 <slot name="menu">
-                    <DatasetMenu :dataset="dataset" :expanded="expanded" v-on="$listeners" :show-tags.sync="showTags" />
+                    <DatasetMenu :dataset="dataset" :expanded="expanded" v-on="$listeners" />
                 </slot>
             </div>
         </nav>
 
-        <!--- read-only tags with name: prefix -->
-        <div v-if="collapsed && dataset.nameTags.length" class="nametags p-1">
+        <!--- read-only tags with name: prefix
+        <div v-if="collapsed && dataset.nameTags.length" class="nametags p-2">
             <Nametag v-for="tag in dataset.nameTags" :key="tag" :tag="tag" />
-        </div>
+        </div> -->
 
-        <!-- expanded view with editors -->
-        <header v-if="expanded" class="p-2 details">
-            <ClickToEdit
-                v-if="dataset.canEditName"
-                tag-name="h4"
-                :value="dataset.name"
-                @input="$emit('update:dataset', { name: $event })"
-                :display-label="dataset.title"
-                :tooltip-title="'Edit dataset name...' | localize"
-                tooltip-placement="left"
-            />
+        <div v-if="expanded" class="p-3 details">
+            <div class="d-flex">
+                <div class="flex-grow-1">
+                    <h4>{{ name || "(Dataset Name)" }}</h4>
 
-            <Annotation
-                class="mt-1"
-                :value="dataset.annotation"
-                @input="$emit('update:dataset', { annotation: $event })"
-            />
+                    <template v-if="!editing">
+                        <p v-if="annotation">{{ annotation }}</p>
+                        <div v-if="dataset.nameTags.length" class="nametags mt-2">
+                            <Nametag v-for="tag in dataset.nameTags" :key="tag" :tag="tag" />
+                        </div>
+                    </template>
 
-            <ContentTags v-if="showTags" class="mt-2" :content="dataset" />
-            <div v-else-if="dataset.nameTags.length" class="nametags mt-2">
-                <Nametag v-for="tag in dataset.nameTags" :key="tag" :tag="tag" />
+                    <div v-else class="my-3">
+                        <b-textarea
+                            class="mb-3"
+                            v-model="name"
+                            placeholder="Dataset Name"
+                            trim
+                            max-rows="4"
+                        ></b-textarea>
+
+                        <b-textarea
+                            class="mb-3"
+                            v-model="annotation"
+                            placeholder="Annotation (optional)"
+                            trim
+                            max-rows="4"
+                        ></b-textarea>
+
+                        <ContentTags class="mt-2" :content="dataset" />
+                    </div>
+                </div>
+
+                <EditorMenu
+                    class="ml-3 flex-grow-0 d-flex flex-column"
+                    v-if="writable"
+                    model-name="Collection"
+                    :editing.sync="editing"
+                    :writable="writable"
+                    :valid="valid"
+                    :dirty="dirty"
+                    @save="save"
+                    @revert="revert"
+                />
             </div>
 
             <div class="details">
@@ -102,41 +130,44 @@ either through the props, and make updates through the events -->
                 </div>
                 <pre v-if="dataset.peek" class="dataset-peek p-1" v-html="dataset.peek"></pre>
             </div>
-        </header>
+        </div>
     </div>
 </template>
 
 <script>
 import { Dataset, STATES } from "../../model";
-import ClickToEdit from "components/ClickToEdit";
-import Annotation from "components/Annotation";
 import { Nametag } from "components/Nametags";
-import { StatusIcon, StateBtn } from "../../StatusIcon";
+import StatusIcon from "../../StatusIcon";
 import DatasetMenu from "./DatasetMenu";
 import DatasetSummary from "./Summary";
 import ContentTags from "../../ContentTags";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
+import IconButton from "components/IconButton";
+import EditorMenu from "../../EditorMenu";
+
 export default {
     mixins: [legacyNavigationMixin],
     components: {
-        ClickToEdit,
-        Annotation,
         StatusIcon,
-        StateBtn,
         DatasetMenu,
         DatasetSummary,
         ContentTags,
         Nametag,
+        IconButton,
+        EditorMenu,
     },
     props: {
         dataset: { type: Dataset, required: true },
         expanded: { type: Boolean, required: true },
         selected: { type: Boolean, required: false, default: false },
         showSelection: { type: Boolean, required: false, default: false },
+        writable: { type: Boolean, required: false, default: true },
+        selectable: { type: Boolean, required: false, default: true },
     },
     data() {
         return {
-            showTags: false,
+            editing: false,
+            tempContent: this.dataset.clone(),
         };
     },
     computed: {
@@ -146,11 +177,33 @@ export default {
         typeId() {
             return this.dataset.type_id;
         },
-        ok() {
-            return this.dataset.state == "ok";
+        isEditing() {
+            return this.writable && this.editing;
         },
-        typedId() {
-            return `dataset-${this.dataset.id}`;
+        valid() {
+            return true;
+        },
+        dirty() {
+            return !this.tempContent.equals(this.dataset);
+        },
+        name: {
+            get() {
+                return this.tempContent?.name || "";
+            },
+            set(newVal) {
+                this.patchTempContent({ name: newVal });
+            },
+        },
+        annotation: {
+            get() {
+                return this.tempContent?.annotation || "";
+            },
+            set(newVal) {
+                this.patchTempContent({ annotation: newVal });
+            },
+        },
+        showSelectionBox() {
+            return this.selectable && this.showSelection;
         },
     },
     methods: {
@@ -161,6 +214,23 @@ export default {
                     break;
                 default:
                     console.log("unhandled status icon click", this.dataset.state);
+            }
+        },
+        patchTempContent(props = {}) {
+            this.tempContent = this.tempContent.patch(props);
+        },
+        save() {
+            if (this.valid) {
+                this.$emit("update:dataset", this.tempContent);
+                this.editing = false;
+            }
+        },
+        reset() {
+            this.tempContent = this.dataset.clone();
+        },
+        revert() {
+            if (this.dirty) {
+                this.reset();
             }
         },
     },

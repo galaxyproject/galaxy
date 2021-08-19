@@ -1,0 +1,26 @@
+---
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+
+execution:
+  default: local_docker
+  environments:
+    local_docker:
+      runner: local
+      docker_enabled: true
+    local_docker_inline_container_resolvers:
+      runner: local
+      docker_enabled: true
+      container_resolvers:
+        - type: fallback
+          identifier: 'quay.io/biocontainers/bwa:0.7.15--0'
+    local_upload:
+      runner: local
+
+tools:
+  - id: upload1
+    environment: local_upload
+  - id: mulled_example_broken_no_requirements_fallback
+    environment: local_docker_inline_container_resolvers

@@ -504,14 +504,28 @@ mapping:
           Container availability will vary by tool, this option will only be used
           for job destinations with Docker or Singularity enabled.
 
-      containers_resolvers_config_file:
+      container_resolvers_config_file:
         type: str
         required: false
         desc: |
           Container resolvers configuration (beta). Set up a file describing
           container resolvers to use when discovering containers for Galaxy. If
-          this is set to None, the default containers loaded is determined by
-          enable_mulled_containers.
+          this is set to None, the default container resolvers loaded is
+          determined by enable_mulled_containers.
+
+      container_resolvers:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Rather than specifying a container_resolvers_config_file, the definition of the
+          resolvers to enable can be embedded into Galaxy's config with this option.
+          This has no effect if a container_resolvers_config_file is used.
+
+          The syntax, available resolvers, and documentation of their options is explained in detail in the
+          documentation:
+
+          https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
 
       involucro_path:
         type: str
@@ -2440,21 +2454,50 @@ mapping:
           stable API. (The module state definitions may change and workflows built using
           these modules may not function in the future.)
 
-      enable_beta_edam_toolbox:
-        type: bool
-        default: false
+      edam_panel_views:
+        type: str
+        default: 'operations,topics'
         required: false
         desc: |
-          Enable beta EDAM organised toolbox which ignores admin managed
-          sections in lieu of EDAM topics only.
+          Comma-separated list of the EDAM panel views to load - choose from merged, operations, topics.
+          Set to empty string to disable EDAM all together. Set default_panel_view to 'ontology:edam_topics'
+          to override default tool panel to use an EDAM view.
 
-      beta_edam_toolbox_ontology_path:
+      edam_toolbox_ontology_path:
         type: str
         default: EDAM.tsv
         path_resolves_to: data_dir
         required: false
         desc: |
-          Sets the path to EDAM ontology file.
+          Sets the path to EDAM ontology file - if the path doesn't exist PyPI package data will be loaded.
+
+      panel_views_dir:
+        type: str
+        default: config/plugins/activities
+        required: false
+        desc: |
+          Directory to check out for toolbox tool panel views. The path is relative to the
+          Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a
+          comma-separated list.
+
+      panel_views:
+        type: seq
+        sequence:
+          - type: any
+        required: false
+        desc: |
+          Definitions of static toolbox panel views embedded directly in the config instead of reading
+          YAML from directory with panel_views_dir.
+
+      default_panel_view:
+        type: str
+        default: default
+        required: false
+        desc: |
+          Default tool panel view for the current Galaxy configuration. This should refer to an id of
+          a panel view defined using the panel_views or panel_views_dir configuration options or an
+          EDAM panel view. The default panel view is simply called `default` and refers to the tool
+          panel state defined by the integrated tool panel.
 
       default_workflow_export_format:
         type: str

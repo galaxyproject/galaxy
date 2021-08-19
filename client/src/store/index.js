@@ -5,6 +5,8 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
+import createPersistedState from "vuex-persistedstate";
+
 import config from "config";
 
 import { gridSearchStore } from "./gridSearchStore";
@@ -23,6 +25,7 @@ import { jobStore } from "./jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
 import { genomeStore } from "./genomeStore";
 import { datatypeStore } from "./datatypeStore";
+import { panelStore } from "./panelStore";
 
 // beta features
 import { historyStore as betaHistoryStore } from "components/History/model/historyStore";
@@ -32,13 +35,18 @@ import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 
 Vue.use(Vuex);
 
+const panelsState = createPersistedState({
+    paths: ["panels"],
+});
+
 export function createStore() {
     const storeConfig = {
-        plugins: [createCache()],
+        plugins: [createCache(), panelsState],
         modules: {
             user: userStore,
             config: configStore,
             betaHistory: betaHistoryStore,
+            panels: panelStore,
 
             // TODO: please namespace all store modules
             gridSearch: gridSearchStore,

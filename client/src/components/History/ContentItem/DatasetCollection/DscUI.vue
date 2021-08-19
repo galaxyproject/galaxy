@@ -9,16 +9,17 @@
         :data-state="dsc.state"
         @keydown.arrow-right.self.stop="$emit('viewCollection')"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
-        @click.stop="$emit('viewCollection')"
     >
-        <nav class="content-top-menu">
-            <div class="content-status-indicators mr-1" @click.stop>
-                <b-check
-                    class="selector"
-                    v-if="showSelection"
-                    :checked="selected"
-                    @change="$emit('update:selected', $event)"
-                />
+        <nav class="p-1 d-flex align-items-center cursor-pointer">
+            <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                <div class="pl-1" v-if="showSelection">
+                    <b-check
+                        class="selector"
+                        :checked="selected"
+                        @click.stop
+                        @change="$emit('update:selected', $event)"
+                    />
+                </div>
 
                 <StatusIcon
                     v-if="dsc.state != 'ok'"
@@ -27,44 +28,45 @@
                     @click.stop="onStatusClick"
                 />
 
-                <StateBtn
+                <IconButton
                     v-if="!dsc.visible"
                     class="px-1"
                     state="hidden"
                     title="Unhide"
-                    icon="fa fa-eye-slash"
+                    icon="eye-slash"
                     @click.stop="$emit('unhide')"
                 />
 
-                <StateBtn
+                <IconButton
                     v-if="dsc.deleted"
                     class="px-1"
                     state="deleted"
                     title="Undelete"
-                    icon="fas fa-trash-restore"
+                    icon="trash-restore"
                     @click.stop="$emit('undelete')"
                 />
 
-                <StateBtn
+                <IconButton
                     class="px-1"
                     state="ok"
                     title="Collection"
-                    icon="fas fa-folder"
+                    icon="folder"
                     @click.stop="$emit('viewCollection')"
+                    variant="link"
                 />
+
+                <div class="content-title flex-grow-1 overflow-hidden" @click.stop="$emit('viewCollection')">
+                    <h5 class="text-truncate">
+                        <!-- <span class="hid">{{ dsc.hid }}</span> -->
+                        <span class="name">{{ dsc.name }}</span>
+                        <span class="description">
+                            ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
+                        </span>
+                    </h5>
+                </div>
             </div>
 
-            <div class="content-title mr-1">
-                <h5 class="text-truncate">
-                    <span class="hid">{{ dsc.hid }}</span>
-                    <span class="name">{{ dsc.name }}</span>
-                    <span class="description">
-                        ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
-                    </span>
-                </h5>
-            </div>
-
-            <div class="content-item-menu">
+            <div class="d-flex" v-if="writable">
                 <slot name="menu">
                     <DscMenu v-if="!dsc.deleted" :collection="dsc" v-on="$listeners" />
                 </slot>
@@ -72,7 +74,7 @@
         </nav>
 
         <!--- read-only tags with name: prefix -->
-        <div v-if="dsc.nameTags.length" class="nametags p-1">
+        <div v-if="dsc.nameTags.length" class="nametags p-2">
             <Nametag v-for="tag in dsc.nameTags" :key="tag" :tag="tag" />
         </div>
 
@@ -82,23 +84,25 @@
 
 <script>
 import { DatasetCollection } from "../../model/DatasetCollection";
-import { StatusIcon, StateBtn } from "../../StatusIcon";
+import StatusIcon from "../../StatusIcon";
 import JobStateProgress from "./JobStateProgress";
 import DscMenu from "./DscMenu";
 import { Nametag } from "components/Nametags";
+import IconButton from "components/IconButton";
 
 export default {
     components: {
         StatusIcon,
-        StateBtn,
         JobStateProgress,
         DscMenu,
         Nametag,
+        IconButton,
     },
     props: {
         dsc: { type: DatasetCollection, required: true },
         selected: { type: Boolean, required: false, default: false },
         showSelection: { type: Boolean, required: false, default: false },
+        writable: { type: Boolean, required: false, default: true },
     },
     methods: {
         onStatusClick() {

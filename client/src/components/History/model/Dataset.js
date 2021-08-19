@@ -5,6 +5,7 @@
  */
 
 import { Content } from "./Content";
+import { scrubModelProps } from "utils/safeAssign";
 
 export class Dataset extends Content {
     getUrl(urlType) {
@@ -40,4 +41,28 @@ export class Dataset extends Content {
         const { display_apps = [], display_types = [] } = this;
         return [...display_apps, ...display_types];
     }
+
+    clone() {
+        const newProps = cleanDatasetProps(this);
+        return new Dataset(newProps);
+    }
+
+    patch(newProps) {
+        const cleanProps = cleanDatasetProps({ ...this, ...newProps });
+        return new Dataset(cleanProps);
+    }
+
+    equals(other) {
+        return Dataset.equals(this, other);
+    }
 }
+
+Dataset.equals = function (a, b) {
+    return JSON.stringify(a) == JSON.stringify(b);
+};
+
+const scrubber = scrubModelProps(Dataset);
+export const cleanDatasetProps = (props = {}) => {
+    const cleanProps = JSON.parse(JSON.stringify(props));
+    return scrubber(cleanProps);
+};

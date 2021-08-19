@@ -48,6 +48,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         :param in_panel: if true, tools are returned in panel structure,
                          including sections and labels
+        :param view: ToolBox view to apply (default is 'default')
         :param trackster: if true, only tools that are compatible with
                           Trackster are returned
         :param q: if present search on the given query will be performed
@@ -61,6 +62,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         q = kwds.get('q', '')
         tool_id = kwds.get('tool_id', '')
         tool_help = util.string_as_bool(kwds.get('tool_help', 'False'))
+        view = kwds.get("view", None)
 
         # Find whether to search.
         if q:
@@ -71,7 +73,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 else:
                     hits = None
             else:
-                hits = self._search(q)
+                hits = self._search(q, view)
             results = []
             if hits:
                 for hit in hits:
@@ -92,7 +94,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         # Return everything.
         try:
-            return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help)
+            return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help, view=view)
         except Exception:
             raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
 
@@ -379,7 +381,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                     detected_versions.append(tool.version)
         return detected_versions
 
-    def _search(self, q):
+    def _search(self, q, view):
         """
         Perform the search on the given query.
         Boosts and numer of results are configurable in galaxy.ini file.
@@ -390,6 +392,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :return:      Dictionary containing the tools' ids of the best hits.
         :return type: dict
         """
+        panel_view = view or self.app.config.default_panel_view
         tool_name_boost = self.app.config.get('tool_name_boost', 9)
         tool_id_boost = self.app.config.get('tool_id_boost', 9)
         tool_section_boost = self.app.config.get('tool_section_boost', 3)
@@ -403,6 +406,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool_ngram_maxsize = self.app.config.get('tool_ngram_maxsize', 4)
 
         results = self.app.toolbox_search.search(q=q,
+                                                 panel_view=panel_view,
                                                  tool_name_boost=tool_name_boost,
                                                  tool_id_boost=tool_id_boost,
                                                  tool_section_boost=tool_section_boost,
