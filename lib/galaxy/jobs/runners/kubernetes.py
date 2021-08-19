@@ -720,7 +720,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_state.running = False
         self.mark_as_failed(job_state)
         try:
-            if job_state.job_wrapper.guest_ports:
+            if self.__is_interactive_tool(job_state):
                 self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
         except Exception:
@@ -744,7 +744,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_state.running = False
         self.mark_as_failed(job_state)
         try:
-            if job_state.job_wrapper.guest_ports:
+            if self.__is_interactive_tool(job_state):
                 self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
         except Exception:
@@ -826,7 +826,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_to_delete = find_job_object_by_name(self._pykube_api, job.get_job_runner_external_id(), self.runner_params['k8s_namespace'])
             if job_to_delete and len(job_to_delete.response['items']) > 0:
                 k8s_job = Job(self._pykube_api, job_to_delete.response['items'][0])
-                if job_wrapper.guest_ports:
+                if self.__is_interactive_tool(job_wrapper.get_state()):
                     self.__cleanup_k8s_interactivetools(job_wrapper, k8s_job)
                 self.__cleanup_k8s_job(k8s_job)
             # TODO assert whether job parallelism == 0
@@ -873,6 +873,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             log.warning("No k8s job found which matches job id '%s'. Ignoring...", job_state.job_id)
         else:
             job = Job(self._pykube_api, jobs.response['items'][0])
-            if job_state.job_wrapper.guest_ports:
+            if self.__is_interactive_tool(job_state):
                 self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
