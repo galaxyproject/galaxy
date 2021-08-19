@@ -2,11 +2,24 @@
     <div class="unified-panel">
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
+                <div class="panel-header-buttons">
+                    <panel-view-button
+                        :panel-views="panelViews"
+                        :current-panel-view="currentPanelView"
+                        @updatePanelView="updatePanelView"
+                        v-if="panelViews && Object.keys(panelViews).length > 1"
+                    />
+                </div>
                 <div class="panel-header-text">Tools</div>
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+            <tool-search
+                :current-panel-view="currentPanelView"
+                placeholder="search tools"
+                @onQuery="onQuery"
+                @onResults="onResults"
+            />
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
@@ -58,12 +71,14 @@ import _l from "utils/localization";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import { filterToolSections } from "./utilities";
+import PanelViewButton from "./Buttons/PanelViewButton";
 
 export default {
     name: "ToolBox",
     components: {
         ToolSection,
         ToolSearch,
+        PanelViewButton,
     },
     data() {
         return {
@@ -75,6 +90,12 @@ export default {
         toolbox: {
             type: Array,
             required: true,
+        },
+        panelViews: {
+            type: Object,
+        },
+        currentPanelView: {
+            type: String,
         },
         workflows: {
             type: Array,
@@ -146,6 +167,9 @@ export default {
         },
         onInsertWorkflowSteps(workflow) {
             this.$emit("onInsertWorkflowSteps", workflow.id, workflow.step_count);
+        },
+        updatePanelView(panelView) {
+            this.$emit("updatePanelView", panelView);
         },
     },
 };

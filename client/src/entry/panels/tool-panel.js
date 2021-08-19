@@ -1,7 +1,7 @@
 import Backbone from "backbone";
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
-import ToolBox from "../../components/Panels/ToolBox";
+import ToolBox from "../../components/Panels/ProviderAwareToolBox";
 import SidePanel from "../../components/Panels/SidePanel";
 import { mountVueComponent } from "../../utils/mountVueComponent";
 
@@ -23,7 +23,9 @@ const ToolPanel = Backbone.View.extend({
                 currentPanel: ToolBox,
                 currentPanelProperties: {
                     storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
-                    toolbox: Galaxy.config.toolbox,
+                    // TODO: find a way to seed to Vuex store's default panel view with data
+                    // or just stop including it in the response.
+                    // toolbox: Galaxy.config.toolbox,
                 },
             },
             el
