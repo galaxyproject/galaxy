@@ -1,33 +1,34 @@
 <template>
     <div>
-        <div v-for="input, index) in inputs" :key="index">
+        <div v-for="(input, index) in inputs" :key="index">
             <div v-if="input.type == 'repeat'">
                 <p class="font-weight-bold mb-2">{{ input.title }}</p>
-                <FormCard v-for="(cache, cacheId) in input.cache"
+                <FormCard
+                    v-for="(cache, cacheId) in input.cache"
                     :key="cacheId"
                     :title="repeatTitle(cacheId, input.title)"
                 >
                     <template v-slot:operations>
-                        <b-button
-                            role="button"
-                            variant="link"
-                            size="sm"
-                            class="float-right"
-                            v-b-tooltip.hover.bottom
-                        >
+                        <b-button role="button" variant="link" size="sm" class="float-right" v-b-tooltip.hover.bottom>
                             <font-awesome-icon icon="trash-alt" />
                         </b-button>
                     </template>
                     <template v-slot:body>
-                        <FormNode 
-                            :inputs="cache"
-                        />
+                        <FormNode @refresh="refresh" :inputs="cache" />
                     </template>
                 </FormCard>
-                <b-button>
+                <b-button @click="repeatInsert(input)">
                     <font-awesome-icon icon="plus" class="mr-1" />
                     <span>Insert {{ input.title }}</span>
                 </b-button>
+            </div>
+            <div v-else-if="input.type == 'section'">
+                <p class="font-weight-bold mb-2">{{ input.title }}</p>
+                <FormCard :title="input.name" :collapsible="true">
+                    <template v-slot:body>
+                        <FormNode :inputs="input.inputs" />
+                    </template>
+                </FormCard>
             </div>
             <FormElement
                 v-else
@@ -43,6 +44,7 @@
 </template>
 
 <script>
+import Vue from "vue";
 import { visitInputs } from "components/Form/utilities";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -129,6 +131,7 @@ export default {
     },
     created() {
         console.log(this.inputs);
+        this.inputs = this.inputs.slice();
     },
     computed: {
         validation() {
@@ -189,6 +192,21 @@ export default {
         },
     },
     methods: {
+        refresh(input) {
+            input = Object.assign({}, input);
+            this.inputs = this.inputs.slice();
+            console.log(input);
+            console.log(this.inputs);
+        },
+        repeatInsert(input) {
+            console.log(input);
+            input.cache = input.cache || {};
+            const repeatCount = Object.keys(input.cache).length;
+            input.cache[repeatCount + 1] = input.inputs;
+            input.cache = Object.assign({}, input.cache);
+            input = Object.assign({}, input);
+            this.$emit("refresh", input);
+        },
         repeatTitle(index, title) {
             return `${index + 1}: ${title}`;
         },
