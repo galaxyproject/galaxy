@@ -65,6 +65,7 @@ def parse_config_xml(config_xml):
         timeout = int(c_xml[0].get('timeout', 30))
         poolsize = int(c_xml[0].get('poolsize', 3))
         refresh_time = int(c_xml[0].get('refresh_time', 300))
+        healthcheck_time = int(c_xml[0].get('healthcheck_time', 300))
 
         c_xml = config_xml.findall('cache')
         if not c_xml:
@@ -95,6 +96,7 @@ def parse_config_xml(config_xml):
                 'timeout': timeout,
                 'poolsize': poolsize,
                 'refresh_time': refresh_time,
+                'healthcheck_time': healthcheck_time,
             },
             'cache': {
                 'size': cache_size,
@@ -128,6 +130,7 @@ class CloudConfigMixin:
                 'timeout': self.timeout,
                 'poolsize': self.poolsize,
                 'refresh_time': self.refresh_time,
+                'healthcheck_time': self.healthcheck_time,
             },
             'cache': {
                 'size': self.cache_size,
@@ -191,6 +194,9 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.refresh_time = connection_dict.get('refresh_time')
         if self.refresh_time is None:
             _config_dict_error('connection->refresh_time')
+        self.healthcheck_time = connection_dict.get('healthcheck_time')
+        if self.healthcheck_time is None:
+            _config_dict_error('connection->healthcheck_time')
 
         cache_dict = config_dict['cache']
         if cache_dict is None:
@@ -206,6 +212,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if not extra_dirs:
             _config_dict_error('extra_dirs')
         self.extra_dirs.update(extra_dirs)
+
+        self.last_healthcheck_time = datetime.now()
 
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
@@ -335,6 +343,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def _in_cache(self, rel_path):
         """ Check if the given dataset is in the local cache and return True if so. """
+        # Check every 'healthcheck_time' seconds if the irods server is down, and raise an exception, because if its 
+        # down, it can still serve files from cache. The raised exception notifies us of the server being down
+        self._server_healthcheck()
+
         cache_path = self._get_cache_path(rel_path)
         return os.path.exists(cache_path)
 
@@ -723,3 +735,14 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def _get_store_usage_percent(self):
         return 0.0
+
+    def _server_healthcheck(self):
+        # Every 'healthcheck_time' seconds, get a connection from the connection pool
+        # If the irods server is up, all is good -- release the connection
+        # If the irods server is down, a NetworkException is thrown
+        current_time = datetime.now()
+        if (current_time - self.last_healthcheck_time).total_seconds() > self.healthcheck_time:
+            # Update last_healthcheck_time
+            self.last_healthcheck_time = current_time
+            with self.session.pool.get_connection() as conn:
+                conn.release()
