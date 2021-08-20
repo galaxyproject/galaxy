@@ -64,7 +64,6 @@ def parse_config_xml(config_xml):
         timeout = int(c_xml[0].get('timeout', 30))
         poolsize = int(c_xml[0].get('poolsize', 3))
         refresh_time = int(c_xml[0].get('refresh_time', 300))
-        healthcheck_time = int(c_xml[0].get('healthcheck_time', 300))
 
         c_xml = config_xml.findall('cache')
         if not c_xml:
@@ -95,7 +94,6 @@ def parse_config_xml(config_xml):
                 'timeout': timeout,
                 'poolsize': poolsize,
                 'refresh_time': refresh_time,
-                'healthcheck_time': healthcheck_time,
             },
             'cache': {
                 'size': cache_size,
@@ -129,7 +127,6 @@ class CloudConfigMixin:
                 'timeout': self.timeout,
                 'poolsize': self.poolsize,
                 'refresh_time': self.refresh_time,
-                'healthcheck_time': self.healthcheck_time,
             },
             'cache': {
                 'size': self.cache_size,
@@ -193,9 +190,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.refresh_time = connection_dict.get('refresh_time')
         if self.refresh_time is None:
             _config_dict_error('connection->refresh_time')
-        self.healthcheck_time = connection_dict.get('healthcheck_time')
-        if self.healthcheck_time is None:
-            _config_dict_error('connection->healthcheck_time')
 
         cache_dict = config_dict['cache']
         if cache_dict is None:
@@ -211,8 +205,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if not extra_dirs:
             _config_dict_error('extra_dirs')
         self.extra_dirs.update(extra_dirs)
-
-        self.last_healthcheck_time = datetime.now()
 
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
