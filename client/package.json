@@ -148,6 +148,7 @@
     "imports-loader": "^3.0.0",
     "jest": "^27.0.6",
     "jest-raw-loader": "^1.0.1",
+    "jest-transform-yaml": "0.1.1",
     "json-loader": "^0.5.7",
     "karma": "^5.0.9",
     "karma-chrome-launcher": "^3.1.0",
@@ -174,7 +175,6 @@
     "webpack-cli": "^4.7.2",
     "webpack-dev-server": "^3.11.2",
     "webpack-merge": "^5.8.0",
-    "yaml-jest": "^1.0.5",
     "yaml-loader": "^0.6.0"
   },
   "peerDependencies": {
