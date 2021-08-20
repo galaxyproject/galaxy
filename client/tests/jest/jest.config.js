@@ -172,7 +172,7 @@ module.exports = {
         [`(${modulesToTransform}).+\\.js$`]: "vue-jest",
         ".*\\.(vue)$": "vue-jest",
         "^.+\\.js$": "babel-jest",
-        "\\.yml$": "yaml-jest",
+        "\\.yml$": "jest-transform-yaml",
         "\\.txt$": "jest-raw-loader",
     },
 
