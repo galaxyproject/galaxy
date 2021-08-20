@@ -166,6 +166,7 @@ class Model(BaseModel):
     """Base model definition with common configuration used by all derived models."""
     class Config:
         use_enum_values = True  # when using .dict()
+        allow_population_by_field_name = True
 
 
 class UserModel(Model):
@@ -629,6 +630,13 @@ class UpdateHistoryContentsBatchPayload(Model):
         description=(
             "This will check the uploading state if not deleting (i.e: deleted=False), "
             "otherwise cannot delete uploading files, so it will raise an error."
+        ),
+    )
+    visible: Optional[bool] = Field(
+        default=False,
+        title="Visible",
+        description=(
+            "Show or hide history contents"
         ),
     )
 
@@ -1901,6 +1909,17 @@ class RoleListModel(BaseModel):
 # Keeping it as a Tuple for now for backward compatibility
 RoleNameIdTuple = Tuple[str, EncodedDatabaseIdField]
 
+# Group_Roles -----------------------------------------------------------------
+
+
+class GroupRoleModel(BaseModel):
+    id: EncodedDatabaseIdField = RoleIdField
+    name: str = RoleNameField
+    url: RelativeUrl = RelativeUrlField
+
+
+class GroupRoleListModel(BaseModel):
+    __root__: List[GroupRoleModel]
 
 # Libraries -----------------------------------------------------------------
 
@@ -2089,11 +2108,7 @@ class DatasetPermissionAction(str, Enum):
     remove_restrictions = "remove_restrictions"
 
 
-class LibraryPermissionsPayloadBase(BaseModel):
-    class Config:
-        use_enum_values = True  # When using .dict()
-        allow_population_by_alias = True
-
+class LibraryPermissionsPayloadBase(Model):
     add_ids: Optional[RoleIdList] = Field(
         [],
         alias="add_ids[]",
@@ -2281,11 +2296,7 @@ class DatasetAssociationRoles(Model):
     )
 
 
-class UpdateDatasetPermissionsPayload(BaseModel):
-    class Config:
-        use_enum_values = True  # When using .dict()
-        allow_population_by_alias = True
-
+class UpdateDatasetPermissionsPayload(Model):
     action: Optional[DatasetPermissionAction] = Field(
         ...,
         title="Action",

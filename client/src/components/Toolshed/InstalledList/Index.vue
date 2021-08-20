@@ -69,23 +69,15 @@ export default {
         Monitor,
         RepositoryDetails,
     },
-    props: ["filter"],
+    props: {
+        filter: {
+            type: String,
+            required: true,
+        },
+    },
     data() {
         return {
             error: null,
-            fields: [
-                {
-                    key: "name",
-                    sortable: true,
-                    sortByFormatted: (value, key, item) => {
-                        return `${this.isLatest(item)}_${value}`;
-                    },
-                },
-                {
-                    key: "owner",
-                    sortable: true,
-                },
-            ],
             loading: true,
             message: null,
             messageVariant: null,
@@ -105,10 +97,39 @@ export default {
         showMessage() {
             return !!this.message;
         },
+        numToolsheds() {
+            const toolsheds = new Set();
+            this.repositories.forEach((x) => {
+                toolsheds.add(x.tool_shed);
+            });
+            return toolsheds.size;
+        },
+        fields() {
+            const fields = [
+                {
+                    key: "name",
+                    sortable: true,
+                    sortByFormatted: (value, key, item) => {
+                        return `${this.isLatest(item)}_${value}`;
+                    },
+                },
+                {
+                    key: "owner",
+                    sortable: true,
+                },
+            ];
+            if (this.numToolsheds > 1) {
+                fields.push({
+                    key: "tool_shed",
+                    sortable: true,
+                });
+            }
+            return fields;
+        },
     },
     created() {
         this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
         this.load();
     },
     methods: {

@@ -195,6 +195,7 @@
   <tool file="cheetah_problem_unbound_var.xml" />
   <tool file="cheetah_problem_unbound_var_input.xml" />
   <tool file="cheetah_problem_syntax_error.xml" />
+  <tool file="model_attributes.xml" />
   <tool file="python_environment_problem.xml" />
   <tool file="config_vars.xml" />
 
@@ -243,6 +244,7 @@
   <tool file="mulled_example_explicit.xml" />
   <tool file="mulled_example_invalid_case.xml" />
   <tool file="mulled_example_broken_no_requirements.xml" />
+  <tool file="mulled_example_broken_no_requirements_fallback.xml" />
 
   <tool file="simple_constructs.yml" />
 

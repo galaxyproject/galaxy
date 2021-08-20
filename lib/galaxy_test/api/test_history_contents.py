@@ -225,10 +225,28 @@ class HistoryContentsApiTestCase(ApiTestCase):
     def test_update_batch(self):
         hda1 = self._wait_for_new_hda()
         assert str(hda1["deleted"]).lower() == "false"
+        assert str(hda1["visible"]).lower() == "true"
+
+        # update deleted flag => true
         payload = dict(items=[{"history_content_type": "dataset", "id": hda1["id"]}], deleted=True)
         update_response = self._raw_update_batch(payload)
         objects = update_response.json()
-        assert objects[0]["deleted"]
+        assert objects[0]["deleted"] is True
+        assert objects[0]["visible"] is True
+
+        # update visibility flag => false
+        payload = dict(items=[{"history_content_type": "dataset", "id": hda1["id"]}], visible=False)
+        update_response = self._raw_update_batch(payload)
+        objects = update_response.json()
+        assert objects[0]["deleted"] is True
+        assert objects[0]["visible"] is False
+
+        # update both flags
+        payload = dict(items=[{"history_content_type": "dataset", "id": hda1["id"]}], deleted=False, visible=True)
+        update_response = self._raw_update_batch(payload)
+        objects = update_response.json()
+        assert objects[0]["deleted"] is False
+        assert objects[0]["visible"] is True
 
     def test_update_type_failures(self):
         hda1 = self._wait_for_new_hda()
@@ -621,3 +639,18 @@ class HistoryContentsApiTestCase(ApiTestCase):
                 if any(c for c in update if c['history_content_type'] == 'dataset_collection' and c['populated_state'] == 'ok'):
                     return
             raise Exception(f"History content update time query did not include populated_state update for dynamic nested collection {collection_id}")
+
+    def test_index_filter_by_type(self):
+        history_id = self.dataset_populator.new_history()
+        self.dataset_populator.new_dataset(history_id)
+        self.dataset_collection_populator.create_list_in_history(history_id=history_id)
+
+        contents_response = self._get(f"histories/{history_id}/contents").json()
+        num_items = len(contents_response)
+        expected_num_collections = 1
+        expected_num_datasets = num_items - expected_num_collections
+
+        contents_response = self._get(f"histories/{history_id}/contents?types=dataset").json()
+        assert len(contents_response) == expected_num_datasets
+        contents_response = self._get(f"histories/{history_id}/contents?types=dataset_collection").json()
+        assert len(contents_response) == expected_num_collections

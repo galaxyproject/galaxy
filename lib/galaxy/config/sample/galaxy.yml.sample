@@ -438,9 +438,18 @@ galaxy:
 
   # Container resolvers configuration (beta). Set up a file describing
   # container resolvers to use when discovering containers for Galaxy.
-  # If this is set to None, the default containers loaded is determined
-  # by enable_mulled_containers.
-  #containers_resolvers_config_file: null
+  # If this is set to None, the default container resolvers loaded is
+  # determined by enable_mulled_containers.
+  #container_resolvers_config_file: null
+
+  # Rather than specifying a container_resolvers_config_file, the
+  # definition of the resolvers to enable can be embedded into Galaxy's
+  # config with this option. This has no effect if a
+  # container_resolvers_config_file is used.
+  # The syntax, available resolvers, and documentation of their options
+  # is explained in detail in the documentation:
+  # https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+  #container_resolvers: null
 
   # involucro is a tool used to build Docker or Singularity containers
   # for tools from Conda dependencies referenced in tools as
@@ -2188,7 +2197,7 @@ galaxy:
   # The base module(s) that are searched for modules for toolbox
   # filtering (https://galaxyproject.org/user-defined-toolbox-filters/)
   # functions.
-  #toolbox_filter_base_modules: galaxy.tools.filters,galaxy.tools.toolbox.filters
+  #toolbox_filter_base_modules: galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters
 
   # Galaxy uses AMQP internally for communicating between processes.
   # For example, when reloading the toolbox or locking job execution,

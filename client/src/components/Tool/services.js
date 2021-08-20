@@ -2,11 +2,12 @@ import axios from "axios";
 import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
 
-export async function updateToolFormData(tool_id, tool_version, inputs) {
+export async function updateToolFormData(tool_id, tool_version, history_id, inputs) {
     const current_state = {
         tool_id: tool_id,
         tool_version: tool_version,
         inputs: inputs,
+        history_id: history_id,
     };
     const url = `${getAppRoot()}api/tools/${tool_id}/build`;
     try {

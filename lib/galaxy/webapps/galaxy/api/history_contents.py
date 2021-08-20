@@ -141,12 +141,12 @@ class HistoryContentsIndexLegacyParams(HistoryContentsIndexLegacyParamsBase):
             "specific datasets will be provided. Also, setting this value will set `dataset_details` to `all`."
         ),
     )
-    types: Optional[str] = Field(
+    types: Optional[Union[List[HistoryContentType], str]] = Field(
         default=None,
         alias="type",  # Legacy alias
         title="Types",
         description=(
-            "A comma separated list of kinds of contents to return "
+            "A list or comma separated list of kinds of contents to return "
             "(currently just `dataset` and `dataset_collection` are available)."
         ),
     )

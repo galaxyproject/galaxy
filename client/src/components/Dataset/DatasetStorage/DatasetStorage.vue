@@ -66,7 +66,7 @@ export default {
             const description = storageInfo.description;
             this.storageInfo = storageInfo;
             if (description) {
-                this.descriptionRendered = MarkdownIt().render(storageInfo.description);
+                this.descriptionRendered = MarkdownIt({ html: true }).render(storageInfo.description);
             } else {
                 this.descriptionRendered = null;
             }

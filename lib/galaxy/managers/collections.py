@@ -309,16 +309,25 @@ class DatasetCollectionManager:
     def _set_from_dict(self, trans, dataset_collection_instance, new_data):
         # send what we can down into the model
         changed = dataset_collection_instance.set_from_dict(new_data)
+
         # the rest (often involving the trans) - do here
         if 'annotation' in new_data.keys() and trans.get_user():
             dataset_collection_instance.add_item_annotation(trans.sa_session, trans.get_user(), dataset_collection_instance, new_data['annotation'])
             changed['annotation'] = new_data['annotation']
+
+        # the api promises a list of changed fields, but tags are not marked as changed to avoid the
+        # flush, so we must handle changed tag responses manually
+        new_tags = None
         if 'tags' in new_data.keys() and trans.get_user():
             # set_tags_from_list will flush on its own, no need to add to 'changed' here and incur a second flush.
-            self.tag_handler.set_tags_from_list(trans.get_user(), dataset_collection_instance, new_data['tags'])
+            new_tags = self.tag_handler.set_tags_from_list(trans.get_user(), dataset_collection_instance, new_data['tags'])
 
         if changed.keys():
             trans.sa_session.flush()
+
+        # set client tag field response after the flush
+        if new_tags is not None:
+            changed['tags'] = dataset_collection_instance.make_tag_string_list()
 
         return changed
 

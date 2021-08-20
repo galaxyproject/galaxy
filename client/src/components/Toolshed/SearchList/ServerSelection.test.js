@@ -11,11 +11,11 @@ describe("ServerSelection", () => {
                 toolshedUrl: "url_0",
                 toolshedUrls: ["url_0", "url_1"],
                 loading: false,
-                total: "total",
+                total: 10,
             },
             localVue,
         });
-        expect(wrapper.find(".description").text()).toBe("total repositories available at");
+        expect(wrapper.find(".description").text()).toBe("10 repositories available at");
         const $options = wrapper.findAll("a");
         expect($options.at(0).text()).toBe("url_0");
         expect($options.at(1).text()).toBe("url_0");

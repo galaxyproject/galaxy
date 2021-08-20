@@ -201,12 +201,8 @@ export default Backbone.View.extend({
                     )
                     .append($("<span/>").addClass("ui-form-title-text"))
             )
-            .append(
-                $("<div/>")
-                    .addClass("ui-form-field")
-                    .append($("<span/>").addClass("ui-form-info form-text text-muted mt-2"))
-                    .append($("<div/>").addClass("ui-form-backdrop"))
-            )
-            .append($("<div/>").addClass("ui-form-preview"));
+            .append($("<div/>").addClass("ui-form-field").append($("<div/>").addClass("ui-form-backdrop")))
+            .append($("<div/>").addClass("ui-form-preview"))
+            .append($("<span/>").addClass("ui-form-info form-text text-muted mb-2"));
     },
 });

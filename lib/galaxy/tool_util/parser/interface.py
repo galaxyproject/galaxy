@@ -1,9 +1,14 @@
+import fnmatch
 import os
+import re
 from abc import (
     ABCMeta,
     abstractmethod
 )
+from os.path import join
+from typing import Dict, List, Optional
 
+from galaxy.util.path import safe_walk
 from .util import _parse_name
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
@@ -166,6 +171,10 @@ class ToolSource(metaclass=ABCMeta):
         """ Return boolean indicating ... I have no clue...
         """
         return False
+
+    def parse_required_files(self) -> Optional['RequiredFiles']:
+        """ Parse explicit RequiredFiles object or return None to let Galaxy decide implicit logic."""
+        return None
 
     @abstractmethod
     def parse_requirements_and_containers(self):
@@ -450,6 +459,55 @@ class TestCollectionDef:
             else:
                 inputs.append(value)
         return inputs
+
+
+class RequiredFiles:
+
+    def __init__(self, includes: List[Dict], excludes: List[Dict], extend_default_excludes: bool):
+        self.includes = includes
+        self.excludes = excludes
+        self.extend_default_excludes = extend_default_excludes
+
+    @staticmethod
+    def from_dict(as_dict):
+        extend_default_excludes: bool = as_dict.get("extend_default_excludes", True)
+        includes: List = as_dict.get("includes", [])
+        excludes: List = as_dict.get("excludes", [])
+        return RequiredFiles(includes, excludes, extend_default_excludes)
+
+    def find_required_files(self, tool_directory: str) -> List[str]:
+
+        def matches(ie_list: List, rel_path: str):
+            for ie_item in ie_list:
+                ie_item_path = ie_item["path"]
+                ie_item_type = ie_item.get("path_type", "literal")
+                if ie_item_type == "literal":
+                    if rel_path == ie_item_path:
+                        return True
+                elif ie_item_type == "prefix":
+                    if rel_path.startswith(ie_item_path):
+                        return True
+                elif ie_item_type == "glob":
+                    if fnmatch.fnmatch(rel_path, ie_item_path):
+                        return True
+                else:
+                    if re.match(ie_item_path, rel_path) is not None:
+                        return True
+            return False
+
+        excludes = self.excludes
+        if self.extend_default_excludes:
+            excludes.append({"path": "tool-data", "path_type": "prefix"})
+            excludes.append({"path": "test-data", "path_type": "prefix"})
+            excludes.append({"path": ".hg", "path_type": "prefix"})
+
+        files: List[str] = []
+        for (dirpath, _, filenames) in safe_walk(tool_directory):
+            for filename in filenames:
+                rel_path = join(dirpath, filename).replace(tool_directory + os.path.sep, '')
+                if matches(self.includes, rel_path) and not matches(self.excludes, rel_path):
+                    files.append(rel_path)
+        return files
 
 
 class TestCollectionOutputDef:

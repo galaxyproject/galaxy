@@ -4,8 +4,6 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import Portlet from "mvc/ui/ui-portlet";
-import Ui from "mvc/ui/ui-misc";
 import FormSection from "mvc/form/form-section";
 import FormData from "mvc/form/form-data";
 
@@ -13,11 +11,7 @@ export default Backbone.View.extend({
     initialize: function (options) {
         this.model = new Backbone.Model({
             initial_errors: false,
-            cls: "ui-portlet",
-            icon: null,
             always_refresh: true,
-            status: "warning",
-            hide_operations: false,
             onchange: function () {},
         }).set(options);
         this.setElement(options.el || "<div/>");
@@ -32,7 +26,6 @@ export default Backbone.View.extend({
             if (field.update) {
                 field.update(node);
                 field.trigger("change");
-                console.debug("form-view::update()", `Updating input: ${input_id}`);
             }
         });
     },
@@ -53,8 +46,6 @@ export default Backbone.View.extend({
         var input_element = this.element_list[input_id];
         if (input_element) {
             input_element.error(message || "Please verify this option.");
-            this.portlet.expand();
-            this.trigger("expand", input_id);
             if (!silent) {
                 var $panel = this.$el
                     .parents()
@@ -127,34 +118,12 @@ export default Backbone.View.extend({
     _renderForm: function () {
         $(".tooltip").remove();
         var options = this.model.attributes;
-        this.message = new Ui.UnescapedMessage();
         this.section = new FormSection.View(this, {
             inputs: options.inputs,
         });
-        this.portlet = new Portlet.View({
-            icon: options.icon,
-            title: options.title,
-            title_id: options.title_id,
-            operations: !options.hide_operations && options.operations,
-            cls: options.cls,
-            buttons: options.buttons,
-            collapsible: options.collapsible,
-            collapsed: options.collapsed,
-            onchange_title: options.onchange_title,
-        });
-        this.portlet.append(this.message.$el);
-        this.portlet.append(this.section.$el);
         this.$el.empty();
         if (options.inputs) {
-            this.$el.append(this.portlet.$el);
+            this.$el.append(this.section.$el);
         }
-        if (options.message) {
-            this.message.update({
-                persistent: true,
-                status: options.status,
-                message: options.message,
-            });
-        }
-        console.debug("form-view::initialize()", "Completed");
     },
 });

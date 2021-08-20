@@ -83,6 +83,10 @@ environment variable:
 
     GALAXY_URL="http://localhost:8000" make client-dev-server
 
+Sometimes you want to run your local UI against a remote Galaxy server. This is also possible, if you enable `CHANGE_ORIGIN` flag 
+
+    CHANGE_ORIGIN=true GALAXY_URL="https://usegalaxy.org/" make client-dev-server
+
 ## Changing Styles/CSS
 
 Galaxy uses Sass for its styling, which is a superset of CSS that compiles down
