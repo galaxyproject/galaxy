@@ -75,8 +75,8 @@ describe("history content operators and functions", () => {
     describe("buildContentId", () => {
         it("should add the history and hid together", () => {
             const id = buildContentId(testDoc);
-            expect(id).toContain(testDoc.history_id);
-            expect(id).toContain(testDoc.hid);
+            expect(id).toContain(String(testDoc.history_id));
+            expect(id).toContain(String(testDoc.hid));
         });
     });
 
@@ -84,8 +84,8 @@ describe("history content operators and functions", () => {
         const doc = prepContent(testDoc);
 
         it("should generate an _id for the content", () => {
-            expect(doc._id).toContain(testDoc.history_id);
-            expect(doc._id).toContain(testDoc.hid);
+            expect(doc._id).toContain(String(testDoc.history_id));
+            expect(doc._id).toContain(String(testDoc.hid));
         });
 
         it("should rename the deleted field because pouchdb reserves that prop", () => {
@@ -169,7 +169,7 @@ describe("collection content operators and functions", () => {
             const dsc = prepDscContent(raw);
             expect(dsc).toExist;
             expect(dsc._id).toContain(raw.parent_url);
-            expect(dsc._id).toContain(raw.element_index);
+            expect(dsc._id).toContain(String(raw.element_index));
         });
 
         // Warrants more testing because we have to untwist the api response format as
