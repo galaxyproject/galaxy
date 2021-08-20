@@ -699,6 +699,9 @@ class Cell(GenericMolFile):
         >>> fname = get_test_fname('Si.cell')
         >>> Cell().sniff(fname)
         True
+        >>> fname = get_test_fname('Si_cell.txt')
+        >>> Cell().sniff(fname)
+        True
         >>> fname = get_test_fname('Si.cif')
         >>> Cell().sniff(fname)
         False
@@ -756,6 +759,9 @@ class CIF(GenericMolFile):
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('Si.cif')
+        >>> CIF().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si_cif.txt')
         >>> CIF().sniff(fname)
         True
         >>> fname = get_test_fname('Si.cell')
@@ -817,6 +823,9 @@ class XYZ(GenericMolFile):
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('Si.xyz')
+        >>> XYZ().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si_xyz.txt')
         >>> XYZ().sniff(fname)
         True
         >>> fname = get_test_fname('Si.cell')
