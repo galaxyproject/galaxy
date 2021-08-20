@@ -20,7 +20,6 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.check_current_dbkey_value(dbkeyValue)
         dbkeyNew = "hg17"
         self.change_dbkey_value_and_click_submit(dbkeyValue, dbkeyNew)
-        self.components.history_panel.options_use_legacy_history.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(4)
         self.use_beta_history()
         self.open_collection_edit_view()

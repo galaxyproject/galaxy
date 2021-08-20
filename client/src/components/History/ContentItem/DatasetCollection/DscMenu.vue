@@ -10,14 +10,7 @@
                 variant="link"
                 class="px-1 collection-edit-view"
             />
-            <b-dropdown
-                v-if="notIn(STATES.DISCARDED)"
-                no-caret
-                right
-                variant="link"
-                size="sm"
-                boundary="window"
-            >
+            <b-dropdown v-if="notIn(STATES.DISCARDED)" no-caret right variant="link" size="sm" boundary="window">
                 <template v-slot:button-content>
                     <Icon icon="trash" variant="link" />
                     <span class="sr-only">Delete Collection</span>
