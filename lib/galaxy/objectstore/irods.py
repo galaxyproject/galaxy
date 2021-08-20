@@ -13,7 +13,6 @@ try:
     import irods.keywords as kw
     from irods.exception import CollectionDoesNotExist
     from irods.exception import DataObjectDoesNotExist
-    from irods.exception import NetworkException
     from irods.session import iRODSSession
 except ImportError:
     irods = None
@@ -313,9 +312,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.warning("Collection or data object (%s) does not exist", data_object_path)
             return -1
-        except NetworkException as e:
-            log.exception(e)
-            return -1
         finally:
             log.debug("irods_pt _get_size_in_irods: %s", ipt_timer)
 
@@ -335,18 +331,11 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.debug("Collection or data object (%s) does not exist", data_object_path)
             return False
-        except NetworkException as e:
-            log.exception(e)
-            return False
         finally:
             log.debug("irods_pt _data_object_exists: %s", ipt_timer)
 
     def _in_cache(self, rel_path):
         """ Check if the given dataset is in the local cache and return True if so. """
-        # Check every 'healthcheck_time' seconds if the irods server is down, and raise an exception, because if its 
-        # down, it can still serve files from cache. The raised exception notifies us of the server being down
-        self._server_healthcheck()
-
         cache_path = self._get_cache_path(rel_path)
         return os.path.exists(cache_path)
 
@@ -378,9 +367,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             data_obj = self.session.data_objects.get(data_object_path)
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.warning("Collection or data object (%s) does not exist", data_object_path)
-            return False
-        except NetworkException as e:
-            log.exception(e)
             return False
         finally:
             log.debug("irods_pt _download: %s", ipt_timer)
@@ -458,9 +444,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
                         source_file, rel_path, os.path.getsize(source_file), (end_time - start_time).total_seconds())
             return True
-        except NetworkException as e:
-            log.exception(e)
-            return False
         finally:
             log.debug("irods_pt _push_to_irods: %s", ipt_timer)
 
@@ -584,9 +567,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 except CollectionDoesNotExist:
                     log.warning("Collection (%s) does not exist!", col_path)
                     return False
-                except NetworkException as e:
-                    log.exception(e)
-                    return False
 
                 cols = col.walk()
                 # Traverse the tree only one level deep
@@ -623,13 +603,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 except (DataObjectDoesNotExist, CollectionDoesNotExist):
                     log.info("Collection or data object (%s) does not exist", data_object_path)
                     return True
-                except NetworkException as e:
-                    log.exception(e)
-                    return False
         except OSError:
             log.exception('%s delete error', self._get_filename(obj, **kwargs))
-        except NetworkException as e:
-            log.exception(e)
         finally:
             log.debug("irods_pt _delete: %s", ipt_timer)
         return False
@@ -735,14 +710,3 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def _get_store_usage_percent(self):
         return 0.0
-
-    def _server_healthcheck(self):
-        # Every 'healthcheck_time' seconds, get a connection from the connection pool
-        # If the irods server is up, all is good -- release the connection
-        # If the irods server is down, a NetworkException is thrown
-        current_time = datetime.now()
-        if (current_time - self.last_healthcheck_time).total_seconds() > self.healthcheck_time:
-            # Update last_healthcheck_time
-            self.last_healthcheck_time = current_time
-            with self.session.pool.get_connection() as conn:
-                conn.release()
