@@ -32,7 +32,7 @@ def get_tool_watcher(toolbox, config):
     config_value = getattr(config, config_name, None)
     observer_class = get_observer_class(config_name, config_value, default="False", monitor_what_str="tools")
     if observer_class is not None:
-        return ToolWatcher(observer_class=observer_class, even_handler_class=ToolFileEventHandler, toolbox=toolbox)
+        return ToolWatcher(observer_class=observer_class, event_handler_class=ToolFileEventHandler, toolbox=toolbox)
     else:
         return NullWatcher()
 
@@ -169,8 +169,8 @@ class ToolConfWatcher:
 
 class ToolWatcher(BaseWatcher):
 
-    def __init__(self, observer_class, even_handler_class, toolbox):
-        super().__init__(observer_class, even_handler_class)
+    def __init__(self, observer_class, event_handler_class, toolbox):
+        super().__init__(observer_class, event_handler_class)
         self.toolbox = toolbox
         self.tool_file_ids = {}
         self.tool_dir_callbacks = {}
