@@ -945,6 +945,7 @@ $galaxy-state-border: (
     "error": $state-danger-border,
     "deleted": darken($state-default-border, 30%),
     "hidden": $state-default-border,
+    "active": $state-default-border,
 );
 
 $galaxy-state-bg: (
@@ -957,6 +958,7 @@ $galaxy-state-bg: (
     "error": $state-danger-bg,
     "deleted": darken($state-default-bg, 30%),
     "hidden": $state-default-bg,
+    "active": darken($state-success-bg, 30%),
 );
 
 @each $state in map-keys($galaxy-state-border) {
@@ -985,6 +987,23 @@ $galaxy-state-bg: (
 [data-state="deleted"],
 [data-state="hidden"] {
     border-style: dotted;
+}
+
+.state-color-active,
+[data-state="active"] {
+    animation: pulse 10s infinite;
+
+    @keyframes pulse {
+        0% {
+            background-color: darken($state-success-bg, 30%);
+        }
+        50% {
+            background-color: $state-success-bg;
+        }
+        100% {
+            background-color: darken($state-success-bg, 30%);
+        }
+    }
 }
 
 // Button styles

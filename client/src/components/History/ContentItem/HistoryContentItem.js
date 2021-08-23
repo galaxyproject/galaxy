@@ -11,7 +11,7 @@ export default {
             const { history_content_type } = this.item;
             switch (history_content_type) {
                 case "dataset":
-                    if ( this.item.tool_type == "interactive") {
+                    if (this.item.tool_type == "interactive") {
                         return "InteractiveTool";
                     } else {
                         return "Dataset";

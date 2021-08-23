@@ -12,7 +12,7 @@ import Placeholder from "./Placeholder";
 import Dataset from "./Dataset";
 import DatasetCollection from "./DatasetCollection";
 import Subdataset from "./Subdataset";
-import InteractiveTool from "./InteractiveTool"
+import InteractiveTool from "./InteractiveTool";
 // import SubDataset from "./SubDataset";
 import Subcollection from "./Subcollection";
 

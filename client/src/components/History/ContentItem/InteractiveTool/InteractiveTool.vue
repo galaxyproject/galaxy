@@ -19,7 +19,6 @@ import { deleteContent, updateContentFields } from "../../model/queries";
 import { cacheContent } from "../../caching";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath } from "utils/redirect";
-import Services from "../../../InteractiveTools/services";
 
 export default {
     components: {
@@ -31,16 +30,6 @@ export default {
     computed: {
         dataset() {
             return new Dataset(this.item);
-        },
-        async interactiveLink() {
-            const activeIT = Services.getActiveInteractiveTools();
-            //TODO select corect IT //
-            for(IT in activeIT) {
-                if(IT.job_id === this.dataset.job_id){
-                    url = activeIT.target;
-                    break
-                };
-            }
         },
     },
     methods: {

@@ -4,7 +4,6 @@ Manager and Serializer for Datasets.
 import glob
 import logging
 import os
-from re import S
 from typing import Type
 
 from galaxy import (
@@ -223,6 +222,7 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
             'access': [self.app.security.encode_id(perm.role.id) for perm in access_permissions],
         }
         return permissions
+
 
 # ============================================================================= AKA DatasetInstanceManager
 class DatasetAssociationManager(base.ModelManager,
@@ -477,9 +477,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
             'meta_files': self.serialize_meta_files,
             'metadata': self.serialize_metadata,
 
-            'creating_job'  : self.serialize_creating_job,
-            'rerunnable'    : self.serialize_rerunnable,
-            'tool_type'     : self.serialize_tool_type,
+            'creating_job': self.serialize_creating_job,
+            'rerunnable': self.serialize_rerunnable,
+            'tool_type': self.serialize_tool_type,
 
             'parent_id': self.serialize_id,
             'designation': lambda i, k, **c: i.designation,
@@ -575,7 +575,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
                 return True
         return False
 
-    def serialize_tool_type(self,dataset, key, user=None, **context):
+    def serialize_tool_type(self, dataset, key, user=None, **context):
         if dataset.creating_job:
             tool = self.app.toolbox.get_tool(dataset.creating_job.tool_id, dataset.creating_job.tool_version)
             if tool:

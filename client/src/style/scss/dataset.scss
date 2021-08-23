@@ -177,6 +177,13 @@
             @extend .state-icon-running;
         }
     }
+
+    &.state-active {
+        background: $state-success-bg;
+        .state-icon {
+            display: none;
+        }
+    }
 }
 
 .blinking {

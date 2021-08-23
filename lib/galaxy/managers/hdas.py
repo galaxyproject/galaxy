@@ -22,9 +22,6 @@ from galaxy.managers import (
 )
 from galaxy.structured_app import MinimalManagerApp
 
-from galaxy.tool_util.parser import get_tool_source
-
-
 log = logging.getLogger(__name__)
 
 
