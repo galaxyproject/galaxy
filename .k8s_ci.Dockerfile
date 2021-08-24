@@ -18,11 +18,8 @@
 ARG ROOT_DIR=/galaxy
 ARG SERVER_DIR=$ROOT_DIR/server
 
-# For much faster build time override this with image0 (Dockerfile.0 build):
-#   docker build --build-arg BASE=<image0 name>...
 ARG STAGE1_BASE=python:3.7-slim
 ARG FINAL_STAGE_BASE=$STAGE1_BASE
-# NOTE: the value of GALAXY_USER must be also hardcoded in COPY in final stage
 ARG GALAXY_USER=galaxy
 ARG GALAXY_PLAYBOOK_REPO=https://github.com/galaxyproject/galaxy-docker-k8s
 
@@ -153,9 +150,9 @@ RUN set -xe; \
 
 WORKDIR $ROOT_DIR
 # Copy galaxy files to final image
-# The chown value MUST be hardcoded (see #35018 at github.com/moby/moby)
-COPY --chown=galaxy:galaxy --from=server_build $ROOT_DIR .
-COPY --chown=galaxy:galaxy --from=client_build $SERVER_DIR/static ./server/static
+# The chown value MUST be hardcoded (see https://github.com/moby/moby/issues/35018)
+COPY --chown=$GALAXY_USER:$GALAXY_USER --from=server_build $ROOT_DIR .
+COPY --chown=$GALAXY_USER:$GALAXY_USER --from=client_build $SERVER_DIR/static ./server/static
 
 WORKDIR $SERVER_DIR
 EXPOSE 8080
