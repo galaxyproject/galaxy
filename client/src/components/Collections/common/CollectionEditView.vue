@@ -104,10 +104,10 @@ export default {
             axios.put(url, data).catch(this.handleError);
         },
         clickedConvert: function (selectedConverter) {
-            const url = prependPath("/api/tools/conversion/" + selectedConverter.tool_id);
+            const url = prependPath(`/api/tools/${selectedConverter.tool_id}/convert`);
             const data = {
-                collection_data: this.collection_id,
-                name: selectedConverter.name,
+                src: "hdca",
+                id: this.collection_id,
                 original_type: selectedConverter.original_type,
                 target_type: selectedConverter.target_type,
                 tool_id: selectedConverter.tool_id,

@@ -429,12 +429,12 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return rval
 
     @expose_api
-    def conversion(self, trans: GalaxyWebTransaction, id, payload, **kwd):
-        converter = self._get_tool(id, user=trans.user)
+    def conversion(self, trans: GalaxyWebTransaction, tool_id, payload, **kwd):
+        converter = self._get_tool(tool_id, user=trans.user)
         target_type = payload.get("target_type")
         original_type = payload.get("original_type")
-        original_collection = payload.get("collection_data")
-        collection_inst = self.hdca_manager.get_dataset_collection_instance(trans, id=original_collection, instance_type="history")
+        input_src = payload.get("src")
+        input_id = payload.get("id")
         # List of string of dependencies
         try:
             deps = trans.app.datatypes_registry.converter_deps[original_type][target_type]
@@ -453,18 +453,17 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         params[input_name] = {
             "values": [
                 {
-                    "id": original_collection,
-                    "hid": collection_inst.hid,
-                    "src": "hdca",
-                    "keep": False
+                    "id": input_id,
+                    "src": input_src,
                 }
             ],
-            "batch": True
+            "batch": input_src == "hdca",
         }
 
         # Make the target datatype available to the converter
         params['__target_datatype__'] = target_type
-        converter.handle_input(trans, params)
+        vars = converter.handle_input(trans, params)
+        return self._handle_inputs_output_to_api_response(trans, converter, vars)
 
     @expose_api_anonymous_and_sessionless
     def xrefs(self, trans: GalaxyWebTransaction, id, **kwds):
@@ -608,6 +607,24 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format)
 
+        new_pja_flush = False
+        for job in vars.get('jobs', []):
+            if inputs.get('send_email_notification', False):
+                # Unless an anonymous user is invoking this via the API it
+                # should never be an option, but check and enforce that here
+                if trans.user is None:
+                    raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
+                else:
+                    job_email_action = PostJobAction('EmailAction')
+                    job.add_post_job_action(job_email_action)
+                    new_pja_flush = True
+
+        if new_pja_flush:
+            trans.sa_session.flush()
+
+        return self._handle_inputs_output_to_api_response(trans, tool, vars)
+
+    def _handle_inputs_output_to_api_response(self, trans, tool, vars):
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])
         rval: Dict[str, Any] = {'outputs': [], 'output_collections': [], 'jobs': [], 'implicit_collections': []}
@@ -627,21 +644,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             output_dict['output_name'] = output_name
             outputs.append(trans.security.encode_dict_ids(output_dict, skip_startswith="metadata_"))
 
-        new_pja_flush = False
         for job in vars.get('jobs', []):
             rval['jobs'].append(self.encode_all_ids(trans, job.to_dict(view='collection'), recursive=True))
-            if inputs.get('send_email_notification', False):
-                # Unless an anonymous user is invoking this via the API it
-                # should never be an option, but check and enforce that here
-                if trans.user is None:
-                    raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
-                else:
-                    job_email_action = PostJobAction('EmailAction')
-                    job.add_post_job_action(job_email_action)
-                    new_pja_flush = True
-
-        if new_pja_flush:
-            trans.sa_session.flush()
 
         for output_name, collection_instance in vars.get('output_collections', []):
             history = target_history or trans.history

@@ -433,6 +433,25 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         expected_names = {'velveth_test1/Roadmaps', 'velveth_test1/output.html', 'velveth_test1/Sequences', 'velveth_test1/Log', 'velveth_test1/output/', 'velveth_test1/output/1'}
         assert set(namelist) == expected_names
 
+    @uses_test_history(require_new=False)
+    def test_convert_dataset(self, history_id):
+        fasta1_contents = open(self.get_filename("1.fasta")).read()
+        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+
+        payload = {
+            "src": "hda",
+            "id": hda1["id"],
+            "original_datatype": "fasta",
+            "target_datatype": "tabular",
+        }
+        create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", data=payload)
+        create_response.raise_for_status()
+        # TODO: wait for job and verify metdata and contents...
+
+    def test_convert_hdca(self):
+        # TODO:
+        pass
+
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:
             hdca_id = self._build_pair(history_id, ["123", "456"])
