@@ -275,7 +275,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'url',
             'create_time',
             'update_time',
-            'tool_type',
         ])
         self.add_view('detailed', [
             'model_class',
