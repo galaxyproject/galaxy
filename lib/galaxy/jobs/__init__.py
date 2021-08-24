@@ -1143,7 +1143,7 @@ class JobWrapper(HasResourceParameters):
         """
         new = os.path.join(self.working_directory, 'upload_params.json')
         try:
-            shutil.move(tool_evaluator.param_dict['paramfile'], new)
+            shutil.copy2(tool_evaluator.param_dict['paramfile'], new)
         except OSError as exc:
             # It won't exist at the old path if setup was interrupted and tried again later
             if exc.errno != errno.ENOENT or not os.path.exists(new):
@@ -1182,6 +1182,8 @@ class JobWrapper(HasResourceParameters):
         with store.DirectoryModelExportStore(export_directory=self.working_directory, app=self.app, for_edit=True, serialize_dataset_objects=True, serialize_jobs=False, encode_ids=False) as export_store:
             export_store.export_job(job, tool=self.tool)
         self.job_io.to_json(path=os.path.join(self.working_directory, 'job_io.json'))
+        self.app.tool_data_tables.to_json(path=os.path.join(self.working_directory, 'tool_data_tables.json'))
+
         # object_store_conf = self.object_store.to_dict()
         # with open(os.path.join(self.working_directory, "object_store_conf.json"), "w") as f:
         #     json.dump(object_store_conf, f)

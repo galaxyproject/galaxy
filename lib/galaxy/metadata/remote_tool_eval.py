@@ -1,3 +1,4 @@
+import json
 import os
 from typing import NamedTuple
 
@@ -17,6 +18,9 @@ from galaxy.tools import (
     create_tool_from_source,
     evaluation,
 )
+from galaxy.tools.data import ToolDataTableManager
+from galaxy.util.bunch import Bunch
+from galaxy.util.dbkeys import GenomeBuilds
 
 
 class ToolAppConfig(NamedTuple):
@@ -24,6 +28,9 @@ class ToolAppConfig(NamedTuple):
     tool_data_path: str
     root: str = '/tmp'
     admin_users: list = []
+    nginx_upload_path = None
+    len_file_path = '/Users/mvandenb/src/galaxy/tool-data/shared/ucsc/chrom'
+    builds_file_path = '/Users/mvandenb/src/galaxy/tool-data/shared/ucsc/builds.txt'
 
 
 class ToolApp:
@@ -31,11 +38,14 @@ class ToolApp:
     name = 'tool_app'
     model = model
 
-    def __init__(self, sa_session, tool_app_config, datatypes_registry, object_store):
+    def __init__(self, sa_session, tool_app_config, datatypes_registry, object_store, tool_data_table_manager: ToolDataTableManager):
         self.model.context = sa_session
         self.config = tool_app_config
         self.datatypes_registry = datatypes_registry
         self.object_store = object_store
+        self.genome_builds = GenomeBuilds(self)
+        self.tool_data_tables = tool_data_table_manager
+        self.file_sources = Bunch(to_dict=lambda *args, **kwargs: {})
 
 
 def main():
@@ -47,7 +57,9 @@ def main():
     import_store = store.imported_store_for_metadata(WORKING_DIRECTORY)
     job = next(iter(import_store.sa_session.objects_by_class_and_id[Job].values()))
     tool_app_config = ToolAppConfig('tool_app', '/tmp')
-    app = ToolApp(sa_session=import_store.sa_session, tool_app_config=tool_app_config, datatypes_registry=datatypes_registry, object_store=object_store)
+    with open(os.path.join(WORKING_DIRECTORY, 'tool_data_tables.json')) as data_tables_json:
+        tdtm = ToolDataTableManager.from_dict(json.load(data_tables_json))
+    app = ToolApp(sa_session=import_store.sa_session, tool_app_config=tool_app_config, datatypes_registry=datatypes_registry, object_store=object_store, tool_data_table_manager=tdtm)
     # TODO: could try to serialize just a minimal tool variant instead of the whole thing ?
     tool_source = get_tool_source(os.path.join(WORKING_DIRECTORY, 'tool.xml'))
     tool = create_tool_from_source(app, tool_source=tool_source)
