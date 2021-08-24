@@ -134,7 +134,7 @@ import { Dataset, STATES } from "../../model";
 import { Nametag } from "components/Nametags";
 import StatusIcon from "../../StatusIcon";
 import InteractiveToolMenu from "./InteractiveToolMenu";
-import DatasetSummary from "./Summary";
+import DatasetSummary from "../Dataset/Summary";
 import ContentTags from "../../ContentTags";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import IconButton from "components/IconButton";
