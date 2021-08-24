@@ -295,7 +295,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
             'creating_job',
             'rerunnable',
-            # 'job_type',
 
             'uuid',
             'permissions',
