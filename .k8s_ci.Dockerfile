@@ -134,6 +134,7 @@ RUN set -xe; \
         procps \
         less \
         bzip2 \
+        tini \
     && update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 0 \
     && update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 0 \
     && echo "set nocompatible\nset backspace=indent,eol,start" >> /usr/share/vim/vimrc.tiny \
@@ -160,6 +161,8 @@ USER $GALAXY_USER
 
 ENV PATH="$SERVER_DIR/.venv/bin:${PATH}"
 ENV GALAXY_CONFIG_CONDA_AUTO_INIT=False
+
+ENTRYPOINT ["tini", "--"]
 
 # [optional] to run:
 CMD uwsgi --yaml config/galaxy.yml
