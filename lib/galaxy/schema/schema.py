@@ -51,7 +51,7 @@ RelativeUrlField: RelativeUrl = Field(
     ...,
     title="URL",
     description="The relative URL to access this item.",
-    deprecated=False  # TODO Should this field be deprecated in FastAPI?
+    deprecated=True,
 )
 
 DownloadUrlField: RelativeUrl = Field(

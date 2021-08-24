@@ -1,5 +1,6 @@
 from typing import List
 
+from galaxy.web.framework import DEPRECATED_URL_ATTRIBUTE_MESSAGE
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
@@ -67,7 +68,10 @@ class GroupRolesApiTestCase(ApiTestCase):
         self._assert_status_code_is_ok(update_response)
         group_role = update_response.json()
         self._assert_valid_group_role(group_role, assert_id=encoded_role_id)
-        assert (group_role["url"] == f"/api/groups/{encoded_group_id}/roles/{encoded_role_id}" or group_role["url"] == "*deprecated attribute not filled in by FastAPI server*")
+        assert (
+            group_role["url"] == f"/api/groups/{encoded_group_id}/roles/{encoded_role_id}"
+            or group_role["url"] == DEPRECATED_URL_ATTRIBUTE_MESSAGE
+        )
 
     def test_update_only_admin(self):
         encoded_group_id = "any-group-id"

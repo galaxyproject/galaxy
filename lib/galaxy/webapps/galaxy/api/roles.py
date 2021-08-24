@@ -19,7 +19,6 @@ from galaxy.schema.schema import (
     RoleModel,
 )
 from galaxy.webapps.base.controller import url_for
-from galaxy.webapps.galaxy.api.common import fastapi_deprecation_message
 from . import (
     BaseGalaxyAPIController,
     depends,
@@ -38,10 +37,7 @@ router = Router(tags=["roles"])
 def role_to_model(trans, role):
     item = role.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
     role_id = trans.security.encode_id(role.id)
-    try:
-        item['url'] = url_for('role', id=role_id)
-    except AttributeError:
-        item['url'] = fastapi_deprecation_message()
+    item['url'] = url_for('role', id=role_id)
     return RoleModel(**item)
 
 
