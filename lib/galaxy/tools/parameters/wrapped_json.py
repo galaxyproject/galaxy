@@ -33,8 +33,8 @@ def data_collection_input_to_path(v):
     return v.all_paths
 
 
-def data_collection_input_to_staging_path_and_source_path(v):
-    staging_paths = v.all_staging_paths
+def data_collection_input_to_staging_path_and_source_path(v, invalid_chars=('/',), include_collection_name=False):
+    staging_paths = v.all_staging_paths(invalid_chars=invalid_chars, include_collection_name=include_collection_name)
     source_paths = v.all_paths
     metadata_files = v.all_metadata_files
     return [
@@ -44,11 +44,12 @@ def data_collection_input_to_staging_path_and_source_path(v):
          } for staging_path, source_path, metadata_files in zip(staging_paths, source_paths, metadata_files)]
 
 
-def data_input_to_staging_path_and_source_path(v):
+def data_input_to_staging_path_and_source_path(v, invalid_chars=('/',)):
+    staging_path = v.staging_path(invalid_chars=invalid_chars)
     return {
-        'staging_path': v.staging_path,
+        'staging_path': staging_path,
         'source_path': data_input_to_path(v),
-        'metadata_files': [{'staging_path': f"{v.staging_path}.{mf[0]}", 'source_path': mf[1]} for mf in v.all_metadata_files]
+        'metadata_files': [{'staging_path': f"{staging_path}.{mf[0]}", 'source_path': mf[1]} for mf in v.all_metadata_files]
     }
 
 
