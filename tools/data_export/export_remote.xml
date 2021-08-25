@@ -34,9 +34,9 @@ $fileconfig
     <inputs>
         <conditional name="export_type">
             <param name="export_type_selector" type="select" label="What would you like to export?">
-                <option value="datasets_auto" selected="True">Datasets using their Galaxy name and extension.</option>
+                <option value="datasets_auto" selected="true">Datasets using their Galaxy name and extension</option>
                 <option value="collection_auto">Dataset Collection using their name, structure and extension</option>
-                <option value="datasets_named">Datasets using specified name.</option>
+                <option value="datasets_named">Datasets specifying their names</option>
                 <!-- Allow more options - e.g. HTML, collections preserving their structure... -->
             </param>
             <when value="datasets_auto">
