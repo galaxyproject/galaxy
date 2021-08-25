@@ -1011,7 +1011,9 @@ def build_url_map(app, global_conf, local_conf):
 
     def get_static_from_config(option_name, default_path):
         config_val = conf.get(option_name, default_url_path(default_path))
-        return Static(config_val, cache_time)
+        per_host_config_option = f"{option_name}_by_host"
+        per_host_config = conf.get(per_host_config_option)
+        return Static(config_val, cache_time, directory_per_host=per_host_config)
 
     # Define static mappings from config
     urlmap["/static"] = get_static_from_config("static_dir", "static/")

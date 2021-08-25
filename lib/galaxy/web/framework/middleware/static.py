@@ -8,9 +8,10 @@ from paste.urlparser import StaticURLParser
 
 class CacheableStaticURLParser(StaticURLParser):
 
-    def __init__(self, directory, cache_seconds=None):
+    def __init__(self, directory, cache_seconds=None, directory_per_host=None):
         StaticURLParser.__init__(self, directory)
         self.cache_seconds = cache_seconds
+        self.directory_per_host = directory_per_host
 
     def __call__(self, environ, start_response):
         path_info = environ.get('PATH_INFO', '')
@@ -27,7 +28,16 @@ class CacheableStaticURLParser(StaticURLParser):
             filename = 'index.html'
         else:
             filename = request.path_info_pop(environ)
-        full = os.path.join(self.directory, filename)
+
+        directory = self.directory
+        host = environ.get('HTTP_HOST')
+        if self.directory_per_host and host:
+            for host_key, host_val in self.directory_per_host.items():
+                if host_key in host:
+                    directory = host_val
+                    break
+
+        full = os.path.join(directory, filename)
         if not os.path.exists(full):
             return self.not_found(environ, start_response)
         if os.path.isdir(full):
