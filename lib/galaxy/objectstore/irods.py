@@ -13,7 +13,6 @@ try:
     import irods.keywords as kw
     from irods.exception import CollectionDoesNotExist
     from irods.exception import DataObjectDoesNotExist
-    from irods.exception import NetworkException
     from irods.session import iRODSSession
 except ImportError:
     irods = None
@@ -305,9 +304,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.warning("Collection or data object (%s) does not exist", data_object_path)
             return -1
-        except NetworkException as e:
-            log.exception(e)
-            return -1
         finally:
             log.debug("irods_pt _get_size_in_irods: %s", ipt_timer)
 
@@ -326,9 +322,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return True
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.debug("Collection or data object (%s) does not exist", data_object_path)
-            return False
-        except NetworkException as e:
-            log.exception(e)
             return False
         finally:
             log.debug("irods_pt _data_object_exists: %s", ipt_timer)
@@ -366,9 +359,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             data_obj = self.session.data_objects.get(data_object_path)
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.warning("Collection or data object (%s) does not exist", data_object_path)
-            return False
-        except NetworkException as e:
-            log.exception(e)
             return False
         finally:
             log.debug("irods_pt _download: %s", ipt_timer)
@@ -446,9 +436,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
                         source_file, rel_path, os.path.getsize(source_file), (end_time - start_time).total_seconds())
             return True
-        except NetworkException as e:
-            log.exception(e)
-            return False
         finally:
             log.debug("irods_pt _push_to_irods: %s", ipt_timer)
 
@@ -572,9 +559,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 except CollectionDoesNotExist:
                     log.warning("Collection (%s) does not exist!", col_path)
                     return False
-                except NetworkException as e:
-                    log.exception(e)
-                    return False
 
                 cols = col.walk()
                 # Traverse the tree only one level deep
@@ -611,13 +595,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 except (DataObjectDoesNotExist, CollectionDoesNotExist):
                     log.info("Collection or data object (%s) does not exist", data_object_path)
                     return True
-                except NetworkException as e:
-                    log.exception(e)
-                    return False
         except OSError:
             log.exception('%s delete error', self._get_filename(obj, **kwargs))
-        except NetworkException as e:
-            log.exception(e)
         finally:
             log.debug("irods_pt _delete: %s", ipt_timer)
         return False
