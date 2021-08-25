@@ -4,8 +4,8 @@
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormDisplay
-                    :inputs="model.inputs"
-                    :form-config="formConfig"
+                    :inputs="formConfig.inputs"
+                    :errors="formConfig.errors"
                     :sustain-repeats="true"
                     :sustain-conditionals="true"
                     :replace-params="replaceParams"
@@ -58,8 +58,7 @@ export default {
     data() {
         return {
             collapsed: this.model.collapsed,
-            formConfig: {},
-            formData: {},
+            formConfig: this.model,
             replaceParams: {},
             errorText: null,
         };
@@ -132,7 +131,6 @@ export default {
                     this.errorText = errorText;
                 }
             );
-            this.formData = data;
             this.$emit("onChange", this.model.index, data);
         },
         onValidation(validation) {
