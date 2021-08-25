@@ -30,8 +30,7 @@
                 </b-button>
             </div>
             <div v-else-if="input.type == 'section'">
-                <p class="font-weight-bold mb-2">{{ input.title }}</p>
-                <FormCard :title="input.name" :collapsible="true" :collapsed="true">
+                <FormCard :title="input.title || input.name" :collapsible="true" :collapsed="true">
                     <template v-slot:body>
                         <FormNode :inputs="input.inputs" />
                     </template>
@@ -39,9 +38,8 @@
             </div>
             <FormElement
                 v-else
-                :id="input.name"
+                v-model="input.value"
                 :title="input.label"
-                :value="input.value"
                 :help="input.help"
                 :area="input.area"
                 :type="input.type"
@@ -124,6 +122,7 @@ export default {
             //this.$emit("onValidation", this.validation);
         },
         inputs() {
+            this.formInputs = Object.assign({}, this.inputs);
             /*this.$nextTick(() => {
                 this.form.update(this.inputs);
             });*/
@@ -138,7 +137,7 @@ export default {
         },
     },
     created() {
-        console.log(this.inputs);
+        //console.log(this.inputs);
         this.inputs = this.inputs.slice();
     },
     computed: {
@@ -200,18 +199,18 @@ export default {
         },
     },
     methods: {
+        repeatTitle(index, title) {
+            return `${parseInt(index) + 1}: ${title}`;
+        },
         repeatInsert(input) {
-            input.cache = input.cache || {};
-            const repeatCount = Object.keys(input.cache).length;
-            input.cache[repeatCount] = input.inputs;
+            const newInputs = JSON.parse(JSON.stringify(input.inputs));
+            input.cache = input.cache || [];
+            input.cache.push(newInputs);
             this.formInputs = Object.assign({}, this.formInputs);
         },
         repeatDelete(input, cacheId) {
-            delete input.cache[cacheId];
+            input.cache.splice(cacheId, 1);
             this.formInputs = Object.assign({}, this.formInputs);
-        },
-        repeatTitle(index, title) {
-            return `${parseInt(index) + 1}: ${title}`;
         },
         onReplaceParams() {
             /*if (this.replaceParams) {

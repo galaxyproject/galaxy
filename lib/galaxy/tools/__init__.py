@@ -2319,8 +2319,9 @@ class Tool(Dictifiable):
             group_state = state_inputs.get(input.name, {})
             if input.type == 'repeat':
                 tool_dict = input.to_dict(request_context)
-                group_cache = tool_dict['cache'] = {}
-                for i in range(len(group_state)):
+                group_size = len(group_state)
+                group_cache = tool_dict['cache'] = [None] * group_size
+                for i in range(group_size):
                     group_cache[i] = []
                     self.populate_model(request_context, input.inputs, group_state[i], group_cache[i], other_values)
             elif input.type == 'conditional':
