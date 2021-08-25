@@ -1168,12 +1168,14 @@ class ConfiguresGalaxyMixin:
 
     def _configure_toolbox(self):
         from galaxy import tools
+        from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
         from galaxy.managers.citations import CitationsManager
         from galaxy.tool_util.deps import containers
         from galaxy.tool_util.deps.dependencies import AppInfo
         import galaxy.tools.search
 
         self.citations_manager = CitationsManager(self)
+        self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
 
         from galaxy.managers.tools import DynamicToolManager
         self.dynamic_tools_manager = DynamicToolManager(self)

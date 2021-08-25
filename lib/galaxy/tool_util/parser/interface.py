@@ -59,6 +59,17 @@ class ToolSource(metaclass=ABCMeta):
     def parse_description(self):
         """ Parse a description for tool. Longer than name, shorted than help. """
 
+    def parse_edam_operations(self) -> List[str]:
+        """Parse list of edam operation codes."""
+        return []
+
+    def parse_edam_topics(self) -> List[str]:
+        """Parse list of edam topic codes."""
+        return []
+
+    def parse_xrefs(self) -> List[Dict[str, str]]:
+        """Parse list of external resource URIs and types."""
+
     def parse_is_multi_byte(self):
         """ Parse is_multi_byte from tool - TODO: figure out what this is and
         document.
