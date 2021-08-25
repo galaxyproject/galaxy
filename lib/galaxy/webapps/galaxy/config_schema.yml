@@ -1479,6 +1479,7 @@ mapping:
       static_dir:
         type: str
         default: static/
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1489,6 +1490,7 @@ mapping:
       static_images_dir:
         type: str
         default: static/images
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1499,6 +1501,7 @@ mapping:
       static_favicon_dir:
         type: str
         default: static/favicon.ico
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1509,6 +1512,7 @@ mapping:
       static_scripts_dir:
         type: str
         default: static/scripts/
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1519,6 +1523,7 @@ mapping:
       static_style_dir:
         type: str
         default: static/style
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1529,6 +1534,7 @@ mapping:
       static_robots_txt:
         type: str
         default: static/robots.txt
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
