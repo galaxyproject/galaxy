@@ -548,7 +548,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
                 return []
         return self._element_identifiers_extensions_paths_and_metadata_files
 
-    def all_staging_paths(self, invalid_chars=('/',), include_collection_name=False):
+    def get_all_staging_paths(self, invalid_chars=('/',), include_collection_name=False):
         safe_element_identifiers = []
         for element_identifiers, extension, *_ in self.element_identifiers_extensions_paths_and_metadata_files:
             datatype = self.datatypes_registry.get_datatype_by_extension(extension)

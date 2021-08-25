@@ -34,7 +34,7 @@ def data_collection_input_to_path(v):
 
 
 def data_collection_input_to_staging_path_and_source_path(v, invalid_chars=('/',), include_collection_name=False):
-    staging_paths = v.all_staging_paths(invalid_chars=invalid_chars, include_collection_name=include_collection_name)
+    staging_paths = v.get_all_staging_paths(invalid_chars=invalid_chars, include_collection_name=include_collection_name)
     source_paths = v.all_paths
     metadata_files = v.all_metadata_files
     return [
