@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-for="(input, index) in inputs" :key="index">
+        <div v-for="(input, index) in formInputs" :key="index">
             <div v-if="input.type == 'repeat'">
                 <p class="font-weight-bold mb-2">{{ input.title }}</p>
                 <FormCard
@@ -9,12 +9,19 @@
                     :title="repeatTitle(cacheId, input.title)"
                 >
                     <template v-slot:operations>
-                        <b-button role="button" variant="link" size="sm" class="float-right" v-b-tooltip.hover.bottom>
+                        <b-button
+                            role="button"
+                            variant="link"
+                            size="sm"
+                            class="float-right"
+                            v-b-tooltip.hover.bottom
+                            @click="repeatDelete(input, cacheId)"
+                        >
                             <font-awesome-icon icon="trash-alt" />
                         </b-button>
                     </template>
                     <template v-slot:body>
-                        <FormNode @refresh="refresh" :inputs="cache" />
+                        <FormNode :inputs="cache" />
                     </template>
                 </FormCard>
                 <b-button @click="repeatInsert(input)">
@@ -24,7 +31,7 @@
             </div>
             <div v-else-if="input.type == 'section'">
                 <p class="font-weight-bold mb-2">{{ input.title }}</p>
-                <FormCard :title="input.name" :collapsible="true">
+                <FormCard :title="input.name" :collapsible="true" :collapsed="true">
                     <template v-slot:body>
                         <FormNode :inputs="input.inputs" />
                     </template>
@@ -102,6 +109,7 @@ export default {
     data() {
         return {
             formData: {},
+            formInputs: this.inputs,
         };
     },
     watch: {
@@ -192,20 +200,15 @@ export default {
         },
     },
     methods: {
-        refresh(input) {
-            input = Object.assign({}, input);
-            this.inputs = this.inputs.slice();
-            console.log(input);
-            console.log(this.inputs);
-        },
         repeatInsert(input) {
-            console.log(input);
             input.cache = input.cache || {};
             const repeatCount = Object.keys(input.cache).length;
-            input.cache[repeatCount + 1] = input.inputs;
-            input.cache = Object.assign({}, input.cache);
-            input = Object.assign({}, input);
-            this.$emit("refresh", input);
+            input.cache[repeatCount] = input.inputs;
+            this.formInputs = Object.assign({}, this.formInputs);
+        },
+        repeatDelete(input, cacheId) {
+            delete input.cache[cacheId];
+            this.formInputs = Object.assign({}, this.formInputs);
         },
         repeatTitle(index, title) {
             return `${parseInt(index) + 1}: ${title}`;
