@@ -41,9 +41,9 @@
                         <template v-slot:body>
                             <FormDisplay
                                 :id="formConfig.id"
-                                :inputs="inputs"
+                                :inputs="formConfig.inputs"
                                 :validation-scroll-to="validationScrollTo"
-                                :form-config="formConfig"
+                                :errors="formConfig.errors"
                                 @onChange="onChange"
                                 @onValidation="onValidation"
                             />
@@ -181,9 +181,6 @@ export default {
         },
         errorContentPretty() {
             return JSON.stringify(this.errorContent, null, 4);
-        },
-        inputs() {
-            return this.formConfig.inputs;
         },
         remapTitle() {
             if (this.remapAllowed === "job_produced_collection_elements") {

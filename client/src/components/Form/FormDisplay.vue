@@ -45,7 +45,7 @@ export default {
             type: Array,
             default: null,
         },
-        formConfig: {
+        errors: {
             type: Object,
             default: null,
         },
@@ -70,11 +70,15 @@ export default {
             this.onHighlight(this.validation, true);
             this.$emit("onValidation", this.validation);
         },
-        formConfig() {
+        inputs() {
             this.$nextTick(() => {
-                this.form.update(this.formConfig.inputs);
+                this.form.update(this.inputs);
+            });
+        },
+        errors() {
+            this.$nextTick(() => {
                 if (this.initialErrors) {
-                    this.form.errors(this.formConfig.errors);
+                    this.form.errors(this.errors);
                 }
             });
         },

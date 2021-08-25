@@ -92,7 +92,7 @@ export default Backbone.View.extend({
         this._renderForm();
         this.data.create();
         if (this.model.get("initial_errors")) {
-            this.errors(this.model.attributes);
+            this.errors(this.model.get("errors"));
         }
         // add listener which triggers on checksum change, and reset the form input wrappers
         var current_check = this.data.checksum();
