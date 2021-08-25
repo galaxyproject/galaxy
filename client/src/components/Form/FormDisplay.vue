@@ -72,9 +72,9 @@ export default {
         },
         formConfig() {
             this.$nextTick(() => {
-                this.form.update(this.formConfig);
+                this.form.update(this.formConfig.inputs);
                 if (this.initialErrors) {
-                    this.form.errors(this.formConfig);
+                    this.form.errors(this.formConfig.errors);
                 }
             });
         },

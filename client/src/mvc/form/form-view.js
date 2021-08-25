@@ -19,9 +19,9 @@ export default Backbone.View.extend({
     },
 
     /** Update available options */
-    update: function (new_model) {
+    update: function (inputs) {
         var self = this;
-        this.data.matchModel(new_model, (node, input_id) => {
+        this.data.matchModel(inputs, (node, input_id) => {
             var field = self.field_list[input_id];
             if (field.update) {
                 field.update(node);
@@ -64,10 +64,10 @@ export default Backbone.View.extend({
     },
 
     /** Highlights errors */
-    errors: function (options) {
+    errors: function (details) {
         this.trigger("reset");
-        if (options && options.errors) {
-            var error_messages = this.data.matchResponse(options.errors);
+        if (details) {
+            var error_messages = this.data.matchResponse(details);
             for (var input_id in this.element_list) {
                 if (error_messages[input_id]) {
                     this.highlight(input_id, error_messages[input_id], true);
