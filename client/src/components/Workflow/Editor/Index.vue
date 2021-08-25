@@ -420,16 +420,12 @@ export default {
         onClone(node) {
             const newId = this.nodeIndex++;
             const stepCopy = JSON.parse(JSON.stringify(node.step));
-            const configFormCopy = JSON.parse(JSON.stringify(node.config_form));
             Vue.set(this.steps, newId, {
                 ...stepCopy,
                 id: newId,
-                config_form: {
-                    ...configFormCopy,
-                    inputs: configFormCopy.inputs.filter((input) => !input.skipOnClone),
-                },
                 uuid: null,
                 label: null,
+                config_form: JSON.parse(JSON.stringify(node.config_form)),
                 annotation: JSON.parse(JSON.stringify(node.annotation)),
                 tool_state: JSON.parse(JSON.stringify(node.tool_state)),
                 post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
