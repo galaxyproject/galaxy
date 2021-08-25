@@ -1772,7 +1772,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         filter_params = self._parse_rest_params(kwd)
         hid = int(hid)
         limit = int(limit)
-        since = kwd.get('update_time-gt', None)
+        since = kwd.get('since', None)
         if since:
             since = dateutil.parser.isoparse(since)
 

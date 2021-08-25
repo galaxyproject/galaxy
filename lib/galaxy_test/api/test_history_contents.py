@@ -585,7 +585,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
             assert isinstance(c['job_state_summary'], dict)
 
     def _get_content(self, history_id, update_time):
-        return self._get(f"/api/histories/{history_id}/contents/near/100/100?update_time-ge={update_time}").json()
+        return self._get(f"/api/histories/{history_id}/contents/near/100/100?update_time-gt={update_time}").json()
 
     def test_history_contents_near_with_update_time(self):
         with self.dataset_populator.test_history() as history_id:
