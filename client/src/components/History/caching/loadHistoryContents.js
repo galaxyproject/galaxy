@@ -22,7 +22,7 @@ export const clearHistoryDateStore = async () => {
  */
 // prettier-ignore
 export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
-    const { 
+    const {
         noInitial = false,
         windowSize = SearchParams.pageSize
     } = cfg;
@@ -39,7 +39,7 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
             return `${baseUrl}?${params.historyContentQueryString}`;
         }),
         map(prependPath),
-        requestWithUpdateTime({ dateStore, noInitial, responseQualifier }),
+        requestWithUpdateTime({ dateStore, noInitial, responseQualifier, dateFieldName: "since" }),
     );
 
     const validResponses$ = ajaxResponse$.pipe(
@@ -81,7 +81,7 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
 
             const matches = areDefined(matchesUp, matchesDown) ? matchesUp + matchesDown : undefined;
             const totalMatches = areDefined(totalMatchesUp, totalMatchesDown) ? totalMatchesUp + totalMatchesDown : undefined;
-            
+
             return {
                 summary,
                 matches,

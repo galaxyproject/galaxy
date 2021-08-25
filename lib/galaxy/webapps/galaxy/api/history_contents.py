@@ -790,8 +790,14 @@ class HistoriesContentsService(ServiceBase):
             # sqlalchemy DateTime columns are not timezone aware, so parse `since` into timezone-aware
             # datetime and then convert to naive datetime object representing UTC,
             # assuming history.update_time represents UTC time.
-            since_date = since.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-            if history.update_time <= since_date:
+            # this is the right format, but changes the date itself resulting in logical errors
+
+            # Although this creates a date with the right format for SQLAlchemy, it changes the date
+            # data resulting in logical errors during testing. I fed back the history.update_time
+            # into this conversion and it fails the inequality
+            # since_date = since.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+
+            if history.update_time <= since:
                 trans.response.status = 204
                 return
 
@@ -1769,12 +1775,13 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
         """
         serialization_params = parse_serialization_params(default_view='betawebclient', **kwd)
+        since = kwd.pop('since', None)
+        if since:
+            since = since.replace("Z", "")
+            since = dateutil.parser.isoparse(since)
         filter_params = self._parse_rest_params(kwd)
         hid = int(hid)
         limit = int(limit)
-        since = kwd.get('since', None)
-        if since:
-            since = dateutil.parser.isoparse(since)
 
         return self.service.contents_near(
             trans, history_id, serialization_params, filter_params, hid, limit, since,

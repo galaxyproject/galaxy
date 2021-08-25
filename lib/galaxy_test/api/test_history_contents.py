@@ -599,15 +599,56 @@ class HistoryContentsApiTestCase(ApiTestCase):
 
     def test_history_contents_near_with_since(self):
         with self.dataset_populator.test_history() as history_id:
-            first_time = datetime.utcnow().isoformat()
-            assert len(self._get_content(history_id, update_time=first_time)) == 0
+            original_history = self._get(f"/api/histories/{history_id}").json()
+            original_history_stamp = original_history['update_time']
+
+            # check empty contents, with no since flag, should return an empty 200 result
+            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100")
+            assert history_contents.status_code == 200
+            assert len(history_contents.json()) == 0
+
+            # adding a since parameter, should return a 204 if history has not changed at all
+            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={original_history_stamp}")
+            assert history_contents.status_code == 204
+
+            # add some stuff
             self.dataset_collection_populator.create_list_in_history(history_id=history_id)
-            assert len(self._get_content(history_id, update_time=first_time)) == 4  # 3 datasets
             self.dataset_populator.wait_for_history(history_id)
-            all_datasets_finished = datetime.utcnow().isoformat()
-            # should return a 204 if history has not changed at all
-            response = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={all_datasets_finished}")
-            assert response.status_code == 204
+
+            # check to make sure the added stuff is there
+            changed_history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100")
+            assert changed_history_contents.status_code == 200
+            assert len(changed_history_contents.json()) == 4
+
+            # check to make sure the history date has actually changed due to changing the contents
+            changed_history = self._get(f"/api/histories/{history_id}").json()
+            changed_history_stamp = changed_history['update_time']
+            assert original_history_stamp != changed_history_stamp
+
+            # a repeated contents request with since=original_history_stamp should now return data
+            # because we have added datasets and the update_time should have been changed
+            changed_content = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={original_history_stamp}")
+            assert changed_content.status_code == 200
+            assert len(changed_content.json()) == 4
+
+    def test_history_contents_near_since_with_standard_iso8601_date(self):
+        with self.dataset_populator.test_history() as history_id:
+            original_history = self._get(f"/api/histories/{history_id}").json()
+            original_history_stamp = original_history['update_time']
+
+            # this is the standard date format that javascript will emit using .toISOString(), it
+            # should be the expected date format for any modern api
+            # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString
+            valid_iso8601_date = original_history_stamp + 'Z'
+            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={valid_iso8601_date}")
+            status = history_contents.status_code
+            assert status == 204
+
+            # Javascript has less date precision than python, here's a common sample
+            javascript_iso_date = '2021-08-25T21:46:49.091Z'
+            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={javascript_iso_date}")
+            status = history_contents.status_code
+            assert status == 204 or status == 200
 
     @skip_without_tool('cat_data_and_sleep')
     def test_history_contents_near_with_update_time_implicit_collection(self):
