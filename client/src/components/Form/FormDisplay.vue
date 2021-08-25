@@ -208,7 +208,7 @@ export default {
             this.$emit("refresh", input);
         },
         repeatTitle(index, title) {
-            return `${index + 1}: ${title}`;
+            return `${parseInt(index) + 1}: ${title}`;
         },
         onReplaceParams() {
             /*if (this.replaceParams) {
