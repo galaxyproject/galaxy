@@ -44,7 +44,10 @@ from galaxy.managers.base import (
 )
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.users import UserManager
-from galaxy.schema import FilterQueryParams
+from galaxy.schema import (
+    FilterQueryParams,
+    SerializationParams,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateHistoryPayload,
@@ -59,7 +62,6 @@ from galaxy.schema.schema import (
     JobImportHistoryResponse,
     LabelValuePair,
 )
-from galaxy.schema.types import SerializationParams
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import restore_text
@@ -1066,11 +1068,11 @@ class HistoriesService(ServiceBase):
         Returns a dictionary with the corresponding values depending on the
         serialization parameters provided.
         """
-        serialization_params["default_view"] = default_view
+        serialization_params.default_view = default_view
         serialized_history = self.serializer.serialize_to_view(
             history,
             user=trans.user,
             trans=trans,
-            **serialization_params
+            **serialization_params.dict()
         )
         return serialized_history

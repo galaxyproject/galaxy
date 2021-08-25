@@ -211,4 +211,4 @@ def _user_to_model(user, security):
 
 def _index(manager, trans, view, keys):
     serialization_params = parse_serialization_params(view, keys, 'all')
-    return manager.get_configuration(trans, serialization_params)
+    return manager.get_configuration(trans, serialization_params.dict())
