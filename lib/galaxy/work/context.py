@@ -62,7 +62,12 @@ class SessionRequestContext(WorkRequestContext):
     """Like WorkRequestContext, but provides access to galaxy session and session."""
     def __init__(self, **kwargs):
         self.galaxy_session = kwargs.pop('galaxy_session', None)
+        self._host = kwargs.pop("host")
         super().__init__(**kwargs)
+
+    @property
+    def host(self):
+        return self._host
 
     def get_galaxy_session(self):
         return self.galaxy_session

@@ -218,6 +218,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.__user = None
         self.galaxy_session = None
         self.error_message = None
+        self.host = self.request.host
 
         # set any cross origin resource sharing headers if configured to do so
         self.set_cors_headers()
