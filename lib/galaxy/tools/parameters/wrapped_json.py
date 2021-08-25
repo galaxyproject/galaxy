@@ -45,7 +45,7 @@ def data_collection_input_to_staging_path_and_source_path(v, invalid_chars=('/',
 
 
 def data_input_to_staging_path_and_source_path(v, invalid_chars=('/',)):
-    staging_path = v.staging_path(invalid_chars=invalid_chars)
+    staging_path = v.get_staging_path(invalid_chars=invalid_chars)
     return {
         'staging_path': staging_path,
         'source_path': data_input_to_path(v),

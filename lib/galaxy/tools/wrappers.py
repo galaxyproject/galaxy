@@ -315,7 +315,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     def name_and_ext(self):
         return f"{self.element_identifier}.{self.file_ext}"
 
-    def staging_path(self, invalid_chars=('/',)):
+    def get_staging_path(self, invalid_chars=('/',)):
         """
         Strip leading dots, unicode null chars, replace `/` with `_`, truncate at 255 characters.
 
