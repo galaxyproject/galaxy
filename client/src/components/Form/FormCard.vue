@@ -13,7 +13,7 @@
                     v-b-tooltip.hover.bottom
                     @click="onCollapse"
                 >
-                    <font-awesome-icon v-if="collapsed" icon="eye-slash" class="fa-fw" />
+                    <font-awesome-icon v-if="expanded" icon="eye-slash" class="fa-fw" />
                     <font-awesome-icon v-else icon="eye" class="fa-fw" />
                 </b-button>
             </div>
@@ -24,7 +24,7 @@
                 </span>
             </a>
         </div>
-        <div v-show="!collapsed" class="portlet-content">
+        <div v-show="expanded" class="portlet-content">
             <slot name="body" />
         </div>
     </div>
@@ -58,9 +58,9 @@ export default {
             type: Boolean,
             default: false,
         },
-        collapsed: {
+        expanded: {
             type: Boolean,
-            default: false,
+            default: true,
         },
     },
     data() {
@@ -74,7 +74,7 @@ export default {
     methods: {
         onCollapse() {
             if (this.collapsible) {
-                this.$emit("update:collapsed", !this.collapsed);
+                this.$emit("update:expanded", !this.expanded);
             }
         },
     },

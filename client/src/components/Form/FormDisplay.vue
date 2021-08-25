@@ -30,7 +30,7 @@
                 </b-button>
             </div>
             <div v-else-if="input.type == 'section'">
-                <FormCard :title="input.title || input.name" :collapsible="true" :collapsed="true">
+                <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
                     <template v-slot:body>
                         <FormNode :inputs="input.inputs" />
                     </template>

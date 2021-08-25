@@ -42,8 +42,7 @@ export class WorkflowRunModel {
                     icon: icon || "",
                     help: null,
                     citations: null,
-                    collapsible: true,
-                    collapsed: i > 0 && !isDataStep(step),
+                    expanded: i == 0 || isDataStep(step),
                     text_enable: "Edit",
                     text_disable: "Undo",
                     cls_enable: "fa fa-edit",
@@ -168,7 +167,7 @@ export class WorkflowRunModel {
                         is_data_input ||
                         (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)
                     ) {
-                        step.collapsed = false;
+                        step.expanded = true;
                         hasOpenToolSteps = true;
                     }
                     if (is_runtime_value) {

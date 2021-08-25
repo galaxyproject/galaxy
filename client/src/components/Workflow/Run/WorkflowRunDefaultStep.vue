@@ -1,6 +1,6 @@
 <template>
     <div :step-label="model.step_label">
-        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :collapsed.sync="collapsed">
+        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :expanded.sync="expanded">
             <template v-slot:body>
                 <FormDisplay
                     :inputs="inputs"
@@ -35,13 +35,13 @@ export default {
     },
     data() {
         return {
-            collapsed: this.model.collapsed,
+            expanded: this.model.expanded,
         };
     },
     watch: {
         validationScrollTo() {
             if (this.validationScrollTo.length > 0) {
-                this.collapsed = false;
+                this.expanded = true;
             }
         },
     },
