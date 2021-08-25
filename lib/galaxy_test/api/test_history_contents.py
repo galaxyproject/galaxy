@@ -597,6 +597,18 @@ class HistoryContentsApiTestCase(ApiTestCase):
             all_datasets_finished = first_time = datetime.utcnow().isoformat()
             assert len(self._get_content(history_id, update_time=all_datasets_finished)) == 0
 
+    def test_history_contents_near_with_since(self):
+        with self.dataset_populator.test_history() as history_id:
+            first_time = datetime.utcnow().isoformat()
+            assert len(self._get_content(history_id, update_time=first_time)) == 0
+            self.dataset_collection_populator.create_list_in_history(history_id=history_id)
+            assert len(self._get_content(history_id, update_time=first_time)) == 4  # 3 datasets
+            self.dataset_populator.wait_for_history(history_id)
+            all_datasets_finished = datetime.utcnow().isoformat()
+            # should return a 204 if history has not changed at all
+            response = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={all_datasets_finished}")
+            assert response.status_code == 204
+
     @skip_without_tool('cat_data_and_sleep')
     def test_history_contents_near_with_update_time_implicit_collection(self):
         with self.dataset_populator.test_history() as history_id:
