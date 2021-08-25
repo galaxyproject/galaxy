@@ -21,7 +21,7 @@
                         </b-button>
                     </template>
                     <template v-slot:body>
-                        <FormNode :inputs="cache" />
+                        <FormNode :inputs="cache" :prefix="getPrefix(input.name)" />
                     </template>
                 </FormCard>
                 <b-button @click="repeatInsert(input)">
@@ -32,13 +32,14 @@
             <div v-else-if="input.type == 'section'">
                 <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
                     <template v-slot:body>
-                        <FormNode :inputs="input.inputs" />
+                        <FormNode :inputs="input.inputs" :prefix="getPrefix(input.name)" />
                     </template>
                 </FormCard>
             </div>
             <FormElement
                 v-else
                 v-model="input.value"
+                :id="getPrefix(input.name)"
                 :title="input.label"
                 :help="input.help"
                 :area="input.area"
@@ -78,6 +79,10 @@ export default {
         errors: {
             type: Object,
             default: null,
+        },
+        prefix: {
+            type: String,
+            default: "",
         },
         sustainRepeats: {
             type: Boolean,
@@ -199,6 +204,13 @@ export default {
         },
     },
     methods: {
+        getPrefix(name) {
+            if (this.prefix) {
+                return `${this.prefix}|${name}`;
+            } else {
+                return name;
+            }
+        },
         repeatTitle(index, title) {
             return `${parseInt(index) + 1}: ${title}`;
         },
