@@ -62,7 +62,6 @@ def parse_config_xml(config_xml):
         host = c_xml[0].get('host', None)
         port = int(c_xml[0].get('port', 0))
         timeout = int(c_xml[0].get('timeout', 30))
-        poolsize = int(c_xml[0].get('poolsize', 3))
         refresh_time = int(c_xml[0].get('refresh_time', 300))
 
         c_xml = config_xml.findall('cache')
@@ -92,7 +91,6 @@ def parse_config_xml(config_xml):
                 'host': host,
                 'port': port,
                 'timeout': timeout,
-                'poolsize': poolsize,
                 'refresh_time': refresh_time,
             },
             'cache': {
@@ -125,7 +123,6 @@ class CloudConfigMixin:
                 'host': self.host,
                 'port': self.port,
                 'timeout': self.timeout,
-                'poolsize': self.poolsize,
                 'refresh_time': self.refresh_time,
             },
             'cache': {
@@ -184,9 +181,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.timeout = connection_dict.get('timeout')
         if self.timeout is None:
             _config_dict_error('connection->timeout')
-        self.poolsize = connection_dict.get('poolsize')
-        if self.poolsize is None:
-            _config_dict_error('connection->poolsize')
         self.refresh_time = connection_dict.get('refresh_time')
         if self.refresh_time is None:
             _config_dict_error('connection->refresh_time')
