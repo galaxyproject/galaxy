@@ -727,7 +727,7 @@ class BamQuerynameSorted(BamInputSorted):
 class CRAM(Binary):
     file_ext = "cram"
     edam_format = "format_3462"
-    edam_data = "format_0863"
+    edam_data = "data_0863"
 
     MetadataElement(name="cram_version", default=None, desc="CRAM Version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
     MetadataElement(name="cram_index", desc="CRAM Index File", param=metadata.FileParameter, file_ext="crai", readonly=True, no_value=None, visible=False, optional=True)
