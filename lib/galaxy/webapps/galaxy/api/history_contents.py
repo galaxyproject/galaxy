@@ -787,17 +787,15 @@ class HistoriesContentsService(ServiceBase):
         # while polling, check to see if the history has changed
         # if it hasn't then we can short-circuit the poll request
         if since:
-            # sqlalchemy DateTime columns are not timezone aware, so parse `since` into timezone-aware
-            # datetime and then convert to naive datetime object representing UTC,
-            # assuming history.update_time represents UTC time.
-            # this is the right format, but changes the date itself resulting in logical errors
+            # sqlalchemy DateTime columns are not timezone aware, but `since` may be a timezone aware
+            # DateTime object if a timezone offset is provided (https://github.com/samuelcolvin/pydantic/blob/5ccbdcb5904f35834300b01432a665c75dc02296/pydantic/datetime_parse.py#L179).
+            # To avoid having to manually process every IS08601 date format, simply convert
+            # history.update_time to UTC/timezone aware before performing the inequality
 
-            # Although this creates a date with the right format for SQLAlchemy, it changes the date
-            # data resulting in logical errors during testing. I fed back the history.update_time
-            # into this conversion and it fails the inequality
-            # since_date = since.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            since = since if since.tzinfo is not None else since.replace(tzinfo=datetime.timezone.utc)
+            history_update_time_tz = history.update_time.replace(tzinfo=datetime.timezone.utc)
 
-            if history.update_time <= since:
+            if history_update_time_tz <= since:
                 trans.response.status = 204
                 return
 
@@ -1775,10 +1773,13 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
         """
         serialization_params = parse_serialization_params(default_view='betawebclient', **kwd)
-        since = kwd.pop('since', None)
-        if since:
-            since = since.replace("Z", "")
-            since = dateutil.parser.isoparse(since)
+
+        since_str = kwd.pop('since', None)
+        if since_str:
+            since = dateutil.parser.isoparse(since_str)
+        else:
+            since = None
+
         filter_params = self._parse_rest_params(kwd)
         hid = int(hid)
         limit = int(limit)

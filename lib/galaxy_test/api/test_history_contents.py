@@ -639,16 +639,18 @@ class HistoryContentsApiTestCase(ApiTestCase):
             # this is the standard date format that javascript will emit using .toISOString(), it
             # should be the expected date format for any modern api
             # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString
+
+            # checking to make sure that the same exact history.update_time returns a "not changed"
+            # result after date parsing
             valid_iso8601_date = original_history_stamp + 'Z'
             history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={valid_iso8601_date}")
-            status = history_contents.status_code
-            assert status == 204
+            assert history_contents.status_code == 204
 
-            # Javascript has less date precision than python, here's a common sample
-            javascript_iso_date = '2021-08-25T21:46:49.091Z'
-            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={javascript_iso_date}")
-            status = history_contents.status_code
-            assert status == 204 or status == 200
+            # test parsing for other standard is08601 formats
+            sample_formats = ['2021-08-26T15:53:02+00:00', '2021-08-26T15:53:02Z', '20210826T155302Z']
+            for date_str in sample_formats:
+                history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={date_str}")
+                assert history_contents.status_code != 400
 
     @skip_without_tool('cat_data_and_sleep')
     def test_history_contents_near_with_update_time_implicit_collection(self):
