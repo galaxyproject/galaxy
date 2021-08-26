@@ -789,13 +789,9 @@ class HistoriesContentsService(ServiceBase):
         if since:
             # sqlalchemy DateTime columns are not timezone aware, but `since` may be a timezone aware
             # DateTime object if a timezone offset is provided (https://github.com/samuelcolvin/pydantic/blob/5ccbdcb5904f35834300b01432a665c75dc02296/pydantic/datetime_parse.py#L179).
-            # To avoid having to manually process every IS08601 date format, simply convert
-            # history.update_time to UTC/timezone aware before performing the inequality
-
-            since = since.replace(tzinfo=datetime.timezone.utc) if since.tzinfo is None else since
-            history_update_time_tz = history.update_time.replace(tzinfo=datetime.timezone.utc)
-
-            if history_update_time_tz <= since:
+            # If a timezone is provided (since.tzinfo is not None) we convert to UTC and remove tzinfo so that comparison with history.update_time is correct.
+            since = since if since.tzinfo is None else since.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            if history.update_time <= since:
                 trans.response.status = 204
                 return
 
