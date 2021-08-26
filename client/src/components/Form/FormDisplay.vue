@@ -29,10 +29,6 @@ export default {
             type: Boolean,
             default: false,
         },
-        hideOperations: {
-            type: Boolean,
-            default: false,
-        },
         textEnable: {
             type: String,
             default: null,
