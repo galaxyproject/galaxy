@@ -16,7 +16,6 @@ def upgrade(migrate_engine):
     downgrade(migrate_engine)
     view = HistoryDatasetCollectionJobStateSummary
     create_view = CreateView(view.name, view.__view__)
-    # print(str(create_view.compile(migrate_engine)))
     migrate_engine.execute(create_view)
 
 
