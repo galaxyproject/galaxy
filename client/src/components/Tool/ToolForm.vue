@@ -43,7 +43,6 @@
                                 :id="formConfig.id"
                                 :inputs="formConfig.inputs"
                                 :validation-scroll-to="validationScrollTo"
-                                :errors="formConfig.errors"
                                 @onChange="onChange"
                                 @onValidation="onValidation"
                             />

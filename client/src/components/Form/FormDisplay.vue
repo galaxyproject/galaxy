@@ -17,6 +17,10 @@ export default {
             type: Array,
             required: true,
         },
+        errors: {
+            type: Object,
+            default: null,
+        },
         sustainRepeats: {
             type: Boolean,
             default: false,
@@ -37,16 +41,8 @@ export default {
             type: String,
             default: null,
         },
-        initialErrors: {
-            type: Boolean,
-            default: false,
-        },
         validationScrollTo: {
             type: Array,
-            default: null,
-        },
-        errors: {
-            type: Object,
             default: null,
         },
         replaceParams: {
@@ -77,9 +73,7 @@ export default {
         },
         errors() {
             this.$nextTick(() => {
-                if (this.initialErrors) {
-                    this.form.errors(this.errors);
-                }
+                this.form.errors(this.errors);
             });
         },
         replaceParams() {
@@ -177,7 +171,6 @@ export default {
                 this.form = new Form({
                     el,
                     inputs: this.inputs,
-                    initial_errors: this.initialErrors,
                     text_enable: this.textEnable,
                     text_disable: this.textDisable,
                     sustain_repeats: this.sustainRepeats,

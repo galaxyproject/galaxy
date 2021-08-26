@@ -32,7 +32,6 @@
                 <FormDisplay
                     :id="id"
                     :inputs="inputs"
-                    :initial-errors="true"
                     :errors="errors"
                     text-enable="Set in Advance"
                     text-disable="Set at Runtime"

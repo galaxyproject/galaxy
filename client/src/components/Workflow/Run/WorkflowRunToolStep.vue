@@ -5,7 +5,6 @@
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormDisplay
                     :inputs="formConfig.inputs"
-                    :errors="formConfig.errors"
                     :sustain-repeats="true"
                     :sustain-conditionals="true"
                     :replace-params="replaceParams"
