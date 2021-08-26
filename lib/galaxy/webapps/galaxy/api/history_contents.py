@@ -792,7 +792,7 @@ class HistoriesContentsService(ServiceBase):
             # To avoid having to manually process every IS08601 date format, simply convert
             # history.update_time to UTC/timezone aware before performing the inequality
 
-            since = since if since.tzinfo is not None else since.replace(tzinfo=datetime.timezone.utc)
+            since = since.replace(tzinfo=datetime.timezone.utc) if since.tzinfo is None else since
             history_update_time_tz = history.update_time.replace(tzinfo=datetime.timezone.utc)
 
             if history_update_time_tz <= since:

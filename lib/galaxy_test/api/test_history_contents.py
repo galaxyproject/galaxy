@@ -1,7 +1,7 @@
 import json
 import time
+import urllib
 from datetime import datetime
-
 from requests import delete, put
 
 from galaxy_test.base.populators import (
@@ -643,13 +643,15 @@ class HistoryContentsApiTestCase(ApiTestCase):
             # checking to make sure that the same exact history.update_time returns a "not changed"
             # result after date parsing
             valid_iso8601_date = original_history_stamp + 'Z'
-            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={valid_iso8601_date}")
+            encoded_valid_date = urllib.parse.quote_plus(valid_iso8601_date)
+            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={encoded_valid_date}")
             assert history_contents.status_code == 204
 
             # test parsing for other standard is08601 formats
-            sample_formats = ['2021-08-26T15:53:02+00:00', '2021-08-26T15:53:02Z', '20210826T155302Z']
+            sample_formats = ['2021-08-26T15:53:02+00:00', '2021-08-26T15:53:02Z', '20210826T155302Z', '2002-10-10T12:00:00−05:00']
             for date_str in sample_formats:
-                history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={date_str}")
+                encoded_date = urllib.parse.quote_plus(date_str) # handles pluses, minuses
+                history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={encoded_date}")
                 assert history_contents.status_code != 400
 
     @skip_without_tool('cat_data_and_sleep')
