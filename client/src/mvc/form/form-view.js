@@ -10,8 +10,6 @@ import FormData from "mvc/form/form-data";
 export default Backbone.View.extend({
     initialize: function (options) {
         this.model = new Backbone.Model({
-            initial_errors: false,
-            always_refresh: true,
             onchange: function () {},
         }).set(options);
         this.setElement(options.el || "<div/>");
@@ -95,12 +93,11 @@ export default Backbone.View.extend({
         var current_check = this.data.checksum();
         this.on("change", (input_id) => {
             var input = self.input_list[input_id];
-            if (!input || input.refresh_on_change || self.model.get("always_refresh")) {
-                var new_check = self.data.checksum();
-                if (new_check != current_check) {
-                    current_check = new_check;
-                    self.model.get("onchange")();
-                }
+            var refresh_request = !input || input.refresh_on_change;
+            var new_check = self.data.checksum();
+            if (new_check != current_check) {
+                current_check = new_check;
+                self.model.get("onchange")(refresh_request);
             }
         });
         this.on("reset", () => {

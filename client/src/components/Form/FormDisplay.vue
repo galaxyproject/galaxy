@@ -157,9 +157,9 @@ export default {
                 this.form.trigger("change");
             }
         },
-        onChange() {
+        onChange(refreshRequest) {
             this.formData = this.form.data.create();
-            this.$emit("onChange", this.formData);
+            this.$emit("onChange", this.formData, refreshRequest);
         },
         onRender() {
             this.$nextTick(() => {
@@ -171,8 +171,8 @@ export default {
                     text_disable: this.textDisable,
                     sustain_repeats: this.sustainRepeats,
                     sustain_conditionals: this.sustainConditionals,
-                    onchange: () => {
-                        this.onChange();
+                    onchange: (refreshRequest) => {
+                        this.onChange(refreshRequest);
                     },
                 });
                 this.onChange();

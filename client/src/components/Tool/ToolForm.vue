@@ -206,9 +206,11 @@ export default {
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
         },
-        onChange(newData) {
+        onChange(newData, requestRefresh) {
             this.formData = newData;
-            this.onUpdate();
+            if (requestRefresh) {
+                this.onUpdate();
+            }
         },
         onUpdate() {
             updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData).then((data) => {

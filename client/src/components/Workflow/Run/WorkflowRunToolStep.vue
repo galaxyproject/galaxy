@@ -121,15 +121,17 @@ export default {
                 }
             });
         },
-        onChange(data) {
-            getTool(this.model.id, this.model.version, data, this.historyId).then(
-                (formConfig) => {
-                    this.formConfig = formConfig;
-                },
-                (errorText) => {
-                    this.errorText = errorText;
-                }
-            );
+        onChange(data, refreshRequest) {
+            if (refreshRequest) {
+                getTool(this.model.id, this.model.version, data, this.historyId).then(
+                    (formConfig) => {
+                        this.formConfig = formConfig;
+                    },
+                    (errorText) => {
+                        this.errorText = errorText;
+                    }
+                );
+            }
             this.$emit("onChange", this.model.index, data);
         },
         onValidation(validation) {
