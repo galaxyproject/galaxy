@@ -21,5 +21,4 @@ def upgrade(migrate_engine):
 
 def downgrade(migrate_engine):
     drop_view = DropView(HistoryDatasetCollectionJobStateSummary.name)
-    # print(str(drop_view.compile(migrate_engine)))
     migrate_engine.execute(drop_view)
