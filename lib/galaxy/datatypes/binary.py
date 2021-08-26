@@ -1570,10 +1570,9 @@ class H5MLM(H5):
         try:
             with h5py.File(dataset.file_name, "r") as handle:
                 rval['Attributes'] = {}
-                for k, v in handle.attrs.items():
-                    if k in ('-URL-', '-repr-'):
-                        continue
-                    rval['Attributes'][k] = util.unicodify(v)
+                attributes = handle.attrs
+                for k in (set(attributes.keys()) - {'-URL-', '-repr-'}):
+                    rval['Attributes'][k] = util.unicodify(attributes.get(k))
         except Exception as e:
             log.warning(e)
 
