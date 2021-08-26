@@ -1592,11 +1592,11 @@ class HexrdMaterials(H5):
                 dataset.metadata.materials = list(mat_file.keys())
                 sgn = dict()
                 lp = dict()
-                for m in mat_file.keys(): 
+                for m in mat_file.keys():
                     if 'SpaceGroupNumber' in mat_file[m] and len(mat_file[m]['SpaceGroupNumber']) > 0:
                         sgn[m] = mat_file[m]['SpaceGroupNumber'][0].item()
                     if 'LatticeParameters' in mat_file[m]:
-                        lp[m] = mat_file[m]['LatticeParameters'][0:].tolist() 
+                        lp[m] = mat_file[m]['LatticeParameters'][0:].tolist()
                 dataset.metadata.SpaceGroupNumber = sgn
                 dataset.metadata.LatticeParameters = lp
         except Exception as e:
@@ -1606,7 +1606,7 @@ class HexrdMaterials(H5):
         if not dataset.dataset.purged:
             lines = ['Material SpaceGroup Lattice']
             if dataset.metadata.materials:
-                for i, m in enumerate(dataset.metadata.materials):
+                for m in dataset.metadata.materials:
                     try:
                         lines.append(f'{m} {dataset.metadata.SpaceGroupNumber[m]} {dataset.metadata.LatticeParameters[m]}')
                     except Exception:
