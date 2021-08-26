@@ -891,7 +891,7 @@ class CreateHistoryPayload(Model):
     )
 
 
-class JobExportHistoryArchive(Model):
+class JobExportHistoryArchiveModel(Model):
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -932,6 +932,10 @@ class JobExportHistoryArchive(Model):
         title="External Download Permanent URL",
         description="Fully qualified URL to download this particular version of the exported history archive.",
     )
+
+
+class JobExportHistoryArchiveCollection(Model):
+    __root__: List[JobExportHistoryArchiveModel]
 
 
 class LabelValuePair(BaseModel):

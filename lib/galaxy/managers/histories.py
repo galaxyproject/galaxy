@@ -43,6 +43,7 @@ from galaxy.managers.base import (
     SortableManager,
 )
 from galaxy.managers.citations import CitationsManager
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.users import UserManager
 from galaxy.schema import (
     FilterQueryParams,
@@ -57,7 +58,7 @@ from galaxy.schema.schema import (
     HistoryDetailed,
     HistoryImportArchiveSourceType,
     HistorySummary,
-    JobExportHistoryArchive,
+    JobExportHistoryArchiveModel,
     JobIdResponse,
     JobImportHistoryResponse,
     LabelValuePair,
@@ -690,7 +691,7 @@ class HistoriesService(ServiceBase):
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
         deleted_only: Optional[bool] = False,
-        all_histories: bool = False,
+        all_histories: Optional[bool] = False,
     ):
         """
         Return a collection of histories for the current user. Additional filters can be applied.
@@ -759,13 +760,15 @@ class HistoriesService(ServiceBase):
 
     def create(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         payload: CreateHistoryPayload,
         serialization_params: SerializationParams,
     ):
         """Create a new history from scratch, by copying an existing one or by importing
         from URL or File depending on the provided parameters in the payload.
         """
+        if trans.anonymous:
+            raise glx_exceptions.AuthenticationRequired("You need to be logged in to create histories.")
         if trans.user and trans.user.bootstrap_admin_user:
             raise glx_exceptions.RealUserRequiredException("Only real users can create histories.")
         hist_name = None
@@ -982,7 +985,12 @@ class HistoriesService(ServiceBase):
         """
         return self.history_export_view.get_exports(trans, id)
 
-    def archive_export(self, trans, id: EncodedDatabaseIdField, payload: ExportHistoryArchivePayload) -> Union[JobExportHistoryArchive, JobIdResponse]:
+    def archive_export(
+        self,
+        trans,
+        id: EncodedDatabaseIdField,
+        payload: ExportHistoryArchivePayload,
+    ) -> Union[JobExportHistoryArchiveModel, JobIdResponse]:
         """
         start job (if needed) to create history export for corresponding
         history.
@@ -1022,13 +1030,13 @@ class HistoriesService(ServiceBase):
 
         if up_to_date and jeha.ready:
             serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
-            return JobExportHistoryArchive.parse_obj(serialized_jeha)
+            return JobExportHistoryArchiveModel.parse_obj(serialized_jeha)
         else:
             # Valid request, just resource is not ready yet.
             trans.response.status = "202 Accepted"
             if jeha:
                 serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
-                return JobExportHistoryArchive.parse_obj(serialized_jeha)
+                return JobExportHistoryArchiveModel.parse_obj(serialized_jeha)
             else:
                 assert job is not None, "logic error, don't have a jeha or a job"
                 job_id = trans.security.encode_id(job.id)
