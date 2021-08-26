@@ -7,7 +7,13 @@
         <div class="ui-form-title">{{ title }}</div>
         <div class="ui-form-field">
             <FormBoolean v-if="type == 'boolean'" :id="id" v-model="currentValue" />
-            <FormInput v-else :id="id" :area="area" v-model="currentValue" />
+            <FormInput v-else-if="type == 'text'" :id="id" :area="$attrs['area']" v-model="currentValue" />
+            <FormParameter v-else
+                v-model="currentValue"
+                :id="id"
+                :type="type"
+                :attributes="$attrs"
+            />
             <span class="ui-form-info form-text text-muted mt-2">{{ help }}</span>
         </div>
     </div>
@@ -15,19 +21,24 @@
 <script>
 import FormBoolean from "./Elements/FormBoolean";
 import FormInput from "./Elements/FormInput";
+import FormParameter from "./Elements/FormParameter";
 
 export default {
     components: {
         FormBoolean,
         FormInput,
+        FormParameter,
     },
     props: {
         id: {
             type: String,
             required: false,
         },
+        type: {
+            type: String,
+            default: "text",
+        },
         value: {
-            type: [String, Boolean],
             default: null,
         },
         title: {
@@ -38,17 +49,9 @@ export default {
             type: String,
             default: null,
         },
-        area: {
-            type: Boolean,
-            default: false,
-        },
         error: {
             type: String,
             default: null,
-        },
-        type: {
-            type: String,
-            default: "text",
         },
     },
     computed: {

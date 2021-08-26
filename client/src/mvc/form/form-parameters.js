@@ -14,7 +14,7 @@ import ColorPicker from "mvc/ui/ui-color-picker";
 import DataPicker from "mvc/ui/ui-data-picker";
 
 // create form view
-export default Backbone.Model.extend({
+export default Backbone.View.extend({
     /** Available parameter types */
     types: {
         text: "_fieldText",
@@ -42,7 +42,7 @@ export default Backbone.Model.extend({
     },
 
     /** Returns an input field for a given field type */
-    create: function (input_def) {
+    initialize: function (input_def) {
         const Galaxy = getGalaxyInstance();
         var fieldClass = this.types[input_def.hiddenInWorkflow ? "hidden" : input_def.type];
         var field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
@@ -54,7 +54,8 @@ export default Backbone.Model.extend({
             input_def.value = null;
         }
         field.value(input_def.value);
-        return field;
+        this.setElement(input_def.el || "<div/>");
+        this.$el.append(field.$el);
     },
 
     /** Data input field */

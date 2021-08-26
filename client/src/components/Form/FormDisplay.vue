@@ -38,12 +38,11 @@
             </div>
             <FormElement
                 v-else
+                v-bind="input"
                 v-model="input.value"
                 :id="getPrefix(input.name)"
                 :title="input.label"
                 :help="input.help"
-                :area="input.area"
-                :type="input.type"
             />
         </div>
     </div>
@@ -112,7 +111,7 @@ export default {
     data() {
         return {
             formData: {},
-            formInputs: this.inputs,
+            formInputs: this.inputs.slice(),
         };
     },
     watch: {
@@ -127,7 +126,7 @@ export default {
             //this.$emit("onValidation", this.validation);
         },
         inputs() {
-            this.formInputs = Object.assign({}, this.inputs);
+            //this.formInputs = Object.assign({}, this.inputs);
             /*this.$nextTick(() => {
                 this.form.update(this.inputs);
             });*/
@@ -140,10 +139,6 @@ export default {
         replaceParams() {
             //this.onReplaceParams();
         },
-    },
-    created() {
-        //console.log(this.inputs);
-        this.inputs = this.inputs.slice();
     },
     computed: {
         validation() {
@@ -218,11 +213,11 @@ export default {
             const newInputs = JSON.parse(JSON.stringify(input.inputs));
             input.cache = input.cache || [];
             input.cache.push(newInputs);
-            this.formInputs = Object.assign({}, this.formInputs);
+            this.formInputs = this.formInputs.slice();
         },
         repeatDelete(input, cacheId) {
             input.cache.splice(cacheId, 1);
-            this.formInputs = Object.assign({}, this.formInputs);
+            this.formInputs = this.formInputs.slice();
         },
         onReplaceParams() {
             /*if (this.replaceParams) {
