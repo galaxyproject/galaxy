@@ -1515,7 +1515,7 @@ class H5MLM(H5):
             return config
         except Exception as e:
             log.warning('%s, get model configuration Except: %s', self, e)
-            return "{}"
+            return ""
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -1543,17 +1543,15 @@ class H5MLM(H5):
         try:
             with h5py.File(dataset.file_name, "r") as handle:
                 rval['Attributes'] = {}
-                for k in handle.attrs.keys():
+                for k, v in handle.attrs.items():
                     if k in ('-URL-', '-repr-'):
                         continue
-                    v = util.unicodify(handle.attrs.get(k))
-                    rval['Attributes'][k] = v
+                    rval['Attributes'][k] = util.unicodify(v)
         except Exception as e:
             log.warning(e)
-            pass
 
         config = self.get_config_string(dataset.file_name)
-        rval['Config'] = json.loads(config)
+        rval['Config'] = json.loads(config) if config else ''
         rval = json.dumps(rval, sort_keys=True, indent=2)
         rval = rval[:self.max_preview_size]
 
