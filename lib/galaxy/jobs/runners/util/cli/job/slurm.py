@@ -34,7 +34,7 @@ class Slurm(BaseJobExec):
                     k = argmap[k]
                 scriptargs[k] = v
             except Exception:
-                log.warning('Unrecognized long argument passed to Slurm CLI plugin: %s' % k)
+                log.warning(f'Unrecognized long argument passed to Slurm CLI plugin: {k}')
 
         # Generated template.
         template_scriptargs = ''
@@ -43,16 +43,16 @@ class Slurm(BaseJobExec):
         return dict(headers=template_scriptargs)
 
     def submit(self, script_file):
-        return 'sbatch %s' % script_file
+        return f'sbatch {script_file}'
 
     def delete(self, job_id):
-        return 'scancel %s' % job_id
+        return f'scancel {job_id}'
 
     def get_status(self, job_ids=None):
         return "squeue -a -o '%A %t'"
 
     def get_single_status(self, job_id):
-        return "squeue -a -o '%A %t' -j " + job_id
+        return f"squeue -a -o '%A %t' -j {job_id}"
 
     def parse_status(self, status, job_ids):
         # Get status for each job, skipping header.
@@ -83,7 +83,7 @@ class Slurm(BaseJobExec):
                 'CD': job_states.OK
             }.get(state)
         except KeyError:
-            raise KeyError("Failed to map slurm status code [%s] to job state." % state)
+            raise KeyError(f"Failed to map slurm status code [{state}] to job state.")
 
 
 __all__ = ('Slurm',)

@@ -140,6 +140,7 @@ export default Backbone.Model.extend({
     /** Text input field */
     _fieldText: function (input_def) {
         // field replaces e.g. a select field
+        const inputClass = input_def.optional && input_def.type === "select" ? Ui.NullableText : Ui.Input;
         if (
             ["SelectTagParameter", "ColumnListParameter"].includes(input_def.model_class) ||
             (input_def.options && input_def.data)
@@ -162,7 +163,7 @@ export default Backbone.Model.extend({
             }
         }
         // create input element
-        return new Ui.Input({
+        return new inputClass({
             id: `field-${input_def.id}`,
             type: input_def.type,
             area: input_def.area,
@@ -170,6 +171,7 @@ export default Backbone.Model.extend({
             placeholder: input_def.placeholder,
             datalist: input_def.datalist,
             onchange: input_def.onchange,
+            value: input_def.value,
         });
     },
 

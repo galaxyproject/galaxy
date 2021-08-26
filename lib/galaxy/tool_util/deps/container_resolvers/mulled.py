@@ -113,8 +113,8 @@ def identifier_to_cached_target(identifier, hash_func, namespace=None):
     image = None
     prefix = ""
     if namespace is not None:
-        prefix = "quay.io/%s/" % namespace
-    if image_name.startswith(prefix + "mulled-v1-"):
+        prefix = f"quay.io/{namespace}/"
+    if image_name.startswith(f"{prefix}mulled-v1-"):
         if hash_func == "v2":
             return None
 
@@ -123,7 +123,7 @@ def identifier_to_cached_target(identifier, hash_func, namespace=None):
         if version and version.isdigit():
             build = version
         image = CachedV1MulledImageMultiTarget(hash, build, identifier)
-    elif image_name.startswith(prefix + "mulled-v2-"):
+    elif image_name.startswith(f"{prefix}mulled-v2-"):
         if hash_func == "v1":
             return None
 
@@ -135,7 +135,7 @@ def identifier_to_cached_target(identifier, hash_func, namespace=None):
         elif version.isdigit():
             version_hash, build = None, version
         elif version:
-            log.debug("Unparsable mulled image tag encountered [%s]" % version)
+            log.debug(f"Unparsable mulled image tag encountered [{version}]")
 
         image = CachedV2MulledImageMultiTarget(image_name, version_hash, build, identifier)
     else:
@@ -156,7 +156,7 @@ def list_cached_mulled_images_from_path(directory, hash_func="v2"):
 
 
 def get_filter(namespace):
-    prefix = "quay.io/" if namespace is None else "quay.io/%s" % namespace
+    prefix = "quay.io/" if namespace is None else f"quay.io/{namespace}"
     return lambda name: name.startswith(prefix) and name.count("/") == 2
 
 
@@ -306,7 +306,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None,
         elif hash_func == "v1":
             base_image_name = v1_image_name(targets)
         else:
-            raise Exception("Unimplemented mulled hash_func [%s]" % hash_func)
+            raise Exception(f"Unimplemented mulled hash_func [{hash_func}]")
 
         cache_key = f"ns[{namespace}]__{hash_func}__{base_image_name}"
         if cache_key in unresolved_cache:
@@ -321,7 +321,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None,
                 assert hash_func != "v1"
                 # base_image_name of form <package_hash>:<version_hash>, expand tag
                 # to include build number in tag.
-                name = "{}:{}".format(base_image_name.split(":")[0], tag)
+                name = f"{base_image_name.split(':')[0]}:{tag}"
             else:
                 # base_image_name of form <package_hash>, simply add build number
                 # as tag to fully qualify image.
@@ -352,7 +352,7 @@ class CliContainerResolver(ContainerResolver):
     @cli_available.setter
     def cli_available(self, value):
         if not value:
-            log.info('{} CLI not available, cannot list or pull images in Galaxy process. Does not impact kubernetes.'.format(self.cli))
+            log.info(f'{self.cli} CLI not available, cannot list or pull images in Galaxy process. Does not impact kubernetes.')
         self._cli_available = value
 
 
@@ -386,7 +386,7 @@ class CachedMulledDockerContainerResolver(CliContainerResolver):
         return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func, shell=self.shell, resolution_cache=resolution_cache)
 
     def __str__(self):
-        return "CachedMulledDockerContainerResolver[namespace=%s]" % self.namespace
+        return f"CachedMulledDockerContainerResolver[namespace={self.namespace}]"
 
 
 class CachedMulledSingularityContainerResolver(SingularityCliContainerResolver):
@@ -406,7 +406,7 @@ class CachedMulledSingularityContainerResolver(SingularityCliContainerResolver):
         return singularity_cached_container_description(targets, self.cache_directory, hash_func=self.hash_func, shell=self.shell)
 
     def __str__(self):
-        return "CachedMulledSingularityContainerResolver[cache_directory=%s]" % self.cache_directory
+        return f"CachedMulledSingularityContainerResolver[cache_directory={self.cache_directory}]"
 
 
 class MulledDockerContainerResolver(CliContainerResolver):
@@ -487,7 +487,7 @@ class MulledDockerContainerResolver(CliContainerResolver):
             return container_description
 
     def __str__(self):
-        return "MulledDockerContainerResolver[namespace=%s]" % self.namespace
+        return f"MulledDockerContainerResolver[namespace={self.namespace}]"
 
 
 class MulledSingularityContainerResolver(SingularityCliContainerResolver, MulledDockerContainerResolver):
@@ -517,7 +517,7 @@ class MulledSingularityContainerResolver(SingularityCliContainerResolver, Mulled
             shell(cmds=cmds)
 
     def __str__(self):
-        return "MulledSingularityContainerResolver[namespace=%s]" % self.namespace
+        return f"MulledSingularityContainerResolver[namespace={self.namespace}]"
 
 
 class BuildMulledDockerContainerResolver(CliContainerResolver):
@@ -564,7 +564,7 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
         return involucro_context
 
     def __str__(self):
-        return "BuildDockerContainerResolver[namespace=%s]" % self.namespace
+        return f"BuildDockerContainerResolver[namespace={self.namespace}]"
 
 
 class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
@@ -612,7 +612,7 @@ class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
         return involucro_context
 
     def __str__(self):
-        return "BuildSingularityContainerResolver[cache_directory=%s]" % self.cache_directory
+        return f"BuildSingularityContainerResolver[cache_directory={self.cache_directory}]"
 
 
 def mulled_targets(tool_info):

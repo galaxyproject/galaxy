@@ -1,5 +1,8 @@
 name: Mulled Unit Tests
 on: [push, pull_request]
+concurrency:
+  group: mulled-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: Test

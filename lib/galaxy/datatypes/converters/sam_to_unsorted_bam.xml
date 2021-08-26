@@ -19,8 +19,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" format="sam" value="bfast_out1.sam"/>
-            <output name="output" format="unsorted.bam" value="bfast_out1.unsorted.bam"/>
+            <param name="input" ftype="sam" value="bfast_out1.sam"/>
+            <output name="output" ftype="unsorted.bam" value="bfast_out1.unsorted.bam"/>
         </test>
     </tests>
     <help>

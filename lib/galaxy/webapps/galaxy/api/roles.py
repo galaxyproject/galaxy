@@ -3,24 +3,21 @@ API operations on Role objects.
 """
 import json
 import logging
-from typing import List
 
 from fastapi import (
     Body,
-)
-from pydantic import (
-    BaseModel,
 )
 
 from galaxy import web
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.roles import (
+from galaxy.managers.roles import RoleManager
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import (
     RoleDefinitionModel,
-    RoleManager,
+    RoleListModel,
     RoleModel,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.webapps.base.controller import url_for
 from . import (
     BaseGalaxyAPIController,
@@ -37,17 +34,10 @@ log = logging.getLogger(__name__)
 router = Router(tags=["roles"])
 
 
-class RoleListModel(BaseModel):
-    __root__: List[RoleModel]
-
-
 def role_to_model(trans, role):
     item = role.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
     role_id = trans.security.encode_id(role.id)
-    try:
-        item['url'] = url_for('role', id=role_id)
-    except AttributeError:
-        item['url'] = "*deprecated attribute not filled in by FastAPI server*"
+    item['url'] = url_for('role', id=role_id)
     return RoleModel(**item)
 
 

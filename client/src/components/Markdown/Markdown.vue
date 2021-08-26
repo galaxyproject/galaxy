@@ -2,10 +2,18 @@
     <div class="markdown-wrapper">
         <LoadingSpan v-if="loading" />
         <div v-else>
-            <a v-if="effectiveExportLink" :href="exportLink" class="markdown-export position-absolute p-3">
-                <i class="fa fa-3x fa-download" />
-            </a>
             <div>
+                <b-button
+                    v-if="effectiveExportLink"
+                    class="float-right"
+                    title="Download PDF"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="onDownload"
+                >
+                    <font-awesome-icon icon="download" />
+                </b-button>
                 <b-button
                     v-if="!readOnly"
                     class="float-right"
@@ -97,7 +105,7 @@ import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
 
 import LoadingSpan from "components/LoadingSpan";
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage";
@@ -128,7 +136,7 @@ md.use(mdNewline);
 
 Vue.use(BootstrapVue);
 
-library.add(faEdit);
+library.add(faDownload, faEdit);
 
 export default {
     store: store,
@@ -278,6 +286,9 @@ export default {
                 args: args,
                 content: content,
             };
+        },
+        onDownload() {
+            window.location.href = this.exportLink;
         },
     },
 };

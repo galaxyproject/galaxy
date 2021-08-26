@@ -47,7 +47,7 @@ class RolesApiTestCase(ApiTestCase):
         assert different_user_role_id in admin_roles_response_ids
 
         # Check showing a valid, role.
-        role_response = self._get("roles/%s" % user_role_id)
+        role_response = self._get(f"roles/{user_role_id}")
         assert_status_code_is(role_response, 200)
         role = role_response.json()
         RolesApiTestCase.check_role_dict(role, assert_id=user_role_id)
@@ -128,7 +128,7 @@ class RolesApiTestCase(ApiTestCase):
         # Trying to access roles are errors - should probably be 403 not 400 though?
         with self._different_user():
             different_user_role_id = self.dataset_populator.user_private_role_id()
-        response = self._get("roles/%s" % different_user_role_id)
+        response = self._get(f"roles/{different_user_role_id}")
         assert_status_code_is(response, 400)
 
     def test_create_only_admin(self):

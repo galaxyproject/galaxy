@@ -2,12 +2,7 @@
 Manager and Serializer for Roles.
 """
 import logging
-from typing import List, Optional
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
 from sqlalchemy import false
 from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
@@ -17,30 +12,9 @@ from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
-
-RoleIdField = Field("ID", description="Encoded ID of the role")
-RoleNameField = Field(title="Name", description="Name of the role")
-RoleDescriptionField = Field(title="Description", description="Description of the role")
-
-
-class RoleModel(BaseModel):
-    id: EncodedDatabaseIdField = RoleIdField
-    name: str = RoleNameField
-    description: str = RoleDescriptionField
-    type: str = Field(title="Type", description="Type or category of the role")
-    url: str = Field(title="URL", description="URL for the role")
-    model_class: str = Field(title="Model class", description="Database model class (Role)")
-
-
-class RoleDefinitionModel(BaseModel):
-    name: str = RoleNameField
-    description: str = RoleDescriptionField
-    user_ids: Optional[List[EncodedDatabaseIdField]] = Field(title="User IDs", default=[])
-    group_ids: Optional[List[EncodedDatabaseIdField]] = Field(title="Group IDs", default=[])
 
 
 class RoleManager(base.ModelManager):
@@ -73,7 +47,7 @@ class RoleManager(base.ModelManager):
         except sqlalchemy_exceptions.NoResultFound:
             raise galaxy.exceptions.RequestParameterInvalidException('No accessible role found with the id provided.')
         except Exception as e:
-            raise galaxy.exceptions.InternalServerError('Error loading from the database.' + unicodify(e))
+            raise galaxy.exceptions.InternalServerError(f"Error loading from the database.{unicodify(e)}")
 
         if not (trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role)):
             raise galaxy.exceptions.RequestParameterInvalidException('No accessible role found with the id provided.')
@@ -82,7 +56,7 @@ class RoleManager(base.ModelManager):
 
     def list_displayable_roles(self, trans: ProvidesUserContext):
         roles = []
-        for role in trans.sa_session.query(Role).filter(Role.table.c.deleted == false()):
+        for role in trans.sa_session.query(Role).filter(Role.deleted == false()):
             if trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role):
                 roles.append(role)
         return roles
@@ -93,7 +67,7 @@ class RoleManager(base.ModelManager):
         user_ids = role_definition_model.user_ids or []
         group_ids = role_definition_model.group_ids or []
 
-        if trans.sa_session.query(Role).filter(Role.table.c.name == name).first():
+        if trans.sa_session.query(Role).filter(Role.name == name).first():
             raise RequestParameterInvalidException(f"A role with that name already exists [{name}]")
 
         role_type = Role.types.ADMIN  # TODO: allow non-admins to create roles

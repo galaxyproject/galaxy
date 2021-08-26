@@ -13,8 +13,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="bed" value="droPer1.bed"/>
-            <output name="output1" format="bgzip" value="droPer1.bgzip"/>
+            <param name="input1" ftype="bed" value="droPer1.bed"/>
+            <output name="output1" ftype="bgzip" value="droPer1.bgzip"/>
         </test>
     </tests>
     <help>

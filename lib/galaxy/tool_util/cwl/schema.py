@@ -51,7 +51,7 @@ class SchemaLoader:
             """)
             processed_path = os.path.join(output_dir, os.path.basename(path))
             path = os.path.abspath(path)
-            uri = "file://" + path
+            uri = f"file://{path}"
             loading_context = loading_context or self.loading_context()
             if REWRITE_EXPRESSIONS:
                 from cwl_utils import cwl_v1_0_expression_refactor

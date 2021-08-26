@@ -334,7 +334,7 @@ class DistanceMatrix(Text):
                     break
                 except Exception as e:
                     if not isinstance(self, PairwiseDistanceMatrix):
-                        log.warning("DistanceMatrix set_meta %s" % e)
+                        log.warning(f"DistanceMatrix set_meta {e}")
 
 
 @build_sniff_from_prefix
@@ -986,7 +986,7 @@ class SffFlow(Tabular):
             flow_values = int(headers[0][0])
             dataset.metadata.flow_values = flow_values
         except Exception as e:
-            log.warning("SffFlow set_meta %s" % e)
+            log.warning(f"SffFlow set_meta {e}")
 
     def make_html_table(self, dataset, skipchars=None):
         """Create HTML table, used for displaying peek"""
@@ -1006,7 +1006,7 @@ class SffFlow(Tabular):
             out += self.make_html_peek_rows(dataset, skipchars=skipchars)
             out += '</table>'
         except Exception as exc:
-            out = "Can't create peek: %s" % unicodify(exc)
+            out = f"Can't create peek: {unicodify(exc)}"
         return out
 
 

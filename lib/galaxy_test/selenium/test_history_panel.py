@@ -1,7 +1,12 @@
+import pytest
+
 from .framework import (
+    retry_assertion_during_transitions,
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
+
+NEW_HISTORY_NAME = "New History Name"
 
 
 class HistoryPanelTestCase(SeleniumTestCase):
@@ -24,26 +29,32 @@ class HistoryPanelTestCase(SeleniumTestCase):
     @selenium_test
     def test_history_panel_rename(self):
         editable_text_input_element = self.history_panel_click_to_rename()
-        editable_text_input_element.send_keys("New History Name")
+        if self.is_beta_history():
+            editable_text_input_element.clear()
+        editable_text_input_element.send_keys(NEW_HISTORY_NAME)
         self.send_enter(editable_text_input_element)
 
-        assert "New History Name" in self.history_panel_name()
+        self.assert_name_changed()
 
     @selenium_test
     def test_history_rename_confirm_with_click(self):
         editable_text_input_element = self.history_panel_click_to_rename()
-        editable_text_input_element.send_keys("New History Name")
+        if self.is_beta_history():
+            editable_text_input_element.clear()
+        editable_text_input_element.send_keys(NEW_HISTORY_NAME)
         self.click_center()
         self.assert_absent(self.navigation.history_panel.selectors.name_edit_input)
-        assert "New History Name" in self.history_panel_name()
+        self.assert_name_changed()
 
     @selenium_test
     def test_history_rename_cancel_with_escape(self):
         editable_text_input_element = self.history_panel_click_to_rename()
-        editable_text_input_element.send_keys("New History Name")
+        if self.is_beta_history():
+            editable_text_input_element.clear()
+        editable_text_input_element.send_keys(NEW_HISTORY_NAME)
         self.send_escape(editable_text_input_element)
         self.assert_absent(self.navigation.history_panel.selectors.name_edit_input)
-        assert "New History Name" not in self.history_panel_name()
+        assert NEW_HISTORY_NAME not in self.history_panel_name()
 
     @selenium_test
     def test_history_tags_and_annotations_buttons(self):
@@ -79,10 +90,17 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_history_panel_annotations_change(self):
+        history_panel = self.components.history_panel
 
+        @retry_assertion_during_transitions
         def assert_current_annotation(expected, error_message="History annotation",
                                       is_equal=True):
-            current_annotation = self.components.history_panel.annotation_editable_text.wait_for_visible()
+
+            if self.is_beta_history():
+                text_component = history_panel.annotation_editable_text_beta
+            else:
+                text_component = history_panel.annotation_editable_text
+            current_annotation = text_component.wait_for_visible()
             error_message += " given: [%s] expected [%s] "
             if is_equal:
                 assert current_annotation.text == expected, error_message % (
@@ -97,7 +115,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
             return random_annotation
 
         # assert that annotation wasn't set before
-        self.components.history_panel.annotation_area.assert_absent_or_hidden()
+        history_panel.annotation_area.assert_absent_or_hidden()
 
         # assign annotation random text
         initial_annotation = set_random_annotation()
@@ -160,6 +178,8 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_refresh_preserves_state(self):
+        if self.is_beta_history():
+            raise pytest.skip("Beta History Panel does not preserve state xref https://github.com/galaxyproject/galaxy/issues/12119")
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
 
@@ -167,6 +187,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.history_panel_ensure_showing_item_details(hid=1)
         self.history_panel_item_body_component(1, wait=True)
         self.history_panel_refresh_click()
+        self.wait_for_history()
 
         # After the refresh, verify the details are still open.
         self.sleep_for(self.wait_types.UX_TRANSITION)
@@ -180,3 +201,8 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.wait_for_selector_clickable(self.history_panel_item_selector(hid=1))
         assert not self.history_panel_item_showing_details(hid=1)
+
+    @retry_assertion_during_transitions
+    def assert_name_changed(self):
+        name = self.history_panel_name()
+        self.assertEqual(name, NEW_HISTORY_NAME)

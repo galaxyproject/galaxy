@@ -42,36 +42,40 @@ var ImportCollectionModal = Backbone.View.extend({
     showCollectionSelect: function (e) {
         const Galaxy = getGalaxyInstance();
         var checked_items = this.findCheckedItems();
-        var template = this.templateCollectionSelectModal();
+        if (checked_items.length === 0) {
+            Toast.info("You must select some datasets first.");
+        } else {
+            var template = this.templateCollectionSelectModal();
 
-        var promise = this.fetchUserHistories();
-        promise
-            .done(() => {
-                this.modal = Galaxy.modal;
-                this.modal.show({
-                    closing_events: true,
-                    title: "Create History Collection from Datasets",
-                    body: template({
-                        selected_datasets: checked_items.dataset_ids.length,
-                        histories: this.histories.models,
-                    }),
-                    buttons: {
-                        Continue: () => {
-                            this.showCollectionBuilder(checked_items.dataset_ids);
+            var promise = this.fetchUserHistories();
+            promise
+                .done(() => {
+                    this.modal = Galaxy.modal;
+                    this.modal.show({
+                        closing_events: true,
+                        title: "Create History Collection from Datasets",
+                        body: template({
+                            selected_datasets: checked_items.dataset_ids.length,
+                            histories: this.histories.models,
+                        }),
+                        buttons: {
+                            Continue: () => {
+                                this.showCollectionBuilder(checked_items.dataset_ids);
+                            },
+                            Close: () => {
+                                Galaxy.modal.hide();
+                            },
                         },
-                        Close: () => {
-                            Galaxy.modal.hide();
-                        },
-                    },
+                    });
+                })
+                .fail((model, response) => {
+                    if (typeof response.responseJSON !== "undefined") {
+                        Toast.error(response.responseJSON.err_msg);
+                    } else {
+                        Toast.error("An error occurred.");
+                    }
                 });
-            })
-            .fail((model, response) => {
-                if (typeof response.responseJSON !== "undefined") {
-                    Toast.error(response.responseJSON.err_msg);
-                } else {
-                    Toast.error("An error occurred.");
-                }
-            });
+        }
     },
     /**
      * Note: The collection creation process expects ldda_ids as ids
@@ -79,21 +83,17 @@ var ImportCollectionModal = Backbone.View.extend({
      * The code below overwrites the id with ldda_id for this reason.
      */
     showCollectionBuilder: function (checked_items) {
-        let collection_elements = [];
-        const elements_source = this.modal.$('input[type="radio"]:checked').val();
-        if (elements_source === "selection") {
-            for (let i = checked_items.length - 1; i >= 0; i--) {
-                const collection_item = {};
-                const dataset = checked_items[i];
-                collection_item.id = dataset.ldda_id;
-                collection_item.name = dataset.name;
-                collection_item.deleted = dataset.deleted;
-                collection_item.state = dataset.state;
-                collection_elements.push(collection_item);
-            }
-        } else if (elements_source === "folder") {
-            collection_elements = this.options.allDatasets;
+        const collection_elements = [];
+        for (let i = checked_items.length - 1; i >= 0; i--) {
+            const collection_item = {};
+            const dataset = checked_items[i];
+            collection_item.id = dataset.ldda_id;
+            collection_item.name = dataset.name;
+            collection_item.deleted = dataset.deleted;
+            collection_item.state = dataset.state;
+            collection_elements.push(collection_item);
         }
+
         const new_history_name = this.modal.$("input[name=history_name]").val();
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)
@@ -198,25 +198,6 @@ var ImportCollectionModal = Backbone.View.extend({
     templateCollectionSelectModal: function () {
         return _.template(
             `<div> <!-- elements selection -->
-                <div class="library-modal-item">
-                    <h4>Which datasets?</h4>
-                    <form class="form-inline">
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="radio_elements" id="selection_radio" value="selection"
-                                <% if (!selected_datasets) { %> disabled <% } else { %> checked <% } %> />
-                            <label class="form-check-label" for="selection_radio">
-                                current selection
-                                <% if (selected_datasets) { %>
-                                    (<%- selected_datasets %>)
-                                <% } %>
-                            </label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="radio_elements" id="folder_radio" value="folder" <% if (!selected_datasets) { %> checked <% } %> >
-                            <label class="form-check-label" for="folder_radio">all datasets in current folder</label>
-                        </div>
-                    </form>
-                </div>
                 <!-- type selection -->
                 <div class="library-modal-item">
                     <h4>Collection type</h4>

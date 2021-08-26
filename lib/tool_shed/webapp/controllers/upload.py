@@ -62,20 +62,20 @@ class UploadController(BaseUIController):
             elif url and url.startswith('hg'):
                 # Use mercurial clone to fetch repository, contents will then be copied over.
                 uploaded_directory = tempfile.mkdtemp()
-                repo_url = 'http%s' % url[len('hg'):]
+                repo_url = f"http{url[len('hg'):]}"
                 cloned_ok, error_message = hg_util.clone_repository(repo_url, uploaded_directory)
                 if not cloned_ok:
-                    message = 'Error uploading via mercurial clone: %s' % error_message
+                    message = f'Error uploading via mercurial clone: {error_message}'
                     status = 'error'
                     basic_util.remove_dir(uploaded_directory)
                     uploaded_directory = None
             elif url:
                 valid_url = True
                 try:
-                    stream = requests.get(url, stream=True)
+                    stream = requests.get(url, stream=True, timeout=util.DEFAULT_SOCKET_TIMEOUT)
                 except Exception as e:
                     valid_url = False
-                    message = 'Error uploading file via http: %s' % util.unicodify(e)
+                    message = f'Error uploading file via http: {util.unicodify(e)}'
                     status = 'error'
                     uploaded_file = None
                 if valid_url:

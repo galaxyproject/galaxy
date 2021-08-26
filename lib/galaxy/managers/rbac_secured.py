@@ -81,7 +81,7 @@ class DatasetRBACPermission(RBACPermission):
     # ---- double secrect probation
     def __assert_action(self):
         if not self.action_name:
-            raise NotImplementedError("abstract parent class" + " needs action_name")
+            raise NotImplementedError("abstract parent class needs action_name")
 
     # ---- interface
     def by_dataset(self, dataset):

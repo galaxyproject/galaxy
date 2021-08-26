@@ -1,11 +1,13 @@
 name: Integration Selenium
 on: [push, pull_request]
+concurrency:
+  group: integration-selenium-${{ github.ref }}
+  cancel-in-progress: true
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-  GALAXY_TEST_SELENIUM_REMOTE: '1'
-  GALAXY_TEST_SELENIUM_REMOTE_PORT: "4444"
   GALAXY_SKIP_CLIENT_BUILD: '0'
   GALAXY_TEST_SELENIUM_RETRIES: 1
+  YARN_INSTALL_OPTS: --frozen-lockfile
 jobs:
   test:
     name: Test
@@ -22,10 +24,6 @@ jobs:
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
-      selenium:
-        image: selenium/standalone-chrome:3.141.59
-        ports:
-          - 4444:4444
     steps:
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
@@ -41,6 +39,10 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - uses: mvdbeek/gha-yarn-cache@master
+        with:
+          yarn-lock-file: 'galaxy root/client/yarn.lock'
+      - uses: nanasess/setup-chromedriver@master
       - name: Run tests
         run: './run_tests.sh -integration test/integration_selenium'
         working-directory: 'galaxy root'

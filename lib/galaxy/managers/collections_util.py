@@ -21,7 +21,7 @@ def api_payload_to_create_params(payload):
     required_parameters = ["collection_type", "element_identifiers"]
     missing_parameters = [p for p in required_parameters if p not in payload]
     if missing_parameters:
-        message = "Missing required parameters %s" % missing_parameters
+        message = f"Missing required parameters {missing_parameters}"
         raise exceptions.ObjectAttributeMissingException(message)
 
     params = dict(

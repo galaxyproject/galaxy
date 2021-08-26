@@ -258,12 +258,12 @@ def _find_tool_files(path_or_uri_like, recursive, enable_beta_formats):
     else:
         if enable_beta_formats:
             if not recursive:
-                files = glob.glob(path + "/*")
+                files = glob.glob(f"{path}/*")
             else:
                 files = _find_files(path, "*")
         else:
             if not recursive:
-                files = glob.glob(path + "/*.xml")
+                files = glob.glob(f"{path}/*.xml")
             else:
                 files = _find_files(path, "*.xml")
         return [os.path.abspath(_) for _ in files]

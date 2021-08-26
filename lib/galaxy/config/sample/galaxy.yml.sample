@@ -222,6 +222,10 @@ galaxy:
   # seconds).
   #database_wait_sleep: 1.0
 
+  # Time (in seconds) between attempts to remove old rows from the
+  # history_audit database table. Set to 0 to disable pruning.
+  #history_audit_table_prune_interval: 3600
+
   # Where dataset files are stored. It must be accessible at the same
   # path on any cluster nodes that will run Galaxy jobs, unless using
   # Pulsar. The default value has been changed from 'files' to 'objects'
@@ -303,13 +307,10 @@ galaxy:
   # <data_dir>.
   #tool_dependency_dir: dependencies
 
-  # The dependency resolvers config file specifies an ordering and
-  # options for how Galaxy resolves tool dependencies (requirement tags
-  # in Tool XML). The default ordering is to the use the Tool Shed for
-  # tools installed that way, use local Galaxy packages, and then use
-  # Conda if available. See
-  # https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
-  # for more information on these options.
+  # Specifies the path to the standalone dependency resolvers
+  # configuration file. This configuration can now be specified directly
+  # in the Galaxy configuration, see the description of the
+  # 'dependency_resolvers' option for details.
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #dependency_resolvers_config_file: dependency_resolvers_conf.xml
@@ -437,9 +438,18 @@ galaxy:
 
   # Container resolvers configuration (beta). Set up a file describing
   # container resolvers to use when discovering containers for Galaxy.
-  # If this is set to None, the default containers loaded is determined
-  # by enable_mulled_containers.
-  #containers_resolvers_config_file: null
+  # If this is set to None, the default container resolvers loaded is
+  # determined by enable_mulled_containers.
+  #container_resolvers_config_file: null
+
+  # Rather than specifying a container_resolvers_config_file, the
+  # definition of the resolvers to enable can be embedded into Galaxy's
+  # config with this option. This has no effect if a
+  # container_resolvers_config_file is used.
+  # The syntax, available resolvers, and documentation of their options
+  # is explained in detail in the documentation:
+  # https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+  #container_resolvers: null
 
   # involucro is a tool used to build Docker or Singularity containers
   # for tools from Conda dependencies referenced in tools as
@@ -808,6 +818,10 @@ galaxy:
   # 0 to disable password expiration.
   #password_expiration_period: 0
 
+  # Allow users to manage their account data, change passwords or delete
+  # their accounts.
+  #enable_account_interface: true
+
   # Galaxy Session Timeout This provides a timeout (in minutes) after
   # which a user will have to log back in. A duration of 0 disables this
   # feature.
@@ -873,10 +887,23 @@ galaxy:
   # as Galaxy by default.
   #interactivetools_proxy_host: null
 
+  # Base path for interactive tools running at a subpath without a
+  # subdomain. Defaults to "/".
+  #interactivetools_base_path: /
+
   # Map for interactivetool proxy.
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
+
+  # Prefix to use in the formation of the subdomain or path for
+  # interactive tools
+  #interactivetools_prefix: interactivetool
+
+  # Shorten the uuid portion of the subdomain or path for interactive
+  # tools. Especially useful for avoiding the need for wildcard
+  # certificates by keeping subdomain under 63 chars
+  #interactivetools_shorten_url: false
 
   # Galaxy Interactive Tools (GxITs) can be stopped from within the
   # Galaxy interface, killing the GxIT job without completing its
@@ -1365,6 +1392,10 @@ galaxy:
   # prefix with a tag path set to the page url
   #statsd_influxdb: false
 
+  # Mock out statsd client calls - only used by testing infrastructure
+  # really. Do not set this in production environments.
+  #statsd_mock_calls: false
+
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
   #library_import_dir: null
@@ -1792,14 +1823,15 @@ galaxy:
   # Enable Galaxy's "Upload via FTP" interface.  You'll need to install
   # and configure an FTP server (we've used ProFTPd since it can use
   # Galaxy's database for authentication) and set the following two
-  # options. This should point to a directory containing subdirectories
-  # matching users' identifier (defaults to e-mail), where Galaxy will
-  # look for files.
-  #ftp_upload_dir: null
-
-  # This should be the hostname of your FTP server, which will be
-  # provided to users in the help text.
+  # options. This will be provided to users in the help text as 'log in
+  # to the FTP server at '. Thus, it should be the hostname of your FTP
+  # server.
   #ftp_upload_site: null
+
+  # This should point to a directory containing subdirectories matching
+  # users' identifier (defaults to e-mail), where Galaxy will look for
+  # files.
+  #ftp_upload_dir: null
 
   # User attribute to use as subdirectory in calculating default
   # ftp_upload_dir pattern. By default this will be email so a user's
@@ -1881,6 +1913,9 @@ galaxy:
   # definition of the resolvers to enable can be embedded into Galaxy's
   # config with this option. This has no effect if a
   # dependency_resolvers_config_file is used.
+  # The syntax, available resolvers, and documentation of their options
+  # is explained in detail in the documentation:
+  # https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
   #dependency_resolvers: null
 
   # Alternative representation of various dependency resolution
@@ -2162,7 +2197,7 @@ galaxy:
   # The base module(s) that are searched for modules for toolbox
   # filtering (https://galaxyproject.org/user-defined-toolbox-filters/)
   # functions.
-  #toolbox_filter_base_modules: galaxy.tools.filters,galaxy.tools.toolbox.filters
+  #toolbox_filter_base_modules: galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters
 
   # Galaxy uses AMQP internally for communicating between processes.
   # For example, when reloading the toolbox or locking job execution,

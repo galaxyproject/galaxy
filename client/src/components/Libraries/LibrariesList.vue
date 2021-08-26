@@ -9,7 +9,9 @@
                 Library
             </b-button>
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
-            <b-form-checkbox class="mr-1" @input="toggle_include_deleted($event)"> include deleted </b-form-checkbox>
+            <b-form-checkbox v-if="isAdmin" class="mr-1" @input="toggle_include_deleted($event)">
+                include deleted
+            </b-form-checkbox>
             <b-form-checkbox class="mr-1" @input="toggle_exclude_restricted($event)">
                 exclude restricted
             </b-form-checkbox>
@@ -49,30 +51,31 @@
                 <textarea
                     v-if="row.item.editMode"
                     class="form-control input_library_name"
-                    :ref="`name-${row.item.id}`"
-                    :value="row.item.name"
+                    v-model="row.item.name"
                     rows="3"
                 />
 
                 <div class="deleted-item" v-else-if="row.item.deleted && include_deleted">{{ row.item.name }}</div>
                 <b-link v-else :to="{ path: `folders/${row.item.root_folder_id}` }">{{ row.item.name }}</b-link>
             </template>
-            <template v-slot:cell(description)="row">
+            <template v-slot:cell(description)="{ item }">
                 <LibraryEditField
-                    @toggleDescriptionExpand="toggleDescriptionExpand(row.item)"
-                    :ref="`description-${row.item.id}`"
-                    :is-expanded="row.item.isExpanded"
-                    :is-edit-mode="row.item.editMode"
-                    :text="row.item.description"
+                    @toggleDescriptionExpand="toggleDescriptionExpand(item)"
+                    :ref="`description-${item.id}`"
+                    :is-expanded="item.isExpanded"
+                    :is-edit-mode="item.editMode"
+                    :text="item.description"
+                    :changed-value.sync="item[newDescriptionProperty]"
                 />
             </template>
-            <template v-slot:cell(synopsis)="row">
+            <template v-slot:cell(synopsis)="{ item }">
                 <LibraryEditField
-                    @toggleDescriptionExpand="toggleDescriptionExpand(row.item)"
-                    :ref="`synopsis-${row.item.id}`"
-                    :is-expanded="row.item.isExpanded"
-                    :is-edit-mode="row.item.editMode"
-                    :text="row.item.synopsis"
+                    @toggleDescriptionExpand="toggleDescriptionExpand(item)"
+                    :ref="`synopsis-${item.id}`"
+                    :is-expanded="item.isExpanded"
+                    :is-edit-mode="item.editMode"
+                    :text="item.synopsis"
+                    :changed-value.sync="item[newSynopsisProperty]"
                 />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
@@ -87,7 +90,7 @@
                     <font-awesome-icon icon="unlock" />
                     Undelete
                 </b-button>
-                <div v-else>
+                <div v-else-if="isAdmin">
                     <b-button
                         v-if="row.item.can_user_modify && row.item.editMode"
                         size="sm"
@@ -158,6 +161,7 @@
                                     id="paginationPerPage"
                                     autocomplete="off"
                                     type="number"
+                                    onkeyup="this.value|=0;if(this.value<1)this.value=1"
                                     v-model="perPage"
                                 />
                             </td>
@@ -205,6 +209,8 @@ export default {
     data() {
         const galaxy = getGalaxyInstance();
         return {
+            newDescriptionProperty: "newDescription",
+            newSynopsisProperty: "newSynopsis",
             isNewLibFormVisible: false,
             currentPage: 1,
             fields: fields,
@@ -242,8 +248,14 @@ export default {
             this.$refs.libraries_list.refresh();
         },
         saveChanges(item) {
-            item.description = this.$refs[`description-${item.id}`].textField;
-            item.synopsis = this.$refs[`synopsis-${item.id}`].textField;
+            const description = item[this.newDescriptionProperty];
+            const synopsis = item[this.newSynopsisProperty];
+            if (description) {
+                item.description = description;
+            }
+            if (synopsis) {
+                item.synopsis = synopsis;
+            }
             this.services.saveChanges(
                 item,
                 () => {

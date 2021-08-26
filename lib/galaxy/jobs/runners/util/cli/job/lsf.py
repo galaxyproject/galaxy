@@ -36,12 +36,12 @@ class LSF(BaseJobExec):
             try:
                 if k == 'memory':
                     # Memory requires both -m and -R rusage[mem=v] request
-                    scriptargs['-R'] = "\"rusage[mem=%s]\"" % v
+                    scriptargs['-R'] = f"\"rusage[mem={v}]\""
                 if not k.startswith('-'):
                     k = argmap[k]
                 scriptargs[k] = v
             except Exception:
-                log.warning('Unrecognized long argument passed to LSF CLI plugin: %s' % k)
+                log.warning(f'Unrecognized long argument passed to LSF CLI plugin: {k}')
 
         # Generated template.
         template_scriptargs = ''
@@ -60,13 +60,13 @@ class LSF(BaseJobExec):
         return "bsub <%s | awk '{ print $2}' | sed 's/[<>]//g'" % script_file
 
     def delete(self, job_id):
-        return 'bkill %s' % job_id
+        return f'bkill {job_id}'
 
     def get_status(self, job_ids=None):
         return "bjobs -a -o \"id stat\" -noheader"  # check this
 
     def get_single_status(self, job_id):
-        return "bjobs -o stat -noheader " + job_id
+        return f"bjobs -o stat -noheader {job_id}"
 
     def parse_status(self, status, job_ids):
         # Get status for each job, skipping header.
@@ -86,12 +86,12 @@ class LSF(BaseJobExec):
             # which would be badly handled here. So this only works well when Galaxy
             # is constantly monitoring the jobs. The logic here is that DONE jobs get forgotten
             # faster than failed jobs.
-            log.warning("Job id '%s' not found LSF status check" % job_id)
+            log.warning(f"Job id '{job_id}' not found LSF status check")
             return job_states.OK
         return self._get_job_state(status)
 
     def get_failure_reason(self, job_id):
-        return "bjobs -l " + job_id
+        return f"bjobs -l {job_id}"
 
     def parse_failure_reason(self, reason, job_id):
         # LSF will produce the following in the job output file:
@@ -120,7 +120,7 @@ class LSF(BaseJobExec):
                 'ZOMBI': job_states.ERROR
             }.get(state)
         except KeyError:
-            raise KeyError("Failed to map LSF status code [%s] to job state." % state)
+            raise KeyError(f"Failed to map LSF status code [{state}] to job state.")
 
     def _get_excluded_hosts(self):
         """

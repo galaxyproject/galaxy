@@ -1,5 +1,5 @@
 <template>
-    <Tags :tags="history.tags" :store-key="storeKey" :tag-service="historyTagService" />
+    <Tags :tags="history.tags" :store-key="storeKey" :tag-service="historyTagService" :disabled="disabled" />
 </template>
 
 <script>
@@ -48,6 +48,7 @@ export default {
     components: { Tags },
     props: {
         history: { type: History, required: true },
+        disabled: { type: Boolean, required: false, default: false },
     },
     computed: {
         storeKey() {

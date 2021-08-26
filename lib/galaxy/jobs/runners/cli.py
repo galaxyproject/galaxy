@@ -43,8 +43,8 @@ class ShellJobRunner(AsynchronousJobRunner):
         params = {}
         shell_params, job_params = url.split('/')[2:4]
         # split 'foo=bar&baz=quux' into { 'foo' : 'bar', 'baz' : 'quux' }
-        shell_params = {'shell_' + k: v for k, v in [kv.split('=', 1) for kv in shell_params.split('&')]}
-        job_params = {'job_' + k: v for k, v in [kv.split('=', 1) for kv in job_params.split('&')]}
+        shell_params = {f"shell_{k}": v for k, v in [kv.split('=', 1) for kv in shell_params.split('&')]}
+        job_params = {f"job_{k}": v for k, v in [kv.split('=', 1) for kv in job_params.split('&')]}
         params.update(shell_params)
         params.update(job_params)
         log.debug(f"Converted URL '{url}' to destination runner=cli, params={params}")
@@ -83,7 +83,7 @@ class ShellJobRunner(AsynchronousJobRunner):
         try:
             self.write_executable_script(ajs.job_file, script)
         except Exception:
-            log.exception("(%s) failure writing job script" % galaxy_id_tag)
+            log.exception(f"({galaxy_id_tag}) failure writing job script")
             job_wrapper.fail("failure preparing job script", exception=True)
             return
 
@@ -104,7 +104,7 @@ class ShellJobRunner(AsynchronousJobRunner):
         # Strip and split to get job ID.
         external_job_id = stdout.strip().split()[-1]
         if not external_job_id:
-            log.error('(%s) submission did not return a job identifier, failing job' % galaxy_id_tag)
+            log.error(f'({galaxy_id_tag}) submission did not return a job identifier, failing job')
             job_wrapper.fail("failure submitting job")
             return
 

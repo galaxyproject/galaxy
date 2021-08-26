@@ -108,7 +108,7 @@ def test_posix_disable_link_security():
 
 
 def test_posix_nonexistent_parent_write():
-    file_sources = _configured_file_sources(include_allowlist=True, writable=True)
+    file_sources = _configured_file_sources(include_allowlist=True, writable=True, plugin_extra_config={'allow_subdir_creation': False})
     e = None
     try:
         write_from(file_sources, "gxfiles://test1/notreal/myfile", "my test content")
@@ -380,7 +380,7 @@ def _assert_user_access_granted(file_sources, user_context):
     assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n", user_context=user_context)
 
 
-def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None):
+def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None, allow_subdir_creation=True):
     tmp, root = _setup_root()
     config_kwd = {}
     if include_allowlist:

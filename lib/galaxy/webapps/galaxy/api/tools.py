@@ -46,6 +46,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         :param in_panel: if true, tools are returned in panel structure,
                          including sections and labels
+        :param view: ToolBox view to apply (default is 'default')
         :param trackster: if true, only tools that are compatible with
                           Trackster are returned
         :param q: if present search on the given query will be performed
@@ -59,6 +60,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         q = kwds.get('q', '')
         tool_id = kwds.get('tool_id', '')
         tool_help = util.string_as_bool(kwds.get('tool_help', 'False'))
+        view = kwds.get("view", None)
 
         # Find whether to search.
         if q:
@@ -69,7 +71,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 else:
                     hits = None
             else:
-                hits = self._search(q)
+                hits = self._search(q, view)
             results = []
             if hits:
                 for hit in hits:
@@ -90,7 +92,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         # Return everything.
         try:
-            return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help)
+            return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help, view=view)
         except Exception:
             raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
 
@@ -215,7 +217,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             tools = self.app.toolbox.get_tool(id, get_all_versions=True)
             for tool in tools:
                 if not tool.allow_user_access(trans.user):
-                    raise exceptions.AuthenticationFailed("Access denied, please login for tool with id '%s'." % id)
+                    raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
         else:
             tools = [self._get_tool(id, tool_version=tool_version, user=trans.user)]
 
@@ -377,7 +379,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                     detected_versions.append(tool.version)
         return detected_versions
 
-    def _search(self, q):
+    def _search(self, q, view):
         """
         Perform the search on the given query.
         Boosts and numer of results are configurable in galaxy.ini file.
@@ -388,6 +390,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :return:      Dictionary containing the tools' ids of the best hits.
         :return type: dict
         """
+        panel_view = view or self.app.config.default_panel_view
         tool_name_boost = self.app.config.get('tool_name_boost', 9)
         tool_id_boost = self.app.config.get('tool_id_boost', 9)
         tool_section_boost = self.app.config.get('tool_section_boost', 3)
@@ -401,6 +404,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool_ngram_maxsize = self.app.config.get('tool_ngram_maxsize', 4)
 
         results = self.app.toolbox_search.search(q=q,
+                                                 panel_view=panel_view,
                                                  tool_name_boost=tool_name_boost,
                                                  tool_id_boost=tool_id_boost,
                                                  tool_section_boost=tool_section_boost,
@@ -433,7 +437,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool_tarball = trans.app.toolbox.package_tool(trans, id)
         trans.response.set_content_type('application/x-gzip')
         download_file = open(tool_tarball, "rb")
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.tgz"' % (id)
+        trans.response.headers["Content-Disposition"] = f'attachment; filename="{id}.tgz"'
         return download_file
 
     @expose_api_anonymous
@@ -493,7 +497,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
         if tool_id in PROTECTED_TOOLS:
-            raise exceptions.RequestParameterInvalidException("Cannot execute tool [%s] directly, must use alternative endpoint." % tool_id)
+            raise exceptions.RequestParameterInvalidException(f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint.")
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         return self._create(trans, payload, **kwd)
@@ -525,7 +529,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             if not trans.user:
                 log.warning("Anonymous user attempts to execute tool, but account activation is turned on.")
             elif not trans.user.active:
-                log.warning("User \"%s\" attempts to execute tool, but account activation is turned on and user account is not active." % trans.user.email)
+                log.warning(f"User \"{trans.user.email}\" attempts to execute tool, but account activation is turned on and user account is not active.")
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
@@ -540,7 +544,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         # Set up inputs.
         inputs = payload.get('inputs', {})
         if not isinstance(inputs, dict):
-            raise exceptions.RequestParameterInvalidException("inputs invalid %s" % inputs)
+            raise exceptions.RequestParameterInvalidException(f"inputs invalid {inputs}")
 
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
@@ -640,9 +644,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     def _get_tool(self, id, tool_version=None, user=None):
         tool = self.app.toolbox.get_tool(id, tool_version)
         if not tool:
-            raise exceptions.ObjectNotFound("Could not find tool with id '%s'." % id)
+            raise exceptions.ObjectNotFound(f"Could not find tool with id '{id}'.")
         if not tool.allow_user_access(user):
-            raise exceptions.AuthenticationFailed("Access denied, please login for tool with id '%s'." % id)
+            raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
         return tool
 
 

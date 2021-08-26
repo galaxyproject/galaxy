@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 
 def validate_datatype_extension(datatypes_registry, ext):
     if ext and ext not in ('auto', 'data') and not datatypes_registry.get_datatype_by_extension(ext):
-        raise RequestParameterInvalidException("Requested extension '%s' unknown, cannot upload dataset." % ext)
+        raise RequestParameterInvalidException(f"Requested extension '{ext}' unknown, cannot upload dataset.")
 
 
 def validate_url(url, ip_allowlist):
@@ -443,7 +443,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
 
     # Queue the job for execution
     trans.app.job_manager.enqueue(job, tool=tool)
-    trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+    trans.log_event(f"Added job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
     output = {}
     for i, v in enumerate(outputs):
         if not hasattr(output_object, "collection_type"):

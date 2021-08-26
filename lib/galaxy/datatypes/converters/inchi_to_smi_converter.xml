@@ -15,6 +15,17 @@
     <outputs>
         <data name="output" format="smi"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="inchi" value="drugbank_drugs.inchi"/>
+            <output name="output" ftype="smi">
+                <assert_contents>
+                    <has_text text="CC(C)C[C"/>
+                    <has_text text="c1ccc(cc1)"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
     <help>
 <![CDATA[
 ]]>

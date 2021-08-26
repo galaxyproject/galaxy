@@ -62,7 +62,7 @@ def verify(
         try:
             verify_assertions(output_content, attributes["assert_list"])
         except AssertionError as err:
-            errmsg = '%s different than expected\n' % (item_label)
+            errmsg = f'{item_label} different than expected\n'
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
@@ -82,7 +82,7 @@ def verify(
         try:
             _verify_checksum(output_content, expected_checksum_type, expected_checksum)
         except AssertionError as err:
-            errmsg = '%s different than expected\n' % (item_label)
+            errmsg = f'{item_label} different than expected\n'
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
@@ -157,7 +157,7 @@ def verify(
             elif compare == "contains":
                 files_contains(local_name, temp_name, attributes=attributes)
             else:
-                raise Exception('Unimplemented Compare type: %s' % compare)
+                raise Exception(f'Unimplemented Compare type: {compare}')
         except AssertionError as err:
             errmsg = f'{item_label} different than expected, difference (using {compare}):\n'
             errmsg += f"( {local_name} v. {temp_name} )\n"
@@ -184,14 +184,14 @@ def _bam_to_sam(local_name, temp_name):
     temp_local = tempfile.NamedTemporaryFile(suffix='.sam', prefix='local_bam_converted_to_sam_')
     with tempfile.NamedTemporaryFile(suffix='.sam', prefix='history_bam_converted_to_sam_', delete=False) as temp:
         try:
-            pysam.view('-h', '-o%s' % temp_local.name, local_name)
+            pysam.view('-h', '--no-PG', '-o', temp_local.name, local_name, catch_stdout=False)
         except Exception as e:
-            msg = "Converting local (test-data) BAM to SAM failed: %s" % unicodify(e)
+            msg = f"Converting local (test-data) BAM to SAM failed: {unicodify(e)}"
             raise Exception(msg)
         try:
-            pysam.view('-h', '-o%s' % temp.name, temp_name)
+            pysam.view('-h', '--no-PG', '-o', temp.name, temp_name, catch_stdout=False)
         except Exception as e:
-            msg = "Converting history BAM to SAM failed: %s" % unicodify(e)
+            msg = f"Converting history BAM to SAM failed: {unicodify(e)}"
             raise Exception(msg)
     os.remove(temp_name)
     return temp_local, temp.name
@@ -199,7 +199,7 @@ def _bam_to_sam(local_name, temp_name):
 
 def _verify_checksum(data, checksum_type, expected_checksum_value):
     if checksum_type not in ["md5", "sha1", "sha256", "sha512"]:
-        raise Exception("Unimplemented hash algorithm [%s] encountered." % checksum_type)
+        raise Exception(f"Unimplemented hash algorithm [{checksum_type}] encountered.")
 
     h = hashlib.new(checksum_type)
     h.update(data)
@@ -224,8 +224,17 @@ def files_delta(file1, file2, attributes=None):
         raise AssertionError('Files %s=%db but %s=%db - compare by size (delta_frac=%s) failed' % (file1, s1, file2, s2, delta_frac))
 
 
+def get_compressed_formats(attributes):
+    attributes = attributes or {}
+    decompress = attributes.get("decompress")
+    # None means all compressed formats are allowed
+    return None if decompress else []
+
+
 def files_diff(file1, file2, attributes=None):
     """Check the contents of 2 files for differences."""
+    attributes = attributes or {}
+
     def get_lines_diff(diff):
         count = 0
         for line in diff:
@@ -234,14 +243,7 @@ def files_diff(file1, file2, attributes=None):
         return count
 
     if not filecmp.cmp(file1, file2, shallow=False):
-        if attributes is None:
-            attributes = {}
-        decompress = attributes.get("decompress", None)
-        if decompress:
-            # None means all compressed formats are allowed
-            compressed_formats = None
-        else:
-            compressed_formats = []
+        compressed_formats = get_compressed_formats(attributes)
         is_pdf = False
         try:
             with get_fileobj(file2, compressed_formats=compressed_formats) as fh:
@@ -309,12 +311,14 @@ def files_diff(file1, file2, attributes=None):
 
 def files_re_match(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match."""
+    attributes = attributes or {}
     join_char = ''
     to_strip = os.linesep
+    compressed_formats = get_compressed_formats(attributes)
     try:
-        with open(file2, encoding='utf-8') as fh:
+        with get_fileobj(file2, compressed_formats=compressed_formats) as fh:
             history_data = fh.readlines()
-        with open(file1, encoding='utf-8') as fh:
+        with get_fileobj(file1, compressed_formats=compressed_formats) as fh:
             local_file = fh.readlines()
     except UnicodeDecodeError:
         join_char = b''
@@ -324,8 +328,6 @@ def files_re_match(file1, file2, attributes=None):
         with open(file1, 'rb') as fh:
             local_file = fh.readlines()
     assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), join_char.join(history_data[:40]))
-    if attributes is None:
-        attributes = {}
     if attributes.get('sort', False):
         history_data.sort()
     lines_diff = int(attributes.get('lines_diff', 0))
@@ -343,11 +345,13 @@ def files_re_match(file1, file2, attributes=None):
 
 def files_re_match_multiline(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match in multiline mode."""
+    attributes = attributes or {}
     join_char = ''
+    compressed_formats = get_compressed_formats(attributes)
     try:
-        with open(file2, encoding='utf-8') as fh:
+        with get_fileobj(file2, compressed_formats=compressed_formats) as fh:
             history_data = fh.readlines()
-        with open(file1, encoding='utf-8') as fh:
+        with get_fileobj(file1, compressed_formats=compressed_formats) as fh:
             local_file = fh.read()
     except UnicodeDecodeError:
         join_char = b''
@@ -355,8 +359,6 @@ def files_re_match_multiline(file1, file2, attributes=None):
             history_data = fh.readlines()
         with open(file1, 'rb') as fh:
             local_file = fh.read()
-    if attributes is None:
-        attributes = {}
     if attributes.get('sort', False):
         history_data.sort()
     history_data = join_char.join(history_data)
@@ -367,11 +369,13 @@ def files_re_match_multiline(file1, file2, attributes=None):
 def files_contains(file1, file2, attributes=None):
     """Check the contents of file2 for substrings found in file1, on a per-line basis."""
     # TODO: allow forcing ordering of contains
+    attributes = attributes or {}
     to_strip = os.linesep
+    compressed_formats = get_compressed_formats(attributes)
     try:
-        with open(file2, encoding='utf-8') as fh:
+        with get_fileobj(file2, compressed_formats=compressed_formats) as fh:
             history_data = fh.read()
-        with open(file1, encoding='utf-8') as fh:
+        with get_fileobj(file1, compressed_formats=compressed_formats) as fh:
             local_file = fh.readlines()
     except UnicodeDecodeError:
         to_strip = os.linesep.encode('utf-8')
@@ -379,8 +383,6 @@ def files_contains(file1, file2, attributes=None):
             history_data = fh.read()
         with open(file1, 'rb') as fh:
             local_file = fh.readlines()
-    if attributes is None:
-        attributes = {}
     lines_diff = int(attributes.get('lines_diff', 0))
     line_diff_count = 0
     for contains in local_file:
@@ -388,4 +390,4 @@ def files_contains(file1, file2, attributes=None):
         if contains not in history_data:
             line_diff_count += 1
         if line_diff_count > lines_diff:
-            raise AssertionError("Failed to find '%s' in history data. (lines_diff=%i)" % (contains, lines_diff))
+            raise AssertionError(f"Failed to find '{contains}' in history data. (lines_diff={lines_diff}).")

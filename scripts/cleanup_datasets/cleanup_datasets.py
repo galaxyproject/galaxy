@@ -140,12 +140,12 @@ def delete_userless_histories(app, cutoff_time, info_only=False, force_retry=Fal
     if force_retry:
         histories = app.sa_session.query(app.model.History) \
                                   .filter(and_(app.model.History.table.c.user_id == null(),
-                                               app.model.History.table.c.update_time < cutoff_time))
+                                               app.model.History.update_time < cutoff_time))
     else:
         histories = app.sa_session.query(app.model.History) \
                                   .filter(and_(app.model.History.table.c.user_id == null(),
                                                app.model.History.table.c.deleted == false(),
-                                               app.model.History.table.c.update_time < cutoff_time))
+                                               app.model.History.update_time < cutoff_time))
     for history in histories:
         if not info_only:
             log.info("Deleting history id %d", history.id)
@@ -170,13 +170,13 @@ def purge_histories(app, cutoff_time, remove_from_disk, info_only=False, force_r
     if force_retry:
         histories = app.sa_session.query(app.model.History) \
                                   .filter(and_(app.model.History.table.c.deleted == true(),
-                                               app.model.History.table.c.update_time < cutoff_time)) \
+                                               app.model.History.update_time < cutoff_time)) \
                                   .options(eagerload('datasets'))
     else:
         histories = app.sa_session.query(app.model.History) \
                                   .filter(and_(app.model.History.table.c.deleted == true(),
                                                app.model.History.table.c.purged == false(),
-                                               app.model.History.table.c.update_time < cutoff_time)) \
+                                               app.model.History.update_time < cutoff_time)) \
                                   .options(eagerload('datasets'))
     for history in histories:
         log.info("### Processing history id %d (%s)", history.id, unicodify(history.name))

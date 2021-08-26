@@ -9,6 +9,7 @@ from galaxy.celery import celery_app
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from . import get_galaxy_app
 
@@ -33,7 +34,7 @@ def recalculate_user_disk_usage(session: scoped_session, user_id=None):
             user.calculate_and_set_disk_usage()
             log.info(f"New user disk usage is {user.disk_usage}")
         else:
-            log.error("Recalculate user disk usage task failed, user %s not found" % user_id)
+            log.error(f"Recalculate user disk usage task failed, user {user_id} not found")
     else:
         log.error("Recalculate user disk usage task received without user_id.")
 
@@ -73,3 +74,12 @@ def export_history(
     job.state = model.Job.states.NEW
     sa_session.flush()
     job_manager.enqueue(job)
+
+
+@celery_app.task
+@galaxy_task
+def prune_history_audit_table(sa_session: scoped_session):
+    """Prune ever growing history_audit table."""
+    timer = ExecutionTimer()
+    model.HistoryAudit.prune(sa_session)
+    log.debug(f"Successfully pruned history_audit table {timer}")

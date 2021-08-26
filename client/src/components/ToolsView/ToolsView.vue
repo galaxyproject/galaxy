@@ -185,8 +185,13 @@ export default {
             const parser = new DOMParser();
             const helpDoc = parser.parseFromString(help, "text/html");
             const xpath = "//strong[text()='What it does']/../following-sibling::*";
-            const match = helpDoc.evaluate(xpath, helpDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
-                .singleNodeValue;
+            const match = helpDoc.evaluate(
+                xpath,
+                helpDoc,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue;
             if (match) {
                 return match.innerHTML;
             }

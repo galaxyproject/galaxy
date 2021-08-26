@@ -218,6 +218,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.__user = None
         self.galaxy_session = None
         self.error_message = None
+        self.host = self.request.host
 
         # set any cross origin resource sharing headers if configured to do so
         self.set_cors_headers()
@@ -488,7 +489,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                             galaxy_session.user.email)
             elif galaxy_session is not None and galaxy_session.user is not None and galaxy_session.user.deleted:
                 invalidate_existing_session = True
-                log.warning("User '%s' is marked deleted, invalidating session" % galaxy_session.user.email)
+                log.warning(f"User '{galaxy_session.user.email}' is marked deleted, invalidating session")
         # Do we need to invalidate the session for some reason?
         if invalidate_existing_session:
             prev_galaxy_session = galaxy_session
@@ -620,14 +621,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             user.set_random_password(length=12)
             user.external = True
             # Replace invalid characters in the username
-            for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-' + '.']:
+            for char in [x for x in username if x not in f"{string.ascii_lowercase + string.digits}-."]:
                 username = username.replace(char, '-')
             # Find a unique username - user can change it later
             if self.sa_session.query(self.app.model.User).filter_by(username=username).first():
                 i = 1
-                while self.sa_session.query(self.app.model.User).filter_by(username=(username + '-' + str(i))).first():
+                while self.sa_session.query(self.app.model.User).filter_by(username=f"{username}-{str(i)}").first():
                     i += 1
-                username += '-' + str(i)
+                username += f"-{str(i)}"
             user.username = username
             self.sa_session.add(user)
             self.sa_session.flush()
@@ -1007,13 +1008,21 @@ def build_url_map(app, global_conf, local_conf):
         cache_time = int(cache_time)
     # Send to dynamic app by default
     urlmap["/"] = app
+
+    def get_static_from_config(option_name, default_path):
+        config_val = conf.get(option_name, default_url_path(default_path))
+        per_host_config_option = f"{option_name}_by_host"
+        per_host_config = conf.get(per_host_config_option)
+        return Static(config_val, cache_time, directory_per_host=per_host_config)
+
     # Define static mappings from config
-    urlmap["/static"] = Static(conf.get("static_dir", default_url_path("static/")), cache_time)
-    urlmap["/images"] = Static(conf.get("static_images_dir", default_url_path("static/images")), cache_time)
-    urlmap["/static/scripts"] = Static(conf.get("static_scripts_dir", default_url_path("static/scripts/")), cache_time)
-    urlmap["/static/welcome.html"] = Static(conf.get("static_welcome_html", default_url_path("static/welcome.html")), cache_time)
-    urlmap["/favicon.ico"] = Static(conf.get("static_favicon_dir", default_url_path("static/favicon.ico")), cache_time)
-    urlmap["/robots.txt"] = Static(conf.get("static_robots_txt", default_url_path("static/robots.txt")), cache_time)
+    urlmap["/static"] = get_static_from_config("static_dir", "static/")
+    urlmap["/images"] = get_static_from_config("static_images_dir", "static/images")
+    urlmap["/static/scripts"] = get_static_from_config("static_scripts_dir", "static/scripts/")
+    urlmap["/static/welcome.html"] = get_static_from_config("static_welcome_html", "static/welcome.html")
+    urlmap["/favicon.ico"] = get_static_from_config("static_favicon_dir", "static/favicon.ico")
+    urlmap["/robots.txt"] = get_static_from_config("static_robots_txt", "static/robots.txt")
+
     if 'static_local_dir' in conf:
         urlmap["/static_local"] = Static(conf["static_local_dir"], cache_time)
     return urlmap, cache_time

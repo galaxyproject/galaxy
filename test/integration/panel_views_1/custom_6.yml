@@ -1,0 +1,13 @@
+name: Custom Panel in a New Section
+type: generic
+items:
+- type: section
+  name: My Completely New Sectin
+  items:
+  - type: label
+    text: The Start
+  - type: tool
+    id: empty_list
+  - label: The Middle
+  - type: tool
+    id: count_list

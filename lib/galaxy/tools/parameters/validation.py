@@ -126,7 +126,7 @@ class ExpressionValidator(Validator):
         try:
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
-            log.debug("Validator {} could not be evaluated on {}".format(self.expression, str(value)), exc_info=True)
+            log.debug(f"Validator {self.expression} could not be evaluated on {str(value)}", exc_info=True)
             raise ValueError(message)
         if not(evalresult):
             raise ValueError(message)
@@ -439,7 +439,7 @@ class ValueInDataTableColumnValidator(Validator):
             column = int(column)
         except ValueError:
             pass
-        message = elem.get("message", "Value was not found in %s." % (table_name))
+        message = elem.get("message", f"Value was not found in {table_name}.")
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
@@ -466,7 +466,7 @@ class ValueInDataTableColumnValidator(Validator):
         if not value:
             return
         if not self._tool_data_table.is_current_version(self._data_table_content_version):
-            log.debug('MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
+            log.debug('ValueInDataTableColumnValidator: values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
             self._load_values()
         if value in self.valid_values:
             return
@@ -612,7 +612,7 @@ validator_types = dict(
     dataset_metadata_not_in_data_table=MetadataNotInDataTableColumnValidator,
     dataset_metadata_in_range=MetadataInRangeValidator,
     value_in_data_table=ValueInDataTableColumnValidator,
-    value_not_in_data_table=ValueInDataTableColumnValidator,
+    value_not_in_data_table=ValueNotInDataTableColumnValidator,
     dataset_ok_validator=DatasetOkValidator,
 )
 

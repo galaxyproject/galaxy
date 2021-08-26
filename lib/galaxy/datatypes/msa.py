@@ -34,7 +34,7 @@ class InfernalCM(Text):
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 model"
             else:
-                dataset.blurb = "%s models" % dataset.metadata.number_of_models
+                dataset.blurb = f"{dataset.metadata.number_of_models} models"
             dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
@@ -80,7 +80,7 @@ class Hmmer(Text):
         try:
             return dataset.peek
         except Exception:
-            return "HMMER database (%s)" % (nice_size(dataset.get_size()))
+            return f"HMMER database ({nice_size(dataset.get_size())})"
 
     @abc.abstractmethod
     def sniff_prefix(self, filename):
@@ -153,7 +153,7 @@ class Stockholm_1_0(Text):
             if (dataset.metadata.number_of_models == 1):
                 dataset.blurb = "1 alignment"
             else:
-                dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
+                dataset.blurb = f"{dataset.metadata.number_of_models} alignments"
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
@@ -184,11 +184,11 @@ class Stockholm_1_0(Text):
 
         chunk_size = None
         if split_params['split_mode'] == 'number_of_parts':
-            raise Exception('Split mode "%s" is currently not implemented for STOCKHOLM-files.' % split_params['split_mode'])
+            raise Exception(f"Split mode \"{split_params['split_mode']}\" is currently not implemented for STOCKHOLM-files.")
         elif split_params['split_mode'] == 'to_size':
             chunk_size = int(split_params['split_size'])
         else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+            raise Exception(f"Unsupported split mode {split_params['split_mode']}")
 
         def _read_stockholm_records(filename):
             lines = []
@@ -232,7 +232,7 @@ class MauveXmfa(Text):
             if (dataset.metadata.number_of_models == 1):
                 dataset.blurb = "1 alignment"
             else:
-                dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
+                dataset.blurb = f"{dataset.metadata.number_of_models} alignments"
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'

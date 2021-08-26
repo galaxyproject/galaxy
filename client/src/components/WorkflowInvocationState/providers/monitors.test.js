@@ -24,8 +24,8 @@ describe("invocationStepMonitor", () => {
         // mocks fetchInvocationStep in initialFetch$
         fetchInvocationMock.mockImplementationOnce(() => () => of(invocationStepDataNew));
         // mocks fetchInvocationStep in pollingFetch$
-        fetchInvocationMock.mockImplementationOnce(() => () =>
-            of(invocationStepDataRunning, invocationStepDataOk, invocationStepDataOk)
+        fetchInvocationMock.mockImplementationOnce(
+            () => () => of(invocationStepDataRunning, invocationStepDataOk, invocationStepDataOk)
         );
         monitor$ = of(invocationId).pipe(invocationStepMonitor(20));
         monitor$.subscribe(spy);
@@ -34,8 +34,8 @@ describe("invocationStepMonitor", () => {
     });
     test("invocationStepMonitor terminates immediately if step is terminal", async () => {
         fetchInvocationMock.mockImplementationOnce(() => () => of(invocationStepDataOk));
-        fetchInvocationMock.mockImplementationOnce(() => () =>
-            of(invocationStepDataRunning, invocationStepDataOk, invocationStepDataOk, invocationStepDataOk)
+        fetchInvocationMock.mockImplementationOnce(
+            () => () => of(invocationStepDataRunning, invocationStepDataOk, invocationStepDataOk, invocationStepDataOk)
         );
         monitor$ = of(invocationId).pipe(invocationStepMonitor(20));
         monitor$.subscribe(spy);

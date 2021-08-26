@@ -88,7 +88,7 @@ export default {
             if (list.length > 0) {
                 const data = this.app.toFetchData(list, this.history_id);
                 axios
-                    .post("api/tools/fetch", data)
+                    .post(`${getAppRoot()}api/tools/fetch`, data)
                     .then((message) => {
                         list.forEach((model) => {
                             this._eventSuccess(model.id, message);
@@ -242,6 +242,7 @@ export default {
                                     name: ftp_file.path,
                                     size: ftp_file.size,
                                     path: ftp_file.path,
+                                    uri: ftp_file.uri,
                                 },
                             ]);
                         },

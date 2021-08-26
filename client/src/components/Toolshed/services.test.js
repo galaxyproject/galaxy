@@ -40,7 +40,7 @@ describe("Toolshed service helpers", () => {
     it("test fix toolshed helper", () => {
         const services = new Services();
         const filter = (x) => x.status !== "Installed";
-        const grouped = services._groupByNameOwner(incoming, filter, true);
+        const grouped = services._groupByNameOwnerToolshed(incoming, filter, true);
         services._fixToolshedUrls(grouped, urls);
         expect(grouped.length).toBe(2);
         expect(grouped[0].name).toBe("name_0");

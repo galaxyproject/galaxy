@@ -4,8 +4,8 @@ import pytest
 
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
+from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.tools.cache import ToolShedRepositoryCache
-from galaxy.tools.toolbox.base import ToolConfRepository
 from galaxy.util import bunch
 
 

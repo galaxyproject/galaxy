@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
+  <tool file="export_remote.xml"/>
   <section id="test" name="Test Section">
     <tool file="multi_data_optional.xml" />
     <tool file="paths_as_file.xml" />
@@ -43,9 +44,11 @@
   <tool file="inputs_as_json.xml" />
   <tool file="inputs_as_json_profile.xml" />
   <tool file="inputs_as_json_with_paths.xml" />
+  <tool file="inputs_as_json_with_staging_path_and_source_path.xml" />
   <tool file="filter_multiple_splitter.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
+  <tool file="select_from_dataset_optional.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_filter_collection.xml" />
@@ -192,6 +195,7 @@
   <tool file="cheetah_problem_unbound_var.xml" />
   <tool file="cheetah_problem_unbound_var_input.xml" />
   <tool file="cheetah_problem_syntax_error.xml" />
+  <tool file="model_attributes.xml" />
   <tool file="python_environment_problem.xml" />
   <tool file="config_vars.xml" />
 
@@ -203,6 +207,7 @@
 
   <tool file="interactivetool_simple.xml" />
   <tool file="interactivetool_two_entry_points.xml" />
+  <tool file="converter_target_datatype.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 
@@ -239,6 +244,7 @@
   <tool file="mulled_example_explicit.xml" />
   <tool file="mulled_example_invalid_case.xml" />
   <tool file="mulled_example_broken_no_requirements.xml" />
+  <tool file="mulled_example_broken_no_requirements_fallback.xml" />
 
   <tool file="simple_constructs.yml" />
 

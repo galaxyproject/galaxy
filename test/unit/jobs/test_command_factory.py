@@ -77,7 +77,13 @@ class TestCommandFactory(TestCase):
     def test_workdir_outputs(self):
         self.include_work_dir_outputs = True
         self.workdir_outputs = [("foo", "bar")]
-        self.__assert_command_is(_surround_command('%s; return_code=$?; if [ -f foo ] ; then cp foo bar ; fi' % MOCK_COMMAND_LINE))
+        self.__assert_command_is(_surround_command('%s; return_code=$?; \nif [ -f "foo" ] ; then cp "foo" "bar" ; fi' % MOCK_COMMAND_LINE))
+
+    def test_workdir_outputs_with_glob(self):
+        self.include_work_dir_outputs = True
+        self.workdir_outputs = [("foo*bar", "foo_x_bar")]
+        self.__assert_command_is(_surround_command(
+            '%s; return_code=$?; \nif [ -f "foo"*"bar" ] ; then cp "foo"*"bar" "foo_x_bar" ; fi' % MOCK_COMMAND_LINE))
 
     def test_set_metadata_skipped_if_unneeded(self):
         self.include_metadata = True

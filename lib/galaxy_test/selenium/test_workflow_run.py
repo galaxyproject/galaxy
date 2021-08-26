@@ -8,6 +8,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_RENAME_ON_REPLACEMENT_PARAM,
     WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
+    WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
@@ -195,9 +196,17 @@ steps:
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
 
         invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
-        self.get("workflows/invocations/report?id=%s" % invocation_0["id"])
+        self.get(f"workflows/invocations/report?id={invocation_0['id']}")
         self.wait_for_selector_visible(".embedded-dataset")
         self.screenshot("workflow_report_custom_1")
+
+    @selenium_test
+    @managed_history
+    def test_execution_with_null_optional_select_from_data(self):
+        self.open_in_workflow_run(WORKFLOW_SELECT_FROM_OPTIONAL_DATASET)
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
 
     def open_in_workflow_run(self, yaml_content):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)

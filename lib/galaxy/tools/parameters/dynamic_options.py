@@ -190,10 +190,10 @@ class DataMetaFilter(Filter):
         try:
             ref = _get_ref_data(other_values, self.ref_name)
         except KeyError:  # no such dataset
-            log.warning("could not filter by metadata: %s unknown" % self.ref_name)
+            log.warning(f"could not filter by metadata: {self.ref_name} unknown")
             return []
         except ValueError:  # not a valid dataset
-            log.warning("could not filter by metadata: %s not a data or collection parameter" % self.ref_name)
+            log.warning(f"could not filter by metadata: {self.ref_name} not a data or collection parameter")
             return []
         # get the metadata value.
         # - for lists: (of data sets) and collections the meta data values of all
@@ -603,7 +603,7 @@ class DynamicOptions:
     @property
     def missing_tool_data_table_name(self):
         if not self.tool_data_table:
-            log.warning("Data table named '%s' is required by tool but not configured" % self.tool_data_table_name)
+            log.warning(f"Data table named '{self.tool_data_table_name}' is required by tool but not configured")
             return self.tool_data_table_name
         return None
 
@@ -663,10 +663,10 @@ class DynamicOptions:
             try:
                 datasets = _get_ref_data(other_values, self.dataset_ref_name)
             except KeyError:  # no such dataset
-                log.warning("could not create dynamic options from_dataset: %s unknown" % self.dataset_ref_name)
+                log.warning(f"could not create dynamic options from_dataset: {self.dataset_ref_name} unknown")
                 return []
             except ValueError:  # not a valid dataset
-                log.warning("could not create dynamic options from_dataset: %s not a data or collection parameter" % self.dataset_ref_name)
+                log.warning(f"could not create dynamic options from_dataset: {self.dataset_ref_name} not a data or collection parameter")
                 return []
 
             options = []
@@ -722,7 +722,7 @@ class DynamicOptions:
         if isinstance(field_name, int):
             field_index = field_name
         else:
-            assert field_name in self.columns, "Requested '%s' column missing from column def" % field_name
+            assert field_name in self.columns, f"Requested '{field_name}' column missing from column def"
             field_index = self.columns[field_name]
         if not isinstance(value, list):
             value = [value]

@@ -192,7 +192,7 @@ def create_repository(app, name, type, description, long_description, user_id, c
         sa_session.flush()
     # Update the repository registry.
     app.repository_registry.add_entry(repository)
-    message = "Repository <b>%s</b> has been created." % escape(str(repository.name))
+    message = f"Repository <b>{escape(str(repository.name))}</b> has been created."
     return repository, message
 
 
@@ -201,7 +201,7 @@ def generate_sharable_link_for_repository_in_tool_shed(repository, changeset_rev
     base_url = web.url_for('/', qualified=True).rstrip('/')
     sharable_url = f'{base_url}/view/{repository.user.username}/{repository.name}'
     if changeset_revision:
-        sharable_url += '/%s' % changeset_revision
+        sharable_url += f'/{changeset_revision}'
     return sharable_url
 
 
@@ -330,14 +330,14 @@ def get_tool_shed_repository_status_label(app, tool_shed_repository=None, name=N
                                            app.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES)
             elif tool_shed_repository.missing_repository_dependencies:
                 bgcolor = app.install_model.ToolShedRepository.states.WARNING
-                status_label = '%s, missing repository dependencies' % status_label
+                status_label = f'{status_label}, missing repository dependencies'
             elif tool_shed_repository.tool_dependencies_being_installed:
                 bgcolor = app.install_model.ToolShedRepository.states.WARNING
                 status_label = '{}, {}'.format(status_label,
                                            app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
             elif tool_shed_repository.missing_tool_dependencies:
                 bgcolor = app.install_model.ToolShedRepository.states.WARNING
-                status_label = '%s, missing tool dependencies' % status_label
+                status_label = f'{status_label}, missing tool dependencies'
             else:
                 bgcolor = app.install_model.ToolShedRepository.states.OK
         else:
@@ -463,7 +463,7 @@ def update_repository(app, trans, id, **kwds):
         repo_dir = repository.repo_path(app)
         # Change the entry in the hgweb.config file for the repository.
         old_lhs = f"repos/{repository.user.username}/{repository.name}"
-        new_lhs = "repos/{}/{}".format(repository.user.username, kwds['name'])
+        new_lhs = f"repos/{repository.user.username}/{kwds['name']}"
         trans.app.hgweb_config_manager.change_entry(old_lhs, new_lhs, repo_dir)
 
         # Change the entry in the repository's hgrc file.
@@ -495,13 +495,13 @@ def validate_repository_name(app, name, user):
     if name in ['None', None, '']:
         return 'Enter the required repository name.'
     if name in ['repos']:
-        return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a repository name." % name
+        return f"The term '{name}' is a reserved word in the Tool Shed, so it cannot be used as a repository name."
     check_existing = get_repository_by_name_and_owner(app, name, user.username)
     if check_existing is not None:
         if check_existing.deleted:
-            return 'You own a deleted repository named <b>%s</b>, please choose a different name.' % escape(name)
+            return f'You own a deleted repository named <b>{escape(name)}</b>, please choose a different name.'
         else:
-            return "You already own a repository named <b>%s</b>, please choose a different name." % escape(name)
+            return f"You already own a repository named <b>{escape(name)}</b>, please choose a different name."
     if len(name) < 2:
         return "Repository names must be at least 2 characters in length."
     if len(name) > 80:

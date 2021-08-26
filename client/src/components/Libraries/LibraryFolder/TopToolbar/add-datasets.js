@@ -710,6 +710,26 @@ var AddDatasets = Backbone.View.extend({
         }
     },
 
+    /**
+     * User clicked the checkbox in the table heading
+     * @param  {context} event
+     */
+    selectAll: function (event) {
+        var selected = event.target.checked;
+        var self = this;
+        // Iterate each checkbox
+        $(":checkbox", "#dataset_list tbody").each(function () {
+            this.checked = selected;
+            var $row = $(this).closest("tr");
+            // Change color of selected/unselected
+            if (selected) {
+                self.makeDarkRow($row);
+            } else {
+                self.makeWhiteRow($row);
+            }
+        });
+    },
+
     makeDarkRow: function ($row) {
         $row.addClass("table-primary");
     },

@@ -26,6 +26,7 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.libraries import LibraryManager
+from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.tools import DynamicToolManager
@@ -61,6 +62,7 @@ from galaxy.util import (
     heartbeat,
     StructuredExecutionTimer,
 )
+from galaxy.util.task import IntervalTask
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
@@ -148,6 +150,7 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
 
 class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._register_singleton(MinimalManagerApp, self)
@@ -167,11 +170,12 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.hda_manager = self._register_singleton(HDAManager)
         self.history_manager = self._register_singleton(HistoryManager)
         self.job_search = self._register_singleton(JobSearch)
-        self.dataset_collections_service = self._register_singleton(DatasetCollectionManager)
+        self.dataset_collection_manager = self._register_singleton(DatasetCollectionManager)
         self.workflow_manager = self._register_singleton(WorkflowsManager)
         self.workflow_contents_manager = self._register_singleton(WorkflowContentsManager)
         self.library_folder_manager = self._register_singleton(FolderManager)
         self.library_manager = self._register_singleton(LibraryManager)
+        self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)
         self.role_manager = self._register_singleton(RoleManager)
         from galaxy.jobs.manager import JobManager
         self.job_manager = self._register_singleton(JobManager)
@@ -265,6 +269,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Load history import/export tools.
         load_lib_tools(self.toolbox)
         self.toolbox.persist_cache(register_postfork=True)
+        # If app is not job handler but uses mule messaging.
+        # Can be removed when removing mule support.
+        self.job_manager._check_jobs_at_startup()
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = self._register_singleton(VisualizationsRegistry, VisualizationsRegistry(
             self,
@@ -304,6 +311,16 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             self.authnz_manager = managers.AuthnzManager(self,
                                                          self.config.oidc_config_file,
                                                          self.config.oidc_backends_config_file)
+
+        if not self.config.enable_celery_tasks and self.config.history_audit_table_prune_interval > 0:
+            self.prune_history_audit_task = IntervalTask(
+                func=lambda: galaxy.model.HistoryAudit.prune(self.model.session),
+                name="HistoryAuditTablePruneTask",
+                interval=self.config.history_audit_table_prune_interval,
+                immediate_start=False,
+                time_execution=True)
+            self.application_stack.register_postfork_function(self.prune_history_audit_task.start)
+            self.haltables.append(("HistoryAuditTablePruneTask", self.prune_history_audit_task.shutdown))
         # Start the job manager
         self.application_stack.register_postfork_function(self.job_manager.start)
         self.proxy_manager = ProxyManager(self.config)
@@ -350,7 +367,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.url_for = url_for
 
         self.server_starttime = int(time.time())  # used for cachebusting
-        log.info("Galaxy app startup finished %s" % startup_timer)
+        log.info(f"Galaxy app startup finished {startup_timer}")
 
     def _shutdown_queue_worker(self):
         self.queue_worker.shutdown()

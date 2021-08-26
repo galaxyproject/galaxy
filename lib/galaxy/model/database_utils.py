@@ -60,7 +60,7 @@ class PosgresDatabaseManager(DatabaseManager):
 
     def _handle_no_database(self):
         self.database = self.url.database  # use database from db_url
-        self.url.database = 'postgres'
+        self.url = self.url.set(database='postgres')
 
     def exists(self):
         with sqlalchemy_engine(self.url) as engine:

@@ -362,7 +362,7 @@ class CachedDependencyManager(DependencyManager):
                 try:
                     shutil.rmtree(hashed_dependencies_dir)
                 except Exception:
-                    log.warning("Could not delete cached dependencies directory '%s'" % hashed_dependencies_dir)
+                    log.warning(f"Could not delete cached dependencies directory '{hashed_dependencies_dir}'")
                     raise
             else:
                 log.debug("Cached dependencies directory '%s' already exists, skipping build", hashed_dependencies_dir)

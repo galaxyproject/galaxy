@@ -19,8 +19,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="interval" value="2.interval"/>
-            <output name="output1" format="tabix" value="2.tabix"/>
+            <param name="input1" ftype="interval" value="2.interval"/>
+            <output name="output1" ftype="tabix" value="2.tabix"/>
         </test>
     </tests>
     <help>

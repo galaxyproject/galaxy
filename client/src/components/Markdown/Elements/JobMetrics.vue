@@ -1,5 +1,5 @@
 <template>
-    <div class="w-50 p-2 float-left">
+    <div class="w-100 p-2">
         <b-card nobody>
             <JobMetrics class="job-metrics" :job-id="args.job_id" />
         </b-card>

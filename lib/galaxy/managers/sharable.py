@@ -631,7 +631,7 @@ class ShareableService:
                     if hasattr(item, "has_possible_members") and item.has_possible_members:
                         skipped = self._make_members_public(trans, item)
                 else:
-                    raise exceptions.MessageException("%s not importable." % class_name)
+                    raise exceptions.MessageException(f"{class_name} not importable.")
             elif action == "disable_link_access":
                 item.importable = False
             elif action == "unpublish":
@@ -643,10 +643,10 @@ class ShareableService:
                     raise exceptions.MessageException(f"Missing required user_id to perform {action}")
                 user = trans.sa_session.query(trans.app.model.User).get(trans.app.security.decode_id(payload.user_id))
                 class_name_lc = class_name.lower()
-                ShareAssociation = getattr(trans.app.model, "%sUserShareAssociation" % class_name)
+                ShareAssociation = getattr(trans.app.model, f"{class_name}UserShareAssociation")
                 usas = trans.sa_session.query(ShareAssociation).filter_by(**{"user": user, class_name_lc: item}).all()
                 if not usas:
-                    raise exceptions.MessageException("%s was not shared with user." % class_name)
+                    raise exceptions.MessageException(f"{class_name} was not shared with user.")
                 for usa in usas:
                     trans.sa_session.delete(usa)
             trans.sa_session.add(item)

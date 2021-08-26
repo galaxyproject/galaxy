@@ -63,7 +63,9 @@ describe("Lint", () => {
         wrapper = mount(Lint, {
             propsData: {
                 untypedParameters: getUntypedWorkflowParameters(nodes),
-                nodes: nodes,
+                getManager: () => {
+                    return { nodes: nodes };
+                },
                 annotation: "annotation",
                 license: null,
                 creator: null,

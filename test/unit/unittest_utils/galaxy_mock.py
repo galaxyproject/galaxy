@@ -197,6 +197,11 @@ class MockAppConfig(Bunch):
         self.delay_tool_initialization = True
         self.external_chown_script = None
 
+        self.default_panel_view = "default"
+        self.panel_views_dir = ''
+        self.panel_views = {}
+        self.edam_panel_views = ''
+
         self.config_file = None
 
     @property

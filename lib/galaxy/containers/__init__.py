@@ -45,7 +45,7 @@ class ContainerVolume(metaclass=ABCMeta):
         self.host_path = host_path
         self.mode = mode
         if mode and not self.mode_is_valid:
-            raise ValueError("Invalid container volume mode: %s" % mode)
+            raise ValueError(f"Invalid container volume mode: {mode}")
 
     @abstractmethod
     def from_str(cls, as_str):
@@ -205,7 +205,7 @@ class ContainerInterface(metaclass=ABCMeta):
         return opttype
 
     def _guess_kwopt_flag(self, opt):
-        return '--%s' % opt.replace('_', '-')
+        return f"--{opt.replace('_', '-')}"
 
     def _stringify_kwopts(self, kwopts):
         opts = []
@@ -219,25 +219,25 @@ class ContainerInterface(metaclass=ABCMeta):
                 }
                 log.warning("option '%s' not in %s.option_map, guessing flag '%s' type '%s'",
                             opt, self.__class__.__name__, optdef['flag'], optdef['type'])
-            opts.append(getattr(self, '_stringify_kwopt_' + optdef['type'])(optdef['flag'], val))
+            opts.append(getattr(self, f"_stringify_kwopt_{optdef['type']}")(optdef['flag'], val))
         return ' '.join(opts)
 
     def _stringify_kwopt_boolean(self, flag, val):
         """
         """
-        return '{flag}={value}'.format(flag=flag, value=str(val).lower())
+        return f'{flag}={str(val).lower()}'
 
     def _stringify_kwopt_string(self, flag, val):
         """
         """
-        return '{flag} {value}'.format(flag=flag, value=shlex.quote(str(val)))
+        return f'{flag} {shlex.quote(str(val))}'
 
     def _stringify_kwopt_list(self, flag, val):
         """
         """
         if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
-        return ' '.join('{flag} {value}'.format(flag=flag, value=shlex.quote(str(v))) for v in val)
+        return ' '.join(f'{flag} {shlex.quote(str(v))}' for v in val)
 
     def _stringify_kwopt_list_of_kvpairs(self, flag, val):
         """
@@ -272,7 +272,7 @@ class ContainerInterface(metaclass=ABCMeta):
             return stdout.strip()
         else:
             msg = f"Command '{command}' returned non-zero exit status {p.returncode}"
-            log.error(msg + ': ' + stderr.strip())
+            log.error(f"{msg}: {stderr.strip()}")
             raise ContainerCLIError(
                 msg,
                 stdout=stdout.strip(),
@@ -346,7 +346,7 @@ def build_container_interfaces(containers_config_file, containers_conf=None):
     interfaces = {}
     for k, conf in containers_conf.items():
         container_type = conf.get('type', DEFAULT_CONTAINER_TYPE)
-        assert container_type in interface_classes, "unknown container interface type: %s" % container_type
+        assert container_type in interface_classes, f"unknown container interface type: {container_type}"
         interfaces[k] = interface_classes[container_type](conf, k, containers_config_file)
     return interfaces
 

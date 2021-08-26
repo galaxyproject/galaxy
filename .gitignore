@@ -51,6 +51,7 @@ database/tool_recommendation_model.hdf5
 *.lock
 *.log
 *.pid
+celerybeat-schedule
 
 # Tool Shed Runtime Files
 tool_shed_webapp.lock

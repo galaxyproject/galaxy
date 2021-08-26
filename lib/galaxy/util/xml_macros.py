@@ -92,7 +92,7 @@ def expand_nested_tokens(tokens):
         for current_token_name, current_token_value in tokens.items():
             if token_name in current_token_value:
                 if token_name == current_token_name:
-                    raise Exception("Token '%s' cannot contain itself" % token_name)
+                    raise Exception(f"Token '{token_name}' cannot contain itself")
                 tokens[current_token_name] = current_token_value.replace(token_name, tokens[token_name])
     return tokens
 

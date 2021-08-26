@@ -163,7 +163,7 @@ class VisualizationsRegistry:
             return False
         if 'config' not in os.listdir(plugin_path):
             return False
-        expected_config_filename = '%s.xml' % (os.path.split(plugin_path)[1])
+        expected_config_filename = f'{os.path.split(plugin_path)[1]}.xml'
         if not os.path.isfile(os.path.join(plugin_path, 'config', expected_config_filename)):
             return False
         return True
@@ -180,7 +180,7 @@ class VisualizationsRegistry:
         """
         plugin_name = os.path.split(plugin_path)[1]
         # TODO: this is the standard/older way to config
-        config_file = os.path.join(plugin_path, 'config', (plugin_name + '.xml'))
+        config_file = os.path.join(plugin_path, 'config', (f"{plugin_name}.xml"))
         if os.path.exists(config_file):
             config = self.config_parser.parse_file(config_file)
             if config is not None:
@@ -188,7 +188,7 @@ class VisualizationsRegistry:
                 plugin = self._build_plugin(plugin_name, plugin_path, config)
                 return plugin
         else:
-            raise ObjectNotFound('Visualization XML not found: %s.' % config_file)
+            raise ObjectNotFound(f'Visualization XML not found: {config_file}.')
 
     def _build_plugin(self, plugin_name, plugin_path, config):
         # TODO: as builder not factory
@@ -218,7 +218,7 @@ class VisualizationsRegistry:
         Wrap to throw error if plugin not in registry.
         """
         if key not in self.plugins:
-            raise ObjectNotFound('Unknown or invalid visualization: ' + key)
+            raise ObjectNotFound(f"Unknown or invalid visualization: {key}")
         return self.plugins[key]
 
     def get_plugins(self, embeddable=None):
