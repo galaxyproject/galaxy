@@ -270,10 +270,11 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         self.ensure_rendering_data_for("history_datasets", obj)[key] = val or default_val
 
     def handle_dataset_display(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "name", hda.name, "")
+        self.handle_dataset_name(line, hda)
+        self.handle_dataset_type(line, hda)
 
     def handle_dataset_embedded(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "name", hda.name, "")
+        self.handle_dataset_name(line, hda)
 
     def handle_dataset_peek(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "peek", hda.peek, "*No Dataset Peek Available*")

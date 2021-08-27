@@ -33,14 +33,35 @@
                 </span>
             </b-card-header>
             <b-card-body>
-                <LoadingSpan v-if="loading" message="Loading Dataset" />
-                <div v-else class="embedded-dataset content-height">
-                    <pre v-if="itemContent.item_data">
-                        <code class="text-normalwrap">{{ itemContent.item_data }}</code>
-                    </pre>
-                    <div v-else>No content found.</div>
-                    <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
-                </div>
+                <UrlDataProvider :url="itemUrl" v-slot="{ result: itemContent, loading, error }">
+                    <LoadingSpan v-if="loading" message="Loading Dataset" />
+                    <div v-else-if="error">{{ error }}</div>
+                    <div v-else class="embedded-dataset content-height">
+                        <div v-if="itemContent.item_data">
+                            <pre v-if="notTabular">
+                                <code class="text-normalwrap">{{ itemContent.item_data }}</code>
+                            </pre>
+                            <div v-else>
+                                <UrlDataProvider
+                                    :url="metaUrl"
+                                    v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
+                                >
+                                    <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
+                                    <div v-else-if="metaError">{{ metaError }}</div>
+                                    <b-table
+                                        v-else
+                                        striped
+                                        hover
+                                        :fields="getFields(metaData)"
+                                        :items="getItems(itemContent.item_data, metaData)"
+                                    />
+                                </UrlDataProvider>
+                            </div>
+                        </div>
+                        <div v-else>No content found.</div>
+                        <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
+                    </div>
+                </UrlDataProvider>
             </b-card-body>
         </b-card>
     </div>
@@ -49,10 +70,12 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import LoadingSpan from "components/LoadingSpan";
-import axios from "axios";
+import { UrlDataProvider } from "components/providers/UrlDataProvider";
+
 export default {
     components: {
         LoadingSpan,
+        UrlDataProvider,
     },
     props: {
         args: {
@@ -68,19 +91,11 @@ export default {
             default: false,
         },
     },
-    data() {
-        return {
-            itemContent: null,
-            loading: true,
-        };
-    },
-    created() {
-        this.getContent().then((data) => {
-            this.itemContent = data;
-            this.loading = false;
-        });
-    },
     computed: {
+        notTabular() {
+            const dataset = this.datasets[this.args.history_dataset_id];
+            return dataset && dataset.ext != "tabular";
+        },
         datasetName() {
             const dataset = this.datasets[this.args.history_dataset_id];
             return dataset && dataset.name;
@@ -92,17 +107,42 @@ export default {
             return `${getAppRoot()}dataset/imp?dataset_id=${this.args.history_dataset_id}`;
         },
         itemUrl() {
-            return `${getAppRoot()}api/datasets/${this.args.history_dataset_id}/get_content_as_text`;
+            return `api/datasets/${this.args.history_dataset_id}/get_content_as_text`;
+        },
+        metaUrl() {
+            return `api/datasets/${this.args.history_dataset_id}`;
         },
     },
     methods: {
-        async getContent() {
-            try {
-                const response = await axios.get(this.itemUrl);
-                return response.data;
-            } catch (e) {
-                return `Failed to retrieve content. ${e}`;
+        getFields(metaData) {
+            const fields = [];
+            const columnNames = metaData.metadata_column_names || [];
+            const columnCount = metaData.metadata_columns;
+            for (let i = 0; i < columnCount; i++) {
+                fields.push({
+                    key: `${i}`,
+                    label: columnNames[i] || i,
+                    sortable: true,
+                });
             }
+            return fields;
+        },
+        getItems(textData, metaData) {
+            const tableData = [];
+            const delimiter = metaData.metadata_delimiter || "\t";
+            const comments = metaData.metadata_comment_lines || 0;
+            const lines = textData.split("\n");
+            lines.forEach((line, i) => {
+                if (i >= comments) {
+                    const tabs = line.split(delimiter);
+                    const rowData = {};
+                    tabs.forEach((cellData, j) => {
+                        rowData[j] = cellData;
+                    });
+                    tableData.push(rowData);
+                }
+            });
+            return tableData;
         },
     },
 };
