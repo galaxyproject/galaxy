@@ -69,6 +69,8 @@ from galaxy.util import restore_text
 
 log = logging.getLogger(__name__)
 
+HistoryArchiveExportResult = Union[JobExportHistoryArchiveModel, JobIdResponse]
+
 
 class HDABasicInfo(BaseModel):
     id: EncodedDatabaseIdField
@@ -990,7 +992,7 @@ class HistoriesService(ServiceBase):
         trans,
         id: EncodedDatabaseIdField,
         payload: ExportHistoryArchivePayload,
-    ) -> Union[JobExportHistoryArchiveModel, JobIdResponse]:
+    ) -> HistoryArchiveExportResult:
         """
         start job (if needed) to create history export for corresponding
         history.
@@ -1033,7 +1035,6 @@ class HistoriesService(ServiceBase):
             return JobExportHistoryArchiveModel.parse_obj(serialized_jeha)
         else:
             # Valid request, just resource is not ready yet.
-            trans.response.status = "202 Accepted"
             if jeha:
                 serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
                 return JobExportHistoryArchiveModel.parse_obj(serialized_jeha)
@@ -1041,6 +1042,12 @@ class HistoriesService(ServiceBase):
                 assert job is not None, "logic error, don't have a jeha or a job"
                 job_id = trans.security.encode_id(job.id)
                 return JobIdResponse(job_id=job_id)
+
+    def is_export_result_ready(self, export_result: HistoryArchiveExportResult) -> bool:
+        if isinstance(export_result, JobIdResponse):
+            return False
+        export_result = cast(JobExportHistoryArchiveModel, export_result)
+        return export_result.up_to_date and export_result.ready
 
     def archive_download(
         self,

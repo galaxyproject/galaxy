@@ -50,8 +50,6 @@ from galaxy.schema.schema import (
     HistoryDetailed,
     HistorySummary,
     JobExportHistoryArchiveCollection,
-    JobExportHistoryArchiveModel,
-    JobIdResponse,
     JobImportHistoryResponse,
 )
 from galaxy.util import (
@@ -287,11 +285,15 @@ class FastAPIHistories:
     )
     def archive_export(
         self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        response: Response,
+        trans=DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIdPathParam,
         payload: ExportHistoryArchivePayload = Body(...),
-    ) -> Union[JobExportHistoryArchiveModel, JobIdResponse]:
-        return self.service.archive_export(trans, id, payload)
+    ) -> histories.HistoryArchiveExportResult:
+        export_result = self.service.archive_export(trans, id, payload)
+        if not self.service.is_export_result_ready(export_result):
+            response.status_code = status.HTTP_202_ACCEPTED
+        return export_result
 
     @router.get(
         '/api/histories/{id}/exports/{jeha_id}',
@@ -720,7 +722,10 @@ class HistoriesController(BaseGalaxyAPIController):
         payload = payload or {}
         payload.update(kwds or {})
         export_payload = ExportHistoryArchivePayload(**payload)
-        return self.service.archive_export(trans, id, export_payload)
+        export_result = self.service.archive_export(trans, id, export_payload)
+        if not self.service.is_export_result_ready(export_result):
+            trans.response.status = 202
+        return export_result
 
     @expose_api_raw
     def archive_download(self, trans, id, jeha_id, **kwds):
