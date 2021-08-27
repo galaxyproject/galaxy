@@ -23,15 +23,18 @@ export default {
             required: true,
         },
     },
-    computed: {
-        /*currentValue: {
-            get() {
-                return this.value;
-            },
-            set(val) {
-                this.$emit("input", val);
-            },
-        },*/
+    watch: {
+        value() {
+            //this.parameter.field.value(this.value);
+        },
+        attributes() {
+            console.log(this.attributes);
+            console.log(this.parameter);
+            if (this.parameter.field.update) {
+                //this.parameter.field.update(this.attributes);
+                //this.parameter.field.trigger("change");
+            }
+        }
     },
     created() {
         this.onRender();
@@ -39,15 +42,16 @@ export default {
     methods: {
         onRender() {
             console.log(this.attributes);
+            const self = this;
             this.$nextTick(() => {
                 const el = this.$refs["parameter"];
-                this.parameter = new ParameterFactory({
+                self.parameter = new ParameterFactory({
                     ...this.attributes,
                     type: this.type,
                     value: this.value,
                     el,
-                    onchange: (value) => {
-                        this.$emit("input", val);
+                    onchange: () => {
+                        //this.$emit("input", self.parameter.field.value());
                     },
                 });
             });

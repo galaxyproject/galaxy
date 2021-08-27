@@ -45,17 +45,17 @@ export default Backbone.View.extend({
     initialize: function (input_def) {
         const Galaxy = getGalaxyInstance();
         var fieldClass = this.types[input_def.hiddenInWorkflow ? "hidden" : input_def.type];
-        var field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
-        if (!field) {
-            field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
+        this.field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
+        if (!this.field) {
+            this.field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
             Galaxy.emit.debug("form-parameters::_addRow()", `Auto matched field type (${input_def.type}).`);
         }
         if (input_def.value === undefined) {
             input_def.value = null;
         }
-        field.value(input_def.value);
+        this.field.value(input_def.value);
         this.setElement(input_def.el || "<div/>");
-        this.$el.append(field.$el);
+        this.$el.append(this.field.$el);
     },
 
     /** Data input field */
