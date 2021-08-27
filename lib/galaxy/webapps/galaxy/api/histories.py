@@ -4,14 +4,24 @@ API operations on a history.
 .. seealso:: :class:`galaxy.model.History`
 """
 import logging
-from typing import Optional
+from typing import (
+    Any,
+    List,
+    Optional,
+    Union,
+)
 
 from fastapi import (
     Body,
+    Depends,
     Path,
+    Query,
     Response,
     status,
 )
+from pydantic.fields import Field
+from pydantic.main import BaseModel
+from starlette.responses import StreamingResponse
 
 from galaxy import (
     util
@@ -20,15 +30,29 @@ from galaxy.managers import (
     histories,
     sharable,
 )
-from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema import FilterQueryParams
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
+from galaxy.schema import (
+    FilterQueryParams,
+    SerializationParams,
+)
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     OrderParamField,
 )
 from galaxy.schema.schema import (
     CreateHistoryPayload,
+    CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
+    HistoryBeta,
+    HistoryDetailed,
+    HistorySummary,
+    JobExportHistoryArchiveCollection,
+    JobExportHistoryArchiveModel,
+    JobIdResponse,
+    JobImportHistoryResponse,
 )
 from galaxy.util import (
     string_as_bool
@@ -39,7 +63,10 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw,
 )
-from galaxy.webapps.galaxy.api.configuration import parse_serialization_params
+from galaxy.webapps.galaxy.api.common import (
+    parse_serialization_params,
+    query_serialization_params,
+)
 from . import (
     BaseGalaxyAPIController,
     depends,
@@ -51,16 +78,256 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=['histories'])
 
+AnyHistoryView = Union[HistoryBeta, HistoryDetailed, HistorySummary]
+
 HistoryIdPathParam: EncodedDatabaseIdField = Path(
     ...,
     title="History ID",
     description="The encoded database identifier of the History."
 )
 
+JehaIDPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    title='Job Export History ID',
+    description='The ID of the Job Export History Association.'
+)
+
+
+class HistoryFilterQueryParams(FilterQueryParams):
+    order: Optional[str] = OrderParamField(default_order="create_time-dsc")
+
+
+class HistoryIndexParams(HistoryFilterQueryParams):
+    all: Optional[bool] = False
+
+
+class DeleteHistoryPayload(BaseModel):
+    purge: bool = Field(
+        default=False,
+        title="Purge",
+        description="Whether to definitely remove this history from disk."
+    )
+
 
 @router.cbv
 class FastAPIHistories:
     service: histories.HistoriesService = depends(histories.HistoriesService)
+
+    @router.get(
+        '/api/histories',
+        summary='Returns histories for the current user.',
+    )
+    def index(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        params: HistoryIndexParams = Depends(HistoryIndexParams),
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        deleted: bool = Query(  # This is for backward compatibility but looks redundant
+            default=False,
+            title="Deleted Only",
+            description="Whether to return only deleted items.",
+            deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
+        )
+    ) -> List[AnyHistoryView]:
+        return self.service.index(trans, serialization_params, params, deleted_only=deleted, all_histories=params.all)
+
+    @router.get(
+        '/api/histories/deleted',
+        summary='Returns deleted histories for the current user.',
+    )
+    def index_deleted(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        params: HistoryIndexParams = Depends(HistoryIndexParams),
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ) -> List[AnyHistoryView]:
+        return self.service.index(trans, serialization_params, params, deleted_only=True, all_histories=params.all)
+
+    @router.get(
+        '/api/histories/published',
+        summary='Return all histories that are published.',
+    )
+    def published(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        filter_params: HistoryFilterQueryParams = Depends(HistoryFilterQueryParams),
+    ) -> List[AnyHistoryView]:
+        return self.service.published(trans, serialization_params, filter_params)
+
+    @router.get(
+        '/api/histories/shared_with_me',
+        summary='Return all histories that are shared with the current user.',
+    )
+    def shared_with_me(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        filter_params: HistoryFilterQueryParams = Depends(HistoryFilterQueryParams),
+    ) -> List[AnyHistoryView]:
+        return self.service.shared_with_me(trans, serialization_params, filter_params)
+
+    @router.get(
+        '/api/histories/most_recently_used',
+        summary='Returns the most recently used history of the user.',
+    )
+    def show_recent(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ) -> AnyHistoryView:
+        return self.service.show(trans, serialization_params)
+
+    @router.get(
+        '/api/histories/{id}',
+        summary='Returns the history with the given ID.',
+    )
+    def show(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ) -> AnyHistoryView:
+        return self.service.show(trans, serialization_params, id)
+
+    @router.get(
+        '/api/histories/{id}/citations',
+        summary='Return all the citations for the tools used to produce the datasets in the history.',
+    )
+    def citations(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+    ) -> List[Any]:
+        return self.service.citations(trans, id)
+
+    @router.post(
+        '/api/histories',
+        summary='Returns the history with the given ID.',
+    )
+    def create(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: CreateHistoryPayload = Body(...),
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ) -> Union[JobImportHistoryResponse, AnyHistoryView]:
+        return self.service.create(trans, payload, serialization_params)
+
+    @router.delete(
+        '/api/histories/{id}',
+        summary='Marks the history with the given ID as deleted.',
+    )
+    def delete(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        purge: bool = Query(default=False),
+        payload: Optional[DeleteHistoryPayload] = Body(default=None)
+    ) -> AnyHistoryView:
+        if payload:
+            purge = payload.purge
+        return self.service.delete(trans, id, serialization_params, purge)
+
+    @router.post(
+        '/api/histories/deleted/{id}/undelete',
+        summary="Restores a deleted history with the given ID (that hasn't been purged).",
+    )
+    def undelete(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ) -> AnyHistoryView:
+        return self.service.undelete(trans, id, serialization_params)
+
+    @router.put(
+        '/api/histories/{id}',
+        summary="Updates the values for the history with the given ID.",
+    )
+    def update(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+        payload: Any = Body(
+            ...,
+            description="Object containing any of the editable fields of the history.",
+        ),
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ) -> AnyHistoryView:
+        return self.service.update(trans, id, payload, serialization_params)
+
+    @router.get(
+        '/api/histories/{id}/exports',
+        summary=(
+            "Get previous history exports (to links). Effectively returns serialized JEHA objects."
+        ),
+    )
+    def index_exports(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+    ) -> JobExportHistoryArchiveCollection:
+        exports = self.service.index_exports(trans, id)
+        return JobExportHistoryArchiveCollection.parse_obj(exports)
+
+    @router.put(  # PUT instead of POST because multiple requests should just result in one object being created.
+        '/api/histories/{id}/exports',
+        summary=(
+            "Start job (if needed) to create history export for corresponding history."
+        ),
+        responses={
+            200: {
+                "description": "Object containing url to fetch export from.",
+            },
+            202: {
+                "description": "The exported archive file is not ready yet.",
+            }
+        },
+    )
+    def archive_export(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+        payload: ExportHistoryArchivePayload = Body(...),
+    ) -> Union[JobExportHistoryArchiveModel, JobIdResponse]:
+        return self.service.archive_export(trans, id, payload)
+
+    @router.get(
+        '/api/histories/{id}/exports/{jeha_id}',
+        summary=(
+            "If ready and available, return raw contents of exported history. "
+        ),
+        response_class=StreamingResponse,
+        responses={
+            200: {
+                "description": "The archive file containing the History.",
+            }
+        },
+    )
+    def archive_download(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+        jeha_id: EncodedDatabaseIdField = JehaIDPathParam,
+    ):
+        """
+        Use/poll ``PUT /api/histories/{id}/exports`` to initiate the creation
+        of such an export - when ready that route will return 200 status
+        code (instead of 202) with a JSON dictionary containing a ``download_url``.
+        """
+        return self.service.archive_download(trans, id, jeha_id)
+
+    @router.get(
+        '/api/histories/{id}/custom_builds_metadata',
+        summary="Returns meta data for custom builds.",
+    )
+    def get_custom_builds_metadata(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+    ) -> CustomBuildsMetadataResponse:
+        return self.service.get_custom_builds_metadata(trans, id)
 
     @router.get(
         '/api/histories/{id}/sharing',
@@ -149,10 +416,6 @@ class FastAPIHistories:
         """Sets a new slug to access this item by URL. The new slug must be unique."""
         self.service.shareable_service.set_slug(trans, id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-class HistoryFilterQueryParams(FilterQueryParams):
-    order: Optional[str] = OrderParamField(default_order="create_time-dsc")
 
 
 class HistoriesController(BaseGalaxyAPIController):

@@ -687,7 +687,7 @@ class HistoriesService(ServiceBase):
 
     def index(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
         deleted_only: Optional[bool] = False,
@@ -817,7 +817,7 @@ class HistoriesService(ServiceBase):
 
     def show(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
         history_id: Optional[EncodedDatabaseIdField] = None,
     ):
@@ -850,7 +850,7 @@ class HistoriesService(ServiceBase):
 
     def update(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         id: EncodedDatabaseIdField,
         payload,
         serialization_params: SerializationParams,
@@ -879,7 +879,7 @@ class HistoriesService(ServiceBase):
 
     def delete(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         history_id: EncodedDatabaseIdField,
         serialization_params: SerializationParams,
         purge: bool = False,
@@ -906,7 +906,7 @@ class HistoriesService(ServiceBase):
 
     def undelete(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         history_id: EncodedDatabaseIdField,
         serialization_params: SerializationParams,
     ):
@@ -927,7 +927,7 @@ class HistoriesService(ServiceBase):
 
     def shared_with_me(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
     ):
@@ -945,7 +945,7 @@ class HistoriesService(ServiceBase):
 
     def published(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
     ):
@@ -961,7 +961,7 @@ class HistoriesService(ServiceBase):
         rval = [self._serialize_history(trans, history, serialization_params, default_view="summary") for history in histories]
         return rval
 
-    def citations(self, trans, history_id):
+    def citations(self, trans: ProvidesHistoryContext, history_id: EncodedDatabaseIdField):
         """
         Return all the citations for the tools used to produce the datasets in
         the history.
@@ -978,7 +978,7 @@ class HistoriesService(ServiceBase):
             tool_ids.add(tool_id)
         return [citation.to_dict("bibtex") for citation in self.citations_manager.citations_for_tool_ids(tool_ids)]
 
-    def index_exports(self, trans, id):
+    def index_exports(self, trans: ProvidesHistoryContext, id: EncodedDatabaseIdField):
         """
         Get previous history exports (to links). Effectively returns serialized
         JEHA objects.
@@ -1042,16 +1042,25 @@ class HistoriesService(ServiceBase):
                 job_id = trans.security.encode_id(job.id)
                 return JobIdResponse(job_id=job_id)
 
-    def archive_download(self, trans, id, jeha_id):
+    def archive_download(
+        self,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+        jeha_id: EncodedDatabaseIdField,
+    ):
         """
         If ready and available, return raw contents of exported history.
         """
         jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
         return self.manager.serve_ready_history_export(trans, jeha)
 
-    def get_custom_builds_metadata(self, trans, id: EncodedDatabaseIdField) -> CustomBuildsMetadataResponse:
+    def get_custom_builds_metadata(
+        self,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+    ) -> CustomBuildsMetadataResponse:
         """
-        Returns meta data for custom builds.
+        Returns metadata for custom builds.
         """
         history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
         installed_builds = []
@@ -1067,7 +1076,7 @@ class HistoriesService(ServiceBase):
 
     def _serialize_history(
             self,
-            trans,
+            trans: ProvidesHistoryContext,
             history: model.History,
             serialization_params: SerializationParams,
             default_view: str = "detailed",
