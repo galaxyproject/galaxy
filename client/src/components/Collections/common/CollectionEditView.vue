@@ -108,9 +108,8 @@ export default {
             const data = {
                 src: "hdca",
                 id: this.collection_id,
-                original_type: selectedConverter.original_type,
+                source_type: selectedConverter.original_type,
                 target_type: selectedConverter.target_type,
-                tool_id: selectedConverter.tool_id,
             };
             axios.post(url, data).catch(this.handleError);
         },

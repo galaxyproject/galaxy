@@ -250,7 +250,6 @@ class DatasetCollectionManager:
         for tool in suitable_converters:
             tool_info = {"tool_id": tool[1].id, "name": tool[1].name, "target_type": tool[0], "original_type": most_recent_datatype}
             suitable_tool_ids.append(tool_info)
-        print("SUITABLETOOLIDS >>>>>>>>>> " + str(suitable_tool_ids))
         return suitable_tool_ids
 
     def _element_identifiers_to_elements(self,

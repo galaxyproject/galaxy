@@ -434,23 +434,68 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert set(namelist) == expected_names
 
     @uses_test_history(require_new=False)
-    def test_convert_dataset(self, history_id):
+    def test_convert_dataset_explicit_history(self, history_id):
         fasta1_contents = open(self.get_filename("1.fasta")).read()
         hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
 
         payload = {
             "src": "hda",
             "id": hda1["id"],
-            "original_datatype": "fasta",
+            "source_datatype": "fasta",
             "target_datatype": "tabular",
+            "history_id" : history_id
         }
         create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", data=payload)
         create_response.raise_for_status()
-        # TODO: wait for job and verify metdata and contents...
+        assert create_response.json()["outputs"][0]["file_ext"] == "tabular"
 
-    def test_convert_hdca(self):
-        # TODO:
-        pass
+    @uses_test_history(require_new=False)
+    def test_convert_dataset_implicit_history(self, history_id):
+        fasta1_contents = open(self.get_filename("1.fasta")).read()
+        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+        payload = {
+            "src": "hda",
+            "id": hda1["id"],
+            "source_datatype": "fasta",
+            "target_datatype": "tabular"
+        }
+        create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", data=payload)
+        create_response.raise_for_status()
+        assert create_response.json()["outputs"][0]["file_ext"] == "tabular"
+
+    @uses_test_history(require_new=False)
+    def test_convert_hdca(self, history_id):
+        data = [
+            {
+                "name": "test0",
+                "elements": [
+                    {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "fasta"},
+                    {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "fasta"},
+                ]
+            },
+            {
+                "name": "test1",
+                "elements": [
+                    {"src": "pasted", "paste_content": "789\n", "name": "forward", "ext": "fasta"},
+                    {"src": "pasted", "paste_content": "0ab\n", "name": "reverse", "ext": "fasta"},
+                ]
+            }
+        ]
+        hdca1 = self.dataset_collection_populator.upload_collection(history_id, "list:paired", elements=data)
+        self._assert_status_code_is(hdca1, 200)
+
+        payload = {
+            "src": "hdca",
+            "id": hdca1.json()["outputs"][0]["id"],
+            "source_datatype": "fasta",
+            "target_datatype": "tabular",
+            "history_id" : history_id
+        }
+        create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", payload)
+        create_response.raise_for_status()
+        assert create_response.json()["outputs"][0]["file_ext"] == "tabular"
+
+        # assert metadata & contentes
 
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:

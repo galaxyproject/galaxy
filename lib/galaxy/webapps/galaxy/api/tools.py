@@ -432,12 +432,12 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     def conversion(self, trans: GalaxyWebTransaction, tool_id, payload, **kwd):
         converter = self._get_tool(tool_id, user=trans.user)
         target_type = payload.get("target_type")
-        original_type = payload.get("original_type")
+        source_type = payload.get("source_type")
         input_src = payload.get("src")
         input_id = payload.get("id")
         # List of string of dependencies
         try:
-            deps = trans.app.datatypes_registry.converter_deps[original_type][target_type]
+            deps = trans.app.datatypes_registry.converter_deps[source_type][target_type]
         except KeyError:
             deps = {}
         # Generate parameter dictionary
@@ -460,10 +460,18 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             "batch": input_src == "hdca",
         }
 
+        history_id = payload.get('history_id')
+        if history_id:
+            decoded_id = self.decode_id(history_id)
+        else:
+            encoded_id = int(trans.app.security.decode_id(input_id))
+            decoded_id = self.hda_manager.get_accessible(encoded_id, trans.user).id
+
+        target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
         # Make the target datatype available to the converter
         params['__target_datatype__'] = target_type
-        vars = converter.handle_input(trans, params)
-        return self._handle_inputs_output_to_api_response(trans, converter, vars)
+        vars = converter.handle_input(trans, params, history=target_history)
+        return self._handle_inputs_output_to_api_response(trans, converter, target_history, vars)
 
     @expose_api_anonymous_and_sessionless
     def xrefs(self, trans: GalaxyWebTransaction, id, **kwds):
@@ -622,9 +630,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         if new_pja_flush:
             trans.sa_session.flush()
 
-        return self._handle_inputs_output_to_api_response(trans, tool, vars)
+        return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
-    def _handle_inputs_output_to_api_response(self, trans, tool, vars):
+    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars):
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])
         rval: Dict[str, Any] = {'outputs': [], 'output_collections': [], 'jobs': [], 'implicit_collections': []}
