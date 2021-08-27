@@ -443,7 +443,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             "id": hda1["id"],
             "source_datatype": "fasta",
             "target_datatype": "tabular",
-            "history_id" : history_id
+            "history_id": history_id
         }
         create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", data=payload)
         create_response.raise_for_status()
@@ -489,7 +489,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             "id": hdca1.json()["outputs"][0]["id"],
             "source_datatype": "fasta",
             "target_datatype": "tabular",
-            "history_id" : history_id
+            "history_id": history_id
         }
         create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", payload)
         create_response.raise_for_status()
