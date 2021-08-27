@@ -37,11 +37,14 @@
                     <LoadingSpan v-if="loading" message="Loading Dataset" />
                     <div v-else-if="error">{{ error }}</div>
                     <div v-else class="embedded-dataset content-height">
-                        <div v-if="itemContent.item_data">
-                            <pre v-if="notTabular">
-                                <code class="text-normalwrap">{{ itemContent.item_data }}</code>
-                            </pre>
-                            <div v-else>
+                        <b-embed
+                            v-if="['pdf', 'html'].includes(datasetType)"
+                            type="iframe"
+                            aspect="16by9"
+                            :src="displayUrl"
+                        />
+                        <div v-else-if="itemContent.item_data">
+                            <div v-if="datasetType == 'tabular'">
                                 <UrlDataProvider
                                     :url="metaUrl"
                                     v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
@@ -57,6 +60,9 @@
                                     />
                                 </UrlDataProvider>
                             </div>
+                            <pre v-else>
+                                <code class="text-normalwrap">{{ itemContent.item_data }}</code>
+                            </pre>
                         </div>
                         <div v-else>No content found.</div>
                         <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
@@ -92,9 +98,9 @@ export default {
         },
     },
     computed: {
-        notTabular() {
+        datasetType() {
             const dataset = this.datasets[this.args.history_dataset_id];
-            return dataset && dataset.ext != "tabular";
+            return dataset.ext;
         },
         datasetName() {
             const dataset = this.datasets[this.args.history_dataset_id];
@@ -102,6 +108,9 @@ export default {
         },
         downloadUrl() {
             return `${getAppRoot()}dataset/display?dataset_id=${this.args.history_dataset_id}`;
+        },
+        displayUrl() {
+            return `${getAppRoot()}datasets/${this.args.history_dataset_id}/display`;
         },
         importUrl() {
             return `${getAppRoot()}dataset/imp?dataset_id=${this.args.history_dataset_id}`;
@@ -149,6 +158,6 @@ export default {
 </script>
 <style scoped>
 .content-height {
-    max-height: 15rem;
+    max-height: 20rem;
 }
 </style>
