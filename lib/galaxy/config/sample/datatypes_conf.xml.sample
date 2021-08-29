@@ -862,6 +862,12 @@
     <datatype extension="ffindex" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true" description_url="https://github.com/soedinglab/ffindex_soedinglab"/>
     <datatype extension="ffdata" type="galaxy.datatypes.data:Data" display_in_upload="true" subclass="true" description_url="https://github.com/soedinglab/ffindex_soedinglab"/>
     <datatype extension="pretext" type="galaxy.datatypes.binary:Pretext" display_in_upload="true" />
+    <!-- Structural Materials datatypes -->
+    <datatype extension="hexrd.materials.h5" type="galaxy.datatypes.binary:HexrdMaterials" display_in_upload="true"/>
+    <datatype extension="npz" type="galaxy.datatypes.binary:Npz" display_in_upload="true"/>
+    <datatype extension="hexrd.images.npz" type="galaxy.datatypes.binary:HexrdImagesNpz" display_in_upload="true"/>
+    <datatype extension="hexrd.eta_ome.npz" type="galaxy.datatypes.binary:HexrdEtaOmeNpz" display_in_upload="true"/>
+    <!-- End Structural Materials datatypes -->
   </registration>
   <sniffers>
     <!--
@@ -914,7 +920,11 @@
     <sniffer type="galaxy.datatypes.binary:Loom"/>
     <sniffer type="galaxy.datatypes.binary:Anndata"/>
     <sniffer type="galaxy.datatypes.binary:Biom2"/>
+    <sniffer type="galaxy.datatypes.binary:HexrdMaterials"/>
     <sniffer type="galaxy.datatypes.binary:H5"/>
+    <sniffer type="galaxy.datatypes.binary:HexrdImagesNpz"/>
+    <sniffer type="galaxy.datatypes.binary:HexrdEtaOmeNpz"/>
+    <sniffer type="galaxy.datatypes.binary:Npz"/>
     <sniffer type="galaxy.datatypes.binary:Bam"/>
     <sniffer type="galaxy.datatypes.binary:BamQuerynameSorted"/>
     <sniffer type="galaxy.datatypes.binary:BamNative"/>
