@@ -44,25 +44,31 @@
                             :src="displayUrl"
                         />
                         <div v-else-if="itemContent.item_data">
-                            <div v-if="datasetType == 'tabular'">
-                                <UrlDataProvider
-                                    :url="metaUrl"
-                                    v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
-                                >
-                                    <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
-                                    <div v-else-if="metaError">{{ metaError }}</div>
-                                    <b-table
-                                        v-else
-                                        striped
-                                        hover
-                                        :fields="getFields(metaData)"
-                                        :items="getItems(itemContent.item_data, metaData)"
-                                    />
-                                </UrlDataProvider>
-                            </div>
-                            <pre v-else>
-                                <code class="text-normalwrap">{{ itemContent.item_data }}</code>
-                            </pre>
+                            <UrlDataProvider
+                                :url="datatypesUrl"
+                                v-slot="{ result: datatypesModel, loading: datatypesLoading }"
+                            >
+                                <LoadingSpan v-if="datatypesLoading" message="Loading Datatypes" />
+                                <div v-else-if="isSubType('tabular', datasetType, datatypesModel)">
+                                    <UrlDataProvider
+                                        :url="metaUrl"
+                                        v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
+                                    >
+                                        <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
+                                        <div v-else-if="metaError">{{ metaError }}</div>
+                                        <b-table
+                                            v-else
+                                            striped
+                                            hover
+                                            :fields="getFields(metaData)"
+                                            :items="getItems(itemContent.item_data, metaData)"
+                                        />
+                                    </UrlDataProvider>
+                                </div>
+                                <pre v-else>
+                                    <code class="text-normalwrap">{{ itemContent.item_data }}</code>
+                                </pre>
+                            </UrlDataProvider>
                         </div>
                         <div v-else>No content found.</div>
                         <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
@@ -77,6 +83,7 @@
 import { getAppRoot } from "onload/loadConfig";
 import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import { DatatypesMapperModel } from "components/Datatypes/model";
 
 export default {
     components: {
@@ -106,6 +113,9 @@ export default {
             const dataset = this.datasets[this.args.history_dataset_id];
             return dataset && dataset.name;
         },
+        datatypesUrl() {
+            return "api/datatypes/types_and_mapping";
+        },
         downloadUrl() {
             return `${getAppRoot()}dataset/display?dataset_id=${this.args.history_dataset_id}`;
         },
@@ -123,6 +133,10 @@ export default {
         },
     },
     methods: {
+        isSubType(child, parent, datatypesModel) {
+            const datatypesMapper = new DatatypesMapperModel(datatypesModel);
+            return datatypesMapper.isSubType(child, parent);
+        },
         getFields(metaData) {
             const fields = [];
             const columnNames = metaData.metadata_column_names || [];
@@ -145,10 +159,17 @@ export default {
                 if (i >= comments) {
                     const tabs = line.split(delimiter);
                     const rowData = {};
+                    let hasData = false;
                     tabs.forEach((cellData, j) => {
-                        rowData[j] = cellData;
+                        const cellDataTrimmed = cellData.trim();
+                        if (cellDataTrimmed) {
+                            hasData = true;
+                        }
+                        rowData[j] = cellDataTrimmed;
                     });
-                    tableData.push(rowData);
+                    if (hasData) {
+                        tableData.push(rowData);
+                    }
                 }
             });
             return tableData;
