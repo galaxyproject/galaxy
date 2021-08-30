@@ -157,15 +157,19 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
                 copyreg.pickle(wrapped_class, pickle_safe_object, do_wrap_func)
         return wrapped_class(value, safe_string_wrapper_function=do_wrap_func)
 
-    # Determine classes not to wrap
+    no_wrap_classes = get_no_wrap_classes(no_wrap_classes)
+    no_wrap_classes = tuple(set(sorted(no_wrap_classes, key=str)))
+    return __do_wrap(value)
+
+
+def get_no_wrap_classes(no_wrap_classes=None):
+    """ Determine classes not to wrap."""
+    _default = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
     if no_wrap_classes:
         if not isinstance(no_wrap_classes, (tuple, list)):
             no_wrap_classes = [no_wrap_classes]
-        no_wrap_classes = list(no_wrap_classes) + list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
-    else:
-        no_wrap_classes = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
-    no_wrap_classes = tuple(set(sorted(no_wrap_classes, key=str)))
-    return __do_wrap(value)
+        return list(no_wrap_classes) + _default
+    return  _default
 
 
 # N.B. refer to e.g. https://docs.python.org/reference/datamodel.html for information on Python's Data Model.

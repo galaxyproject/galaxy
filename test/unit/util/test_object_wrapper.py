@@ -1,0 +1,55 @@
+from galaxy.util.object_wrapper import (
+    __DONT_SANITIZE_TYPES__,
+    get_no_wrap_classes,
+    SafeStringWrapper,
+    wrap_with_safe_string,
+)
+
+
+class Foo:
+    pass
+
+
+class Bar:
+    pass
+
+
+def test_do_not_wrap_no_wrap_classes():
+    """ Do not wrap instances of classes passed in no_wrap_classes."""
+    result = wrap_with_safe_string(Foo())
+    assert isinstance(result, SafeStringWrapper)
+
+    result = wrap_with_safe_string(Foo(), no_wrap_classes=Foo)
+    assert not isinstance(result, SafeStringWrapper)
+
+    result = wrap_with_safe_string(Foo(), no_wrap_classes=Bar)
+    assert isinstance(result, SafeStringWrapper)
+
+
+class TestGetNoWrapClasses:
+
+    def test_default_no_wrap_classes(self):
+        """ If no arg supplied, use default."""
+        expected = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
+        classes = get_no_wrap_classes()
+        assert set(classes) == set(expected)
+    
+    def test_no_wrap_classes_one_arg(self):
+        """ One class passed."""
+        expected = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper] + [Foo]
+        classes = get_no_wrap_classes(no_wrap_classes=Foo)
+        assert set(classes) == set(expected)
+    
+    def test_no_wrap_classes_multiple_arg_as_list(self):
+        """ Multiple classses passed as a list."""
+        arg = [Foo, Bar]
+        expected = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper] + [Foo, Bar]
+        classes = get_no_wrap_classes(no_wrap_classes=arg)
+        assert set(classes) == set(expected)
+    
+    def test_no_wrap_classes_multiple_arg_as_tuple(self):
+        """ Multiple classses passed as a tuple."""
+        arg = (Foo, Bar)
+        expected = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper] + [Foo, Bar]
+        classes = get_no_wrap_classes(no_wrap_classes=arg)
+        assert set(classes) == set(expected)
