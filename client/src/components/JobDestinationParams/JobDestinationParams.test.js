@@ -38,6 +38,7 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
             store: testStore,
             propsData,
             localVue,
+            attachTo: document.body,
         });
         expect(responseKeys.length > 0).toBeTruthy();
     });
