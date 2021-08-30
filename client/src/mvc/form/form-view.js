@@ -10,8 +10,6 @@ import FormData from "mvc/form/form-data";
 export default Backbone.View.extend({
     initialize: function (options) {
         this.model = new Backbone.Model({
-            initial_errors: false,
-            always_refresh: true,
             onchange: function () {},
         }).set(options);
         this.setElement(options.el || "<div/>");
@@ -19,9 +17,9 @@ export default Backbone.View.extend({
     },
 
     /** Update available options */
-    update: function (new_model) {
+    update: function (inputs) {
         var self = this;
-        this.data.matchModel(new_model, (node, input_id) => {
+        this.data.matchModel(inputs, (node, input_id) => {
             var field = self.field_list[input_id];
             if (field.update) {
                 field.update(node);
@@ -64,10 +62,10 @@ export default Backbone.View.extend({
     },
 
     /** Highlights errors */
-    errors: function (options) {
+    errors: function (details) {
         this.trigger("reset");
-        if (options && options.errors) {
-            var error_messages = this.data.matchResponse(options.errors);
+        if (details) {
+            var error_messages = this.data.matchResponse(details);
             for (var input_id in this.element_list) {
                 if (error_messages[input_id]) {
                     this.highlight(input_id, error_messages[input_id], true);
@@ -91,19 +89,15 @@ export default Backbone.View.extend({
         this.data = new FormData.Manager(this);
         this._renderForm();
         this.data.create();
-        if (this.model.get("initial_errors")) {
-            this.errors(this.model.attributes);
-        }
         // add listener which triggers on checksum change, and reset the form input wrappers
         var current_check = this.data.checksum();
         this.on("change", (input_id) => {
             var input = self.input_list[input_id];
-            if (!input || input.refresh_on_change || self.model.get("always_refresh")) {
-                var new_check = self.data.checksum();
-                if (new_check != current_check) {
-                    current_check = new_check;
-                    self.model.get("onchange")();
-                }
+            var refresh_request = !input || input.refresh_on_change;
+            var new_check = self.data.checksum();
+            if (new_check != current_check) {
+                current_check = new_check;
+                self.model.get("onchange")(refresh_request);
             }
         });
         this.on("reset", () => {

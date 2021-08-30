@@ -17,15 +17,15 @@ export default {
             type: Array,
             required: true,
         },
+        errors: {
+            type: Object,
+            default: null,
+        },
         sustainRepeats: {
             type: Boolean,
             default: false,
         },
         sustainConditionals: {
-            type: Boolean,
-            default: false,
-        },
-        hideOperations: {
             type: Boolean,
             default: false,
         },
@@ -37,16 +37,8 @@ export default {
             type: String,
             default: null,
         },
-        initialErrors: {
-            type: Boolean,
-            default: false,
-        },
         validationScrollTo: {
             type: Array,
-            default: null,
-        },
-        formConfig: {
-            type: Object,
             default: null,
         },
         replaceParams: {
@@ -70,12 +62,14 @@ export default {
             this.onHighlight(this.validation, true);
             this.$emit("onValidation", this.validation);
         },
-        formConfig() {
+        inputs() {
             this.$nextTick(() => {
-                this.form.update(this.formConfig);
-                if (this.initialErrors) {
-                    this.form.errors(this.formConfig);
-                }
+                this.form.update(this.inputs);
+            });
+        },
+        errors() {
+            this.$nextTick(() => {
+                this.form.errors(this.errors);
             });
         },
         replaceParams() {
@@ -163,9 +157,9 @@ export default {
                 this.form.trigger("change");
             }
         },
-        onChange() {
+        onChange(refreshRequest) {
             this.formData = this.form.data.create();
-            this.$emit("onChange", this.formData);
+            this.$emit("onChange", this.formData, refreshRequest);
         },
         onRender() {
             this.$nextTick(() => {
@@ -173,13 +167,12 @@ export default {
                 this.form = new Form({
                     el,
                     inputs: this.inputs,
-                    initial_errors: this.initialErrors,
                     text_enable: this.textEnable,
                     text_disable: this.textDisable,
                     sustain_repeats: this.sustainRepeats,
                     sustain_conditionals: this.sustainConditionals,
-                    onchange: () => {
-                        this.onChange();
+                    onchange: (refreshRequest) => {
+                        this.onChange(refreshRequest);
                     },
                 });
                 this.onChange();
