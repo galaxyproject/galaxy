@@ -188,8 +188,9 @@ def config_allows_origin(origin_raw, config):
     return False
 
 
-def qualified_url_builder(path):
-    return url_for(path, qualified=True)
+def url_builder(*args, **kwargs) -> str:
+    """Wrapper around the uWSGI version of the function for reversing URLs."""
+    return url_for(*args, **kwargs)
 
 
 class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryContext):
@@ -283,8 +284,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         return self._app
 
     @property
-    def qualified_url_builder(self):
-        return qualified_url_builder
+    def url_builder(self):
+        return url_builder
 
     def setup_i18n(self):
         locales = []
