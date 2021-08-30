@@ -399,23 +399,24 @@ class NavigatesGalaxy(HasDriver):
         if self.is_beta_history():
             history_item_selector_state = self.content_item_by_attributes(hid=hid, state=state)
             history_item_selector_state.wait_for_visible()
+            return history_item_selector_state
         else:
             history_item_selector = self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=allowed_force_refreshes, multi_history_panel=multi_history_panel)
             # history_item_selector_state = history_item_selector.with_class(f"state-{state}")
             history_item_selector_state = history_item_selector.with_data("state", state)
-        try:
-            self.history_item_wait_for(history_item_selector_state, allowed_force_refreshes)
-        except self.TimeoutException as e:
-            history_item = self.wait_for_visible(history_item_selector)
-            current_state = "UNKNOWN"
-            classes = history_item.get_attribute("class").split(" ")
-            for clazz in classes:
-                if clazz.startswith("state-"):
-                    current_state = clazz[len("state-"):]
-            template = "Failed waiting on history item %d state to change to [%s] current state [%s]. "
-            message = template % (hid, state, current_state)
-            raise self.prepend_timeout_message(e, message)
-        return history_item_selector_state
+            try:
+                self.history_item_wait_for(history_item_selector_state, allowed_force_refreshes)
+            except self.TimeoutException as e:
+                history_item = self.wait_for_visible(history_item_selector)
+                current_state = "UNKNOWN"
+                classes = history_item.get_attribute("class").split(" ")
+                for clazz in classes:
+                    if clazz.startswith("state-"):
+                        current_state = clazz[len("state-"):]
+                template = "Failed waiting on history item %d state to change to [%s] current state [%s]. "
+                message = template % (hid, state, current_state)
+                raise self.prepend_timeout_message(e, message)
+            return history_item_selector_state
 
     def click_grid_popup_option(self, item_name, option_label):
         item_button = None
