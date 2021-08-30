@@ -566,6 +566,19 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         if string_as_bool(kwargs.get("override_tempdir", "True")):
             tempfile.tempdir = self.new_file_path
 
+    def config_value_for_host(self, config_option, host):
+        val = getattr(self, config_option)
+        if config_option in self.schema.per_host_options:
+            per_host_option = f"{config_option}_by_host"
+            if per_host_option in self.config_dict:
+                per_host = self.config_dict[per_host_option] or {}
+                for host_key, host_val in per_host.items():
+                    if host_key in host:
+                        val = host_val
+                        break
+
+        return val
+
     def _process_config(self, kwargs):
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file

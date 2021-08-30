@@ -5,7 +5,6 @@ API operations on Group objects.
 import logging
 
 from fastapi import Path
-from routes.util import url_for
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.group_roles import GroupRolesManager
@@ -14,8 +13,8 @@ from galaxy.schema.schema import GroupRoleListModel, GroupRoleModel
 from galaxy.web import (
     expose_api,
     require_admin,
+    url_for,
 )
-from galaxy.webapps.galaxy.api.common import fastapi_deprecation_message
 from . import (
     BaseGalaxyAPIController,
     depends,
@@ -43,11 +42,7 @@ RoleIDParam: EncodedDatabaseIdField = Path(
 
 def group_role_to_model(trans, encoded_group_id, role):
     encoded_role_id = trans.security.encode_id(role.id)
-    try:
-        url = url_for('group_role', group_id=encoded_group_id, id=encoded_role_id)
-    except AttributeError:
-        url = fastapi_deprecation_message()
-
+    url = url_for('group_role', group_id=encoded_group_id, id=encoded_role_id)
     return GroupRoleModel(
         id=encoded_role_id,
         name=role.name,

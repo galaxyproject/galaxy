@@ -534,7 +534,7 @@ def _validate(args, app_desc):
         ordered_dump(raw_config, config_p)
 
     def _clean(p, k, v):
-        return k not in ['reloadable', 'path_resolves_to']
+        return k not in ['reloadable', 'path_resolves_to', 'per_host']
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
     with tempfile.NamedTemporaryFile('w', suffix=".yml") as fp:

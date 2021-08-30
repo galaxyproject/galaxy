@@ -140,7 +140,7 @@ def get_trans(request: Request, app: StructuredApp = DependsOnApp, user: Optiona
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
     qualified_url_builder = QualifiedUrlBuilder(request)
-    return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session, qualified_url_builder=qualified_url_builder)
+    return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session, qualified_url_builder=qualified_url_builder, host=request.client.host)
 
 
 DependsOnTrans = Depends(get_trans)

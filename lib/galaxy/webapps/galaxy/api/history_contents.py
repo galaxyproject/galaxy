@@ -787,11 +787,11 @@ class HistoriesContentsService(ServiceBase):
         # while polling, check to see if the history has changed
         # if it hasn't then we can short-circuit the poll request
         if since:
-            # sqlalchemy DateTime columns are not timezone aware, so parse `since` into timezone-aware
-            # datetime and then convert to naive datetime object representing UTC,
-            # assuming history.update_time represents UTC time.
-            since_date = since.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-            if history.update_time <= since_date:
+            # sqlalchemy DateTime columns are not timezone aware, but `since` may be a timezone aware
+            # DateTime object if a timezone offset is provided (https://github.com/samuelcolvin/pydantic/blob/5ccbdcb5904f35834300b01432a665c75dc02296/pydantic/datetime_parse.py#L179).
+            # If a timezone is provided (since.tzinfo is not None) we convert to UTC and remove tzinfo so that comparison with history.update_time is correct.
+            since = since if since.tzinfo is None else since.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            if history.update_time <= since:
                 trans.response.status = 204
                 return
 
@@ -1769,12 +1769,16 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
         """
         serialization_params = parse_serialization_params(default_view='betawebclient', **kwd)
+
+        since_str = kwd.pop('since', None)
+        if since_str:
+            since = dateutil.parser.isoparse(since_str)
+        else:
+            since = None
+
         filter_params = self._parse_rest_params(kwd)
         hid = int(hid)
         limit = int(limit)
-        since = kwd.get('update_time-gt', None)
-        if since:
-            since = dateutil.parser.isoparse(since)
 
         return self.service.contents_near(
             trans, history_id, serialization_params, filter_params, hid, limit, since,
