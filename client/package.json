@@ -52,7 +52,7 @@
     "jquery.complexify": "^0.5.2",
     "jquery.cookie": "^1.4.1",
     "linkifyjs": "^2.1.9",
-    "markdown-it": "^11.0.0",
+    "markdown-it": "^12.2.0",
     "markdown-it-regexp": "^0.4.0",
     "moment": "2.29.1",
     "object-hash": "^2.2.0",
