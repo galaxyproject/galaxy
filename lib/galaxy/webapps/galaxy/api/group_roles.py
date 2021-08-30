@@ -13,7 +13,6 @@ from galaxy.schema.schema import GroupRoleListModel, GroupRoleModel
 from galaxy.web import (
     expose_api,
     require_admin,
-    url_for,
 )
 from . import (
     BaseGalaxyAPIController,
@@ -42,7 +41,7 @@ RoleIDParam: EncodedDatabaseIdField = Path(
 
 def group_role_to_model(trans, encoded_group_id, role):
     encoded_role_id = trans.security.encode_id(role.id)
-    url = url_for('group_role', group_id=encoded_group_id, id=encoded_role_id)
+    url = trans.url_builder('group_role', group_id=encoded_group_id, id=encoded_role_id)
     return GroupRoleModel(
         id=encoded_role_id,
         name=role.name,
@@ -62,13 +61,14 @@ class FastAPIGroupRoles:
         group_roles = self.manager.index(trans, group_id)
         return GroupRoleListModel(__root__=[group_role_to_model(trans, group_id, gr.role) for gr in group_roles])
 
-    @router.get('/api/groups/{group_id}/roles/{role_id}',
+    @router.get('/api/groups/{group_id}/roles/{id}',
+                name="group_role",
                 require_admin=True,
                 summary='Displays information about a group role.')
     def show(self, trans: ProvidesAppContext = DependsOnTrans,
              group_id: EncodedDatabaseIdField = GroupIDParam,
-             role_id: EncodedDatabaseIdField = RoleIDParam) -> GroupRoleModel:
-        role = self.manager.show(trans, role_id, group_id)
+             id: EncodedDatabaseIdField = RoleIDParam) -> GroupRoleModel:
+        role = self.manager.show(trans, id, group_id)
         return group_role_to_model(trans, group_id, role)
 
     @router.put('/api/groups/{group_id}/roles/{role_id}',
