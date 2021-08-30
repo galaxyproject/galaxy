@@ -315,23 +315,22 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     def name_and_ext(self):
         return f"{self.element_identifier}.{self.file_ext}"
 
-    @property
-    def staging_path(self):
+    def get_staging_path(self, invalid_chars=('/',)):
         """
         Strip leading dots, unicode null chars, replace `/` with `_`, truncate at 255 characters.
 
         Not safe for commandline use, would need additional sanitization.
         """
         max_len = 254 - len(self.file_ext)
-        safe_element_identifier = filesystem_safe_string(self.element_identifier, max_len=max_len)
+        safe_element_identifier = filesystem_safe_string(self.element_identifier, max_len=max_len, invalid_chars=invalid_chars)
         return f"{safe_element_identifier}.{self.file_ext}"
 
     @property
     def all_metadata_files(self):
         return self.unsanitized.get_metadata_file_paths_and_extensions() if self else []
 
-    def serialize(self):
-        return data_input_to_staging_path_and_source_path(self) if self else {}
+    def serialize(self, invalid_chars=('/',)):
+        return data_input_to_staging_path_and_source_path(self, invalid_chars=invalid_chars) if self else {}
 
     @property
     def is_collection(self):
@@ -449,8 +448,8 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
             self._dataset_elements_cache[group] = wrappers
         return self._dataset_elements_cache[group]
 
-    def serialize(self):
-        return [v.serialize() for v in self]
+    def serialize(self, invalid_chars=('/',)):
+        return [v.serialize(invalid_chars) for v in self]
 
     def __str__(self):
         return ','.join(map(str, self))
@@ -549,8 +548,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
                 return []
         return self._element_identifiers_extensions_paths_and_metadata_files
 
-    @property
-    def all_staging_paths(self):
+    def get_all_staging_paths(self, invalid_chars=('/',), include_collection_name=False):
         safe_element_identifiers = []
         for element_identifiers, extension, *_ in self.element_identifiers_extensions_paths_and_metadata_files:
             datatype = self.datatypes_registry.get_datatype_by_extension(extension)
@@ -558,12 +556,20 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
                 extension = getattr(datatype, 'file_ext_export_alias', extension)
             current_element_identifiers = []
             for element_identifier in element_identifiers:
-                current_element_identifiers.append(filesystem_safe_string(element_identifier, max_len=254 - len(extension)))
+                max_len = 254 - len(extension)
+                if include_collection_name:
+                    max_len = max_len - (len(self.name) + 1)
+                    assert max_len >= 1, 'Could not stage element, element identifier is too long'
+                current_element_identifier = filesystem_safe_string(element_identifier, max_len=max_len, invalid_chars=invalid_chars)
+                if include_collection_name and self.name:
+                    current_element_identifier = f"{filesystem_safe_string(self.name, invalid_chars=invalid_chars)}{os.path.sep}{current_element_identifier}"
+                current_element_identifiers.append(current_element_identifier)
+
             safe_element_identifiers.append(f'{os.path.sep.join(current_element_identifiers)}.{extension}')
         return safe_element_identifiers
 
-    def serialize(self):
-        return data_collection_input_to_staging_path_and_source_path(self)
+    def serialize(self, invalid_chars=('/',), include_collection_name=False):
+        return data_collection_input_to_staging_path_and_source_path(self, invalid_chars=invalid_chars, include_collection_name=include_collection_name)
 
     @property
     def is_input_supplied(self):
