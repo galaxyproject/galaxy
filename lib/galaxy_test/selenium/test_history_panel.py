@@ -227,15 +227,14 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_refresh_preserves_state(self):
-        if self.is_beta_history():
-            raise pytest.skip("Beta History Panel does not preserve state xref https://github.com/galaxyproject/galaxy/issues/12119")
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
 
         # Open the details, verify they are open and do a refresh.
         self.history_panel_ensure_showing_item_details(hid=1)
         self.history_panel_item_body_component(1, wait=True)
-        self.history_panel_refresh_click()
+
+        self._refresh()
         self.wait_for_history()
 
         # After the refresh, verify the details are still open.
@@ -244,9 +243,12 @@ class HistoryPanelTestCase(SeleniumTestCase):
         assert self.history_panel_item_showing_details(hid=1)
 
         # Close the detailed display, refresh, and ensure they are still closed.
-        self.history_panel_click_item_title(hid=1, wait=True)
+        wait = not self.is_beta_history()
+        self.history_panel_click_item_title(hid=1, wait=wait)
         assert not self.history_panel_item_showing_details(hid=1)
-        self.history_panel_refresh_click()
+
+        self._refresh()
+
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.wait_for_selector_clickable(self.history_panel_item_selector(hid=1))
         assert not self.history_panel_item_showing_details(hid=1)
@@ -255,3 +257,10 @@ class HistoryPanelTestCase(SeleniumTestCase):
     def assert_name_changed(self):
         name = self.history_panel_name()
         self.assertEqual(name, NEW_HISTORY_NAME)
+
+    def _refresh(self):
+        if self.is_beta_history():
+            # beta history has no refresh button
+            self.home()
+        else:
+            self.history_panel_refresh_click()

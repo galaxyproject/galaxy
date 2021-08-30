@@ -316,6 +316,7 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_item_component(self, history_item=None, hid=None, multi_history_panel=False):
         if self.is_beta_history():
+            assert hid
             return self.content_item_by_attributes(hid=hid)
         if history_item is None:
             assert hid
@@ -1478,6 +1479,9 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_item_showing_details(self, hid):
         item_component = self.history_panel_item_component(hid=hid)
+        item_component.wait_for_present()
+        if item_component.details.is_absent:
+            return False
         return item_component.details.is_displayed
 
     def collection_builder_set_name(self, name):
