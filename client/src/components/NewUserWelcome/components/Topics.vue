@@ -32,7 +32,6 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 export default {
-
     props: {
         topics: {type: Array, required: true},
         imageLoc: {type: String, required: false, default: "static/plugins/welcome_page/new_user/static/topics/"},
@@ -40,7 +39,7 @@ export default {
     methods:    {    
         imgUrl(src) {
             const root = getAppRoot();
-            const url = `${root}${this.imageLoc}${src}`.replace("//", "/");
+            const url = `${root}static/${this.imageLoc}${src}`.replace("//", "/");
             return url;
         }
     }

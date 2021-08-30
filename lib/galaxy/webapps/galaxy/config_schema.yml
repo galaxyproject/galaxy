@@ -3497,7 +3497,7 @@ mapping:
 
       welcome_directory:
         type: str
-        default: /welcome_page/new_user/static/
+        default: plugins/welcome_page/new_user/static/topics/
         required: false
         desc: |
           Location of New User Welcome data, a single directory containing the

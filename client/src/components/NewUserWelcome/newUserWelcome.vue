@@ -6,7 +6,7 @@
                 v-bind="currentNode"
                 @select="down"
                 @back="up"
-                :image-loc="config.welcome_directory || defaultLocation"
+                :image-loc="config.welcome_directory"
                 >
             </component>
         </ConfigProvider>
@@ -60,7 +60,7 @@ export default {
     methods: {
         imgUrl(src) {
             const root = getAppRoot();
-            const url = `${root}${this.imageLoc}${src}`.replace("//", "/");
+            const url = `${root}static/${this.imageLoc}${src}`.replace("//", "/");
             return url;
         },
         up(){

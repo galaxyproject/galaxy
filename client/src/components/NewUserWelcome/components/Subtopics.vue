@@ -42,7 +42,7 @@
         methods:    {    
             imgUrl(src) {
                 const root = getAppRoot();
-                const url = `${root}${this.imageLoc}${src}`.replace("//", "/");
+                const url = `${root}static/${this.imageLoc}${src}`.replace("//", "/");
                 return url;
             }
         }
