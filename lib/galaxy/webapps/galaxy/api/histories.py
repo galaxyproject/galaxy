@@ -52,6 +52,7 @@ from galaxy.schema.schema import (
     JobExportHistoryArchiveCollection,
     JobImportHistoryResponse,
 )
+from galaxy.schema.types import LatestLiteral
 from galaxy.util import (
     string_as_bool
 )
@@ -84,10 +85,13 @@ HistoryIdPathParam: EncodedDatabaseIdField = Path(
     description="The encoded database identifier of the History."
 )
 
-JehaIDPathParam: EncodedDatabaseIdField = Path(
-    ...,
+JehaIDPathParam: Union[EncodedDatabaseIdField, LatestLiteral] = Path(
+    default="latest",
     title='Job Export History ID',
-    description='The ID of the Job Export History Association.'
+    description=(
+        'The ID of the specific Job Export History Association or '
+        '`latest` (default) to download the last generated archive.'
+    )
 )
 
 
@@ -288,8 +292,18 @@ class FastAPIHistories:
         response: Response,
         trans=DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIdPathParam,
-        payload: ExportHistoryArchivePayload = Body(...),
+        payload: Optional[ExportHistoryArchivePayload] = Body(None),
     ) -> histories.HistoryArchiveExportResult:
+        """This will start a job to create a history export archive.
+
+        Calling this endpoint multiple times will return the 202 status code until the archive
+        has been completely generated and is ready to download. When ready, it will return
+        the 200 status code along with the download link information.
+
+        If the history will be exported to a `directory_uri`, instead of returning the download
+        link information, the Job ID will be returned so it can be queried to determine when
+        the file has been written.
+        """
         export_result = self.service.archive_export(trans, id, payload)
         if not self.service.is_export_result_ready(export_result):
             response.status_code = status.HTTP_202_ACCEPTED
@@ -298,7 +312,7 @@ class FastAPIHistories:
     @router.get(
         '/api/histories/{id}/exports/{jeha_id}',
         summary=(
-            "If ready and available, return raw contents of exported history. "
+            "If ready and available, return raw contents of exported history as a downloadable archive."
         ),
         response_class=StreamingResponse,
         responses={
@@ -311,14 +325,22 @@ class FastAPIHistories:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIdPathParam,
-        jeha_id: EncodedDatabaseIdField = JehaIDPathParam,
+        jeha_id: Union[EncodedDatabaseIdField, LatestLiteral] = JehaIDPathParam,
     ):
         """
-        Use/poll ``PUT /api/histories/{id}/exports`` to initiate the creation
-        of such an export - when ready that route will return 200 status
-        code (instead of 202) with a JSON dictionary containing a ``download_url``.
+        See ``PUT /api/histories/{id}/exports`` to initiate the creation
+        of the history export - when ready, that route will return 200 status
+        code (instead of 202) and this route can be used to download the archive.
         """
-        return self.service.archive_download(trans, id, jeha_id)
+        jeha = self.service.get_ready_history_export(trans, id, jeha_id)
+        media_type = 'application/x-tar'
+        if jeha.compressed:
+            media_type = 'application/x-gzip'
+        return StreamingResponse(
+            self.service.archive_download(trans, jeha),
+            headers={'Content-Disposition': f'attachment; filename="{jeha.export_name}"'},
+            media_type=media_type,
+        )
 
     @router.get(
         '/api/histories/{id}/custom_builds_metadata',
@@ -738,7 +760,9 @@ class HistoriesController(BaseGalaxyAPIController):
         code (instead of 202) with a JSON dictionary containing a
         ``download_url``.
         """
-        return self.service.archive_download(trans, id, jeha_id)
+        # TODO: remove the HistoriesService.legacy_archive_download function when
+        # removing this endpoint
+        return self.service.legacy_archive_download(trans, id, jeha_id)
 
     @expose_api
     def get_custom_builds_metadata(self, trans, id, payload=None, **kwd):

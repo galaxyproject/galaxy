@@ -63,6 +63,7 @@ from galaxy.schema.schema import (
     JobImportHistoryResponse,
     LabelValuePair,
 )
+from galaxy.schema.types import LatestLiteral
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import restore_text
@@ -253,7 +254,8 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         job, _ = history_imp_tool.execute(trans, incoming=incoming)
         return job
 
-    def serve_ready_history_export(self, trans, jeha):
+    # TODO: remove this function when the legacy endpoint using it is removed
+    def legacy_serve_ready_history_export(self, trans, jeha):
         assert jeha.ready
         if jeha.compressed:
             trans.response.set_content_type('application/x-gzip')
@@ -263,6 +265,16 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         trans.response.headers["Content-Disposition"] = disposition
         archive = trans.app.object_store.get_filename(jeha.dataset)
         return open(archive, mode='rb')
+
+    def serve_ready_history_export(self, trans, jeha):
+        """
+        Serves the history export archive for use as a streaming response so the file
+        doesn't need to be loaded into memory.
+        """
+        assert jeha.ready
+        archive = trans.app.object_store.get_filename(jeha.dataset)
+        with open(archive, mode="rb") as archive_file:
+            yield from archive_file
 
     def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None):
         # Convert options to booleans.
@@ -991,7 +1003,7 @@ class HistoriesService(ServiceBase):
         self,
         trans,
         id: EncodedDatabaseIdField,
-        payload: ExportHistoryArchivePayload,
+        payload: Optional[ExportHistoryArchivePayload] = None,
     ) -> HistoryArchiveExportResult:
         """
         start job (if needed) to create history export for corresponding
@@ -1003,6 +1015,8 @@ class HistoriesService(ServiceBase):
         :rtype:     dict
         :returns:   object containing url to fetch export from.
         """
+        if payload is None:
+            payload = ExportHistoryArchivePayload()
         history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
         jeha = history.latest_export
         exporting_to_uri = payload.directory_uri
@@ -1049,7 +1063,30 @@ class HistoriesService(ServiceBase):
         export_result = cast(JobExportHistoryArchiveModel, export_result)
         return export_result.up_to_date and export_result.ready
 
+    def get_ready_history_export(
+        self,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+        jeha_id: Union[EncodedDatabaseIdField, LatestLiteral],
+    ) -> model.JobExportHistoryArchive:
+        """Returns the exported history archive information if it's ready
+        or raises an exception if not."""
+        return self.history_export_view.get_ready_jeha(trans, id, jeha_id)
+
     def archive_download(
+        self,
+        trans: ProvidesHistoryContext,
+        jeha: model.JobExportHistoryArchive,
+    ):
+        """
+        If ready and available, return raw contents of exported history
+        using a generator function.
+        """
+        return self.manager.serve_ready_history_export(trans, jeha)
+
+    # TODO: remove this function and HistoryManager.legacy_serve_ready_history_export when
+    # removing the legacy HistoriesController
+    def legacy_archive_download(
         self,
         trans: ProvidesHistoryContext,
         id: EncodedDatabaseIdField,
@@ -1059,7 +1096,7 @@ class HistoriesService(ServiceBase):
         If ready and available, return raw contents of exported history.
         """
         jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
-        return self.manager.serve_ready_history_export(trans, jeha)
+        return self.manager.legacy_serve_ready_history_export(trans, jeha)
 
     def get_custom_builds_metadata(
         self,
