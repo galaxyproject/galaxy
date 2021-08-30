@@ -359,7 +359,7 @@ export async function createDatasetCollection(history, inputs = {}) {
         copy_elements: true,
         name: "list",
         element_identifiers: [],
-        hide_source_items: "True",
+        hide_source_items: true,
         type: "dataset_collection",
     };
 

@@ -44,6 +44,8 @@
                                     :selectable="false"
                                     @update:expanded="setExpanded(item, $event)"
                                     @viewCollection="$emit('viewCollection', item)"
+                                    :data-index="index"
+                                    :data-row-key="rowKey"
                                 />
                             </template>
                         </Scroller>

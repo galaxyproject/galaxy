@@ -11,7 +11,7 @@
                 class="px-1"
             />
             <IconButton
-                v-if="notIn(STATES.DISCARDED)"
+                v-if="writable && notIn(STATES.DISCARDED)"
                 icon="pen"
                 :title="editButtonTitle"
                 :disabled="dataset.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
@@ -20,7 +20,7 @@
                 class="px-1"
             />
             <IconButton
-                v-if="dataset.accessible"
+                v-if="writable && dataset.accessible"
                 :icon="dataset.deleted ? 'trash-restore' : 'trash'"
                 :title="deleteButtonTitle"
                 :disabled="dataset.purged"
@@ -165,6 +165,7 @@ export default {
     props: {
         dataset: { type: Dataset, required: true },
         expanded: { type: Boolean, required: true },
+        writable: { type: Boolean, default: true },
     },
 
     data() {

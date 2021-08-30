@@ -6,7 +6,7 @@
             :pressed="editing"
             icon="pen"
             @click="$emit('update:editing', !editing)"
-            data-description="history editor toggle"
+            data-description="editor toggle"
         />
 
         <template v-if="editing">
@@ -17,7 +17,7 @@
                 :class="{ disabled: !valid }"
                 icon="save"
                 @click="$emit('save')"
-                data-description="history editor save button"
+                data-description="editor save button"
             />
 
             <!-- revert -->
@@ -27,6 +27,7 @@
                 :class="{ disabled: !dirty }"
                 icon="undo"
                 @click="$emit('revert')"
+                data-description="editor revert button"
             />
 
             <!-- form status -->
@@ -36,6 +37,7 @@
                 :class="{ valid: valid, disabled: !valid }"
                 :icon="valid ? 'check' : 'exclamation-triangle'"
                 variant="link"
+                data-description="editor status"
             />
         </template>
     </nav>

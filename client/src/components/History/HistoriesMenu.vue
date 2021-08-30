@@ -14,7 +14,7 @@
         >
             <template v-slot:button-content>
                 <Icon class="mr-1" icon="folder" />
-                <span id="click-me-fool" class="text-nowrap">{{ title | l }}</span>
+                <span class="text-nowrap">{{ title | l }}</span>
             </template>
 
             <b-dropdown-text>

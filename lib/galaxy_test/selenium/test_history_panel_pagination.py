@@ -1,3 +1,5 @@
+import pytest
+
 from galaxy_test.base.populators import flakey
 from .framework import (
     selenium_test,
@@ -12,6 +14,9 @@ class HistoryPanelPaginationTestCase(SeleniumTestCase):
     @selenium_test
     @flakey  # The next button doesn't always work - maybe a delay in JS callback registering for that.
     def test_pagination(self):
+        if self.is_beta_history():
+            raise pytest.skip("There is no pagination on the beta history panel")
+
         history_id = self.current_history_id()
 
         self.dataset_populator.new_dataset(history_id, content='1\t2\t3', name="data1")

@@ -1,4 +1,4 @@
-import { concat, race, timer, merge, partition, Observable, BehaviorSubject, Subject } from "rxjs";
+import { combineLatest, concat, race, timer, merge, partition, Observable, BehaviorSubject, Subject } from "rxjs";
 import {
     debounceTime,
     distinctUntilChanged,
@@ -65,12 +65,15 @@ export const contentPayload = (cfg = {}) => {
             pluck('key')
         );
 
-        // only have cursor height, need to make a guess
-        const estimatedHid$ = noKey$.pipe(
+        const cursor$ = noKey$.pipe(
             pluck('cursor'),
-            withLatestFrom(cursorToHid$),
+        );
+
+        // only have cursor height, need to make a guess
+        const estimatedHid$ = combineLatest(cursor$, cursorToHid$).pipe(
             map((inputs) => estimateHid(...inputs)),
             map(hid => Math.round(hid)),
+            distinctUntilChanged(),
             show(debug, hid => console.log("estimatedHid", hid, history)),
         );
 
@@ -149,18 +152,13 @@ export const contentPayload = (cfg = {}) => {
             map(([[lastResponse, response], pos, hid]) => {
                 const updatesAtTop = response.maxHid > lastResponse.maxHid;
 
-                const scrollerInDefault = (pos.cursor == 0 && pos.key == null);
+                const scrollerExactlyAtTop = pos.cursor === 0 || pos.key === lastResponse.maxHid;
                 const fudge = 2;
-                const scrollNearLastTop = Math.abs(hid - lastResponse.maxContentHid) < fudge;
-                const scrollerAtTop = scrollerInDefault || scrollNearLastTop;
-
-                // console.group("should i reposition?");
-                // console.log("updatesAtTop", updatesAtTop);
-                // console.log("scrollerAtTop", scrollerAtTop);
-                // console.groupEnd();
+                const scrollNearLastTop = pos.key !== null ? Math.abs(pos.key - lastResponse.maxContentHid) < fudge : false;
+                const scrollerAtTop = scrollerExactlyAtTop || scrollNearLastTop;
 
                 if (updatesAtTop && scrollerAtTop) {
-                    return new ScrollPos({ cursor: 0, key: response.maxHid })
+                    return ScrollPos.create({ cursor: 0, key: response.maxContentHid });
                 }
                 return null;
             }),

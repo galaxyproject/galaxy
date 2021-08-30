@@ -1,10 +1,14 @@
 import pytest
 
+from galaxy.selenium.navigates_galaxy import (
+    edit_details
+)
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
 )
+
 
 NEW_HISTORY_NAME = "New History Name"
 
@@ -17,30 +21,35 @@ class HistoryPanelTestCase(SeleniumTestCase):
     def test_history_panel_landing_state(self):
         self.assert_initial_history_panel_state_correct()
 
-        tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
-        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
-
-        self.wait_for_visible(tag_icon_selector)
-        self.wait_for_visible(annotation_icon_selector)
-
-        name_element = self.history_panel_name_element()
-        self.assert_tooltip_text(name_element, self.navigation.history_panel.text.tooltip_name)
+        if self.is_beta_history():
+            # look for the editor icon
+            editor = self.components.history_panel.editor.selector(scope=".beta.history")
+            toggle = editor.toggle
+            toggle.wait_for_visible()
+        else:
+            tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
+            annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
+            self.wait_for_visible(tag_icon_selector)
+            self.wait_for_visible(annotation_icon_selector)
+            name_element = self.history_panel_name_element()
+            self.assert_tooltip_text(name_element, self.navigation.history_panel.text.tooltip_name)
 
     @selenium_test
     def test_history_panel_rename(self):
-        editable_text_input_element = self.history_panel_click_to_rename()
         if self.is_beta_history():
-            editable_text_input_element.clear()
-        editable_text_input_element.send_keys(NEW_HISTORY_NAME)
-        self.send_enter(editable_text_input_element)
-
-        self.assert_name_changed()
+            self.history_panel_rename(NEW_HISTORY_NAME)
+            self.assert_name_changed()
+        else:
+            editable_text_input_element = self.history_panel_click_to_rename()
+            editable_text_input_element.send_keys(NEW_HISTORY_NAME)
+            self.send_enter(editable_text_input_element)
+            self.assert_name_changed()
 
     @selenium_test
     def test_history_rename_confirm_with_click(self):
-        editable_text_input_element = self.history_panel_click_to_rename()
         if self.is_beta_history():
-            editable_text_input_element.clear()
+            raise pytest.skip("Beta History Panel has explicit editing toggle mode, so can not click off to the side to save")
+        editable_text_input_element = self.history_panel_name_input()
         editable_text_input_element.send_keys(NEW_HISTORY_NAME)
         self.click_center()
         self.assert_absent(self.navigation.history_panel.selectors.name_edit_input)
@@ -48,45 +57,53 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_history_rename_cancel_with_escape(self):
-        editable_text_input_element = self.history_panel_click_to_rename()
-        if self.is_beta_history():
-            editable_text_input_element.clear()
+        self.open_history_editor()
+        editable_text_input_element = self.history_panel_name_input()
         editable_text_input_element.send_keys(NEW_HISTORY_NAME)
         self.send_escape(editable_text_input_element)
-        self.assert_absent(self.navigation.history_panel.selectors.name_edit_input)
+        if self.is_beta_history():
+            self.components.history_panel.editor.selector(scope=".beta.history").form.wait_for_absent_or_hidden()
+        else:
+            self.assert_absent(self.navigation.history_panel.selectors.name_edit_input)
         assert NEW_HISTORY_NAME not in self.history_panel_name()
 
     @selenium_test
+    @edit_details
     def test_history_tags_and_annotations_buttons(self):
-        tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
-        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
+        if self.is_beta_history():
+            history_editor = self.components.history_panel.editor.selector(scope=".beta.history")
+            history_editor.annotation_input.wait_for_clickable()
+            history_editor.tags_input.wait_for_clickable()
+        else:
+            tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
+            annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
 
-        tag_area_selector = self.navigation.history_panel.selectors.tag_area
-        annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
+            tag_area_selector = self.navigation.history_panel.selectors.tag_area
+            annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
 
-        tag_icon = self.wait_for_clickable(tag_icon_selector)
-        annon_icon = self.wait_for_clickable(annotation_icon_selector)
+            tag_icon = self.wait_for_clickable(tag_icon_selector)
+            annon_icon = self.wait_for_clickable(annotation_icon_selector)
 
-        self.assert_absent_or_hidden(tag_area_selector)
-        self.assert_absent_or_hidden(annotation_area_selector)
+            self.assert_absent_or_hidden(tag_area_selector)
+            self.assert_absent_or_hidden(annotation_area_selector)
 
-        tag_icon.click()
+            tag_icon.click()
 
-        self.wait_for_visible(tag_area_selector)
-        self.assert_absent_or_hidden(annotation_area_selector)
+            self.wait_for_visible(tag_area_selector)
+            self.assert_absent_or_hidden(annotation_area_selector)
 
-        tag_icon.click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        annon_icon.click()
+            tag_icon.click()
+            self.sleep_for(self.wait_types.UX_TRANSITION)
+            annon_icon.click()
 
-        self.wait_for_visible(annotation_area_selector)
-        self.assert_absent_or_hidden(tag_area_selector)
+            self.wait_for_visible(annotation_area_selector)
+            self.assert_absent_or_hidden(tag_area_selector)
 
-        annon_icon.click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
+            annon_icon.click()
+            self.sleep_for(self.wait_types.UX_TRANSITION)
 
-        self.assert_absent_or_hidden(tag_area_selector)
-        self.assert_absent_or_hidden(annotation_area_selector)
+            self.assert_absent_or_hidden(tag_area_selector)
+            self.assert_absent_or_hidden(annotation_area_selector)
 
     @selenium_test
     def test_history_panel_annotations_change(self):
@@ -97,7 +114,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
                                       is_equal=True):
 
             if self.is_beta_history():
-                text_component = history_panel.annotation_editable_text_beta
+                text_component = self.beta_history_element("history annotation")
             else:
                 text_component = history_panel.annotation_editable_text
             current_annotation = text_component.wait_for_visible()
@@ -133,37 +150,38 @@ class HistoryPanelTestCase(SeleniumTestCase):
     @selenium_test
     def test_history_panel_tags_change(self):
 
-        def add_tags(size):
+        def create_tags(size):
             history_panel_tags = list()
-
             for i in range(size):
                 history_panel_tags.append(self._get_random_name(prefix="arbitrary_tag_%s_") % i)
-
-            self.history_panel_add_tags(history_panel_tags)
             return history_panel_tags
 
+        def add_tags(tags_size):
+            tags = create_tags(tags_size)
+            self.history_panel_add_tags(tags)
+            return tags
+
+        # check tags against list
         def assert_current_tags(expected_tags):
-            current_tags = self.components.history_panel.tags
-            current_tags.wait_for_visible()
-            assert [tag.text for tag in
-                    current_tags.all()] == expected_tags, f"tags [{current_tags}] are not the same as expected [{expected_tags}]"
+            if self.is_beta_history():
+                current_tags = self.open_tags()
+            else:
+                current_tags = self.components.history_panel.tags
+            errmsg = f"tags [{current_tags}] are not the same as expected [{expected_tags}]"
+            assert [tag.text for tag in current_tags.all()] == expected_tags, errmsg
 
-        def clear_tags(expected_tags_size):
+        # looks like this is intended to check if the tag editor is open
+        def assert_no_tags():
+            if self.is_beta_history():
+                tags_component = self.components.history_panel.tag_editor.selector(scope=".beta.history")
+                tags_component.display.assert_absent_or_hidden()
+            else:
+                self.components.history_panel.tag_area.assert_absent_or_hidden()
 
-            close_tag_buttons = self.components.history_panel.tag_close_btn.all()
-            current_tags_size = len(close_tag_buttons)
-
-            assert expected_tags_size == current_tags_size, "there are more tags than expected! current {}, expected {}".format(
-                current_tags_size, expected_tags_size)
-            for close_btn in reversed(close_tag_buttons):
-                close_btn.click()
-                self.sleep_for(self.wait_types.UX_RENDER)
-
-        tags_size = 5
-
-        self.components.history_panel.tag_area.assert_absent_or_hidden()
+        assert_no_tags()
 
         # add new tags to empty tags area
+        tags_size = 5
         tags = add_tags(tags_size)
         assert_current_tags(tags)
 
@@ -173,8 +191,39 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
         # delete all tags
         expected_tags_len = len(tags)
-        clear_tags(expected_tags_len)
-        self.components.history_panel.tags.assert_absent_or_hidden()
+        self.clear_tags(expected_tags_len)
+
+        assert_no_tags()
+
+    # after about 5 tags, a toggle link shows up and you have to click it to see the full list
+    def open_tags(self):
+        tags_component = self.components.history_panel.tag_editor.selector(scope=".beta.history")
+        if not tags_component.toggle.is_absent:
+            tags_component.toggle.wait_for_and_click()
+        tags_component.display.wait_for_visible()
+        return tags_component.display
+
+    @edit_details
+    def clear_tags(self, expected_tags_size):
+        if self.is_beta_history():
+            self.open_tags()
+            tags = self.components.history_panel.tag_editor.selector(scope=".beta.history")
+            close_tag_buttons = tags.tag_close_btn.all()
+        else:
+            close_tag_buttons = self.components.history_panel.tag_close_btn.all()
+
+        current_tags_size = len(close_tag_buttons)
+
+        errmsg = "there are more tags than expected! current {}, expected {}".format(current_tags_size, expected_tags_size)
+        assert expected_tags_size == current_tags_size, errmsg
+
+        for close_btn in reversed(close_tag_buttons):
+            close_btn.click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+
+        if not self.is_beta_history():
+            self.components.history_panel.tag_icon.wait_for_and_click()
+            self.sleep_for(self.wait_types.UX_RENDER)
 
     @selenium_test
     def test_refresh_preserves_state(self):
