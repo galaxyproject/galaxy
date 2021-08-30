@@ -388,7 +388,7 @@ do
           shift 1
           ;;
       -main|-main_tools|--main_tools)
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,config/tool_conf.xml.main"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample"
           marker="tool"
           test_script="pytest"
           report_file="run_framework_tests.html"
