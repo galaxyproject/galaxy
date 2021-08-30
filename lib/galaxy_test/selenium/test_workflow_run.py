@@ -38,7 +38,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.workflow_run_submit()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("workflow_run_simple_submitted")
-        self.history_panel_wait_for_hid_ok(2, allowed_force_refreshes=1)
+        self._wait_for_hid(2, "ok")
         self.history_panel_click_item_title(hid=2, wait=True)
         self.assert_item_summary_includes(2, "2 sequences")
         self.screenshot("workflow_run_simple_complete")
@@ -94,7 +94,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.screenshot("workflow_run_rename_simple_input")
         self.workflow_run_submit()
         output_hid = 2
-        self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
+        self._wait_for_hid(output_hid, "ok")
         history_id = self.current_history_id()
         details = self.dataset_populator.get_history_dataset_details(history_id, hid=output_hid)
         assert details["name"] == "moocow suffix", details
@@ -126,7 +126,7 @@ steps:
         self.screenshot("workflow_run_step_parameter_input")
         self.workflow_run_submit()
         output_hid = 2
-        self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
+        self._wait_for_hid(output_hid, "ok")
         history_id = self.current_history_id()
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=output_hid)
         assert "12345" in content, content
@@ -143,7 +143,7 @@ steps:
         self.screenshot("workflow_run_rename_subworkflow_input")
         self.workflow_run_submit()
         output_hid = 2
-        self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
+        self._wait_for_hid(output_hid, "ok")
         history_id = self.current_history_id()
         details = self.dataset_populator.get_history_dataset_details(history_id, hid=output_hid)
         assert details["name"] == "moocow suffix", details
@@ -166,7 +166,7 @@ steps:
         self.screenshot("workflow_run_two_inputs")
         self.workflow_run_submit()
 
-        self.history_panel_wait_for_hid_ok(7, allowed_force_refreshes=1)
+        self._wait_for_hid(7, "ok")
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
         self.assertEqual("10.0\n30.0\n20.0\n40.0\n", content)
 
@@ -178,7 +178,7 @@ steps:
         self.workflow_run_specify_inputs(inputs)
         self.screenshot("workflow_run_rules")
         self.workflow_run_submit()
-        self.history_panel_wait_for_hid_ok(6, allowed_force_refreshes=1)
+        self._wait_for_hid(6, "ok")
         output_content = self.dataset_populator.get_history_collection_details(history_id, hid=6)
         rules_test_data.check_example_2(output_content, self.dataset_populator)
 
@@ -235,7 +235,7 @@ steps:
         self.workflow_click_option(".workflow-run")
 
     def _assert_has_3_lines_after_run(self, hid):
-        self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)
+        self._wait_for_hid(hid, "ok")
         history_id = self.current_history_id()
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=hid)
         assert len([x for x in content.split("\n") if x]) == 3, content
@@ -259,3 +259,12 @@ steps:
         assert initial_value == "", initial_value
         input_element.clear()
         input_element.send_keys(value)
+
+    def _wait_for_hid(self, hid, state="ok"):
+        if self.is_beta_history():
+            # takes a little while for these things to upload and end up in the history
+            timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+            row_selector = self.content_item_by_attributes(hid=hid, state=state)
+            self.wait_for_visible(row_selector, timeout=timeout)
+        else:
+            self.history_panel_wait_for_hid_ok(7, allowed_force_refreshes=1)
