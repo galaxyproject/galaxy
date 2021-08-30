@@ -19,7 +19,7 @@ describe("ToolsView/ToolsView.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        wrapper = mount(ToolsView, { localVue });
+        wrapper = mount(ToolsView, { localVue, attachTo: document.body });
         axiosMock.onGet("/api/tools?tool_help=True").reply(200, testToolsListResponse);
         axiosMock.onGet(new RegExp(`./*/citations`)).reply(200, testCitation);
         await flushPromises();
@@ -52,7 +52,6 @@ describe("ToolsView/ToolsView.vue", () => {
         const modalId = "modal--" + infoButton.attributes().index;
         const modal = wrapper.find("#" + modalId);
         expect(modal.element).not.toBeVisible();
-
         infoButton.trigger("click");
         await flushPromises();
 
