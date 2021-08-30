@@ -52,7 +52,7 @@ describe("ToolsView/ToolsView.vue", () => {
         const modalId = "modal--" + infoButton.attributes().index;
         const modal = wrapper.find("#" + modalId);
         expect(modal.element).not.toBeVisible();
-        infoButton.trigger("click");
+        await infoButton.trigger("click");
         await flushPromises();
 
         expect(modal.element).toBeVisible();
@@ -68,7 +68,7 @@ describe("ToolsView/ToolsView.vue", () => {
         expect(citation.element).not.toBeVisible();
         expect(infoButton.attributes("aria-expanded") === "false").toBeTruthy();
 
-        infoButton.trigger("click");
+        await infoButton.trigger("click");
         await flushPromises();
         expect(infoButton.attributes("aria-expanded") === "true").toBeTruthy();
         expect(citation.element).toBeVisible();
