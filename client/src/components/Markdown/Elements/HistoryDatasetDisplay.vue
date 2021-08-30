@@ -67,8 +67,8 @@
                                         </UrlDataProvider>
                                     </div>
                                     <pre v-else>
-                                            <code class="text-normalwrap">{{ itemContent.item_data }}</code>
-                                        </pre>
+                                        <code class="text-normalwrap">{{ itemContent.item_data }}</code>
+                                    </pre>
                                 </div>
                                 <div v-else>No content found.</div>
                                 <b-link v-if="itemContent.truncated" :href="itemContent.item_url">
