@@ -18,13 +18,13 @@ def mock_app():
 
 @pytest.fixture
 def tool_shed_repository_cache(mock_app):
-    tool_shed_repository_cache = ToolShedRepositoryCache(app=mock_app)
+    tool_shed_repository_cache = ToolShedRepositoryCache(session=mock_app.install_model.context)
     return tool_shed_repository_cache
 
 
 @pytest.fixture
 def repos(mock_app):
-    repositories = [create_repo(mock_app, changeset=i + 1, installed_changeset=i) for i in range(10)]
+    repositories = [create_repo(mock_app.install_model.context, changeset=i + 1, installed_changeset=i) for i in range(10)]
     mock_app.install_model.context.flush()
     return repositories
 
@@ -46,7 +46,7 @@ def tool_conf_repos(tool_shed_repository_cache):
     return tool_shed_repository_cache.local_repositories
 
 
-def create_repo(app, changeset, installed_changeset, config_filename=None):
+def create_repo(session, changeset, installed_changeset, config_filename=None):
     metadata = {
         'tools': [{
             'add_to_tool_panel': False,  # to have repository.includes_tools_for_display_in_tool_panel=False in InstalledRepositoryManager.activate_repository()
@@ -64,8 +64,8 @@ def create_repo(app, changeset, installed_changeset, config_filename=None):
     repository.installed_changeset_revision = str(installed_changeset)
     repository.deleted = False
     repository.uninstalled = False
-    app.install_model.context.add(repository)
-    app.install_model.context.flush()
+    session.add(repository)
+    session.flush()
     tool_dependency = tool_shed_install.ToolDependency(
         name='Name',
         version='100',
@@ -73,5 +73,5 @@ def create_repo(app, changeset, installed_changeset, config_filename=None):
         status='ok',
         tool_shed_repository_id=repository.id,
     )
-    app.install_model.context.add(tool_dependency)
+    session.add(tool_dependency)
     return repository
