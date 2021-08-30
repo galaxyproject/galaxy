@@ -3,6 +3,7 @@ import DscUI from "../History/ContentItem/DatasetCollection/DscUI";
 import { shallowMount } from "@vue/test-utils";
 import datasetCollectionRaw from "../History/test/json/DatasetCollection.json";
 import datasetCollectionContent from "../History/test/json/DatasetCollection.nested.json";
+import flushPromises from "flush-promises";
 
 jest.mock("../History/caching");
 
@@ -56,6 +57,7 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
     });
     it("build dsc from collection content", async () => {
         wrapper.setProps({ item: datasetCollectionContent });
+        await flushPromises();
         expect(wrapper.vm.datasetCollection.name).toBe(datasetCollectionContent.element_identifier);
     });
 });
