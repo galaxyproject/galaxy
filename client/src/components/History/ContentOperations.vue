@@ -15,6 +15,7 @@
                     :disabled="!totalMatches"
                     :pressed="showFilter"
                     @click="showFilter = !showFilter"
+                    data-description="content filter toggle"
                 />
                 <IconButton
                     title="Collapse Expanded Items"
@@ -91,6 +92,7 @@
                     size="sm"
                     text="Create New Content"
                     :disabled="!totalMatches"
+                    data-description="new content menu"
                 >
                     <template v-slot:button-content>
                         <Icon icon="plus" />
@@ -104,23 +106,40 @@
                     <b-dropdown-item
                         aria-describedby="history-op-new-content"
                         @click="iframeRedirect('/dataset/copy_datasets')"
+                        data-description="copy datasets"
                     >
                         <span v-localize>Copy Datasets</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item aria-describedby="history-op-new-content" @click="buildDatasetList">
+                    <b-dropdown-item
+                        aria-describedby="history-op-new-content"
+                        @click="buildDatasetList"
+                        data-description="build list"
+                    >
                         <span v-localize>Build Dataset List</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item aria-describedby="history-op-new-content" @click="buildDatasetPair">
+                    <b-dropdown-item
+                        aria-describedby="history-op-new-content"
+                        @click="buildDatasetPair"
+                        data-description="build pair"
+                    >
                         <span v-localize>Build Dataset Pair</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item aria-describedby="history-op-new-content" @click="buildListOfPairs">
+                    <b-dropdown-item
+                        aria-describedby="history-op-new-content"
+                        @click="buildListOfPairs"
+                        data-description="build list of pairs"
+                    >
                         <span v-localize>Build List of Dataset Pairs</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item aria-describedby="history-op-new-content" @click="buildCollectionFromRules">
+                    <b-dropdown-item
+                        aria-describedby="history-op-new-content"
+                        @click="buildCollectionFromRules"
+                        data-description="build collection from rules"
+                    >
                         <span v-localize>Build Collection from Rules</span>
                     </b-dropdown-item>
                 </b-dropdown>
@@ -311,8 +330,19 @@ export default {
         async buildNewCollection(collectionTypeCode) {
             const modalResult = await buildCollectionModal(collectionTypeCode, this.history.id, this.contentSelection);
             const newCollection = await createDatasetCollection(this.history, modalResult);
+
+            // cache the collection
             await cacheContent(newCollection);
-            this.$emit("manualReload");
+
+            // have to hide the source items if that was requested
+            if (modalResult.hide_source_items) {
+                this.contentSelection.forEach(async (dataset) => {
+                    await cacheContent({ ...dataset, visible: false }, true);
+                });
+                this.$emit("resetSelection");
+            }
+
+            // this.$emit("manualReload");
         },
 
         // #endregion

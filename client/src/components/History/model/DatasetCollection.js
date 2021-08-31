@@ -17,19 +17,13 @@ export class DatasetCollection extends Content {
         super.loadProps(raw);
     }
 
-    // number of contained contents
-    // Need to do some manual handling, because once again, the API is
-    // inconsistent, element_count not returned in the case of a pair. It
-    // should be two, but we need to add that value in.
     get totalElements() {
         if ("element_count" in this) {
             return this.element_count;
         }
-
         if (this.collection_type == "paired") {
             return 2;
         }
-
         return undefined;
     }
 
@@ -58,11 +52,11 @@ export class DatasetCollection extends Content {
 
     // amalgam state value
     get state() {
-        return this.jobSummary.state || this.populated_state;
+        return this.jobSummary.state;
     }
 
     get jobSummary() {
-        return new JobStateSummary(this);
+        return Object.freeze(new JobStateSummary(this));
     }
 
     clone() {

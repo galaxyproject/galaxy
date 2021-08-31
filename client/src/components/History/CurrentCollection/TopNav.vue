@@ -1,11 +1,18 @@
 <template>
-    <b-dropdown v-if="breadCrumbOptions.length" size="sm" text="Return to..." boundary="viewport" no-caret>
+    <b-dropdown
+        v-if="breadCrumbOptions.length"
+        size="sm"
+        text="Return to..."
+        boundary="viewport"
+        data-description="collection breadcrumbs menu"
+        no-caret
+    >
         <template v-slot:button-content>
             <Icon icon="arrow-up" class="mr-1" />
             <b class="text-nowrap" v-localize>Return to...</b>
         </template>
 
-        <b-dropdown-item @click="close">
+        <b-dropdown-item @click="close" data-description="back to history">
             <span>History: {{ history.name }}</span>
         </b-dropdown-item>
 
@@ -14,7 +21,14 @@
         </b-dropdown-item>
     </b-dropdown>
 
-    <b-button v-else size="sm" title="`Return to: ${history.name}`" @click="close">
+    <b-button
+        v-else
+        class="back"
+        size="sm"
+        title="`Return to: ${history.name}`"
+        @click="close"
+        data-description="back to history"
+    >
         <Icon icon="arrow-up" class="mr-1" />
         <b class="text-nowrap">Return to: {{ history.name }}</b>
     </b-button>

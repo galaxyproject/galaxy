@@ -17,6 +17,6 @@ export function loadSet(key) {
     } catch (err) {
         console.warn("Error loading cached list", key, err);
         sessionStorage.removeItem(key);
-        return null;
+        return new Set();
     }
 }
