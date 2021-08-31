@@ -37,7 +37,7 @@ A method that requires a user but not a history should declare its
 import abc
 import string
 from json import dumps
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from sqlalchemy.orm.scoping import scoped_session
 
@@ -64,6 +64,16 @@ class ProvidesAppContext:
     @abc.abstractproperty
     def app(self) -> MinimalManagerApp:
         """Provide access to the Galaxy ``app`` object.
+        """
+
+    @abc.abstractproperty
+    def url_builder(self) -> Optional[Callable[..., str]]:
+        """
+        Provide access to Galaxy URLs (if available).
+
+        :type   qualified:  bool
+        :param  qualified:  if True, the fully qualified URL is returned,
+                            else a relative URL is returned (default False).
         """
 
     @property

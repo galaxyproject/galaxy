@@ -359,6 +359,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         rule_builder.main_button_ok.wait_for_and_click()
         self.tool_form_execute()
         output_hid = example["output_hid"]
+        self.home()
         self.history_panel_wait_for_hid_ok(output_hid)
         output_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_hid, wait=False)
         example["check"](output_hdca, self.dataset_populator)
@@ -366,7 +367,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
     def _tool_apply_with_source(self, rules_json, hid=None, landing_screenshot=None, rule_init_screenshot=None, rule_complete_screenshot=None):
         self._tool_open_apply_rules()
         if hid:
-            self.tool_set_value("input", "%s:" % hid, expected_type="data_collection")
+            self.tool_set_value("input", f"{hid}:", expected_type="data_collection")
         if landing_screenshot:
             self.screenshot(landing_screenshot)
         rule_builder = self.components.rule_builder

@@ -4,6 +4,7 @@ from functools import lru_cache
 from celery import Celery
 
 from galaxy.config import Configuration
+from galaxy.main_config import find_config
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.properties import load_app_properties
 
@@ -26,6 +27,10 @@ def get_galaxy_app():
 @lru_cache(maxsize=1)
 def get_app_properties():
     config_file = os.environ.get("GALAXY_CONFIG_FILE")
+    if not config_file:
+        galaxy_root_dir = os.environ.get('GALAXY_ROOT_DIR')
+        if galaxy_root_dir:
+            config_file = find_config(config_file, galaxy_root_dir)
     if config_file:
         return load_app_properties(
             config_file=os.path.abspath(config_file),
@@ -47,8 +52,25 @@ def get_broker():
         return config.amqp_internal_connection
 
 
+def get_history_audit_table_prune_interval():
+    config = get_config()
+    if config:
+        return config.history_audit_table_prune_interval
+    else:
+        return 3600
+
+
 broker = get_broker()
 celery_app = Celery('galaxy', broker=broker, include=['galaxy.celery.tasks'])
+prune_interval = get_history_audit_table_prune_interval()
+if prune_interval > 0:
+    celery_app.conf.beat_schedule = {
+        'prune-history-audit-table': {
+            'task': 'galaxy.celery.tasks.prune_history_audit_table',
+            'schedule': prune_interval,
+        },
+    }
+celery_app.conf.timezone = 'UTC'
 
 
 if __name__ == '__main__':

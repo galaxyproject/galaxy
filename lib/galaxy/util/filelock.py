@@ -26,7 +26,7 @@ class FileLock:
         """
         self.is_locked = False
         full_path = os.path.abspath(file_name)
-        self.lockfile = "%s.lock" % full_path
+        self.lockfile = f"{full_path}.lock"
         self.file_name = full_path
         self.timeout = timeout
         self.delay = delay

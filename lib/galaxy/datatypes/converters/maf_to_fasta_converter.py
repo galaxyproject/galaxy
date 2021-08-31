@@ -24,7 +24,7 @@ def __main__():
                 else:
                     spec_counts[spec] += 1
                 out.write("%s\n" % maf_utilities.get_fasta_header(c, {'block_index': count, 'species': spec, 'sequence_index': spec_counts[spec]}, suffix="%s_%i_%i" % (spec, count, spec_counts[spec])))
-                out.write("%s\n" % c.text)
+                out.write(f"{c.text}\n")
             out.write("\n")
     print("%i MAF blocks converted to FASTA." % (count))
 

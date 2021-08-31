@@ -14,11 +14,11 @@ class TestBismarkRepository(ShedTwillTestCase):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_category_and_repository(self):
@@ -53,7 +53,7 @@ class TestBismarkRepository(ShedTwillTestCase):
                          strings_not_displayed=[])
         valid_revision = self.get_repository_tip(repository)
         self.test_db_util.refresh(repository)
-        tool_guid = '%s/repos/user1/bismark_0070/bismark_methylation_extractor/0.7.7.3' % self.url.replace('http://', '').rstrip('/')
+        tool_guid = f"{self.url.replace('http://', '').rstrip('/')}/repos/user1/bismark_0070/bismark_methylation_extractor/0.7.7.3"
         tool_metadata_strings_displayed = [tool_guid,
                                            '0.7.7.3',  # The tool version.
                                            'bismark_methylation_extractor',  # The tool ID.

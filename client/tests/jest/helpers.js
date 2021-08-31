@@ -7,20 +7,26 @@ import { createLocalVue, shallowMount } from "@vue/test-utils";
 import { localizationPlugin } from "components/plugins/localization";
 import { vueRxShortcutPlugin } from "components/plugins/vueRxShortcuts";
 import { eventHubPlugin } from "components/plugins/eventHub";
+import { iconPlugin } from "components/plugins/icons";
 import BootstrapVue from "bootstrap-vue";
 import Vuex from "vuex";
 
+const defaultComparator = (a, b) => a == b;
+
 // Creates a watcher on the indicated vm/prop for use in testing
-export function watchForChange({ vm, opts, propName, timeout = 1000, label = "" }) {
+export function watchForChange(cfg = {}) {
+    const { vm, opts, propName, comparator = defaultComparator, timeout = 1000 } = cfg;
+
     const start = new Date();
     return new Promise((resolve, reject) => {
         const timeoutID = setTimeout(() => {
-            reject(`${propName} never changed ${label}`);
+            reject(`${propName} never changed`);
         }, timeout);
+
         vm.$watch(
             propName,
             function (newVal, oldVal) {
-                if (newVal !== oldVal) {
+                if (!comparator(newVal, oldVal)) {
                     clearTimeout(timeoutID);
                     const stop = new Date();
                     resolve({ start, stop, propName, elapsed: stop - start, newVal, oldVal });
@@ -28,6 +34,25 @@ export function watchForChange({ vm, opts, propName, timeout = 1000, label = "" 
             },
             opts
         );
+    });
+}
+
+export function watchUntil(vm, isComplete, timeout = 1000) {
+    const start = new Date();
+
+    return new Promise((resolve, reject) => {
+        const timeoutID = setTimeout(() => {
+            if (unwatch) unwatch();
+            reject("watch timed out");
+        }, timeout);
+
+        const unwatch = vm.$watch(isComplete, (isDone) => {
+            if (!isDone) return;
+            clearTimeout(timeoutID);
+            const stop = new Date();
+            if (unwatch) unwatch();
+            resolve({ start, stop, elapsed: stop - start });
+        });
     });
 }
 
@@ -71,6 +96,7 @@ export function getLocalVue() {
     localVue.use(localizationPlugin);
     localVue.use(vueRxShortcutPlugin);
     localVue.use(eventHubPlugin);
+    localVue.use(iconPlugin);
     localVue.directive("b-tooltip", mockedDirective);
     localVue.directive("b-popover", mockedDirective);
     return localVue;
@@ -105,3 +131,20 @@ export function waitForLifecyleEvent(vm, lifecycleHookName, cfg = {}) {
     )
     .toPromise();
 }
+
+// Waits for an observable to emit N times then resolves a promise
+// returns a promise because it's easier to test that way in async jest tests
+export const untilNthEmission = (src$, n = 1, safetyTimeout = 2000) => {
+    return new Promise((resolve, reject) => {
+        let result;
+        // prettier-ignore
+        src$.pipe(
+            take(n),
+            takeUntil(timer(safetyTimeout))
+        ).subscribe({
+            next: (val) => (result = val),
+            complete: () => resolve(result),
+            error: reject,
+        });
+    });
+};

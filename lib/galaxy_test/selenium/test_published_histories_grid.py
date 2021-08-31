@@ -93,7 +93,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
                 break
 
         if tags is None:
-            raise AssertionError('Failed to find history with name [%s]' % self.history1_name)
+            raise AssertionError(f'Failed to find history with name [{self.history1_name}]')
 
         tag_button_selector = 'div.tag-name'
         tag_buttons = tags.find_elements_by_css_selector(tag_button_selector)

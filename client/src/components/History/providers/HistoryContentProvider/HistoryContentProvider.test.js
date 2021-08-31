@@ -1,129 +1,86 @@
-import { pipe } from "rxjs";
-import { map } from "rxjs/operators";
-import { History } from "../../model/History";
-import { SearchParams } from "../../model/SearchParams";
+import { shallowMount } from "@vue/test-utils";
+import { watchUntil, getLocalVue } from "jest/helpers";
+import { sameVueObj, payloadChange } from "../../test/providerTestHelpers";
 import HistoryContentProvider from "./HistoryContentProvider";
+import { SearchParams } from "../../model";
 import { bulkCacheContent, wipeDatabase } from "../../caching";
-import { getPropRange } from "../../caching/loadHistoryContents";
-import { watchForChange, mountRenderless } from "jest/helpers";
-import { getLocalVue } from "jest/helpers";
+import { defaultPayload } from "../ContentProvider";
+import { serverContent, testHistory, testHistoryContent } from "../../test/testHistory";
+// import { reportPayload } from "../../test/providerTestHelpers";
 
-//#region Test Data
+// reads hids
+const payloadHids = (payload) => payload.contents?.map((o) => o.hid) || [];
+const localVue = getLocalVue();
 
-import rawHistory from "../../test/json/History.json";
-import rawHistoryContent from "../../test/json/historyContent.json";
-
-// doctor up some sample content
-const historyContent = rawHistoryContent.map((item) => {
-    item.history_id = rawHistory.id;
-    return item;
-});
-
-// set hid_counter to total length +1 because the stupid api can't count
-const testHistory = new History({
-    ...rawHistory,
-    hid_counter: historyContent[0].hid + 1,
-});
-
-//#endregion
-
-//#region Mocking
-
+// mocking
 jest.mock("app");
 jest.mock("../../caching");
-
-import { loadContents } from "./loadContents";
 jest.mock("./loadContents");
 
-const loadContentsResults = historyContent;
-const { min: minHid, max: maxHid } = getPropRange(loadContentsResults, "hid");
-
-loadContents.mockImplementation((config) => {
-    return pipe(
-        map(([history, params, hid]) => {
-            return {
-                minContentHid: minHid,
-                maxContentHid: maxHid,
-                minHid: minHid,
-                maxHid: maxHid,
-                matchesUp: 0,
-                matchesDown: SearchParams.pageSize,
-                matches: SearchParams.pageSize,
-                totalMatchesUp: 0,
-                totalMatches: historyContent.length,
-            };
-        })
-    );
-});
-
-//#endregion
-
-const payloadChange = async ({ vm, label = "payload change" }) => {
-    await watchForChange({ vm, propName: "payload", label });
-    return vm.payload;
-};
-
-const mountProvider = async (Component, propsData) => {
-    const localVue = getLocalVue();
-    const wrapper = mountRenderless(Component, { localVue, propsData });
-    await wrapper.vm.$nextTick();
-    return wrapper;
-};
+afterEach(() => wipeDatabase());
 
 describe("HistoryContentProvider", () => {
     let wrapper;
 
-    const defaultProps = {
-        parent: testHistory,
-        // debouncePeriod: 0,
-        bench: 5,
-        disableLoad: true,
-    };
+    beforeEach(async () => {});
 
     afterEach(async () => {
         if (wrapper) {
             await wrapper.destroy();
         }
-        await wipeDatabase();
     });
-
-    // No loading, no watching, no polling, all output variables should be
-    // dependent solely upon input history
 
     describe("blank initialization state", () => {
         beforeEach(async () => {
-            await wipeDatabase();
-            wrapper = await mountProvider(HistoryContentProvider, defaultProps);
-        });
-
-        test("should expose all the update methods and default vars", () => {
-            // allows child components to update search params via event handler
-            expect(wrapper.vm.updateParams).toBeInstanceOf(Function);
-
-            // allows child scroller component to update the position in the history
-            // via an event handler
-            expect(wrapper.vm.setScrollPos).toBeInstanceOf(Function);
-
-            // when data comes in from the observables, these are the handlers that
-            // run in the subscription, so we can test the provider's logic without
-            // having to invoke the observables directly
-            expect(wrapper.vm.setPayload).toBeInstanceOf(Function);
-        });
-
-        test("should show an empty payload", async () => {
+            wrapper = await shallowMount(HistoryContentProvider, {
+                localVue,
+                propsData: {
+                    parent: testHistory,
+                    pageSize: 10,
+                    debug: false,
+                    debouncePeriod: 200,
+                },
+                scopedSlots: {
+                    default() {},
+                },
+            });
+            // wait for default emit
             await payloadChange({ vm: wrapper.vm });
-            expect(wrapper.vm.params).toEqual(new SearchParams());
-            expect(wrapper.vm.pageSize).toEqual(SearchParams.pageSize);
+        });
+
+        test("should expose update methods", async () => {
+            expect(wrapper.vm.setScrollPos).toBeInstanceOf(Function);
+        });
+
+        test("should show an empty payload", () => {
+            expect(SearchParams.equals(new SearchParams(), wrapper.vm.params)).toBe(true);
+            expect(sameVueObj(wrapper.vm.payload, defaultPayload));
         });
     });
 
     describe("with pre-inserted content", () => {
         beforeEach(async () => {
-            await wipeDatabase();
-            await bulkCacheContent(historyContent);
-            wrapper = await mountProvider(HistoryContentProvider, {
-                ...defaultProps,
-                pageSize: 5,
+            // eslint-disable-next-line no-unused-vars
+            const cachedContent = await bulkCacheContent(testHistoryContent, true);
+
+            wrapper = await shallowMount(HistoryContentProvider, {
+                localVue,
+                propsData: {
+                    parent: testHistory,
+                    pageSize: 10,
+                    debug: false,
+                    debouncePeriod: 200,
+                },
+                scopedSlots: {
+                    default() {},
+                },
+            });
+
+            // eslint-disable-next-line no-unused-vars
+            const spinUp = await watchUntil(wrapper.vm, function () {
+                const allDone = wrapper.vm.payload.contents.length > 0;
+                // console.log("done?", allDone);
+                return allDone;
             });
         });
 
@@ -132,16 +89,22 @@ describe("HistoryContentProvider", () => {
         // returned content rows and the total matches
 
         test("initial load, no scrolling", async () => {
-            await watchForChange({ vm: wrapper.vm, propName: "payload" });
-            const { contents, topRows, bottomRows, startKey, totalMatches } = wrapper.vm.payload;
-            // show ({ itemCount: contents.length, topRows, bottomRows, startKey, totalMatches });
+            const payload = wrapper.vm.payload;
+            // reportPayload(payload);
 
+            // test data on server
+            const allContent = serverContent();
+            // maximum hid in the fake server content
+            const maxServerHid = allContent[0].hid;
+            expect(payload).toBeDefined();
+
+            const { contents, topRows, bottomRows, startKey, totalMatches } = payload;
             expect(topRows).toEqual(0);
-            expect(contents.length).toEqual(wrapper.vm.pageSize + 1, "wrong pagesize");
+            expect(contents.length).toBeGreaterThanOrEqual(2 * wrapper.vm.pageSize);
             expect(bottomRows).toBeGreaterThan(0);
-            expect(bottomRows).toEqual(historyContent.length - contents.length);
-            expect(startKey).toEqual(maxHid);
-            expect(totalMatches).toEqual(historyContent.length);
+            expect(bottomRows).toEqual(allContent.length - contents.length);
+            expect(startKey).toEqual(maxServerHid);
+            expect(totalMatches).toEqual(allContent.length);
         });
 
         // When the scroller moves, we may end up over a known content row, in
@@ -150,11 +113,11 @@ describe("HistoryContentProvider", () => {
         // bottomRows
 
         test("scroll to known key", async () => {
-            await watchForChange({ vm: wrapper.vm, propName: "payload" });
+            const payload = wrapper.vm.payload;
 
             // shift the scroller down to half way through that content list
             // make sure it's visible and not hidden
-            const targetElement = historyContent[Math.floor(historyContent.length / 2)];
+            const targetElement = testHistoryContent[Math.floor(testHistoryContent.length / 2)];
             expect(targetElement.visible).toBe(true);
             expect(targetElement.deleted).toBe(false);
 
@@ -162,44 +125,36 @@ describe("HistoryContentProvider", () => {
             expect(targetKey).toBeDefined();
             expect(targetKey).toBeGreaterThan(0);
 
-            // set that scroll position, then look at what comes out
-            // show(targetKey);
+            // console.log("setting scroll pos to targetKey", targetKey);
             wrapper.vm.setScrollPos({ key: targetKey });
 
-            // what we should get out is a range of content around targetKey and
-            // startKey should == targetKey because we know it's in the content
-            const { contents: secondContents, ...secondPayload } = await payloadChange({
-                vm: wrapper.vm,
-                label: "second dealie",
-            });
-            // show({ items: secondContents.length, ...secondPayload });
+            // need to wait for it to settle down
+            await await payloadChange({ vm: wrapper.vm });
 
-            // should get a window around 133, 133 should be the startKey
-            const hids = secondContents.map((o) => o.hid);
+            // check to see if what we want is there
+            const scrollPayload = wrapper.vm.payload;
+            expect(payload).toBeDefined();
+            const { startKey } = scrollPayload;
+            const hids = payloadHids(scrollPayload);
+            // console.log("hids", hids);
+
             expect(hids).toContain(targetKey);
-            expect(secondPayload.startKey).toEqual(targetKey);
+            expect(startKey).toEqual(targetKey);
         });
 
         // This simulates dragging the scrollbar to a place in the history where
         // there is no exact match of HID. The provider should still render
         // contents around the targetHID, if they exist
 
-        test("should show results when we pick a HID by scroller height rather than exact match", async () => {
-            await watchForChange({ vm: wrapper.vm, propName: "payload" });
-
+        test("should show results when we pick a HID by scroller height", async () => {
             // set scroller to non-existent hid
             wrapper.vm.setScrollPos({ cursor: 0.52323 });
-
-            const { contents, startKey, targetKey, topRows, bottomRows, totalMatches } = await payloadChange({
-                vm: wrapper.vm,
-                label: "scroll cursor dealie",
-            });
-            const hids = contents.map((o) => o.hid);
-            // show({ hids, startKey, targetKey, topRows, bottomRows, totalMatches });
+            const scrollPayload = await payloadChange({ vm: wrapper.vm });
+            const { contents, startKey, topRows, bottomRows, totalMatches } = scrollPayload;
+            const hids = payloadHids(scrollPayload);
 
             expect(hids).toContain(startKey);
             expect(startKey).toBeGreaterThan(0);
-            expect(targetKey).toBeGreaterThan(0);
             expect(topRows).toBeGreaterThan(0);
             expect(bottomRows).toEqual(totalMatches - contents.length - topRows);
         });

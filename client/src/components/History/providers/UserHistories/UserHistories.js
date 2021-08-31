@@ -16,6 +16,9 @@ import { mapActions, mapGetters } from "vuex";
 import { History } from "../../model/History";
 
 export default {
+    props: {
+        user: { type: Object, required: true },
+    },
     computed: {
         ...mapGetters("betaHistory", ["currentHistoryId", "currentHistory", "histories"]),
 
@@ -40,20 +43,24 @@ export default {
             "loadUserHistories",
             "secureHistory",
         ]),
-    },
-    watch: {
-        // load history when the current id changes
-        currentHistoryId: {
-            immediate: true,
-            handler(newId, oldId) {
-                if (newId && newId !== oldId) {
-                    this.loadHistoryById(newId);
-                }
-            },
+
+        updateCurrentHistory(updates) {
+            this.updateHistory({ ...updates, id: this.currentHistory.id });
         },
     },
-    created() {
-        this.loadUserHistories();
+    watch: {
+        // when user changes reload histories
+        user: {
+            immediate: true,
+            handler() {
+                this.loadUserHistories();
+            },
+        },
+
+        // refresh history when the current id changes
+        currentHistoryId(newId) {
+            this.loadHistoryById(newId);
+        },
     },
     render() {
         return this.$scopedSlots.default({
@@ -62,7 +69,7 @@ export default {
 
             // currently selected history object, should be a full object not just a summary
             currentHistory: this.currentHistoryModel,
-            currentHistoryId: this.currentHistoryModel?.id || null,
+            currentHistoryId: this.currentHistoryId,
 
             handlers: {
                 // Updates the history in the store without a trip to the server, in the event that a
@@ -78,7 +85,11 @@ export default {
                 // save new history params should be an object with an id property and any additional
                 // properties that are to be updated on the server. A full history object is not required
                 updateHistory: this.updateHistory,
-                updateCurrentHistory: () => this.updateHistory(this.currentHistory),
+                updateCurrentHistory: this.updateCurrentHistory,
+
+                // also conform to .sync event name format
+                "update:history": this.updateHistory,
+                "update:currentHistory": this.updateCurrentHistory,
 
                 // delete history then clear currentHistoryId
                 deleteHistory: (history) => this.deleteHistory({ history }),

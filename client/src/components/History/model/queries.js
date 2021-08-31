@@ -8,6 +8,7 @@
 import axios from "axios";
 import moment from "moment";
 import { prependPath } from "utils/redirect";
+import { History } from "./History";
 
 // #region setup & utils
 
@@ -25,7 +26,9 @@ const api = axios.create({
  */
 
 const doResponse = (response) => {
-    if (response.status != 200) throw new Error(response);
+    if (response.status != 200) {
+        throw new Error(response);
+    }
     return response.data;
 };
 
@@ -51,8 +54,12 @@ function buildLegacyParam(fields = {}) {
 }
 
 function pythonBooleanFormat(val) {
-    if (val === true) return "True";
-    if (val === false) return "False";
+    if (val === true) {
+        return "True";
+    }
+    if (val === false) {
+        return "False";
+    }
     return val;
 }
 
@@ -75,15 +82,16 @@ function formData(fields = {}) {
 
 const stdHistoryParams = {
     view: "betawebclient",
-    // keys: historyFields.join(","),
 };
 
 /**
  * Return list of available histories
  */
 export async function getHistoryList() {
-    const response = await api.get("/histories?view=summary");
-    return doResponse(response);
+    const params = { view: "summary", keys: "size" };
+    const response = await api.get("/histories", { params });
+    const rawList = doResponse(response);
+    return rawList.map((props) => new History(props));
 }
 
 /**
@@ -93,9 +101,10 @@ export async function getHistoryList() {
 export async function getHistoryById(id, since) {
     const path = `/histories/${id}`;
     const sinceParam = since !== undefined ? moment.utc(since).toISOString() : null;
-    const url = sinceParam ? path : `${path}?q=update_time-gt&qv=${sinceParam}`;
+    const url = sinceParam ? `${path}?q=update_time-gt&qv=${sinceParam}` : path;
     const response = await api.get(url, { params: stdHistoryParams });
-    return doResponse(response);
+    const props = doResponse(response);
+    return new History(props);
 }
 
 /**
@@ -103,10 +112,20 @@ export async function getHistoryById(id, since) {
  * @param {Object} props Optional history props
  */
 export async function createNewHistory(props = {}) {
-    const url = `/histories`;
-    const data = Object.assign({ name: "New History" }, props);
-    const response = await api.post(url, data, { params: stdHistoryParams });
-    return doResponse(response);
+    // TODO: adjust api, keep this for later
+    // const url = `/histories`;
+    // const data = Object.assign({ name: "New History" }, props);
+    // const response = await api.post(url, data, { params: stdHistoryParams });
+
+    // using old route to create and select new history at same time
+    const url = prependPath("/history/create_new_current");
+    const createResponse = await api.get(url, { baseURL: "" });
+    const id = createResponse?.data?.id || null;
+    if (!id) {
+        throw new Error("failed to create and select new history");
+    }
+    const newHistoryProps = doResponse(createResponse);
+    return new History(newHistoryProps);
 }
 
 /**
@@ -124,7 +143,8 @@ export async function cloneHistory(history, name, copyAll) {
         current: true,
     };
     const response = await api.post(url, payload, { params: stdHistoryParams });
-    return doResponse(response);
+    const clonedProps = doResponse(response);
+    return new History(clonedProps);
 }
 
 /**
@@ -156,7 +176,8 @@ export async function undeleteHistoryById(id) {
 export async function updateHistoryFields(id, payload) {
     const url = `/histories/${id}`;
     const response = await api.put(url, payload, { params: stdHistoryParams });
-    return doResponse(response);
+    const props = doResponse(response);
+    return new History(props);
 }
 
 /**
@@ -187,7 +208,8 @@ export async function getCurrentHistoryFromServer() {
     const response = await api.get(url, {
         baseURL: prependPath("/"), // old api doesn't use api path
     });
-    return doResponse(response);
+    const props = doResponse(response);
+    return new History(props);
 }
 
 export async function setCurrentHistoryOnServer(history_id) {
@@ -337,7 +359,7 @@ export async function createDatasetCollection(history, inputs = {}) {
         copy_elements: true,
         name: "list",
         element_identifiers: [],
-        hide_source_items: "True",
+        hide_source_items: true,
         type: "dataset_collection",
     };
 

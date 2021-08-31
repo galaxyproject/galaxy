@@ -90,7 +90,7 @@ class ApplicationStackMessage(dict):
 
         This could also be implemented as a mixin class.
         """
-        assert self.default_handler is not None, '%s has no default handler method, cannot bind' % self.__class__.__name__
+        assert self.default_handler is not None, f'{self.__class__.__name__} has no default handler method, cannot bind'
         setattr(obj, name, types.MethodType(self.default_handler, obj))
         log.debug("Bound default message handler '%s.%s' to %s", self.__class__.__name__, self.default_handler.__name__,
                   getattr(obj, name))
@@ -144,7 +144,7 @@ class TaskMessage(ParamMessage):
             cls=self.__class__.__name__,
             task=msg.task,
             msg=msg)
-        getattr(self, '_handle_%s_msg' % msg.task)(**msg.params)
+        getattr(self, f'_handle_{msg.task}_msg')(**msg.params)
 
     @property
     def task(self):

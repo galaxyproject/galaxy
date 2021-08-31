@@ -1,16 +1,14 @@
 <template>
-    <CurrentUser v-slot="{ user }">
+    <CurrentUser class="d-flex flex-column" v-slot="{ user }">
         <UserHistories v-if="user" :user="user" v-slot="{ currentHistory, histories, handlers }">
-            <HistoryPanel v-if="currentHistory" :history="currentHistory" v-on="handlers">
-                <template v-slot:nav>
-                    <div>
-                        <HistorySelector
-                            :histories="histories"
-                            :current-history="currentHistory"
-                            @update:currentHistory="handlers.setCurrentHistory"
-                        />
-                        <HistoriesMenu v-on="handlers" />
-                    </div>
+            <HistoryPanel v-if="currentHistory" :history="currentHistory" v-on="handlers" id="current-history-panel">
+                <template v-slot:globalNav>
+                    <HistoriesMenu
+                        v-on="handlers"
+                        :histories="histories"
+                        :current-history="currentHistory"
+                        title="Current History"
+                    />
                 </template>
             </HistoryPanel>
 
@@ -25,7 +23,6 @@
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "./providers/UserHistories";
 import HistoryPanel from "./HistoryPanel";
-import HistorySelector from "./HistorySelector";
 import HistoriesMenu from "./HistoriesMenu";
 
 export default {
@@ -33,8 +30,12 @@ export default {
         CurrentUser,
         UserHistories,
         HistoryPanel,
-        HistorySelector,
         HistoriesMenu,
     },
+    // data() {
+    //     return {
+    //         showModal: false,
+    //     };
+    // },
 };
 </script>

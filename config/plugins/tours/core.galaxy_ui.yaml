@@ -95,7 +95,7 @@ steps:
       #backdrop: true
 
     - title: "Tool parameters"
-      element: '.center-panel .ui-portlet'
+      element: '.center-panel .portlet-content'
       intro: "Here you can choose your tool parameters. Select your input dataset from your history and specify parameters for your analysis."
       position: "right"
 
@@ -154,7 +154,7 @@ steps:
         - "div.title-bar.clear:eq(0)"
 
     - title: "Re-run tool"
-      element: "#current-history-panel .fa-refresh:first"
+      element: "#current-history-panel .fa-redo:first"
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
       position: "left"
 

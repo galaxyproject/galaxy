@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 
 import requests
 
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from galaxy.web import statsd_client as statsd
 
 
@@ -14,12 +15,12 @@ def get_timings(test_uuid):
     # ts = datetime.datetime.fromtimestamp(to_timestamp).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     params = {
         "db": "telegraf",
-        "q": "select * from galaxy_ where test='%s'" % (test_uuid,),
+        "q": f"select * from galaxy_ where test='{test_uuid}'",
     }
     query = urlencode(params)
     headers = {"content-type": "application/json"}
-    url = "http://localhost:8086/query?%s" % query
-    response = requests.get(url, headers=headers)
+    url = f"http://localhost:8086/query?{query}"
+    response = requests.get(url, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
     if response.ok:
         return response.json()
     else:

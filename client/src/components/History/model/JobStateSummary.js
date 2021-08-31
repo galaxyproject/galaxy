@@ -1,20 +1,13 @@
 /**
  * Read-only class takes raw data and applies some rules
  * to determine an amalgam state for a collection.
+ *
+ * Logic stolen from job-state-model.js and hdca-li.js
  */
 import { STATES } from "./states";
 
-// logic largely stolen from the butchered, degenerate mess at:
-// import nonsense from "mvc/history/job-states-model.js"
-
-// Job-state-summary lists
-
-const NON_TERMINAL_STATES = [STATES.NEW, STATES.QUEUED, STATES.RUNNING];
-
-const ERROR_STATES = [
-    STATES.ERROR,
-    STATES.DELETED, // does this exist?
-];
+const NON_TERMINAL_STATES = [STATES.NEW, STATES.WAITING, STATES.QUEUED, STATES.RUNNING];
+const ERROR_STATES = [STATES.ERROR, STATES.DELETED];
 
 export class JobStateSummary extends Map {
     constructor(dsc = {}) {
@@ -23,7 +16,6 @@ export class JobStateSummary extends Map {
         this.populated_state = populated_state;
     }
 
-    // state element has value > 0
     hasJobs(key) {
         return this.has(key) ? this.get(key) > 0 : false;
     }
@@ -33,40 +25,23 @@ export class JobStateSummary extends Map {
         return states.some((s) => this.hasJobs(s));
     }
 
-    // amalgam state, basically just for display purposes
     get state() {
-        // FROM mvc/history/hdca-li.js
-        //TODO: model currently has no state
-        // var state;
-        // var jobStatesSummary = this.model.jobStatesSummary;
-        // if (jobStatesSummary) {
-        //     if (jobStatesSummary.new()) {
-        //         state = "loading";
-        //     } else if (jobStatesSummary.errored()) {
-        //         state = "error";
-        //     } else if (jobStatesSummary.terminal()) {
-        //         state = "ok";
-        //     } else if (jobStatesSummary.running()) {
-        //         state = "running";
-        //     } else {
-        //         state = "queued";
-        //     }
-        // } else if (this.model.get("job_source_id")) {
-        //     // Initial rendering - polling will fill in more details in a bit.
-        //     state = "loading";
-        // } else {
-        //     state = this.model.get("populated_state") ? STATES.OK : STATES.RUNNING;
-        // }
-
         if (this.jobCount) {
-            if (this.isErrored) return STATES.ERROR;
-            if (this.isNew) return STATES.NEW;
-            if (this.isRunning) return STATES.RUNNING;
-            if (this.isTerminal) return STATES.OK;
+            if (this.isErrored) {
+                return STATES.ERROR;
+            }
+            if (this.isRunning) {
+                return STATES.RUNNING;
+            }
+            if (this.isNew) {
+                return STATES.LOADING;
+            }
+            if (this.isTerminal) {
+                return STATES.OK;
+            }
             return STATES.QUEUED;
         }
-
-        return null;
+        return this.populated_state;
     }
 
     // Flags
@@ -76,16 +51,18 @@ export class JobStateSummary extends Map {
     }
 
     get isErrored() {
-        return this.anyHasJobs(...ERROR_STATES);
+        return this.populated_state == STATES.ERROR || this.anyHasJobs(...ERROR_STATES);
+    }
+
+    get isTerminal() {
+        if (this.isNew) {
+            return false;
+        }
+        return !this.anyHasJobs(...NON_TERMINAL_STATES);
     }
 
     get isRunning() {
         return this.hasJobs(STATES.RUNNING);
-    }
-
-    get isTerminal() {
-        if (this.isNew) return false;
-        return !this.anyHasJobs(...NON_TERMINAL_STATES);
     }
 
     // Counts
@@ -99,6 +76,6 @@ export class JobStateSummary extends Map {
     }
 
     get runningCount() {
-        return this.get(STATES.ERRUNNINGROR);
+        return this.get(STATES.RUNNING);
     }
 }

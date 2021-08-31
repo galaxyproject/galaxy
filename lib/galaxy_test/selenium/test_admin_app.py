@@ -58,7 +58,7 @@ class AdminAppTestCase(SeleniumTestCase):
         # This serves as a check for the presence of the upgrade notification.
         admin_component.toolshed.upgrade_notification.wait_for_visible()
         self.screenshot('admin_toolshed_repo_installed')
-        repository_row = self.driver.find_element_by_xpath("//div[contains(text(), '%s')]/.." % repository_name)
+        repository_row = self.driver.find_element_by_xpath(f"//div[contains(text(), '{repository_name}')]/..")
         repository_row.click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot('admin_toolshed_installed_only')

@@ -252,8 +252,7 @@ class CatchingIter:
                 exc_info, self.environ)
             if close_response is not None:
                 response += (
-                    '<hr noshade>Error in .close():<br>%s'
-                    % close_response)
+                    f'<hr noshade>Error in .close():<br>{close_response}')
 
             if not self.start_checker.response_started:
                 self.start_checker('500 Internal Server Error',
@@ -423,14 +422,14 @@ def handle_exception(exc_info, error_stream, html=True,
             extra = "<p><b>The error has been logged to our team.</b>"
             if 'sentry_event_id' in environ:
                 extra += " If you want to contact us about this error, please reference the following<br><br>"
-                extra += "<b><large>GURU MEDITATION: #" + environ['sentry_event_id'] + "</large></b>"
+                extra += f"<b><large>GURU MEDITATION: #{environ['sentry_event_id']}</large></b>"
             extra += "</p>"
             return_error = error_template('', msg, extra)
     else:
         return_error = None
     if not reported and error_stream:
         err_report = formatter.format_text(exc_data, show_hidden_frames=True)
-        err_report += '\n' + '-' * 60 + '\n'
+        err_report += f"\n{'-' * 60}\n"
         error_stream.write(err_report)
     if extra_data:
         error_stream.write(extra_data)

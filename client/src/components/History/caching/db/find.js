@@ -1,6 +1,6 @@
 import { pipe } from "rxjs";
 import { mergeMap } from "rxjs/operators";
-import { needs } from "../operators/needs";
+import { show, needs } from "utils/observable";
 
 /**
  * Pouchdb-find as an operator
@@ -8,8 +8,11 @@ import { needs } from "../operators/needs";
  *
  * @param {Observable} db$ Observable pouchDb instance
  */
-export const find = (db$) => {
+export const find = (db$, cfg = {}) => {
+    const { label = "find", debug = false } = cfg;
+
     return pipe(
+        show(debug, (request) => console.log(`${label} -> request`, request)),
         needs(db$),
         mergeMap(async (inputs) => {
             const [request, db] = inputs;
@@ -33,6 +36,7 @@ export const find = (db$) => {
             }
 
             return docs;
-        })
+        }),
+        show(debug, (result) => console.log(`${label} -> result`, result))
     );
 };

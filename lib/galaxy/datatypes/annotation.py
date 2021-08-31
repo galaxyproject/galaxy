@@ -26,7 +26,7 @@ class SnapHmm(Text):
         try:
             return dataset.peek
         except Exception:
-            return "SNAP HMM model (%s)" % (nice_size(dataset.get_size()))
+            return f"SNAP HMM model ({nice_size(dataset.get_size())})"
 
     def sniff_prefix(self, file_prefix):
         """
@@ -55,7 +55,7 @@ class Augustus(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "Augustus model (%s)" % (nice_size(dataset.get_size()))
+            return f"Augustus model ({nice_size(dataset.get_size())})"
 
     def sniff(self, filename):
         """

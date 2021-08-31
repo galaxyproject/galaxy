@@ -35,7 +35,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesApp, tools_support.UsesT
         self.setup_app()
         self.history = galaxy.model.History()
         self.trans = MockTrans(self.app, self.history)
-        self.app.dataset_collections_service = MockCollectionService()
+        self.app.dataset_collection_manager = MockCollectionService()
         self.tool_action = MockAction(self.trans)
 
     def tearDown(self):
@@ -204,6 +204,7 @@ class MockTrans:
         self.workflow_building_mode = False
         self.webapp = Bunch(name="galaxy")
         self.sa_session = self.app.model.context
+        self.url_builder = None
 
     def get_history(self, **kwargs):
         return self.history

@@ -121,6 +121,9 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :type   invocation_id: string
         :param  invocation_id: limit listing of jobs to those that match the invocation_id. If none, all are returned.
 
+        :type   view: string
+        :param  view: Determines columns to return. Defaults to 'collection'.
+
         :rtype:     list
         :returns:   list of dictionaries containing summary job information
         """
@@ -128,6 +131,11 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         is_admin = trans.user_is_admin
         user_details = kwd.get('user_details', False)
         user_id = kwd.get('user_id', None)
+        view = kwd.get('view', 'collection')
+        if view not in ('collection', 'admin_job_list'):
+            raise exceptions.RequestParameterInvalidException(f"view parameter '{view} is invalid")
+        if view == 'admin_job_list' and not is_admin:
+            raise exceptions.AdminRequiredException("Only admins can use the admin_job_list view")
 
         if user_id:
             decoded_user_id = self.decode_id(user_id)
@@ -197,8 +205,10 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         out = []
         for job in query.all():
-            job_dict = job.to_dict('collection', system_details=is_admin)
+            job_dict = job.to_dict(view, system_details=is_admin)
             j = self.encode_all_ids(trans, job_dict, True)
+            if view == 'admin_job_list':
+                j['decoded_job_id'] = job.id
             if user_details:
                 j['user_email'] = job.user.email
             out.append(j)
@@ -314,11 +324,11 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         job = self.__get_job(trans, id)
         if not job:
-            raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
+            raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")
         if job.state == job.states.PAUSED:
             job.resume()
         else:
-            exceptions.RequestParameterInvalidException("Job with id '%s' is not paused" % (job.tool_id))
+            exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
         return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
     @expose_api_anonymous
@@ -409,12 +419,12 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         job = self.__get_job(trans, id)
         if not job:
-            raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
+            raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")
         tool = self.app.toolbox.get_tool(job.tool_id, kwd.get('tool_version') or job.tool_version)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if not tool.is_workflow_compatible:
-            raise exceptions.ConfigDoesNotAllowException("Tool '%s' cannot be rerun." % (job.tool_id))
+            raise exceptions.ConfigDoesNotAllowException(f"Tool '{job.tool_id}' cannot be rerun.")
         return tool.to_json(trans, {}, job=job)
 
     def __dictify_associations(self, trans, *association_lists):

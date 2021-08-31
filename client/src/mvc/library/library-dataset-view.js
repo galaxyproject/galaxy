@@ -473,7 +473,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         <button data-toggle="tooltip" data-placement="top"
                             title="Attempt to detect the format of dataset"
                             class="btn btn-secondary toolbtn_detect_datatype toolbar-item mr-1" type="button">
-                            <span class="fa fa-undo"></span>
+                            <span class="fa fa-redo"></span>
                             &nbsp;Auto-detect datatype
                         </button>
                     <% } %>
@@ -492,12 +492,12 @@ var LibraryDatasetView = Backbone.View.extend({
                 <!-- BREADCRUMBS -->
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item">
-                        <a title="Return to the list of libraries" href="<% rootPath %>libraries">Libraries</a>
+                        <a title="Return to the list of libraries" href="<% rootPath %>/libraries">Libraries</a>
                     </li>
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>
                             <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="<% rootPath %>folders/<%- path_item[0] %>">
+                                <a title="Return to this folder" href="<% rootPath %>/libraries/folders/<%- path_item[0] %>">
                                     <%- path_item[1] %>
                                 </a>
                             </li>

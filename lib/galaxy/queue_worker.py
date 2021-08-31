@@ -41,7 +41,7 @@ def send_local_control_task(app, task, get_response=False, kwargs=None):
     """
     if kwargs is None:
         kwargs = {}
-    log.info("Queuing {} task {} for {}.".format("sync" if get_response else "async", task, app.config.server_name))
+    log.info(f"Queuing {'sync' if get_response else 'async'} task {task} for {app.config.server_name}.")
     payload = {'task': task,
                'kwargs': kwargs}
     routing_key = f'control.{app.config.server_name}@{socket.gethostname()}'
@@ -60,7 +60,7 @@ def send_control_task(app, task, noop_self=False, get_response=False, routing_ke
     """
     if kwargs is None:
         kwargs = {}
-    log.info("Sending %s control task." % task)
+    log.info(f"Sending {task} control task.")
     payload = {'task': task,
                'kwargs': kwargs}
     if noop_self:
@@ -155,7 +155,7 @@ def create_panel_section(app, **kwargs):
 def reload_tool(app, **kwargs):
     params = util.Params(kwargs)
     tool_id = params.get('tool_id', None)
-    log.debug("Executing reload tool task for %s" % tool_id)
+    log.debug(f"Executing reload tool task for {tool_id}")
     if tool_id:
         app.toolbox.reload_tool_by_id(tool_id)
     else:
@@ -215,7 +215,7 @@ def reload_data_managers(app, **kwargs):
 
 def reload_display_application(app, **kwargs):
     display_application_ids = kwargs.get('display_application_ids', None)
-    log.debug("Executing display application reload task for %s" % display_application_ids)
+    log.debug(f"Executing display application reload task for {display_application_ids}")
     app.datatypes_registry.reload_display_applications(display_application_ids)
 
 
@@ -232,7 +232,7 @@ def recalculate_user_disk_usage(app, **kwargs):
         if user:
             user.calculate_and_set_disk_usage()
         else:
-            log.error("Recalculate user disk usage task failed, user %s not found" % user_id)
+            log.error(f"Recalculate user disk usage task failed, user {user_id} not found")
     else:
         log.error("Recalculate user disk usage task received without user_id.")
 
@@ -259,7 +259,7 @@ def reload_job_rules(app, **kwargs):
     for module in job_rule_modules(app):
         rules_module_name = module.__name__
         for name, module in sys.modules.items():
-            if ((name == rules_module_name or name.startswith(rules_module_name + '.'))
+            if ((name == rules_module_name or name.startswith(f"{rules_module_name}."))
                     and ismodule(module)):
                 log.debug("Reloading job rules module: %s", name)
                 importlib.reload(module)
@@ -396,7 +396,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
             else:
                 result = 'NO_OP'
         else:
-            log.warning("Received a malformed task message:\n%s" % body)
+            log.warning(f"Received a malformed task message:\n{body}")
         if message.properties.get('reply_to'):
             self.producer.publish(
                 {'result': result},
@@ -410,3 +410,4 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
 
     def shutdown(self):
         self.should_stop = True
+        self.join()

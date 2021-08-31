@@ -3,7 +3,6 @@ File format detector
 """
 
 import bz2
-import codecs
 import gzip
 import io
 import logging
@@ -17,7 +16,7 @@ import urllib.request
 import zipfile
 
 from galaxy import util
-from galaxy.util import compression_utils
+from galaxy.util import compression_utils, stream_to_open_named_file
 from galaxy.util.checkers import (
     check_binary,
     check_bz2,
@@ -56,41 +55,9 @@ def stream_url_to_file(path, file_sources=None):
         file_source_path.file_source.realize_to(file_source_path.path, temp_name)
         return temp_name
     else:
-        page = urllib.request.urlopen(path)  # page will be .close()ed in stream_to_file
+        page = urllib.request.urlopen(path, timeout=util.DEFAULT_SOCKET_TIMEOUT)  # page will be .close()ed in stream_to_file
         temp_name = stream_to_file(page, prefix=prefix, source_encoding=util.get_charset_from_http_headers(page.headers))
         return temp_name
-
-
-def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):
-    """Writes a stream to the provided file descriptor, returns the file name. Closes file descriptor"""
-    # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
-    CHUNK_SIZE = 1048576
-    try:
-        codecs.lookup(target_encoding)
-    except Exception:
-        target_encoding = util.DEFAULT_ENCODING  # utf-8
-    use_source_encoding = source_encoding is not None
-    while True:
-        chunk = stream.read(CHUNK_SIZE)
-        if not chunk:
-            break
-        if use_source_encoding:
-            # If a source encoding is given we use it to convert to the target encoding
-            try:
-                if not isinstance(chunk, str):
-                    chunk = chunk.decode(source_encoding, source_error)
-                os.write(fd, chunk.encode(target_encoding, target_error))
-            except UnicodeDecodeError:
-                use_source_encoding = False
-                os.write(fd, chunk)
-        else:
-            # Compressed files must be encoded after they are uncompressed in the upload utility,
-            # while binary files should not be encoded at all.
-            if isinstance(chunk, str):
-                chunk = chunk.encode(target_encoding, target_error)
-            os.write(fd, chunk)
-    os.close(fd)
-    return filename
 
 
 def stream_to_file(stream, suffix='', prefix='', dir=None, text=False, **kwd):
@@ -710,7 +677,7 @@ def handle_compressed_file(
                 except OSError as e:
                     os.remove(uncompressed.name)
                     compressed_file.close()
-                    raise OSError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
+                    raise OSError(f'Problem uncompressing {compressed_type} data, please try retrieving the data uncompressed: {util.unicodify(e)}')
                 if not chunk:
                     break
                 uncompressed.write(chunk)

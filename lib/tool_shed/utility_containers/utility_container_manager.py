@@ -709,9 +709,9 @@ class UtilityContainerManager:
                                                                                   self.app.security.encode_id(tool_shed_repository_id))
             if tool_shed_repository:
                 if tool_shed_repository.missing_repository_dependencies:
-                    installation_status = '%s, missing repository dependencies' % installation_status
+                    installation_status = f'{installation_status}, missing repository dependencies'
                 elif tool_shed_repository.missing_tool_dependencies:
-                    installation_status = '%s, missing tool dependencies' % installation_status
+                    installation_status = f'{installation_status}, missing tool dependencies'
         return tool_shed_repository_id, installation_status, repository_dependency
 
     def get_folder(self, folder, key):

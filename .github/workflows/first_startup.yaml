@@ -1,5 +1,10 @@
 name: first startup
 on: [push, pull_request]
+concurrency:
+  group: first-startup-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  YARN_INSTALL_OPTS: --frozen-lockfile
 jobs:
 
   test:
@@ -9,6 +14,10 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.6', '3.9']
+        webserver: ['uwsgi']
+        include:
+          - python-version: '3.9'
+            webserver: 'dev'
     defaults:
       run:
         shell: bash -l {0}
@@ -26,6 +35,9 @@ jobs:
       with:
         path: ~/.cache/pip
         key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+    - uses: mvdbeek/gha-yarn-cache@master
+      with:
+        yarn-lock-file: 'galaxy root/client/yarn.lock'
     - name: Install tox
       run: pip install tox
       # Use this job to test the latest migrations
@@ -34,3 +46,5 @@ jobs:
     - name: run tests
       run: tox -e first_startup
       working-directory: 'galaxy root'
+      env:
+        APP_WEBSERVER: ${{ matrix.webserver }}

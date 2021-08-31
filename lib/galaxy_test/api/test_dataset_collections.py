@@ -101,7 +101,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         archive = zipfile.ZipFile(BytesIO(create_response.content))
         namelist = archive.namelist()
-        assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
+        assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_dce, namelist):
             assert f"{collection_name}/{element['element_identifier']}.{element['object']['file_ext']}" == zip_path
@@ -116,10 +116,10 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         archive = zipfile.ZipFile(BytesIO(create_response.content))
         namelist = archive.namelist()
-        assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
+        assert len(namelist) == 2, f"Expected 2 elements in [{namelist}]"
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_dce, namelist):
-            assert "{}/{}.{}".format(collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert f"{collection_name}/{element['element_identifier']}.{element['object']['file_ext']}" == zip_path
 
     def test_list_pair_download(self):
         fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(self.history_id).json()
@@ -132,10 +132,10 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         archive = zipfile.ZipFile(BytesIO(create_response.content))
         namelist = archive.namelist()
-        assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
+        assert len(namelist) == 2, f"Expected 2 elements in [{namelist}]"
         pair_collection_name = pair['element_identifier']
         for element, zip_path in zip(pair['object']['elements'], namelist):
-            assert "{}/{}/{}.{}".format(list_collection_name, pair_collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert f"{list_collection_name}/{pair_collection_name}/{element['element_identifier']}.{element['object']['file_ext']}" == zip_path
 
     def test_list_list_download(self):
         dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id).json()
@@ -146,7 +146,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         archive = zipfile.ZipFile(BytesIO(create_response.content))
         namelist = archive.namelist()
-        assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
+        assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
 
     def test_list_list_list_download(self):
         dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id, collection_type='list:list:list').json()
@@ -157,7 +157,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         archive = zipfile.ZipFile(BytesIO(create_response.content))
         namelist = archive.namelist()
-        assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
+        assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
 
     def test_hda_security(self):
         element_identifiers = self.dataset_collection_populator.pair_identifiers(self.history_id)
@@ -274,7 +274,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert "bagit.txt" in hdca["populated_state_message"], hdca
 
     def _assert_one_collection_created_in_history(self):
-        contents_response = self._get("histories/%s/contents/dataset_collections" % self.history_id)
+        contents_response = self._get(f"histories/{self.history_id}/contents/dataset_collections")
         self._assert_status_code_is(contents_response, 200)
         contents = contents_response.json()
         assert len(contents) == 1
@@ -307,7 +307,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         response = self._get(contents_url)
         self._assert_status_code_is(response, 200)
         fake_collection_id = '5d7db0757a2eb7ef'
-        fake_contents_url = '/api/dataset_collections/{}/contents/{}'.format(hdca['id'], fake_collection_id)
+        fake_contents_url = f"/api/dataset_collections/{hdca['id']}/contents/{fake_collection_id}"
         error_response = self._get(fake_contents_url)
         assert_object_id_error(error_response)
 
@@ -347,14 +347,47 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         hdca, root_contents_url = self._create_collection_contents_pair()
 
         # check limit
-        limited_contents = self._get(root_contents_url + '?limit=1').json()
+        limited_contents = self._get(f"{root_contents_url}?limit=1").json()
         assert len(limited_contents) == 1
         assert limited_contents[0]['element_index'] == 0
 
         # check offset
-        offset_contents = self._get(root_contents_url + '?offset=1').json()
+        offset_contents = self._get(f"{root_contents_url}?offset=1").json()
         assert len(offset_contents) == 1
         assert offset_contents[0]['element_index'] == 1
+
+    def test_collection_tools_tag_propagation(self):
+        elements = [{"src": "files", "tags": ["name:element_tag"]}]
+        targets = [{
+            "destination": {"type": "hdca"},
+            "elements": elements,
+            "collection_type": "list",
+            "name": "Test collection",
+            "tags": ["name:collection_tag"]
+        }]
+        payload = {
+            "history_id": self.history_id,
+            "targets": json.dumps(targets),
+            "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
+        }
+        hdca_id = self.dataset_populator.fetch(payload).json()['output_collections'][0]['id']
+        inputs = {
+            "input": {"batch": False, "src": "hdca", "id": hdca_id},
+        }
+        payload = self.dataset_populator.run_tool_payload(
+            tool_id='__FILTER_FAILED_DATASETS__',
+            inputs=inputs,
+            history_id=self.history_id,
+            input_format='legacy',
+        )
+        response = self._post("tools", payload).json()
+        self.dataset_populator.wait_for_history(self.history_id, assert_ok=False)
+        output_collection = response["output_collections"][0]
+        # collection should not inherit tags from input collection elements, only parent collection
+        assert output_collection['tags'] == ["name:collection_tag"]
+        element = output_collection['elements'][0]
+        # new element hda should have tags copied from old hda
+        assert element['object']['tags'] == ['name:element_tag']
 
     def _compare_collection_contents_elements(self, contents_elements, hdca_elements):
         # compare collection api results to existing hdca element contents
@@ -373,7 +406,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
 
     def _get_contents_url_for_hdca(self, hdca):
         # look up the history contents using optional serialization key
-        history_contents_url = "histories/%s/contents?v=dev&view=summary&keys=contents_url" % (self.history_id)
+        history_contents_url = f"histories/{self.history_id}/contents?v=dev&view=summary&keys=contents_url"
         json = self._get(history_contents_url).json()
 
         # filter out the collection we just made id = hdca.id

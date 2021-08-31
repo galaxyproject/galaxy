@@ -1,6 +1,6 @@
 import { of } from "rxjs";
 import { ObserverSpy } from "@hirez_io/observer-spy";
-import * as caching from "components/History/caching/loadHistoryContents";
+import { loadHistoryContents } from "../../History/caching";
 import { monitorHistoryUntilTrue, invocationStepMonitor } from "./monitors";
 import * as fetch from "./fetch";
 
@@ -24,8 +24,8 @@ describe("invocationStepMonitor", () => {
         // mocks fetchInvocationStep in initialFetch$
         fetchInvocationMock.mockImplementationOnce(() => () => of(invocationStepDataNew));
         // mocks fetchInvocationStep in pollingFetch$
-        fetchInvocationMock.mockImplementationOnce(() => () =>
-            of(invocationStepDataRunning, invocationStepDataOk, invocationStepDataOk)
+        fetchInvocationMock.mockImplementationOnce(
+            () => () => of(invocationStepDataRunning, invocationStepDataOk, invocationStepDataOk)
         );
         monitor$ = of(invocationId).pipe(invocationStepMonitor(20));
         monitor$.subscribe(spy);
@@ -34,8 +34,8 @@ describe("invocationStepMonitor", () => {
     });
     test("invocationStepMonitor terminates immediately if step is terminal", async () => {
         fetchInvocationMock.mockImplementationOnce(() => () => of(invocationStepDataOk));
-        fetchInvocationMock.mockImplementationOnce(() => () =>
-            of(invocationStepDataRunning, invocationStepDataOk, invocationStepDataOk, invocationStepDataOk)
+        fetchInvocationMock.mockImplementationOnce(
+            () => () => of(invocationStepDataRunning, invocationStepDataOk, invocationStepDataOk, invocationStepDataOk)
         );
         monitor$ = of(invocationId).pipe(invocationStepMonitor(20));
         monitor$.subscribe(spy);
@@ -58,7 +58,7 @@ describe("monitorHistoryUntilTrue", () => {
         stopMonitor = false;
         completed = false;
         mockLoadHistoryContent = of(1, 2, 3);
-        jest.spyOn(caching, 'loadHistoryContents').mockImplementation(() => () => mockLoadHistoryContent);
+        loadHistoryContents.mockImplementation(() => () => mockLoadHistoryContent);
         monitor$ = monitorHistoryUntilTrue(stopFn, historyId, 20);
     });
 

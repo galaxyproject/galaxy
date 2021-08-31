@@ -3,6 +3,7 @@ import logging
 import re
 import uuid
 from math import isinf
+from typing import Optional
 
 import packaging.version
 
@@ -20,6 +21,7 @@ from .interface import (
     InputSource,
     PageSource,
     PagesSource,
+    RequiredFiles,
     TestCollectionDef,
     TestCollectionOutputDef,
     ToolSource,
@@ -136,7 +138,7 @@ class XmlToolSource(ToolSource):
         if expression_el is not None:
             expression_type = expression_el.get("type")
             if expression_type != "ecma5.1":
-                raise Exception("Unknown expression type [%s] encountered" % expression_type)
+                raise Exception(f"Unknown expression type [{expression_type}] encountered")
             return expression_el.text
         return None
 
@@ -261,6 +263,26 @@ class XmlToolSource(ToolSource):
             elem = self.root
         return string_as_bool(elem.get(attribute, default))
 
+    def parse_required_files(self) -> Optional[RequiredFiles]:
+        required_files = self.root.find("required_files")
+        if required_files is None:
+            return None
+
+        def parse_include_exclude_list(tag_name):
+            as_list = []
+            for ref in required_files.findall(tag_name):
+                path = ref.get("path")
+                assert path is not None, f'"path" must be specified in {tag_name}'
+                path_type = ref.get("type", "literal")
+                as_list.append({"path": path, "path_type": path_type})
+            return as_list
+
+        as_dict = {}
+        as_dict["extend_default_excludes"] = self._get_attribute_as_bool("extend_default_excludes", True, elem=required_files)
+        as_dict["includes"] = parse_include_exclude_list("include")
+        as_dict["excludes"] = parse_include_exclude_list("exclude")
+        return RequiredFiles.from_dict(as_dict)
+
     def parse_requirements_and_containers(self):
         return requirements.parse_requirements_from_xml(self.root)
 
@@ -382,7 +404,7 @@ class XmlToolSource(ToolSource):
                 else:
                     _parse_expression(out_child)
             else:
-                log.warning("Unknown output tag encountered [%s]" % out_child.tag)
+                log.warning(f"Unknown output tag encountered [{out_child.tag}]")
 
         for output_def in data_dict.values():
             outputs[output_def.name] = output_def
@@ -471,7 +493,7 @@ class XmlToolSource(ToolSource):
             elif detect_errors == "aggressive":
                 exit_codes, regexes = aggressive_error_checks()
             else:
-                raise ValueError("Unknown detect_errors value encountered [%s]" % detect_errors)
+                raise ValueError(f"Unknown detect_errors value encountered [{detect_errors}]")
         elif len(self.root.findall('stdio')) == 0 and not self.legacy_defaults:
             exit_codes, regexes = error_on_exit_code()
         else:
@@ -728,7 +750,7 @@ def __parse_extra_files_elem(extra):
     extra_type = attrib.pop('type', 'file')
     extra_name = attrib.pop('name', None)
     assert extra_type == 'directory' or extra_name is not None, \
-        'extra_files type (%s) requires a name attribute' % extra_type
+        f'extra_files type ({extra_type}) requires a name attribute'
     extra_value, extra_attributes = __parse_test_attributes(extra, attrib)
     return {
         "value": extra_value,
@@ -915,8 +937,7 @@ class StdioParser:
                         exit_code.range_end = int(code_ranges[1])
                 # If we got more than one colon, then ignore the exit code.
                 elif (len(code_ranges) > 2):
-                    log.warning("Invalid tool exit_code range %s - ignored"
-                                % code_range)
+                    log.warning(f"Invalid tool exit_code range {code_range} - ignored")
                     continue
                 # Else we have a singular value. If it's not an integer, then
                 # we'll just write a log message and skip this exit_code.
@@ -925,7 +946,7 @@ class StdioParser:
                         exit_code.range_start = int(code_range)
                     except Exception:
                         log.error(code_range)
-                        log.warning("Invalid range start for tool's exit_code %s: exit_code ignored" % code_range)
+                        log.warning(f"Invalid range start for tool's exit_code {code_range}: exit_code ignored")
                         continue
                     exit_code.range_end = exit_code.range_start
                 # TODO: Check if we got ">", ">=", "<", or "<=":
@@ -934,7 +955,7 @@ class StdioParser:
                 # the start must be -inf and the end must be +inf.
                 # So at least warn about this situation:
                 if isinf(exit_code.range_start) and isinf(exit_code.range_end):
-                    log.warning("Tool exit_code range %s will match on all exit codes" % code_range)
+                    log.warning(f"Tool exit_code range {code_range} will match on all exit codes")
                 self.stdio_exit_codes.append(exit_code)
         except Exception:
             log.exception("Exception in parse_stdio_exit_codes!")

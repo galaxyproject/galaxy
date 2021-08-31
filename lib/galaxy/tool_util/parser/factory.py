@@ -53,7 +53,7 @@ def get_tool_source_from_representation(tool_format, tool_representation):
             tool_representation["version"] = "1.0.0"  # Don't require version for embedded tools.
         return YamlToolSource(tool_representation)
     else:
-        raise Exception("Unknown tool representation format [%s]." % tool_format)
+        raise Exception(f"Unknown tool representation format [{tool_format}].")
 
 
 def get_input_source(content):

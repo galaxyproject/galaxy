@@ -100,14 +100,16 @@ class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
             'deleted': True,
             'visible': False,
             'name': 'New Name',
+            'tags': ['name:one', 'group:two', 'three']
             # TODO: doesn't work
-            # 'tags'      : [ 'one', 'two', 'three' ]
             # 'annotations'      : [?]
         })
         self.assertEqual(hdca.name, 'New Name')
         self.assertTrue(hdca.deleted)
         self.assertFalse(hdca.visible)
-        # self.assertEqual( hdca.tags, [ 'one', 'two', 'three' ] )
+
+        tag_names = hdca.make_tag_string_list()
+        self.assertEqual(tag_names, ['name:one', 'group:two', 'three'])
         # self.assertEqual( hdca.annotations, [ 'one', 'two', 'three' ] )
 
     # def test_validation( self ):

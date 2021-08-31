@@ -9,7 +9,7 @@ from galaxy.exceptions import MalformedContents
 from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper, JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
 from galaxy.tools.imp_exp.export_history import create_archive
 from ..unittest_utils.galaxy_mock import MockApp
-from ..unittest_utils.objectstore_helpers import TestConfig
+from ..unittest_utils.objectstore_helpers import Config as TestConfig
 
 
 # good enough for the very specific tests we're writing as of now...
@@ -622,6 +622,8 @@ def _import_export(app, h, dest_export=None):
         dest_export = os.path.join(dest_parent, "moo.tgz")
 
     job = model.Job()
+    app.model.session.add(job, h)
+    app.model.session.flush()
     jeha = model.JobExportHistoryArchive.create_for_history(
         h, job, app.model.context, app.object_store, compressed=True
     )

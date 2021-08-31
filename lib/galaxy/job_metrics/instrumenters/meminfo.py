@@ -33,7 +33,7 @@ class MemInfoPlugin(InstrumentPlugin):
         self.verbose = util.asbool(kwargs.get("verbose", False))
 
     def pre_execute_instrument(self, job_directory):
-        return "cat /proc/meminfo > '%s'" % self.__instrument_meminfo_path(job_directory)
+        return f"cat /proc/meminfo > '{self.__instrument_meminfo_path(job_directory)}'"
 
     def job_properties(self, job_id, job_directory):
         properties = {}

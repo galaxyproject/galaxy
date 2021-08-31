@@ -112,9 +112,9 @@ class Registry:
                 root = tree.getroot()
                 # Load datatypes and converters from config
                 if deactivate:
-                    self.log.debug('Deactivating datatypes from %s' % config)
+                    self.log.debug(f'Deactivating datatypes from {config}')
                 else:
-                    self.log.debug('Loading datatypes from %s' % config)
+                    self.log.debug(f'Loading datatypes from {config}')
             else:
                 root = config
             registration = root.find('registration')
@@ -131,7 +131,7 @@ class Registry:
                         self.converters_path_attr = os.path.abspath(os.path.join(os.path.dirname(__file__), 'converters'))
                         self.converters_path = self.converters_path_attr
                     if not os.path.isdir(self.converters_path):
-                        raise ConfigurationError("Directory does not exist: %s" % self.converters_path)
+                        raise ConfigurationError(f"Directory does not exist: {self.converters_path}")
             if use_display_applications:
                 if not self.display_applications_path:
                     self.display_path_attr = registration.get('display_path', 'display_applications')
@@ -204,7 +204,7 @@ class Registry:
                         del self.datatypes_by_extension[extension]
                         if extension in self.upload_file_formats:
                             self.upload_file_formats.remove(extension)
-                        self.log.debug("Removed datatype with extension '%s' from the registry." % extension)
+                        self.log.debug(f"Removed datatype with extension '{extension}' from the registry.")
                 else:
                     # We are loading new datatype, so we'll make sure it is correctly defined before proceeding.
                     can_process_datatype = False
@@ -247,14 +247,14 @@ class Registry:
                                         for mod in fields:
                                             module = getattr(module, mod)
                                         datatype_class = getattr(module, datatype_class_name)
-                                        self.log.debug('Retrieved datatype module {}:{} from the datatype registry for extension {}.'.format(str(datatype_module), datatype_class_name, extension))
+                                        self.log.debug(f'Retrieved datatype module {str(datatype_module)}:{datatype_class_name} from the datatype registry for extension {extension}.')
                                     except Exception:
                                         self.log.exception('Error importing datatype module %s', str(datatype_module))
                                         ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[type_extension].__class__
-                                self.log.debug('Retrieved datatype module {} from type_extension {} for extension {}.'.format(str(datatype_class.__name__), type_extension, extension))
+                                self.log.debug(f'Retrieved datatype module {str(datatype_class.__name__)} from type_extension {type_extension} for extension {extension}.')
                             except Exception:
                                 self.log.exception('Error determining datatype_class for type_extension %s', str(type_extension))
                                 ok = False
@@ -307,7 +307,7 @@ class Registry:
                                 for composite_file in elem.findall('composite_file'):
                                     name = composite_file.get('name', None)
                                     if name is None:
-                                        self.log.warning("You must provide a name for your composite_file (%s)." % composite_file)
+                                        self.log.warning(f"You must provide a name for your composite_file ({composite_file}).")
                                     optional = composite_file.get('optional', False)
                                     mimetype = composite_file.get('mimetype', None)
                                     self.datatypes_by_extension[extension].add_composite_file(name, optional=optional, mimetype=mimetype)
@@ -339,7 +339,7 @@ class Registry:
                                     elif auto_compressed_type == "bz2":
                                         dynamic_parent = binary.Bz2DynamicCompressedArchive
                                     else:
-                                        raise Exception("Unknown auto compression type [%s]" % auto_compressed_type)
+                                        raise Exception(f"Unknown auto compression type [{auto_compressed_type}]")
                                     attributes["file_ext"] = compressed_extension
                                     attributes["uncompressed_datatype_instance"] = datatype_instance
                                     compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, dynamic_parent, ), attributes)
@@ -357,7 +357,7 @@ class Registry:
                                         "description": description,
                                         "description_url": description_url,
                                     })
-                                    self.converters.append(("%s_to_uncompressed.xml" % auto_compressed_type, compressed_extension, extension))
+                                    self.converters.append((f"{auto_compressed_type}_to_uncompressed.xml", compressed_extension, extension))
                                     if datatype_class not in compressed_sniffers:
                                         compressed_sniffers[datatype_class] = []
                                     if sniff_compressed_types:
@@ -411,7 +411,7 @@ class Registry:
             site_type = build_site_config.get('type')
             path = build_site_config.get('file')
             if not os.path.exists(path):
-                sample_path = "%s.sample" % path
+                sample_path = f"{path}.sample"
                 if os.path.exists(sample_path):
                     self.log.debug(f"Build site file [{path}] not found using sample [{sample_path}].")
                     path = sample_path
@@ -511,12 +511,12 @@ class Registry:
                                             if sniffer_class == s_e_c:
                                                 del self.sniffer_elems[index]
                                                 sniffer_elem_classes = [elem.attrib['type'] for elem in self.sniffer_elems]
-                                                self.log.debug("Removed sniffer element for datatype '%s'" % str(dtype))
+                                                self.log.debug(f"Removed sniffer element for datatype '{str(dtype)}'")
                                                 break
                                         for sniffer_class in self.sniff_order:
                                             if sniffer_class.__class__ == aclass.__class__:
                                                 self.sniff_order.remove(sniffer_class)
-                                                self.log.debug("Removed sniffer class for datatype '%s' from sniff order" % str(dtype))
+                                                self.log.debug(f"Removed sniffer class for datatype '{str(dtype)}' from sniff order")
                                                 break
                                 else:
                                     # We are loading new sniffer, so see if we have a conflicting sniffer already loaded.
@@ -527,14 +527,14 @@ class Registry:
                                             conflict = True
                                             if override:
                                                 del self.sniff_order[conflict_loc]
-                                                self.log.debug("Removed conflicting sniffer for datatype '%s'" % dtype)
+                                                self.log.debug(f"Removed conflicting sniffer for datatype '{dtype}'")
                                             break
                                     if not conflict or override:
                                         if compressed_sniffers and aclass.__class__ in compressed_sniffers:
                                             for compressed_sniffer in compressed_sniffers[aclass.__class__]:
                                                 self.sniff_order.append(compressed_sniffer)
                                         self.sniff_order.append(aclass)
-                                        self.log.debug("Loaded sniffer for datatype '%s'" % dtype)
+                                        self.log.debug(f"Loaded sniffer for datatype '{dtype}'")
                                     # Processing the new sniffer elem is now complete, so make sure the element defining it is loaded if necessary.
                                     sniffer_class = elem.get('type', None)
                                     if sniffer_class is not None:
@@ -573,7 +573,7 @@ class Registry:
         except KeyError:
             # datatype was never declared
             mimetype = default
-            self.log.warning('unknown mimetype in data factory %s' % str(ext))
+            self.log.warning(f'unknown mimetype in data factory {str(ext)}')
         return mimetype
 
     def get_datatype_by_extension(self, ext):
@@ -644,9 +644,9 @@ class Registry:
                         self.log.debug("Loaded converter: %s", converter.id)
             except Exception:
                 if deactivate:
-                    self.log.exception("Error deactivating converter from (%s)" % converter_path)
+                    self.log.exception(f"Error deactivating converter from ({converter_path})")
                 else:
-                    self.log.exception("Error loading converter (%s)" % converter_path)
+                    self.log.exception(f"Error loading converter ({converter_path})")
 
     def load_display_applications(self, app, installed_repository_dict=None, deactivate=False):
         """
@@ -712,9 +712,9 @@ class Registry:
                             self.log.debug(f"Loaded display application '{display_app.id}' for datatype '{extension}', inherit={inherit}.")
                 except Exception:
                     if deactivate:
-                        self.log.exception("Error deactivating display application (%s)" % config_path)
+                        self.log.exception(f"Error deactivating display application ({config_path})")
                     else:
-                        self.log.exception("Error loading display application (%s)" % config_path)
+                        self.log.exception(f"Error loading display application ({config_path})")
         # Handle display_application subclass inheritance.
         for extension, d_type1 in self.datatypes_by_extension.items():
             for d_type2, display_app in self.inherit_display_application_by_class:
@@ -759,6 +759,7 @@ class Registry:
                 'ab1': binary.Ab1(),
                 'axt': sequence.Axt(),
                 'bam': binary.Bam(),
+                'jp2': binary.JP2(),
                 'bed': interval.Bed(),
                 'coverage': coverage.LastzCoverage(),
                 'customtrack': interval.CustomTrack(),
@@ -794,6 +795,7 @@ class Registry:
                 'ab1': 'application/octet-stream',
                 'axt': 'text/plain',
                 'bam': 'application/octet-stream',
+                'jp2': 'application/octet-stream',
                 'bed': 'text/plain',
                 'customtrack': 'text/plain',
                 'csfasta': 'text/plain',
@@ -834,6 +836,7 @@ class Registry:
             self.sniff_order = [
                 binary.Bam(),
                 binary.Sff(),
+                binary.JP2(),
                 binary.H5(),
                 xml.GenericXml(),
                 sequence.Maf(),

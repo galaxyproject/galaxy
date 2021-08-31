@@ -92,7 +92,7 @@ class LibraryFolderAsContainerManagerMixin(ContainerManagerMixin):
             return self.lda_manager
         elif isinstance(content, model.LibraryFolder):
             return self.folder_manager
-        raise TypeError('Unknown contents class: ' + str(content))
+        raise TypeError(f"Unknown contents class: {str(content)}")
 
 
 class DatasetCollectionAsContainerManagerMixin(ContainerManagerMixin):
@@ -111,4 +111,4 @@ class DatasetCollectionAsContainerManagerMixin(ContainerManagerMixin):
             return self.collection_manager
         elif isinstance(content, model.DatasetCollection):
             return self.collection_manager
-        raise TypeError('Unknown contents class: ' + str(content))
+        raise TypeError(f"Unknown contents class: {str(content)}")

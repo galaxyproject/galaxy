@@ -104,7 +104,9 @@ export default {
             return hasNotes;
         },
         singleParam: function () {
-            if (!this.isSingleParam) return;
+            if (!this.isSingleParam) {
+                return;
+            }
             const parameter = this.parameters.find((parameter) => {
                 return parameter.text === this.param;
             });

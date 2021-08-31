@@ -135,6 +135,7 @@ export var DatasetListItemView = _super.extend(
             _super.prototype._swapNewRender.call(this, $newRender);
             if (this.model.has("state")) {
                 this.$el.addClass(`state-${this.model.get("state")}`);
+                this.$el.attr("data-state", this.model.get("state"));
             }
             return this.$el;
         },
@@ -317,11 +318,11 @@ export var DatasetListItemView = _super.extend(
                     style: style,
                     title: title,
                     onclick: function () {
-                        if (!isUnsharable)
+                        if (!isUnsharable) {
                             navigator.clipboard.writeText(`${window.location.origin}${urls.download}`).then(() => {
                                 Toast.info("Link is copied to your clipboard");
                             });
-                        else {
+                        } else {
                             Toast.warning("Dataset is not sharable");
                         }
                     },
@@ -332,7 +333,9 @@ export var DatasetListItemView = _super.extend(
          *  @returns {jQuery} rendered DOM
          */
         _renderDownloadButton: function () {
-            if (this.isPurged()) return null;
+            if (this.isPurged()) {
+                return null;
+            }
 
             // return either: a popupmenu with links to download assoc. meta files (if there are meta files)
             //  or a single download icon-button (if there are no meta files)

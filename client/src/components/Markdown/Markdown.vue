@@ -2,10 +2,18 @@
     <div class="markdown-wrapper">
         <LoadingSpan v-if="loading" />
         <div v-else>
-            <a v-if="effectiveExportLink" :href="exportLink" class="markdown-export position-absolute p-3">
-                <i class="fa fa-3x fa-download" />
-            </a>
             <div>
+                <b-button
+                    v-if="effectiveExportLink"
+                    class="float-right"
+                    title="Download PDF"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="onDownload"
+                >
+                    <font-awesome-icon icon="download" />
+                </b-button>
                 <b-button
                     v-if="!readOnly"
                     class="float-right"
@@ -44,6 +52,7 @@
                 <div v-else-if="obj.name == 'generate_time'" class="galaxy-time">
                     <pre><code>{{ getTime }}</code></pre>
                 </div>
+                <HistoryLink v-else-if="obj.name == 'history_link'" :args="obj.args" :histories="histories" />
                 <HistoryDatasetAsImage v-else-if="obj.name == 'history_dataset_as_image'" :args="obj.args" />
                 <HistoryDatasetLink v-else-if="obj.name == 'history_dataset_link'" :args="obj.args" />
                 <HistoryDatasetIndex v-else-if="obj.name == 'history_dataset_index'" :args="obj.args" />
@@ -96,7 +105,7 @@ import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
 
 import LoadingSpan from "components/LoadingSpan";
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage";
@@ -105,6 +114,7 @@ import HistoryDatasetLink from "./Elements/HistoryDatasetLink";
 import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay";
 import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails";
+import HistoryLink from "./Elements/HistoryLink";
 import InvocationTime from "./Elements/InvocationTime";
 import JobMetrics from "./Elements/JobMetrics";
 import JobParameters from "./Elements/JobParameters";
@@ -126,7 +136,7 @@ md.use(mdNewline);
 
 Vue.use(BootstrapVue);
 
-library.add(faEdit);
+library.add(faDownload, faEdit);
 
 export default {
     store: store,
@@ -137,6 +147,7 @@ export default {
         HistoryDatasetDisplay,
         HistoryDatasetIndex,
         HistoryDatasetLink,
+        HistoryLink,
         JobMetrics,
         JobParameters,
         LoadingSpan,
@@ -165,6 +176,7 @@ export default {
             markdownObjects: [],
             markdownErrors: [],
             historyDatasets: {},
+            histories: {},
             historyDatasetCollections: {},
             workflows: {},
             jobs: {},
@@ -201,6 +213,7 @@ export default {
             this.markdownErrors = config.errors || [];
             this.markdownObjects = this.splitMarkdown(markdown);
             this.historyDatasets = config.history_datasets || {};
+            this.histories = config.histories || {};
             this.historyDatasetCollections = config.history_dataset_collections || {};
             this.workflows = config.workflows || {};
             this.jobs = config.jobs || {};
@@ -259,7 +272,9 @@ export default {
             // we need [... ] to return empty string, if regex doesn't match
             const function_arguments = [...content.matchAll(new RegExp(FUNCTION_CALL, "g"))];
             for (let i = 0; i < function_arguments.length; i++) {
-                if (function_arguments[i] === undefined) continue;
+                if (function_arguments[i] === undefined) {
+                    continue;
+                }
                 const arguments_str = function_arguments[i].toString().replace(/,/g, "").trim();
                 if (arguments_str) {
                     const [key, val] = arguments_str.split("=");
@@ -271,6 +286,9 @@ export default {
                 args: args,
                 content: content,
             };
+        },
+        onDownload() {
+            window.location.href = this.exportLink;
         },
     },
 };

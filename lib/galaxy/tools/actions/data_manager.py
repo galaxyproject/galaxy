@@ -15,5 +15,5 @@ class DataManagerToolAction(DefaultToolAction):
             trans.sa_session.add(assoc)
             trans.sa_session.flush()
         else:
-            log.error("Got bad return value from DefaultToolAction.execute(): %s" % (rval))
+            log.error(f"Got bad return value from DefaultToolAction.execute(): {rval}")
         return rval

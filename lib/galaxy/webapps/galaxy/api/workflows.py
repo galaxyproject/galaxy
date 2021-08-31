@@ -190,15 +190,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             workflows = []
             workflows_by_toolshed = dict()
             for value in rval:
-                tool_ids = []
-                workflow_details = self.workflow_contents_manager.workflow_to_dict(trans, self.__get_stored_workflow(trans, value['id']), style='instance')
-                if 'steps' in workflow_details:
-                    for step in workflow_details['steps']:
-                        tool_id = workflow_details['steps'][step].get('tool_id')
-                        if tool_id and tool_id not in tool_ids and self.app.toolbox.is_missing_shed_tool(tool_id):
-                            tool_ids.append(tool_id)
-                if len(tool_ids) > 0:
-                    value['missing_tools'] = tool_ids
+                tool_ids = self.workflow_contents_manager.get_all_tool_ids(self.__get_stored_workflow(trans, value['id']).latest_workflow)
+                missing_tool_ids = [tool_id for tool_id in tool_ids if self.app.toolbox.is_missing_shed_tool(tool_id)]
+                if len(missing_tool_ids) > 0:
+                    value['missing_tools'] = missing_tool_ids
                     workflows_missing_tools.append(value)
             for workflow in workflows_missing_tools:
                 for tool_id in workflow['missing_tools']:
@@ -331,11 +326,11 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         }
 
         if payload is None or len(ways_to_create.intersection(payload)) == 0:
-            message = "One parameter among - %s - must be specified" % ", ".join(ways_to_create)
+            message = f"One parameter among - {', '.join(ways_to_create)} - must be specified"
             raise exceptions.RequestParameterMissingException(message)
 
         if len(ways_to_create.intersection(payload)) > 1:
-            message = "Only one parameter among - %s - must be specified" % ", ".join(ways_to_create)
+            message = f"Only one parameter among - {', '.join(ways_to_create)} - must be specified"
             raise exceptions.RequestParameterInvalidException(message)
 
         if 'installed_repository_file' in payload:
@@ -343,7 +338,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                 raise exceptions.AdminRequiredException()
             installed_repository_file = payload.get('installed_repository_file', '')
             if not os.path.exists(installed_repository_file):
-                raise exceptions.RequestParameterInvalidException("Workflow file '%s' not found" % installed_repository_file)
+                raise exceptions.RequestParameterInvalidException(f"Workflow file '{installed_repository_file}' not found")
             elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
                 with open(installed_repository_file, encoding='utf-8') as f:
                     workflow_data = f.read()
@@ -369,9 +364,9 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                     archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
                 else:
                     try:
-                        archive_data = requests.get(archive_source).text
+                        archive_data = requests.get(archive_source, timeout=util.DEFAULT_SOCKET_TIMEOUT).text
                     except Exception:
-                        raise exceptions.MessageException("Failed to open URL '%s'." % escape(archive_source))
+                        raise exceptions.MessageException(f"Failed to open URL '{escape(archive_source)}'.")
             elif hasattr(archive_file, 'file'):
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
@@ -529,7 +524,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         trans.sa_session.flush()
 
         # TODO: Unsure of response message to let api know that a workflow was successfully deleted
-        return ("Workflow '%s' successfully deleted" % stored_workflow.name)
+        return (f"Workflow '{stored_workflow.name}' successfully deleted")
 
     @expose_api
     def import_new_workflow_deprecated(self, trans: GalaxyWebTransaction, payload, **kwd):
@@ -751,7 +746,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         workflow_id = workflow.id
         workflow = workflow.latest_workflow
 
-        response = {"message": "Workflow '%s' imported successfully." % escape(workflow.name), "status": "success",
+        response = {"message": f"Workflow '{escape(workflow.name)}' imported successfully.", "status": "success",
                     "id": trans.security.encode_id(workflow_id)}
         if workflow.has_errors:
             response["message"] = "Imported, but some steps in this workflow have validation errors."
@@ -808,7 +803,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         try:
             stored_workflow = self.get_stored_workflow(trans, workflow_id, check_ownership=False)
         except Exception:
-            raise exceptions.ObjectNotFound("Malformed workflow id ( %s ) specified." % workflow_id)
+            raise exceptions.ObjectNotFound(f"Malformed workflow id ( {workflow_id} ) specified.")
         if stored_workflow.importable is False:
             raise exceptions.ItemAccessibilityException('The owner of this workflow has disabled imports via this link.')
         elif stored_workflow.deleted:
@@ -828,14 +823,20 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
 
         .. note:: This method takes the same arguments as
             :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
+
+        :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
         """
         # Get workflow + accessibility check.
-        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
+        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id, instance=kwd.get('instance', False))
         workflow = stored_workflow.latest_workflow
         run_configs = build_workflow_run_configs(trans, workflow, payload)
         is_batch = payload.get('batch')
         if not is_batch and len(run_configs) != 1:
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
+
+        tool_ids = self.workflow_contents_manager.get_all_tool_ids(workflow)
+        if not all([self.app.toolbox.has_tool(tool_id) for tool_id in tool_ids]):
+            raise exceptions.MessageException("Workflow was not invoked; some required tools are not installed.")
 
         invocations = []
         for run_config in run_configs:
@@ -875,8 +876,15 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :param  workflow_id:      an encoded stored workflow id to restrict query to
         :type   workflow_id:      str
 
+        :param  instance:         true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                  by default.
+        :type   instance:         boolean
+
         :param  history_id:       an encoded history id to restrict query to
         :type   history_id:       str
+
+        :param  job_id:           an encoded job id to restrict query to
+        :type   job_id:           str
 
         :param  user_id:          an encoded user id to restrict query to, must be own id if not admin user
         :type   user_id:          str
@@ -890,7 +898,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         if workflow_id is not None:
-            stored_workflow_id = self.__get_stored_workflow(trans, workflow_id).id
+            stored_workflow_id = self.__get_stored_workflow(trans, workflow_id, instance=kwd.get('instance', False)).id
         else:
             stored_workflow_id = None
 
@@ -900,6 +908,12 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             history_id = history.id
         else:
             history_id = None
+
+        encoded_job_id = kwd.get("job_id", None)
+        if encoded_job_id:
+            job_id = self.decode_id(encoded_job_id)
+        else:
+            job_id = None
 
         encoded_user_id = kwd.get("user_id", None)
         if encoded_user_id:
@@ -921,7 +935,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         if limit is not None:
             limit = int(limit)
         invocations = self.workflow_manager.build_invocations_query(
-            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id, include_terminal=include_terminal, limit=limit
+            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, job_id=job_id, user_id=user_id, include_terminal=include_terminal, limit=limit
         )
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 
@@ -1226,7 +1240,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         # specified in https://github.com/biocompute-objects/BCO_Specification/blob/main/docs/top-level.md#203-etag-etag
         etag = hashlib.sha256(json.dumps(bco_dict, sort_keys=True).encode()).hexdigest()
         bco_dict.update({
-            'object_id': url_for(controller="api/invocations/%s" % invocation_id, action='biocompute', qualified=True),
+            'object_id': url_for(controller=f"api/invocations/{invocation_id}", action='biocompute', qualified=True),
             'spec_version': spec_version,
             'etag': etag,
         })
@@ -1260,7 +1274,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         generated will very likely change in important ways over time.
         """
         ret_dict = self._generate_invocation_bco(trans, invocation_id, **kwd)
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="bco_%s.json"' % invocation_id
+        trans.response.headers["Content-Disposition"] = f'attachment; filename="bco_{invocation_id}.json"'
         trans.response.set_content_type("application/json")
         return format_return_as_json(ret_dict, pretty=True)
 
@@ -1417,7 +1431,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         install_options = workflow_create_options.install_options
         for k in tools:
             item = tools[k]
-            tool_shed_url = 'https://' + item['tool_shed'] + '/'
+            tool_shed_url = f"https://{item['tool_shed']}/"
             name = item['name']
             owner = item['owner']
             changeset_revision = item['changeset_revision']

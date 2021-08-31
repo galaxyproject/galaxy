@@ -15,7 +15,8 @@ class AppInfo:
         container_image_cache_path=None,
         library_import_dir=None,
         enable_mulled_containers=False,
-        containers_resolvers_config_file=None,
+        container_resolvers_config_file=None,
+        container_resolvers_config_dict=None,
         involucro_path=None,
         involucro_auto_init=True,
         mulled_channels=DEFAULT_CHANNELS,
@@ -29,7 +30,8 @@ class AppInfo:
         self.container_image_cache_path = container_image_cache_path
         self.library_import_dir = library_import_dir
         self.enable_mulled_containers = enable_mulled_containers
-        self.containers_resolvers_config_file = containers_resolvers_config_file
+        self.container_resolvers_config_file = container_resolvers_config_file
+        self.container_resolvers_config_dict = container_resolvers_config_dict
         self.involucro_path = involucro_path
         self.involucro_auto_init = involucro_auto_init
         self.mulled_channels = mulled_channels
@@ -42,7 +44,7 @@ class ToolInfo:
 
     def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=None, guest_ports=None, tool_id=None, tool_version=None, profile=-1):
         if env_pass_through is None:
-            env_pass_through = ["GALAXY_SLOTS"]
+            env_pass_through = ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT"]
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:

@@ -79,20 +79,16 @@ export class Services {
     }
 
     async setPermissions(apiRootUrl, id, new_roles_ids, onSuccess, onError) {
-        var formData = new FormData();
+        const data = { action: "set_permissions" };
         new_roles_ids.forEach((permissionType) => {
-            Object.keys(permissionType).map(function (k) {
-                const ids = permissionType[k].map((a) => a.id);
-                formData.append(k, ids);
+            Object.keys(permissionType).map(function (type) {
+                const ids = permissionType[type].map((a) => a.id);
+                data[type] = ids;
             });
         });
 
-        axios({
-            method: "post",
-            url: `${apiRootUrl}/${id}/permissions?action=set_permissions`,
-            data: formData,
-            headers: { "Content-Type": "multipart/form-data" },
-        })
+        axios
+            .post(`${apiRootUrl}/${id}/permissions`, data)
             .then(function (response) {
                 onSuccess(response);
             })

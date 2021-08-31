@@ -36,15 +36,15 @@ def upgrade(migrate_engine):
             field_values_str = _sniffnfix_pg9_hex(str(row['field_values']))
             try:
                 # Encoding errors?  Just to be safe.
-                print("Attempting to fix row %s" % row['id'])
-                print("Prior to replacement: %s" % field_values_str)
+                print(f"Attempting to fix row {row['id']}")
+                print(f"Prior to replacement: {field_values_str}")
             except Exception:
                 pass
             field_values_dict = {}
             # look for each field name in the values and extract its value (string)
             for index in range(len(fields_list)):
                 field = fields_list[index]
-                field_name_key = '"%s": "' % field['name']
+                field_name_key = f"\"{field['name']}\": \""
                 field_index = field_values_str.find(field_name_key)
                 if field_index == -1:
                     # if the field name is not present the field values dict then
@@ -60,7 +60,7 @@ def upgrade(migrate_engine):
                         # if this is not the last field then the value string lies between
                         # this field name and the next field name
                         next_field = fields_list[index + 1]
-                        next_field_index = field_values_str.find('", "%s": "' % next_field['name'])
+                        next_field_index = field_values_str.find(f"\", \"{next_field['name']}\": \"")
                         value = field_values_str[field_index + len(field_name_key):next_field_index]
                     # clean up the value string, escape the required quoutes and newline characters
                     value = value.replace("'", "\''")\
@@ -75,7 +75,7 @@ def upgrade(migrate_engine):
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" % (json_values, int(row['id']))
             migrate_engine.execute(cmd)
             try:
-                print("Post replacement: %s" % json_values)
+                print(f"Post replacement: {json_values}")
             except Exception:
                 pass
     if corrupted_rows:

@@ -218,7 +218,7 @@ def expand_meta_parameters(trans, tool, incoming):
 
     expanded_incomings = permutations.expand_multi_inputs(incoming_template, classifier)
     if collections_to_match.has_collections():
-        collection_info = trans.app.dataset_collections_service.match_collections(collections_to_match)
+        collection_info = trans.app.dataset_collection_manager.match_collections(collections_to_match)
     else:
         collection_info = None
     return expanded_incomings, collection_info
@@ -233,7 +233,7 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
         try:
             src = incoming_val["src"]
             if src != "hdca":
-                raise exceptions.ToolMetaParameterException("Invalid dataset collection source type %s" % src)
+                raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
             encoded_hdc_id = incoming_val["id"]
             subcollection_type = incoming_val.get('map_over_type', None)
         except TypeError:

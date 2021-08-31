@@ -357,4 +357,4 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
         return containers_dict
 
     def generate_tool_dependencies_key(self, name, version, type):
-        return '{}{}{}{}{}'.format(str(name), container_util.STRSEP, str(version), container_util.STRSEP, str(type))
+        return f'{str(name)}{container_util.STRSEP}{str(version)}{container_util.STRSEP}{str(type)}'

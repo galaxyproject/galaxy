@@ -87,7 +87,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
         step = model.WorkflowStep()
         step.type = 'data_collection_input'
         if hid not in summary.collection_types:
-            raise exceptions.RequestParameterInvalidException("hid %s does not appear to be a collection" % hid)
+            raise exceptions.RequestParameterInvalidException(f"hid {hid} does not appear to be a collection")
         collection_type = summary.collection_types[hid]
         if dataset_collection_names:
             name = dataset_collection_names[i]
@@ -121,7 +121,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
                 if input_collection:
                     other_hid = input_collection.hid
                 else:
-                    log.info("Cannot find implicit input collection for %s" % input_name)
+                    log.info(f"Cannot find implicit input collection for {input_name}")
             if other_hid in hid_to_output_pair:
                 step_input = step.get_or_add_input(input_name)
                 other_step, other_name = hid_to_output_pair[other_hid]
@@ -142,7 +142,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
                 hid = None
                 for implicit_pair in jobs[job]:
                     query_assoc_name, dataset_collection = implicit_pair
-                    if query_assoc_name == assoc_name or assoc_name.startswith("__new_primary_file_%s|" % query_assoc_name):
+                    if query_assoc_name == assoc_name or assoc_name.startswith(f"__new_primary_file_{query_assoc_name}|"):
                         hid = summary.hid(dataset_collection)
                 if hid is None:
                     template = "Failed to find matching implicit job - job id is %s, implicit pairs are %s, assoc_name is %s."
@@ -156,7 +156,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
                     has_hid = assoc.dataset_collection_instance
                 hid = summary.hid(has_hid)
             if hid in hid_to_output_pair:
-                log.warning("duplicate hid found in extract_steps [%s]" % hid)
+                log.warning(f"duplicate hid found in extract_steps [{hid}]")
             hid_to_output_pair[hid] = (step, assoc.name)
     return steps
 
@@ -185,7 +185,7 @@ class DatasetCollectionCreationJob:
 
     def __init__(self, dataset_collection):
         self.is_fake = True
-        self.id = "fake_%s" % dataset_collection.id
+        self.id = f"fake_{dataset_collection.id}"
         self.from_jobs = None
         self.name = "Dataset Collection Creation"
         self.disabled_why = "Dataset collection created in a way not compatible with workflows"
@@ -381,7 +381,7 @@ def __cleanup_param_values(inputs, values):
                 # Cleanup the other deprecated crap associated with datasets
                 # as well. Worse, for nested datasets all the metadata is
                 # being pushed into the root. FIXME: MUST REMOVE SOON
-                key = prefix + key + "_"
+                key = f"{prefix + key}_"
                 for k in root_values.keys():
                     if k not in root_input_keys and k.startswith(key):
                         del root_values[k]

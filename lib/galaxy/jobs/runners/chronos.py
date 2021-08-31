@@ -147,10 +147,10 @@ class ChronosJobRunner(AsynchronousJobRunner):
 
     @handle_exception_call
     def queue_job(self, job_wrapper):
-        LOGGER.debug("Starting queue_job for job " + job_wrapper.get_id_tag())
+        LOGGER.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
         if not self.prepare_job(job_wrapper, include_metadata=False,
                                 modify_command_for_container=False):
-            LOGGER.debug("Not ready " + job_wrapper.get_id_tag())
+            LOGGER.debug(f"Not ready {job_wrapper.get_id_tag()}")
             return
         job_destination = job_wrapper.job_destination
         chronos_job_spec = self._get_job_spec(job_wrapper)
@@ -279,7 +279,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
         if not os.path.exists(job_wrapper.working_directory):
             LOGGER.error("No working directory found")
 
-        path = job_wrapper.working_directory + '/chronos_' + job_wrapper.get_id_tag() + '.sh'
+        path = f"{job_wrapper.working_directory}/chronos_{job_wrapper.get_id_tag()}.sh"
         mode = 0o755
 
         with open(path, 'w', encoding='utf-8') as f:
@@ -295,7 +295,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
         template = {
             'async': False,
             # 'command': job_wrapper.runner_command_line,
-            'command': '$SHELL ' + command_script_path,
+            'command': f"$SHELL {command_script_path}",
             'owner': self.runner_params['owner'],
             'disabled': False,
             'schedule': 'R1//PT1S',

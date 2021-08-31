@@ -5,14 +5,21 @@
     <div
         class="dataset dataset-collection collapsed"
         :class="{ selected }"
+        :id="typedId"
         :data-state="dsc.state"
         @keydown.arrow-right.self.stop="$emit('viewCollection')"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
-        @click.stop="$emit('viewCollection')"
     >
-        <nav class="d-flex content-top-menu align-items-center justify-content-between">
-            <div class="d-flex mr-1 align-items-center" @click.stop>
-                <b-check v-if="showSelection" :checked="selected" @change="$emit('update:selected', $event)" />
+        <nav class="p-1 d-flex align-items-baseline cursor-pointer">
+            <div class="d-flex align-items-baseline flex-grow-1 overflow-hidden">
+                <div class="pl-1" v-if="showSelection">
+                    <b-check
+                        class="selector"
+                        :checked="selected"
+                        @click.stop
+                        @change="$emit('update:selected', $event)"
+                    />
+                </div>
 
                 <StatusIcon
                     v-if="dsc.state != 'ok'"
@@ -21,48 +28,53 @@
                     @click.stop="onStatusClick"
                 />
 
-                <StateBtn
+                <IconButton
                     v-if="!dsc.visible"
                     class="px-1"
                     state="hidden"
                     title="Unhide"
-                    icon="fa fa-eye-slash"
+                    icon="eye-slash"
                     @click.stop="$emit('unhide')"
                 />
 
-                <StateBtn
+                <IconButton
+                    v-if="dsc.deleted"
+                    class="px-1"
+                    state="deleted"
+                    title="Undelete"
+                    icon="trash-restore"
+                    @click.stop="$emit('undelete')"
+                />
+
+                <IconButton
                     class="px-1"
                     state="ok"
                     title="Collection"
-                    icon="fas fa-folder"
+                    icon="folder"
                     @click.stop="$emit('viewCollection')"
+                    variant="link"
                 />
+
+                <div class="content-title title flex-grow-1 overflow-hidden" @click.stop="$emit('viewCollection')">
+                    <h5 class="text-truncate">
+                        <span class="hid sr-only">{{ dsc.hid }}</span>
+                        <span class="name">{{ dsc.name }}</span>
+                        <span class="description">
+                            ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
+                        </span>
+                    </h5>
+                </div>
             </div>
 
-            <h5 class="flex-grow-1 overflow-hidden mr-auto text-nowrap text-truncate">
-                <span class="hid">{{ dsc.hid }}</span>
-                <span class="name">{{ dsc.name }}</span>
-                <span class="description">
-                    ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
-                </span>
-            </h5>
-
-            <slot name="menu">
-                <DscMenu v-if="!dsc.deleted" class="content-item-menu" v-on="$listeners" />
-            </slot>
-
-            <StateBtn
-                v-if="dsc.deleted"
-                class="px-1"
-                state="deleted"
-                title="Undelete"
-                icon="fas fa-trash-restore"
-                @click.stop="$emit('undelete')"
-            />
+            <div class="d-flex" v-if="writable">
+                <slot name="menu">
+                    <DscMenu v-if="!dsc.deleted" v-on="$listeners" />
+                </slot>
+            </div>
         </nav>
 
         <!--- read-only tags with name: prefix -->
-        <div v-if="dsc.nameTags.length" class="nametags p-1">
+        <div v-if="collapsed && dsc.nameTags.length" class="nametags px-2 pb-2">
             <Nametag v-for="tag in dsc.nameTags" :key="tag" :tag="tag" />
         </div>
 
@@ -72,27 +84,37 @@
 
 <script>
 import { DatasetCollection } from "../../model/DatasetCollection";
-import { StatusIcon, StateBtn } from "../../StatusIcon";
+import StatusIcon from "../../StatusIcon";
 import JobStateProgress from "./JobStateProgress";
 import DscMenu from "./DscMenu";
 import { Nametag } from "components/Nametags";
+import IconButton from "components/IconButton";
 
 export default {
     components: {
         StatusIcon,
-        StateBtn,
         JobStateProgress,
         DscMenu,
         Nametag,
+        IconButton,
     },
     props: {
         dsc: { type: DatasetCollection, required: true },
         selected: { type: Boolean, required: false, default: false },
         showSelection: { type: Boolean, required: false, default: false },
+        writable: { type: Boolean, required: false, default: true },
     },
     methods: {
         onStatusClick() {
             console.log("onStatusClick", ...arguments);
+        },
+    },
+    computed: {
+        typedId() {
+            return this.dsc.type_id;
+        },
+        collapsed() {
+            return !this.expanded;
         },
     },
 };

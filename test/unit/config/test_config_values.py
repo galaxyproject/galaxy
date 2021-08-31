@@ -99,7 +99,6 @@ class ExpectedValues:
         self._expected_paths = {
             'admin_tool_recommendations_path': self._in_config_dir('tool_recommendations_overwrite.yml'),
             'auth_config_file': self._in_config_dir('auth_conf.xml'),
-            'beta_edam_toolbox_ontology_path': self._in_data_dir('EDAM.tsv'),
             'build_sites_config_file': self._in_sample_dir('build_sites.yml.sample'),
             'builds_file_path': self._in_root_dir('tool-data/shared/ucsc/builds.txt'),
             'cache_dir': self._in_data_dir('cache'),
@@ -113,6 +112,7 @@ class ExpectedValues:
             'datatypes_config_file': self._in_sample_dir('datatypes_conf.xml.sample'),
             'dependency_resolvers_config_file': self._in_config_dir('dependency_resolvers_conf.xml'),
             'dynamic_proxy_session_map': self._in_data_dir('session_map.sqlite'),
+            'edam_toolbox_ontology_path': self._in_data_dir('EDAM.tsv'),
             'error_report_file': self._in_config_dir('error_report.yml'),
             'file_path': self._in_data_dir('objects'),
             'file_sources_config_file': self._in_config_dir('file_sources_conf.yml'),

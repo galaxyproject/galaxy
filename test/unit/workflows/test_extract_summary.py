@@ -108,6 +108,13 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         assert len(job_dict) == 0
 
 
+class MockJobToOutputDatasetAssociation:
+
+    def __init__(self, name, dataset):
+        self.name = name
+        self.dataset = dataset
+
+
 class MockHistory:
 
     def __init__(self):
@@ -140,7 +147,7 @@ class MockHda:
             if not job:
                 job = model.Job()
             self.job = job
-            assoc = model.JobToOutputDatasetAssociation(output_name, self)
+            assoc = MockJobToOutputDatasetAssociation(output_name, self)
             assoc.job = job
             self.creating_job_associations = [assoc]
         else:

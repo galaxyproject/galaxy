@@ -272,17 +272,17 @@ class ToolEvaluator:
         # - Only necessary when self.check_values is False (==external dataset
         #   tool?: can this be abstracted out as part of being a datasouce tool?)
         # For now we try to not wrap unnecessarily, but this should be untangled at some point.
+        matches = None
         for name, data in input_datasets.items():
             param_dict_value = param_dict.get(name, None)
             if data and param_dict_value is None:
                 # We may have a nested parameter that is not fully prefixed.
                 # We try recovering from param_dict, but tool authors should really use fully-qualified
                 # variables
-                wrappers = find_instance_nested(param_dict,
-                                                instances=(DatasetFilenameWrapper, DatasetListWrapper),
-                                                match_key=name)
-                if len(wrappers) == 1:
-                    wrapper = wrappers[0]
+                if matches is None:
+                    matches = find_instance_nested(param_dict, instances=(DatasetFilenameWrapper, DatasetListWrapper))
+                wrapper = matches.get(name)
+                if wrapper:
                     param_dict[name] = wrapper
                     continue
             if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
@@ -545,7 +545,7 @@ class ToolEvaluator:
             self.__write_workdir_file(config_filename, environment_variable_template, param_dict, is_template=is_template, strip=environment_variable_def.get("strip", False))
             config_file_basename = os.path.basename(config_filename)
             # environment setup in job file template happens before `cd $working_directory`
-            environment_variable["value"] = '`cat "%s/%s"`' % (self.compute_environment.env_config_directory(), config_file_basename)
+            environment_variable["value"] = f'`cat "{self.compute_environment.env_config_directory()}/{config_file_basename}"`'
             environment_variable["raw"] = True
             environment_variable["job_directory_path"] = config_filename
             environment_variables.append(environment_variable)
@@ -553,11 +553,11 @@ class ToolEvaluator:
         home_dir = self.compute_environment.home_directory()
         tmp_dir = self.compute_environment.tmp_directory()
         if home_dir:
-            environment_variable = dict(name="HOME", value='"%s"' % home_dir, raw=True)
+            environment_variable = dict(name="HOME", value=f'"{home_dir}"', raw=True)
             environment_variables.append(environment_variable)
         if tmp_dir:
             for tmp_directory_var in self.tool.tmp_directory_vars:
-                environment_variable = dict(name=tmp_directory_var, value='"%s"' % tmp_dir, raw=True)
+                environment_variable = dict(name=tmp_directory_var, value=f'"{tmp_dir}"', raw=True)
                 environment_variables.append(environment_variable)
         self.environment_variables = environment_variables
         return environment_variables
@@ -600,7 +600,7 @@ class ToolEvaluator:
             rval = json.dumps(file_sources_dict)
             return rval, False
         else:
-            raise Exception("Unknown config file type %s" % config_type)
+            raise Exception(f"Unknown config file type {config_type}")
 
         return json.dumps(wrapped_json.json_wrap(self.tool.inputs,
                                                  self.param_dict,

@@ -28,17 +28,29 @@ attribute change to a model object.
 import datetime
 import logging
 import re
-from typing import Callable, Dict, List, Optional, Set, Type
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+)
 
-import routes
 import sqlalchemy
 from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
+from galaxy.schema import FilterQueryParams
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import BasicApp, MinimalManagerApp
 from galaxy.util import namedtuple
+from galaxy.web import url_for as gx_url_for
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +76,7 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
         if not trans.user:
             raise exceptions.ItemOwnershipException("Must be logged in to manage Galaxy items", type='error')
         if item.user != trans.user:
-            raise exceptions.ItemOwnershipException("%s is not owned by the current user" % item.__class__.__name__, type='error')
+            raise exceptions.ItemOwnershipException(f"{item.__class__.__name__} is not owned by the current user", type='error')
 
     # Verify accessible:
     #   if it's part of a lib - can they access via security
@@ -72,10 +84,10 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
     if check_accessible:
         if type(item) in (trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset):
             if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), item, trans.user):
-                raise exceptions.ItemAccessibilityException("%s is not accessible to the current user" % item.__class__.__name__, type='error')
+                raise exceptions.ItemAccessibilityException(f"{item.__class__.__name__} is not accessible to the current user", type='error')
         else:
             if (item.user != trans.user) and (not item.importable) and (trans.user not in item.users_shared_with_dot_users):
-                raise exceptions.ItemAccessibilityException("%s is not accessible to the current user" % item.__class__.__name__, type='error')
+                raise exceptions.ItemAccessibilityException(f"{item.__class__.__name__} is not accessible to the current user", type='error')
     return item
 
 
@@ -88,19 +100,23 @@ def get_class(class_name):
         item_class = tool_shed_install.ToolShedRepository
     else:
         if not hasattr(model, class_name):
-            raise exceptions.MessageException("Item class '%s' not available." % class_name)
+            raise exceptions.MessageException(f"Item class '{class_name}' not available.")
         item_class = getattr(model, class_name)
     return item_class
 
 
-def decode_id(app, id):
-    try:
-        # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
-        #   resulting in error for valid id
-        return app.security.decode_id(str(id))
-    except (ValueError, TypeError):
-        msg = "Malformed id ( %s ) specified, unable to decode" % (str(id))
-        raise exceptions.MalformedId(msg, id=str(id))
+def decode_id(app: BasicApp, id: Any):
+    # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
+    #   resulting in error for valid id
+    return decode_with_security(app.security, id)
+
+
+def decode_with_security(security: IdEncodingHelper, id: Any):
+    return security.decode_id(str(id))
+
+
+def encode_with_security(security: IdEncodingHelper, id: Any):
+    return security.encode_id(id)
 
 
 def get_object(trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
@@ -271,9 +287,9 @@ class ModelManager:
         try:
             return query.one()
         except sqlalchemy.orm.exc.NoResultFound:
-            raise exceptions.ObjectNotFound(self.model_class.__name__ + ' not found')
+            raise exceptions.ObjectNotFound(f"{self.model_class.__name__} not found")
         except sqlalchemy.orm.exc.MultipleResultsFound:
-            raise exceptions.InconsistentDatabase('found more than one ' + self.model_class.__name__)
+            raise exceptions.InconsistentDatabase(f"found more than one {self.model_class.__name__}")
 
     def _one_or_none(self, query):
         """
@@ -538,7 +554,7 @@ class ModelSerializer(HasAModelManager):
         item_dict = MySerializer.serialize( my_item, keys_to_serialize )
     """
     #: 'service' to use for getting urls - use class var to allow overriding when testing
-    url_for = staticmethod(routes.url_for)
+    url_for = staticmethod(gx_url_for)
     default_view: Optional[str]
     views: Dict[str, List[str]]
 
@@ -626,7 +642,7 @@ class ModelSerializer(HasAModelManager):
             return self.serializers[original_key]
         if original_key in self.serializable_keyset:
             return lambda i, k, **c: self.default_serializer(i, original_key, **c)
-        raise KeyError('serializer not found for remap: ' + original_key)
+        raise KeyError(f"serializer not found for remap: {original_key}")
 
     def default_serializer(self, item, key, **context):
         """
@@ -808,7 +824,7 @@ class ModelValidator(HasAModelManager):
         :raises exceptions.RequestParameterInvalidException: if not an instance.
         """
         if not isinstance(val, types):
-            msg = 'must be a type: %s' % (str(types))
+            msg = f'must be a type: {str(types)}'
             raise exceptions.RequestParameterInvalidException(msg, key=key, val=val)
         return val
 
@@ -940,6 +956,49 @@ class ModelFilterParser(HasAModelManager):
             'update_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
         })
 
+    def build_filter_params(
+        self,
+        query_params: FilterQueryParams,
+        filter_attr_key: str = 'q',
+        filter_value_key: str = 'qv',
+        attr_op_split_char: str = '-',
+    ) -> List[Tuple[str, str, str]]:
+        """
+        Builds a list of tuples containing filtering information in the form of (attribute, operator, value).
+        """
+        DEFAULT_OP = 'eq'
+        qdict = query_params.dict(exclude_defaults=True)
+        if filter_attr_key not in qdict:
+            return []
+        # precondition: attrs/value pairs are in-order in the qstring
+        attrs = qdict.get(filter_attr_key)
+        if not isinstance(attrs, list):
+            attrs = [attrs]
+        # ops are strings placed after the attr strings and separated by a split char (e.g. 'create_time-lt')
+        # ops are optional and default to 'eq'
+        reparsed_attrs = []
+        ops = []
+        for attr in attrs:
+            op = DEFAULT_OP
+            if attr_op_split_char in attr:
+                # note: only split the last (e.g. q=community-tags-in&qv=rna yields ( 'community-tags', 'in', 'rna' )
+                attr, op = attr.rsplit(attr_op_split_char, 1)
+            ops.append(op)
+            reparsed_attrs.append(attr)
+        attrs = reparsed_attrs
+
+        values = qdict.get(filter_value_key, [])
+        if not isinstance(values, list):
+            values = [values]
+        # TODO: it may be more helpful to the consumer if we error on incomplete 3-tuples
+        #   (instead of relying on zip to shorten)
+        return list(zip(attrs, ops, values))
+
+    def parse_query_filters(self, query_filters: FilterQueryParams):
+        """Convenience function to parse a FilterQueryParams object into a collection of filtering criteria."""
+        filter_params = self.build_filter_params(query_filters)
+        return self.parse_filters(filter_params)
+
     def parse_filters(self, filter_tuple_list):
         """
         Parse string 3-tuples (attr, op, val) into orm or functional filters.
@@ -1057,7 +1116,7 @@ class ModelFilterParser(HasAModelManager):
         # correct op_string to usable function key
         fn_name = op_string
         if op_string in self.UNDERSCORED_OPS:
-            fn_name = '__' + op_string + '__'
+            fn_name = f"__{op_string}__"
         elif op_string == 'in':
             fn_name = 'in_'
 
@@ -1088,7 +1147,7 @@ class ModelFilterParser(HasAModelManager):
             return True
         if bool_string in ('False', False):
             return False
-        raise ValueError('invalid boolean: ' + str(bool_string))
+        raise ValueError(f"invalid boolean: {str(bool_string)}")
 
     def parse_id_list(self, id_list_string, sep=','):
         """
@@ -1136,3 +1195,50 @@ def is_valid_slug(slug):
 
     VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
     return VALID_SLUG_RE.match(slug)
+
+
+class SortableManager:
+    """A manager interface for parsing order_by strings into actual 'order by' queries."""
+
+    def parse_order_by(self, order_by_string, default=None):
+        """Return an ORM compatible order_by clause using the given string (i.e.: 'name-dsc,create_time').
+        This must be implemented by the manager."""
+        raise NotImplementedError
+
+
+class ServiceBase:
+    """Base class with common logic and utils reused by other Services."""
+
+    def __init__(self, security: IdEncodingHelper):
+        self.security = security
+
+    def decode_id(self, id: EncodedDatabaseIdField) -> int:
+        """Decodes a previously encoded database ID."""
+        return decode_with_security(self.security, id)
+
+    def encode_id(self, id: int) -> EncodedDatabaseIdField:
+        """Encodes a raw database ID."""
+        return encode_with_security(self.security, id)
+
+    def decode_ids(self, ids: List[EncodedDatabaseIdField]) -> List[int]:
+        """
+        Decodes all encoded IDs in the given list.
+        """
+        return [self.decode_id(id) for id in ids]
+
+    def encode_all_ids(self, rval, recursive: bool = False):
+        """
+        Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
+
+        It might be useful to turn this in to a decorator
+        """
+        return self.security.encode_all_ids(rval, recursive=recursive)
+
+    def build_order_by(self, manager: SortableManager, order_by_query: Optional[str] = None):
+        """Returns an ORM compatible order_by clause using the order attribute and the given manager.
+
+        The manager has to implement the `parse_order_by` function to support all the sortable model attributes."""
+        ORDER_BY_SEP_CHAR = ','
+        if order_by_query and ORDER_BY_SEP_CHAR in order_by_query:
+            return [manager.parse_order_by(o) for o in order_by_query.split(ORDER_BY_SEP_CHAR)]
+        return manager.parse_order_by(order_by_query)

@@ -53,7 +53,7 @@
                             'rules-container-full': initialElements == null,
                         }"
                     >
-                        <rule-component rule-type="sort" :displayRuleType.sync="displayRuleType" :builder="this">
+                        <rule-component rule-type="sort" :display-rule-type.sync="displayRuleType" :builder="this">
                             <column-selector :target.sync="addSortingTarget" :col-headers="activeRuleColHeaders" />
                             <label v-b-tooltip.hover :title="titleNumericSort">
                                 <input type="checkbox" v-model="addSortingNumeric" />
@@ -62,7 +62,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_basename"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <column-selector
@@ -72,7 +72,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_rownum"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <label>
@@ -82,7 +82,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_metadata"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <label>
@@ -95,7 +95,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_group_tag_value"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <label>
@@ -109,7 +109,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_regex"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <column-selector :target.sync="addColumnRegexTarget" :col-headers="activeRuleColHeaders" />
@@ -140,7 +140,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_concatenate"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <column-selector
@@ -154,7 +154,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_substr"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <column-selector :target.sync="addColumnSubstrTarget" :col-headers="activeRuleColHeaders" />
@@ -173,7 +173,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_value"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <label>
@@ -183,7 +183,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="remove_columns"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <column-selector
@@ -194,7 +194,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="split_columns"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <column-selector
@@ -212,7 +212,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="swap_columns"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <column-selector
@@ -228,7 +228,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_regex"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <column-selector :target.sync="addFilterRegexTarget" :col-headers="activeRuleColHeaders" />
@@ -240,7 +240,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_matches"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <column-selector
@@ -255,7 +255,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_compare"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <column-selector
@@ -275,7 +275,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_count"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <label>
@@ -296,7 +296,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_empty"
-                            :displayRuleType.sync="displayRuleType"
+                            :display-rule-type.sync="displayRuleType"
                             :builder="this"
                         >
                             <column-selector :target.sync="addFilterEmptyTarget" :col-headers="activeRuleColHeaders" />
@@ -611,7 +611,6 @@ import $ from "jquery";
 import _ from "underscore";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import AjaxQueue from "utils/ajax-queue";
 import axios from "axios";
 import _l from "utils/localization";
 import HotTable from "@handsontable/vue";
@@ -639,6 +638,14 @@ Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
+
+// convert deferred backbone nonsense into a promise
+const deferredToPromise = (d) => {
+    return new Promise((resolve, reject) => {
+        d.done((_, result) => resolve(result));
+        d.fail((err) => reject(err));
+    });
+};
 
 export default {
     data: function () {
@@ -1353,21 +1360,19 @@ export default {
             }
             this.saveSession(JSON.stringify(asJson));
             this.state = "wait";
-            const name = this.collectionName;
-            const collectionType = this.collectionType;
+            const { collectionName: name, collectionType, hideSourceItems } = this;
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
                 if (this.state !== "error") {
-                    new AjaxQueue.AjaxQueue(
-                        _.map(elements, (elements, name) => {
-                            return () => {
-                                const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
-                                return response;
-                            };
-                        })
-                    )
-                        .done(this.oncreate)
-                        .fail(this.renderFetchError);
+                    const deferreds = Object.entries(elements).map(([name, els]) => {
+                        // This looks like a promise but it is not one because creationFn and
+                        // oncreate are references to function from the backbone models which means
+                        // they are expecting their arguments in a different order. So, looks like,
+                        // jQuery.Deferred and therefore jQuery are still dependencies
+                        return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
+                    });
+                    const promises = deferreds.map(deferredToPromise);
+                    return Promise.all(promises).catch((err) => this.renderFetchError(err));
                 }
             } else if (this.elementsType == "collection_contents") {
                 this.resetSource();

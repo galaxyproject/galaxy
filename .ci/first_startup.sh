@@ -6,11 +6,11 @@ i=0
 echo "Testing for correct startup:"
 bash run.sh --daemon && \
     while [ "$i" -le $TRIES ]; do
-        curl "$URL" && EXIT_CODE=0 && break
+        curl --max-time 1 "$URL" && EXIT_CODE=0 && break
         sleep 1
         i=$((i + 1))
     done
-kill -9 "$(cat galaxy.pid)"
+bash run.sh --skip-wheels --stop-daemon
 echo "exit code:$EXIT_CODE, showing startup log:"
 cat galaxy.log
 exit $EXIT_CODE

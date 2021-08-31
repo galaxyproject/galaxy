@@ -250,9 +250,6 @@ export default {
             // logic from legacy code
             return !!(this.contains_file_or_folder && Galaxy.user);
         },
-        allDatasets: function () {
-            return this.folderContents.filter((element) => element.type === "file");
-        },
     },
     methods: {
         updateSearch: function (value) {
@@ -271,10 +268,16 @@ export default {
         async getSelected() {
             if (this.isAllSelectedMode) {
                 this.$emit("setBusy", true);
-                const selected = await this.services.getFilteredFolderContents(this.folder_id, this.unselected);
+                const selected = await this.services.getFilteredFolderContents(
+                    this.folder_id,
+                    this.unselected,
+                    this.$parent.search_text
+                );
                 this.$emit("setBusy", false);
                 return selected;
-            } else return this.selected;
+            } else {
+                return this.selected;
+            }
         },
         newFolder() {
             this.$emit("newFolder");
@@ -301,12 +304,13 @@ export default {
         // helper function to make legacy code compatible
         findCheckedItems: async function (idOnly = true) {
             const datasets = [];
-            const folder = [];
+            const folders = [];
             const selected = await this.getSelected();
             selected.forEach((item) => {
-                item.type === "file" ? datasets.push(idOnly ? item.id : item) : idOnly ? item.id : item;
+                const selected_item = idOnly ? item.id : item;
+                item.type === "file" ? datasets.push(selected_item) : folders.push(selected_item);
             });
-            return { datasets: datasets, folders: folder };
+            return { datasets: datasets, folders: folders };
         },
         importToHistoryModal: function (isCollection) {
             this.findCheckedItems(!isCollection).then(({ datasets, folders }) => {
@@ -316,7 +320,6 @@ export default {
                 if (isCollection) {
                     new mod_import_collection.ImportCollectionModal({
                         selected: checkedItems,
-                        allDatasets: this.allDatasets,
                     });
                 } else {
                     new mod_import_dataset.ImportDatasetModal({

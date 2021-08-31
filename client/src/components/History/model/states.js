@@ -11,6 +11,8 @@ export const STATES = {
     SETTING_METADATA: "setting_metadata",
     /** was created without a tool */
     NEW: "new",
+    /** job is being created, but not put into job queue yet */
+    WAITING: "waiting",
     /** has no data */
     EMPTY: "empty",
     /** has successfully completed running */
@@ -31,6 +33,8 @@ export const STATES = {
     // found in job-state summary model?
     // this an actual state value or something derived from deleted prop?
     DELETED: "deleted",
+
+    LOADING: "loading",
 };
 
 export const NOT_READY_STATES = [STATES.UPLOAD, STATES.QUEUED, STATES.RUNNING, STATES.SETTING_METADATA, STATES.NEW];

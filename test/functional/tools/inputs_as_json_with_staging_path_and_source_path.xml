@@ -1,0 +1,46 @@
+<tool id="inputs_as_json_with_staging_paths" name="inputs_as_json_with_staging_paths" version="1.0.0" profile="21.09">
+    <command detect_errors="exit_code">
+        python '$check_inputs' '$inputs'
+    </command>
+    <configfiles>
+        <inputs name="inputs" data_style="staging_path_and_source_path" />
+        <configfile name="check_inputs"><![CDATA[
+import json
+import sys
+
+input_json_path = sys.argv[1]
+as_dict = json.load(open(input_json_path, "r"))
+
+collection_input_with_staging_details = as_dict["collection_input"]
+assert collection_input_with_staging_details[0]['staging_path'] == "list/element1.bam"
+assert collection_input_with_staging_details[0]['metadata_files'][0]['staging_path'] == "list/element1.bam.bai"
+
+with open("output", "w") as f:
+    f.write("okay\n")
+]]></configfile>
+    </configfiles>
+    <inputs>
+        <param name="data_input" type="data" optional="true" />
+        <param name="multiple_data_input" type="data" optional="true" multiple="true" />
+        <param name="collection_input" type="data_collection" optional="true"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" from_work_dir="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="collection_input">
+                <collection type="list:list">
+                    <element name="list">
+                        <collection type="list">
+                            <element name="element1" value="1.bam" ftype="bam" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+        </test>
+    </tests>
+    <help>
+        Test tool demonstrating the special inputs config file.
+    </help>
+</tool>
