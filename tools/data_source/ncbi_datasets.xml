@@ -7,15 +7,23 @@
         <requirement type="package" version="11.25.1">ncbi-datasets-cli</requirement>
     </requirements>
     <command><![CDATA[
-cp '$file_param' '$output'
+#if $json_param:
+    cat '$payload' > '$output'
+#else
+    cp '$file_param' '$output'
+#end if
     ]]></command>
-    <inputs action="https://www.ncbi.nlm.nih.gov/datasets/" check_values="false" method="get">
+    <configfiles>
+        <configfile name="payload">$json_param</configfile>
+    </configfiles>
+    <inputs action="https://www.ncbi.nlm.nih.gov/datasets/" check_values="true" method="get">
         <display>go to SRA server $GALAXY_URL</display>
-        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=ncbi_datasets_source" />
-        <param name="file_param" type="file"/>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=ncbi_datasets_source"/>
+        <param name="file_param" type="file" optional="true"/>
+        <param name="json_param" type="json" optional="true"/>
     </inputs>
     <outputs>
-        <data name="output" format="data" label="POSTed file"/>
+        <data name="output" format="txt" label="POSTed file"/>
     </outputs>
     <options sanitize="true"/>
     <citations>
