@@ -16,14 +16,24 @@ class Bar:
 
 def test_do_not_wrap_no_wrap_classes():
     """ Do not wrap instances of classes passed in no_wrap_classes."""
-    result = wrap_with_safe_string(Foo())
+    obj = Foo()
+    result = wrap_with_safe_string(obj)
+    assert result is not obj
     assert isinstance(result, SafeStringWrapper)
 
-    result = wrap_with_safe_string(Foo(), no_wrap_classes=Foo)
-    assert not isinstance(result, SafeStringWrapper)
+    result = wrap_with_safe_string(obj, no_wrap_classes=Foo)
+    assert result is obj
 
-    result = wrap_with_safe_string(Foo(), no_wrap_classes=Bar)
+    result = wrap_with_safe_string(obj, no_wrap_classes=Bar)
+    assert result is not obj
     assert isinstance(result, SafeStringWrapper)
+
+
+def test_do_not_wrap_safestringwrapper():
+    """ Do not wrap SafeStringWrapper: only wrap one layer."""
+    obj = SafeStringWrapper(None)
+    result = wrap_with_safe_string(obj)
+    assert result is obj
 
 
 class TestGetNoWrapClasses:
@@ -33,20 +43,20 @@ class TestGetNoWrapClasses:
         expected = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
         classes = get_no_wrap_classes()
         assert set(classes) == set(expected)
-    
+
     def test_no_wrap_classes_one_arg(self):
         """ One class passed."""
         expected = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper] + [Foo]
         classes = get_no_wrap_classes(no_wrap_classes=Foo)
         assert set(classes) == set(expected)
-    
+
     def test_no_wrap_classes_multiple_arg_as_list(self):
         """ Multiple classses passed as a list."""
         arg = [Foo, Bar]
         expected = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper] + [Foo, Bar]
         classes = get_no_wrap_classes(no_wrap_classes=arg)
         assert set(classes) == set(expected)
-    
+
     def test_no_wrap_classes_multiple_arg_as_tuple(self):
         """ Multiple classses passed as a tuple."""
         arg = (Foo, Bar)

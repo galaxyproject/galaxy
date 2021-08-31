@@ -101,15 +101,12 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
     """
 
     def __do_wrap(value):
-        if isinstance(value, SafeStringWrapper):
-            # Only ever wrap one-layer
+        if isinstance(value, no_wrap_classes):
             return value
         if isinstance(value, Callable):
             safe_class = CallableSafeStringWrapper
         else:
             safe_class = SafeStringWrapper
-        if isinstance(value, no_wrap_classes):
-            return value
         if isinstance(value, __WRAP_NO_SUBCLASS__):
             return safe_class(value, safe_string_wrapper_function=__do_wrap)
         for this_type in __WRAP_SEQUENCES__ + __WRAP_SETS__:
