@@ -875,8 +875,6 @@ class CreateHistoryPayload(Model):
         title="Archive Source",
         description=(
             "The URL that will generate the archive to import when `archive_type='url'`. "
-            # This seems a bit odd but the create history action expects `archive_source` to be != None
-            "When importing from a file using `archive_file`, please set `archive_source=''`."
         ),
     )
     archive_type: Optional[HistoryImportArchiveSourceType] = Field(
@@ -887,7 +885,7 @@ class CreateHistoryPayload(Model):
     archive_file: Optional[Any] = Field(
         default=None,
         title="Archive File",
-        description="Detailed file information when importing the history from a file.",
+        description="Uploaded file information when importing the history from a file.",
     )
 
 

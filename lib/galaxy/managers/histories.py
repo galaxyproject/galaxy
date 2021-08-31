@@ -7,6 +7,12 @@ created (or copied) by users over the course of an analysis.
 import glob
 import logging
 import os
+import shutil
+from pathlib import Path
+from tempfile import (
+    NamedTemporaryFile,
+    SpooledTemporaryFile,
+)
 from typing import (
     cast,
     List,
@@ -791,7 +797,7 @@ class HistoriesService(ServiceBase):
         copy_this_history_id = payload.history_id
         all_datasets = payload.all_datasets
 
-        if payload.archive_source is not None:
+        if payload.archive_source is not None or hasattr(payload.archive_file, "file"):
             archive_source = payload.archive_source
             archive_file = payload.archive_file
             if archive_source:
@@ -799,6 +805,8 @@ class HistoriesService(ServiceBase):
             elif archive_file is not None and hasattr(archive_file, "file"):
                 archive_source = archive_file.file.name
                 archive_type = HistoryImportArchiveSourceType.file
+                if isinstance(archive_file.file, SpooledTemporaryFile):
+                    archive_source = self._save_upload_file_tmp(archive_file)
             else:
                 raise glx_exceptions.MessageException("Please provide a url or file.")
             job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
@@ -828,6 +836,16 @@ class HistoriesService(ServiceBase):
             self.manager.set_current(trans, new_history)
 
         return self._serialize_history(trans, new_history, serialization_params)
+
+    def _save_upload_file_tmp(self, upload_file) -> str:
+        try:
+            suffix = Path(upload_file.filename).suffix
+            with NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                shutil.copyfileobj(upload_file.file, tmp)
+                tmp_path = Path(tmp.name)
+        finally:
+            upload_file.file.close()
+        return str(tmp_path)
 
     def show(
         self,

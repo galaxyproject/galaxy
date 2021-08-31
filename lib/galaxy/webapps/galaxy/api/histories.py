@@ -67,6 +67,7 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from . import (
+    as_form,
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
@@ -109,6 +110,11 @@ class DeleteHistoryPayload(BaseModel):
         title="Purge",
         description="Whether to definitely remove this history from disk."
     )
+
+
+@as_form
+class CreateHistoryFormData(CreateHistoryPayload):
+    """Uses Form data instead of JSON"""
 
 
 @router.cbv
@@ -207,10 +213,10 @@ class FastAPIHistories:
         '/api/histories',
         summary='Returns the history with the given ID.',
     )
-    def create(
+    async def create(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        payload: CreateHistoryPayload = Body(...),
+        payload: CreateHistoryPayload = Depends(CreateHistoryFormData.as_form),
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> Union[JobImportHistoryResponse, AnyHistoryView]:
         return self.service.create(trans, payload, serialization_params)

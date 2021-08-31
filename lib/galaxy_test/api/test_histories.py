@@ -25,7 +25,7 @@ class BaseHistories:
 
     def _create_history(self, name):
         post_data = dict(name=name)
-        create_response = self._post("histories", data=post_data, json=True).json()
+        create_response = self._post("histories", data=post_data).json()
         self._assert_has_keys(create_response, "name", "id")
         self.assertEqual(create_response["name"], name)
         return create_response

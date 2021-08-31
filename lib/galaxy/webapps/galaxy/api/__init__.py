@@ -1,6 +1,7 @@
 """
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
+import inspect
 from typing import (
     Any,
     AsyncGenerator,
@@ -12,12 +13,14 @@ from typing import (
 
 from fastapi import (
     Cookie,
+    Form,
     Header,
     Query,
 )
 from fastapi.params import Depends
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
+from pydantic.main import BaseModel
 try:
     from starlette_context import context as request_context
 except ImportError:
@@ -201,3 +204,30 @@ class Router(InferringRouter):
         https://fastapi-utils.davidmontague.xyz/user-guide/class-based-views/
         """
         return cbv(self)
+
+
+def as_form(cls: Type[BaseModel]):
+    """
+    Adds an as_form class method to decorated models. The as_form class method
+    can be used with FastAPI endpoints.
+
+    See https://github.com/tiangolo/fastapi/issues/2387#issuecomment-731662551
+    """
+    new_params = [
+        inspect.Parameter(
+            field.alias,
+            inspect.Parameter.POSITIONAL_ONLY,
+            default=(Form(field.default) if not field.required else Form(...)),
+        )
+        for field in cls.__fields__.values()
+    ]
+
+    async def _as_form(**data):
+        return cls(**data)
+
+    sig = inspect.signature(_as_form)
+    sig = sig.replace(parameters=new_params)
+    _as_form.__signature__ = sig    # type: ignore
+    # setattr(cls, "as_form", _as_form)
+    cls.as_form = _as_form
+    return cls
