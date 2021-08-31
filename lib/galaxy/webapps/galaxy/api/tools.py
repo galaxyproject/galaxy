@@ -465,7 +465,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             decoded_id = self.decode_id(history_id)
         else:
             encoded_id = int(trans.app.security.decode_id(input_id))
-            decoded_id = self.hda_manager.get_accessible(encoded_id, trans.user).id
+            decoded_id = self.hda_manager.get_accessible(encoded_id, trans.user).history_id
 
         target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
         # Make the target datatype available to the converter
