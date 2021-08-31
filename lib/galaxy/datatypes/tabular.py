@@ -18,7 +18,10 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import binary, data, metadata
-from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.metadata import (
+    MetadataElement,
+    MetadataParameter,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     get_headers,
@@ -469,6 +472,13 @@ class Sam(Tabular):
     track_type = "ReadTrack"
     data_sources = {"data": "bam", "index": "bigwig"}
 
+    MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
+    MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
+    MetadataElement(name="read_groups", default=[], desc="Read Groups", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={})
+
     def __init__(self, **kwd):
         """Initialize sam datatype"""
         super().__init__(**kwd)
@@ -558,6 +568,20 @@ class Sam(Tabular):
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.columns = 12
             dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
+
+            try:
+                bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb')
+                # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
+                dataset.metadata.reference_names = list(bam_file.references)
+                dataset.metadata.reference_lengths = list(bam_file.lengths)
+                dataset.metadata.bam_header = dict(bam_file.header.items())
+                dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
+                dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
+                dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
+            except Exception:
+                # Per Dan, don't log here because doing so will cause datasets that
+                # fail metadata to end in the error state
+                pass
 
     @staticmethod
     def merge(split_files, output_file):
