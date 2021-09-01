@@ -317,6 +317,7 @@ class FastAPIHistories:
 
     @router.get(
         '/api/histories/{id}/exports/{jeha_id}',
+        name="history_archive_download",
         summary=(
             "If ready and available, return raw contents of exported history as a downloadable archive."
         ),

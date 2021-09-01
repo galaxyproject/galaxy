@@ -386,11 +386,9 @@ class HistoryExportView:
     def serialize(self, trans, history_id, jeha):
         rval = jeha.to_dict()
         encoded_jeha_id = trans.security.encode_id(jeha.id)
-        api_url = self.app.url_for("history_archive_download", id=history_id, jeha_id=encoded_jeha_id)
-        # this URL is less likely to be blocked by a proxy and require an API key, so export
-        # older-style controller version for use with within the GUI and such.
-        external_url = self.app.url_for(controller='history', action="export_archive", id=history_id, qualified=True)
-        external_permanent_url = self.app.url_for(controller='history', action="export_archive", id=history_id, jeha_id=encoded_jeha_id, qualified=True)
+        api_url = trans.url_builder("history_archive_download", id=history_id, jeha_id=encoded_jeha_id)
+        external_url = trans.url_builder("history_archive_download", id=history_id, jeha_id="latest", qualified=True)
+        external_permanent_url = trans.url_builder("history_archive_download", id=history_id, jeha_id=encoded_jeha_id, qualified=True)
         rval["download_url"] = api_url
         rval["external_download_latest_url"] = external_url
         rval["external_download_permanent_url"] = external_permanent_url
