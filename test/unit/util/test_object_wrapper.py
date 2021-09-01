@@ -1,3 +1,5 @@
+import pytest
+
 from galaxy.util.object_wrapper import (
     __DONT_SANITIZE_TYPES__,
     get_no_wrap_classes,
@@ -12,6 +14,11 @@ class Foo:
 
 class Bar:
     pass
+
+
+@pytest.fixture(scope='module')
+def default_no_wrap_types():
+    return list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
 
 
 def test_do_not_wrap_no_wrap_classes():
@@ -37,29 +44,28 @@ def test_do_not_wrap_safestringwrapper():
 
 
 class TestGetNoWrapClasses:
+    """Test get_no_wrap_classes() with different arguments."""
 
-    def test_default_no_wrap_classes(self):
+    def test_default_no_wrap_classes(self, default_no_wrap_types):
         """ If no arg supplied, use default."""
-        expected = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
+        expected = default_no_wrap_types
         classes = get_no_wrap_classes()
         assert set(classes) == set(expected)
 
-    def test_no_wrap_classes_one_arg(self):
+    def test_no_wrap_classes_one_arg(self, default_no_wrap_types):
         """ One class passed."""
-        expected = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper] + [Foo]
+        expected = default_no_wrap_types + [Foo]
         classes = get_no_wrap_classes(no_wrap_classes=Foo)
         assert set(classes) == set(expected)
 
-    def test_no_wrap_classes_multiple_arg_as_list(self):
+    def test_no_wrap_classes_multiple_arg_as_list(self, default_no_wrap_types):
         """ Multiple classses passed as a list."""
-        arg = [Foo, Bar]
-        expected = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper] + [Foo, Bar]
-        classes = get_no_wrap_classes(no_wrap_classes=arg)
+        expected = default_no_wrap_types + [Foo, Bar]
+        classes = get_no_wrap_classes(no_wrap_classes=[Foo, Bar])
         assert set(classes) == set(expected)
 
-    def test_no_wrap_classes_multiple_arg_as_tuple(self):
+    def test_no_wrap_classes_multiple_arg_as_tuple(self, default_no_wrap_types):
         """ Multiple classses passed as a tuple."""
-        arg = (Foo, Bar)
-        expected = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper] + [Foo, Bar]
-        classes = get_no_wrap_classes(no_wrap_classes=arg)
+        expected = default_no_wrap_types + [Foo, Bar]
+        classes = get_no_wrap_classes(no_wrap_classes=(Foo, Bar))
         assert set(classes) == set(expected)
