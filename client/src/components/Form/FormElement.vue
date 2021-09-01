@@ -6,14 +6,9 @@
         </div>
         <div class="ui-form-title">{{ title }}</div>
         <div class="ui-form-field">
-            <FormBoolean v-if="type == 'boolean'" :id="id" v-model="currentValue" />
-            <FormInput v-else-if="type == 'text'" :id="id" :area="$attrs['area']" v-model="currentValue" />
-            <FormParameter v-else
-                v-model="currentValue"
-                :id="id"
-                :type="type"
-                :attributes="$attrs"
-            />
+            <FormBoolean v-if="type == 'boolean1'" :id="id" v-model="currentValue" />
+            <FormInput v-else-if="type == 'text1'" :id="id" :area="$attrs['area']" v-model="currentValue" />
+            <FormParameter v-else v-model="currentValue" :id="id" :type="type" :attributes="$attrs" />
             <span class="ui-form-info form-text text-muted mt-2">{{ help }}</span>
         </div>
     </div>
@@ -60,7 +55,7 @@ export default {
                 return this.value;
             },
             set(val) {
-                this.$emit("input", val);
+                this.$emit("input", val, this.id);
             },
         },
         hasError() {

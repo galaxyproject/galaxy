@@ -39,7 +39,7 @@
             <FormElement
                 v-else
                 v-bind="input"
-                v-model="input.value"
+                @input="onInput"
                 :id="getPrefix(input.name)"
                 :title="input.label"
                 :help="input.help"
@@ -130,6 +130,9 @@ export default {
             /*this.$nextTick(() => {
                 this.form.update(this.inputs);
             });*/
+        },
+        formInputs() {
+            console.log(this.formInputs);
         },
         errors() {
             /*this.$nextTick(() => {
@@ -235,9 +238,13 @@ export default {
                 this.form.trigger("change");
             }*/
         },
-        onChange(refreshRequest) {
-            //this.formData = this.form.data.create();
-            //this.$emit("onChange", this.formData, refreshRequest);
+        onInput(value, identifier) {
+            this.formData[identifier] = value;
+            console.log(this.formData);
+        },
+        onChange() {
+            /*this.formData = this.form.data.create();
+            this.$emit("onChange", this.formData);*/
         },
         onRender() {
             /*this.$nextTick(() => {
