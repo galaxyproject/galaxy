@@ -3,7 +3,7 @@ import { getLocalVue } from "jest/helpers";
 import DatasetError from "./DatasetError";
 import MockProvider from "../providers/MockProvider";
 
-jest.mock("components/WorkflowInvocationState/providers", () => {
+jest.mock("components/providers", () => {
     return {}; // stubbed below
 });
 
