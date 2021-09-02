@@ -6,8 +6,8 @@
     cat ${" ".join(map(str, $f2))} >> $out2
   </command>
   <inputs>
-    <param name="f1" type="data" format="txt" multiple="true" label="Data 1" min="1" max="1235" />
-    <param name="f2" type="data" format="txt" multiple="true" label="Data 2" />
+    <param name="f1" type="data" format="txt" multiple="true" min="1" max="2" label="Data 1"/>
+    <param name="f2" type="data" format="txt" multiple="true" optional="false" label="Data 2" />
     <conditional name="advanced">
       <param name="full" type="select" label="Parameter Settings">
         <option value="no">Use defaults</option>
@@ -41,12 +41,34 @@
         </assert_contents>
       </output>
     </test>
-    <!-- UI widget can do this next one, but API can. -->
+    <!-- UI widget can't do this next one, but API can. -->
     <test>
       <param name="f1" value="simple_line.txt,simple_line.txt" />
       <param name="f2" value="simple_line_alternative.txt" />
       <output name="out1" file="simple_line_x2.txt" />
       <output name="out2" file="simple_line_alternative.txt" />
+    </test>
+    <!-- ensure that `a multiple="true" data parameter requires at least one data input.` -->
+    <test expect_failure="true">
+      <param name="f1" value="simple_line.txt,simple_line_alternative.txt" />
+      <!-- <param name="f2" value="" /> -->
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+    </test>
+    <!-- ensure that the `max` attribute of f1 is evaluated -->
+    <test expect_failure="true">
+      <param name="f1" value="simple_line.txt,simple_line_alternative.txt,simple_line.txt" />
+      <param name="f2" value="simple_line_alternative.txt" />
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
     </test>
   </tests>
 </tool>
