@@ -104,7 +104,15 @@ def get_api_user(
         user_manager: UserManager = depends(UserManager),
         key: Optional[str] = Query(None),
         x_api_key: Optional[str] = Header(None),
-        run_as: Optional[EncodedDatabaseIdField] = Header(None, title='Run as User', description='Admins and ')) -> Optional[User]:
+        run_as: Optional[EncodedDatabaseIdField] = Header(
+            default=None,
+            title='Run as User',
+            description=(
+                'The user ID that will be used to effectively make this API call. '
+                'Only admins and designated users can make API calls on behalf of other users.'
+            )
+        )
+) -> Optional[User]:
     api_key = key or x_api_key
     if not api_key:
         return None
