@@ -150,11 +150,22 @@ class UrlBuilder:
 DependsOnUser = Depends(get_user)
 
 
+def get_current_history_from_session(galaxy_session: Optional[model.GalaxySession]) -> Optional[model.History]:
+    if galaxy_session:
+        return galaxy_session.current_history
+    return None
+
+
 def get_trans(request: Request, app: StructuredApp = DependsOnApp, user: Optional[User] = Depends(get_user),
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
     url_builder = UrlBuilder(request)
-    return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session, url_builder=url_builder, host=request.client.host)
+    return SessionRequestContext(
+        app=app, user=user,
+        galaxy_session=galaxy_session,
+        url_builder=url_builder, host=request.client.host,
+        history=get_current_history_from_session(galaxy_session),
+    )
 
 
 DependsOnTrans = Depends(get_trans)
