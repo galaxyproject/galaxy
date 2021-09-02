@@ -811,6 +811,14 @@ class HistoryBeta(HistoryDetailed):
     )
 
 
+AnyHistoryView = Union[
+    HistoryBeta, HistoryDetailed, HistorySummary,
+    # Any will cover those cases in which only specific `keys` are requested
+    # otherwise the validation will fail because the required fields are not returned
+    Any,
+]
+
+
 class ExportHistoryArchivePayload(Model):
     gzip: Optional[bool] = Field(
         default=True,

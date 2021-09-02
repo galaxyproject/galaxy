@@ -57,13 +57,11 @@ from galaxy.schema import (
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyHistoryView,
     CreateHistoryPayload,
     CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
-    HistoryBeta,
-    HistoryDetailed,
     HistoryImportArchiveSourceType,
-    HistorySummary,
     JobExportHistoryArchiveModel,
     JobIdResponse,
     JobImportHistoryResponse,
@@ -1140,7 +1138,7 @@ class HistoriesService(ServiceBase):
             history: model.History,
             serialization_params: SerializationParams,
             default_view: str = "detailed",
-    ) -> Union[HistoryBeta, HistoryDetailed, HistorySummary]:
+    ) -> Union[AnyHistoryView]:
         """
         Returns a dictionary with the corresponding values depending on the
         serialization parameters provided.
