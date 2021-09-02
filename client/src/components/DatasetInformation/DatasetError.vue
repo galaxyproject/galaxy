@@ -21,10 +21,10 @@
                         <b id="dataset-error-tool-id" class="text-break">{{ jobDetails.tool_id }}</b
                         >.
                     </p>
-                    <div v-if="jobDetails.tool_stderr || jobDetails.job_stderr || jobDetails.job_messages">
+                    <div v-if="jobDetails.tool_stderr || jobDetails.job_stderr || hasMessages(jobDetails)">
                         <h3>Details</h3>
                     </div>
-                    <div v-if="jobDetails.job_messages" id="dataset-error-job-messages">
+                    <div v-if="hasMessages(jobDetails)" id="dataset-error-job-messages">
                         <p>Execution resulted in the following messages:</p>
                         <div v-for="(job_message, index) in jobDetails.job_messages" :key="index">
                             <pre class="rounded code">{{ job_message["desc"] }}</pre>
@@ -130,6 +130,9 @@ export default {
         };
     },
     methods: {
+        hasMessages(jobDetails) {
+            return jobDetails.job_messages && jobDetails.job_messages.length > 0;
+        },
         onError(err) {
             this.errorMessage = err;
         },
