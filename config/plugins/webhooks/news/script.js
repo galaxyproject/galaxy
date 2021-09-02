@@ -8,8 +8,10 @@ function showNewsOverlay() {
 }
 
 function newsSeen() {
-  var el = document.getElementById("news-unseen-pip");
-  el.parentNode.removeChild(el);
+  // When it's seen, remove fa and far, add fas.
+  const newsIconSpan = document.getElementById("news").querySelector(".fa-bell")
+  newsIconSpan.classList.remove("fa");
+  newsIconSpan.classList.add("far");
   window.localStorage.setItem(
     "galaxy-news-seen-release",
     Galaxy.config.version_major
@@ -17,13 +19,10 @@ function newsSeen() {
 }
 
 function newsUnseen() {
-  let econtainer = document.getElementById("news").children[0];
-  econtainer.insertAdjacentHTML(
-    "beforeend",
-    `
-        <span id="news-unseen-pip" class="nav-note fa fa-circle"></span>
-        `
-  );
+  // When there is news, set far instead of fa
+  const newsIconSpan = document.getElementById("news").querySelector(".fa-bell")
+  newsIconSpan.classList.remove("far");
+  newsIconSpan.classList.add("fa");
 }
 
 function addNewsIframe() {
@@ -33,6 +32,8 @@ function addNewsIframe() {
   // Check that they've seen the current version's release notes.
   if (lastSeenVersion != currentGalaxyVersion) {
     newsUnseen();
+  } else {
+    newsSeen();
   }
 
   document.querySelector("body.full-content").insertAdjacentHTML(
