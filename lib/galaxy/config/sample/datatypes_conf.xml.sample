@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <datatypes>
   <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
+    <datatype extension="geo.tiff" type="galaxy.datatypes.images:GeoTiff" display_in_upload="true"/>
     <datatype extension="jp2" type="galaxy.datatypes.binary:JP2" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Ab1"/>
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
@@ -1076,6 +1077,7 @@
     <sniffer type="galaxy.datatypes.images:Mrc2014"/>
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>
+    <sniffer type="galaxy.datatypes.images:GeoTiff"/>
     <sniffer type="galaxy.datatypes.images:OMETiff"/>
     <sniffer type="galaxy.datatypes.images:Tiff"/>
     <sniffer type="galaxy.datatypes.images:Bmp"/>
