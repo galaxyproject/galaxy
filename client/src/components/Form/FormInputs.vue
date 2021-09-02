@@ -1,24 +1,70 @@
 <template>
-    <FormInputs
-        :id="id"
-        :inputs="inputs"
-        :prefix="prefix"
-        :sustain-repeats="sustainRepeats"
-        :sustain-conditionals="sustainConditionals"
-        :text-enable="textEnable"
-        :text-disable="textDisable"
-        :validation-scroll-to="validationScrollTo"
-        :errors="errors"
-        :replace-params="replaceParams"
-    />
+    <div>
+        <div v-for="(input, index) in formInputs" :key="index">
+            <div v-if="input.type == 'repeat'">
+                <p class="font-weight-bold mb-2">{{ input.title }}</p>
+                <FormCard
+                    v-for="(cache, cacheId) in input.cache"
+                    :key="cacheId"
+                    :title="repeatTitle(cacheId, input.title)"
+                >
+                    <template v-slot:operations>
+                        <b-button
+                            role="button"
+                            variant="link"
+                            size="sm"
+                            class="float-right"
+                            v-b-tooltip.hover.bottom
+                            @click="repeatDelete(input, cacheId)"
+                        >
+                            <font-awesome-icon icon="trash-alt" />
+                        </b-button>
+                    </template>
+                    <template v-slot:body>
+                        <FormNode :inputs="cache" :prefix="getPrefix(input.name)" />
+                    </template>
+                </FormCard>
+                <b-button @click="repeatInsert(input)">
+                    <font-awesome-icon icon="plus" class="mr-1" />
+                    <span>Insert {{ input.title }}</span>
+                </b-button>
+            </div>
+            <div v-else-if="input.type == 'section'">
+                <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
+                    <template v-slot:body>
+                        <FormNode :inputs="input.inputs" :prefix="getPrefix(input.name)" />
+                    </template>
+                </FormCard>
+            </div>
+            <FormElement
+                v-else
+                v-bind="input"
+                @input="onInput"
+                :id="getPrefix(input.name)"
+                :title="input.label"
+                :help="input.help"
+            />
+        </div>
+    </div>
 </template>
 
 <script>
-import FormInputs from "./FormInputs";
+import Vue from "vue";
+import { visitInputs } from "components/Form/utilities";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
+import FormCard from "components/Form/FormCard";
+import FormElement from "components/Form/FormElement";
+
+library.add(faPlus, faTrashAlt);
 
 export default {
+    name: "FormNode",
     components: {
-        FormInputs,
+        FontAwesomeIcon,
+        FormCard,
+        FormElement,
     },
     props: {
         id: {
@@ -28,10 +74,6 @@ export default {
         inputs: {
             type: Array,
             required: true,
-        },
-        errors: {
-            type: Object,
-            default: null,
         },
         prefix: {
             type: String,
@@ -55,6 +97,10 @@ export default {
         },
         validationScrollTo: {
             type: Array,
+            default: null,
+        },
+        errors: {
+            type: Object,
             default: null,
         },
         replaceParams: {
@@ -90,7 +136,9 @@ export default {
         },
         errors() {
             /*this.$nextTick(() => {
-                this.form.errors(this.errors);
+                if (this.initialErrors) {
+                    this.form.errors(this.errors);
+                }
             });*/
         },
         replaceParams() {
@@ -206,12 +254,13 @@ export default {
                 this.form = new Form({
                     el,
                     inputs: this.inputs,
+                    initial_errors: this.initialErrors,
                     text_enable: this.textEnable,
                     text_disable: this.textDisable,
                     sustain_repeats: this.sustainRepeats,
                     sustain_conditionals: this.sustainConditionals,
-                    onchange: (refreshRequest) => {
-                        this.onChange(refreshRequest);
+                    onchange: () => {
+                        this.onChange();
                     },
                 });
                 this.onChange();
