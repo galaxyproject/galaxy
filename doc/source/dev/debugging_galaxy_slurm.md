@@ -38,11 +38,6 @@ playbooks for that).
         <destinations default="slurm">
             <destination id="slurm" runner="slurm"/>
         </destinations>
-        <resources default="default">
-          <group id="default"></group>
-          <group id="memoryonly">memory</group>
-          <group id="all">processors,memory,time,project</group>
-        </resources>
     </job_conf>
     ```
 
