@@ -45,14 +45,13 @@ export default {
     },
     methods: {
         onRender() {
-            this.parameter = new ParameterFactory();
             this.$nextTick(() => {
-                const el = this.$refs["parameter"];
+                this.parameter = new ParameterFactory();
                 this.parameter.create({
                     ...this.attributes,
                     type: this.type,
                     value: this.value,
-                    el,
+                    el: this.$refs["parameter"],
                     onchange: () => {
                         this.$emit("input", this.parameter.field.value());
                     },
