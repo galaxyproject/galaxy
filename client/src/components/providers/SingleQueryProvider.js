@@ -21,6 +21,7 @@ export const SingleQueryProvider = (lookup) => {
         data() {
             return {
                 result: undefined,
+                error: undefined,
             };
         },
         computed: {
@@ -47,6 +48,8 @@ export const SingleQueryProvider = (lookup) => {
                     this.result = result;
                 },
                 (err) => {
+                    this.result = {};
+                    this.error = err;
                     this.$emit("error", err);
                 }
             );
@@ -55,6 +58,7 @@ export const SingleQueryProvider = (lookup) => {
             return this.$scopedSlots.default({
                 loading: this.loading,
                 result: this.result,
+                error: this.error,
             });
         },
     };
