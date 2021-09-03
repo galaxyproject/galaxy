@@ -16,11 +16,8 @@ either through the props, and make updates through the events -->
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
     >
         <!-- name, state buttons, menus -->
-        <nav
-            class="content-top-menu p-1 d-flex align-items-baseline cursor-pointer"
-            @click.stop="$emit('update:expanded', !expanded)"
-        >
-            <div class="d-flex align-items-baseline flex-grow-1 overflow-hidden">
+        <nav class="content-top-menu p-1 d-flex cursor-pointer" @click.stop="$emit('update:expanded', !expanded)">
+            <div class="d-flex flex-grow-1 overflow-hidden">
                 <div class="pl-1" v-if="showSelectionBox">
                     <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)"></b-check>
                 </div>
