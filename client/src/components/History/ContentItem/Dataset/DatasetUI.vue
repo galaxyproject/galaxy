@@ -49,7 +49,7 @@ either through the props, and make updates through the events -->
 
                 <div class="content-title title p-1 overflow-hidden">
                     <h5 class="text-truncate" v-if="collapsed">
-                        <span class="hid sr-only" data-description="dataset hid">{{ dataset.hid }}</span>
+                        <span class="hid" data-description="dataset hid">{{ dataset.hid }}</span>
                         <span class="name" data-description="dataset name">{{ dataset.title }}</span>
                     </h5>
                 </div>

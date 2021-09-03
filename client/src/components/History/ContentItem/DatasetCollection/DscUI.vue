@@ -57,7 +57,7 @@
 
                 <div class="content-title title flex-grow-1 overflow-hidden" @click.stop="$emit('viewCollection')">
                     <h5 class="text-truncate">
-                        <span class="hid sr-only">{{ dsc.hid }}</span>
+                        <span class="hid">{{ dsc.hid }}</span>
                         <span class="name">{{ dsc.name }}</span>
                         <span class="description">
                             ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
