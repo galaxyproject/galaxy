@@ -46,7 +46,7 @@ playbooks for that).
     </job_conf>
     ```
 
-4. Uncomment the following line in ~/galaxy/config/galaxy.yml
+4. Uncomment the following line in ~/galaxy/config/galaxy.yml (If the file does not exist, create it by copying ~/galaxy/config/galaxy.yml.sample)
     * `job_config_file: job_conf.xml`
 
 5. Install Slurm (Instructions borrowed from https://gist.github.com/ckandoth/2acef6310041244a690e4c08d2610423)
