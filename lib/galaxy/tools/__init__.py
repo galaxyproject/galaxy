@@ -2962,7 +2962,7 @@ class BuildListCollectionTool(DatabaseOperationTool):
                     identifier = incoming_repeat["input"].name
                 elif incoming_repeat["id_cond"]["id_select"] == 'manual':
                     identifier = incoming_repeat["id_cond"]["identifier"]
-                new_elements[identifier] = incoming_repeat["input"].copy(copy_tags=tags)
+                new_elements[identifier] = incoming_repeat["input"].copy(copy_tags=incoming_repeat["input"].tags)
 
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
