@@ -1,8 +1,6 @@
 <template>
-    <div>
-        <div v-if="toolStderr || jobStderr || hasMessages">
-            <h3>Details</h3>
-        </div>
+    <div v-if="hasDetails">
+        <h3>Details</h3>
         <div v-if="hasMessages" id="dataset-error-job-messages">
             <p>Execution resulted in the following messages:</p>
             <div v-for="(jobMessage, index) in jobMessages" :key="index">
@@ -25,18 +23,21 @@ export default {
     props: {
         toolStderr: {
             type: String,
-            required: true,
+            default: null,
         },
         jobStderr: {
             type: String,
-            required: true,
+            default: null,
         },
         jobMessages: {
             type: Array,
-            required: true,
+            default: null,
         },
     },
     computed: {
+        hasDetails() {
+            return this.toolStderr || this.jobStderr || this.hasMessages;
+        },
         hasMessages() {
             return this.jobMessages && this.jobMessages.length > 0;
         },
