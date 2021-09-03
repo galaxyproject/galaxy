@@ -21,24 +21,7 @@
 </template>
 
 <script>
-import FormElement from "components/Form/FormElement";
-import { DatasetProvider } from "components/WorkflowInvocationState/providers";
-import { JobDetailsProvider, JobProblemProvider } from "components/providers/JobProvider";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBug } from "@fortawesome/free-solid-svg-icons";
-import { sendErrorReport } from "./services";
-
-library.add(faBug);
-
 export default {
-    components: {
-        DatasetProvider,
-        FontAwesomeIcon,
-        FormElement,
-        JobDetailsProvider,
-        JobProblemProvider,
-    },
     props: {
         toolStderr: {
             type: String,
