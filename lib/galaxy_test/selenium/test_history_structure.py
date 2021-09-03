@@ -25,7 +25,7 @@ class HistoryStructureTestCase(SeleniumTestCase):
         self.components.history_structure.header.assert_absent_or_hidden()
         self.components.history_structure.dataset.assert_absent_or_hidden()
 
-        self.click_history_option(self.components.history_panel.options_show_history_structure)
+        self.history_panel_show_structure()
 
         # assert details are not visible before expand
         self.components.history_structure.details.assert_absent_or_hidden()

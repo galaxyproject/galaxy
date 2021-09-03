@@ -39,7 +39,7 @@
                 <span v-localize>Extract Workflow</span>
             </b-dropdown-item>
 
-            <b-dropdown-item @click="backboneRoute('/histories/show_structure')">
+            <b-dropdown-item @click="backboneRoute('/histories/show_structure')" data-description="show structure">
                 <Icon icon="code-branch" class="mr-1" />
                 <span v-localize>Show Structure</span>
             </b-dropdown-item>
