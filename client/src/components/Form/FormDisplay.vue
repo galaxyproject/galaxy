@@ -8,8 +8,9 @@
         :text-enable="textEnable"
         :text-disable="textDisable"
         :validation-scroll-to="validationScrollTo"
-        :errors="errors"
         :replace-params="replaceParams"
+        :errors="errors"
+        :change="onChange"
     />
 </template>
 
@@ -65,7 +66,6 @@ export default {
     data() {
         return {
             formData: {},
-            formInputs: this.inputs.slice(),
         };
     },
     watch: {
@@ -156,26 +156,6 @@ export default {
         },
     },
     methods: {
-        getPrefix(name) {
-            if (this.prefix) {
-                return `${this.prefix}|${name}`;
-            } else {
-                return name;
-            }
-        },
-        repeatTitle(index, title) {
-            return `${parseInt(index) + 1}: ${title}`;
-        },
-        repeatInsert(input) {
-            const newInputs = JSON.parse(JSON.stringify(input.inputs));
-            input.cache = input.cache || [];
-            input.cache.push(newInputs);
-            this.formInputs = this.formInputs.slice();
-        },
-        repeatDelete(input, cacheId) {
-            input.cache.splice(cacheId, 1);
-            this.formInputs = this.formInputs.slice();
-        },
         onReplaceParams() {
             /*if (this.replaceParams) {
                 this.params = {};
@@ -192,30 +172,12 @@ export default {
                 this.form.trigger("change");
             }*/
         },
-        onInput(value, identifier) {
+        onChange(value, identifier) {
             this.formData[identifier] = value;
-            console.log(this.formData);
-        },
-        onChange() {
+            console.log(value);
+            console.log(identifier);
             /*this.formData = this.form.data.create();
             this.$emit("onChange", this.formData);*/
-        },
-        onRender() {
-            /*this.$nextTick(() => {
-                const el = this.$refs["form"];
-                this.form = new Form({
-                    el,
-                    inputs: this.inputs,
-                    text_enable: this.textEnable,
-                    text_disable: this.textDisable,
-                    sustain_repeats: this.sustainRepeats,
-                    sustain_conditionals: this.sustainConditionals,
-                    onchange: (refreshRequest) => {
-                        this.onChange(refreshRequest);
-                    },
-                });
-                this.onChange();
-            });*/
         },
         onHighlight(validation, silent = false) {
             /*this.form.trigger("reset");

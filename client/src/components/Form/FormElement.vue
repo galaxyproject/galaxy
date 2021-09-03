@@ -49,6 +49,14 @@ export default {
             default: null,
         },
     },
+    created() {
+        this.$emit("initial", this.value, this.id);
+    },
+    watch: {
+        value() {
+            this.$emit("initial", this.value, this.id);
+        },
+    },
     computed: {
         currentValue: {
             get() {

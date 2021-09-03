@@ -21,7 +21,7 @@
                         </b-button>
                     </template>
                     <template v-slot:body>
-                        <FormNode :inputs="cache" :prefix="getPrefix(input.name)" />
+                        <FormNode :inputs="cache" :prefix="getRepeatPrefix(input.name, cacheId)" :change="change" />
                     </template>
                 </FormCard>
                 <b-button @click="repeatInsert(input)">
@@ -32,17 +32,18 @@
             <div v-else-if="input.type == 'section'">
                 <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
                     <template v-slot:body>
-                        <FormNode :inputs="input.inputs" :prefix="getPrefix(input.name)" />
+                        <FormNode :inputs="input.inputs" :prefix="getPrefix(input.name)" :change="change" />
                     </template>
                 </FormCard>
             </div>
             <FormElement
                 v-else
                 v-bind="input"
-                @input="onInput"
                 :id="getPrefix(input.name)"
                 :title="input.label"
                 :help="input.help"
+                @input="change"
+                @initial="change"
             />
         </div>
     </div>
@@ -67,10 +68,6 @@ export default {
         FormElement,
     },
     props: {
-        id: {
-            type: String,
-            default: null,
-        },
         inputs: {
             type: Array,
             required: true,
@@ -107,6 +104,10 @@ export default {
             type: Object,
             default: null,
         },
+        change: {
+            type: Function,
+            required: true,
+        },
     },
     data() {
         return {
@@ -115,8 +116,8 @@ export default {
         };
     },
     watch: {
-        id() {
-            //this.onRender();
+        inputs() {
+            this.formInputs = this.inputs.slice();
         },
         validationScrollTo() {
             //this.onHighlight(this.validationScrollTo);
@@ -124,15 +125,6 @@ export default {
         validation() {
             //this.onHighlight(this.validation, true);
             //this.$emit("onValidation", this.validation);
-        },
-        inputs() {
-            //this.formInputs = Object.assign({}, this.inputs);
-            /*this.$nextTick(() => {
-                this.form.update(this.inputs);
-            });*/
-        },
-        formInputs() {
-            console.log(this.formInputs);
         },
         errors() {
             /*this.$nextTick(() => {
@@ -145,66 +137,15 @@ export default {
             //this.onReplaceParams();
         },
     },
-    computed: {
-        validation() {
-            /*let batch_n = -1;
-            let batch_src = null;
-            for (const job_input_id in this.formData) {
-                const input_value = this.formData[job_input_id];
-                const input_id = this.form.data.match(job_input_id);
-                const input_field = this.form.field_list[input_id];
-                const input_def = this.form.input_list[input_id];
-                if (!input_id || !input_def || !input_field || input_def.step_linked) {
-                    continue;
-                }
-                if (
-                    input_value &&
-                    Array.isArray(input_value.values) &&
-                    input_value.values.length == 0 &&
-                    !input_def.optional
-                ) {
-                    return [job_input_id, "Please provide data for this input."];
-                }
-                if (input_value == null && !input_def.optional && input_def.type != "hidden") {
-                    return [job_input_id, "Please provide a value for this option."];
-                }
-                if (input_def.wp_linked && input_def.text_value == input_value) {
-                    return [job_input_id, "Please provide a value for this workflow parameter."];
-                }
-                if (input_field.validate) {
-                    const message = input_field.validate();
-                    if (message) {
-                        return [job_input_id, message];
-                    }
-                }
-                if (input_value && input_value.batch) {
-                    const n = input_value.values.length;
-                    const src = n > 0 && input_value.values[0] && input_value.values[0].src;
-                    if (src) {
-                        if (batch_src === null) {
-                            batch_src = src;
-                        } else if (batch_src !== src) {
-                            return [
-                                job_input_id,
-                                "Please select either dataset or dataset list fields for all batch mode fields.",
-                            ];
-                        }
-                    }
-                    if (batch_n === -1) {
-                        batch_n = n;
-                    } else if (batch_n !== n) {
-                        return [
-                            job_input_id,
-                            `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`,
-                        ];
-                    }
-                }
-            }*/
-            return null;
-        },
-    },
     methods: {
-        getPrefix(name) {
+        getRepeatPrefix(name, index) {
+            if (this.prefix) {
+                return `${this.prefix}|${name}_${index}`;
+            } else {
+                return `${name}_${index}`;
+            }
+        },
+        getPrefix(name, index) {
             if (this.prefix) {
                 return `${this.prefix}|${name}`;
             } else {
@@ -239,32 +180,6 @@ export default {
                 });
                 this.form.trigger("change");
             }*/
-        },
-        onInput(value, identifier) {
-            this.formData[identifier] = value;
-            console.log(this.formData);
-        },
-        onChange() {
-            /*this.formData = this.form.data.create();
-            this.$emit("onChange", this.formData);*/
-        },
-        onRender() {
-            /*this.$nextTick(() => {
-                const el = this.$refs["form"];
-                this.form = new Form({
-                    el,
-                    inputs: this.inputs,
-                    initial_errors: this.initialErrors,
-                    text_enable: this.textEnable,
-                    text_disable: this.textDisable,
-                    sustain_repeats: this.sustainRepeats,
-                    sustain_conditionals: this.sustainConditionals,
-                    onchange: () => {
-                        this.onChange();
-                    },
-                });
-                this.onChange();
-            });*/
         },
         onHighlight(validation, silent = false) {
             /*this.form.trigger("reset");
