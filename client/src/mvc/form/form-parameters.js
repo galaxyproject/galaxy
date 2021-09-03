@@ -42,7 +42,7 @@ export default Backbone.View.extend({
     },
 
     /** Returns an input field for a given field type */
-    initialize: function (input_def) {
+    create: function (input_def) {
         const Galaxy = getGalaxyInstance();
         var fieldClass = this.types[input_def.hiddenInWorkflow ? "hidden" : input_def.type];
         this.field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
