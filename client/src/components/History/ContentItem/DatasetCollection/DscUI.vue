@@ -10,7 +10,7 @@
         @keydown.arrow-right.self.stop="$emit('viewCollection')"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
     >
-        <nav class="p-1 d-flex align-items-baseline cursor-pointer">
+        <nav class="content-top-menu p-1 d-flex align-items-baseline cursor-pointer">
             <div class="d-flex align-items-baseline flex-grow-1 overflow-hidden">
                 <div class="pl-1" v-if="showSelection">
                     <b-check
