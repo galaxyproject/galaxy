@@ -120,9 +120,6 @@ export default {
         };
     },
     methods: {
-        hasMessages(jobDetails) {
-            return jobDetails.job_messages && jobDetails.job_messages.length > 0;
-        },
         onError(err) {
             this.errorMessage = err;
         },
