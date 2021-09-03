@@ -1,13 +1,7 @@
 """Integration tests for the TES runner."""
 import collections
-import json
-from lib.galaxy import config
 import os
 import tempfile
-import time
-
-
-from galaxy.util import unicodify
 from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_without_tool,
@@ -17,6 +11,7 @@ from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 Config = collections.namedtuple('Config', 'path')
 TOOL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'tools'))
+
 
 def job_config():
     job_conf_template = ("""<job_conf>
@@ -38,14 +33,15 @@ def job_config():
         job_conf.write(job_conf_template)
     return Config(job_conf.name)
 
+
 @integration_util.skip_unless_tes()
 class BaseTESIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
-    
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
-    
+
     @classmethod
     def setUpClass(cls):
         cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
