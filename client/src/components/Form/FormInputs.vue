@@ -21,7 +21,12 @@
                         </b-button>
                     </template>
                     <template v-slot:body>
-                        <FormNode :inputs="cache" :prefix="getRepeatPrefix(input.name, cacheId)" :change="change" />
+                        <FormNode
+                            :inputs="cache"
+                            :prefix="getRepeatPrefix(input.name, cacheId)"
+                            :add-parameters="addParameters"
+                            :remove-parameters="removeParameters"
+                        />
                     </template>
                 </FormCard>
                 <b-button @click="repeatInsert(input)">
@@ -32,7 +37,12 @@
             <div v-else-if="input.type == 'section'">
                 <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
                     <template v-slot:body>
-                        <FormNode :inputs="input.inputs" :prefix="getPrefix(input.name)" :change="change" />
+                        <FormNode
+                            :inputs="input.inputs"
+                            :prefix="getPrefix(input.name)"
+                            :add-parameters="addParameters"
+                            :remove-parameters="removeParameters"
+                        />
                     </template>
                 </FormCard>
             </div>
@@ -42,8 +52,7 @@
                 :id="getPrefix(input.name)"
                 :title="input.label"
                 :help="input.help"
-                @input="change"
-                @initial="change"
+                @input="addParameters"
             />
         </div>
     </div>
@@ -104,7 +113,11 @@ export default {
             type: Object,
             default: null,
         },
-        change: {
+        addParameters: {
+            type: Function,
+            required: true,
+        },
+        removeParameters: {
             type: Function,
             required: true,
         },
@@ -164,6 +177,8 @@ export default {
         repeatDelete(input, cacheId) {
             input.cache.splice(cacheId, 1);
             this.formInputs = this.formInputs.slice();
+            const prefix = this.getRepeatPrefix(input.name, cacheId);
+            this.removeParameters(`${prefix}|`);
         },
         onReplaceParams() {
             /*if (this.replaceParams) {

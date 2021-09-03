@@ -10,7 +10,8 @@
         :validation-scroll-to="validationScrollTo"
         :replace-params="replaceParams"
         :errors="errors"
-        :change="onChange"
+        :add-parameters="addParameters"
+        :remove-parameters="removeParameters"
     />
 </template>
 
@@ -172,12 +173,24 @@ export default {
                 this.form.trigger("change");
             }*/
         },
-        onChange(value, identifier) {
-            this.formData[identifier] = value;
-            console.log(value);
-            console.log(identifier);
-            /*this.formData = this.form.data.create();
-            this.$emit("onChange", this.formData);*/
+        addParameters(value, identifier) {
+            const currentValueString = JSON.stringify(this.formData[identifier]);
+            if (currentValueString != JSON.stringify(value)) {
+                this.formData[identifier] = value;
+                console.log(this.formData);
+                this.$emit("onChange", this.formData, true);
+            }
+        },
+        removeParameters(prefix) {
+            const filtered = {};
+            Object.keys(this.formData).forEach((key) => {
+                if (!key.startsWith(prefix)) {
+                    filtered[key] = this.formData[key];
+                }
+            });
+            this.formData = filtered;
+            console.log(this.formData);
+            //this.$emit("onChange", this.formData, true);
         },
         onHighlight(validation, silent = false) {
             /*this.form.trigger("reset");

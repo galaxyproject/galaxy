@@ -50,12 +50,7 @@ export default {
         },
     },
     created() {
-        this.$emit("initial", this.value, this.id);
-    },
-    watch: {
-        value() {
-            this.$emit("initial", this.value, this.id);
-        },
+        this.$emit("input", this.value, this.id);
     },
     computed: {
         currentValue: {
