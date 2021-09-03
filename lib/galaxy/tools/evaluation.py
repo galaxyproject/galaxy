@@ -4,8 +4,6 @@ import os
 import shlex
 import tempfile
 
-import sqlalchemy
-
 from galaxy import model
 from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.job_execution.setup import ensure_configs_directory
@@ -429,14 +427,6 @@ class ToolEvaluator:
         skip = ['chromInfo'] + list(self.tool.template_macro_params.keys())
         if not self.tool or not self.tool.options or self.tool.options.sanitize:
             for key, value in list(param_dict.items()):
-
-                # Do not wrap Galaxy model classes with SafeStringWrapper.
-                # Models are mapped declaratively, so SQLAlchemy's DeclarativeMeta is their metaclass.
-                # By overriding attribute access, SafeStringWrapper (called in wrap_with_safe_string)
-                # inteferes with SQLAlchemy's instrumentation. And everything dies.
-                if type(value.__class__) == sqlalchemy.orm.decl_api.DeclarativeMeta:
-                    continue
-
                 if key not in skip:
                     # Remove key so that new wrapped object will occupy key slot
                     del param_dict[key]

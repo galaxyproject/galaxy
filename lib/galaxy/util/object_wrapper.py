@@ -23,6 +23,8 @@ from types import (
     TracebackType,
 )
 
+import sqlalchemy
+
 NoneType = type(None)
 NotImplementedType = type(NotImplemented)
 EllipsisType = type(Ellipsis)
@@ -261,6 +263,14 @@ class SafeStringWrapper:
         return self.__safe_string_wrapper_function__(getattr(self.unsanitized, name))
 
     def __setattr__(self, name, value):
+        # A class mapped declaratively is a subclass of DeclarativeMeta. It will check at creation time
+        # if self has _sa_instance_state set, and if not, it'll try to set it. This happens BEFORE self.__init__
+        # has been called, so self.unsanitized does not exists, which raises an AttributeError.
+        # To avoid this, as well as to avoid SQLAlchemy state to be set on SafeStringWrapper,
+        # we simply ignore this call.
+        if isinstance(value, sqlalchemy.orm.state.InstanceState):
+            return
+
         if name in SafeStringWrapper.__NO_WRAP_NAMES__:
             return object.__setattr__(self, name, value)
         return setattr(self.unsanitized, name, value)
