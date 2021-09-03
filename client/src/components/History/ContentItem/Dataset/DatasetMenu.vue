@@ -31,6 +31,7 @@
             />
 
             <b-dropdown
+                right
                 size="sm"
                 variant="link"
                 :text="'Dataset Operations' | l"
