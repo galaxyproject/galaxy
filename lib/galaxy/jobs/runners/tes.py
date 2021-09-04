@@ -1,20 +1,21 @@
 """
 Job control via TES.
 """
-from lib.galaxy.jobs import JobWrapper
 import logging
 import os
 from re import escape, findall
-from os import sep
+
 import requests
 
 from galaxy import model
+from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
-from galaxy.jobs.command_factory import build_command
 from galaxy.util import asbool
+
+from lib.galaxy.jobs import JobWrapper
 
 log = logging.getLogger(__name__)
 
@@ -143,7 +144,7 @@ class TESJobRunner(AsynchronousJobRunner):
         if directory is None:
             return []
 
-        pattern = r'''[\'\"]?(%s%s[^\s\'\"]+)[\'\"]?''' % (escape(directory), escape(sep))
+        pattern = r'''[\'\"]?(%s%s[^\s\'\"]+)[\'\"]?''' % (escape(directory), escape(os.sep))
         return self.find_pattern_references(pattern, command_line, extra_files)
 
     def _read(self, path: str):

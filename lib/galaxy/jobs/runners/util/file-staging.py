@@ -1,6 +1,7 @@
 import sys
-from pulsar.client.transport import post_file
 import os
+
+from pulsar.client.transport import post_file
 
 
 def get_job_directory_files(work_dir: str):
