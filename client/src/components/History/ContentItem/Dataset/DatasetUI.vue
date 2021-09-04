@@ -16,8 +16,8 @@ either through the props, and make updates through the events -->
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
     >
         <!-- name, state buttons, menus -->
-        <nav class="p-1 d-flex align-items-baseline cursor-pointer" @click.stop="$emit('update:expanded', !expanded)">
-            <div class="d-flex align-items-baseline flex-grow-1 overflow-hidden">
+        <nav class="content-top-menu p-1 d-flex cursor-pointer" @click.stop="$emit('update:expanded', !expanded)">
+            <div class="d-flex flex-grow-1 overflow-hidden">
                 <div class="pl-1" v-if="showSelectionBox">
                     <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)"></b-check>
                 </div>
@@ -49,7 +49,7 @@ either through the props, and make updates through the events -->
 
                 <div class="content-title title p-1 overflow-hidden">
                     <h5 class="text-truncate" v-if="collapsed">
-                        <span class="hid sr-only" data-description="dataset hid">{{ dataset.hid }}</span>
+                        <span class="hid" data-description="dataset hid">{{ dataset.hid }}</span>
                         <span class="name" data-description="dataset name">{{ dataset.title }}</span>
                     </h5>
                 </div>

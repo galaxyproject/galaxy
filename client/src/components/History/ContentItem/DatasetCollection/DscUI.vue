@@ -10,8 +10,8 @@
         @keydown.arrow-right.self.stop="$emit('viewCollection')"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
     >
-        <nav class="p-1 d-flex align-items-baseline cursor-pointer">
-            <div class="d-flex align-items-baseline flex-grow-1 overflow-hidden">
+        <nav class="content-top-menu p-1 d-flex cursor-pointer">
+            <div class="d-flex flex-grow-1 overflow-hidden">
                 <div class="pl-1" v-if="showSelection">
                     <b-check
                         class="selector"
@@ -57,7 +57,7 @@
 
                 <div class="content-title title flex-grow-1 overflow-hidden" @click.stop="$emit('viewCollection')">
                     <h5 class="text-truncate">
-                        <span class="hid sr-only">{{ dsc.hid }}</span>
+                        <span class="hid">{{ dsc.hid }}</span>
                         <span class="name">{{ dsc.name }}</span>
                         <span class="description">
                             ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
