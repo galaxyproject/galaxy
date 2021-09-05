@@ -600,6 +600,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get('database_create_tables', 'True'))
         self.database_encoding = kwargs.get('database_encoding')  # Create new databases with this encoding
+
+        # Database data tables connection
+        if not self.data_table_database_connection:  # Provide default if not supplied by user
+            db_path = self._in_data_dir('data_tables.sqlite')
+            self.data_table_database_connection = f'sqlite:///{db_path}?isolation_level=IMMEDIATE'
+            self.data_table_database_engine_options = get_database_engine_options(kwargs, model_prefix="data_tables_")
+
         self.thread_local_log = None
         if self.enable_per_request_sql_debugging:
             self.thread_local_log = threading.local()
@@ -1230,7 +1237,7 @@ class ConfiguresGalaxyMixin:
         # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
         self.tool_data_tables = ToolDataTableManager(tool_data_path=self.config.tool_data_path,
                                                      config_filename=self.config.tool_data_table_config_path,
-                                                     other_config_dict=self.config)
+                                                     other_config_dict=self.config, dt_model=self.data_tables_model)
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
         try:
             self.tool_data_tables.load_from_config_file(config_filename=self.config.shed_tool_data_table_config,
@@ -1323,6 +1330,19 @@ class ConfiguresGalaxyMixin:
             log.info(f"Install database using its own connection {install_db_url}")
             self.install_model = install_mapping.init(install_db_url,
                                                       install_database_options)
+
+        # Database data tables
+        data_tables_db_url = self.config.data_table_database_connection
+        log.info(f"Data table database using its own connection: {data_tables_db_url}")
+        log.info(f"Checking database migration: {check_migrate_databases}")
+        if check_migrate_databases:
+            # Initialize data table database / check for appropriate schema version.
+            from galaxy.model.data_tables.migrate.check import create_or_verify_database
+            create_or_verify_database(data_tables_db_url, install_database_options)
+
+        from galaxy.model.data_tables import mapping as data_tables_mapping
+        log.info(f"Data tables database using its own connection {data_tables_db_url}")
+        self.data_tables_model = data_tables_mapping.init(data_tables_db_url)
 
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():

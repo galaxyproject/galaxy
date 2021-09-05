@@ -6,12 +6,12 @@ from typing import Dict
 
 from galaxy import util
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.tools.data import TabularToolDataTable
+from galaxy.tools.data import DatabaseToolDataTable, TabularToolDataTable
 from galaxy.util.template import fill_template
 
 log = logging.getLogger(__name__)
 
-SUPPORTED_DATA_TABLE_TYPES = (TabularToolDataTable)
+SUPPORTED_DATA_TABLE_TYPES = (TabularToolDataTable, DatabaseToolDataTable)
 VALUE_TRANSLATION_FUNCTIONS = dict(abspath=os.path.abspath)
 DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
 

@@ -4646,4 +4646,19 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``data_table_database_connection``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The database connection for data table entries within a database.
+    By default, Galaxy will use a SQLite database at
+    '<data_dir>/data_tables.sqlite'.  You may use a SQLAlchemy
+    connection string to specify an external database instead.
+    Sample default
+    'sqlite:///<data_dir>/data_tables.sqlite?isolation_level=IMMEDIATE'
+:Default: ``None``
+:Type: str
+
+
 

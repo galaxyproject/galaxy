@@ -8,6 +8,7 @@ env:
   GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 'true'
   GALAXY_TEST_SELENIUM_RETRIES: 1
   YARN_INSTALL_OPTS: --frozen-lockfile
+  DATA_TABLES_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/data_tables?client_encoding=utf8'
 jobs:
   test:
     name: Test

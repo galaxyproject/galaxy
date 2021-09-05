@@ -48,6 +48,12 @@ DATABASE = {
             'default_sqlite_file': 'install.sqlite',
             'config_override': 'GALAXY_INSTALL_CONFIG_',
         },
+    "data_tables":
+        {
+            'repo': 'galaxy/model/data_tables/migrate',
+            'default_sqlite_file': 'data_tables.sqlite',
+            'config_override': 'GALAXY_CONFIG_',
+        },
 }
 
 
@@ -57,7 +63,7 @@ def _read_model_arguments(argv, use_argparse=False):
         parser.add_argument('database', metavar='DATABASE', type=str,
                             default="galaxy",
                             nargs='?',
-                            help='database to target (galaxy, tool_shed, install)')
+                            help='database to target (galaxy, tool_shed, install, data_tables)')
         populate_config_args(parser)
         args = parser.parse_args(argv[1:] if argv else [])
         return args.config_file, args.config_section, args.database

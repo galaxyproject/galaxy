@@ -20,8 +20,10 @@ from typing import List
 
 import refgenconf
 import requests
+from sqlalchemy import case, cast, func, Integer, String
 
 from galaxy import util
+from galaxy.model import data_tables as data_tables_model
 from galaxy.util import RW_R__R__
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
@@ -69,7 +71,7 @@ class ToolDataPathFiles:
 class ToolDataTableManager:
     """Manages a collection of tool data tables"""
 
-    def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None):
+    def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None, dt_model=None):
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
@@ -77,6 +79,7 @@ class ToolDataTableManager:
         self.data_tables = {}
         self.tool_data_path_files = ToolDataPathFiles(self.tool_data_path)
         self.other_config_dict = other_config_dict or {}
+        self.dt_model = dt_model
         for single_config_filename in util.listify(config_filename):
             if not single_config_filename:
                 continue
@@ -120,7 +123,7 @@ class ToolDataTableManager:
             tree = util.parse_xml(filename)
             root = tree.getroot()
             for table_elem in root.findall('table'):
-                table = ToolDataTable.from_elem(table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files, other_config_dict=self.other_config_dict)
+                table = ToolDataTable.from_elem(table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files, other_config_dict=self.other_config_dict, dt_model=self.dt_model)
                 table_elems.append(table_elem)
                 if table.name not in self.data_tables:
                     self.data_tables[table.name] = table
@@ -243,10 +246,10 @@ class ToolDataTable:
     type_key: str
 
     @classmethod
-    def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None):
+    def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None, dt_model=None):
         table_type = table_elem.get('type', 'tabular')
         assert table_type in tool_data_table_types, f"Unknown data table type '{table_type}'"
-        return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files, other_config_dict=other_config_dict)
+        return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files, other_config_dict=other_config_dict, dt_model=dt_model)
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
         self.name = config_element.get('name')
@@ -329,7 +332,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
     type_key = 'tabular'
 
-    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, dt_model=None):
         super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
@@ -814,7 +817,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
 
     type_key = 'refgenie'
 
-    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, dt_model=None):
         super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
@@ -900,6 +903,333 @@ class RefgenieToolDataTable(TabularToolDataTable):
         super()._remove_entry(values)
 
 
+class DatabaseToolDataTable(ToolDataTable, Dictifiable):
+    """
+    Data stored in the database, mainly for highly transactional data::
+
+        <table type="database" name="test">
+            <column name='...' index = '...' />
+        </table>
+
+    """
+    dict_collection_visible_keys = ['name']
+    type_key = 'database'
+
+    datatable_name = None
+    datatable_allow_duplicate_entries = True
+    sa_session = None
+    datatable_id = None
+
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, dt_model=None):
+        super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        self.config_element = config_element
+        self.data = []
+        if dt_model is not None:
+            self.configure_and_load(config_element, tool_data_path, from_shed_config, dt_model=dt_model)
+
+    def configure_and_load(self, config_element, tool_data_path, from_shed_config=False, url_timeout=10, dt_model=None):
+        """
+        Configure and load the data table, set up the entries in the database on initial load
+        """
+        self.datatable_name = config_element.get('name', None)
+        self.datatable_allow_duplicate_entries = config_element.get('allow_duplicate_entries', True)
+        assert self.datatable_name, ValueError('You must specify a name attribute.')
+        self.parse_column_spec(config_element)
+
+        # store repo info if available:
+        repo_elem = config_element.find('tool_shed_repository')
+        if repo_elem is not None:
+            repo_info = dict(tool_shed=repo_elem.find('tool_shed').text, name=repo_elem.find('repository_name').text,
+                             owner=repo_elem.find('repository_owner').text,
+                             installed_changeset_revision=repo_elem.find('installed_changeset_revision').text)
+        else:
+            repo_info = None
+        # Capture potential errors
+        errors = []
+
+        if dt_model is not None:
+            self.sa_session = dt_model.context
+            if not self.data_table_exist_in_database():
+                # In case we don't have a datatable yet, create a new one in the database and add the columns to it
+                dt = data_tables_model.DataTable(name=self.datatable_name)
+                self.sa_session.add(dt)
+
+                # Create columns in the database if we need to
+                for columnname in self.columns.keys():
+                    # Check if the column already exists first, if it doesn't create it
+                    datatablecolumns = self.lookup_column_by_name(columnname)
+                    if datatablecolumns is not None and len(datatablecolumns) == 0:
+                        dt_column = data_tables_model.DataTableColumn(name=columnname)
+                        self.sa_session.add(dt_column)
+                self.sa_session.flush()
+                log.debug("Created new DataTable and DataTableColumn entries in database.")
+
+                # Map columns to the data table
+                for columnname in self.columns.keys():
+                    datatablecolumns = self.lookup_column_by_name(columnname)
+                    if datatablecolumns is not None and len(datatablecolumns) == 1:
+                        datatablecolumn = datatablecolumns[0]
+                        dtfa = data_tables_model.DataTableColumnAssociation(data_table_id=dt.id,
+                                                                            data_table_column_id=datatablecolumn.id)
+                        self.sa_session.add(dtfa)
+                self.sa_session.flush()
+                log.debug("Mapped DataTable and DataTableColumn to each other in database.")
+
+            self.append_column_spec()
+            datatables = self.get_data_table_from_database()
+            if len(datatables) == 1:
+                datatable = datatables[0]
+                self.datatable_id = datatable.id
+
+            # Get data into [[Line 1 field 1, Line 1 Field 2], [L2 F1, L2 F2]] format
+            if self.datatable_id is not None:
+                self.data = self.get_data_table_rows()
+
+            # Create a fake filename so we can show it in the UI
+            self.filenames["Database %s" % self.datatable_name] = dict(found=True, filename="Database %s",
+                                                                       from_shed_config=from_shed_config,
+                                                                       tool_data_path=tool_data_path,
+                                                                       config_element=config_element,
+                                                                       tool_shed_repository=repo_info,
+                                                                       errors=errors)
+
+    def lookup_column_by_name(self, column):
+        """
+        Lookup a data table data table column
+        """
+        if self.sa_session:
+            return self.sa_session.query(data_tables_model.DataTableColumn).enable_eagerloads(False) \
+                .filter(data_tables_model.DataTableColumn.name == column).all()
+        return None
+
+    def data_table_exist_in_database(self):
+        if self.sa_session:
+            datatables = self.get_data_table_from_database()
+            if len(datatables) == 0:
+                return False
+            return True
+        return False
+
+    def get_data_table_from_database(self):
+        return self.sa_session.query(data_tables_model.DataTable).enable_eagerloads(False)\
+            .filter(data_tables_model.DataTable.name == self.datatable_name).all()
+
+    def set_db_column(self, column, idx):
+        if 'db_columns' not in dir(self):
+            self.db_columns = {}
+        if 'col_index' not in dir(self):
+            self.col_index = {}
+
+        self.columns_data[column]['db_idx'] = idx
+        self.db_columns[idx] = column
+        self.col_index[self.columns_data[column]['col_idx']] = column
+
+    def get_data_table_rows(self):
+        """
+        Retrieve all rows from the database that belong to this data table
+        """
+        rows = []
+        dt_rows = self.sa_session.query(data_tables_model.DataTableRowAssociation).enable_eagerloads(False)\
+            .filter(data_tables_model.DataTableRowAssociation.data_table_id == self.datatable_id).all()
+        for row in dt_rows:
+            row_data = [None for x in self.db_columns.keys()]
+            dt_row_values = self.sa_session.query(data_tables_model.DataTableField).enable_eagerloads(False)\
+                .filter(data_tables_model.DataTableField.data_table_row_id == row.id).all()
+            for dt_row_value in dt_row_values:
+                colname = self.db_columns[dt_row_value.data_table_column_id]
+                colidx = self.columns_data[colname]['col_idx']
+                row_data[colidx] = dt_row_value.value
+            rows.append(row_data)
+        return rows
+
+    def get_fields(self):
+        return self.data
+
+    def parse_column_spec(self, config_element):
+        """
+        Parse column definitions, which can either be a set of 'column' elements
+        with a name and index (as in dynamic options config), or a shorthand
+        comma separated list of names in order as the text of a 'column_names'
+        element.
+
+        A column named 'value' is required.
+        """
+        self.columns = {}
+        self.columns_data = {}
+        if config_element.find('columns') is not None:
+            column_names = util.xml_text(config_element.find('columns'))
+            column_names = [n.strip() for n in column_names.split(',')]
+            for index, name in enumerate(column_names):
+                self.columns[name] = index
+                if name not in self.columns_data:
+                    self.columns_data[name] = {}
+                self.columns_data[name]['col_idx'] = index
+                self.largest_index = index
+        else:
+            raise Exception()
+
+    def append_column_spec(self):
+        """
+        Append further column information that we cache for speed
+        """
+        # Map the database index to the columns dictionary
+        for name in self.columns.keys():
+            db_column = self.lookup_column_by_name(name)
+            if db_column is not None:
+                self.set_db_column(name, db_column[0].id)
+
+    def _add_entry(self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+        """
+        Add a new row to the database data table
+        """
+        is_error = False
+        if not self.check_data_table():
+            return True
+
+        if allow_duplicates:
+            qrows = self.get_rows_by_values(entry)
+            if len(qrows) > 0:
+                log.debug("Entry %s already exists in the database data table '%s'." % (entry, self.datatable_name))
+                return True
+
+        # Create data table row
+        dtrow = data_tables_model.DataTableRow()
+        self.sa_session.add(dtrow)
+        self.sa_session.flush()
+
+        # Associate row with data table
+        dtrow_assoc = data_tables_model.DataTableRowAssociation(data_table_id=self.datatable_id, data_table_row_id=dtrow.id)
+        self.sa_session.add(dtrow_assoc)
+        self.sa_session.flush()
+
+        # Loop over the entry to add values to the database
+        for (entrykey, entryvalue) in entry.items():
+            colinfo = self.columns_data.get(entrykey, {})
+            dt_columnid = colinfo.get('db_idx', None)
+            if dt_columnid is not False:
+                dtrow_value = data_tables_model.DataTableField(value=entryvalue, data_table_row_id=dtrow.id,
+                                                   data_table_column_id=dt_columnid)
+                self.sa_session.add(dtrow_value)
+        self.sa_session.flush()
+
+        # Reload data entries for the data table using queries
+        if self.datatable_id is not None:
+            # Get data into [[Line 1 field 1, Line 1 Field 2], [L2 F1, L2 F2]] format
+            self.data = self.get_data_table_rows()
+
+        return is_error
+
+    def _remove_entry(self, values):
+        """
+        Remove an entry from the database data table
+        """
+        if not self.check_data_table():
+            raise Exception()
+
+        # Change the array to a dictionary that is {column: value}
+        entries = {}
+        for (idx, value) in enumerate(values):
+            colname = self.col_index[idx]
+            entries[colname] = value
+
+        # Get rows based on the values
+        qrows = self.get_rows_by_values(entries)
+        if len(qrows) == 0:
+            log.debug("No entry matching '%s' was found in the data table" % entries)
+            return
+
+        # Delete rows
+        for row in qrows:
+            log.debug("Deleting row %s" % row.row_id)
+            self.sa_session.query(data_tables_model.DataTableField)\
+                .filter(data_tables_model.DataTableField.data_table_row_id == row.row_id).delete()
+            self.sa_session.query(data_tables_model.DataTableRowAssociation)\
+                .filter(data_tables_model.DataTableRowAssociation.data_table_row_id == row.row_id).delete()
+            self.sa_session.query(data_tables_model.DataTableRow).filter(data_tables_model.DataTableRow.id == row.row_id).delete()
+        self.sa_session.flush()
+
+        # Reload data entries for the data table using queries
+        if self.datatable_id is not None:
+            # Get data into [[Line 1 field 1, Line 1 Field 2], [L2 F1, L2 F2]] format
+            self.data = self.get_data_table_rows()
+
+    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, persist_on_error=False,
+                              entry_source=None, **kwd):
+        # raise NotImplementedError("Feature isn't supported for Database Data Tables.")
+        return self._loaded_content_version
+
+    def check_data_table(self):
+        """
+        Validate the connection to the database and the existance of the data table
+        """
+        return self.sa_session is not None and self.data_table_exist_in_database()
+
+    def get_column_name_list(self):
+        """
+        Get the column names
+        """
+        rval = []
+        for i in range(self.largest_index + 1):
+            found_column = False
+            for name, index in self.columns.items():
+                if index == i:
+                    if not found_column:
+                        rval.append(name)
+                    elif name == 'value':
+                        # the column named 'value' always has priority over other named columns
+                        rval[-1] = name
+                    found_column = True
+            if not found_column:
+                rval.append(None)
+        return rval
+
+    def get_rows_by_values(self, entries):
+        """
+        Retrieve data table rows based on values.
+        This function creates a query where all values belonging to a data table row are mapped into a single row.
+        """
+        case_query = []
+        entry_collabels = {}
+        # Create a case for every DataTableField in a DataTableRow
+        for (colname, value) in entries.items():
+            dbidx = self.columns_data[colname]['db_idx']
+            collabel = "value_%s" % colname
+
+            prep_case = cast(func.max(case(value=data_tables_model.DataTableField.data_table_column_id,
+                                           whens={dbidx: data_tables_model.DataTableField.value})), String).label(collabel)
+            case_query.append(prep_case)
+            entry_collabels[collabel] = value
+
+        # Retrieve the ID of the row
+        case_query.insert(0, cast(data_tables_model.DataTableField.data_table_row_id, Integer).label("row_id"))
+
+        # Query the DataTableField table with the data_table_row_id and the cases
+        datatable_temp = self.sa_session.query(*case_query).group_by(data_tables_model.DataTableField.data_table_row_id) \
+            .cte('datatable_temporary')
+
+        # Prepare secondary query of the temporary datatable table
+        query = self.sa_session.query(datatable_temp)
+
+        # Dynamically add filters to the query as we don't know how large it is
+        for (collabel, colvalue) in entry_collabels.items():
+            query = query.filter(datatable_temp.c[collabel] == colvalue)
+
+        return query.all()
+
+    def to_dict(self, view='collection', **kwargs):
+        rval = super(DatabaseToolDataTable, self).to_dict()
+        if view == 'element':
+            rval['columns'] = sorted(self.columns.keys(), key=lambda x: self.columns[x])
+            rval['fields'] = self.get_fields()
+        return rval
+
+    def reload_from_files(self):
+        new_version = self._update_version()
+        if self.datatable_id is not None:
+            self.data = self.get_data_table_rows()
+        return self._update_version(version=new_version)
+
+
 def expand_here_template(content, here=None):
     if here and content:
         content = string.Template(content).safe_substitute({"__HERE__": here})
@@ -907,4 +1237,4 @@ def expand_here_template(content, here=None):
 
 
 # Registry of tool data types by type_key
-tool_data_table_types = {cls.type_key: cls for cls in [TabularToolDataTable, RefgenieToolDataTable]}
+tool_data_table_types = {cls.type_key: cls for cls in [TabularToolDataTable, RefgenieToolDataTable, DatabaseToolDataTable]}

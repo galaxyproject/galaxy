@@ -172,6 +172,7 @@ DO_NOT_TEST = [
     'database_log_query_counts',  # overridden for tests
     'database_template',  # default value set for tests
     'datatypes_config_file',  # broken
+    'data_table_database_connection',  # untestable; refactor config/__init__ to test
     'default_locale',  # broken
     'dependency_resolution',  # nested properties
     'disable_library_comptypes',  # broken: default overridden with empty string
