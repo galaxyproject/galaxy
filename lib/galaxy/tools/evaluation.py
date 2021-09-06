@@ -8,6 +8,7 @@ from galaxy import model
 from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
+from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.tools import global_tool_errors
 from galaxy.tools.parameters import (
     visit_input_values,
@@ -41,7 +42,6 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.object_wrapper import wrap_with_safe_string
 from galaxy.util.template import fill_template
 from galaxy.work.context import WorkRequestContext
 

@@ -18,6 +18,7 @@ from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
+from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
     form_builder,
     listify,
@@ -26,7 +27,6 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.json import safe_dumps
-from galaxy.util.object_wrapper import sanitize_lists_to_string
 
 log = logging.getLogger(__name__)
 
