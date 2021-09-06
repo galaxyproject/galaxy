@@ -50,7 +50,7 @@ export default {
         },
     },
     created() {
-        this.$emit("input", this.value, this.id);
+        this.$emit("input", this.value, this.id, false);
     },
     computed: {
         currentValue: {
@@ -58,7 +58,7 @@ export default {
                 return this.value;
             },
             set(val) {
-                this.$emit("input", val, this.id);
+                this.$emit("input", val, this.id, true);
             },
         },
         hasError() {

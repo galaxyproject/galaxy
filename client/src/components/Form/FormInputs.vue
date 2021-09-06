@@ -26,6 +26,7 @@
                             :prefix="getRepeatPrefix(input.name, cacheId)"
                             :add-parameters="addParameters"
                             :remove-parameters="removeParameters"
+                            :update-parameters="updateParameters"
                         />
                     </template>
                 </FormCard>
@@ -42,6 +43,7 @@
                             :prefix="getPrefix(input.name)"
                             :add-parameters="addParameters"
                             :remove-parameters="removeParameters"
+                            :update-parameters="updateParameters"
                         />
                     </template>
                 </FormCard>
@@ -121,6 +123,10 @@ export default {
             type: Function,
             required: true,
         },
+        updateParameters: {
+            type: Function,
+            required: true,
+        },
     },
     data() {
         return {
@@ -173,6 +179,7 @@ export default {
             input.cache = input.cache || [];
             input.cache.push(newInputs);
             this.formInputs = this.formInputs.slice();
+            this.updateParameters();
         },
         repeatDelete(input, cacheId) {
             input.cache.splice(cacheId, 1);

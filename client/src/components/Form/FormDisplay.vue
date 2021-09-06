@@ -12,6 +12,7 @@
         :errors="errors"
         :add-parameters="addParameters"
         :remove-parameters="removeParameters"
+        :update-parameters="updateParameters"
     />
 </template>
 
@@ -173,12 +174,11 @@ export default {
                 this.form.trigger("change");
             }*/
         },
-        addParameters(value, identifier) {
+        addParameters(value, identifier, requiresRequest) {
             const currentValueString = JSON.stringify(this.formData[identifier]);
             if (currentValueString != JSON.stringify(value)) {
                 this.formData[identifier] = value;
-                console.log(this.formData);
-                this.$emit("onChange", this.formData, true);
+                this.updateParameters(requiresRequest);
             }
         },
         removeParameters(prefix) {
@@ -189,8 +189,13 @@ export default {
                 }
             });
             this.formData = filtered;
-            console.log(this.formData);
-            //this.$emit("onChange", this.formData, true);
+            this.updateParameters();
+        },
+        updateParameters(requiresRequest = true) {
+            this.$nextTick(() => {
+                this.$emit("onChange", this.formData, requiresRequest);
+                console.log(this.formData, requiresRequest);
+            });
         },
         onHighlight(validation, silent = false) {
             /*this.form.trigger("reset");

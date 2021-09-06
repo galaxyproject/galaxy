@@ -23,41 +23,37 @@ export default {
         },
     },
     watch: {
-        value() {
+        /*value() {
             if (this.parameter) {
                 const currentValue = this.parameter.field.value();
                 if (this.value !== currentValue) {
                     this.parameter.field.value(this.value);
                 }
             }
-        },
+        },*/
         attributes() {
             if (this.parameter) {
                 if (this.parameter.field.update) {
                     this.parameter.field.update(this.attributes);
-                    //this.parameter.field.trigger("change");
+                    this.$emit("input", this.parameter.field.value());
                 }
             }
         },
     },
     created() {
-        this.onRender();
-    },
-    methods: {
-        onRender() {
-            this.$nextTick(() => {
-                this.parameter = new ParameterFactory();
-                this.parameter.create({
-                    ...this.attributes,
-                    type: this.type,
-                    value: this.value,
-                    el: this.$refs["parameter"],
-                    onchange: () => {
-                        this.$emit("input", this.parameter.field.value());
-                    },
-                });
+        this.$nextTick(() => {
+            this.parameter = new ParameterFactory();
+            this.parameter.create({
+                ...this.attributes,
+                type: this.type,
+                value: this.value,
+                el: this.$refs["parameter"],
+                onchange: () => {
+                    this.$emit("input", this.parameter.field.value());
+                },
             });
-        },
+            this.$emit("input", this.parameter.field.value());
+        });
     },
 };
 </script>
