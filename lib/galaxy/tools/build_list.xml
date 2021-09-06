@@ -98,27 +98,6 @@ This tool will create a new collection from your history datasets but your quota
     </test>
     <test>
       <repeat name="datasets">
-        <param name="input">
-          <collection type="list">
-            <element name="simple_line" value="simple_line.txt"/>
-          </collection>
-        </param>
-        <conditional name="id_cond">
-          <param name="id_select" value="identifier"/>
-        </conditional>
-      </repeat>
-      <output_collection name="output" type="list">
-        <element name="???">
-          <element name="simple_line">
-            <assert_contents>
-              <has_text_matching expression="^This is a line of text.\n$"/>
-            </assert_contents>
-          </element>
-        </element>
-      </output_collection>
-    </test>
-    <test>
-      <repeat name="datasets">
         <param name="input" value="simple_line.txt" />
         <conditional name="id_cond">
           <param name="id_select" value="manual"/>
