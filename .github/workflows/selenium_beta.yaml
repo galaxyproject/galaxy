@@ -5,6 +5,7 @@ env:
   GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 1
   GALAXY_TEST_SELENIUM_RETRIES: 1
   GALAXY_TEST_SELENIUM_BETA_HISTORY: 1
+  YARN_INSTALL_OPTS: --frozen-lockfile
 jobs:
   test:
     name: Test
@@ -14,7 +15,6 @@ jobs:
       matrix:
         python-version: ['3.7']
         chunk: [0, 1, 2]
-    continue-on-error: true
     services:
       postgres:
         image: postgres:13
@@ -38,7 +38,7 @@ jobs:
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - uses: nanasess/setup-chromedriver@master
       - name: Run tests
-        run: ./run_tests.sh -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }} || true
+        run: ./run_tests.sh -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         with:
