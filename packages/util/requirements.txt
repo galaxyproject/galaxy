@@ -7,5 +7,4 @@ pyyaml
 requests
 routes
 six>=1.9.0
-SQLAlchemy>=1.4.20,<2
 zipstream-new
