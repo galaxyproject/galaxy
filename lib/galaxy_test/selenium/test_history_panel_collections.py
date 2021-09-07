@@ -102,37 +102,13 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         failed_hid = failed_response["output_collections"][0]["hid"]
         assert failed_hid > 0
 
-        if self.is_beta_history():
-            # if we do not reload the page after the initialization, then we have to wait for the
-            # server to update history.update_time so that polling returns a change set. If the
-            # chron-job-ish mechanism they put in place a few weeks back does not work in a timely
-            # fashion, the polling will never render curremt results before the test times out
-            self.sleep_for(WAIT_TYPES.HISTORY_POLL)
+        # sleep really shouldn't be needed :(
+        time.sleep(1)
 
-            # Note: it might be worth making something similar to history_panel_wait_for_hid_state
-            # but with a poll count parameter instead of a page-refresh parameter, then you could
-            # get quantitative testing results as well as qualitative (test_xyz required 25 polls
-            # to complete, etc)
+        self.home()
 
-            try:
-                # this is the most likely order, but it might go faster if polling responds quickly
-                self.content_item_by_attributes(hid=ok_hid).wait_for_present()
-                self.content_item_by_attributes(hid=failed_hid).wait_for_present()
-                self.content_item_by_attributes(hid=failed_hid, state="running").wait_for_present()
-                self.content_item_by_attributes(hid=ok_hid, state="ok").wait_for_present()
-                self.content_item_by_attributes(hid=failed_hid, state="error").wait_for_present()
-            finally:
-                self.sleep_for(WAIT_TYPES.HISTORY_POLL)
-                self.content_item_by_attributes(hid=ok_hid, state="ok").wait_for_present()
-                self.content_item_by_attributes(hid=failed_hid, state="error").wait_for_present()
-        else:
-            # sleep really shouldn't be needed :(
-            time.sleep(1)
-
-            self.home()
-
-            self.history_panel_wait_for_hid_state(ok_hid, "ok")
-            self.history_panel_wait_for_hid_state(failed_hid, "error")
+        self.history_panel_wait_for_hid_state(ok_hid, "ok")
+        self.history_panel_wait_for_hid_state(failed_hid, "error")
 
         self.screenshot("history_panel_collections_state_terminal")
 
