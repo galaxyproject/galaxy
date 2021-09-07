@@ -350,8 +350,11 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_wait_for_hid_visible(self, hid, allowed_force_refreshes=0, multi_history_panel=False):
         current_history_id = self.current_history_id()
         self.wait_for_history_to_have_hid(current_history_id, hid)
+        # TODO: just use HID and stop resolving history_item -or- place history item in DOM.
+        # I think Mason thought the first was cleaner based on recent changes, but I think duplicated
+        # HIDs due to conversions and such make using the actual history item ID more robust.
         history_item = self.hid_to_history_item(hid, current_history_id=current_history_id)
-        history_item_selector = self.history_panel_item_component(history_item, multi_history_panel=multi_history_panel)
+        history_item_selector = self.history_panel_item_component(history_item, hid=hid, multi_history_panel=multi_history_panel)
         try:
             self.history_item_wait_for(history_item_selector, allowed_force_refreshes)
         except self.TimeoutException as e:
@@ -396,27 +399,25 @@ class NavigatesGalaxy(HasDriver):
         return history_item_selector
 
     def history_panel_wait_for_hid_state(self, hid, state, allowed_force_refreshes=0, multi_history_panel=False):
+        history_item_selector = self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=allowed_force_refreshes, multi_history_panel=multi_history_panel)
         if self.is_beta_history():
             history_item_selector_state = self.content_item_by_attributes(hid=hid, state=state)
-            history_item_selector_state.wait_for_visible()
-            return history_item_selector_state
         else:
-            history_item_selector = self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=allowed_force_refreshes, multi_history_panel=multi_history_panel)
             # history_item_selector_state = history_item_selector.with_class(f"state-{state}")
             history_item_selector_state = history_item_selector.with_data("state", state)
-            try:
-                self.history_item_wait_for(history_item_selector_state, allowed_force_refreshes)
-            except self.TimeoutException as e:
-                history_item = self.wait_for_visible(history_item_selector)
-                current_state = "UNKNOWN"
-                classes = history_item.get_attribute("class").split(" ")
-                for clazz in classes:
-                    if clazz.startswith("state-"):
-                        current_state = clazz[len("state-"):]
-                template = "Failed waiting on history item %d state to change to [%s] current state [%s]. "
-                message = template % (hid, state, current_state)
-                raise self.prepend_timeout_message(e, message)
-            return history_item_selector_state
+        try:
+            self.history_item_wait_for(history_item_selector_state, allowed_force_refreshes)
+        except self.TimeoutException as e:
+            history_item = self.wait_for_visible(history_item_selector)
+            current_state = "UNKNOWN"
+            classes = history_item.get_attribute("class").split(" ")
+            for clazz in classes:
+                if clazz.startswith("state-"):
+                    current_state = clazz[len("state-"):]
+            template = "Failed waiting on history item %d state to change to [%s] current state [%s]. "
+            message = template % (hid, state, current_state)
+            raise self.prepend_timeout_message(e, message)
+        return history_item_selector_state
 
     def click_grid_popup_option(self, item_name, option_label):
         item_button = None
@@ -590,8 +591,7 @@ class NavigatesGalaxy(HasDriver):
         self._perform_upload(paste_data=paste_data, **kwd)
 
     def _perform_upload(self, test_path=None, paste_data=None, ext=None, genome=None, ext_all=None, genome_all=None):
-        if not self.is_beta_history():
-            self.home()
+        self.home()
         self.upload_start_click()
 
         self.upload_set_footer_extension(ext_all)
@@ -1404,7 +1404,7 @@ class NavigatesGalaxy(HasDriver):
             self.click_history_option(self.components.history_panel.options_show_history_structure)
 
     def history_multi_view_display_collection_contents(self, collection_hid, collection_type="list"):
-        self.components.history_panel.multi_view_button.wait_for_and_click()
+        self.open_history_multi_view()
 
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
         self.click(selector)
