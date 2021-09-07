@@ -48,6 +48,7 @@ from galaxy.model import (
     LibraryDataset,
 )
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.objectstore import ObjectStore
 from galaxy.schema import FilterQueryParams
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
@@ -159,6 +160,11 @@ class HistoryContentsIndexLegacyParams(HistoryContentsIndexLegacyParamsBase):
             "instead of the *summary* default information."
         ),
     )
+    sharable: Optional[bool] = Field(
+        default=None,
+        title="Sharable",
+        description="Whether to return only sharable or not sharable datasets. Leave unset for both.",
+    )
 
 
 class ParsedHistoryContentsLegacyParams(HistoryContentsIndexLegacyParamsBase):
@@ -179,6 +185,11 @@ class ParsedHistoryContentsLegacyParams(HistoryContentsIndexLegacyParamsBase):
             "A set of encoded IDs for the datasets that will be returned with detailed "
             "information or the value `all` to return (full) details for all datasets."
         ),
+    )
+    object_store_ids: Optional[List[str]] = Field(
+        default=None,
+        title="Object store IDs",
+        description="A list of object store ids to filter this down to.",
     )
 
 
@@ -287,6 +298,7 @@ class HistoriesContentsService(ServiceBase):
     def __init__(
         self,
         security: IdEncodingHelper,
+        object_store: ObjectStore,
         history_manager: histories.HistoryManager,
         history_contents_manager: history_contents.HistoryContentsManager,
         hda_manager: hdas.HDAManager,
@@ -299,6 +311,7 @@ class HistoriesContentsService(ServiceBase):
         history_contents_filters: history_contents.HistoryContentsFilters,
     ):
         super().__init__(security)
+        self.object_store = object_store
         self.history_manager = history_manager
         self.history_contents_manager = history_contents_manager
         self.hda_manager = hda_manager
@@ -1082,12 +1095,18 @@ class HistoriesContentsService(ServiceBase):
             if details and details != 'all':
                 details = set(util.listify(details))
 
+        object_store_ids = None
+        sharable = params.sharable
+        if sharable is not None:
+            object_store_ids = self.object_store.object_store_ids(private=not sharable)
+
         return ParsedHistoryContentsLegacyParams(
             types=types,
             ids=ids,
             deleted=params.deleted,
             visible=params.visible,
             dataset_details=details,
+            object_store_ids=object_store_ids,
         ).dict(exclude_defaults=True)
 
     def __collection_dict(self, trans, dataset_collection_instance, **kwds):

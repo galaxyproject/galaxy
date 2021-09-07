@@ -66,6 +66,7 @@ def parse_config_xml(config_xml):
             raise Exception(msg)
         r['extra_dirs'] = [
             {k: e.get(k) for k in attrs} for e in extra_dirs]
+        r['private'] = ConcreteObjectStore.parse_private_from_config_xml(config_xml)
         if 'job_work' not in (d['type'] for d in r['extra_dirs']):
             msg = f'No value for {tag}:type="job_work" in XML tree'
             log.error(msg)
@@ -285,6 +286,7 @@ class PithosObjectStore(ConcreteObjectStore):
                 new_file = os.path.join(self.staging_path, rel_path)
                 open(new_file, 'w').close()
                 self.pithos.upload_from_string(rel_path, '')
+        return self
 
     def _empty(self, obj, **kwargs):
         """
