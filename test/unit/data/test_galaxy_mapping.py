@@ -14,6 +14,7 @@ import galaxy.model.mapping as mapping
 from galaxy.model.database_utils import create_database
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.objectstore import QuotaSourceMap
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
@@ -442,7 +443,7 @@ class MappingTests(BaseModelTestCase):
 
         u = model.User(email="disk_default@test.com", password="password")
         self.persist(u)
-        u.adjust_total_disk_usage(1)
+        u.adjust_total_disk_usage(1, None)
         u_id = u.id
         self.expunge()
         user_reload = model.session.query(model.User).get(u_id)
@@ -1030,8 +1031,11 @@ class PostgresMappingTests(MappingTests):
 
 class MockObjectStore:
 
-    def __init__(self):
-        pass
+    def __init__(self, quota_source_map=None):
+        self._quota_source_map = quota_source_map or QuotaSourceMap()
+
+    def get_quota_source_map(self):
+        return self._quota_source_map
 
     def size(self, dataset):
         return 42

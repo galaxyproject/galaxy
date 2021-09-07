@@ -24,11 +24,13 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_static"/>
         </backend>
         <backend id="dynamic_ebs" type="disk" weight="0">
+            <quota source="ebs" />
             <files_dir path="${temp_directory}/files_dynamic_ebs"/>
             <extra_dir type="temp" path="${temp_directory}/tmp_dynamic_ebs"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_dynamic_ebs"/>
         </backend>
         <backend id="dynamic_s3" type="disk" weight="0">
+            <quota source="s3" />
             <files_dir path="${temp_directory}/files_dynamic_s3"/>
             <extra_dir type="temp" path="${temp_directory}/tmp_dynamic_s3"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_dynamic_s3"/>
@@ -70,7 +72,7 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         for external_filename_tuple in self._app.model.session.query(self._app.model.Dataset.external_filename).all():
             assert external_filename_tuple[0] is None
 
-    def test_tool_simple_constructs(self):
+    def test_objectstore_selection(self):
         with self.dataset_populator.test_history() as history_id:
 
             def _run_tool(tool_id, inputs):
@@ -93,6 +95,10 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
 
             # One file uploaded, added to default object store ID.
             self._assert_file_counts(1, 0, 0, 0)
+            usage_list = self.dataset_populator.get_usage()
+            assert len(usage_list) == 1
+            assert usage_list[0]["quota_source_label"] is None
+            assert usage_list[0]["total_disk_usage"] == 6
 
             # should create two files in static object store.
             _run_tool("multi_data_param", {"f1": hda1_input, "f2": hda1_input})
@@ -105,6 +111,13 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
             }
             _run_tool("create_10", create_10_inputs)
             self._assert_file_counts(1, 2, 10, 0)
+
+            usage_list = self.dataset_populator.get_usage()
+            assert len(usage_list) == 2
+            assert usage_list[0]["quota_source_label"] is None
+            assert usage_list[0]["total_disk_usage"] == 6
+            assert usage_list[1]["quota_source_label"] == "ebs"
+            assert usage_list[1]["total_disk_usage"] == 21
 
             # should create 10 files in S3 object store.
             create_10_inputs = {

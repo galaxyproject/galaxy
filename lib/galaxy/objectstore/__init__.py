@@ -12,6 +12,7 @@ import random
 import shutil
 import threading
 import time
+from typing import NamedTuple
 
 import yaml
 
@@ -32,6 +33,8 @@ from galaxy.util.sleeper import Sleeper
 
 NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configuration with no database session present."
 DEFAULT_PRIVATE = False
+DEFAULT_QUOTA_SOURCE = None  # Just track quota right on user object in Galaxy.
+DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by default
 
 log = logging.getLogger(__name__)
 
@@ -229,6 +232,10 @@ class ObjectStore(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
+    def get_quota_source_map(self):
+        """Return QuotaSourceMap describing mapping of object store IDs to quota sources."""
+
 
 class BaseObjectStore(ObjectStore):
 
@@ -362,8 +369,9 @@ class BaseObjectStore(ObjectStore):
 class ConcreteObjectStore(BaseObjectStore):
     """Subclass of ObjectStore for stores that don't delegate (non-nested).
 
-    Currently only adds store_by functionality. Which doesn't make
-    sense for the delegating object stores.
+    Adds store_by and quota_source functionality. These attributes do not make
+    sense for the delegating object stores, they should describe files at actually
+    persisted, not how a file is routed to a persistence source.
     """
 
     def __init__(self, config, config_dict=None, **kwargs):
@@ -387,6 +395,11 @@ class ConcreteObjectStore(BaseObjectStore):
         self.description = config_dict.get("description", None)
         # Annotate this as true to prevent sharing of data.
         self.private = config_dict.get("private", DEFAULT_PRIVATE)
+        # short label describing the quota source or null to use default
+        # quota source right on user object.
+        quota_config = config_dict.get("quota", {})
+        self.quota_source = quota_config.get('source', DEFAULT_QUOTA_SOURCE)
+        self.quota_enabled = quota_config.get('enabled', DEFAULT_QUOTA_ENABLED)
 
     def to_dict(self):
         rval = super().to_dict()
@@ -394,6 +407,10 @@ class ConcreteObjectStore(BaseObjectStore):
         rval["store_by"] = self.store_by
         rval["name"] = self.name
         rval["description"] = self.description
+        rval["quota"] = {
+            "source": self.quota_source,
+            "enabled": self.quota_enabled,
+        }
         return rval
 
     def _get_concrete_store_name(self, obj):
@@ -407,6 +424,13 @@ class ConcreteObjectStore(BaseObjectStore):
 
     def _is_private(self, obj):
         return self.private
+
+    def get_quota_source_map(self):
+        quota_source_map = QuotaSourceMap(
+            self.quota_source,
+            self.quota_enabled,
+        )
+        return quota_source_map
 
 
 class DiskObjectStore(ConcreteObjectStore):
@@ -458,7 +482,12 @@ class DiskObjectStore(ConcreteObjectStore):
             if name is not None:
                 config_dict['name'] = name
             for e in config_xml:
-                if e.tag == 'files_dir':
+                if e.tag == 'quota':
+                    config_dict['quota'] = {
+                        'source': e.get('source', DEFAULT_QUOTA_SOURCE),
+                        'enabled': asbool(e.get('enabled', DEFAULT_QUOTA_ENABLED)),
+                    }
+                elif e.tag == 'files_dir':
                     config_dict["files_dir"] = e.get('path')
                 elif e.tag == 'description':
                     config_dict["description"] = e.text
@@ -803,6 +832,7 @@ class DistributedObjectStore(NestedObjectStore):
             removing backends when they get too full.
         """
         super().__init__(config, config_dict)
+        self._quota_source_map = None
 
         self.backends = {}
         self.weighted_backend_ids = []
@@ -949,6 +979,21 @@ class DistributedObjectStore(NestedObjectStore):
         else:
             return default
 
+    def get_quota_source_map(self):
+        if self._quota_source_map is None:
+            quota_source_map = QuotaSourceMap()
+            self._merge_quota_source_map(quota_source_map, self)
+            self._quota_source_map = quota_source_map
+        return self._quota_source_map
+
+    @classmethod
+    def _merge_quota_source_map(clz, quota_source_map, object_store):
+        for backend_id, backend in object_store.backends.items():
+            if isinstance(backend, DistributedObjectStore):
+                clz._merge_quota_source_map(quota_source_map, backend)
+            else:
+                quota_source_map.backends[backend_id] = backend.get_quota_source_map()
+
     def __get_store_id_for(self, obj, **kwargs):
         if obj.object_store_id is not None:
             if obj.object_store_id in self.backends:
@@ -977,7 +1022,6 @@ class DistributedObjectStore(NestedObjectStore):
 
 
 class HierarchicalObjectStore(NestedObjectStore):
-
     """
     ObjectStore that defers to a list of backends.
 
@@ -996,10 +1040,20 @@ class HierarchicalObjectStore(NestedObjectStore):
             backend_is_private = backend_def.get("private")
             if backend_is_private is not None:
                 assert is_private == backend_is_private, "The private attribute must be defined on the HierarchicalObjectStore and not contained concrete objectstores."
+            backend_quota = backend_def.get("quota")
+            if backend_quota is not None:
+                # Make sure just was using defaults - because cannot override what is
+                # is setup by the HierarchicalObjectStore.
+                assert backend_quota.get("source", DEFAULT_QUOTA_SOURCE) == DEFAULT_QUOTA_SOURCE
+                assert backend_quota.get("enabled", DEFAULT_QUOTA_ENABLED) == DEFAULT_QUOTA_ENABLED
+
             backends[order] = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
 
         self.backends = backends
         self.private = is_private
+        quota_config = config_dict.get("quota", {})
+        self.quota_source = quota_config.get('source', DEFAULT_QUOTA_SOURCE)
+        self.quota_enabled = quota_config.get('enabled', DEFAULT_QUOTA_ENABLED)
 
     @classmethod
     def parse_xml(clazz, config_xml):
@@ -1043,6 +1097,13 @@ class HierarchicalObjectStore(NestedObjectStore):
         # object_store_id - so all the contained object stores need to define is_private
         # the same way.
         return self.private
+
+    def get_quota_source_map(self):
+        quota_source_map = QuotaSourceMap(
+            self.quota_source,
+            self.quota_enabled,
+        )
+        return quota_source_map
 
 
 def type_to_object_store_class(store, fsmon=False):
@@ -1184,6 +1245,67 @@ def config_to_dict(config):
         'object_store_cache_path': config.object_store_cache_path,
         'gid': config.gid,
     }
+
+
+class QuotaSourceInfo(NamedTuple):
+    label: str
+    use: bool
+
+
+class QuotaSourceMap:
+
+    def __init__(self, source=DEFAULT_QUOTA_SOURCE, enabled=DEFAULT_QUOTA_ENABLED):
+        self.default_quota_source = source
+        self.default_quota_enabled = enabled
+        self.info = QuotaSourceInfo(self.default_quota_source, self.default_quota_enabled)
+        self.backends = {}
+        self._labels = None
+
+    def get_quota_source_info(self, object_store_id):
+        if object_store_id in self.backends:
+            return self.backends[object_store_id].get_quota_source_info(object_store_id)
+        else:
+            return self.info
+
+    def get_quota_source_label(self, object_store_id):
+        if object_store_id in self.backends:
+            return self.backends[object_store_id].get_quota_source_label(object_store_id)
+        else:
+            return self.default_quota_source
+
+    def get_quota_source_labels(self):
+        if self._labels is None:
+            labels = set()
+            if self.default_quota_source:
+                labels.add(self.default_quota_source)
+            for backend in self.backends.values():
+                labels = labels.union(backend.get_quota_source_labels())
+            self._labels = labels
+        return self._labels
+
+    def default_usage_excluded_ids(self):
+        exclude_object_store_ids = []
+        for backend_id, backend_source_map in self.backends.items():
+            if backend_source_map.default_quota_source is not None:
+                exclude_object_store_ids.append(backend_id)
+            elif not backend_source_map.default_quota_enabled:
+                exclude_object_store_ids.append(backend_id)
+        return exclude_object_store_ids
+
+    def get_id_to_source_pairs(self):
+        pairs = []
+        for backend_id, backend_source_map in self.backends.items():
+            if backend_source_map.default_quota_source is not None and backend_source_map.default_quota_enabled:
+                pairs.append((backend_id, backend_source_map.default_quota_source))
+        return pairs
+
+    def ids_per_quota_source(self):
+        quota_sources = {}
+        for (object_id, quota_source_label) in self.get_id_to_source_pairs():
+            if quota_source_label not in quota_sources:
+                quota_sources[quota_source_label] = []
+            quota_sources[quota_source_label].append(object_id)
+        return quota_sources
 
 
 class ObjectStorePopulator:

@@ -40,7 +40,13 @@ class AdminActions:
             raise ActionInputError("Operation for an unlimited quota must be '='.")
         else:
             # Create the quota
-            quota = self.app.model.Quota(name=params.name, description=params.description, amount=create_amount, operation=params.operation)
+            quota = self.app.model.Quota(
+                name=params.name,
+                description=params.description,
+                amount=create_amount,
+                operation=params.operation,
+                quota_source_label=params.quota_source_label,
+            )
             self.sa_session.add(quota)
             # If this is a default quota, create the DefaultQuotaAssociation
             if params.default != 'no':

@@ -23,6 +23,7 @@ class QuotaParamParser(BaseParamParser):
                        amount=util.restore_text(params.get('amount', '').strip()),
                        operation=params.get('operation', ''),
                        default=params.get('default', ''),
+                       quota_source_label=params.get('quota_source_label', None),
                        in_users=util.listify(params.get('in_users', [])),
                        out_users=util.listify(params.get('out_users', [])),
                        in_groups=util.listify(params.get('in_groups', [])),

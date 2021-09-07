@@ -4,6 +4,8 @@ import _ from "underscore";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
+import { showQuotaDialog } from "components/Quota";
+
 var logNamespace = "user";
 //==============================================================================
 /** @class View to display a user's disk/storage usage
@@ -27,6 +29,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         initialize: function (options) {
             this.log(`${this}.initialize:`, options);
             _.extend(this.options, options);
+            this.useQuotaSourceLabels = options.quotaSourceLabels.length > 0;
 
             //this.bind( 'all', function( event, data ){ this.log( this + ' event:', event, data ); }, this );
             this.listenTo(this.model, "change:quota_percent change:total_disk_usage", this.render);
@@ -126,6 +129,17 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
 
             this.$el.html(meterHtml);
             this.$el.find(".quota-meter-text").tooltip();
+            const $link = this.$el.find(".quota-meter-link");
+            if (this.useQuotaSourceLabels) {
+                $link.attr("href", "").click((e) => {
+                    showQuotaDialog({
+                        quotaSourceLabels: this.options.quotaSourceLabels,
+                    });
+                    e.preventDefault();
+                });
+            } else {
+                $link.attr("href", this.options.quotaUrl);
+            }
             return this;
         },
 
@@ -134,11 +148,10 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
                 ? `title="Using ${data.nice_total_disk_usage}. Click for details."`
                 : "";
             const using = `${_l("Using")} ${data.quota_percent}%`;
-            const quotaUrl = this.options.quotaUrl;
             return `<div id="quota-meter" class="quota-meter progress">
     <div class="progress-bar" style="width: ${data.quota_percent}%"></div>
     <div class="quota-meter-text" data-placement="left" ${title}>
-        <a href="${quotaUrl}" target="_blank">${using}</a>
+        <a class="quota-meter-link" target="_blank">${using}</a>
     </div>
 </div>`;
         },

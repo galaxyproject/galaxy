@@ -362,11 +362,13 @@ DISTRIBUTED_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="distributed">
     <backends>
         <backend id="files1" type="disk" weight="2">
+            <quota source="1files" />
             <files_dir path="${temp_directory}/files1"/>
             <extra_dir type="temp" path="${temp_directory}/tmp1"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
         </backend>
         <backend id="files2" type="disk" weight="1">
+            <quota source="2files" />
             <files_dir path="${temp_directory}/files2"/>
             <extra_dir type="temp" path="${temp_directory}/tmp2"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
@@ -380,6 +382,8 @@ DISTRIBUTED_TEST_CONFIG_YAML = """
 type: distributed
 backends:
    - id: files1
+     quota:
+       source: 1files
      type: disk
      weight: 2
      files_dir: "${temp_directory}/files1"
@@ -389,6 +393,8 @@ backends:
      - type: job_work
        path: "${temp_directory}/job_working_directory1"
    - id: files2
+     quota:
+       source: 2files
      type: disk
      weight: 1
      files_dir: "${temp_directory}/files2"
@@ -421,8 +427,43 @@ def test_distributed_store():
             _assert_has_keys(as_dict, ["backends", "extra_dirs", "type"])
             _assert_key_has_value(as_dict, "type", "distributed")
 
+            backends = as_dict["backends"]
+            assert len(backends)
+            assert backends[0]["quota"]["source"] == "1files"
+            assert backends[1]["quota"]["source"] == "2files"
+
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+
+HIERARCHICAL_MUST_HAVE_UNIFIED_QUOTA_SOURCE = """<?xml version="1.0"?>
+<object_store type="hierarchical" private="true">
+    <backends>
+        <backend type="disk" weight="1" order="0" store_by="id">
+            <quota source="1files" /> <!-- Cannot do this here, only in distributedobjectstore -->
+            <files_dir path="${temp_directory}/files1"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+        </backend>
+        <backend type="disk" weight="1" order="1" store_by="uuid">
+            <files_dir path="${temp_directory}/files2"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
+        </backend>
+    </backends>
+</object_store>
+"""
+
+
+def test_hiercachical_backend_must_share_quota_source():
+    the_exception = None
+    for config_str in [HIERARCHICAL_MUST_HAVE_UNIFIED_QUOTA_SOURCE]:
+        try:
+            with TestConfig(config_str) as (directory, object_store):
+                pass
+        except Exception as e:
+            the_exception = e
+    assert the_exception is not None
 
 
 # Unit testing the cloud and advanced infrastructure object stores is difficult, but

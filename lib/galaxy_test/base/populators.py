@@ -607,6 +607,11 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in role, role
         return role["id"]
 
+    def get_usage(self):
+        usage_response = self.galaxy_interactor.get("users/current/usage")
+        usage_response.raise_for_status()
+        return usage_response.json()
+
     def create_role(self, user_ids: list, description: str = None) -> dict:
         payload = {
             "name": self.get_random_name(prefix="testpop"),

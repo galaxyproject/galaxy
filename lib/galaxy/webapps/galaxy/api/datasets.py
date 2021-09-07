@@ -181,12 +181,18 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             # not implemented on nestedobjectstores yet.
             percent_used = None
 
+        quota_source = dataset.quota_source_info
+        quota_source_dict = {
+            'label': quota_source.label,
+            'use': quota_source.use,
+        }
         return {
             'object_store_id': object_store_id,
             'sharable': dataset.sharable,
             'name': name,
             'description': description,
             'percent_used': percent_used,
+            'quota_source': quota_source_dict,
         }
 
     @web.expose_api
