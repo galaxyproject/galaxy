@@ -266,6 +266,8 @@ history_panel:
       selector: '//a[text()="Use Beta History Panel"]'
     new_history_button: '.history-new-button'
     multi_view_button: '.history-view-multi-button'
+    histories_operation_menu: '.histories-operation-menu'
+    multi_view_button_beta: '[data-description="switch to multi history view"]'
 
     pagination_pages: '.list-pagination .pages'
     pagination_pages_options: '.list-pagination .pages option'

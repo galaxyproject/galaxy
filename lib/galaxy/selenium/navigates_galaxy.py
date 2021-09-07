@@ -1390,6 +1390,19 @@ class NavigatesGalaxy(HasDriver):
 
         _click_action_in_menu()
 
+    def open_history_multi_view(self):
+        if self.is_beta_history():
+            self.components.history_panel.histories_operation_menu.wait_for_and_click()
+            self.components.history_panel.multi_view_button_beta.wait_for_and_click()
+        else:
+            self.components.history_panel.multi_view_button.wait_for_and_click()
+
+    def history_panel_show_structure(self):
+        if self.is_beta_history():
+            self.use_bootstrap_dropdown(option="show structure", menu="history menu")
+        else:
+            self.click_history_option(self.components.history_panel.options_show_history_structure)
+
     def history_multi_view_display_collection_contents(self, collection_hid, collection_type="list"):
         self.components.history_panel.multi_view_button.wait_for_and_click()
 
@@ -1462,7 +1475,7 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_click_item_title(self, hid, **kwds):
         item_component = self.history_panel_item_component(hid=hid)
         details_component = item_component.details
-        details_displayed = details_component.is_displayed
+        details_displayed = not details_component.is_absent and details_component.is_displayed
         item_component.title.wait_for_and_click()
 
         if kwds.get("wait", False):
