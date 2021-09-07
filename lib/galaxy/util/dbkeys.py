@@ -6,9 +6,9 @@ import os.path
 import re
 from json import loads
 
-from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
     galaxy_directory,
+    sanitize_lists_to_string,
     unicodify,
 )
 
