@@ -239,7 +239,10 @@ class MetadataCollection(Mapping):
             meta_dict['__validated_state__'] = dataset_meta_dict['__validated_state__']
         if '__validated_state_message__' in dataset_meta_dict:
             meta_dict['__validated_state_message__'] = dataset_meta_dict['__validated_state_message__']
-        encoded_meta_dict = galaxy.model.custom_types.json_encoder.encode(meta_dict)
+        try:
+            encoded_meta_dict = galaxy.model.custom_types.json_encoder.encode(meta_dict)
+        except Exception as e:
+            raise Exception(f"Failed encoding metadata dictionary: {meta_dict}") from e
         if filename is None:
             return encoded_meta_dict
         with open(filename, 'wt+') as fh:
