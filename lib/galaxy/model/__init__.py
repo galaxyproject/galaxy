@@ -2165,11 +2165,6 @@ class JobImportHistoryArchive(Base, RepresentById):
     job = relationship('Job')
     history = relationship('History')
 
-    def __init__(self, job=None, history=None, archive_dir=None):
-        self.job = job
-        self.history = history
-        self.archive_dir = archive_dir
-
 
 class JobContainerAssociation(Base, RepresentById):
     __tablename__ = 'job_container_association'

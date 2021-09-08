@@ -2689,7 +2689,7 @@ class TestJobImportHistoryArchive(BaseTest):
 
     def test_columns(self, session, cls_, job, history):
         archive_dir = 'a'
-        obj = cls_(job, history, archive_dir)
+        obj = cls_(job=job, history=history, archive_dir=archive_dir)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -2699,7 +2699,7 @@ class TestJobImportHistoryArchive(BaseTest):
             assert stored_obj. archive_dir == archive_dir
 
     def test_relationships(self, session, cls_, job, history):
-        obj = cls_(job, history)
+        obj = cls_(job=job, history=history)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
