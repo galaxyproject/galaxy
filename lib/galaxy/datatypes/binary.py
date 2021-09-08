@@ -17,6 +17,7 @@ from json import dumps
 from typing import Optional
 
 import h5py
+import numpy as np
 import pysam
 import pysam.bcftools
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP
@@ -727,7 +728,7 @@ class BamQuerynameSorted(BamInputSorted):
 class CRAM(Binary):
     file_ext = "cram"
     edam_format = "format_3462"
-    edam_data = "format_0863"
+    edam_data = "data_0863"
 
     MetadataElement(name="cram_version", default=None, desc="CRAM Version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
     MetadataElement(name="cram_index", desc="CRAM Index File", param=metadata.FileParameter, file_ext="crai", readonly=True, no_value=None, visible=False, optional=True)
@@ -962,7 +963,12 @@ class Loom(H5):
                 dataset.metadata.description = loom_file.attrs.get('description')
                 dataset.metadata.url = loom_file.attrs.get('url')
                 dataset.metadata.doi = loom_file.attrs.get('doi')
-                dataset.metadata.loom_spec_version = loom_file.attrs.get('LOOM_SPEC_VERSION')
+                loom_spec_version = loom_file.attrs.get('LOOM_SPEC_VERSION')
+                if isinstance(loom_spec_version, np.ndarray):
+                    loom_spec_version = loom_spec_version[0]
+                    if isinstance(loom_spec_version, bytes):
+                        loom_spec_version = loom_spec_version.decode()
+                dataset.metadata.loom_spec_version = loom_spec_version
                 dataset.creation_date = loom_file.attrs.get('creation_date')
                 dataset.metadata.shape = tuple(loom_file['matrix'].shape)
 
@@ -1554,6 +1560,67 @@ class H5MLM(H5):
             return dataset.peek
         except Exception:
             return "HDF5 Model (%s)" % (nice_size(dataset.get_size()))
+
+
+class HexrdMaterials(H5):
+    """
+    Class describing a Hexrd Materials file: https://github.com/HEXRD/hexrd
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('hexrd.materials.h5')
+    >>> HexrdMaterials().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.loom')
+    >>> HexrdMaterials().sniff(fname)
+    False
+    """
+    file_ext = "hexrd.materials.h5"
+    edam_format = "format_3590"
+
+    MetadataElement(name="materials", desc="materials", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="SpaceGroupNumber", default={}, param=DictParameter, desc="SpaceGroupNumber", readonly=True, visible=True, no_value={})
+    MetadataElement(name="LatticeParameters", default={}, param=DictParameter, desc="LatticeParameters", readonly=True, visible=True, no_value={})
+
+    def sniff(self, filename):
+        if super().sniff(filename):
+            req = {'AtomData', 'Atomtypes', 'CrystalSystem', 'LatticeParameters'}
+            with h5py.File(filename, 'r') as mat_file:
+                for k in mat_file.keys():
+                    if isinstance(mat_file[k], h5py._hl.group.Group) and set(mat_file[k].keys()) >= req:
+                        return True
+        return False
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            with h5py.File(dataset.file_name, 'r') as mat_file:
+                dataset.metadata.materials = list(mat_file.keys())
+                sgn = dict()
+                lp = dict()
+                for m in mat_file.keys():
+                    if 'SpaceGroupNumber' in mat_file[m] and len(mat_file[m]['SpaceGroupNumber']) > 0:
+                        sgn[m] = mat_file[m]['SpaceGroupNumber'][0].item()
+                    if 'LatticeParameters' in mat_file[m]:
+                        lp[m] = mat_file[m]['LatticeParameters'][0:].tolist()
+                dataset.metadata.SpaceGroupNumber = sgn
+                dataset.metadata.LatticeParameters = lp
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            lines = ['Material SpaceGroup Lattice']
+            if dataset.metadata.materials:
+                for m in dataset.metadata.materials:
+                    try:
+                        lines.append(f'{m} {dataset.metadata.SpaceGroupNumber[m]} {dataset.metadata.LatticeParameters[m]}')
+                    except Exception:
+                        continue
+            dataset.peek = '\n'.join(lines)
+            dataset.blurb = f"Materials: {' '.join(dataset.metadata.materials)}"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
 
 
 class Scf(Binary):
@@ -3106,6 +3173,181 @@ class JP2(Binary):
             return dataset.peek
         except Exception:
             return "Binary JPEG 2000 file (%s)" % (nice_size(dataset.get_size()))
+
+
+class Npz(CompressedArchive):
+    """
+    Class describing an Numpy NPZ file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('hexrd.images.npz')
+    >>> Npz().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Npz().sniff(fname)
+    False
+    """
+    file_ext = "npz"
+    # edam_format = "format_4003"
+
+    MetadataElement(name="nfiles", default=0, desc="nfiles", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="files", default=[], desc="files", readonly=True, visible=True, no_value=[])
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+    def sniff(self, filename):
+        try:
+            npz = np.load(filename)
+            if isinstance(npz, np.lib.npyio.NpzFile):
+                for f in npz.files:
+                    if isinstance(npz[f], np.ndarray):
+                        return True
+        except Exception:
+            return False
+        return False
+
+    def set_meta(self, dataset, **kwd):
+        try:
+            with np.load(dataset.file_name) as npz:
+                dataset.metadata.nfiles = len(npz.files)
+                dataset.metadata.files = npz.files
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = f"Binary Numpy npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
+
+
+class HexrdImagesNpz(Npz):
+    """
+    Class describing an HEXRD Images Numpy NPZ file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('hexrd.images.npz')
+    >>> HexrdImagesNpz().sniff(fname)
+    True
+    >>> fname = get_test_fname('eta_ome.npz')
+    >>> HexrdImagesNpz().sniff(fname)
+    False
+    """
+    file_ext = "hexrd.images.npz"
+
+    MetadataElement(name="panel_id", default='', desc="Detector Panel ID", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value='')
+    MetadataElement(name="shape", default=(), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=())
+    MetadataElement(name="nframes", default=0, desc="nframes", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="omegas", desc="has omegas", default="False", visible=False)
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+    def sniff(self, filename):
+        if super().sniff(filename):
+            try:
+                req_files = {'0_row', '0_col', '0_data', 'shape', 'nframes', 'dtype'}
+                with np.load(filename) as npz:
+                    return set(npz.files) >= req_files
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
+                return False
+        return False
+
+    def set_meta(self, dataset, **kwd):
+        super().set_meta(dataset, **kwd)
+        try:
+            with np.load(dataset.file_name) as npz:
+                if 'panel_id' in npz.files:
+                    dataset.metadata.panel_id = str(npz['panel_id'])
+                if 'omega' in npz.files:
+                    dataset.metadata.omegas = "True"
+                dataset.metadata.shape = npz['shape'].tolist()
+                dataset.metadata.nframes = npz['nframes'].tolist()
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            lines = [f"Binary Hexrd Image npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})",
+                     f"Panel: {dataset.metadata.panel_id} Frames: {dataset.metadata.nframes} Shape: {dataset.metadata.shape}"]
+            dataset.peek = '\n'.join(lines)
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
+
+
+class HexrdEtaOmeNpz(Npz):
+    """
+    Class describing an HEXRD Eta-Ome Numpy NPZ file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('hexrd.eta_ome.npz')
+    >>> HexrdEtaOmeNpz().sniff(fname)
+    True
+    >>> fname = get_test_fname('hexrd.images.npz')
+    >>> HexrdEtaOmeNpz().sniff(fname)
+    False
+    """
+    file_ext = "hexrd.eta_ome.npz"
+
+    MetadataElement(name="HKLs", default=(), desc="HKLs", param=metadata.ListParameter, readonly=True, visible=True, no_value=())
+    MetadataElement(name="nframes", default=0, desc="nframes", readonly=True, visible=True, no_value=0)
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+    def sniff(self, filename):
+        if super().sniff(filename):
+            try:
+                req_files = {'dataStore', 'etas', 'etaEdges', 'iHKLList', 'omegas', 'omeEdges', 'planeData_hkls'}
+                with np.load(filename) as npz:
+                    return set(npz.files) >= req_files
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
+                return False
+        return False
+
+    def set_meta(self, dataset, **kwd):
+        super().set_meta(dataset, **kwd)
+        try:
+            with np.load(dataset.file_name) as npz:
+                dataset.metadata.HKLs = npz['iHKLList'].tolist()
+                dataset.metadata.nframes = len(npz['omegas'])
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            lines = [f"Binary Hexrd Eta-Ome npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})",
+                     f"Eta-Ome HKLs: {dataset.metadata.HKLs} Frames: {dataset.metadata.nframes}"]
+            dataset.peek = '\n'.join(lines)
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
 
 
 if __name__ == '__main__':

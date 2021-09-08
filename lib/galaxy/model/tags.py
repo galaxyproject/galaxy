@@ -358,28 +358,28 @@ class GalaxyTagHandler(TagHandler):
         TagHandler.__init__(self, sa_session)
         self.item_tag_assoc_info["History"] = ItemTagAssocInfo(model.History,
                                                                model.HistoryTagAssociation,
-                                                               model.HistoryTagAssociation.table.c.history_id)
+                                                               model.HistoryTagAssociation.history_id)
         self.item_tag_assoc_info["HistoryDatasetAssociation"] = \
             ItemTagAssocInfo(model.HistoryDatasetAssociation,
                              model.HistoryDatasetAssociationTagAssociation,
-                             model.HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id)
+                             model.HistoryDatasetAssociationTagAssociation.history_dataset_association_id)
         self.item_tag_assoc_info["HistoryDatasetCollectionAssociation"] = \
             ItemTagAssocInfo(model.HistoryDatasetCollectionAssociation,
                              model.HistoryDatasetCollectionTagAssociation,
-                             model.HistoryDatasetCollectionTagAssociation.table.c.history_dataset_collection_id)
+                             model.HistoryDatasetCollectionTagAssociation.history_dataset_collection_id)
         self.item_tag_assoc_info["LibraryDatasetDatasetAssociation"] = \
             ItemTagAssocInfo(model.LibraryDatasetDatasetAssociation,
                              model.LibraryDatasetDatasetAssociationTagAssociation,
-                             model.LibraryDatasetDatasetAssociationTagAssociation.table.c.library_dataset_dataset_association_id)
+                             model.LibraryDatasetDatasetAssociationTagAssociation.library_dataset_dataset_association_id)
         self.item_tag_assoc_info["Page"] = ItemTagAssocInfo(model.Page,
                                                             model.PageTagAssociation,
-                                                            model.PageTagAssociation.table.c.page_id)
+                                                            model.PageTagAssociation.page_id)
         self.item_tag_assoc_info["StoredWorkflow"] = ItemTagAssocInfo(model.StoredWorkflow,
                                                                       model.StoredWorkflowTagAssociation,
-                                                                      model.StoredWorkflowTagAssociation.table.c.stored_workflow_id)
+                                                                      model.StoredWorkflowTagAssociation.stored_workflow_id)
         self.item_tag_assoc_info["Visualization"] = ItemTagAssocInfo(model.Visualization,
                                                                      model.VisualizationTagAssociation,
-                                                                     model.VisualizationTagAssociation.table.c.visualization_id)
+                                                                     model.VisualizationTagAssociation.visualization_id)
 
 
 class GalaxyTagHandlerSession(GalaxyTagHandler):

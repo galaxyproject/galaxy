@@ -53,10 +53,13 @@ class AppSchema(Schema):
         self._defaults = {}  # {config option: default value or null}
         self._reloadable_options = set()  # config options we can reload at runtime
         self._paths_to_resolve = {}  # {config option: referenced config option}
+        self._per_host_options = set()  # config options that can be set using a per_host config parameter
         for key, data in app_schema.items():
             self._defaults[key] = data.get('default')
             if data.get('reloadable'):
                 self._reloadable_options.add(key)
+            if data.get('per_host'):
+                self._per_host_options.add(key)
             if data.get('path_resolves_to'):
                 self._paths_to_resolve[key] = data.get('path_resolves_to')
 
@@ -71,6 +74,10 @@ class AppSchema(Schema):
     @property
     def reloadable_options(self):
         return self._reloadable_options
+
+    @property
+    def per_host_options(self):
+        return self._per_host_options
 
     def validate_path_resolution_graph(self):
         """This method is for tests only: we SHOULD validate the schema's path resolution graph

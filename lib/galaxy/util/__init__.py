@@ -1071,7 +1071,7 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
     return value
 
 
-def filesystem_safe_string(s, max_len, truncation_chars='..', strip_leading_dot=True, invalid_chars=('/',), replacement_char='_'):
+def filesystem_safe_string(s, max_len=255, truncation_chars='..', strip_leading_dot=True, invalid_chars=('/',), replacement_char='_'):
     """
     Strip unicode null chars, truncate at 255 characters.
     Optionally replace additional ``invalid_chars`` with `replacement_char` .

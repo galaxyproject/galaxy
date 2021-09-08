@@ -142,13 +142,16 @@ class GalaxyInteractorApi:
 
         def verify_dataset(element, element_attrib, element_outfile):
             hda = element["object"]
-            self.verify_output_dataset(
-                history,
-                hda_id=hda["id"],
-                outfile=element_outfile,
-                attributes=element_attrib,
-                tool_id=tool_id
-            )
+            try:
+                self.verify_output_dataset(
+                    history,
+                    hda_id=hda["id"],
+                    outfile=element_outfile,
+                    attributes=element_attrib,
+                    tool_id=tool_id
+                )
+            except AssertionError as e:
+                raise AssertionError(f"Collection element {element.get('element_identifier', '')} of collection {output_collection_def.name}: {e}")
 
         verify_collection(output_collection_def, data_collection, verify_dataset)
 
@@ -869,7 +872,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             element_type = element["element_type"]
             if element_type != "dataset_collection":
                 verify_dataset(element, element_attrib, element_outfile)
-            if element_type == "dataset_collection":
+            else:
                 elements = element["object"]["elements"]
                 verify_elements(elements, element_attrib.get("elements", {}))
 

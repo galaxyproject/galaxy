@@ -16,8 +16,8 @@ either through the props, and make updates through the events -->
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
     >
         <!-- name, state buttons, menus -->
-        <nav class="p-1 d-flex align-items-center cursor-pointer" @click.stop="$emit('update:expanded', !expanded)">
-            <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+        <nav class="content-top-menu p-1 d-flex cursor-pointer" @click.stop="$emit('update:expanded', !expanded)">
+            <div class="d-flex flex-grow-1 overflow-hidden">
                 <div class="pl-1" v-if="showSelectionBox">
                     <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)"></b-check>
                 </div>
@@ -47,30 +47,30 @@ either through the props, and make updates through the events -->
                     @click.stop="$emit('undelete')"
                 />
 
-                <div class="content-title p-1 overflow-hidden">
+                <div class="content-title title p-1 overflow-hidden">
                     <h5 class="text-truncate" v-if="collapsed">
-                        <!-- <span class="hid">{{ dataset.hid }}</span> -->
-                        <span class="name">{{ dataset.title }}</span>
+                        <span class="hid" data-description="dataset hid">{{ dataset.hid }}</span>
+                        <span class="name" data-description="dataset name">{{ dataset.title }}</span>
                     </h5>
                 </div>
             </div>
 
             <div class="d-flex">
                 <slot name="menu">
-                    <DatasetMenu :dataset="dataset" :expanded="expanded" v-on="$listeners" />
+                    <DatasetMenu :dataset="dataset" :expanded="expanded" :writable="writable" v-on="$listeners" />
                 </slot>
             </div>
         </nav>
 
-        <!--- read-only tags with name: prefix
-        <div v-if="collapsed && dataset.nameTags.length" class="nametags p-2">
+        <!--- read-only tags with name: prefix -->
+        <div v-if="collapsed && dataset.nameTags.length" class="nametags px-2 pb-2">
             <Nametag v-for="tag in dataset.nameTags" :key="tag" :tag="tag" />
-        </div> -->
+        </div>
 
         <div v-if="expanded" class="p-3 details">
             <div class="d-flex">
                 <div class="flex-grow-1">
-                    <h4>{{ name || "(Dataset Name)" }}</h4>
+                    <h4 data-description="dataset name">{{ name || "(Dataset Name)" }}</h4>
 
                     <template v-if="!editing">
                         <p v-if="annotation">{{ annotation }}</p>
@@ -96,7 +96,7 @@ either through the props, and make updates through the events -->
                             max-rows="4"
                         ></b-textarea>
 
-                        <ContentTags class="mt-2" :content="dataset" />
+                        <StatelessTags class="mt-2" v-model="tags" />
                     </div>
                 </div>
 
@@ -114,7 +114,7 @@ either through the props, and make updates through the events -->
             </div>
 
             <div class="details">
-                <DatasetSummary :dataset="dataset" />
+                <DatasetSummary :dataset="dataset" class="summary" />
 
                 <div class="display-applications" v-if="dataset.displayLinks.length">
                     <div class="display-application" v-for="app in dataset.displayLinks" :key="app.label">
@@ -140,10 +140,10 @@ import { Nametag } from "components/Nametags";
 import StatusIcon from "../../StatusIcon";
 import DatasetMenu from "./DatasetMenu";
 import DatasetSummary from "./Summary";
-import ContentTags from "../../ContentTags";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import IconButton from "components/IconButton";
 import EditorMenu from "../../EditorMenu";
+import { StatelessTags } from "components/Tags";
 
 export default {
     mixins: [legacyNavigationMixin],
@@ -151,10 +151,10 @@ export default {
         StatusIcon,
         DatasetMenu,
         DatasetSummary,
-        ContentTags,
         Nametag,
         IconButton,
         EditorMenu,
+        StatelessTags,
     },
     props: {
         dataset: { type: Dataset, required: true },
@@ -200,6 +200,16 @@ export default {
             },
             set(newVal) {
                 this.patchTempContent({ annotation: newVal });
+            },
+        },
+        tags: {
+            get() {
+                return this.tempContent?.tags || [];
+            },
+            set(newTags) {
+                if (Array.isArray(newTags)) {
+                    this.patchTempContent({ tags: newTags });
+                }
             },
         },
         showSelectionBox() {

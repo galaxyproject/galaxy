@@ -1,6 +1,12 @@
 <template>
     <div>
-        <b-dropdown size="sm" variant="link" text="Histories" toggle-class="text-decoration-none">
+        <b-dropdown
+            size="sm"
+            variant="link"
+            text="Histories"
+            toggle-class="text-decoration-none"
+            data-description="history menu"
+        >
             <template v-slot:button-content>
                 <Icon icon="wrench" />
                 <span class="sr-only">Operations on the current history</span>
@@ -33,7 +39,7 @@
                 <span v-localize>Extract Workflow</span>
             </b-dropdown-item>
 
-            <b-dropdown-item @click="backboneRoute('/histories/show_structure')">
+            <b-dropdown-item @click="backboneRoute('/histories/show_structure')" data-description="show structure">
                 <Icon icon="code-branch" class="mr-1" />
                 <span v-localize>Show Structure</span>
             </b-dropdown-item>
@@ -62,7 +68,7 @@
                 <span v-localize>Export Tool Citations</span>
             </b-dropdown-item>
 
-            <b-dropdown-item @click="backboneRoute(history.exportLink)">
+            <b-dropdown-item @click="backboneRoute(history.exportLink)" data-description="export to file">
                 <Icon icon="file-archive" class="mr-1" />
                 <span v-localize>Export History to File</span>
             </b-dropdown-item>

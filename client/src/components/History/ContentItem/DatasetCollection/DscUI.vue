@@ -10,8 +10,8 @@
         @keydown.arrow-right.self.stop="$emit('viewCollection')"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
     >
-        <nav class="p-1 d-flex align-items-center cursor-pointer">
-            <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+        <nav class="content-top-menu p-1 d-flex cursor-pointer">
+            <div class="d-flex flex-grow-1 overflow-hidden">
                 <div class="pl-1" v-if="showSelection">
                     <b-check
                         class="selector"
@@ -55,9 +55,9 @@
                     variant="link"
                 />
 
-                <div class="content-title flex-grow-1 overflow-hidden" @click.stop="$emit('viewCollection')">
+                <div class="content-title title flex-grow-1 overflow-hidden" @click.stop="$emit('viewCollection')">
                     <h5 class="text-truncate">
-                        <!-- <span class="hid">{{ dsc.hid }}</span> -->
+                        <span class="hid">{{ dsc.hid }}</span>
                         <span class="name">{{ dsc.name }}</span>
                         <span class="description">
                             ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
@@ -74,7 +74,7 @@
         </nav>
 
         <!--- read-only tags with name: prefix -->
-        <div v-if="dsc.nameTags.length" class="nametags p-2">
+        <div v-if="collapsed && dsc.nameTags.length" class="nametags px-2 pb-2">
             <Nametag v-for="tag in dsc.nameTags" :key="tag" :tag="tag" />
         </div>
 
@@ -112,6 +112,9 @@ export default {
     computed: {
         typedId() {
             return this.dsc.type_id;
+        },
+        collapsed() {
+            return !this.expanded;
         },
     },
 };

@@ -1,5 +1,5 @@
 <template>
-    <component :is="summaryComponent" :dataset="dataset" class="summary" />
+    <component :is="summaryComponent" :dataset="dataset" />
 </template>
 
 <script>

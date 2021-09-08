@@ -36,6 +36,7 @@ from galaxy.schema.fields import (
 from galaxy.schema.types import RelativeUrl
 
 USER_MODEL_CLASS_NAME = "User"
+GROUP_MODEL_CLASS_NAME = "Group"
 HDA_MODEL_CLASS_NAME = "HistoryDatasetAssociation"
 DC_MODEL_CLASS_NAME = "DatasetCollection"
 DCE_MODEL_CLASS_NAME = "DatasetCollectionElement"
@@ -51,7 +52,7 @@ RelativeUrlField: RelativeUrl = Field(
     ...,
     title="URL",
     description="The relative URL to access this item.",
-    deprecated=False  # TODO Should this field be deprecated in FastAPI?
+    deprecated=True,
 )
 
 DownloadUrlField: RelativeUrl = Field(
@@ -178,6 +179,21 @@ class UserModel(Model):
     deleted: bool = Field(title='Deleted', description='User is deleted')
     last_password_change: datetime = Field(title='Last password change', description='')
     model_class: str = ModelClassField(USER_MODEL_CLASS_NAME)
+
+
+class GroupModel(BaseModel):
+    """User group model"""
+    model_class: str = ModelClassField(GROUP_MODEL_CLASS_NAME)
+    id: EncodedDatabaseIdField = Field(
+        ...,  # Required
+        title='ID',
+        description='Encoded group ID',
+    )
+    name: str = Field(
+        ...,  # Required
+        title="Name",
+        description="The name of the group.",
+    )
 
 
 class JobSourceType(str, Enum):

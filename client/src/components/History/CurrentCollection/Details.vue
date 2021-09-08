@@ -1,18 +1,26 @@
 <!-- Edits a collection, if that collection is editable. -->
 
 <template>
-    <section class="history-details d-flex">
+    <section class="history-details d-flex" data-description="edit details">
         <div class="flex-grow-1">
-            <h3 class="history-title">{{ dscName || "(Collection Name)" }}</h3>
+            <h3 class="history-title" data-description="collection name display">
+                {{ dscName || "(Collection Name)" }}
+            </h3>
             <p class="mt-1">
                 <i class="fas fa-folder"></i>
                 a {{ dsc.collectionType | localize }}
                 {{ dsc.collectionCount | localize }}
             </p>
 
-            <div v-if="isEditing" class="mt-3">
-                <b-textarea v-model="dscName" placeholder="Collection Name" trim max-rows="4"></b-textarea>
-                <ContentTags :content="dsc" class="mt-3" />
+            <div v-if="isEditing" class="mt-3" @keydown.esc="revertAndCancel" data-description="edit form">
+                <b-textarea
+                    v-model="dscName"
+                    placeholder="Collection Name"
+                    trim
+                    max-rows="4"
+                    data-description="name input"
+                ></b-textarea>
+                <StatelessTags v-model="tags" class="mt-3 tags" />
             </div>
 
             <div v-else-if="dsc.tags && dsc.tags.length">
@@ -37,14 +45,14 @@
 <script>
 import { DatasetCollection } from "../model";
 import { Nametag } from "components/Nametags";
-import ContentTags from "../ContentTags";
 import EditorMenu from "../EditorMenu";
+import { StatelessTags } from "components/Tags";
 
 export default {
     components: {
-        ContentTags,
         Nametag,
         EditorMenu,
+        StatelessTags,
     },
     props: {
         dsc: { type: DatasetCollection, required: true },
@@ -77,6 +85,16 @@ export default {
                 this.patchTempDsc({ name: newName });
             },
         },
+        tags: {
+            get() {
+                return this.tempContent?.tags || [];
+            },
+            set(newTags) {
+                if (Array.isArray(newTags)) {
+                    this.patchTempDsc({ tags: newTags });
+                }
+            },
+        },
     },
     watch: {
         dscId(newId, oldId) {
@@ -102,6 +120,10 @@ export default {
             if (this.dirty) {
                 this.reset();
             }
+        },
+        revertAndCancel() {
+            this.revert();
+            this.editing = false;
         },
     },
 };

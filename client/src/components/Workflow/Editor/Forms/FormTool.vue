@@ -32,8 +32,7 @@
                 <FormDisplay
                     :id="id"
                     :inputs="inputs"
-                    :initial-errors="true"
-                    :form-config="formConfig"
+                    :errors="errors"
                     text-enable="Set in Advance"
                     text-disable="Set at Runtime"
                     @onChange="onChange"
@@ -88,7 +87,6 @@ export default {
             sectionValues: {},
             messageVariant: "",
             messageText: "",
-            formConfig: {},
         };
     },
     computed: {
@@ -128,6 +126,9 @@ export default {
             });
             return inputs;
         },
+        errors() {
+            return this.node.config_form.errors;
+        },
     },
     methods: {
         onChangeOutputDatatype(outputName, newDatatype) {
@@ -162,7 +163,6 @@ export default {
                 inputs: Object.assign({}, this.mainValues, this.sectionValues),
             }).then((data) => {
                 this.$emit("onSetData", this.node.id, data);
-                this.formConfig = data;
                 if (newVersion) {
                     const options = data.config_form;
                     this.messageVariant = "success";

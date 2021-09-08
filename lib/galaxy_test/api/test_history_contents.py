@@ -1,5 +1,6 @@
 import json
 import time
+import urllib
 from datetime import datetime
 
 from requests import delete, put
@@ -585,7 +586,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
             assert isinstance(c['job_state_summary'], dict)
 
     def _get_content(self, history_id, update_time):
-        return self._get(f"/api/histories/{history_id}/contents/near/100/100?update_time-ge={update_time}").json()
+        return self._get(f"/api/histories/{history_id}/contents/near/100/100?update_time-gt={update_time}").json()
 
     def test_history_contents_near_with_update_time(self):
         with self.dataset_populator.test_history() as history_id:
@@ -596,6 +597,63 @@ class HistoryContentsApiTestCase(ApiTestCase):
             self.dataset_populator.wait_for_history(history_id)
             all_datasets_finished = first_time = datetime.utcnow().isoformat()
             assert len(self._get_content(history_id, update_time=all_datasets_finished)) == 0
+
+    def test_history_contents_near_with_since(self):
+        with self.dataset_populator.test_history() as history_id:
+            original_history = self._get(f"/api/histories/{history_id}").json()
+            original_history_stamp = original_history['update_time']
+
+            # check empty contents, with no since flag, should return an empty 200 result
+            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100")
+            assert history_contents.status_code == 200
+            assert len(history_contents.json()) == 0
+
+            # adding a since parameter, should return a 204 if history has not changed at all
+            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={original_history_stamp}")
+            assert history_contents.status_code == 204
+
+            # add some stuff
+            self.dataset_collection_populator.create_list_in_history(history_id=history_id)
+            self.dataset_populator.wait_for_history(history_id)
+
+            # check to make sure the added stuff is there
+            changed_history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100")
+            assert changed_history_contents.status_code == 200
+            assert len(changed_history_contents.json()) == 4
+
+            # check to make sure the history date has actually changed due to changing the contents
+            changed_history = self._get(f"/api/histories/{history_id}").json()
+            changed_history_stamp = changed_history['update_time']
+            assert original_history_stamp != changed_history_stamp
+
+            # a repeated contents request with since=original_history_stamp should now return data
+            # because we have added datasets and the update_time should have been changed
+            changed_content = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={original_history_stamp}")
+            assert changed_content.status_code == 200
+            assert len(changed_content.json()) == 4
+
+    def test_history_contents_near_since_with_standard_iso8601_date(self):
+        with self.dataset_populator.test_history() as history_id:
+            original_history = self._get(f"/api/histories/{history_id}").json()
+            original_history_stamp = original_history['update_time']
+
+            # this is the standard date format that javascript will emit using .toISOString(), it
+            # should be the expected date format for any modern api
+            # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString
+
+            # checking to make sure that the same exact history.update_time returns a "not changed"
+            # result after date parsing
+            valid_iso8601_date = original_history_stamp + 'Z'
+            encoded_valid_date = urllib.parse.quote_plus(valid_iso8601_date)
+            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={encoded_valid_date}")
+            assert history_contents.status_code == 204
+
+            # test parsing for other standard is08601 formats
+            sample_formats = ['2021-08-26T15:53:02+00:00', '2021-08-26T15:53:02Z', '20210826T155302Z', '2002-10-10T12:00:00-05:00']
+            for date_str in sample_formats:
+                encoded_date = urllib.parse.quote_plus(date_str)  # handles pluses, minuses
+                history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={encoded_date}")
+                self._assert_status_code_is_ok(history_contents)
 
     @skip_without_tool('cat_data_and_sleep')
     def test_history_contents_near_with_update_time_implicit_collection(self):

@@ -9,8 +9,8 @@ from galaxy import (
     util,
     web
 )
-from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
+from galaxy.managers.quotas import QuotaManager
 from galaxy.model import tool_shed_install as install_model
 from galaxy.security.validate_user_input import validate_password
 from galaxy.tool_shed.util.repository_util import get_ids_of_tool_shed_repositories_being_installed
@@ -22,9 +22,7 @@ from galaxy.util import (
 from galaxy.util.tool_shed import common_util, encoding_util
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import grids, time_ago
-from galaxy.web.params import QuotaParamParser
 from galaxy.webapps.base import controller
-from galaxy.webapps.base.controller import UsesQuotaMixin
 from tool_shed.util.web_util import escape
 
 
@@ -503,7 +501,7 @@ class ToolVersionListGrid(grids.Grid):
         return trans.install_model.context.query(self.model_class)
 
 
-class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaParamParser):
+class AdminGalaxy(controller.JSAppLauncher):
 
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
@@ -521,6 +519,10 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     )
     activate_operation = grids.GridOperation("Activate User", condition=(lambda item: not item.active), allow_multiple=False)
     resend_activation_email = grids.GridOperation("Resend Activation Email", condition=(lambda item: not item.active), allow_multiple=False)
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.quota_manager: QuotaManager = QuotaManager(app)
 
     @web.expose
     @web.require_admin
@@ -646,13 +648,13 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             operation = kwargs.pop('operation').lower()
             try:
                 if operation == 'delete':
-                    message = self._delete_quota(quotas)
+                    message = self.quota_manager.delete_quota(quotas)
                 elif operation == 'undelete':
-                    message = self._undelete_quota(quotas)
+                    message = self.quota_manager.undelete_quota(quotas)
                 elif operation == 'purge':
-                    message = self._purge_quota(quotas)
+                    message = self.quota_manager.purge_quota(quotas)
                 elif operation == 'unset as default':
-                    message = self._unset_quota_default(quotas[0])
+                    message = self.quota_manager.unset_quota_default(quotas[0])
             except ActionInputError as e:
                 message, status = (e.err_msg, 'error')
         if message:
@@ -703,7 +705,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         build_select_input('in_users', 'Users', all_users, [])]}
         else:
             try:
-                quota, message = self._create_quota(util.Params(payload), decode_id=trans.security.decode_id)
+                quota, message = self.quota_manager.create_quota(payload, decode_id=trans.security.decode_id)
                 return {'message': message}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
@@ -730,7 +732,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             }
         else:
             try:
-                return {'message': self._rename_quota(quota, util.Params(payload))}
+                return {'message': self.quota_manager.rename_quota(quota, util.Params(payload))}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
@@ -766,7 +768,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                               build_select_input('in_users', 'Users', all_users, in_users)]}
         else:
             try:
-                return {'message': self._manage_users_and_groups_for_quota(quota, util.Params(payload), decode_id=trans.security.decode_id)}
+                return {'message': self.quota_manager.manage_users_and_groups_for_quota(quota, util.Params(payload), decode_id=trans.security.decode_id)}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
@@ -794,7 +796,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             }
         else:
             try:
-                return {'message': self._edit_quota(quota, util.Params(payload))}
+                return {'message': self.quota_manager.edit_quota(quota, util.Params(payload))}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
@@ -822,7 +824,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             }
         else:
             try:
-                return {'message': self._set_quota_default(quota, util.Params(payload))}
+                return {'message': self.quota_manager.set_quota_default(quota, util.Params(payload))}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
