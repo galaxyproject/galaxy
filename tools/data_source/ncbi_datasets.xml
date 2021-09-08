@@ -1,5 +1,5 @@
-<tool name="NCBI Datasets" id="ncbi_datasets_source" tool_type="data_source" version="1.0" profile="21.01">
-    <description>server</description>
+<tool name="NCBI Datasets Genomes" id="ncbi_datasets_source" tool_type="data_source" version="1.0" profile="21.01">
+    <description>import data from the NCBI Datasets Genomes page</description>
     <edam_operations>
         <edam_operation>operation_0224</edam_operation>
     </edam_operations>
@@ -16,8 +16,8 @@
     <configfiles>
         <configfile name="payload">$json_param</configfile>
     </configfiles>
-    <inputs action="https://www.ncbi.nlm.nih.gov/datasets/" check_values="true" method="get">
-        <display>go to SRA server $GALAXY_URL</display>
+    <inputs action="https://www.ncbi.nlm.nih.gov/datasets/genomes" check_values="true" method="get">
+        <display>go to NCBI Datasets Genomes server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=ncbi_datasets_source"/>
         <param name="file_param" type="file" optional="true"/>
         <param name="json_param" type="json" optional="true"/>
