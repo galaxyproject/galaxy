@@ -1140,6 +1140,66 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_content_directory``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Point Galaxy at a repository consisting of a copy of the bio.tools
+    database (e.g. https://github.com/bio-tools/content/) to resolve
+    bio.tools data for tool metadata.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``biotools_use_api``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to true to attempt to resolve bio.tools metadata for
+    tools for tool not resovled via biotools_content_directory.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_type``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    bio.tools web service request related caching. The type of beaker
+    cache used.
+:Default: ``file``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_data_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    bio.tools web service request related caching. The data directory
+    to point beaker cache at.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``biotools/data``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_lock_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    bio.tools web service request related caching. The lock directory
+    to point beaker cache at.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``biotools/locks``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``citation_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -3367,26 +3427,68 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_edam_toolbox``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+``edam_panel_views``
+~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable beta EDAM organised toolbox which ignores admin managed
-    sections in lieu of EDAM topics only.
-:Default: ``false``
-:Type: bool
+    Comma-separated list of the EDAM panel views to load - choose from
+    merged, operations, topics. Set to empty string to disable EDAM
+    all together. Set default_panel_view to 'ontology:edam_topics' to
+    override default tool panel to use an EDAM view.
+:Default: ``operations,topics``
+:Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``beta_edam_toolbox_ontology_path``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``edam_toolbox_ontology_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Sets the path to EDAM ontology file.
+    Sets the path to EDAM ontology file - if the path doesn't exist
+    PyPI package data will be loaded.
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``EDAM.tsv``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``panel_views_dir``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Directory to check out for toolbox tool panel views. The path is
+    relative to the Galaxy root dir.  To use an absolute path begin
+    the path with '/'.  This is a comma-separated list.
+:Default: ``config/plugins/activities``
+:Type: str
+
+
+~~~~~~~~~~~~~~~
+``panel_views``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Definitions of static toolbox panel views embedded directly in the
+    config instead of reading YAML from directory with
+    panel_views_dir.
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``default_panel_view``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default tool panel view for the current Galaxy configuration. This
+    should refer to an id of a panel view defined using the
+    panel_views or panel_views_dir configuration options or an EDAM
+    panel view. The default panel view is simply called `default` and
+    refers to the tool panel state defined by the integrated tool
+    panel.
+:Default: ``default``
 :Type: str
 
 

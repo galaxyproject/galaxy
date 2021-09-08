@@ -831,6 +831,46 @@ mapping:
           This results in faster startup times but uses more memory when using forked Galaxy
           processes.
 
+      biotools_content_directory:
+        type: str
+        required: false
+        desc: |
+          Point Galaxy at a repository consisting of a copy of the bio.tools database (e.g.
+          https://github.com/bio-tools/content/) to resolve bio.tools data for tool metadata.
+
+      biotools_use_api:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Set this to true to attempt to resolve bio.tools metadata for tools for tool not
+          resovled via biotools_content_directory.
+
+      biotools_service_cache_type:
+        type: str
+        default: file
+        required: false
+        desc: |
+          bio.tools web service request related caching. The type of beaker cache used.
+
+      biotools_service_cache_data_dir:
+        type: str
+        default: biotools/data
+        path_resolves_to: cache_dir
+        required: false
+        desc: |
+          bio.tools web service request related caching. The data directory to point
+          beaker cache at.
+
+      biotools_service_cache_lock_dir:
+        type: str
+        default: biotools/locks
+        path_resolves_to: cache_dir
+        required: false
+        desc: |
+          bio.tools web service request related caching. The lock directory to point
+          beaker cache at.
+
       citation_cache_type:
         type: str
         default: file
