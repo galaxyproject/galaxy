@@ -2252,19 +2252,6 @@ class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
     deferred = relationship('DeferredJob', back_populates='deferred_job')
     transfer = relationship('TransferJob', back_populates='transfer_job')
 
-    def __init__(self, job=None, params=None, dataset=None, deferred_job=None,
-                 transfer_job=None, fasta_path=None, created_time=None, modified_time=None,
-                 dbkey=None, user=None, indexer=None):
-        self.job = job
-        self.dataset = dataset
-        self.fasta_path = fasta_path
-        self.user = user
-        self.indexer = indexer
-        self.created_time = created_time
-        self.modified_time = modified_time
-        self.deferred = deferred_job
-        self.transfer = transfer_job
-
 
 class DeferredJob(Base, RepresentById):
     __tablename__ = 'deferred_job'
