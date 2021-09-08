@@ -17,7 +17,7 @@ import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
 import ToolForm from "components/Tool/ToolForm";
 import FormGeneric from "components/Form/FormGeneric";
-import Sharing from "components/Sharing.vue";
+import Sharing from "components/Sharing/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
 import DatasetList from "components/Dataset/DatasetList.vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
