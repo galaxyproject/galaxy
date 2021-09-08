@@ -101,6 +101,8 @@ This tag defines a particular Data Manager. Any number of
 +---------------+------------+-----------+--------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | ``id``        | A string*  | no        | ``id="twobit_builder"``                          | Must be unique across all Data Managers; should be lowercase and contain only letters, numbers, and underscores. While technically optional, it is a best-practice to specify this value. When not specified, it will use the id of the underlying Data Manager Tool. |
 +---------------+------------+-----------+--------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``version``   | A string*  | no        | ``version="0.0.1"``                              | Deprecated with release 21.09. The version of the data manager defaults to the version of the data manager tool                                                                                                                                                       |
++---------------+------------+-----------+--------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 The following is an example that contains all of the attributes
 described above.
@@ -616,7 +618,7 @@ the ``extra_files_path`` of ``out_file``.
 
 .. code-block:: xml
 
-    <tool id="data_manager_fetch_genome_all_fasta" name="Reference Genome" version="0.0.1" tool_type="manage_data">
+    <tool id="data_manager_fetch_genome_all_fasta" name="Reference Genome" tool_type="manage_data">
         <description>fetching</description>
         <command interpreter="python">data_manager_fetch_genome_all_fasta.py "${out_file}" --dbkey_description ${ dbkey.get_display_text() }</command>
         <inputs>
