@@ -65,6 +65,7 @@ fabric3==1.14.post1
 fastapi-utils==0.2.1; python_version >= "3.6" and python_version < "4.0"
 fastapi==0.65.2; python_version >= "3.6"
 fluent-logger==0.10.0; python_version >= "3.5"
+fs==2.4.13
 funcsigs==1.0.2
 future==0.18.2; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
 galaxy-sequence-utils==1.1.5
