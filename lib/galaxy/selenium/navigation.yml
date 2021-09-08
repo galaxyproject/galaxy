@@ -310,6 +310,9 @@ tool_panel:
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
     search: '.search-query'
     workflow_names: '#internal-workflows .toolTitle'
+    views_button: '.tool-panel-dropdown'
+    views_menu_item: '[data-panel-id="${panel_id}"]'
+    panel_labels: '.tool-panel-label'
 
 multi_history_view:
 

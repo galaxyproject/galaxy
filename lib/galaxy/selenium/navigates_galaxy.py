@@ -1192,6 +1192,22 @@ class NavigatesGalaxy(HasDriver):
     def workflow_run_submit(self):
         self.wait_for_and_click_selector("button.btn-primary")
 
+    def workflow_create_new(self, annotation=None, clear_placeholder=False):
+        self.workflow_index_open()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.click_button_new_workflow()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        form_element = self.driver.find_element_by_id("submit")
+        name = self._get_random_name()
+        annotation = annotation or self._get_random_name()
+        inputs = self.driver.find_elements_by_class_name("ui-input")
+        if clear_placeholder:
+            inputs[0].clear()
+        inputs[0].send_keys(name)
+        inputs[1].send_keys(annotation)
+        form_element.click()
+        return name
+
     def tool_open(self, tool_id, outer=False):
         if outer:
             tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)

@@ -2,6 +2,7 @@
     <b-dropdown-item
         :active="currentPanelView == panelView.id"
         :disabled="currentPanelView == panelView.id"
+        :data-panel-id="panelView.id"
         @click="onClick"
     >
         <span :class="icon" />
