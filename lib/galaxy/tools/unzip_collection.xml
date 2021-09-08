@@ -1,7 +1,8 @@
 <tool id="__UNZIP_COLLECTION__"
-      name="Unzip Collection"
+      name="Unzip collection"
       version="1.0.0"
       tool_type="unzip_collection">
+  <description></description>
   <type class="UnzipCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
@@ -9,7 +10,7 @@
         <edam_operation>operation_3359</edam_operation>
     </edam_operations>
   <inputs>
-    <param type="data_collection" collection_type="paired" name="input" label="Input Paired Dataset" />
+    <param type="data_collection" collection_type="paired" name="input" label="Paired input to unzip" />
   </inputs>
   <outputs>
     <data name="forward" label="${on_string} (forward)" format_source="input"/>
@@ -17,13 +18,24 @@
   </outputs>
   <help><![CDATA[
 
-This tool takes a paired dataset collection and builds two datasets from it. If mapped over a list of paired datasets, this tool will produce two lists of datasets.
 
-----
+========
+Synopsis
+========
 
-**Example**
+Takes a paired collection and "unzips" it into two simple dataset collections (lists of datasets). 
 
-If a collection consists of two forward and two reverse datasets (e.g., forward and reverse reads from a sequencing experiment) this tool will output two collections: one consisting of forward reads and one of reverse reads.
+===========
+Description
+===========
+
+Given a paired collection of forward and reverse reads this tool will "unzip" it into two collections containing forward and reverse reads, respectively:
+
+.. image:: ${static_path}/images/tools/collection_ops/unzip.svg
+  :width: 500
+  :alt: Unzipping operation
+
+-----
 
 .. class:: infomark
 
