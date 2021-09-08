@@ -1944,12 +1944,7 @@ class ImplicitCollectionJobs(Base, RepresentById):
         OK = 'ok'  # Job associations are set and fixed.
         FAILED = 'failed'  # There were issues populating job associations, object is in error.
 
-    def __init__(
-        self,
-        id=None,
-        populated_state=None,
-    ):
-        self.id = id
+    def __init__(self, populated_state=None):
         self.populated_state = populated_state or ImplicitCollectionJobs.populated_states.NEW
 
     @property
