@@ -5,19 +5,19 @@
     <entry_points>
         <entry_point name="GPU enabled Interactive Jupyter Notebook for Machine Learning" requires_domain="True">
             <port>8888</port>
-	    <url>ipython/lab</url>
+            <url>ipython/lab</url>
         </entry_point>
     </entry_points>
     <environment_variables>
         <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
         <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
-	<environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
-	<environment_variable name="DISABLE_AUTH">true</environment_variable>
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="DISABLE_AUTH">true</environment_variable>
         <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
-	#import re
+        #import re
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/ &&
         mkdir -p ./jupyter/data &&
@@ -31,14 +31,14 @@
         cd ./jupyter/ &&
         export HOME=/home/\$NB_USER/ &&
         export PATH=/home/\$NB_USER/.local/bin:\$PATH &&
-	#if $mode.mode_select == 'scratch':
-	    ## copy all notebooks, workflows and data
-	    cp /home/\$NB_USER/home_page.ipynb ./ &&
+        #if $mode.mode_select == 'scratch':
+            ## copy all notebooks, workflows and data
+            cp /home/\$NB_USER/home_page.ipynb ./ &&
             cp /home/\$NB_USER/notebooks/*.ipynb ./notebooks/ &&
             cp /home/\$NB_USER/elyra/*.* ./elyra/ &&
             cp /home/\$NB_USER/data/*.tsv ./data/ &&
             ## provide all rights to copied files
-	    chown -R \$NB_USER:users `pwd` &&
+            chown -R \$NB_USER:users `pwd` &&
             chown \$NB_USER ./home_page.ipynb &&
             chown \$NB_USER ./notebooks/ &&
             chown \$NB_USER ./notebooks/*.ipynb &&
@@ -56,7 +56,7 @@
         <conditional name="mode">
             <param name="mode_select" type="select" label="Do you already have a notebook?" help="If not, no problem we will provide you with a default one.">
                 <option value="scratch">Start with a fresh notebook</option>
-	        <option value="previous">Load a previous notebook</option>
+		<option value="previous">Load a previous notebook</option>
             </param>
             <when value="scratch"/>
             <when value="previous">
@@ -69,7 +69,7 @@
 
     </inputs>
     <outputs>
-        <data name="jupyter_notebook" format="ipynb" label="Executed Notebook"></data>
+        <data name="jupyter_notebook" format="ipynb" label="Executed Notebook" />
     </outputs>
     <tests>
         <test expect_num_outputs="1">
