@@ -1971,9 +1971,6 @@ class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
     implicit_collection_jobs = relationship('ImplicitCollectionJobs', back_populates='jobs')
     job = relationship('Job', back_populates='implicit_collection_jobs_association')
 
-    def __init__(self):
-        self.implicit_collection_jobs_id = None
-
 
 class PostJobAction(Base, RepresentById):
     __tablename__ = 'post_job_action'
