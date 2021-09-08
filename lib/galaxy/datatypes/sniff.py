@@ -489,7 +489,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     """
     file_prefix = FilePrefix(fname)
     file_ext = run_sniffers_raw(file_prefix, sniff_order, is_binary)
-
+    log.error(f"file_ext {file_ext}")
     # Ugly hack for tsv vs tabular sniffing, we want to prefer tabular
     # to tsv but it doesn't have a sniffer - is TSV was sniffed just check
     # if it is an okay tabular and use that instead.
@@ -502,8 +502,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     # skip header check if data is already known to be binary
     if is_binary:
         return file_ext or 'binary'
-    # get_headers returns an empty list for binary (and empty) files
-    if len(get_headers(file_prefix, None)) == 0:
+    if file_prefix.non_utf8_error is not None:
         return 'data'  # default data type file extension
     if is_column_based(file_prefix, '\t', 1):
         return 'tabular'  # default tabular data type file extension
