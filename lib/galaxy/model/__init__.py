@@ -1604,15 +1604,10 @@ class Task(Base, JobLike, RepresentById):
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__(self, job, working_directory, prepare_files_cmd):
-        self.command_line = None
         self.parameters = []
         self.state = Task.states.NEW
-        self.info = None
         self.working_directory = working_directory
-        self.task_runner_name = None
-        self.task_runner_external_id = None
         self.job = job
-        self.exit_code = None
         self.prepare_input_files_cmd = prepare_files_cmd
         self._init_metrics()
 
