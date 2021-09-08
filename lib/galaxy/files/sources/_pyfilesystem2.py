@@ -3,6 +3,8 @@ import functools
 import logging
 import os
 
+import fs
+
 from ..sources import BaseFilesSource
 
 log = logging.getLogger(__name__)
@@ -44,7 +46,11 @@ class PyFilesystem2FilesSource(BaseFilesSource):
 
     def _write_from(self, target_path, native_path, user_context=None):
         with open(native_path, 'rb') as read_file:
-            self._open_fs(user_context=user_context).upload(target_path, read_file)
+            openfs = self._open_fs(user_context=user_context)
+            dirname = fs.path.dirname(target_path)
+            if not openfs.exists(dirname):
+                openfs.makedirs(dirname)
+            openfs.upload(target_path, read_file)
 
     def _resource_info_to_dict(self, dir_path, resource_info):
         name = resource_info.name

@@ -1,5 +1,5 @@
 import threading
-from typing import Dict
+from typing import Any, Dict, List
 
 import packaging.version
 from sortedcontainers import SortedSet
@@ -44,13 +44,13 @@ class ToolLineage:
         self.tool_versions = SortedSet(key=packaging.version.parse)
 
     @property
-    def tool_ids(self):
+    def tool_ids(self) -> List[str]:
         versionless_tool_id = remove_version_from_guid(self.tool_id)
         tool_id = versionless_tool_id or self.tool_id
         return [f"{tool_id}/{version}" for version in self.tool_versions]
 
     @staticmethod
-    def from_tool(tool):
+    def from_tool(tool) -> 'ToolLineage':
         tool_id = tool.id
         lineages_by_id = ToolLineage.lineages_by_id
         with ToolLineage.lock:
@@ -60,7 +60,7 @@ class ToolLineage:
         lineage.register_version(tool.version)
         return lineage
 
-    def register_version(self, tool_version):
+    def register_version(self, tool_version) -> None:
         assert tool_version is not None
         self.tool_versions.add(str(tool_version))
 
@@ -71,12 +71,12 @@ class ToolLineage:
         """
         return [ToolLineageVersion(tool_id, tool_version) for tool_id, tool_version in zip(self.tool_ids, self.tool_versions)]
 
-    def get_version_ids(self, reverse=False):
+    def get_version_ids(self, reverse=False) -> List[str]:
         if reverse:
             return list(reversed(self.tool_ids))
         return self.tool_ids
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         return dict(
             tool_id=self.tool_id,
             tool_versions=list(self.tool_versions),

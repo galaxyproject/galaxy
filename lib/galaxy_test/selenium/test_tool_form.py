@@ -359,6 +359,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         rule_builder.main_button_ok.wait_for_and_click()
         self.tool_form_execute()
         output_hid = example["output_hid"]
+        self.home()
         self.history_panel_wait_for_hid_ok(output_hid)
         output_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_hid, wait=False)
         example["check"](output_hdca, self.dataset_populator)

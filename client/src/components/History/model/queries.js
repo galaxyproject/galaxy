@@ -8,6 +8,7 @@
 import axios from "axios";
 import moment from "moment";
 import { prependPath } from "utils/redirect";
+import { History } from "./History";
 
 // #region setup & utils
 
@@ -87,9 +88,10 @@ const stdHistoryParams = {
  * Return list of available histories
  */
 export async function getHistoryList() {
-    const params = { view: "summary" };
+    const params = { view: "summary", keys: "size" };
     const response = await api.get("/histories", { params });
-    return doResponse(response);
+    const rawList = doResponse(response);
+    return rawList.map((props) => new History(props));
 }
 
 /**
@@ -101,7 +103,8 @@ export async function getHistoryById(id, since) {
     const sinceParam = since !== undefined ? moment.utc(since).toISOString() : null;
     const url = sinceParam ? `${path}?q=update_time-gt&qv=${sinceParam}` : path;
     const response = await api.get(url, { params: stdHistoryParams });
-    return doResponse(response);
+    const props = doResponse(response);
+    return new History(props);
 }
 
 /**
@@ -121,7 +124,8 @@ export async function createNewHistory(props = {}) {
     if (!id) {
         throw new Error("failed to create and select new history");
     }
-    return doResponse(createResponse);
+    const newHistoryProps = doResponse(createResponse);
+    return new History(newHistoryProps);
 }
 
 /**
@@ -139,7 +143,8 @@ export async function cloneHistory(history, name, copyAll) {
         current: true,
     };
     const response = await api.post(url, payload, { params: stdHistoryParams });
-    return doResponse(response);
+    const clonedProps = doResponse(response);
+    return new History(clonedProps);
 }
 
 /**
@@ -171,7 +176,8 @@ export async function undeleteHistoryById(id) {
 export async function updateHistoryFields(id, payload) {
     const url = `/histories/${id}`;
     const response = await api.put(url, payload, { params: stdHistoryParams });
-    return doResponse(response);
+    const props = doResponse(response);
+    return new History(props);
 }
 
 /**
@@ -202,7 +208,8 @@ export async function getCurrentHistoryFromServer() {
     const response = await api.get(url, {
         baseURL: prependPath("/"), // old api doesn't use api path
     });
-    return doResponse(response);
+    const props = doResponse(response);
+    return new History(props);
 }
 
 export async function setCurrentHistoryOnServer(history_id) {
@@ -352,7 +359,7 @@ export async function createDatasetCollection(history, inputs = {}) {
         copy_elements: true,
         name: "list",
         element_identifiers: [],
-        hide_source_items: "True",
+        hide_source_items: true,
         type: "dataset_collection",
     };
 

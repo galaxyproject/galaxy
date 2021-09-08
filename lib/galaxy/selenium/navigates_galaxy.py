@@ -56,6 +56,8 @@ class WAIT_TYPES:
     SHED_SEARCH = WaitType('shed_search', 30)
     # Wait time for repository installation
     REPO_INSTALL = WaitType('repo_install', 60)
+    # Beta history Polling Duration
+    HISTORY_POLL = WaitType("history_poll", 3)
 
 
 # Choose a moderate wait type for operations that don't specify a type.
@@ -108,6 +110,25 @@ def retry_during_transitions(f, attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAU
         return retry_call_during_transitions(partial(f, *args, **kwds), attempts=attempts, sleep=sleep, exception_check=exception_check)
 
     return _retry
+
+
+def edit_details(f, scope=".beta.history"):
+    """Open the editor, run the edits, hit the save button"""
+
+    @wraps(f)
+    def func_wrapper(self, *args, **kwds):
+        # open editor
+        if self.is_beta_history():
+            self.open_history_editor(scope=scope)
+        # run edits
+        result = f(self, *args, **kwds)
+        # save edits
+        if self.is_beta_history():
+            save_button = self.beta_history_element('editor save button')
+            save_button.wait_for_and_click()
+        return result
+
+    return func_wrapper
 
 
 class NavigatesGalaxy(HasDriver):
@@ -228,7 +249,7 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_name_element(self):
         if self.is_beta_history():
-            component = self.components.history_panel.name_beta
+            component = self.beta_history_element("history name display")
         else:
             component = self.components.history_panel.name
         return component.wait_for_present()
@@ -291,9 +312,12 @@ class NavigatesGalaxy(HasDriver):
         self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
-        self.history_panel_wait_for_hid_state(hid, 'ok', allowed_force_refreshes=allowed_force_refreshes)
+        return self.history_panel_wait_for_hid_state(hid, 'ok', allowed_force_refreshes=allowed_force_refreshes)
 
     def history_panel_item_component(self, history_item=None, hid=None, multi_history_panel=False):
+        if self.is_beta_history():
+            assert hid
+            return self.content_item_by_attributes(hid=hid)
         if history_item is None:
             assert hid
             history_item = self.hid_to_history_item(hid)
@@ -326,8 +350,11 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_wait_for_hid_visible(self, hid, allowed_force_refreshes=0, multi_history_panel=False):
         current_history_id = self.current_history_id()
         self.wait_for_history_to_have_hid(current_history_id, hid)
+        # TODO: just use HID and stop resolving history_item -or- place history item in DOM.
+        # I think Mason thought the first was cleaner based on recent changes, but I think duplicated
+        # HIDs due to conversions and such make using the actual history item ID more robust.
         history_item = self.hid_to_history_item(hid, current_history_id=current_history_id)
-        history_item_selector = self.history_panel_item_component(history_item, multi_history_panel=multi_history_panel)
+        history_item_selector = self.history_panel_item_component(history_item, hid=hid, multi_history_panel=multi_history_panel)
         try:
             self.history_item_wait_for(history_item_selector, allowed_force_refreshes)
         except self.TimeoutException as e:
@@ -373,8 +400,11 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_wait_for_hid_state(self, hid, state, allowed_force_refreshes=0, multi_history_panel=False):
         history_item_selector = self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=allowed_force_refreshes, multi_history_panel=multi_history_panel)
-        # history_item_selector_state = history_item_selector.with_class(f"state-{state}")
-        history_item_selector_state = history_item_selector.with_data("state", state)
+        if self.is_beta_history():
+            history_item_selector_state = self.content_item_by_attributes(hid=hid, state=state)
+        else:
+            # history_item_selector_state = history_item_selector.with_class(f"state-{state}")
+            history_item_selector_state = history_item_selector.with_data("state", state)
         try:
             self.history_item_wait_for(history_item_selector_state, allowed_force_refreshes)
         except self.TimeoutException as e:
@@ -1245,14 +1275,40 @@ class NavigatesGalaxy(HasDriver):
     def is_beta_history(self):
         return not self.components.history_panel.beta.is_absent
 
+    # avoids problematic ID and classes on markup
+    def beta_history_element(self, attribute_value, attribute_name="data-description", scope=".beta.history"):
+        return self.components._.by_attribute(name=attribute_name, value=attribute_value, scope=scope)
+
+    # join list of attrs into css attribute selectors and append to base beta_item selector
+    def content_item_by_attributes(self, **attrs):
+        suffix_list = [f'[data-{k}="{v}"]' for (k, v) in attrs.items()]
+        suffix = "".join(suffix_list)
+        return self.components.history_panel.content_item.selector(suffix=suffix)
+
     def history_click_create_new(self):
-        self.components.history_panel.new_history_button.wait_for_and_click()
+        if not self.is_beta_history():
+            self.components.history_panel.new_history_button.wait_for_and_click()
+        else:
+            dropdown = self.beta_history_element("histories operation menu")
+            dropdown.wait_for_and_click()
+            option = self.beta_history_element("create new history")
+            option.wait_for_and_click()
 
     def history_panel_click_copy_elements(self):
         if self.is_beta_history():
-            self.components.history_panel.options_button_copy_datasets_beta.wait_for_and_click()
+            self.use_bootstrap_dropdown(option="copy datasets", menu="new content menu")
         else:
             self.click_history_option("Copy Datasets")
+
+    def use_bootstrap_dropdown(self, option=None, menu=None):
+        """uses bootstrap dropdown by data-description attributes"""
+        if option is None:
+            raise TypeError
+        if menu is None:
+            raise TypeError
+        toggle = self.beta_history_element(menu).descendant("button")
+        self.wait_for_and_click(toggle)
+        return self.beta_history_element(option).wait_for_and_click()
 
     @retry_during_transitions
     def histories_click_advanced_search(self):
@@ -1271,37 +1327,43 @@ class NavigatesGalaxy(HasDriver):
                 names.append(name)
         return names
 
+    @edit_details
     def history_panel_add_tags(self, tags):
         tag_icon = self.components.history_panel.tag_icon
         tag_area = self.components.history_panel.tag_area
         tag_area_input = self.components.history_panel.tag_area_input
 
-        if tag_area.is_absent or not tag_area.is_displayed:
+        # if the tag editor is not present but the tag_icon is, then click it
+        if not tag_icon.is_absent and (tag_area.is_absent or not tag_area.is_displayed):
             tag_icon.wait_for_and_click()
 
-        tag_area = tag_area_input.wait_for_and_click()
+        input_element = tag_area_input.wait_for_and_click()
 
         for tag in tags:
-            tag_area.send_keys(tag)
-            self.send_enter(tag_area)
-            time.sleep(.5)
+            input_element.send_keys(tag)
+            self.send_enter(input_element)
+            self.sleep_for(self.wait_types.UX_RENDER)
 
+    @edit_details
     def history_panel_rename(self, new_name):
-        editable_text_input_element = self.history_panel_click_to_rename()
+        editable_text_input_element = self.history_panel_name_input()
         if self.is_beta_history():
             editable_text_input_element.clear()
         editable_text_input_element.send_keys(new_name)
         self.send_enter(editable_text_input_element)
+        return editable_text_input_element
+
+    def history_panel_name_input(self):
+        if self.is_beta_history():
+            editable_text_input_element = self.beta_history_element("name input").wait_for_visible()
+        else:
+            editable_text_input_element = self.history_panel_click_to_rename()
+        return editable_text_input_element
 
     def history_panel_click_to_rename(self):
         history_panel = self.components.history_panel
-        if self.is_beta_history():
-            name = history_panel.name_beta
-            edit = history_panel.name_edit_input_beta
-        else:
-            name = history_panel.name
-            edit = history_panel.name_edit_input
-
+        name = history_panel.name
+        edit = history_panel.name_edit_input
         name.wait_for_and_click()
         return edit.wait_for_visible()
 
@@ -1328,8 +1390,21 @@ class NavigatesGalaxy(HasDriver):
 
         _click_action_in_menu()
 
+    def open_history_multi_view(self):
+        if self.is_beta_history():
+            self.components.history_panel.histories_operation_menu.wait_for_and_click()
+            self.components.history_panel.multi_view_button_beta.wait_for_and_click()
+        else:
+            self.components.history_panel.multi_view_button.wait_for_and_click()
+
+    def history_panel_show_structure(self):
+        if self.is_beta_history():
+            self.use_bootstrap_dropdown(option="show structure", menu="history menu")
+        else:
+            self.click_history_option(self.components.history_panel.options_show_history_structure)
+
     def history_multi_view_display_collection_contents(self, collection_hid, collection_type="list"):
-        self.components.history_panel.multi_view_button.wait_for_and_click()
+        self.open_history_multi_view()
 
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
         self.click(selector)
@@ -1400,10 +1475,10 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_click_item_title(self, hid, **kwds):
         item_component = self.history_panel_item_component(hid=hid)
         details_component = item_component.details
+        details_displayed = not details_component.is_absent and details_component.is_displayed
         item_component.title.wait_for_and_click()
 
         if kwds.get("wait", False):
-            details_displayed = details_component.is_displayed
             if details_displayed:
                 details_component.wait_for_absent_or_hidden()
             else:
@@ -1416,6 +1491,9 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_item_showing_details(self, hid):
         item_component = self.history_panel_item_component(hid=hid)
+        item_component.wait_for_present()
+        if item_component.details.is_absent:
+            return False
         return item_component.details.is_displayed
 
     def collection_builder_set_name(self, name):
@@ -1604,31 +1682,33 @@ class NavigatesGalaxy(HasDriver):
         return element
 
     def set_history_annotation(self, annotation, clear_text=False):
-        self.ensure_history_annotation_area_displayed()
         history_panel = self.components.history_panel
 
         if self.is_beta_history():
-            editable = history_panel.annotation_editable_text_beta
-            edit = history_panel.annotation_edit_beta
+            toggle = self.beta_history_element("editor toggle")
+            toggle.wait_for_and_click()
+            annotation_input = self.beta_history_element("annotation input").wait_for_visible()
+            if clear_text:
+                annotation_input.clear()
+            annotation_input.send_keys(annotation)
+            save_button = self.beta_history_element("editor save button")
+            save_button.wait_for_and_click()
         else:
+            self.ensure_history_annotation_area_displayed()
             editable = history_panel.annotation_editable_text
             edit = history_panel.annotation_edit
 
-        editable.wait_for_and_click()
-        edit_el = edit.wait_for_and_click()
-        if clear_text:
-            # previously this was just edit_el.clear() but
-            # .clear() doesn't work with beta history panel
-            action_chains = self.action_chains()
-            for _ in range(40):
-                action_chains.send_keys(Keys.BACKSPACE)
-            action_chains.perform()
-        edit_el.send_keys(annotation)
+            editable.wait_for_and_click()
+            edit_el = edit.wait_for_and_click()
+            if clear_text:
+                # previously this was just edit_el.clear() but
+                # .clear() doesn't work with beta history panel
+                action_chains = self.action_chains()
+                for _ in range(40):
+                    action_chains.send_keys(Keys.BACKSPACE)
+                action_chains.perform()
+            edit_el.send_keys(annotation)
 
-        if self.is_beta_history():
-            # no button, just click away
-            self.click_center()
-        else:
             history_panel.annotation_done.wait_for_and_click()
 
     def ensure_history_annotation_area_displayed(self):
@@ -1673,6 +1753,21 @@ class NavigatesGalaxy(HasDriver):
 
     def snapshot(self, description):
         """Test case subclass overrides this to provide detailed logging."""
+
+    def open_history_editor(self, scope=".beta.history"):
+        if self.is_beta_history():
+            panel = self.components.history_panel.editor.selector(scope=scope)
+            toggle = panel.toggle
+            toggle.wait_for_and_click()
+            editor = panel.form
+            editor.wait_for_present()
+
+    def close_history_editor(self, scope=".beta.history"):
+        if self.is_beta_history():
+            toggle = self.components.history_panel.edit_toggle
+            toggle.wait_for_and_click()
+            editor = self.components.history_panel.editor.selector(scope=scope)
+            self.assert_absent_or_hidden(editor)
 
 
 class NotLoggedInException(TimeoutException):

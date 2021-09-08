@@ -504,14 +504,28 @@ mapping:
           Container availability will vary by tool, this option will only be used
           for job destinations with Docker or Singularity enabled.
 
-      containers_resolvers_config_file:
+      container_resolvers_config_file:
         type: str
         required: false
         desc: |
           Container resolvers configuration (beta). Set up a file describing
           container resolvers to use when discovering containers for Galaxy. If
-          this is set to None, the default containers loaded is determined by
-          enable_mulled_containers.
+          this is set to None, the default container resolvers loaded is
+          determined by enable_mulled_containers.
+
+      container_resolvers:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Rather than specifying a container_resolvers_config_file, the definition of the
+          resolvers to enable can be embedded into Galaxy's config with this option.
+          This has no effect if a container_resolvers_config_file is used.
+
+          The syntax, available resolvers, and documentation of their options is explained in detail in the
+          documentation:
+
+          https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
 
       involucro_path:
         type: str
@@ -816,6 +830,46 @@ mapping:
           Set this to true to delay parsing of tool inputs and outputs until they are needed.
           This results in faster startup times but uses more memory when using forked Galaxy
           processes.
+
+      biotools_content_directory:
+        type: str
+        required: false
+        desc: |
+          Point Galaxy at a repository consisting of a copy of the bio.tools database (e.g.
+          https://github.com/bio-tools/content/) to resolve bio.tools data for tool metadata.
+
+      biotools_use_api:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Set this to true to attempt to resolve bio.tools metadata for tools for tool not
+          resovled via biotools_content_directory.
+
+      biotools_service_cache_type:
+        type: str
+        default: file
+        required: false
+        desc: |
+          bio.tools web service request related caching. The type of beaker cache used.
+
+      biotools_service_cache_data_dir:
+        type: str
+        default: biotools/data
+        path_resolves_to: cache_dir
+        required: false
+        desc: |
+          bio.tools web service request related caching. The data directory to point
+          beaker cache at.
+
+      biotools_service_cache_lock_dir:
+        type: str
+        default: biotools/locks
+        path_resolves_to: cache_dir
+        required: false
+        desc: |
+          bio.tools web service request related caching. The lock directory to point
+          beaker cache at.
 
       citation_cache_type:
         type: str
@@ -1237,6 +1291,7 @@ mapping:
       brand:
         type: str
         required: false
+        per_host: true
         desc: |
           Append "{brand}" text to the masthead.
 
@@ -1244,6 +1299,7 @@ mapping:
         type: bool
         default: true
         required: false
+        per_host: true
         desc: |
           Display the "Galaxy" text in the masthead.
 
@@ -1327,6 +1383,7 @@ mapping:
         default: /static/welcome.html
         required: false
         reloadable: true
+        per_host: true
         desc: |
           The URL of the page to display in Galaxy's middle pane when loaded.  This can
           be an absolute or relative URL.
@@ -1335,6 +1392,7 @@ mapping:
         type: str
         default: /
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Galaxy/brand" text.
 
@@ -1342,18 +1400,21 @@ mapping:
         type: str
         default: /static/favicon.png
         required: false
+        per_host: true
         desc: |
           The brand image source.
 
       logo_src_secondary:
         type: str
         required: false
+        per_host: true
         desc: |
           The custom brand image source.
 
       helpsite_url:
         type: str
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Galaxy Help" link in the "Help" menu.
 
@@ -1361,6 +1422,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Wiki" link in the "Help" menu.
 
@@ -1375,6 +1437,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/support/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
 
@@ -1382,6 +1445,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/citing-galaxy
         required: false
+        per_host: true
         desc: |
           The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
 
@@ -1396,6 +1460,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/search/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Search" link in the "Help" menu.
 
@@ -1403,6 +1468,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/mailing-lists/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Mailing Lists" link in the "Help" menu.
 
@@ -1410,12 +1476,14 @@ mapping:
         type: str
         default: https://vimeo.com/galaxyproject
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Videos" link in the "Help" menu.
 
       terms_url:
         type: str
         required: false
+        per_host: true        
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
           as on the user registration and login forms and in the activation emails.
@@ -1451,6 +1519,7 @@ mapping:
       static_dir:
         type: str
         default: static/
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1461,6 +1530,7 @@ mapping:
       static_images_dir:
         type: str
         default: static/images
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1471,6 +1541,7 @@ mapping:
       static_favicon_dir:
         type: str
         default: static/favicon.ico
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1481,6 +1552,7 @@ mapping:
       static_scripts_dir:
         type: str
         default: static/scripts/
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1491,6 +1563,7 @@ mapping:
       static_style_dir:
         type: str
         default: static/style
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1501,6 +1574,7 @@ mapping:
       static_robots_txt:
         type: str
         default: static/robots.txt
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -2440,21 +2514,50 @@ mapping:
           stable API. (The module state definitions may change and workflows built using
           these modules may not function in the future.)
 
-      enable_beta_edam_toolbox:
-        type: bool
-        default: false
+      edam_panel_views:
+        type: str
+        default: 'operations,topics'
         required: false
         desc: |
-          Enable beta EDAM organised toolbox which ignores admin managed
-          sections in lieu of EDAM topics only.
+          Comma-separated list of the EDAM panel views to load - choose from merged, operations, topics.
+          Set to empty string to disable EDAM all together. Set default_panel_view to 'ontology:edam_topics'
+          to override default tool panel to use an EDAM view.
 
-      beta_edam_toolbox_ontology_path:
+      edam_toolbox_ontology_path:
         type: str
         default: EDAM.tsv
         path_resolves_to: data_dir
         required: false
         desc: |
-          Sets the path to EDAM ontology file.
+          Sets the path to EDAM ontology file - if the path doesn't exist PyPI package data will be loaded.
+
+      panel_views_dir:
+        type: str
+        default: config/plugins/activities
+        required: false
+        desc: |
+          Directory to check out for toolbox tool panel views. The path is relative to the
+          Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a
+          comma-separated list.
+
+      panel_views:
+        type: seq
+        sequence:
+          - type: any
+        required: false
+        desc: |
+          Definitions of static toolbox panel views embedded directly in the config instead of reading
+          YAML from directory with panel_views_dir.
+
+      default_panel_view:
+        type: str
+        default: default
+        required: false
+        desc: |
+          Default tool panel view for the current Galaxy configuration. This should refer to an id of
+          a panel view defined using the panel_views or panel_views_dir configuration options or an
+          EDAM panel view. The default panel view is simply called `default` and refers to the tool
+          panel state defined by the integrated tool panel.
 
       default_workflow_export_format:
         type: str
@@ -2638,6 +2741,7 @@ mapping:
         default: 'prefer'
         enum: ['off', 'prefer']
         required: false
+        per_host: true
         desc: |
           If set to 'off' by default, always use the traditional workflow form that renders
           all steps in the GUI and serializes the tool state of all steps during
@@ -2652,6 +2756,7 @@ mapping:
         default: 'current'
         enum: ['current', 'new']
         required: false
+        per_host: true
         desc: |
           When the simplified workflow run form is rendered, should the invocation outputs
           be sent to the 'current' history or a 'new' history.
@@ -2661,6 +2766,7 @@ mapping:
         default: 'off'
         enum: ['on', 'off']
         required: false
+        per_host: true
         desc: |
           When the simplified workflow run form is rendered, should the invocation use job
           caching. This isn't a boolean so an option for 'show-selection' can be added later.
@@ -2675,6 +2781,7 @@ mapping:
       ftp_upload_site:
         type: str
         required: false
+        per_host: true
         desc: |
           Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
           configure an FTP server (we've used ProFTPd since it can use Galaxy's

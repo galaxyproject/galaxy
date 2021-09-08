@@ -32,7 +32,7 @@ celery==5.0.5; python_version >= "3.6"
 certifi==2020.12.5; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.6"
 cffi==1.14.5; implementation_name == "pypy" and python_version >= "3.6" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0")
 chardet==4.0.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4"
-cheetah3==3.2.6.post2; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
+cheetah3==3.2.6.post1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 circus==0.17.1
 click-didyoumean==0.0.3; python_version >= "3.6"
 click-plugins==1.1.1; python_version >= "3.6"
@@ -60,10 +60,12 @@ docopt==0.6.2
 docutils==0.16; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 dogpile.cache==1.1.2; python_version >= "3.6"
 ecdsa==0.14.1; python_version >= "2.6" and python_full_version < "3.0.0" or python_full_version >= "3.3.0"
+edam-ontology==1.25.2
 fabric3==1.14.post1
 fastapi-utils==0.2.1; python_version >= "3.6" and python_version < "4.0"
 fastapi==0.65.2; python_version >= "3.6"
 fluent-logger==0.10.0; python_version >= "3.5"
+fs==2.4.13
 funcsigs==1.0.2
 future==0.18.2; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
 galaxy-sequence-utils==1.1.5

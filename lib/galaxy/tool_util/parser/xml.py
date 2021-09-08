@@ -3,6 +3,7 @@ import logging
 import re
 import uuid
 from math import isinf
+from typing import Optional
 
 import packaging.version
 
@@ -20,6 +21,7 @@ from .interface import (
     InputSource,
     PageSource,
     PagesSource,
+    RequiredFiles,
     TestCollectionDef,
     TestCollectionOutputDef,
     ToolSource,
@@ -260,6 +262,26 @@ class XmlToolSource(ToolSource):
         if elem is None:
             elem = self.root
         return string_as_bool(elem.get(attribute, default))
+
+    def parse_required_files(self) -> Optional[RequiredFiles]:
+        required_files = self.root.find("required_files")
+        if required_files is None:
+            return None
+
+        def parse_include_exclude_list(tag_name):
+            as_list = []
+            for ref in required_files.findall(tag_name):
+                path = ref.get("path")
+                assert path is not None, f'"path" must be specified in {tag_name}'
+                path_type = ref.get("type", "literal")
+                as_list.append({"path": path, "path_type": path_type})
+            return as_list
+
+        as_dict = {}
+        as_dict["extend_default_excludes"] = self._get_attribute_as_bool("extend_default_excludes", True, elem=required_files)
+        as_dict["includes"] = parse_include_exclude_list("include")
+        as_dict["excludes"] = parse_include_exclude_list("exclude")
+        return RequiredFiles.from_dict(as_dict)
 
     def parse_requirements_and_containers(self):
         return requirements.parse_requirements_from_xml(self.root)

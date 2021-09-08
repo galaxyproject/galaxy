@@ -10,12 +10,18 @@ import hash from "object-hash";
  */
 export const SingleQueryProvider = (lookup) => {
     const promiseCache = new Map();
-    const resultCache = new Map();
 
     return {
+        props: {
+            useCache: {
+                type: Boolean,
+                default: true,
+            },
+        },
         data() {
             return {
                 result: undefined,
+                error: undefined,
             };
         },
         computed: {
@@ -23,33 +29,36 @@ export const SingleQueryProvider = (lookup) => {
                 return this.result === undefined;
             },
             cacheKey() {
-                hash(this.$attrs || {});
+                return hash(this.$attrs || {});
             },
         },
         mounted() {
-            const cachedResult = resultCache.get(this.cacheKey);
-            if (cachedResult) {
-                this.result = cachedResult;
-                return;
+            let lookupPromise;
+            if (this.useCache) {
+                lookupPromise = promiseCache.get(this.cacheKey);
+                if (!lookupPromise) {
+                    lookupPromise = lookup(this.$attrs);
+                    promiseCache.set(this.cacheKey, lookupPromise);
+                }
+            } else {
+                lookupPromise = lookup(this.$attrs);
             }
-
-            let lookupPromise = promiseCache.get(this.cacheKey);
-            if (!lookupPromise) {
-                lookupPromise = lookup(this.$attrs).catch((err) => {
+            lookupPromise.then(
+                (result) => {
+                    this.result = result;
+                },
+                (err) => {
+                    this.result = {};
+                    this.error = err;
                     this.$emit("error", err);
-                });
-                promiseCache.set(this.cacheKey, lookupPromise);
-            }
-
-            lookupPromise.then((result) => {
-                resultCache.set(this.cacheKey, result);
-                this.result = result;
-            });
+                }
+            );
         },
         render() {
             return this.$scopedSlots.default({
                 loading: this.loading,
                 result: this.result,
+                error: this.error,
             });
         },
     };

@@ -43,11 +43,13 @@ from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parser import (
     get_tool_source,
     get_tool_source_from_representation,
+    RequiredFiles,
     ToolOutputCollectionPart
 )
 from galaxy.tool_util.parser.xml import XmlPageSource
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.tool_util.toolbox import BaseGalaxyToolBox
+from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tools import expressions
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -195,6 +197,16 @@ GALAXY_LIB_TOOLS_VERSIONED = {
 BIOTOOLS_MAPPING_CONTENT = resource_string(__name__, 'biotools_mappings.tsv').decode("UTF-8")
 BIOTOOLS_MAPPING: Dict[str, str] = dict([cast(Tuple[str, str], tuple(x.split("\t"))) for x in BIOTOOLS_MAPPING_CONTENT.splitlines() if not x.startswith("#")])
 
+REQUIRE_FULL_DIRECTORY = {
+    "includes": [{"path": "**", "path_type": "glob"}],
+}
+IMPLICITLY_REQUIRED_TOOL_FILES: Dict[str, Dict] = {
+    "deseq2": {"version": packaging.version.parse("2.11.40.6"), "required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
+    # minimum example:
+    # "foobar": {"required": REQUIRE_FULL_DIRECTORY}
+    # if no version is specified, all versions without explicit RequiredFiles will be selected
+}
+
 
 class safe_update(NamedTuple):
     min_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
@@ -268,10 +280,17 @@ class ToolBox(BaseGalaxyToolBox):
         # FIXME: ./
         if tool_root_dir == './tools':
             tool_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'bundled'))
+        view_sources = StaticToolBoxViewSources(
+            view_directories=app.config.panel_views_dir,
+            view_dicts=app.config.panel_views,
+        )
+        default_panel_view = app.config.default_panel_view
         super().__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
+            view_sources=view_sources,
+            default_panel_view=default_panel_view,
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
 
@@ -760,7 +779,7 @@ class Tool(Dictifiable):
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
 
     def get_panel_section(self):
-        return self.app.toolbox.get_integrated_section_for_tool(self)
+        return self.app.toolbox.get_section_for_tool(self)
 
     def allow_user_access(self, user, attempting_access=True):
         """
@@ -813,9 +832,6 @@ class Tool(Dictifiable):
                 self.version = "1.0.0"
             else:
                 raise Exception(f"Missing tool 'version' for tool with id '{self.id}' at '{tool_source}'")
-
-        self.edam_operations = tool_source.parse_edam_operations()
-        self.edam_topics = tool_source.parse_edam_topics()
 
         # Support multi-byte tools
         self.is_multi_byte = tool_source.parse_is_multi_byte()
@@ -963,6 +979,16 @@ class Tool(Dictifiable):
         self.requirements = requirements
         self.containers = containers
 
+        required_files = tool_source.parse_required_files()
+        if required_files is None:
+            old_id = self.old_id
+            if old_id in IMPLICITLY_REQUIRED_TOOL_FILES:
+                lineage_requirement = IMPLICITLY_REQUIRED_TOOL_FILES[old_id]
+                lineage_requirement_until = lineage_requirement.get("version")
+                if lineage_requirement_until is None or self.version_object < lineage_requirement_until:
+                    required_files = RequiredFiles.from_dict(lineage_requirement["required"])
+        self.required_files = required_files
+
         self.citations = self._parse_citations(tool_source)
         xrefs = tool_source.parse_xrefs()
         has_biotools_reference = any(x["reftype"] == "bio.tools" for x in xrefs)
@@ -971,6 +997,23 @@ class Tool(Dictifiable):
             if legacy_biotools_ref is not None:
                 xrefs.append({"value": legacy_biotools_ref, "reftype": "bio.tools"})
         self.xrefs = xrefs
+
+        edam_operations = tool_source.parse_edam_operations()
+        edam_topics = tool_source.parse_edam_topics()
+        has_missing_data = len(edam_operations) == 0 or len(edam_topics) == 0
+        if has_missing_data:
+            biotools_reference = self.biotools_reference
+            if biotools_reference:
+                biotools_entry = self.app.biotools_metadata_source.get_biotools_metadata(biotools_reference)
+                if biotools_entry:
+                    edam_info = biotools_entry.edam_info
+                    if len(edam_operations) == 0:
+                        edam_operations = edam_info.edam_operations
+                    if len(edam_topics) == 0:
+                        edam_topics = edam_info.edam_topics
+
+        self.edam_operations = edam_operations
+        self.edam_topics = edam_topics
 
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes

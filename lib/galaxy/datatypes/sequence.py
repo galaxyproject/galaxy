@@ -829,34 +829,72 @@ class Fastq(BaseFastq):
 
 
 class FastqSanger(Fastq):
-    """Class representing a FASTQ sequence ( the Sanger variant )"""
+    """Class representing a FASTQ sequence (the Sanger variant)
+
+    phred scored quality values 0:50 represented by ASCII 33:83
+    """
     edam_format = "format_1932"
     file_ext = "fastqsanger"
     bases_regexp = re.compile("^[NGTAC]*$", re.IGNORECASE)
 
     @staticmethod
     def quality_check(lines):
-        """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
+        """
+        Presuming lines are lines from a fastq file,
+        return True if the qualities are compatible with sanger encoding
+        """
         for line in islice(lines, 3, None, 4):
-            if not all(_ >= '!' and _ <= 'S' for _ in line[0]):
+            if not all(q >= '!' and q <= 'S' for q in line[0]):
                 return False
         return True
 
 
 class FastqSolexa(Fastq):
-    """Class representing a FASTQ sequence ( the Solexa variant )"""
+    """Class representing a FASTQ sequence ( the Solexa variant )
+
+    solexa scored quality values -5:40 represented by ASCII 59:104
+    """
     edam_format = "format_1933"
     file_ext = "fastqsolexa"
 
+    @staticmethod
+    def quality_check(lines):
+        """
+        Presuming lines are lines from a fastq file,
+        return True if the qualities are compatible with sanger encoding
+        """
+        for line in islice(lines, 3, None, 4):
+            if not all(q >= ';' and q <= 'h' for q in line[0]):
+                return False
+        return True
+
 
 class FastqIllumina(Fastq):
-    """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )"""
+    """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )
+
+    phred scored quality values 0:40 represented by ASCII 64:104
+    """
     edam_format = "format_1931"
     file_ext = "fastqillumina"
 
+    @staticmethod
+    def quality_check(lines):
+        """
+        Presuming lines are lines from a fastq file,
+        return True if the qualities are compatible with sanger encoding
+        """
+        for line in islice(lines, 3, None, 4):
+            if not all(q >= '@' and q <= 'h' for q in line[0]):
+                return False
+        return True
+
 
 class FastqCSSanger(Fastq):
-    """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )"""
+    """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )
+
+    sequence in in color space
+    phred scored quality values 0:93 represented by ASCII 33:126
+    """
     file_ext = "fastqcssanger"
     bases_regexp = re.compile(r"^[NGTAC][0123\.]*$", re.IGNORECASE)
 

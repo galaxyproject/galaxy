@@ -81,7 +81,6 @@ function _makeSection(node, output, datatypes, onOutputLabel, onOutputDatatype) 
     const activeOutput = node.activeOutputs.get(output.name);
     const inputTitle = output.label || output.name;
     const inputConfig = {
-        skipOnClone: true,
         title: `Configure Output: '${inputTitle}'`,
         type: "section",
         flat: true,
@@ -207,7 +206,6 @@ export default function makeSection(node, datatypes, onOutputLabel, onOutputData
             payload: {
                 host: window.location.host,
             },
-            skipOnClone: true,
         });
         inputs.push({
             name: `pja__${outputFirst.name}__DeleteIntermediatesAction`,
@@ -216,7 +214,6 @@ export default function makeSection(node, datatypes, onOutputLabel, onOutputData
             value: String(Boolean(postJobActions[`DeleteIntermediatesAction${outputFirst.name}`])),
             ignore: "false",
             help: "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",
-            skipOnClone: true,
         });
         for (const output of node.outputs) {
             inputs.push(_makeSection(node, output, datatypes, onOutputLabel, onOutputDatatype));

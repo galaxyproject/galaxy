@@ -1,4 +1,4 @@
-import { concat, race, timer, merge, partition, Observable, BehaviorSubject, Subject } from "rxjs";
+import { combineLatest, concat, race, timer, merge, partition, Observable, BehaviorSubject, Subject } from "rxjs";
 import {
     debounceTime,
     distinctUntilChanged,
@@ -34,10 +34,10 @@ import { defaultPayload } from "../ContentProvider";
  */
 // prettier-ignore
 export const contentPayload = (cfg = {}) => {
-    const { 
-        parent: history, 
+    const {
+        parent: history,
         filters = new SearchParams(),
-        pageSize = SearchParams.pageSize, 
+        pageSize = SearchParams.pageSize,
         debouncePeriod = 250,
         loadingTimeout = 2000,
         disablePoll = false,
@@ -45,6 +45,7 @@ export const contentPayload = (cfg = {}) => {
         // optional feedback indicators
         loadingEvents$ = new Subject(),
         resetPos$ = new Subject(),
+        chunkSize = pageSize
     } = cfg;
 
     // These running totals are shared between instances of content payload because a lot of the
@@ -64,12 +65,15 @@ export const contentPayload = (cfg = {}) => {
             pluck('key')
         );
 
-        // only have cursor height, need to make a guess
-        const estimatedHid$ = noKey$.pipe(
+        const cursor$ = noKey$.pipe(
             pluck('cursor'),
-            withLatestFrom(cursorToHid$),
+        );
+
+        // only have cursor height, need to make a guess
+        const estimatedHid$ = combineLatest(cursor$, cursorToHid$).pipe(
             map((inputs) => estimateHid(...inputs)),
             map(hid => Math.round(hid)),
+            distinctUntilChanged(),
             show(debug, hid => console.log("estimatedHid", hid, history)),
         );
 
@@ -78,14 +82,15 @@ export const contentPayload = (cfg = {}) => {
             filter(hid => !isNaN(hid)),
             share(),
         );
-        
+
         // #endregion
 
         // #region server loading
 
         const serverHid$ = hid$.pipe(
-            chunk(pageSize, true),
+            chunk({ chunkSize, debug, label: "serverHid" }),
             distinctUntilChanged(),
+            debounceTime(debouncePeriod),
             show(debug, hid => console.log("serverHid", hid)),
             share(),
         );
@@ -109,7 +114,7 @@ export const contentPayload = (cfg = {}) => {
             mergeAll(),
             debounceTime(100),
         );
-        
+
         const cacheMonitor$ = cacheHid$.pipe(
             watchHistoryContents({ history, filters, pageSize, debouncePeriod, debug }),
             show(debug, (result) => console.log("cacheMonitor.contents (hid)", result.contents.map(o => o.hid))),
@@ -133,7 +138,7 @@ export const contentPayload = (cfg = {}) => {
         // #endregion
 
         // #region Reposition View to accomodate recent updates
-        
+
         // When new updates to the history come in, we should shift the scrollPos so that we can see
         // them. Without some kind of explicit move, the system will think they're just random
         // updates that are happening outside the region of interest, and there would be no
@@ -147,18 +152,13 @@ export const contentPayload = (cfg = {}) => {
             map(([[lastResponse, response], pos, hid]) => {
                 const updatesAtTop = response.maxHid > lastResponse.maxHid;
 
-                const scrollerInDefault = (pos.cursor == 0 && pos.key == null);
+                const scrollerExactlyAtTop = pos.cursor === 0 || pos.key === lastResponse.maxHid;
                 const fudge = 2;
-                const scrollNearLastTop = Math.abs(hid - lastResponse.maxContentHid) < fudge;
-                const scrollerAtTop = scrollerInDefault || scrollNearLastTop;
-                
-                // console.group("should i reposition?");
-                // console.log("updatesAtTop", updatesAtTop);
-                // console.log("scrollerAtTop", scrollerAtTop);
-                // console.groupEnd();
+                const scrollNearLastTop = pos.key !== null ? Math.abs(pos.key - lastResponse.maxContentHid) < fudge : false;
+                const scrollerAtTop = scrollerExactlyAtTop || scrollNearLastTop;
 
                 if (updatesAtTop && scrollerAtTop) {
-                    return new ScrollPos({ cursor: 0, key: response.maxHid })
+                    return ScrollPos.create({ cursor: 0, key: response.maxContentHid });
                 }
                 return null;
             }),
@@ -190,7 +190,7 @@ export const contentPayload = (cfg = {}) => {
             const sub = payload$.subscribe(obs);
 
             // Tie stat feedback subscriptions to main payload sub
-            // Make sure not to combineLatest these subject accumulators or we'll 
+            // Make sure not to combineLatest these subject accumulators or we'll
             // end up with an infinite loop
             sub.add(newCursorToHid$.subscribe(cursorToHid$));
             sub.add(newHidToTopRows$.subscribe(hidToTopRows$));

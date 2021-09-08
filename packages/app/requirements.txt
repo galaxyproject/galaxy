@@ -9,7 +9,7 @@ celery
 kombu
 Beaker
 pykwalify
-pulsar-galaxy-lib
+pulsar-galaxy-lib>=0.14.7
 gxformat2
 Mako
 sqlitedict
@@ -18,3 +18,4 @@ Markdown
 refgenconf>=0.7.0,<0.10.0 # https://github.com/galaxyproject/galaxy/issues/11601
 Fabric3
 lagom
+fs

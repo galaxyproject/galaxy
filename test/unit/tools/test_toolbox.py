@@ -371,6 +371,10 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         assert len(section.elems) == 1
         assert next(iter(section.elems.values())).id == "github.com/galaxyproject/example/test_tool/0.2"
 
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="0.1")
+        section_pair = self.toolbox.get_section_for_tool(test_tool)
+        assert section_pair == ("tid", "TID")
+
     def test_group_tools_out_of_section(self):
         self._init_tool()
         self._setup_two_versions_in_config(section=False)

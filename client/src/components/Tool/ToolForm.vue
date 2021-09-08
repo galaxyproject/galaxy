@@ -41,9 +41,8 @@
                         <template v-slot:body>
                             <FormDisplay
                                 :id="formConfig.id"
-                                :inputs="inputs"
+                                :inputs="formConfig.inputs"
                                 :validation-scroll-to="validationScrollTo"
-                                :form-config="formConfig"
                                 @onChange="onChange"
                                 @onValidation="onValidation"
                             />
@@ -89,7 +88,6 @@
 </template>
 
 <script>
-import Scroller from "vue-scrollto";
 import { getGalaxyInstance } from "app";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import { allowCachedJobs } from "./utilities";
@@ -183,9 +181,6 @@ export default {
         errorContentPretty() {
             return JSON.stringify(this.errorContent, null, 4);
         },
-        inputs() {
-            return this.formConfig.inputs;
-        },
         remapTitle() {
             if (this.remapAllowed === "job_produced_collection_elements") {
                 return "Replace elements in collection?";
@@ -211,9 +206,11 @@ export default {
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
         },
-        onChange(newData) {
+        onChange(newData, refreshRequest) {
             this.formData = newData;
-            this.onUpdate();
+            if (refreshRequest) {
+                this.onUpdate();
+            }
         },
         onUpdate() {
             updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData).then((data) => {
@@ -287,7 +284,7 @@ export default {
                     if ([true, "true"].includes(config.enable_tool_recommendations)) {
                         this.showRecommendation = true;
                     }
-                    Scroller.scrollTo("body");
+                    document.querySelector(".center-panel").scrollTop = 0;
                 },
                 (e) => {
                     this.showExecuting = false;

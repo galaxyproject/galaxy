@@ -9,8 +9,17 @@
                 v-slot="{ isExpanded, setExpanded }"
             >
                 <Layout class="dataset-collection-panel">
-                    <template v-slot:nav>
+                    <template v-slot:globalNav>
                         <TopNav :history="history" :selected-collections="selectedCollections" v-on="$listeners" />
+                    </template>
+
+                    <template v-slot:localNav>
+                        <IconButton
+                            icon="download"
+                            title="Download Collection"
+                            :href="downloadCollectionUrl"
+                            download
+                        />
                     </template>
 
                     <template v-slot:details>
@@ -23,15 +32,20 @@
                             :class="{ loadingBackground: loading }"
                             v-bind="payload"
                             @scroll="setScrollPos"
+                            :debug="false"
                         >
-                            <template v-slot="{ item, index }">
+                            <template v-slot="{ item, index, rowKey }">
                                 <CollectionContentItem
                                     :item="item"
                                     :index="index"
+                                    :row-key="rowKey"
                                     :expanded="isExpanded(item)"
-                                    :writable="writable"
+                                    :writable="false"
+                                    :selectable="false"
                                     @update:expanded="setExpanded(item, $event)"
                                     @viewCollection="$emit('viewCollection', item)"
+                                    :data-index="index"
+                                    :data-row-key="rowKey"
                                 />
                             </template>
                         </Scroller>
@@ -55,6 +69,7 @@ import Scroller from "../Scroller";
 import { CollectionContentItem } from "../ContentItem";
 
 import { reportPayload } from "../providers/ContentProvider/helpers";
+import IconButton from "components/IconButton";
 
 export default {
     filters: {
@@ -69,6 +84,7 @@ export default {
         Scroller,
         CollectionContentItem,
         ExpandedItems,
+        IconButton,
     },
     props: {
         history: { type: History, required: true },
@@ -86,14 +102,22 @@ export default {
         writable() {
             return this.isRoot;
         },
+        rootCollection() {
+            return this.selectedCollections[0];
+        },
+        downloadCollectionUrl() {
+            let url = "";
+            if (this.rootCollection) {
+                url = `${this.rootCollection.url}/download`;
+            }
+            return url;
+        },
     },
     methods: {
         // change the data of the root collection, anything past the root
         // collection is part of the dataset collection, which i believe is supposed to
         // be immutable, so only edit name, tags, blah of top-level selected collection,
-
         async updateDsc(collection, fields) {
-            // console.log("updateDsc", this.writable, collection, fields);
             if (this.writable) {
                 const ajaxResult = await updateContentFields(collection, fields);
                 await cacheContent({ ...collection, ...ajaxResult });

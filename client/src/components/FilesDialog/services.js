@@ -18,12 +18,11 @@ export class Services {
         }
     }
 
-    async list(uri) {
-        const url = `${this.root}api/remote_files?target=${uri}`;
+    async list(uri, isRecursive = false) {
+        const url = `${this.root}api/remote_files?target=${uri}${isRecursive ? "&recursive=true" : ""}`;
         try {
             const response = await axios.get(url);
-            const fileSources = response.data;
-            return fileSources;
+            return response.data;
         } catch (e) {
             rethrowSimple(e);
         }

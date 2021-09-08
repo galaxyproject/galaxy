@@ -21,6 +21,7 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy import model
+from galaxy.exceptions import ObjectNotFound
 from galaxy.jobs import (
     JobDestination,
     JobWrapper,
@@ -1087,6 +1088,10 @@ class DefaultJobDispatcher:
         except KeyError:
             log.error(f'recover(): ({job_wrapper.job_id}) Invalid job runner: {runner_name}')
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
+        except ObjectNotFound:
+            msg = "Could not recover job working directory after Galaxy restart"
+            log.exception(f"recover(): ({job_wrapper.job_id}) {msg}")
+            job_wrapper.fail(msg)
 
     def shutdown(self):
         failures = []

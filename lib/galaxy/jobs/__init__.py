@@ -2043,10 +2043,14 @@ class JobWrapper(HasResourceParameters):
     @property
     def tmp_dir_creation_statement(self):
         tmp_dir = self.get_destination_configuration("tmp_dir", None)
-        if not tmp_dir or tmp_dir.lower() == "true":
-            working_directory = self.working_directory
-            return '''$([ ! -e '{0}/tmp' ] || mv '{0}/tmp' '{0}'/tmp.$(date +%Y%m%d-%H%M%S) ; mkdir '{0}/tmp'; echo '{0}/tmp')'''.format(working_directory)
-        else:
+        try:
+            if not tmp_dir or util.asbool(tmp_dir):
+                working_directory = self.working_directory
+                return '''$([ ! -e '{0}/tmp' ] || mv '{0}/tmp' '{0}'/tmp.$(date +%Y%m%d-%H%M%S) ; mkdir '{0}/tmp'; echo '{0}/tmp')'''.format(working_directory)
+            else:
+                return tmp_dir
+        except ValueError:
+            # Catch case where tmp_dir is a complex expression and not a boolean value
             return tmp_dir
 
     def home_directory(self):

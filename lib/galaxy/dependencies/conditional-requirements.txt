@@ -33,9 +33,9 @@ kamaki
 watchdog
 
 # Error reporters optional modules
-python-gitlab
+python-gitlab>=2.10.0
 pygithub
 influxdb
 
 # Deep learning packages for tool recommendation
-tensorflow==2.5.0
+tensorflow==2.5.1

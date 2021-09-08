@@ -10,7 +10,7 @@
         <ExpandedItems
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
-            v-slot="{ isExpanded, setExpanded }"
+            v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }"
         >
             <SelectedItems
                 :scope-key="history.id"
@@ -26,16 +26,20 @@
                 }"
             >
                 <Layout>
-                    <template v-slot:nav>
-                        <slot name="nav"></slot>
+                    <template v-slot:globalNav>
+                        <slot name="globalNav" :history="history"></slot>
+                    </template>
+
+                    <template v-slot:localNav>
+                        <HistoryMenu :history="history" v-on="$listeners" />
                     </template>
 
                     <template v-slot:details>
-                        <HistoryDetails class="history-details" :history="history" v-on="$listeners" />
+                        <HistoryDetails :history="history" v-on="$listeners" />
                     </template>
 
                     <template v-slot:messages>
-                        <HistoryMessages class="history-messages m-2" :history="history" />
+                        <HistoryMessages class="m-2" :history="history" />
                     </template>
 
                     <template v-slot:listcontrols>
@@ -51,6 +55,8 @@
                             @resetSelection="resetSelection"
                             @selectAllContent="selectItems(payload.contents)"
                             @manualReload="manualReload"
+                            :expanded-count="expandedCount"
+                            @collapseAllContent="collapseAll"
                         />
                     </template>
 
@@ -65,16 +71,20 @@
                             :debug="false"
                             @scroll="setScrollPos"
                         >
-                            <template v-slot="{ item, index }">
+                            <template v-slot="{ item, index, rowKey }">
                                 <HistoryContentItem
                                     :item="item"
                                     :index="index"
+                                    :row-key="rowKey"
                                     :show-selection="showSelection"
                                     :expanded="isExpanded(item)"
                                     @update:expanded="setExpanded(item, $event)"
                                     :selected="isSelected(item)"
                                     @update:selected="setSelected(item, $event)"
                                     @viewCollection="$emit('viewCollection', item)"
+                                    :data-hid="item.hid"
+                                    :data-index="index"
+                                    :data-row-key="rowKey"
                                 />
                             </template>
                         </Scroller>
@@ -101,6 +111,7 @@ import ToolHelpModal from "./ToolHelpModal";
 import Scroller from "./Scroller";
 import { HistoryContentItem } from "./ContentItem";
 import { reportPayload } from "./providers/ContentProvider/helpers";
+import HistoryMenu from "./HistoryMenu";
 
 export default {
     filters: {
@@ -118,6 +129,7 @@ export default {
         HistoryContentItem,
         ExpandedItems,
         SelectedItems,
+        HistoryMenu,
     },
     props: {
         history: { type: History, required: true },
