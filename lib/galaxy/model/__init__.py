@@ -989,38 +989,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__(self):
-        self.session_id = None
-        self.user_id = None
-        self.tool_id = None
-        self.tool_version = None
-        self.copied_from_job_id = None
-        self.command_line = None
         self.dependencies = []
-        self.param_filename = None
-        self.parameters = []
-        self.input_datasets = []
-        self.output_datasets = []
-        self.input_dataset_collections = []
-        self.input_dataset_collection_elements = []
-        self.output_dataset_collection_instances = []
-        self.output_dataset_collections = []
-        self.input_library_datasets = []
-        self.output_library_datasets = []
         self.state = Job.states.NEW
-        self.info = None
-        self.job_runner_name = None
-        self.job_runner_external_id = None
-        self.destination_id = None
-        self.destination_params = None
-        self.post_job_actions = []
-        self.state_history = []
         self.imported = False
-        self.handler = None
-        self.create_time = None
-        self.exit_code = None
-        self.history_id = None
-        self.job_messages = None
-        self.update_time = None
         self._init_metrics()
         self.state_history.append(JobStateHistory(self))
 
