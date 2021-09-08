@@ -16,6 +16,7 @@ from fastapi import (
     Depends,
     Path,
     Query,
+    Request,
     Response,
     status,
 )
@@ -207,14 +208,24 @@ class FastAPIHistories:
 
     @router.post(
         '/api/histories',
-        summary='Returns the history with the given ID.',
+        summary='Creates a new history.',
     )
     async def create(
         self,
+        request: Request,
         trans: ProvidesHistoryContext = DependsOnTrans,
         payload: CreateHistoryPayload = Depends(CreateHistoryFormData.as_form),
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> Union[JobImportHistoryResponse, AnyHistoryView]:
+        """The new history can also be copied form a existing history or imported from an archive or URL."""
+        # This action needs to work both with json and x-www-form-urlencoded payloads.
+        # The way to support different content types on the same path operation is reading
+        # the request directly and parse it depending on the content type.
+        # We will assume x-www-form-urlencoded by default to deal with possible file uploads.
+        # See https://github.com/tiangolo/fastapi/issues/990#issuecomment-639615888
+        if "application/json" in request.headers.get("content-type", ""):
+            body = await request.json()
+            payload = CreateHistoryPayload.parse_obj(body)
         return self.service.create(trans, payload, serialization_params)
 
     @router.delete(

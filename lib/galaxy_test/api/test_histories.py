@@ -43,6 +43,14 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         indexed_history = [h for h in index_response if h["id"] == created_id][0]
         self.assertEqual(indexed_history["name"], "TestHistory1")
 
+    def test_create_history_json(self):
+        name = "TestHistoryJson"
+        post_data = dict(name=name)
+        create_response = self._post("histories", data=post_data, json=True).json()
+        self._assert_has_keys(create_response, "name", "id")
+        self.assertEqual(create_response["name"], name)
+        return create_response
+
     def test_show_history(self):
         history_id = self._create_history("TestHistoryForShow")["id"]
         show_response = self._show(history_id)
