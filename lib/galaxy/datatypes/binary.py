@@ -331,7 +331,7 @@ class GenericAsn1Binary(Binary):
     edam_data = "data_0849"
 
 
-class _BamOrSam():
+class _BamOrSam:
     """
     Helper class to set the metadata common to sam and bam files
     """
