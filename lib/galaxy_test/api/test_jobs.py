@@ -6,6 +6,7 @@ from operator import itemgetter
 
 import requests
 
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
 from galaxy_test.base.populators import (
@@ -337,15 +338,16 @@ steps:
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error_anon(self):
         # Need to get a cookie and use that for anonymous tool runs
-        cookies = requests.get(self.url).cookies
+        cookies = requests.get(self.url, timeout=DEFAULT_SOCKET_TIMEOUT).cookies
         payload = json.dumps({"tool_id": "detect_errors_aggressive",
                               "inputs": {"error_bool": "true"}})
-        run_response = requests.post(f"{self.galaxy_interactor.api_url}/tools", data=payload, cookies=cookies).json()
+        run_response = requests.post(f"{self.galaxy_interactor.api_url}/tools", data=payload, cookies=cookies, timeout=DEFAULT_SOCKET_TIMEOUT).json()
         job_id = run_response['jobs'][0]["id"]
         dataset_id = run_response['outputs'][0]['id']
         response = requests.post(f'{self.galaxy_interactor.api_url}/jobs/{job_id}/error',
                                  data={'email': 'someone@domain.com', 'dataset_id': dataset_id},
-                                 cookies=cookies)
+                                 cookies=cookies,
+                                 timeout=DEFAULT_SOCKET_TIMEOUT)
         assert response.status_code == 200, response.text
 
     @uses_test_history(require_new=True)
@@ -523,7 +525,7 @@ steps:
         assert dataset_details['state'] == 'paused'
         # Undelete input dataset
         undelete_response = self._put(f"histories/{history_id}/contents/{hda1['id']}",
-                                      data=json.dumps({'deleted': False}))
+                                      data={'deleted': False}, json=True)
         self._assert_status_code_is(undelete_response, 200)
         resume_response = self._put(f"jobs/{job_id}/resume")
         self._assert_status_code_is(resume_response, 200)
@@ -574,7 +576,7 @@ steps:
         self._job_search(tool_id='identifier_single', history_id=history_id, inputs=inputs)
         dataset_details = self._get(f"histories/{history_id}/contents/{dataset_id}").json()
         dataset_details['name'] = 'Renamed Test Dataset'
-        dataset_update_response = self._put(f"histories/{history_id}/contents/{dataset_id}", data=dict(name='Renamed Test Dataset'))
+        dataset_update_response = self._put(f"histories/{history_id}/contents/{dataset_id}", data=dict(name='Renamed Test Dataset'), json=True)
         self._assert_status_code_is(dataset_update_response, 200)
         assert dataset_update_response.json()['name'] == 'Renamed Test Dataset'
         search_payload = self._search_payload(history_id=history_id, tool_id='identifier_single', inputs=inputs)

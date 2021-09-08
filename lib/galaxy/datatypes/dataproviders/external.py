@@ -12,6 +12,7 @@ from urllib.parse import (
 )
 from urllib.request import urlopen
 
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from . import (
     base,
     line
@@ -119,9 +120,9 @@ class URLDataProvider(base.DataProvider):
 
         if method == 'GET':
             self.url += f'?{encoded_data}'
-            opened = urlopen(url)
+            opened = urlopen(url, timeout=DEFAULT_SOCKET_TIMEOUT)
         elif method == 'POST':
-            opened = urlopen(url, encoded_data)
+            opened = urlopen(url, encoded_data, timeout=DEFAULT_SOCKET_TIMEOUT)
         else:
             raise ValueError(f'Not a valid method: {method}')
 

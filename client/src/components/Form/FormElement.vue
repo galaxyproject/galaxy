@@ -6,16 +6,19 @@
         </div>
         <div class="ui-form-title">{{ title }}</div>
         <div class="ui-form-field">
-            <FormInput :id="id" :value="value" :area="area" @onChange="onChange" />
+            <FormInput v-if="type == 'text'" :id="id" :area="area" v-model="currentValue" />
+            <FormBoolean v-else-if="type == 'boolean'" :id="id" v-model="currentValue" />
             <span class="ui-form-info form-text text-muted mt-2">{{ help }}</span>
         </div>
     </div>
 </template>
 <script>
-import FormInput from "./FormInput";
+import FormBoolean from "./Elements/FormBoolean";
+import FormInput from "./Elements/FormInput";
 
 export default {
     components: {
+        FormBoolean,
         FormInput,
     },
     props: {
@@ -24,16 +27,16 @@ export default {
             required: true,
         },
         value: {
-            type: String,
-            default: "",
+            type: [String, Boolean],
+            default: null,
         },
         title: {
             type: String,
-            default: "",
+            default: null,
         },
         help: {
             type: String,
-            default: "",
+            default: null,
         },
         area: {
             type: Boolean,
@@ -43,8 +46,20 @@ export default {
             type: String,
             default: null,
         },
+        type: {
+            type: String,
+            default: "text",
+        },
     },
     computed: {
+        currentValue: {
+            get() {
+                return this.value;
+            },
+            set(val) {
+                this.$emit("input", val);
+            },
+        },
         hasError() {
             return !!this.error;
         },
@@ -54,11 +69,6 @@ export default {
             } else {
                 return "ui-form-element section-row";
             }
-        },
-    },
-    methods: {
-        onChange(value) {
-            this.$emit("onChange", value);
         },
     },
 };

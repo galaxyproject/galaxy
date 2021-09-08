@@ -19,8 +19,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="interval" value="2.interval"/>
-            <output name="output1" format="bgzip" value="2.bgzip"/>
+            <param name="input1" ftype="interval" value="2.interval"/>
+            <output name="output1" ftype="bgzip" value="2.bgzip"/>
         </test>
     </tests>
     <help>

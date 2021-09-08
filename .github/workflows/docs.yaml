@@ -1,5 +1,8 @@
 name: Build docs
 on: [push, pull_request]
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest

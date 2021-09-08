@@ -83,7 +83,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         history_manager = trans.app.history_manager
         workflow_manager = trans.app.workflow_manager
         job_manager = JobManager(trans.app)
-        collection_manager = trans.app.dataset_collections_service
+        collection_manager = trans.app.dataset_collection_manager
 
         def _check_object(object_id, line):
             if object_id is None:
@@ -270,10 +270,11 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         self.ensure_rendering_data_for("history_datasets", obj)[key] = val or default_val
 
     def handle_dataset_display(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "name", hda.name, "")
+        self.handle_dataset_name(line, hda)
+        self.handle_dataset_type(line, hda)
 
     def handle_dataset_embedded(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "name", hda.name, "")
+        self.handle_dataset_name(line, hda)
 
     def handle_dataset_peek(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "peek", hda.peek, "*No Dataset Peek Available*")
@@ -685,8 +686,8 @@ history_dataset_collection_display(input={})
             return (f"workflow_display(workflow_id={invocation.workflow.stored_workflow.id})\n", False)
         if container == "history_link":
             return (f"history_link(history_id={invocation.history.id})\n", False)
-        if container == "invocation_date":
-            return (f"invocation_date(invocation_id={invocation.id})\n", False)
+        if container == "invocation_time":
+            return (f"invocation_time(invocation_id={invocation.id})\n", False)
         ref_object_type = None
         output_match = re.search(OUTPUT_LABEL_PATTERN, line)
         input_match = re.search(INPUT_LABEL_PATTERN, line)

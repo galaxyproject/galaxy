@@ -1,5 +1,8 @@
 name: Python linting
 on: [push, pull_request]
+concurrency:
+  group: py-lint-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: Test

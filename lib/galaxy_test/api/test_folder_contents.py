@@ -210,7 +210,7 @@ class FolderContentsApiTestCase(ApiTestCase):
             "name": name,
             "description": f"The description of {name}",
         }
-        create_response = self._post(f"folders/{folder_id}", data=data)
+        create_response = self._post(f"folders/{folder_id}", data=data, json=True)
         self._assert_status_code_is(create_response, 200)
         folder = create_response.json()
         return folder["id"]
@@ -224,7 +224,7 @@ class FolderContentsApiTestCase(ApiTestCase):
         return ldda["id"]
 
     def _create_content_in_folder_with_payload(self, folder_id: str, payload) -> Any:
-        create_response = self._post(f"folders/{folder_id}/contents", data=payload)
+        create_response = self._post(f"folders/{folder_id}/contents", data=payload, json=True)
         self._assert_status_code_is(create_response, 200)
         return create_response.json()
 

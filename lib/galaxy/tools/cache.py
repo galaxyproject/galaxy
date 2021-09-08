@@ -13,11 +13,11 @@ from sqlalchemy.orm import (
     defer,
     joinedload,
 )
+from sqlalchemy.orm.session import sessionmaker
 from sqlitedict import SqliteDict
 
 from galaxy.model.tool_shed_install import ToolShedRepository
-from galaxy.structured_app import MinimalManagerApp
-from galaxy.tools.toolbox.base import ToolConfRepository
+from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 
@@ -286,8 +286,8 @@ class ToolShedRepositoryCache:
     repositories: List[ToolShedRepository]
     repos_by_tuple: Dict[Tuple[str, str, str], List[ToolConfRepository]]
 
-    def __init__(self, app: MinimalManagerApp):
-        self.app = app
+    def __init__(self, session: sessionmaker):
+        self.session = session()
         # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
         self.local_repositories = []
         # Repositories loaded from database
@@ -300,17 +300,13 @@ class ToolShedRepositoryCache:
         self.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
     def rebuild(self):
-        try:
-            session = self.app.install_model._SessionLocal()
-            self.repositories = session.query(ToolShedRepository).options(
-                defer(ToolShedRepository.metadata), joinedload('tool_dependencies')
-            ).all()
-            repos_by_tuple = defaultdict(list)
-            for repository in self.repositories + self.local_repositories:
-                repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
-            self.repos_by_tuple = repos_by_tuple
-        finally:
-            session.close()
+        self.repositories = self.session.query(ToolShedRepository).options(
+            defer(ToolShedRepository.metadata), joinedload('tool_dependencies')
+        ).all()
+        repos_by_tuple = defaultdict(list)
+        for repository in self.repositories + self.local_repositories:
+            repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
+        self.repos_by_tuple = repos_by_tuple
 
     def get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
         if repository_id:
@@ -327,3 +323,6 @@ class ToolShedRepositoryCache:
                 continue
             return repo
         return None
+
+    def shutdown(self) -> None:
+        self.session.close()

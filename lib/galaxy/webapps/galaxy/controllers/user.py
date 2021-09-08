@@ -66,7 +66,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 # only create a group if not existing yet
                 try:
                     group = self.sa_session.query(trans.app.model.Group).filter(
-                        trans.app.model.Group.table.c.name == role_name).first()
+                        trans.app.model.Group.name == role_name).first()
                 except NoResultFound:
                     group = self.model.Group(name=role_name)
                     self.sa_session.add(group)

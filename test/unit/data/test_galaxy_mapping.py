@@ -1,7 +1,9 @@
 import collections
 import os
+import random
 import unittest
 import uuid
+from tempfile import NamedTemporaryFile
 
 import pytest
 from sqlalchemy import inspect
@@ -10,6 +12,7 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
 from galaxy.model.database_utils import create_database
+from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.security import GalaxyRBACAgent
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -127,52 +130,50 @@ class MappingTests(BaseModelTestCase):
     def test_ratings(self):
         model = self.model
 
-        u = model.User(email="rater@example.com", password="password")
+        user_email = "rater@example.com"
+        u = model.User(email=user_email, password="password")
         self.persist(u)
 
-        def persist_and_check_rating(rating_class, **kwds):
-            rating_association = rating_class()
-            rating_association.rating = 5
-            rating_association.user = u
-            for key, value in kwds.items():
-                setattr(rating_association, key, value)
+        def persist_and_check_rating(rating_class, item):
+            rating = 5
+            rating_association = rating_class(u, item, rating)
             self.persist(rating_association)
             self.expunge()
-            stored_annotation = self.query(rating_class).all()[0]
-            assert stored_annotation.rating == 5
-            assert stored_annotation.user.email == "rater@example.com"
+            stored_rating = self.query(rating_class).all()[0]
+            assert stored_rating.rating == rating
+            assert stored_rating.user.email == user_email
 
         sw = model.StoredWorkflow()
         sw.user = u
         self.persist(sw)
-        persist_and_check_rating(model.StoredWorkflowRatingAssociation, stored_workflow=sw)
+        persist_and_check_rating(model.StoredWorkflowRatingAssociation, sw)
 
         h = model.History(name="History for Rating", user=u)
         self.persist(h)
-        persist_and_check_rating(model.HistoryRatingAssociation, history=h)
+        persist_and_check_rating(model.HistoryRatingAssociation, h)
 
         d1 = model.HistoryDatasetAssociation(extension="txt", history=h, create_dataset=True, sa_session=model.session)
         self.persist(d1)
-        persist_and_check_rating(model.HistoryDatasetAssociationRatingAssociation, hda=d1)
+        persist_and_check_rating(model.HistoryDatasetAssociationRatingAssociation, d1)
 
         page = model.Page()
         page.user = u
         self.persist(page)
-        persist_and_check_rating(model.PageRatingAssociation, page=page)
+        persist_and_check_rating(model.PageRatingAssociation, page)
 
         visualization = model.Visualization()
         visualization.user = u
         self.persist(visualization)
-        persist_and_check_rating(model.VisualizationRatingAssociation, visualization=visualization)
+        persist_and_check_rating(model.VisualizationRatingAssociation, visualization)
 
         dataset_collection = model.DatasetCollection(collection_type="paired")
         history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=dataset_collection)
         self.persist(history_dataset_collection)
-        persist_and_check_rating(model.HistoryDatasetCollectionRatingAssociation, history_dataset_collection=history_dataset_collection)
+        persist_and_check_rating(model.HistoryDatasetCollectionRatingAssociation, history_dataset_collection)
 
         library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
         self.persist(library_dataset_collection)
-        persist_and_check_rating(model.LibraryDatasetCollectionRatingAssociation, library_dataset_collection=library_dataset_collection)
+        persist_and_check_rating(model.LibraryDatasetCollectionRatingAssociation, library_dataset_collection)
 
     def test_display_name(self):
 
@@ -252,7 +253,7 @@ class MappingTests(BaseModelTestCase):
 
         sw = model.StoredWorkflow()
         sw.user = u
-        tag_and_test(sw, model.StoredWorkflowTagAssociation, "tagged_workflows")
+        tag_and_test(sw, model.StoredWorkflowTagAssociation, "tagged_stored_workflows")
 
         h = model.History(name="History for Tagging", user=u)
         tag_and_test(h, model.HistoryTagAssociation, "tagged_histories")
@@ -274,6 +275,55 @@ class MappingTests(BaseModelTestCase):
 
         library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
         tag_and_test(library_dataset_collection, model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections")
+
+    def test_collection_get_interface(self):
+        model = self.model
+        u = model.User(email="mary@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        d1 = model.HistoryDatasetAssociation(extension="txt", history=h1, create_dataset=True, sa_session=model.session)
+        c1 = model.DatasetCollection(collection_type="list")
+        elements = 100
+        dces = [model.DatasetCollectionElement(collection=c1, element=d1, element_identifier=f"{i}", element_index=i) for i in range(elements)]
+        self.persist(u, h1, d1, c1, *dces, flush=False, expunge=False)
+        model.session.flush()
+        for i in range(elements):
+            assert c1[i] == dces[i]
+
+    def test_dataset_instance_order(self):
+        model = self.model
+        u = model.User(email="mary@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        elements = []
+        list_pair = model.DatasetCollection(collection_type="list:paired")
+        for i in range(20):
+            pair = model.DatasetCollection(collection_type="pair")
+            forward = model.HistoryDatasetAssociation(extension="txt", history=h1, name=f"forward_{i}", create_dataset=True, sa_session=model.session)
+            reverse = model.HistoryDatasetAssociation(extension="bam", history=h1, name=f"reverse_{i}", create_dataset=True, sa_session=model.session)
+            dce1 = model.DatasetCollectionElement(collection=pair, element=forward, element_identifier=f"forward_{i}", element_index=1)
+            dce2 = model.DatasetCollectionElement(collection=pair, element=reverse, element_identifier=f"reverse_{i}", element_index=2)
+            to_persist = [(forward, reverse), (dce1, dce2)]
+            self.persist(pair)
+            for item in to_persist:
+                if i % 2:
+                    self.persist(item[0])
+                    self.persist(item[1])
+                else:
+                    self.persist(item[1])
+                    self.persist(item[0])
+            elements.append(model.DatasetCollectionElement(collection=list_pair, element=pair, element_index=i, element_identifier=str(i)))
+        self.persist(list_pair)
+        random.shuffle(elements)
+        for item in elements:
+            self.persist(item)
+        forward = []
+        reverse = []
+        for i, dataset_instance in enumerate(list_pair.dataset_instances):
+            if i % 2:
+                reverse.append(dataset_instance)
+            else:
+                forward.append(dataset_instance)
+        assert all(d.name == f"forward_{i}" for i, d in enumerate(forward))
+        assert all(d.name == f"reverse_{i}" for i, d in enumerate(reverse))
 
     def test_collections_in_histories(self):
         model = self.model
@@ -324,11 +374,20 @@ class MappingTests(BaseModelTestCase):
         u = model.User(email="mary2@example.com", password="password")
         h1 = model.History(name="History 1", user=u)
         d1 = model.HistoryDatasetAssociation(extension="bam", history=h1, create_dataset=True, sa_session=model.session)
+        index = NamedTemporaryFile("w")
+        index.write("cool bam index")
+        index2 = NamedTemporaryFile("w")
+        index2.write("cool bam index 2")
+        metadata_dict = {"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name}), "bam_csi_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index2.name})}
+        d1.metadata.from_JSON_dict(json_dict=metadata_dict)
+        assert d1.metadata.bam_index
+        assert d1.metadata.bam_csi_index
+        assert isinstance(d1.metadata.bam_index, model.MetadataFile)
+        assert isinstance(d1.metadata.bam_csi_index, model.MetadataFile)
         d2 = model.HistoryDatasetAssociation(extension="txt", history=h1, create_dataset=True, sa_session=model.session)
         c1 = model.DatasetCollection(collection_type='paired')
         dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="forward", element_index=0)
         dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
-
         c2 = model.DatasetCollection(collection_type="list:paired")
         dce3 = model.DatasetCollectionElement(collection=c2, element=c1, element_identifier="inner_list", element_index=0)
         c3 = model.DatasetCollection(collection_type="list:list")
@@ -349,12 +408,14 @@ class MappingTests(BaseModelTestCase):
         assert c2.dataset_action_tuples == []
         assert c2.populated_optimized
         assert c2.dataset_states_and_extensions_summary == ({'new'}, {'txt', 'bam'})
+        assert c2.element_identifiers_extensions_paths_and_metadata_files == [[('inner_list', 'forward'), 'bam', 'mock_dataset_14.dat', [('bai', 'mock_dataset_14.dat'), ('bam.csi', 'mock_dataset_14.dat')]], [('inner_list', 'reverse'), 'txt', 'mock_dataset_14.dat', []]]
         assert c3.dataset_instances == []
         assert c3.dataset_elements == []
         assert c3.dataset_states_and_extensions_summary == (set(), set())
         q = c4._get_nested_collection_attributes(element_attributes=('element_identifier',))
         assert q.all() == [('outer_list', 'inner_list', 'forward'), ('outer_list', 'inner_list', 'reverse')]
         assert c4.dataset_elements == [dce1, dce2]
+        assert c4.element_identifiers_extensions_and_paths == [(('outer_list', 'inner_list', 'forward'), 'bam', 'mock_dataset_14.dat'), (('outer_list', 'inner_list', 'reverse'), 'txt', 'mock_dataset_14.dat')]
 
     def test_default_disk_usage(self):
         model = self.model
@@ -883,10 +944,13 @@ class MockObjectStore:
         return True
 
     def get_filename(self, *args, **kwds):
-        return "dataest_14.dat"
+        return "mock_dataset_14.dat"
 
     def get_store_by(self, *args, **kwds):
         return 'id'
+
+    def update_from_file(self, *arg, **kwds):
+        pass
 
 
 def get_suite():

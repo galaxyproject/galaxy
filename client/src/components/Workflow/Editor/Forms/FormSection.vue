@@ -1,14 +1,14 @@
 <template>
-    <Form :id="id" :inputs="inputs" ref="form" @onChange="onChange" />
+    <FormDisplay :id="id" :inputs="inputs" ref="form" @onChange="onChange" />
 </template>
 
 <script>
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 import makeSection from "./makeSection";
 
 export default {
     components: {
-        Form,
+        FormDisplay,
     },
     props: {
         id: {

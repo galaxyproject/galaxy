@@ -12,8 +12,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="vcf_bgzip" value="vcf_bgzip_to_maf_in.vcf_bgzip"/>
-            <output name="output1" format="tabix" value="tabix_to_maf_in_to_tabix.tabix"/>
+            <param name="input1" ftype="vcf_bgzip" value="vcf_bgzip_to_maf_in.vcf_bgzip"/>
+            <output name="output1" ftype="tabix" value="tabix_to_maf_in_to_tabix.tabix"/>
         </test>
     </tests>
     <help>

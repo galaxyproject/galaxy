@@ -635,7 +635,8 @@ class Data(metaclass=DataMeta):
                 if key.startswith('__'):
                     params[key] = value
         params[input_name] = original_dataset
-
+        # Make the target datatype available to the converter
+        params['__target_datatype__'] = target_type
         # Run converter, job is dispatched through Queue
         converted_dataset = converter.execute(trans, incoming=params, set_output_hid=visible, history=history)[1]
         if len(params) > 0:

@@ -8,5 +8,5 @@ pydantic<1.8
 requests
 Routes
 six
-SQLAlchemy>=1.4.15,<2
+SQLAlchemy>=1.4.20,<2
 WebOb

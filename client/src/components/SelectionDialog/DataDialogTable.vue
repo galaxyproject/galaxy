@@ -8,18 +8,33 @@
             :filter="filter"
             :per-page="perPage"
             :current-page="currentPage"
+            :busy.sync="isBusy"
             @row-clicked="clicked"
             @filtered="filtered"
         >
+            <template v-slot:head(select_icon)="">
+                <font-awesome-icon
+                    @click="$emit('toggleSelectAll')"
+                    class="select-checkbox cursor-pointer"
+                    title="Check to select all datasets"
+                    :icon="selectionIcon(selectAllIcon)"
+                />
+            </template>
+            <template v-slot:cell(select_icon)="data">
+                <font-awesome-icon :icon="selectionIcon(data.item._rowVariant)" />
+            </template>
             <template v-slot:cell(label)="data">
-                <pre
-                    v-if="isEncoded"
-                    :title="data.item.labelTitle"
-                ><code>{{ data.value ? data.value : "-" }}</code></pre>
-                <span v-else>
-                    <i v-if="data.item.isLeaf" :class="leafIcon" /> <i v-else class="fa fa-folder" />
-                    <span :title="data.item.labelTitle">{{ data.value ? data.value : "-" }}</span>
-                </span>
+                <div style="cursor: pointer">
+                    <pre
+                        v-if="isEncoded"
+                        :title="data.item.labelTitle"
+                    ><code>{{ data.value ? data.value : "-" }}</code></pre>
+                    <span v-else>
+                        <i v-if="data.item.isLeaf" :class="leafIcon" />
+                        <font-awesome-icon v-else icon="folder" />
+                        <span :title="data.item.labelTitle">{{ data.value ? data.value : "-" }}</span>
+                    </span>
+                </div>
             </template>
             <template v-slot:cell(details)="data">
                 {{ data.value ? data.value : "-" }}
@@ -28,7 +43,9 @@
                 {{ data.value ? data.value : "-" }}
             </template>
             <template v-slot:cell(navigate)="data">
-                <i v-if="!data.item.isLeaf" class="fa fa-caret-square-o-right" @click.stop="open(data.item)" />
+                <b-button variant="light" size="sm" v-if="!data.item.isLeaf" @click.stop="open(data.item)">
+                    <font-awesome-icon :icon="['far', 'caret-square-right']" />
+                </b-button>
             </template>
         </b-table>
         <div v-if="nItems === 0">
@@ -45,15 +62,25 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { faCheckSquare, faSquare, faCaretSquareRight, faMinusSquare } from "@fortawesome/free-regular-svg-icons";
+import { faFolder } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { selectionStates } from "components/SelectionDialog/selectionStates";
 
 Vue.use(BootstrapVue);
+library.add(faCheckSquare, faSquare, faFolder, faCaretSquareRight, faMinusSquare);
 
 const LABEL_FIELD = { key: "label", sortable: true };
 const DETAILS_FIELD = { key: "details", sortable: true };
 const TIME_FIELD = { key: "time", sortable: true };
 const NAVIGATE_FIELD = { key: "navigate", label: "", sortable: false };
+const SELECT_ICON_FIELD = { key: "select_icon", label: "", sortable: false };
 
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     props: {
         items: {
             type: Array,
@@ -66,6 +93,10 @@ export default {
         multiple: {
             type: Boolean,
             default: false,
+        },
+        selectAllIcon: {
+            type: String,
+            default: selectionStates.unselected,
         },
         leafIcon: {
             type: String,
@@ -83,7 +114,15 @@ export default {
             type: Boolean,
             default: false,
         },
+        showSelectIcon: {
+            type: Boolean,
+            default: false,
+        },
         isEncoded: {
+            type: Boolean,
+            default: false,
+        },
+        isBusy: {
             type: Boolean,
             default: false,
         },
@@ -105,7 +144,11 @@ export default {
     },
     computed: {
         fields: function () {
-            const fields = [LABEL_FIELD];
+            const fields = [];
+            if (this.showSelectIcon) {
+                fields.push(SELECT_ICON_FIELD);
+            }
+            fields.push(LABEL_FIELD);
             if (this.showDetails) {
                 fields.push(DETAILS_FIELD);
             }
@@ -115,10 +158,21 @@ export default {
             if (this.showNavigate) {
                 fields.push(NAVIGATE_FIELD);
             }
+
             return fields;
         },
     },
     methods: {
+        selectionIcon(variant) {
+            switch (variant) {
+                case selectionStates.selected:
+                    return ["far", "check-square"];
+                case selectionStates.mixed:
+                    return ["fas", "minus-square"];
+                default:
+                    return ["far", "square"];
+            }
+        },
         /** Resets pagination when a filter/search word is entered **/
         filtered: function (items) {
             this.nItems = items.length;

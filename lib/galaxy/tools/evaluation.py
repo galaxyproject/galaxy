@@ -4,11 +4,11 @@ import os
 import shlex
 import tempfile
 
-
 from galaxy import model
 from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
+from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.tools import global_tool_errors
 from galaxy.tools.parameters import (
     visit_input_values,
@@ -42,7 +42,6 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.object_wrapper import wrap_with_safe_string
 from galaxy.util.template import fill_template
 from galaxy.work.context import WorkRequestContext
 
@@ -272,17 +271,17 @@ class ToolEvaluator:
         # - Only necessary when self.check_values is False (==external dataset
         #   tool?: can this be abstracted out as part of being a datasouce tool?)
         # For now we try to not wrap unnecessarily, but this should be untangled at some point.
+        matches = None
         for name, data in input_datasets.items():
             param_dict_value = param_dict.get(name, None)
             if data and param_dict_value is None:
                 # We may have a nested parameter that is not fully prefixed.
                 # We try recovering from param_dict, but tool authors should really use fully-qualified
                 # variables
-                wrappers = find_instance_nested(param_dict,
-                                                instances=(DatasetFilenameWrapper, DatasetListWrapper),
-                                                match_key=name)
-                if len(wrappers) == 1:
-                    wrapper = wrappers[0]
+                if matches is None:
+                    matches = find_instance_nested(param_dict, instances=(DatasetFilenameWrapper, DatasetListWrapper))
+                wrapper = matches.get(name)
+                if wrapper:
                     param_dict[name] = wrapper
                     continue
             if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):

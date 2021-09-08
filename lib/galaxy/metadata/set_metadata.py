@@ -30,6 +30,7 @@ from galaxy.job_execution.output_collect import (
     collect_dynamic_outputs,
     collect_extra_files,
     collect_primary_datasets,
+    collect_shrinked_content_from_path,
     default_exit_code_file,
     read_exit_code_from,
     SessionlessJobContext,
@@ -136,9 +137,10 @@ def set_metadata_portable():
 
     object_store = None
     job_context = None
-    version_string = ""
+    version_string = None
 
     export_store = None
+    final_job_state = Job.states.OK
     if extended_metadata_collection:
         tool_dict = metadata_params["tool"]
         stdio_exit_code_dicts, stdio_regex_dicts = tool_dict["stdio_exit_codes"], tool_dict["stdio_regexes"]
@@ -194,11 +196,10 @@ def set_metadata_portable():
         else:
             final_job_state = Job.states.ERROR
 
-        version_string = ""
-        if os.path.exists(COMMAND_VERSION_FILENAME):
-            version_string = open(COMMAND_VERSION_FILENAME).read()
+        version_string_path = os.path.join('outputs', COMMAND_VERSION_FILENAME)
+        version_string = collect_shrinked_content_from_path(version_string_path)
 
-        job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
+        expression_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
 
         # Load outputs.
         export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False, serialize_jobs=False)
@@ -207,6 +208,27 @@ def set_metadata_portable():
     except AssertionError:
         # Remove in 21.09, this should only happen for jobs that started on <= 20.09 and finish now
         import_model_store = None
+
+    job_context = SessionlessJobContext(
+        metadata_params,
+        tool_provided_metadata,
+        object_store,
+        export_store,
+        import_model_store,
+        os.path.join(tool_job_working_directory, "working"),
+        final_job_state=final_job_state,
+    )
+
+    unnamed_id_to_path = {}
+    for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
+        destination = unnamed_output_dict["destination"]
+        elements = unnamed_output_dict["elements"]
+        destination_type = destination["type"]
+        if destination_type == 'hdas':
+            for element in elements:
+                filename = element.get('filename')
+                if filename:
+                    unnamed_id_to_path[element['object_id']] = os.path.join(job_context.job_working_directory, filename)
 
     for output_name, output_dict in outputs.items():
         dataset_instance_id = output_dict["id"]
@@ -232,7 +254,7 @@ def set_metadata_portable():
         # Same block as below...
         set_meta_kwds = stringify_dictionary_keys(json.load(open(filename_kwds)))  # load kwds; need to ensure our keywords are not unicode
         try:
-            dataset.dataset.external_filename = dataset_filename_override
+            dataset.dataset.external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
             store_by = output_dict.get("object_store_store_by", legacy_object_store_store_by)
             extra_files_dir_name = f"dataset_{getattr(dataset.dataset, store_by)}_files"
             files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
@@ -248,14 +270,17 @@ def set_metadata_portable():
                 setattr(dataset.metadata, metadata_name, metadata_file_override)
             if output_dict.get("validate", False):
                 set_validated_state(dataset)
-            set_meta(dataset, file_dict)
+            if dataset_instance_id not in unnamed_id_to_path:
+                # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
+                # so skip set_meta here.
+                set_meta(dataset, file_dict)
 
             if extended_metadata_collection:
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
-                    context = ExpressionContext(meta, job_context)
+                    context = ExpressionContext(meta, expression_context)
                 else:
-                    context = job_context
+                    context = expression_context
 
                 # Lazy and unattached
                 # if getattr(dataset, "hidden_beneath_collection_instance", None):
@@ -314,17 +339,6 @@ def set_metadata_portable():
 
     if extended_metadata_collection:
         # discover extra outputs...
-
-        job_context = SessionlessJobContext(
-            metadata_params,
-            tool_provided_metadata,
-            object_store,
-            export_store,
-            import_model_store,
-            os.path.join(tool_job_working_directory, "working"),
-            final_job_state=final_job_state,
-        )
-
         output_collections = {}
         for name, output_collection in metadata_params["output_collections"].items():
             output_collections[name] = import_model_store.sa_session.query(HistoryDatasetCollectionAssociation).find(output_collection["id"])

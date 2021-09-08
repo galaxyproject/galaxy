@@ -264,8 +264,8 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             self.check_user_can_add_to_library_item(trans, parent, check_accessible=True)
             create_params = api_payload_to_create_params(payload)
             create_params['parent'] = parent
-            service = trans.app.dataset_collections_service
-            dataset_collection_instance = service.create(**create_params)
+            dataset_collection_manager = trans.app.dataset_collection_manager
+            dataset_collection_instance = dataset_collection_manager.create(**create_params)
             return [dictify_dataset_collection_instance(dataset_collection_instance, security=trans.security, parent=parent)]
         if status != 200:
             trans.response.status = status

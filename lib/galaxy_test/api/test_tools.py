@@ -6,7 +6,7 @@ import zipfile
 from io import BytesIO
 
 import pytest
-from requests import get
+from requests import get, put
 
 from galaxy.util import galaxy_root_path
 from galaxy_test.base import rules_test_data
@@ -216,6 +216,18 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             assert galaxy_url.startswith("http")
             assert galaxy_url.endswith("tool_runner?tool_id=ratmine")
 
+    @skip_without_tool("cheetah_problem_unbound_var_input")
+    def test_legacy_biotools_xref_injection(self):
+        url = self._api_url("tools/cheetah_problem_unbound_var_input")
+        get_response = get(url)
+        get_response.raise_for_status()
+        get_json = get_response.json()
+        assert "xrefs" in get_json
+        assert len(get_json["xrefs"]) == 1
+        xref = get_json["xrefs"][0]
+        assert xref["reftype"] == "bio.tools"
+        assert xref["value"] == "bwa"
+
     @skip_without_tool("test_data_source")
     def test_data_source_ok_request(self):
         with self.dataset_populator.test_history() as history_id:
@@ -295,6 +307,40 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         tool_info = tool_show_response.json()
         self._assert_has_keys(tool_info, "inputs", "outputs", "panel_section_id")
         return tool_info
+
+    @skip_without_tool("model_attributes")
+    @uses_test_history(require_new=False)
+    def test_model_attributes_sanitization(self, history_id):
+        cool_name_with_quote = "cool name with a quo\"te"
+        cool_name_without_quote = "cool name with a quo__dq__te"
+
+        current_user = self._get("users/current").json()
+        user_info_url = self._api_url(f"users/{current_user['id']}/information/inputs", use_key=True)
+        put_response = put(user_info_url, data=json.dumps({"address_0|desc": cool_name_with_quote}))
+        put_response.raise_for_status()
+
+        response = get(user_info_url).json()
+        self.assertEqual(len(response["addresses"]), 1)
+        self.assertEqual(response["addresses"][0]["desc"], cool_name_with_quote)
+
+        hda1 = self.dataset_populator.new_dataset(history_id, content='1\t2\t3', name=cool_name_with_quote)
+        assert hda1["name"] == cool_name_with_quote
+
+        rval = self._run(
+            tool_id="model_attributes",
+            inputs={"input1": dataset_to_param(hda1)},
+            history_id=history_id,
+            assert_ok=True,
+            wait_for_job=True,
+        )
+        sanitized_dataset_name = self.dataset_populator.get_history_dataset_content(history_id, dataset=rval["outputs"][0])
+        assert sanitized_dataset_name.strip() == cool_name_without_quote
+
+        sanitized_email = self.dataset_populator.get_history_dataset_content(history_id, dataset=rval["outputs"][1])
+        assert '"' not in sanitized_email
+
+        sanitized_address = self.dataset_populator.get_history_dataset_content(history_id, dataset=rval["outputs"][2])
+        assert sanitized_address.strip() == cool_name_without_quote
 
     @skip_without_tool("composite_output")
     def test_test_data_filepath_security(self):
@@ -1683,7 +1729,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @skip_without_tool("identifier_in_conditional")
     @uses_test_history(require_new=False)
     def test_identifier_map_over_input_in_conditional(self, history_id):
-        hdca_id = self._build_pair(history_id, ["123", "456"])
+        # Run cat tool, so HDA names are different from element identifiers
+        hdca_id = self._build_pair(history_id, ["123", "456"], run_cat=True)
         inputs = {
             "outer_cond|input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
             "outer_cond|multi_input": False,
@@ -2519,9 +2566,15 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         hdca_list_id = response.json()["outputs"][0]["id"]
         return hdca_list_id
 
-    def _build_pair(self, history_id, contents):
+    def _build_pair(self, history_id, contents, run_cat=False):
         create_response = self.dataset_collection_populator.create_pair_in_history(history_id, contents=contents, direct_upload=True)
-        hdca_id = create_response.json()["outputs"][0]["id"]
+        hdca_id = create_response.json()["output_collections"][0]["id"]
+        inputs = {
+            "input1": {'batch': True, 'values': [dict(src="hdca", id=hdca_id)]},
+        }
+        if run_cat:
+            outputs = self._run_cat(history_id, inputs=inputs, assert_ok=True)
+            hdca_id = outputs['implicit_collections'][0]['id']
         return hdca_id
 
     def _assert_dataset_permission_denied_response(self, response):

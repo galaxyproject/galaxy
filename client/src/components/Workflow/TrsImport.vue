@@ -18,7 +18,7 @@
             <div v-else>
                 <div>
                     <b>TRS ID:</b>
-                    <b-form-input v-model="toolId" />
+                    <b-form-input v-model="debouncedToolId" id="trs-id-input" />
                 </div>
                 <trs-tool :trs-tool="trsTool" v-if="trsTool" @onImport="importVersion(trsTool.id, $event)" />
             </div>
@@ -66,10 +66,11 @@ export default {
     data() {
         return {
             trsSelection: null,
-            toolId: null,
             trsTool: null,
             errorMessage: null,
             isAutoImport: this.queryTrsVersionId && this.queryTrsServer && this.queryTrsId,
+            timeout: null,
+            toolId: null,
         };
     },
     computed: {
@@ -78,6 +79,19 @@ export default {
         },
         isAnonymous() {
             return getGalaxyInstance().user.isAnonymous();
+        },
+        debouncedToolId: {
+            get() {
+                return this.toolId;
+            },
+            set(val) {
+                if (this.timeout) {
+                    clearTimeout(this.timeout);
+                }
+                this.timeout = setTimeout(() => {
+                    this.toolId = val.trim();
+                }, 300);
+            },
         },
     },
     watch: {

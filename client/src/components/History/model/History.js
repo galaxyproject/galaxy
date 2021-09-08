@@ -1,4 +1,5 @@
 import { dateMixin, ModelBase } from "./ModelBase";
+import { scrubModelProps } from "utils/safeAssign";
 
 export class History extends dateMixin(ModelBase) {
     // not deleted
@@ -36,8 +37,32 @@ export class History extends dateMixin(ModelBase) {
         }
         return status.join(", ");
     }
+
+    get exportLink() {
+        return `histories/${this.id}/export`;
+    }
+
+    clone() {
+        const newProps = cleanHistoryProps(this);
+        return new History(newProps);
+    }
+
+    patch(newProps) {
+        const cleanProps = cleanHistoryProps({ ...this, ...newProps });
+        return new History(cleanProps);
+    }
+
+    equals(other) {
+        return History.equals(this, other);
+    }
 }
 
 History.equals = function (a, b) {
     return JSON.stringify(a) == JSON.stringify(b);
+};
+
+const scrubber = scrubModelProps(History);
+export const cleanHistoryProps = (props = {}) => {
+    const cleanProps = JSON.parse(JSON.stringify(props));
+    return scrubber(cleanProps);
 };

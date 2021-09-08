@@ -27,13 +27,13 @@
             </b-button>
         </template>
         <template v-slot:body>
-            <FormMessage class="mt-2" :message="errorText" variant="danger" :persistent="true" />
+            <FormMessage :message="errorText" variant="danger" :persistent="true" />
             <FormElement
                 id="__label"
                 :value="node.label"
                 title="Label"
                 help="Add a step label."
-                @onChange="onLabel"
+                @input="onLabel"
                 :error="errorLabel"
             />
             <FormElement
@@ -42,15 +42,15 @@
                 title="Step Annotation"
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-                @onChange="onAnnotation"
+                @input="onAnnotation"
             />
-            <Form :id="id" :inputs="inputs" @onChange="onChange" />
+            <FormDisplay :id="id" :inputs="inputs" @onChange="onChange" />
         </template>
     </FormCard>
 </template>
 
 <script>
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 import FormMessage from "components/Form/FormMessage";
@@ -60,7 +60,7 @@ import WorkflowIcons from "components/Workflow/icons";
 
 export default {
     components: {
-        Form,
+        FormDisplay,
         FormCard,
         FormElement,
         FormMessage,

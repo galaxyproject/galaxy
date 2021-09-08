@@ -364,8 +364,8 @@ body {
                     .nav-note {
                         @extend .font-weight-bold;
                         @extend .position-absolute;
-                        left: 2.2rem;
-                        top: 2.2rem;
+                        left: 1.9rem;
+                        top: 1.9rem;
                         font-size: 0.6rem;
                     }
                 }
@@ -585,11 +585,6 @@ div.form-row-input label {
     padding-top: 10px;
     padding-bottom: 10px;
     margin-top: 5px;
-}
-
-#run-workflow {
-    @extend .float-right;
-    @extend .mt-3;
 }
 
 .form-row {

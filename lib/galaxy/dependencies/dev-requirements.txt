@@ -32,7 +32,7 @@ celery==5.0.5; python_version >= "3.6"
 certifi==2020.12.5; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.6"
 cffi==1.14.5; implementation_name == "pypy" and python_version >= "3.6" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0")
 chardet==4.0.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4"
-cheetah3==3.2.6.post2; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
+cheetah3==3.2.6.post1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 circus==0.17.1
 click-didyoumean==0.0.3; python_version >= "3.6"
 click-plugins==1.1.1; python_version >= "3.6"
@@ -60,10 +60,12 @@ docopt==0.6.2
 docutils==0.16; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 dogpile.cache==1.1.2; python_version >= "3.6"
 ecdsa==0.14.1; python_version >= "2.6" and python_full_version < "3.0.0" or python_full_version >= "3.3.0"
+edam-ontology==1.25.2
 fabric3==1.14.post1
 fastapi-utils==0.2.1; python_version >= "3.6" and python_version < "4.0"
-fastapi==0.63.0; python_version >= "3.6"
+fastapi==0.65.2; python_version >= "3.6"
 fluent-logger==0.10.0; python_version >= "3.5"
+fs==2.4.13
 funcsigs==1.0.2
 future==0.18.2; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
 galaxy-sequence-utils==1.1.5
@@ -144,13 +146,13 @@ prompt-toolkit==3.0.3; python_version >= "3.6"
 protobuf==3.15.8; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
 prov==1.5.1; python_version >= "3.6" and python_version < "4"
 psutil==5.8.0; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
-pulsar-galaxy-lib==0.14.6
+pulsar-galaxy-lib==0.14.10
 py==1.10.0; python_version >= "3.6" and python_full_version < "3.0.0" and implementation_name == "pypy" or python_full_version >= "3.4.0" and python_version >= "3.6" and implementation_name == "pypy"
 pyasn1-modules==0.2.8; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0"
 pyasn1==0.4.8; python_version >= "3.5" and python_version < "4"
 pycparser==2.20; python_version >= "3.6" and python_full_version < "3.0.0" and implementation_name == "pypy" or implementation_name == "pypy" and python_version >= "3.6" and python_full_version >= "3.4.0"
 pycryptodome==3.10.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
-pydantic==1.7.3; python_version >= "3.6" and python_version < "4.0"
+pydantic==1.8.2; python_version >= "3.6" and python_version < "4.0"
 pydot==1.4.2; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.4.0"
 pyeventsystem==0.1.0
 pyfaidx==0.5.9.5
@@ -177,7 +179,7 @@ pytest-pythonpath==0.7.3
 pytest-shard==0.1.2; python_version >= "3.6"
 pytest==6.2.3; python_version >= "3.6"
 python-dateutil==2.8.1; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.3.0"
-python-irodsclient==0.9.0
+python-irodsclient==1.0.0
 python-jose==3.2.0
 python-keystoneclient==4.1.1; python_version >= "3.6"
 python-neutronclient==7.2.1; python_version >= "3.6"
@@ -224,11 +226,11 @@ sphinxcontrib-jsmath==1.0.1; python_version >= "3.5"
 sphinxcontrib-qthelp==1.0.3; python_version >= "3.5"
 sphinxcontrib-serializinghtml==1.1.4; python_version >= "3.5"
 sqlalchemy-migrate==0.13.0
-sqlalchemy==1.4.15
+sqlalchemy==1.4.20
 sqlitedict==1.7.0
 sqlparse==0.4.1; python_version >= "3.5"
 starlette-context==0.3.2; python_version >= "3.7"
-starlette==0.13.6; python_version >= "3.6"
+starlette==0.14.2; python_version >= "3.6"
 statsd==3.3.0
 stevedore==3.3.0; python_version >= "3.6"
 svgwrite==1.4.1; python_version >= "3.6"

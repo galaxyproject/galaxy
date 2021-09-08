@@ -9,8 +9,8 @@ from galaxy import (
     util,
     web
 )
-from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
+from galaxy.managers.quotas import QuotaManager
 from galaxy.model import tool_shed_install as install_model
 from galaxy.security.validate_user_input import validate_password
 from galaxy.tool_shed.util.repository_util import get_ids_of_tool_shed_repositories_being_installed
@@ -22,9 +22,7 @@ from galaxy.util import (
 from galaxy.util.tool_shed import common_util, encoding_util
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import grids, time_ago
-from galaxy.web.params import QuotaParamParser
 from galaxy.webapps.base import controller
-from galaxy.webapps.base.controller import UsesQuotaMixin
 from tool_shed.util.web_util import escape
 
 
@@ -503,7 +501,7 @@ class ToolVersionListGrid(grids.Grid):
         return trans.install_model.context.query(self.model_class)
 
 
-class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaParamParser):
+class AdminGalaxy(controller.JSAppLauncher):
 
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
@@ -521,6 +519,10 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     )
     activate_operation = grids.GridOperation("Activate User", condition=(lambda item: not item.active), allow_multiple=False)
     resend_activation_email = grids.GridOperation("Resend Activation Email", condition=(lambda item: not item.active), allow_multiple=False)
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.quota_manager: QuotaManager = QuotaManager(app)
 
     @web.expose
     @web.require_admin
@@ -646,13 +648,13 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             operation = kwargs.pop('operation').lower()
             try:
                 if operation == 'delete':
-                    message = self._delete_quota(quotas)
+                    message = self.quota_manager.delete_quota(quotas)
                 elif operation == 'undelete':
-                    message = self._undelete_quota(quotas)
+                    message = self.quota_manager.undelete_quota(quotas)
                 elif operation == 'purge':
-                    message = self._purge_quota(quotas)
+                    message = self.quota_manager.purge_quota(quotas)
                 elif operation == 'unset as default':
-                    message = self._unset_quota_default(quotas[0])
+                    message = self.quota_manager.unset_quota_default(quotas[0])
             except ActionInputError as e:
                 message, status = (e.err_msg, 'error')
         if message:
@@ -671,8 +673,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                         .order_by(trans.app.model.User.table.c.email):
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for group in trans.sa_session.query(trans.app.model.Group) \
-                                         .filter(trans.app.model.Group.table.c.deleted == false()) \
-                                         .order_by(trans.app.model.Group.table.c.name):
+                                         .filter(trans.app.model.Group.deleted == false()) \
+                                         .order_by(trans.app.model.Group.name):
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             default_options = [('No', 'no')]
             for type_ in trans.app.model.DefaultQuotaAssociation.types:
@@ -703,7 +705,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         build_select_input('in_users', 'Users', all_users, [])]}
         else:
             try:
-                quota, message = self._create_quota(util.Params(payload), decode_id=trans.security.decode_id)
+                quota, message = self.quota_manager.create_quota(payload, decode_id=trans.security.decode_id)
                 return {'message': message}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
@@ -730,7 +732,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             }
         else:
             try:
-                return {'message': self._rename_quota(quota, util.Params(payload))}
+                return {'message': self.quota_manager.rename_quota(quota, util.Params(payload))}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
@@ -753,8 +755,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     in_users.append(trans.security.encode_id(user.id))
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for group in trans.sa_session.query(trans.app.model.Group) \
-                                         .filter(trans.app.model.Group.table.c.deleted == false()) \
-                                         .order_by(trans.app.model.Group.table.c.name):
+                                         .filter(trans.app.model.Group.deleted == false()) \
+                                         .order_by(trans.app.model.Group.name):
                 if group in [x.group for x in quota.groups]:
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
@@ -766,7 +768,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                               build_select_input('in_users', 'Users', all_users, in_users)]}
         else:
             try:
-                return {'message': self._manage_users_and_groups_for_quota(quota, util.Params(payload), decode_id=trans.security.decode_id)}
+                return {'message': self.quota_manager.manage_users_and_groups_for_quota(quota, util.Params(payload), decode_id=trans.security.decode_id)}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
@@ -794,7 +796,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             }
         else:
             try:
-                return {'message': self._edit_quota(quota, util.Params(payload))}
+                return {'message': self.quota_manager.edit_quota(quota, util.Params(payload))}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
@@ -822,7 +824,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             }
         else:
             try:
-                return {'message': self._set_quota_default(quota, util.Params(payload))}
+                return {'message': self.quota_manager.set_quota_default(quota, util.Params(payload))}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
@@ -941,8 +943,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                         .order_by(trans.app.model.User.table.c.email):
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for group in trans.sa_session.query(trans.app.model.Group) \
-                                         .filter(trans.app.model.Group.table.c.deleted == false()) \
-                                         .order_by(trans.app.model.Group.table.c.name):
+                                         .filter(trans.app.model.Group.deleted == false()) \
+                                         .order_by(trans.app.model.Group.name):
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {
                 'title': 'Create Role',
@@ -957,7 +959,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     build_select_input('in_users', 'Users', all_users, []), {
                     'name': 'auto_create',
                     'label': 'Create a new group of the same name for this role:',
-                    'type': 'boolean'
+                    'type': 'boolean',
+                    'optional': True,
                 }]}
         else:
             name = util.restore_text(payload.get('name', ''))
@@ -967,7 +970,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             in_groups = [trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_groups'))]
             if not name or not description:
                 return self.message_exception(trans, 'Enter a valid name and a description.')
-            elif trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == name).first():
+            elif trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.name == name).first():
                 return self.message_exception(trans, 'Role names must be unique and a role with that name already exists, so choose another name.')
             elif None in in_users or None in in_groups:
                 return self.message_exception(trans, 'One or more invalid user/group id has been provided.')
@@ -985,7 +988,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     trans.sa_session.add(gra)
                 if auto_create_checked:
                     # Check if role with same name already exists
-                    if trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == name).first():
+                    if trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.name == name).first():
                         return self.message_exception(trans, 'A group with that name already exists, so choose another name or disable group creation.')
                     # Create the group
                     group = trans.app.model.Group(name=name)
@@ -1029,7 +1032,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             if not new_name:
                 return self.message_exception(trans, 'Enter a valid role name.')
             else:
-                existing_role = trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == new_name).first()
+                existing_role = trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.name == new_name).first()
                 if existing_role and existing_role.id != role.id:
                     return self.message_exception(trans, 'A role with that name already exists.')
                 else:
@@ -1059,8 +1062,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     in_users.append(trans.security.encode_id(user.id))
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for group in trans.sa_session.query(trans.app.model.Group) \
-                                         .filter(trans.app.model.Group.table.c.deleted == false()) \
-                                         .order_by(trans.app.model.Group.table.c.name):
+                                         .filter(trans.app.model.Group.deleted == false()) \
+                                         .order_by(trans.app.model.Group.name):
                 if group in [x.group for x in role.groups]:
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
@@ -1196,7 +1199,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             if not new_name:
                 return self.message_exception(trans, 'Enter a valid group name.')
             else:
-                existing_group = trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == new_name).first()
+                existing_group = trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.name == new_name).first()
                 if existing_group and existing_group.id != group.id:
                     return self.message_exception(trans, 'A group with that name already exists.')
                 else:
@@ -1225,8 +1228,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     in_users.append(trans.security.encode_id(user.id))
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for role in trans.sa_session.query(trans.app.model.Role) \
-                                        .filter(trans.app.model.Role.table.c.deleted == false()) \
-                                        .order_by(trans.app.model.Role.table.c.name):
+                                        .filter(trans.app.model.Role.deleted == false()) \
+                                        .order_by(trans.app.model.Role.name):
                 if role in [x.role for x in group.roles]:
                     in_roles.append(trans.security.encode_id(role.id))
                 all_roles.append((role.name, trans.security.encode_id(role.id)))
@@ -1256,8 +1259,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                         .order_by(trans.app.model.User.table.c.email):
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for role in trans.sa_session.query(trans.app.model.Role) \
-                                        .filter(trans.app.model.Role.table.c.deleted == false()) \
-                                        .order_by(trans.app.model.Role.table.c.name):
+                                        .filter(trans.app.model.Role.deleted == false()) \
+                                        .order_by(trans.app.model.Role.name):
                 all_roles.append((role.name, trans.security.encode_id(role.id)))
             return {
                 'title': 'Create Group',
@@ -1270,7 +1273,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     build_select_input('in_users', 'Users', all_users, []), {
                     'name': 'auto_create',
                     'label': 'Create a new role of the same name for this group:',
-                    'type': 'boolean'
+                    'type': 'boolean',
+                    'optional': True,
                 }]
             }
         else:
@@ -1280,7 +1284,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_roles'))]
             if not name:
                 return self.message_exception(trans, 'Enter a valid name.')
-            elif trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == name).first():
+            elif trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.name == name).first():
                 return self.message_exception(trans, 'Group names must be unique and a group with that name already exists, so choose another name.')
             elif None in in_users or None in in_roles:
                 return self.message_exception(trans, 'One or more invalid user/role id has been provided.')
@@ -1298,7 +1302,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     trans.sa_session.add(gra)
                 if auto_create_checked:
                     # Check if role with same name already exists
-                    if trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == name).first():
+                    if trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.name == name).first():
                         return self.message_exception(trans, 'A role with that name already exists, so choose another name or disable role creation.')
                     # Create the role
                     role = trans.app.model.Role(name=name, description=f'Role for group {name}')
@@ -1483,8 +1487,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             all_roles = []
             in_groups = []
             all_groups = []
-            for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.deleted == false()) \
-                    .order_by(trans.app.model.Role.table.c.name):
+            for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.deleted == false()) \
+                    .order_by(trans.app.model.Role.name):
                 if role in [x.role for x in user.roles]:
                     in_roles.append(trans.security.encode_id(role.id))
                 if role.type != trans.app.model.Role.types.PRIVATE:
@@ -1493,8 +1497,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     # role, which should always be in in_roles.  The check above is added as an additional
                     # precaution, since for a period of time we were including private roles in the form fields.
                     all_roles.append((role.name, trans.security.encode_id(role.id)))
-            for group in trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.deleted == false()) \
-                    .order_by(trans.app.model.Group.table.c.name):
+            for group in trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.deleted == false()) \
+                    .order_by(trans.app.model.Group.name):
                 if group in [x.group for x in user.groups]:
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))

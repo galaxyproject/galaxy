@@ -33,9 +33,9 @@ VALID_ARGUMENTS = {
     "tool_stdout": ["step", "job_id"],
     "generate_galaxy_version": [],
     "generate_time": [],
-    "invocation_time": ["invocation_id"],
     "visualization": DYNAMIC_ARGUMENTS,
     # Invocation Flavored Markdown
+    "invocation_time": ["invocation_id"],
     "invocation_outputs": [],
     "invocation_inputs": [],
 }

@@ -23,7 +23,11 @@ from galaxy.selenium.context import (
 from galaxy.selenium.navigates_galaxy import (
     retry_during_transitions
 )
-from galaxy.util import asbool, classproperty
+from galaxy.util import (
+    asbool,
+    classproperty,
+    DEFAULT_SOCKET_TIMEOUT,
+)
 from galaxy_test.base import populators
 from galaxy_test.base.api import UsesApiTestCaseMixin
 from galaxy_test.base.api_util import get_admin_api_key
@@ -59,6 +63,7 @@ GALAXY_TEST_SELENIUM_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_USER_EMAI
 GALAXY_TEST_SELENIUM_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_USER_PASSWORD", None)
 GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL", DEFAULT_ADMIN_USER)
 GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD)
+GALAXY_TEST_SELENIUM_BETA_HISTORY = os.environ.get("GALAXY_TEST_SELENIUM_BETA_HISTORY", "0") == "1"
 
 # JS code to execute in Galaxy JS console to setup localStorage of session for logging and
 # logging "flatten" messages because it seems Selenium (with Chrome at least) only grabs
@@ -167,6 +172,7 @@ retry_assertion_during_transitions = partial(retry_during_transitions, exception
 
 
 class TestSnapshot:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, driver, index, description):
         self.screenshot_binary = driver.get_screenshot_as_png()
@@ -212,6 +218,8 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
     # will be used to login.
     ensure_registered = False
 
+    ensure_beta_history = GALAXY_TEST_SELENIUM_BETA_HISTORY
+
     # Override this in subclasses to annotate that an admin user
     # is required for the test to run properly. Override admin user
     # login info with GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL /
@@ -251,6 +259,8 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         """
         if self.ensure_registered:
             self.login()
+            if self.ensure_beta_history:
+                self.use_beta_history()
 
     def tear_down_selenium(self):
         self.tear_down_driver()
@@ -358,6 +368,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         initial_size_str = self.components.history_panel.new_size.text
         size_selector = self.components.history_panel.size
         size_text = size_selector.wait_for_text()
+
         assert initial_size_str in size_text, f"{initial_size_str} not in {size_text}"
 
         self.components.history_panel.empty_message.wait_for_visible()
@@ -550,7 +561,7 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.get(full_url, params=data, cookies=cookies, headers=headers)
+        response = requests.get(full_url, params=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
@@ -568,10 +579,10 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.post(full_url, data=data, cookies=cookies, files=files, headers=headers)
+        response = requests.post(full_url, data=data, cookies=cookies, files=files, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
-    def _delete(self, route, data=None, headers=None, admin=False) -> Response:
+    def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
@@ -579,10 +590,10 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.delete(full_url, data=data, cookies=cookies, headers=headers)
+        response = requests.delete(full_url, data=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
-    def _put(self, route, data=None, headers=None, admin=False) -> Response:
+    def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
@@ -590,7 +601,7 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.put(full_url, data=data, cookies=cookies, headers=headers)
+        response = requests.put(full_url, data=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
 

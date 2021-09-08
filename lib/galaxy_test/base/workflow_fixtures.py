@@ -57,6 +57,16 @@ steps:
 """
 
 
+WORKFLOW_SELECT_FROM_OPTIONAL_DATASET = """
+class: GalaxyWorkflow
+steps:
+  select_from_dataset_optional:
+    tool_id: select_from_dataset_optional
+    state:
+      select_single: null
+"""
+
+
 # Throwing a bunch of broken steps in to get a really long modal and sure it
 # is scrollable.
 WORKFLOW_WITH_INVALID_STATE = """

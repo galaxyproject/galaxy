@@ -12,6 +12,7 @@ from ..sources import BaseFilesSource
 
 DEFAULT_ENFORCE_SYMLINK_SECURITY = True
 DEFAULT_DELETE_ON_REALIZE = False
+DEFAULT_ALLOW_SUBDIR_CREATION = True
 
 
 class PosixFilesSource(BaseFilesSource):
@@ -29,6 +30,7 @@ class PosixFilesSource(BaseFilesSource):
         self.root = props["root"]
         self.enforce_symlink_security = props.get("enforce_symlink_security", DEFAULT_ENFORCE_SYMLINK_SECURITY)
         self.delete_on_realize = props.get("delete_on_realize", DEFAULT_DELETE_ON_REALIZE)
+        self.allow_subdir_creation = props.get("allow_subdir_creation", DEFAULT_ALLOW_SUBDIR_CREATION)
 
     def _list(self, path="/", recursive=True, user_context=None):
         dir_path = self._to_native_path(path, user_context=user_context)
@@ -36,8 +38,9 @@ class PosixFilesSource(BaseFilesSource):
             raise exceptions.ObjectNotFound(f'The specified directory does not exist [{dir_path}].')
         if recursive:
             res = []
+            effective_root = self._effective_root(user_context)
             for (p, dirs, files) in safe_walk(dir_path, allowlist=self._allowlist):
-                rel_dir = os.path.relpath(p, dir_path)
+                rel_dir = os.path.relpath(p, effective_root)
                 to_dict = functools.partial(self._resource_info_to_dict, rel_dir, user_context=user_context)
                 res.extend(map(to_dict, dirs))
                 res.extend(map(to_dict, files))
@@ -74,7 +77,10 @@ class PosixFilesSource(BaseFilesSource):
 
         target_native_path_parent = os.path.dirname(target_native_path)
         if not os.path.exists(target_native_path_parent):
-            raise Exception("Parent directory does not exist.")
+            if self.allow_subdir_creation:
+                os.makedirs(target_native_path_parent)
+            else:
+                raise Exception("Parent directory does not exist.")
 
         shutil.copyfile(native_path, target_native_path)
 
@@ -120,6 +126,7 @@ class PosixFilesSource(BaseFilesSource):
             "root": os.path.abspath(self._effective_root(user_context)),
             "enforce_symlink_security": self.enforce_symlink_security,
             "delete_on_realize": self.delete_on_realize,
+            "allow_subdir_creation": self.allow_subdir_creation,
         }
 
     @property

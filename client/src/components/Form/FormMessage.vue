@@ -1,5 +1,5 @@
 <template>
-    <b-alert :variant="variant" :show="showAlert">
+    <b-alert class="mt-2" :variant="variant" :show="showAlert">
         {{ message | l }}
     </b-alert>
 </template>

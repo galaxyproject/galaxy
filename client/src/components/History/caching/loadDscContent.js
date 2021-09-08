@@ -10,13 +10,14 @@ import { bulkCacheDscContent } from "./db";
 import { SearchParams } from "../model/SearchParams";
 import { prependPath } from "./workerConfig";
 import { summarizeCacheOperation, dateStore } from "./loadHistoryContents";
+import { show } from "utils/observable";
 
 /**
  * Load collection content (drill down)
  * Params: contents_url + search params + element_index
  */
 export const loadDscContent = (cfg = {}) => {
-    // const { onceEvery = 10 * 1000 } = cfg;
+    const { debug = false } = cfg;
 
     return publish((inputs$) => {
         const url$ = inputs$.pipe(nth(0));
@@ -24,6 +25,7 @@ export const loadDscContent = (cfg = {}) => {
         return inputs$.pipe(
             map(buildDscContentUrl),
             map(prependPath),
+            show(debug, (url) => console.log("Sending collection request:", url)),
             requestWithUpdateTime({ dateStore }),
             pluck("response"),
             withLatestFrom(url$),

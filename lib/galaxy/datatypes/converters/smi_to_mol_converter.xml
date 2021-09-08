@@ -15,6 +15,17 @@
     <outputs>
         <data name="output" format="mol"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="smi" value="drugbank_drugs.smi"/>
+            <output name="output" ftype="mol">
+                <assert_contents>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="M  END"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
     <help>
 <![CDATA[
 ]]>

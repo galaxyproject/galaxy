@@ -15,6 +15,7 @@ import sys
 import tempfile
 import threading
 import time
+from typing import Optional
 from urllib.parse import urlparse
 
 import nose.config
@@ -155,6 +156,7 @@ def setup_galaxy_config(
     conda_auto_init=False,
     conda_auto_install=False,
     use_shared_connection_for_amqp=False,
+    allow_tool_conf_override: bool = True,
 ):
     """Setup environment and build config for test Galaxy instance."""
     # For certain docker operations this needs to be evaluated out - e.g. for cwltool.
@@ -165,6 +167,7 @@ def setup_galaxy_config(
     new_file_path = tempfile.mkdtemp(prefix='new_files_path_', dir=tmpdir)
     job_working_directory = tempfile.mkdtemp(prefix='job_working_directory_', dir=tmpdir)
 
+    user_library_import_dir: Optional[str]
     if use_test_file_dir:
         first_test_file_dir = ensure_test_file_dir_set()
         if not os.path.isabs(first_test_file_dir):
@@ -196,7 +199,10 @@ def setup_galaxy_config(
     # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
     galaxy_data_manager_data_path = tempfile.mkdtemp(prefix='data_manager_tool-data', dir=tmpdir)
 
-    tool_conf = os.environ.get('GALAXY_TEST_TOOL_CONF', default_tool_conf)
+    if allow_tool_conf_override:
+        tool_conf = os.environ.get('GALAXY_TEST_TOOL_CONF', default_tool_conf)
+    else:
+        tool_conf = default_tool_conf
     conda_auto_install = os.environ.get('GALAXY_TEST_CONDA_AUTO_INSTALL', conda_auto_install)
     conda_auto_init = os.environ.get('GALAXY_TEST_CONDA_AUTO_INIT', conda_auto_init)
     conda_prefix = os.environ.get('GALAXY_TEST_CONDA_PREFIX')
@@ -856,7 +862,7 @@ def launch_uvicorn(webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=N
     port = attempt_ports(port)
     gx_app = build_galaxy_app(galaxy_config)
 
-    gx_webapp = webapp_factory(
+    gx_wsgi_webapp = webapp_factory(
         galaxy_config['global_conf'],
         app=gx_app,
         use_translogger=False,
@@ -864,7 +870,7 @@ def launch_uvicorn(webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=N
         register_shutdown_at_exit=False
     )
     from galaxy.webapps.galaxy.fast_app import initialize_fast_app
-    app = initialize_fast_app(gx_webapp, gx_app)
+    app = initialize_fast_app(gx_wsgi_webapp, gx_app)
     server, port = uvicorn_serve(app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port)
     log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}")
@@ -909,6 +915,7 @@ class TestDriver:
     down. This is somewhat like a Python TestCase - but different
     because it is meant to provide a main() endpoint.
     """
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self):
         """Setup tracked resources."""
@@ -1001,7 +1008,8 @@ class GalaxyTestDriver(TestDriver):
         else:
             default_tool_conf = getattr(config_object, "default_tool_conf", None)
             datatypes_conf_override = getattr(config_object, "datatypes_conf_override", None)
-
+        allow_tool_conf_override = getattr(config_object, "allow_tool_conf_override", True)
+        self.allow_tool_conf_override = allow_tool_conf_override
         self.default_tool_conf = default_tool_conf
         self.datatypes_conf_override = datatypes_conf_override
 
@@ -1046,7 +1054,8 @@ class GalaxyTestDriver(TestDriver):
                         log_format=self.log_format,
                         conda_auto_init=getattr(config_object, "conda_auto_init", False),
                         conda_auto_install=getattr(config_object, "conda_auto_install", False),
-                        use_shared_connection_for_amqp=getattr(config_object, "use_shared_connection_for_amqp", False)
+                        use_shared_connection_for_amqp=getattr(config_object, "use_shared_connection_for_amqp", False),
+                        allow_tool_conf_override=self.allow_tool_conf_override,
                     )
                     galaxy_config = setup_galaxy_config(
                         galaxy_db_path,

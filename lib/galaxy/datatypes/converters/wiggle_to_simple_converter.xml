@@ -14,8 +14,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" format="wig" value="aggregate_binned_scores_3.wig"/>
-            <output name="out_file1" format="interval" value="aggregate_binned_scores_3.interval"/>
+            <param name="input" ftype="wig" value="aggregate_binned_scores_3.wig"/>
+            <output name="out_file1" ftype="interval" value="aggregate_binned_scores_3.interval"/>
         </test>
     </tests>
 </tool>

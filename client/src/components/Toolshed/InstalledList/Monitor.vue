@@ -30,7 +30,6 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services";
 import InstallationButton from "../RepositoryDetails/InstallationButton";
 
@@ -58,8 +57,7 @@ export default {
         },
     },
     created() {
-        this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
         this.load();
     },
     destroyed() {

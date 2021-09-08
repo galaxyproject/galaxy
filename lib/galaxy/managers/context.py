@@ -67,8 +67,14 @@ class ProvidesAppContext:
         """
 
     @abc.abstractproperty
-    def qualified_url_builder(self) -> Optional[Callable[[str], str]]:
-        """Provide access to fully qualified Galaxy URLs (if available)."""
+    def url_builder(self) -> Optional[Callable[..., str]]:
+        """
+        Provide access to Galaxy URLs (if available).
+
+        :type   qualified:  bool
+        :param  qualified:  if True, the fully qualified URL is returned,
+                            else a relative URL is returned (default False).
+        """
 
     @property
     def security(self) -> IdEncodingHelper:

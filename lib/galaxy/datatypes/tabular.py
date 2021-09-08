@@ -802,6 +802,7 @@ class Vcf(BaseVcf):
 class VcfGz(BaseVcf, binary.Binary):
     # This class name is a misnomer, should be VcfBgzip
     file_ext = 'vcf_bgzip'
+    file_ext_export_alias = 'vcf.gz'
     compressed = True
     compressed_format = "gzip"
 

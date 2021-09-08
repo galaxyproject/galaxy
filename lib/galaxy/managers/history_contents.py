@@ -39,7 +39,7 @@ log = logging.getLogger(__name__)
 
 # into its own class to have it's own filters, etc.
 # TODO: but can't inherit from model manager (which assumes only one model)
-class HistoryContentsManager(containers.ContainerManagerMixin):
+class HistoryContentsManager(containers.ContainerManagerMixin, base.SortableManager):
 
     root_container_class = model.History
 

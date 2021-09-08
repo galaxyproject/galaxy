@@ -407,13 +407,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    The dependency resolvers config file specifies an ordering and
-    options for how Galaxy resolves tool dependencies (requirement
-    tags in Tool XML). The default ordering is to the use the Tool
-    Shed for tools installed that way, use local Galaxy packages, and
-    then use Conda if available. See
-    https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
-    for more information on these options.
+    Specifies the path to the standalone dependency resolvers
+    configuration file. This configuration can now be specified
+    directly in the Galaxy configuration, see the description of the
+    'dependency_resolvers' option for details.
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``dependency_resolvers_conf.xml``
@@ -682,17 +679,33 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``containers_resolvers_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``container_resolvers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Container resolvers configuration (beta). Set up a file describing
     container resolvers to use when discovering containers for Galaxy.
-    If this is set to None, the default containers loaded is
+    If this is set to None, the default container resolvers loaded is
     determined by enable_mulled_containers.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``container_resolvers``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying a container_resolvers_config_file, the
+    definition of the resolvers to enable can be embedded into
+    Galaxy's config with this option. This has no effect if a
+    container_resolvers_config_file is used.
+    The syntax, available resolvers, and documentation of their
+    options is explained in detail in the documentation:
+    https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~
@@ -1127,6 +1140,66 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_content_directory``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Point Galaxy at a repository consisting of a copy of the bio.tools
+    database (e.g. https://github.com/bio-tools/content/) to resolve
+    bio.tools data for tool metadata.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``biotools_use_api``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to true to attempt to resolve bio.tools metadata for
+    tools for tool not resovled via biotools_content_directory.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_type``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    bio.tools web service request related caching. The type of beaker
+    cache used.
+:Default: ``file``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_data_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    bio.tools web service request related caching. The data directory
+    to point beaker cache at.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``biotools/data``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_lock_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    bio.tools web service request related caching. The lock directory
+    to point beaker cache at.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``biotools/locks``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``citation_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -1456,6 +1529,17 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_account_interface``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow users to manage their account data, change passwords or
+    delete their accounts.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``session_duration``
 ~~~~~~~~~~~~~~~~~~~~
@@ -1598,6 +1682,17 @@
     Proxy host - assumed to just be hosted on the same hostname and
     port as Galaxy by default.
 :Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_base_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Base path for interactive tools running at a subpath without a
+    subdomain. Defaults to "/".
+:Default: ``/``
 :Type: str
 
 
@@ -3332,26 +3427,68 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_edam_toolbox``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+``edam_panel_views``
+~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable beta EDAM organised toolbox which ignores admin managed
-    sections in lieu of EDAM topics only.
-:Default: ``false``
-:Type: bool
+    Comma-separated list of the EDAM panel views to load - choose from
+    merged, operations, topics. Set to empty string to disable EDAM
+    all together. Set default_panel_view to 'ontology:edam_topics' to
+    override default tool panel to use an EDAM view.
+:Default: ``operations,topics``
+:Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``beta_edam_toolbox_ontology_path``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``edam_toolbox_ontology_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Sets the path to EDAM ontology file.
+    Sets the path to EDAM ontology file - if the path doesn't exist
+    PyPI package data will be loaded.
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``EDAM.tsv``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``panel_views_dir``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Directory to check out for toolbox tool panel views. The path is
+    relative to the Galaxy root dir.  To use an absolute path begin
+    the path with '/'.  This is a comma-separated list.
+:Default: ``config/plugins/activities``
+:Type: str
+
+
+~~~~~~~~~~~~~~~
+``panel_views``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Definitions of static toolbox panel views embedded directly in the
+    config instead of reading YAML from directory with
+    panel_views_dir.
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``default_panel_view``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default tool panel view for the current Galaxy configuration. This
+    should refer to an id of a panel view defined using the
+    panel_views or panel_views_dir configuration options or an EDAM
+    panel view. The default panel view is simply called `default` and
+    refers to the tool panel state defined by the integrated tool
+    panel.
+:Default: ``default``
 :Type: str
 
 
@@ -3652,28 +3789,29 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``ftp_upload_dir``
-~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable Galaxy's "Upload via FTP" interface.  You'll need to
-    install and configure an FTP server (we've used ProFTPd since it
-    can use Galaxy's database for authentication) and set the
-    following two options. This should point to a directory containing
-    subdirectories matching users' identifier (defaults to e-mail),
-    where Galaxy will look for files.
-:Default: ``None``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``ftp_upload_site``
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    This should be the hostname of your FTP server, which will be
-    provided to users in the help text.
+    Enable Galaxy's "Upload via FTP" interface.  You'll need to
+    install and configure an FTP server (we've used ProFTPd since it
+    can use Galaxy's database for authentication) and set the
+    following two options. This will be provided to users in the help
+    text as 'log in to the FTP server at '. Thus, it should be the
+    hostname of your FTP server.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``ftp_upload_dir``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This should point to a directory containing subdirectories
+    matching users' identifier (defaults to e-mail), where Galaxy will
+    look for files.
 :Default: ``None``
 :Type: str
 
@@ -3861,6 +3999,9 @@
     definition of the resolvers to enable can be embedded into
     Galaxy's config with this option. This has no effect if a
     dependency_resolvers_config_file is used.
+    The syntax, available resolvers, and documentation of their
+    options is explained in detail in the documentation:
+    https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
 :Default: ``None``
 :Type: seq
 
@@ -4426,7 +4567,7 @@
     filtering
     (https://galaxyproject.org/user-defined-toolbox-filters/)
     functions.
-:Default: ``galaxy.tools.filters,galaxy.tools.toolbox.filters``
+:Default: ``galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters``
 :Type: str
 
 

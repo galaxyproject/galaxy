@@ -617,7 +617,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 continue
             if step.upgrade_messages:
                 has_upgrade_messages = True
-            if step.type == 'tool' or step.type is None:
+            if step.type in ('tool', 'subworkflow', None):
                 if step.module.version_changes:
                     step_version_changes.extend(step.module.version_changes)
                 step_errors = step.module.get_errors()
@@ -805,7 +805,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Fix any missing parameters
             upgrade_message_dict = module.check_and_update_state() or {}
             if hasattr(module, "version_changes") and module.version_changes:
-                upgrade_message_dict[module.tool.name] = "\n".join(module.version_changes)
+                upgrade_message_dict[module.get_name()] = "\n".join(module.version_changes)
             # Get user annotation.
             config_form = module.get_config_form(step=step)
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
@@ -1279,12 +1279,12 @@ class WorkflowContentsManager(UsesAnnotations):
             uuid = step_dict.get("uuid", None)
             if uuid and uuid != "None":
                 if uuid in discovered_uuids:
-                    raise exceptions.DuplicatedIdentifierException("Duplicate step UUID in request.")
+                    raise exceptions.DuplicatedIdentifierException(f"Duplicate step UUID '{uuid}' in request.")
                 discovered_uuids.add(uuid)
             label = step_dict.get("label", None)
             if label:
                 if label in discovered_labels:
-                    raise exceptions.DuplicatedIdentifierException("Duplicated step label in request.")
+                    raise exceptions.DuplicatedIdentifierException(f"Duplicated step label '{label}' in request.")
                 discovered_labels.add(label)
 
             if 'workflow_outputs' in step_dict:
@@ -1297,13 +1297,13 @@ class WorkflowContentsManager(UsesAnnotations):
                         output_label = output_dict.get("label", None)
                         if output_label:
                             if label in discovered_output_labels:
-                                raise exceptions.DuplicatedIdentifierException("Duplicated workflow output label in request.")
+                                raise exceptions.DuplicatedIdentifierException(f"Duplicated workflow output label '{label}' in request.")
                             discovered_output_labels.add(label)
 
                         output_uuid = step_dict.get("output_uuid", None)
                         if output_uuid:
                             if output_uuid in discovered_output_uuids:
-                                raise exceptions.DuplicatedIdentifierException("Duplicate workflow output UUID in request.")
+                                raise exceptions.DuplicatedIdentifierException(f"Duplicate workflow output UUID '{output_uuid}' in request.")
                             discovered_output_uuids.add(uuid)
 
             yield step_dict

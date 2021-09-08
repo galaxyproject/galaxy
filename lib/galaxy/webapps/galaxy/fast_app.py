@@ -26,6 +26,10 @@ api_tags_metadata = [
         "description": "Operations with genome data.",
     },
     {
+        "name": "group_roles",
+        "description": "Operations with group roles.",
+    },
+    {
         "name": "licenses",
         "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",
     },
@@ -87,7 +91,7 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             return response
 
 
-def initialize_fast_app(gx_webapp, gx_app):
+def initialize_fast_app(gx_wsgi_webapp, gx_app):
     app = FastAPI(
         title="Galaxy API",
         docs_url="/api/docs",
@@ -97,6 +101,6 @@ def initialize_fast_app(gx_webapp, gx_app):
     add_galaxy_middleware(app, gx_app)
     add_request_id_middleware(app)
     include_all_package_routers(app, 'galaxy.webapps.galaxy.api')
-    wsgi_handler = WSGIMiddleware(gx_webapp)
+    wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     app.mount('/', wsgi_handler)
     return app
