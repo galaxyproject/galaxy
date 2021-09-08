@@ -36,7 +36,7 @@
             image: {type: String, required: true},
             blurb: {type: String, required: true},
             intro: {type: String, required: true},
-            imageLoc: {type: String, required: false, default: "static/plugins/welcome_page/new_user/static/topics/"},
+            imageLoc: {type: String, required: false, default: "plugins/welcome_page/new_user/static/topics/"},
 
         },
         methods:    {    

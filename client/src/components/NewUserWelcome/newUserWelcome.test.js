@@ -21,6 +21,8 @@ describe( 'New user first view', () => {
             propsData,
             localVue,
         });
+        console.log("helloworld");
+        console.log(wrapper);
     });
 
     it("Contains standard header", async () => {

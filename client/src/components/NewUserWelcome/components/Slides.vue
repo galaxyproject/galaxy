@@ -34,7 +34,7 @@
         props: {
             header: {type: String, required: true},
             slides: {type: Array, required: true},
-            imageLoc: {type: String, required: false, default: "static/plugins/welcome_page/new_user/static/topics/"},
+            imageLoc: {type: String, required: false, default: "plugins/welcome_page/new_user/static/topics/"},
         },
         methods: {
             imgUrl(src) {

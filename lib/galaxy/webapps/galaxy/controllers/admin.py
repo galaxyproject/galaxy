@@ -16,9 +16,9 @@ from galaxy.security.validate_user_input import validate_password
 from galaxy.tool_shed.util.repository_util import get_ids_of_tool_shed_repositories_being_installed
 from galaxy.util import (
     nice_size,
+    pretty_print_time_interval,
     sanitize_text,
-    url_get,
-    pretty_print_time_interval
+    url_get
 )
 from galaxy.util.tool_shed import common_util, encoding_util
 from galaxy.web import url_for
