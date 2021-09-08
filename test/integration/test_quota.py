@@ -1,8 +1,3 @@
-
-import json
-
-from requests import delete
-
 from galaxy_test.base.populators import (
     DatasetPopulator,
 )
@@ -66,10 +61,10 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
         quota_id = quota["id"]
 
         new_quota_name = "updated-quota-name"
-        update_payload = json.dumps({
+        update_payload = {
             'name': new_quota_name,
-        })
-        put_response = self._put(f"quotas/{quota_id}", data=update_payload)
+        }
+        put_response = self._put(f"quotas/{quota_id}", data=update_payload, json=True)
         put_response.raise_for_status()
         assert "has been renamed to" in put_response.text
 
@@ -90,7 +85,7 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
         quota_name = "test-delete-purge-quota"
         quota = self._create_quota_with_name(quota_name)
         quota_id = quota["id"]
-        delete_response = self._delete_and_purge(f"quotas/{quota_id}")
+        delete_response = self._delete_and_purge(quota_id)
         delete_response.raise_for_status()
         self._assert_quota_is_deleted(quota_id)
 
@@ -111,7 +106,7 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
         json_response = show_response.json()
         assert user_email in str(json_response["users"])
 
-        delete_response = self._delete_and_purge(f"quotas/{quota_id}")
+        delete_response = self._delete_and_purge(quota_id)
         delete_response.raise_for_status()
         show_response = self._get(f"quotas/deleted/{quota_id}")
         show_response.raise_for_status()
@@ -146,7 +141,7 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
         quota_name = "test-duplicated-quota"
         self._create_quota_with_name(quota_name)
         payload = self._build_quota_payload_with_name(quota_name)
-        create_response = self._post("quotas", data=payload)
+        create_response = self._post("quotas", data=payload, json=True)
         self._assert_status_code_is(create_response, 400)
 
     def test_400_when_show_unknown_quota(self):
@@ -172,18 +167,11 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
             'in_groups': []
         }
 
-    def _delete_and_purge(self, url):
-        headers = self.galaxy_interactor.api_key_header(
-            key=self.galaxy_interactor.api_key,
-            admin=True,
-            anon=False,
-            headers=None,
-        )
-        json_data = json.dumps({
+    def _delete_and_purge(self, quota_id):
+        data = {
             'purge': 'true'
-        })
-        api_url = self._api_url(url)
-        return delete(api_url, data=json_data, headers=headers)
+        }
+        return self._delete(f"quotas/{quota_id}", data=data, admin=True, json=True)
 
     def _assert_quota_is_deleted(self, quota_id: str):
         show_response = self._get(f"quotas/deleted/{quota_id}")
