@@ -6,12 +6,12 @@ from functools import total_ordering
 
 from galaxy import exceptions
 from galaxy.model.none_like import NoneDataset
+from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.tools.parameters.wrapped_json import (
     data_collection_input_to_staging_path_and_source_path,
     data_input_to_staging_path_and_source_path,
 )
 from galaxy.util import filesystem_safe_string
-from galaxy.util.object_wrapper import wrap_with_safe_string
 
 log = logging.getLogger(__name__)
 

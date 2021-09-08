@@ -3,6 +3,7 @@ boltons
 docutils
 markupsafe
 packaging
+pycryptodome
 pyyaml
 requests
 routes

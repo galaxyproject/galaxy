@@ -49,7 +49,7 @@ class RatableManagerMixin:
         # TODO?: update and create to RatingsManager (if not overkill)
         rating = self.rating(item, user, as_int=False)
         if not rating:
-            rating = self.rating_assoc(user=user)
+            rating = self.rating_assoc(user, item)
             self.associate(rating, item)
         rating.rating = value
 

@@ -8,9 +8,9 @@ from json import loads
 
 from galaxy.util import (
     galaxy_directory,
+    sanitize_lists_to_string,
     unicodify,
 )
-from galaxy.util.object_wrapper import sanitize_lists_to_string
 
 log = logging.getLogger(__name__)
 

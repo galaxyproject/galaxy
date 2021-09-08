@@ -130,52 +130,50 @@ class MappingTests(BaseModelTestCase):
     def test_ratings(self):
         model = self.model
 
-        u = model.User(email="rater@example.com", password="password")
+        user_email = "rater@example.com"
+        u = model.User(email=user_email, password="password")
         self.persist(u)
 
-        def persist_and_check_rating(rating_class, **kwds):
-            rating_association = rating_class()
-            rating_association.rating = 5
-            rating_association.user = u
-            for key, value in kwds.items():
-                setattr(rating_association, key, value)
+        def persist_and_check_rating(rating_class, item):
+            rating = 5
+            rating_association = rating_class(u, item, rating)
             self.persist(rating_association)
             self.expunge()
-            stored_annotation = self.query(rating_class).all()[0]
-            assert stored_annotation.rating == 5
-            assert stored_annotation.user.email == "rater@example.com"
+            stored_rating = self.query(rating_class).all()[0]
+            assert stored_rating.rating == rating
+            assert stored_rating.user.email == user_email
 
         sw = model.StoredWorkflow()
         sw.user = u
         self.persist(sw)
-        persist_and_check_rating(model.StoredWorkflowRatingAssociation, stored_workflow=sw)
+        persist_and_check_rating(model.StoredWorkflowRatingAssociation, sw)
 
         h = model.History(name="History for Rating", user=u)
         self.persist(h)
-        persist_and_check_rating(model.HistoryRatingAssociation, history=h)
+        persist_and_check_rating(model.HistoryRatingAssociation, h)
 
         d1 = model.HistoryDatasetAssociation(extension="txt", history=h, create_dataset=True, sa_session=model.session)
         self.persist(d1)
-        persist_and_check_rating(model.HistoryDatasetAssociationRatingAssociation, hda=d1)
+        persist_and_check_rating(model.HistoryDatasetAssociationRatingAssociation, d1)
 
         page = model.Page()
         page.user = u
         self.persist(page)
-        persist_and_check_rating(model.PageRatingAssociation, page=page)
+        persist_and_check_rating(model.PageRatingAssociation, page)
 
         visualization = model.Visualization()
         visualization.user = u
         self.persist(visualization)
-        persist_and_check_rating(model.VisualizationRatingAssociation, visualization=visualization)
+        persist_and_check_rating(model.VisualizationRatingAssociation, visualization)
 
         dataset_collection = model.DatasetCollection(collection_type="paired")
         history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=dataset_collection)
         self.persist(history_dataset_collection)
-        persist_and_check_rating(model.HistoryDatasetCollectionRatingAssociation, history_dataset_collection=history_dataset_collection)
+        persist_and_check_rating(model.HistoryDatasetCollectionRatingAssociation, history_dataset_collection)
 
         library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
         self.persist(library_dataset_collection)
-        persist_and_check_rating(model.LibraryDatasetCollectionRatingAssociation, library_dataset_collection=library_dataset_collection)
+        persist_and_check_rating(model.LibraryDatasetCollectionRatingAssociation, library_dataset_collection)
 
     def test_display_name(self):
 
@@ -255,7 +253,7 @@ class MappingTests(BaseModelTestCase):
 
         sw = model.StoredWorkflow()
         sw.user = u
-        tag_and_test(sw, model.StoredWorkflowTagAssociation, "tagged_workflows")
+        tag_and_test(sw, model.StoredWorkflowTagAssociation, "tagged_stored_workflows")
 
         h = model.History(name="History for Tagging", user=u)
         tag_and_test(h, model.HistoryTagAssociation, "tagged_histories")
