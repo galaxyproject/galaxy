@@ -1,4 +1,3 @@
-import json
 from typing import Any
 from unittest import SkipTest
 
@@ -123,14 +122,11 @@ class SharingApiTests(UsesApiTestCaseMixin):
         return sharing_response.json()
 
     def _set_resource_sharing(self, resource_id: str, action: str, payload: Any = None, expect_response_status: int = 200):
-        data = None
-        if payload:
-            data = json.dumps(payload)
-        sharing_response = self._put(f"{self.api_name}/{resource_id}/{action}", data=data)
+        sharing_response = self._put(f"{self.api_name}/{resource_id}/{action}", data=payload, json=True)
         self._assert_status_code_is(sharing_response, expect_response_status)
         return sharing_response.json()
 
     def _set_slug(self, resource_id: str, new_slug: str):
         payload = {"new_slug": new_slug}
-        response = self._put(f"{self.api_name}/{resource_id}/slug", json.dumps(payload))
+        response = self._put(f"{self.api_name}/{resource_id}/slug", data=payload, json=True)
         return response

@@ -1,4 +1,3 @@
-import json
 import time
 
 from requests import (
@@ -548,7 +547,7 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         assert "already shared" in sharing_response["errors"][0]
 
     def _share_history_with_payload(self, history_id, payload):
-        sharing_response = self._put(f"histories/{history_id}/share_with", data=json.dumps(payload))
+        sharing_response = self._put(f"histories/{history_id}/share_with", data=payload, json=True)
         self._assert_status_code_is(sharing_response, 200)
         return sharing_response.json()
 

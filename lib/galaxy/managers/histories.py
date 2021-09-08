@@ -1055,12 +1055,6 @@ class HistoriesService(ServiceBase):
             fasta_hdas=[LabelValuePair(label=f'{hda.hid}: {hda.name}', value=trans.security.encode_id(hda.id)) for hda in fasta_hdas],
         )
 
-    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
-        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
-        status of the resource.
-        """
-        return self.shareable_service.sharing(trans, id, payload)
-
     def _serialize_history(
             self,
             trans,
