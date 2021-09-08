@@ -154,11 +154,10 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt=br"[^\S\n]+", tmp_dir=N
 
 def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
     idx = 0
-    if not isinstance(fname_or_file_prefix, FilePrefix):
-        fname_or_file_prefix = FilePrefix(fname_or_file_prefix)
-    if fname_or_file_prefix.binary:
-        return
-    file_iterator = fname_or_file_prefix.line_iterator()
+    if isinstance(fname_or_file_prefix, FilePrefix):
+        file_iterator = fname_or_file_prefix.line_iterator()
+    else:
+        file_iterator = compression_utils.get_fileobj(fname_or_file_prefix)
     for line in file_iterator:
         line = line.rstrip('\n\r')
         if comment_designator is not None and comment_designator != '' and line.startswith(comment_designator):
@@ -466,8 +465,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     # skip header check if data is already known to be binary
     if is_binary:
         return file_ext or 'binary'
-    # get_headers returns an empty list for binary (and empty) files
-    if len(get_headers(file_prefix, None)) == 0:
+    try:
+        get_headers(file_prefix, None)
+    except UnicodeDecodeError:
         return 'data'  # default data type file extension
     if is_column_based(file_prefix, '\t', 1):
         return 'tabular'  # default tabular data type file extension
