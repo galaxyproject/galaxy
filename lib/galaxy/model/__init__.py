@@ -526,13 +526,7 @@ class User(Base, Dictifiable, RepresentById):
         self.deleted = False
         self.purged = False
         self.active = False
-        self.activation_token = None
         self.username = username
-        self.last_password_change = None
-        # Relationships
-        self.histories = []
-        self.credentials = []
-        # ? self.roles = []
 
     @property
     def extra_preferences(self):
