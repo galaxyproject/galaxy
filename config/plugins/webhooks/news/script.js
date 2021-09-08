@@ -29,7 +29,9 @@ function addNewsIframe() {
     // now we'll hardcode the version users 'see'. @hexylena will remove this
     // code when she writes the user-facing release notes, and then will file
     // an issue for how we'll fix this properly.
-    if(currentGalaxyVersion == "21.09") {
+    if(currentGalaxyVersion == "22.01") {
+        currentGalaxyVersion = "21.09";
+    } else if(currentGalaxyVersion == "21.09") {
         currentGalaxyVersion = "21.05";
     }
 
