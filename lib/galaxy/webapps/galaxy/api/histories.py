@@ -317,8 +317,8 @@ class FastAPIHistories:
         link information, the Job ID will be returned so it can be queried to determine when
         the file has been written.
         """
-        export_result = self.service.archive_export(trans, id, payload)
-        if not self.service.is_export_result_ready(export_result):
+        export_result, ready = self.service.archive_export(trans, id, payload)
+        if not ready:
             response.status_code = status.HTTP_202_ACCEPTED
         return export_result
 
@@ -758,8 +758,8 @@ class HistoriesController(BaseGalaxyAPIController):
         payload = payload or {}
         payload.update(kwds or {})
         export_payload = ExportHistoryArchivePayload(**payload)
-        export_result = self.service.archive_export(trans, id, export_payload)
-        if not self.service.is_export_result_ready(export_result):
+        export_result, ready = self.service.archive_export(trans, id, export_payload)
+        if not ready:
             trans.response.status = 202
         return export_result
 

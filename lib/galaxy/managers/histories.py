@@ -14,7 +14,6 @@ from tempfile import (
     SpooledTemporaryFile,
 )
 from typing import (
-    cast,
     List,
     Optional,
     Set,
@@ -1018,7 +1017,7 @@ class HistoriesService(ServiceBase):
         trans,
         id: EncodedDatabaseIdField,
         payload: Optional[ExportHistoryArchivePayload] = None,
-    ) -> HistoryArchiveExportResult:
+    ) -> Tuple[HistoryArchiveExportResult, bool]:
         """
         start job (if needed) to create history export for corresponding
         history.
@@ -1051,31 +1050,27 @@ class HistoriesService(ServiceBase):
         else:
             job = jeha.job
 
+        ready = bool((up_to_date and jeha.ready) or exporting_to_uri)
+
         if exporting_to_uri:
             # we don't have a jeha, there will never be a download_url. Just let
             # the client poll on the created job_id to determine when the file has been
             # written.
             job_id = trans.security.encode_id(job.id)
-            return JobIdResponse(job_id=job_id)
+            return (JobIdResponse(job_id=job_id), ready)
 
         if up_to_date and jeha.ready:
             serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
-            return JobExportHistoryArchiveModel.parse_obj(serialized_jeha)
+            return (JobExportHistoryArchiveModel.parse_obj(serialized_jeha), ready)
         else:
             # Valid request, just resource is not ready yet.
             if jeha:
                 serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
-                return JobExportHistoryArchiveModel.parse_obj(serialized_jeha)
+                return (JobExportHistoryArchiveModel.parse_obj(serialized_jeha), ready)
             else:
                 assert job is not None, "logic error, don't have a jeha or a job"
                 job_id = trans.security.encode_id(job.id)
-                return JobIdResponse(job_id=job_id)
-
-    def is_export_result_ready(self, export_result: HistoryArchiveExportResult) -> bool:
-        if isinstance(export_result, JobIdResponse):
-            return False
-        export_result = cast(JobExportHistoryArchiveModel, export_result)
-        return export_result.up_to_date and export_result.ready
+                return (JobIdResponse(job_id=job_id), ready)
 
     def get_ready_history_export(
         self,
