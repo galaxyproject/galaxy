@@ -8273,14 +8273,6 @@ class TransferJob(Base, RepresentById):
     terminal_states = [states.ERROR,
                        states.DONE]
 
-    def __init__(self, state=None, path=None, info=None, pid=None, socket=None, params=None):
-        self.state = state
-        self.path = path
-        self.info = info
-        self.pid = pid
-        self.socket = socket
-        self.params = params
-
 
 class Tag(Base, RepresentById):
     __tablename__ = 'tag'

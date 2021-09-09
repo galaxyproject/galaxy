@@ -4829,7 +4829,13 @@ class TestTransferJob(BaseTest):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         state, path, info, pid, socket, params = 'd', 'a', 'b', 2, 3, 'c'
-        obj = cls_(state, path, info, pid, socket, params)
+        obj = cls_()
+        obj.state = state
+        obj.path = path
+        obj.info = info
+        obj.pid = pid
+        obj.socket = socket
+        obj.params = params
         obj.create_time = create_time
         obj.update_time = update_time
 
