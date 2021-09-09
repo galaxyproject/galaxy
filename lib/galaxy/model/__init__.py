@@ -7347,12 +7347,6 @@ class WorkflowRequestStepState(Base, Dictifiable, RepresentById):
 
     dict_collection_visible_keys = ['id', 'name', 'value', 'workflow_step_id']
 
-    def __init__(self, workflow_step=None, name=None, value=None):
-        self.workflow_step = workflow_step
-        self.name = name  # TODO this is unused and not persisted. Verify and remove.
-        self.value = value
-        self.type = type  # TODO this is incorrect. Verify and remove.
-
 
 class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, RepresentById):
     """ Workflow step input dataset parameters.

@@ -6147,7 +6147,9 @@ class TestWorkflowRequestStepState(BaseTest):
 
     def test_columns(self, session, cls_, workflow_step, workflow_invocation):
         value = 'a'
-        obj = cls_(workflow_step, None, value)
+        obj = cls_()
+        obj.workflow_step = workflow_step
+        obj.value = value
         obj.workflow_invocation = workflow_invocation
 
         with dbcleanup(session, obj) as obj_id:
@@ -6158,7 +6160,8 @@ class TestWorkflowRequestStepState(BaseTest):
             assert stored_obj.value == value
 
     def test_relationships(self, session, cls_, workflow_step, workflow_invocation):
-        obj = cls_(workflow_step)
+        obj = cls_()
+        obj.workflow_step = workflow_step
         obj.workflow_invocation = workflow_invocation
 
         with dbcleanup(session, obj) as obj_id:
