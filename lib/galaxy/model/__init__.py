@@ -4612,8 +4612,6 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
         self.item_count = item_count
         self.order_id = order_id
         self.genome_build = genome_build
-        self.folders = []
-        self.datasets = []
 
     def add_library_dataset(self, library_dataset, genome_build=None):
         library_dataset.folder_id = self.id
