@@ -7717,14 +7717,6 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
 
-    def __init__(self, server_url=None, handle=None, secret=None, issued=None, lifetime=None, assoc_type=None):
-        self.server_url = server_url
-        self.handle = handle
-        self.secret = secret
-        self.issued = issued
-        self.lifetime = lifetime
-        self.assoc_type = assoc_type
-
     def save(self):
         self.sa_session.add(self)
         self.sa_session.flush()

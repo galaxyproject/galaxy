@@ -3861,7 +3861,13 @@ class TestPSAAssociation(BaseTest):
 
     def test_columns(self, session, cls_):
         server_url, handle, secret, issued, lifetime, assoc_type = 'a', 'b', 'c', 1, 2, 'd'
-        obj = cls_(server_url, handle, secret, issued, lifetime, assoc_type)
+        obj = cls_()
+        obj.server_url = server_url
+        obj.handle = handle
+        obj.secret = secret
+        obj.issued = issued
+        obj.lifetime = lifetime
+        obj.assoc_type = assoc_type
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
