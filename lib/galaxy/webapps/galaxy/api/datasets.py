@@ -127,7 +127,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     @web.legacy_expose_api_anonymous
     def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):
         """
-        GET /api/datasets/{encoded_dataset_id}
+        GET  datasets/{encoded_dataset_id}
         Displays information about and/or content of a dataset.
         """
         # Get dataset.
@@ -187,6 +187,22 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             'description': description,
             'percent_used': percent_used,
         }
+
+    @web.expose_api_anonymous
+    def show_inheritance_chain(self, trans, dataset_id, hda_ldda='hda', **kwd):
+        """
+        GET /api/datasets/{dataset_id}/inheritance_chain
+
+        Display user-facing storage details related to the objectstore a
+        dataset resides in.
+        """
+        dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+        inherit_chain = dataset_instance.source_dataset_chain
+        result = []
+        for dep in inherit_chain:
+            result.append({"name": f"{dep[0].name}", "dep": dep[1]})
+
+        return result
 
     @web.expose_api
     def update_permissions(self, trans, dataset_id, payload, **kwd):

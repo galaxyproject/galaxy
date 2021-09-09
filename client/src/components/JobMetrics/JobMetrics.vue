@@ -13,17 +13,17 @@
             </table>
         </div>
 
-        <div id="aws-estimate" v-if="isAwsEstimate && awsEstimate">
+        <div id="aws-estimate" v-if="aws_estimate && computedAwsEstimate">
             <h3>AWS estimate</h3>
-            <b>{{ awsEstimate.price }} USD</b><br />
-            This job requested {{ awsEstimate.vcpus }} cores and {{ awsEstimate.memory }} Gb. Given this, the smallest
-            EC2 machine we could find is <span id="aws_name">{{ awsEstimate.instance.name }}</span> (<span
+            <b>{{ computedAwsEstimate.price }} USD</b><br />
+            This job requested {{ computedAwsEstimate.vcpus }} cores and {{ computedAwsEstimate.memory }} Gb. Given this, the smallest
+            EC2 machine we could find is <span id="aws_name">{{ computedAwsEstimate.instance.name }}</span> (<span
                 id="aws_mem"
-                >{{ awsEstimate.instance.mem }}</span
+                >{{ computedAwsEstimate.instance.mem }}</span
             >
-            GB / <span id="aws_vcpus">{{ awsEstimate.instance.vcpus }}</span> vCPUs /
-            <span id="aws_cpu">{{ awsEstimate.instance.cpu }}</span
-            >). That instance is priced at {{ awsEstimate.instance.price }} USD/hour.<br />
+            GB / <span id="aws_vcpus">{{ computedAwsEstimate.instance.vcpus }}</span> vCPUs /
+            <span id="aws_cpu">{{ computedAwsEstimate.instance.cpu }}</span
+            >). That instance is priced at {{ computedAwsEstimate.instance.price }} USD/hour.<br />
             Please note, that those numbers are only estimates, all jobs are always free of charge for all users.
         </div>
     </div>
@@ -43,7 +43,7 @@ export default {
             type: String,
         },
         aws_estimate: {
-            type: String,
+            type: Boolean,
         },
         datasetType: {
             type: String,
@@ -66,11 +66,8 @@ export default {
     },
     computed: {
         ...mapGetters(["getJobMetricsByDatasetId", "getJobMetricsByJobId"]),
-        isAwsEstimate: function () {
-            return this.aws_estimate && this.aws_estimate.toUpperCase() === "true".toUpperCase();
-        },
-        awsEstimate: function () {
-            if (!this.isAwsEstimate) {
+        computedAwsEstimate: function () {
+            if (!this.aws_estimate) {
                 return;
             }
 

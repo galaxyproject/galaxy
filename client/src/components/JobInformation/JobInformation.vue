@@ -26,7 +26,7 @@
                 </tr>
                 <tr v-if="job && includeTimes">
                     <td>Updated</td>
-                    <td id="created" v-if="job.update_time">
+                    <td id="updated" v-if="job.update_time">
                         <UtcDate :date="job.update_time" mode="pretty" />
                     </td>
                 </tr>
@@ -47,7 +47,7 @@
                     <td>Job Messages</td>
                     <td>
                         <ul style="padding-left: 15px; margin-bottom: 0px">
-                            <li v-for="message in job.job_messages" :key="message">{{ message }}</li>
+                            <li v-for="(message, index) in job.job_messages" :key="index">{{ message }}</li>
                         </ul>
                     </td>
                 </tr>
