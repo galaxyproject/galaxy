@@ -2,21 +2,21 @@
     <div class="collection-menu">
         <b-button-group>
             <IconButton
-            icon="info-circle"
-            v-if="hasJob"
-            key="dataset-details"
-            title="View Dataset Collection Details"
-            @click.stop.prevent="backboneRoute(collectionDetailsPath)"
-            variant="link"
-            class="px-1"
-        >
-        </IconButton>
+                icon="info-circle"
+                v-if="hasJob"
+                key="dataset-details"
+                title="View Dataset Collection Details"
+                @click.stop.prevent="backboneRoute(collectionDetailsPath)"
+                variant="link"
+                class="px-1"
+            >
+            </IconButton>
             <IconButton
                 v-if="notIn(STATES.DISCARDED)"
                 icon="pen"
                 :title="editButtonTitle"
                 :disabled="dsc.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
-                @click.stop="backboneRoute(collectionEditPath)"
+                @click.stop="backboneRoute('collection/edit/' + dsc.hdca_id)"
                 variant="link"
                 class="px-1 dsc-edit-view"
             />
@@ -88,9 +88,6 @@ export default {
         collectionDetailsPath() {
             return `jobs/${this.dsc.job_source_id}/view`;
         },
-        collectionEditPath() {
-            return `collection/edit/` + dsc.hdca_id
-        }
     },
     methods: {
         runDelete: function (kind) {
@@ -109,5 +106,5 @@ export default {
             return goodStates.has(this.dsc.state);
         },
     },
-}
+};
 </script>
