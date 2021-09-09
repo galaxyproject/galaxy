@@ -4,26 +4,20 @@
         <edam_operation>operation_0224</edam_operation>
     </edam_operations>
     <requirements>
-        <requirement type="package" version="11.25.1">ncbi-datasets-cli</requirement>
+        <requirement type="package" version="12.11.0">ncbi-datasets-cli</requirement>
     </requirements>
     <command><![CDATA[
-#if $json_param:
-    cat '$payload' > '$output'
-#else
-    cp '$file_param' '$output'
-#end if
+datasets version
+&& datasets download --input-json $file_param --filename $compressed_archive --no-progressbar
+&& unzip -l $compressed_archive
     ]]></command>
-    <configfiles>
-        <configfile name="payload">$json_param</configfile>
-    </configfiles>
     <inputs action="https://www.ncbi.nlm.nih.gov/datasets/genomes" check_values="true" method="get">
         <display>go to NCBI Datasets Genomes server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=ncbi_datasets_source"/>
         <param name="file_param" type="file" optional="true"/>
-        <param name="json_param" type="json" optional="true"/>
     </inputs>
     <outputs>
-        <data name="output" format="txt" label="POSTed file"/>
+        <data name="compressed_archive" format="zip" label="NCBI Genome Dataset"/>
     </outputs>
     <options sanitize="true"/>
     <citations>
