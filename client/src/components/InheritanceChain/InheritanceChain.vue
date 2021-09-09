@@ -54,7 +54,7 @@ export default {
     background-color: #eee;
 }
 .current-dataset {
-  background-color: #fff;
+    background-color: #fff;
     font-weight: bold;
 }
 .inheritance-arrow {
