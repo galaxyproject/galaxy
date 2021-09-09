@@ -4715,13 +4715,6 @@ class LibraryDataset(Base, RepresentById):
                       ('upload_paths', 'Upload files from filesystem paths'),
                       ('import_from_history', 'Import datasets from your current history')]
 
-    def __init__(self, folder=None, order_id=None, name=None, info=None, library_dataset_dataset_association=None, **kwd):
-        self.folder = folder
-        self.order_id = order_id
-        self.name = name
-        self.info = info
-        self.library_dataset_dataset_association = library_dataset_dataset_association
-
     def get_info(self):
         if self.library_dataset_dataset_association:
             return self.library_dataset_dataset_association.info
