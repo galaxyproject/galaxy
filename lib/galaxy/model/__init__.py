@@ -6701,11 +6701,6 @@ class WorkflowStepConnection(Base, RepresentById):
     # outside of Galaxy.
     NON_DATA_CONNECTION = "__NO_INPUT_OUTPUT_NAME__"
 
-    def __init__(self):
-        self.output_step_id = None
-        self.output_name = None
-        self.input_step_input_id = None
-
     @property
     def non_data_connection(self):
         return (self.output_name == self.input_name == WorkflowStepConnection.NON_DATA_CONNECTION)
