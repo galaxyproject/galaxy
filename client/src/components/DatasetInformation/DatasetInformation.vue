@@ -64,7 +64,7 @@
 import Utils from "utils/utils";
 import UtcDate from "components/UtcDate";
 import DecodedId from "../DecodedId";
-import { DatasetProvider } from "../WorkflowInvocationState/providers";
+import { DatasetProvider } from "components/providers";
 
 export default {
     props: {

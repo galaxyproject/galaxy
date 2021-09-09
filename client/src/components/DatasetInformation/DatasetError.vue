@@ -87,7 +87,7 @@
 <script>
 import DatasetErrorDetails from "./DatasetErrorDetails";
 import FormElement from "components/Form/FormElement";
-import { DatasetProvider } from "components/WorkflowInvocationState/providers";
+import { DatasetProvider } from "components/providers";
 import { JobDetailsProvider, JobProblemProvider } from "components/providers/JobProvider";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";

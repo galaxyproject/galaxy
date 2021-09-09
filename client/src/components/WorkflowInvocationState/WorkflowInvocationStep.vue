@@ -23,7 +23,7 @@
                                 <summary><b>Output Datasets</b></summary>
                                 <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                     <b>{{ name }}</b>
-                                    <workflow-invocation-data-contents :data_item="value" />
+                                    <generic-history-content :data_item="value" />
                                 </div>
                             </details>
                             <details
@@ -33,7 +33,7 @@
                                 <summary><b>Output Dataset Collections</b></summary>
                                 <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                                     <b>{{ name }}</b>
-                                    <workflow-invocation-data-contents :data_item="value" />
+                                    <generic-history-content :data_item="value" />
                                 </div>
                             </details>
                             <div class="portlet-body" style="width: 100%; overflow-x: auto">
@@ -45,7 +45,7 @@
                                     v-else-if="workflowStepType == 'parameter_input'"
                                     :parameters="[invocation.input_step_parameters[stepDetails.workflow_step_label]]"
                                 ></parameter-step>
-                                <workflow-invocation-data-contents
+                                <generic-history-content
                                     v-else-if="isDataStep && invocation.inputs[workflowStep.id]"
                                     :data_item="invocation.inputs[workflowStep.id]"
                                 />
@@ -89,8 +89,8 @@ import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex";
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
-import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents.vue";
-import { InvocationStepProvider } from "./providers";
+import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
+import { InvocationStepProvider } from "components/providers";
 import LoadingSpan from "../LoadingSpan";
 
 export default {
@@ -99,7 +99,7 @@ export default {
         JobStep,
         ParameterStep,
         InvocationStepProvider,
-        WorkflowInvocationDataContents,
+        GenericHistoryContent,
         WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
     },
     props: {
