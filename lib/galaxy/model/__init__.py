@@ -6200,14 +6200,12 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     dict_element_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted', 'hidden']
 
     def __init__(self, user=None, name=None, slug=None, create_time=None, update_time=None, published=False, latest_workflow_id=None, workflow=None, hidden=False):
-        self.id = None
         self.user = user
         self.name = name
         self.slug = slug
         self.create_time = create_time
         self.update_time = update_time
         self.published = published
-        self.latest_workflow_id = None
         self.latest_workflow = workflow
         self.workflows = listify(workflow)
         self.hidden = hidden
