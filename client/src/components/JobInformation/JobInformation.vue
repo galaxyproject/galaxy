@@ -7,7 +7,7 @@
                     <td>Galaxy Tool ID:</td>
                     <td id="galaxy-tool-id">
                         {{ job.tool_id }}
-                        <a title="run" :href="`${getAppRoot()}root?tool_id=${job.tool_id}`" target="_top">
+                        <a title="Run tool" :href="`${getAppRoot()}root?tool_id=${job.tool_id}`" target="_top">
                             <font-awesome-icon icon="play" />
                         </a>
                         <copy-to-clipboard
@@ -39,7 +39,7 @@
                     <td id="workflow-id">
                         {{ job.workflow_invocation_step.stored_workflow_id }}
                         <a
-                            title="view"
+                            title="View workflow"
                             :href="`${getAppRoot()}workflow/display_by_id?id=${
                                 job.workflow_invocation_step.stored_workflow_id
                             }`"
@@ -90,7 +90,7 @@
                     <td>Job API ID:</td>
                     <td id="encoded-job-id">
                         {{ job.id }} <decoded-id :id="job.id" />
-                        <a title="rerun" :href="`${getAppRoot()}root?job_id=${job.id}`" target="_top"
+                        <a title="Rerun job" :href="`${getAppRoot()}root?job_id=${job.id}`" target="_top"
                             ><font-awesome-icon icon="redo"
                         /></a>
                     </td>
