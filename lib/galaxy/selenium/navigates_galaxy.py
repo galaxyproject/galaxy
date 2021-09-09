@@ -1370,10 +1370,11 @@ class NavigatesGalaxy(HasDriver):
         return editable_text_input_element
 
     def history_panel_name_input(self):
-        if self.is_beta_history():
-            editable_text_input_element = self.beta_history_element("name input").wait_for_visible()
-        else:
+        if not self.is_beta_history():
             editable_text_input_element = self.history_panel_click_to_rename()
+        history_panel = self.components.history_panel
+        edit = history_panel.name_edit_input
+        editable_text_input_element = edit.wait_for_visible()
         return editable_text_input_element
 
     def history_panel_click_to_rename(self):
