@@ -887,7 +887,11 @@ class TestEvent(BaseTest):
         message, tool_id = 'a', 'b'
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        obj = cls_(message, history, user, galaxy_session)
+        obj = cls_()
+        obj.message = message
+        obj.history = history
+        obj.user = user
+        obj.galaxy_session = galaxy_session
         obj.create_time = create_time
         obj.update_time = update_time
         obj.tool_id = tool_id
@@ -904,7 +908,10 @@ class TestEvent(BaseTest):
             assert stored_obj.tool_id == tool_id
 
     def test_relationships(self, session, cls_, history, galaxy_session, user):
-        obj = cls_(None, history, user, galaxy_session)
+        obj = cls_()
+        obj.history = history
+        obj.user = user
+        obj.galaxy_session = galaxy_session
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)

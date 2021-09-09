@@ -6048,13 +6048,6 @@ class Event(Base, RepresentById):
     user = relationship('User')
     galaxy_session = relationship('GalaxySession')
 
-    def __init__(self, message=None, history=None, user=None, galaxy_session=None):
-        self.history = history
-        self.galaxy_session = galaxy_session
-        self.user = user
-        self.tool_id = None
-        self.message = message
-
 
 class GalaxySession(Base, RepresentById):
     __tablename__ = 'galaxy_session'
