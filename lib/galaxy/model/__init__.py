@@ -8066,16 +8066,6 @@ class Page(Base, Dictifiable, RepresentById):
 
     dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted', 'username']
 
-    def __init__(self):
-        self.id = None
-        self.user = None
-        self.title = None
-        self.slug = None
-        self.latest_revision_id = None
-        self.revisions = []
-        self.importable = None
-        self.published = None
-
     def to_dict(self, view='element'):
         rval = super().to_dict(view=view)
         rev = []
