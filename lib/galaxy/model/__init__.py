@@ -7537,8 +7537,6 @@ class MetadataFile(Base, StorableObject, RepresentById):
             self.history_dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
             self.library_dataset = dataset
-        self.hda_id = None
-        self.lda_id = None
         self.name = name
 
     @property
