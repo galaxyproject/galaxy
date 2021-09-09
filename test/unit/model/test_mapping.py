@@ -6087,7 +6087,10 @@ class TestWorkflowRequestInputParameter(BaseTest):
 
     def test_columns(self, session, cls_, workflow_invocation):
         name, value, type = 'a', 'b', 'c'
-        obj = cls_(name, value, type)
+        obj = cls_()
+        obj.name = name
+        obj.value = value
+        obj.type = type
         obj.workflow_invocation = workflow_invocation
 
         with dbcleanup(session, obj) as obj_id:

@@ -7331,11 +7331,6 @@ class WorkflowRequestInputParameter(Base, Dictifiable, RepresentById):
         META_PARAMETERS = 'meta'
         RESOURCE_PARAMETERS = 'resource'
 
-    def __init__(self, name=None, value=None, type=None):
-        self.name = name
-        self.value = value
-        self.type = type
-
 
 class WorkflowRequestStepState(Base, Dictifiable, RepresentById):
     """ Workflow step value parameters.
