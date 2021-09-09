@@ -14,17 +14,20 @@
                 :items="items"
                 :multiple="multiple"
                 :filter="filter"
+                :select-all-icon="selectAllIcon"
+                :show-select-icon="undoShow && multiple"
                 :show-details="showDetails"
                 :show-time="showTime"
-                :show-navigate="mode == 'directory'"
+                :show-navigate="showNavigate"
+                :is-busy="isBusy"
                 @clicked="clicked"
                 @open="open"
-                @load="load"
+                @toggleSelectAll="toggleSelectAll"
             />
         </template>
         <template v-slot:buttons>
-            <b-btn size="sm" class="float-left" v-if="undoShow" @click="load()">
-                <div class="fa fa-caret-left mr-1" />
+            <b-btn id="back-btn" size="sm" class="float-left" v-if="undoShow" @click="load()">
+                <font-awesome-icon :icon="['fas', 'caret-left']" />
                 Back
             </b-btn>
             <b-btn
@@ -44,10 +47,16 @@
 <script>
 import Vue from "vue";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
+import { selectionStates } from "components/SelectionDialog/selectionStates";
 import { UrlTracker } from "components/DataDialog/utilities";
+import { isSubPath } from "components/FilesDialog/utilities";
 import { Services } from "./services";
 import { Model } from "./model";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
 
+library.add(faCaretLeft);
 export default {
     mixins: [SelectionDialogMixin],
     props: {
@@ -65,8 +74,13 @@ export default {
             default: false,
         },
     },
+    components: {
+        FontAwesomeIcon,
+    },
     data() {
         return {
+            allSelected: false,
+            selectedDirectories: [],
             errorMessage: null,
             filter: null,
             items: [],
@@ -76,6 +90,10 @@ export default {
             hasValue: false,
             showTime: true,
             showDetails: true,
+            showNavigate: true,
+            isBusy: false,
+            currentDirectory: undefined,
+            selectAllIcon: selectionStates.unselected,
         };
     },
     created: function () {
@@ -92,30 +110,117 @@ export default {
     methods: {
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
         formatRows() {
+            const getIcon = (isSelected, path) => {
+                if (isSelected) {
+                    return selectionStates.selected;
+                } else {
+                    return this.model.pathExists(path) ? selectionStates.mixed : selectionStates.unselected;
+                }
+            };
+
+            this.hasValue = this.model.count() > 0 || this.selectedDirectories.length > 0;
             for (const item of this.items) {
                 let _rowVariant = "active";
                 if (item.isLeaf || !this.fileMode) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
                 }
+                // if directory
+                else if (!item.isLeaf) {
+                    _rowVariant = getIcon(this.isDirectorySelected(item.id), item.url);
+                }
                 Vue.set(item, "_rowVariant", _rowVariant);
+            }
+            this.allSelected = this.checkIfAllSelected();
+            if (this.currentDirectory.url) {
+                this.selectAllIcon = getIcon(this.allSelected, this.currentDirectory.url);
             }
         },
         /** Collects selected datasets in value array **/
         clicked: function (record) {
             if (record.isLeaf || !this.fileMode) {
-                this.model.add(record);
-                this.hasValue = this.model.count() > 0;
-                if (this.multiple) {
-                    this.formatRows();
-                } else {
-                    this.finalize();
-                }
+                // record is file
+                this.selectFile(record);
             } else {
-                this.open(record);
+                // record is directory
+                // you cannot select entire root directory
+                this.urlTracker.atRoot() ? this.open(record) : this.selectDirectory(record);
+            }
+            this.formatRows();
+        },
+        unselectPath(path, unselectOnlyAboveDirectories = false, unselectId) {
+            // unselect directories
+            this.selectedDirectories = this.selectedDirectories.filter((directory) => {
+                if (unselectId === directory.id) {
+                    return false;
+                }
+
+                let matched;
+                if (unselectOnlyAboveDirectories) {
+                    matched = isSubPath(directory.url, path);
+                } else {
+                    // unselect all folders under or above the current path
+                    matched = isSubPath(directory.url, path) || isSubPath(path, directory.url);
+                }
+                // filter out those that matched
+                return !matched;
+            });
+
+            // unselect files
+            if (!unselectOnlyAboveDirectories) {
+                // unselect all files under this path
+                this.model.unselectUnderPath(path);
             }
         },
+        selectFile(file, selectOnly = false) {
+            const selected = this.model.exists(file.id);
+            if (selected) {
+                this.unselectPath(file.url, true);
+            }
+            if (selectOnly) {
+                if (!selected) {
+                    this.model.add(file);
+                }
+            } else {
+                this.model.add(file);
+            }
+
+            this.hasValue = this.model.count() > 0;
+            if (this.multiple) {
+                this.formatRows();
+            } else {
+                this.finalize();
+            }
+        },
+        selectDirectory(record) {
+            // if directory is `selected` or `mixed` unselect everything
+            if (this.isDirectorySelected(record.id) || this.model.pathExists(record.url)) {
+                this.unselectPath(record.url, false, record.id);
+            } else {
+                this.selectedDirectories.push(record);
+                // look for subdirectories
+                const recursive = true;
+                this.isBusy = true;
+                this.services.list(record.url, recursive).then((items) => {
+                    items.forEach((item) => {
+                        // construct record
+                        const sub_record = this.parseItemFileMode(item);
+                        if (sub_record.isLeaf) {
+                            // select file under this path
+                            this.selectFile(sub_record, true);
+                        } else {
+                            // select subdirectory
+                            this.selectedDirectories.push(sub_record);
+                        }
+                    });
+                    this.isBusy = false;
+                });
+            }
+        },
+        isDirectorySelected(directoryId) {
+            return this.selectedDirectories.some(({ id }) => id === directoryId);
+        },
         open: function (record) {
-            this.load(record.url);
+            this.load(record);
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         finalize: function () {
@@ -123,9 +228,36 @@ export default {
             this.modalShow = false;
             this.callback(results);
         },
+        /** check if all objects in this folders are selected **/
+        checkIfAllSelected() {
+            const isAllSelected = this.items.every(({ id }) => this.model.exists(id) || this.isDirectorySelected(id));
+
+            if (isAllSelected && !this.isDirectorySelected(this.currentDirectory.id)) {
+                // if all selected, select current folder
+                this.selectedDirectories.push(this.currentDirectory);
+            }
+
+            return isAllSelected;
+        },
+        /** select all files in current folder**/
+        toggleSelectAll: function () {
+            const isUnselectAll = this.model.pathExists(this.currentDirectory.url);
+
+            for (const item of this.items) {
+                if (isUnselectAll) {
+                    if (this.model.exists(item.id) || this.model.pathExists(item.id)) {
+                        item.isLeaf ? this.model.add(item) : this.selectDirectory(item);
+                    }
+                } else {
+                    item.isLeaf ? this.model.add(item) : this.selectDirectory(item);
+                }
+            }
+            this.hasValue = this.model.count() > 0;
+            this.formatRows();
+        },
         /** Performs server request to retrieve data records **/
-        load: function (url) {
-            url = this.urlTracker.getUrl(url);
+        load: function (record) {
+            this.currentDirectory = this.urlTracker.getUrl(record);
             this.filter = null;
             this.optionsShow = false;
             this.undoShow = !this.urlTracker.atRoot();
@@ -156,37 +288,9 @@ export default {
                     });
             } else {
                 this.services
-                    .list(url)
+                    .list(this.currentDirectory.url)
                     .then((items) => {
-                        if (this.fileMode) {
-                            items = items.map((item) => {
-                                const itemClass = item.class;
-                                return {
-                                    id: item.uri,
-                                    label: item.name,
-                                    time: item.ctime,
-                                    isLeaf: itemClass == "File",
-                                    size: item.size,
-                                    url: item.uri,
-                                    labelTitle: item.uri,
-                                };
-                            });
-                        } else {
-                            items = items
-                                .filter((item) => item.class == "Directory")
-                                .map((item) => {
-                                    return {
-                                        id: item.uri,
-                                        label: item.name,
-                                        time: item.ctime,
-                                        isLeaf: false,
-                                        size: item.size,
-                                        url: item.uri,
-                                        labelTitle: item.uri,
-                                    };
-                                });
-                        }
-                        this.items = items;
+                        this.items = this.parseItems(items);
                         this.formatRows();
                         this.optionsShow = true;
                         this.showTime = true;
@@ -196,6 +300,40 @@ export default {
                         this.errorMessage = errorMessage;
                     });
             }
+        },
+        parseItemFileMode(item) {
+            const result = {
+                id: item.uri,
+                label: item.name,
+                time: item.ctime,
+                isLeaf: item.class === "File",
+                size: item.size,
+                url: item.uri,
+                labelTitle: item.uri,
+            };
+            return result;
+        },
+        parseItems(items) {
+            if (this.fileMode) {
+                items = items.map((item) => {
+                    return this.parseItemFileMode(item);
+                });
+            } else {
+                items = items
+                    .filter((item) => item.class == "Directory")
+                    .map((item) => {
+                        return {
+                            id: item.uri,
+                            label: item.name,
+                            time: item.ctime,
+                            isLeaf: false,
+                            size: item.size,
+                            url: item.uri,
+                            labelTitle: item.uri,
+                        };
+                    });
+            }
+            return items;
         },
     },
 };

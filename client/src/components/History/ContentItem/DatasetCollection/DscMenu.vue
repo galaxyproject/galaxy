@@ -2,13 +2,23 @@
     <div class="collection-menu">
         <b-button-group>
             <IconButton
+            icon="info-circle"
+            v-if="hasJob"
+            key="dataset-details"
+            title="View Dataset Collection Details"
+            @click.stop.prevent="backboneRoute(collectionDetailsPath)"
+            variant="link"
+            class="px-1"
+        >
+        </IconButton>
+            <IconButton
                 v-if="notIn(STATES.DISCARDED)"
                 icon="pen"
                 :title="editButtonTitle"
-                :disabled="collection.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
-                @click.stop="backboneRoute('collection/edit/' + collection.hdca_id)"
+                :disabled="dsc.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
+                @click.stop="backboneRoute(collectionEditPath)"
                 variant="link"
-                class="px-1 collection-edit-view"
+                class="px-1 dsc-edit-view"
             />
             <b-dropdown v-if="notIn(STATES.DISCARDED)" no-caret right variant="link" size="sm" boundary="window">
                 <template v-slot:button-content>
@@ -53,18 +63,18 @@ export default {
     mixins: [legacyNavigationMixin],
     inject: ["STATES"],
     props: {
-        collection: { type: DatasetCollection, required: true },
+        dsc: { type: DatasetCollection, required: true },
     },
     computed: {
         editButtonTitle() {
-            if (this.collection.deleted) {
+            if (this.dsc.deleted) {
                 return "Collection must not be deleted to edit";
             }
-            if (this.collection.purged) {
+            if (this.dsc.purged) {
                 return "Cannot edit attributes of collections removed from disk";
             }
             const unreadyStates = new Set([this.STATES.UPLOAD, this.STATES.NEW]);
-            if (unreadyStates.has(this.collection.state)) {
+            if (unreadyStates.has(this.dsc.state)) {
                 return "This collection is not yet editable";
             }
             return "Edit attributes";
@@ -72,6 +82,15 @@ export default {
         deleteCollectionButtonTitle() {
             return "Delete Collection";
         },
+        hasJob() {
+            return this.dsc?.job_source_type == "Job";
+        },
+        collectionDetailsPath() {
+            return `jobs/${this.dsc.job_source_id}/view`;
+        },
+        collectionEditPath() {
+            return `collection/edit/` + dsc.hdca_id
+        }
     },
     methods: {
         runDelete: function (kind) {
@@ -81,17 +100,14 @@ export default {
                 this.$emit("delete");
             }
         },
-        collectionEditURL: function () {
-            return "/collection/edit/" + this.collection.hdca_id;
-        },
         notIn(...states) {
             const badStates = new Set(states);
-            return !badStates.has(this.collection.state);
+            return !badStates.has(this.dsc.state);
         },
         isIn(...states) {
             const goodStates = new Set(states);
-            return goodStates.has(this.collection.state);
+            return goodStates.has(this.dsc.state);
         },
     },
-};
+}
 </script>

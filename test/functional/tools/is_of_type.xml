@@ -1,0 +1,29 @@
+<tool id="is_of_type" name="is_of_type" version="1.0.0">
+    <command><![CDATA[
+#for $dataset in $collection:  
+    #if $dataset.is_of_type('txt')
+        echo "true" >> '$is_txt'
+    #end if
+#end for
+    ]]></command>
+    <inputs>
+        <param name="collection" type="data_collection" collection_type="list" format="txt"/>
+    </inputs>
+    <outputs>
+        <data name="is_txt" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="collection">
+                <collection type="list">
+                    <element name="forward" value="1.fasta" ftype="fasta"/>
+                </collection>
+            </param>
+            <output name="is_txt">
+                <assert_contents>
+                    <has_text text="true"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

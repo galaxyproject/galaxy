@@ -20,10 +20,12 @@ describe("SelectionDialog.vue", () => {
             slots: {
                 options: "<tree-options />",
                 search: "<cool-search />",
+                selectAll: "<select-all />",
             },
             stubs: {
                 "tree-options": { template: "<div id='tree-options'/>" },
                 "cool-search": { template: "<div id='cool-search'/>" },
+                "select-all": { template: "<div id='select-all'/>" },
             },
             propsData: mockOptions,
             localVue,
@@ -40,7 +42,7 @@ describe("SelectionDialog.vue", () => {
         expect(wrapper.get("#tree-options"));
     });
 
-    it("loads search correctly", async () => {
+    it("loads header correctly", async () => {
         await localVue.nextTick();
         expect(wrapper.get("#cool-search"));
     });

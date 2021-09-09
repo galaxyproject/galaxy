@@ -31,6 +31,7 @@
             />
 
             <b-dropdown
+                right
                 size="sm"
                 variant="link"
                 :text="'Dataset Operations' | l"
@@ -96,7 +97,7 @@
                     v-if="dataset.rerunnable && dataset.creating_job && notIn(STATES.UPLOAD, STATES.NOT_VIEWABLE)"
                     title="Run job again"
                     :href="prependPath(dataset.getUrl('rerun'))"
-                    @click.stop="
+                    @click.stop.prevent="
                         backboneRoute('/', {
                             job_id: dataset.creating_job,
                         })

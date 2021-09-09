@@ -16,10 +16,10 @@
     </DatasetUI>
 </template>
 <script>
-import DatasetUI from "../History/ContentItem/Dataset/DatasetUI";
-import { Dataset } from "../History/model";
-import { deleteContent, updateContentFields } from "../History/model/queries";
-import { cacheContent } from "../History/caching";
+import DatasetUI from "components/History/ContentItem/Dataset/DatasetUI";
+import { Dataset } from "../../model";
+import { deleteContent, updateContentFields } from "../../model/queries";
+import { cacheContent } from "../../caching";
 
 export default {
     components: {
