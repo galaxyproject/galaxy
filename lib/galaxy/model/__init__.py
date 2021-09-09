@@ -6776,11 +6776,6 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
             & not_(StoredWorkflow.deleted))  # type: ignore
     )
 
-    def __init__(self):
-        self.stored_workflow = None
-        self.user = None
-        self.order_index = None
-
 
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     __tablename__ = 'workflow_invocation'
