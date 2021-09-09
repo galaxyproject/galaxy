@@ -2474,14 +2474,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         self.deleted = False
         self.purged = False
         self.importing = False
-        self.genome_build = None
         self.published = False
-        self.update_time = None
-        # Relationships
         self.user = user
-        self.datasets = []
-        self.galaxy_sessions = []
-        self.tags = []
         # Objects to eventually add to history
         self._pending_additions = []
 
