@@ -6281,13 +6281,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     input_step_types = ['data_input', 'data_collection_input', 'parameter_input']
 
     def __init__(self, uuid=None):
-        self.id = None
         self.user = None
-        self.name = None
-        self.has_cycles = None
-        self.has_errors = None
-        self.steps = []
-        self.stored_workflow_id = None
         self.uuid = get_uuid(uuid)
 
     def has_outputs_defined(self):
