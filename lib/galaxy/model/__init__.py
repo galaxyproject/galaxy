@@ -7246,11 +7246,6 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
         # CANCELLED = 'cancelled',  TODO: implement and expose
         # FAILED = 'failed',  TODO: implement and expose
 
-    def __init__(self):
-        self.implicit_collection_jobs_id = None
-        self.job_id = None
-        self.workflow_invocation_id = None
-
     @property
     def is_new(self):
         return self.state == self.states.NEW
