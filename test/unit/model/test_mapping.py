@@ -5014,7 +5014,12 @@ class TestUserAction(BaseTest):
     def test_columns(self, session, cls_, user, galaxy_session):
         action, params, context = 'a', 'b', 'c'
         create_time = datetime.now()
-        obj = cls_(user, galaxy_session.id, action, params, context)
+        obj = cls_()
+        obj.user = user
+        obj.session_id = galaxy_session.id
+        obj.action = action
+        obj.params = params
+        obj.context = context
         obj.create_time = create_time
 
         with dbcleanup(session, obj) as obj_id:
@@ -5027,8 +5032,9 @@ class TestUserAction(BaseTest):
             assert stored_obj.context == context
             assert stored_obj.params == params
 
-    def test_relationships(self, session, cls_, user, galaxy_session):
-        obj = cls_(user, galaxy_session.id, None, None, None)
+    def test_relationships(self, session, cls_, user):
+        obj = cls_()
+        obj.user = user
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)

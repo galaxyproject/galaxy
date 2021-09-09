@@ -8762,13 +8762,6 @@ class UserAction(Base, RepresentById):
     params = Column(Unicode(1024))
     user = relationship('User')
 
-    def __init__(self, user=None, session_id=None, action=None, params=None, context=None):
-        self.user = user
-        self.session_id = session_id
-        self.action = action
-        self.params = params
-        self.context = context
-
 
 class APIKeys(Base, RepresentById):
     __tablename__ = 'api_keys'
