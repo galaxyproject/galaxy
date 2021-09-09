@@ -1,4 +1,4 @@
-<tool id="interactive_tool_ml_jupyter_notebook" tool_type="interactive" name="GPU enabled Interactive Jupyter Notebook for Machine Learning" version="0.1">
+<tool id="interactive_tool_ml_jupyter_notebook" tool_type="interactive" name="GPU enabled Interactive Jupyter Notebook for Machine Learning" version="0.1" profile="20.09">
     <requirements>
         <container type="docker">docker.io/anupkumar/docker-ml-jupyterlab:galaxy-integration</container>
     </requirements>
@@ -48,7 +48,18 @@
             jupyter trust ./notebooks/*.ipynb &&
             jupyter trust ./elyra/*.ipynb &&
             jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True
-	#end if
+        #else:
+            #set $noteboook_name = re.sub('[^\w\-\.\s]', '_', str($mode.ipynb.element_identifier))
+            cp '$mode.ipynb' './${noteboook_name}.ipynb' &&
+            jupyter trust './${noteboook_name}.ipynb' &&
+            #if $mode.run_it:
+                jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
+                #set $noteboook_name = 'ipython_galaxy_notebook'
+            #else:
+                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
+            #end if
+            cp './${noteboook_name}.ipynb' '$jupyter_notebook'
+        #end if
     ]]>
     </command>
     <inputs>
@@ -79,16 +90,14 @@
             <output name="jupyter_notebook" file="test.ipynb" ftype="ipynb"/>
         </test>
     </tests>
-    <help>
-    
-    JupyterLab is a next-generation web-based user interface for Project Jupyter. JupyterLab enables you to work with documents and activities such as Jupyter notebooks, text editors, 
-    terminals, and custom components in a flexible, integrated, and extensible manner.
+    <help><![CDATA[
+        JupyterLab is a next-generation web-based user interface for Project Jupyter. JupyterLab enables you to work with documents and activities such as Jupyter notebooks, text editors,
+        terminals, and custom components in a flexible, integrated, and extensible manner.
 
-    Galaxy offers you to use Jupyter Lab directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
-    do the heavy lifting such as performing computation on GPUs and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter Lab.
+        Galaxy offers you to use Jupyter Lab directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
+        do the heavy lifting such as performing computation on GPUs and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter Lab.
 
-    You can start with a new Jupyter Lab notebook from scratch and wait until the job starts running. Running job will provide you a link which can be opened in the same or another 
-    browser tab. This link opens Jupyter Lab notebook which can be used to prototype machine learning solutions.
-
-    </help>
+        You can start with a new Jupyter Lab notebook from scratch and wait until the job starts running. Running job will provide you a link which can be opened in the same or another
+        browser tab. This link opens Jupyter Lab notebook which can be used to prototype machine learning solutions.
+    ]]></help>
 </tool>
