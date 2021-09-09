@@ -77,7 +77,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
             const JOB_ID = Math.random().toString(36).substring(2);
             const propsData = {
                 jobId: JOB_ID,
-                aws_estimate: "True",
+                aws_estimate: true,
             };
             const metricsResponse = [
                 { plugin: "core", name: "galaxy_slots", raw_value: cores },
