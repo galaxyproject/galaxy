@@ -43,7 +43,7 @@ import _l from "utils/localization";
 import { errorMessageAsString } from "utils/simple-error";
 import DatabaseEditTab from "./DatabaseEditTab";
 import SuitableConvertersTab from "./SuitableConvertersTab";
-import { GenomeProvider, SuitableConvertersProvider } from "../../WorkflowInvocationState/providers";
+import { GenomeProvider, SuitableConvertersProvider } from "../../providers";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase, faTable, faBars, faUser, faCog } from "@fortawesome/free-solid-svg-icons";
