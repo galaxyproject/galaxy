@@ -68,6 +68,9 @@ class GenericMolFile(Text):
     def get_mime(self):
         return 'text/plain'
 
+    def get_element_symbols(self):
+        return ["Ac", "Ag", "Al", "Am", "Ar", "As", "At", "Au", "B ", "Ba", "Be", "Bh", "Bi", "Bk", "Br", "C ", "Ca", "Cd", "Ce", "Cf", "Cl", "Cm", "Co", "Cr", "Cs", "Cu", "Ds", "Db", "Dy", "Er", "Es", "Eu", "F ", "Fe", "Fm", "Fr", "Ga", "Gd", "Ge", "H ", "He", "Hf", "Hg", "Ho", "Hs", "I ", "In", "Ir", "K ", "Kr", "La", "Li", "Lr", "Lu", "Md", "Mg", "Mn", "Mo", "Mt", "N ", "Na", "Nb", "Nd", "Ne", "Ni", "No", "Np", "O ", "Os", "P ", "Pa", "Pb", "Pd", "Pm", "Po", "Pr", "Pt", "Pu", "Ra", "Rb", "Re", "Rf", "Rg", "Rh", "Rn", "Ru", "S ", "Sb", "Sc", "Se", "Sg", "Si", "Sm", "Sn", "Sr", "Ta", "Tb", "Tc", "Te", "Th", "Ti", "Tl", "Tm", "U ", "V ", "W ", "Xe", "Y ", "Yb", "Zn", "Zr"]
+
 
 class MOL(GenericMolFile):
     file_ext = "mol"
@@ -1091,30 +1094,38 @@ class XYZ(GenericMolFile):
         >>> XYZ().sniff(fname)
         False
         """
-        try:
-            ase_data = ase_read(
-                filename, format="extxyz"
-            )  # use extxyz ("extended XYZ") as basic xyz format won't throw errors
-            return True if ase_data else False
-        except (TypeError, XYZError):
-            return False
+        idx = 0
+        with open(filename) as f:
+            xyz_lines = f.readlines(1000)[:-1]
+        for line in xyz_lines:
+            idx += 1
+            if idx == 1:
+                try:
+                    int(line)
+                except (TypeError, ValueError):
+                    return False
+                else:
+                    if count_lines(filename) != int(line) + 2:
+                        return False
+            if idx > 2:
+                atom = line.split()
+                if atom[0] not in self.get_element_symbols():
+                    return False
+                try:
+                    float(atom[1])
+                    float(atom[2])
+                    float(atom[3])
+                except (TypeError, ValueError):
+                    return False
+        return True
 
     def set_meta(self, dataset, **kwd):
         """
         Find Atom IDs for metadata.
         """
-        try:
-            ase_data = ase_read(dataset.file_name, format="xyz")
-            atom_data = [
-                str(sym) + str(pos)
-                for sym, pos in zip(
-                    ase_data.get_chemical_symbols(), ase_data.get_positions()
-                )
-            ]
-            dataset.metadata.atom_data = atom_data
-        except Exception as e:
-            log.error("Error finding atom_data: %s", unicodify(e))
-            raise
+        with open(dataset.file_name) as f:
+            lines = f.readlines()
+            dataset.metadata.atom_data = [atom.strip() for atom in lines[2:]]
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
