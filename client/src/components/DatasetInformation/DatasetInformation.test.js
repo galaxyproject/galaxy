@@ -7,7 +7,7 @@ import datasetResponse from "./testData/datasetResponse";
 import flushPromises from "flush-promises";
 import moment from "moment";
 
-jest.mock("../History/caching");
+jest.mock("components/History/caching");
 const HDA_ID = "FOO_HDA_ID";
 
 const mockDatasetProvider = {

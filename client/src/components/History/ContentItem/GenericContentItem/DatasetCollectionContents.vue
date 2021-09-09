@@ -22,14 +22,14 @@
     </div>
 </template>
 <script>
-import { DatasetProvider } from "./providers";
+import { DatasetProvider } from "components/providers";
 import DatasetUIWrapper from "./DatasetUIWrapper";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
         DatasetProvider,
-        DatasetCollectionUIWrapper: () => import("components/WorkflowInvocationState/DatasetCollectionUIWrapper"),
+        DatasetCollectionUIWrapper: () => import("./DatasetCollectionUIWrapper"),
         DatasetUIWrapper,
         LoadingSpan,
     },

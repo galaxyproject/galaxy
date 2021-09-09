@@ -1446,6 +1446,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                         "uuid": str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
                     }
             rval['outputs'] = output_dict
+            rval['output_collections'] = {jtodca.name: {'id': jtodca.dataset_collection_instance.id, 'src': 'hdca'} for jtodca in self.output_dataset_collection_instances}
 
         return rval
 

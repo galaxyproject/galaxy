@@ -19,11 +19,11 @@
     </div>
 </template>
 <script>
-import { deleteDatasetCollection, updateContentFields } from "../History/model/queries";
-import { cacheContent } from "../History/caching";
-import { DatasetCollection } from "../History/model/DatasetCollection";
-import DscUI from "../History/ContentItem/DatasetCollection/DscUI";
-import { DatasetCollectionContentProvider } from "./providers";
+import { deleteDatasetCollection, updateContentFields } from "../../model/queries";
+import { cacheContent } from "../../caching";
+import { DatasetCollection } from "../../model/DatasetCollection";
+import DscUI from "components/History/ContentItem/DatasetCollection/DscUI";
+import { DatasetCollectionContentProvider } from "components/providers";
 import DatasetCollectionContents from "./DatasetCollectionContents";
 
 export default {
