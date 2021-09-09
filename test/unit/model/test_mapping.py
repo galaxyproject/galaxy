@@ -5149,7 +5149,9 @@ class TestUserPreference(BaseTest):
 
     def test_columns(self, session, cls_, user):
         name, value = 'a', 'b'
-        obj = cls_(name, value)
+        obj = cls_()
+        obj.name = name
+        obj.value = value
         obj.user = user
 
         with dbcleanup(session, obj) as obj_id:

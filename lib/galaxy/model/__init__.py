@@ -8744,6 +8744,8 @@ class UserPreference(Base, RepresentById):
     user = relationship('User', back_populates='_preferences')
 
     def __init__(self, name=None, value=None):
+        # Do not remove this constructor: it is set as the creator for the User.preferences
+        # AssociationProxy to which 2 args are passed.
         self.name = name
         self.value = value
 
