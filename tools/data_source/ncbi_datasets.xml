@@ -6,10 +6,10 @@
     <requirements>
         <requirement type="package" version="12.11.0">ncbi-datasets-cli</requirement>
     </requirements>
+    <version_command>datasets version</version_command>
     <command><![CDATA[
-datasets version
-&& datasets download --input-json $file_param --filename $compressed_archive --no-progressbar
-&& unzip -l $compressed_archive
+datasets download --input-json '$file_param' --filename '$compressed_archive' --no-progressbar
+&& unzip -l '$compressed_archive'
     ]]></command>
     <inputs action="https://www.ncbi.nlm.nih.gov/datasets/genomes" check_values="true" method="get">
         <display>go to NCBI Datasets Genomes server $GALAXY_URL</display>
