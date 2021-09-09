@@ -5485,7 +5485,9 @@ class TestWorkerProcess(BaseTest):
     def test_columns(self, session, cls_):
         server_name, hostname = get_unique_value(), 'a'
         update_time = datetime.now()
-        obj = cls_(server_name, hostname)
+        obj = cls_()
+        obj.server_name = server_name
+        obj.hostname = hostname
         obj.update_time = update_time
 
         with dbcleanup(session, obj) as obj_id:

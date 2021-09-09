@@ -316,10 +316,6 @@ class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
     pid = Column(Integer)
     update_time = Column(DateTime, default=now, onupdate=now)
 
-    def __init__(self, server_name, hostname):
-        self.server_name = server_name
-        self.hostname = hostname
-
 
 def cached_id(galaxy_model_object):
     """Get model object id attribute without a firing a database query.
