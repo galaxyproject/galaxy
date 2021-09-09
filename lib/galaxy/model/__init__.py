@@ -6759,10 +6759,6 @@ class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
     user = relationship('User', back_populates='workflows_shared_by_others')
     stored_workflow = relationship('StoredWorkflow', back_populates='users_shared_with')
 
-    def __init__(self):
-        self.stored_workflow = None
-        self.user = None
-
 
 class StoredWorkflowMenuEntry(Base, RepresentById):
     __tablename__ = 'stored_workflow_menu_entry'
