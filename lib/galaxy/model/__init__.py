@@ -8114,10 +8114,6 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     user = relationship('User', back_populates='pages_shared_by_others')
     page = relationship('Page', back_populates='users_shared_with')
 
-    def __init__(self):
-        self.page = None
-        self.user = None
-
 
 class Visualization(Base, RepresentById):
     __tablename__ = 'visualization'
