@@ -446,8 +446,11 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             "history_id": history_id
         }
         create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", data=payload)
+        self.dataset_populator.wait_for_job(create_response.json()["jobs"][0]["id"], assert_ok=True)
         create_response.raise_for_status()
-        assert create_response.json()["outputs"][0]["file_ext"] == "tabular"
+        assert create_response.json()["implicit_collections"] == []
+        for output in create_response.json()["outputs"]:
+            assert output["file_ext"] == "tabular"
 
     @uses_test_history(require_new=False)
     def test_convert_dataset_implicit_history(self, history_id):
@@ -460,8 +463,11 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             "target_datatype": "tabular"
         }
         create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", data=payload)
+        self.dataset_populator.wait_for_job(create_response.json()["jobs"][0]["id"], assert_ok=True)
         create_response.raise_for_status()
-        assert create_response.json()["outputs"][0]["file_ext"] == "tabular"
+        assert create_response.json()["implicit_collections"] == []
+        for output in create_response.json()["outputs"]:
+            assert output["file_ext"] == "tabular"
 
     @uses_test_history(require_new=False)
     def test_convert_hdca(self, history_id):
@@ -492,10 +498,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             "history_id": history_id
         }
         create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", payload)
-        create_response.raise_for_status()
-        assert create_response.json()["outputs"][0]["file_ext"] == "tabular"
 
-        # assert metadata & contentes
+        self.dataset_populator.wait_for_job(create_response.json()["jobs"][0]["id"], assert_ok=True)
+        create_response.raise_for_status()
+        assert create_response.json()["implicit_collections"] != []
+        for output in create_response.json()["outputs"]:
+            assert output["file_ext"] == "tabular"
 
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:

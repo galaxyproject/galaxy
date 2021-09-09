@@ -232,7 +232,6 @@ class DatasetCollectionManager:
         most_recent_datatype = None
         # TODO error checking
         for datatype in dbkeys_and_extensions[1]:
-            new_converters = {}
             new_converters = datatypes_registry.get_converters_by_datatype(datatype)
             set_of_new_converters = set()
             for tgt_type, tgt_val in new_converters.items():
@@ -244,7 +243,7 @@ class DatasetCollectionManager:
                 first_extension = False
             else:
                 suitable_converters = suitable_converters.intersection(set_of_new_converters)
-                if (suitable_converters.__len__ != 0):
+                if suitable_converters:
                     most_recent_datatype = datatype
         suitable_tool_ids = list()
         for tool in suitable_converters:
