@@ -6091,7 +6091,6 @@ class GalaxySession(Base, RepresentById):
         self.session_key = session_key
         self.is_valid = is_valid
         self.prev_session_id = prev_session_id
-        self.histories = []
         self.last_action = last_action or datetime.now()
 
     def add_history(self, history, association=None):
