@@ -462,12 +462,13 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
 
 class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
-    def __init__(self, job_working_directory, has_collection, datatypes_registry=None, **kwargs):
+    def __init__(self, job_working_directory, has_collection, datatypes_registry, **kwargs):
         super().__init__()
         self.job_working_directory = job_working_directory
         self._dataset_elements_cache = {}
         self._element_identifiers_extensions_paths_and_metadata_files = None
         self.datatypes_registry = datatypes_registry
+        kwargs['datatypes_registry'] = datatypes_registry
         self.kwargs = kwargs
 
         if has_collection is None:
