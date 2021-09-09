@@ -377,7 +377,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
         converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
-        expected = Counter([
+        expected = [
             'CONVERTER_bed_to_fli_0',
             'CONVERTER_interval_to_bed_0',
             'CONVERTER_bed_gff_or_vcf_to_bigwig_0',
@@ -387,9 +387,11 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             'CONVERTER_interval_to_bed6_0',
             'CONVERTER_interval_to_bedstrict_0',
             'CONVERTER_bed_to_tabix_0',
-            'CONVERTER_interval_to_bed12_0'])
-        actual = Counter([converter["tool_id"] for converter in converters.json()])
-        assert actual == expected
+            'CONVERTER_interval_to_bed12_0']
+        actual =[]
+        for converter in converters.json():
+            actual.append(converter["tool_id"])
+        assert sorted(actual) == sorted(expected)
 
     def test_get_suitable_converters_different_datatypes_matches(self):
         response = self.dataset_collection_populator.upload_collection(self.history_id, "list:paired", elements=[
@@ -411,9 +413,11 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
         converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
-        expected = Counter(['tabular_to_csv'])
-        actual = Counter([converter["tool_id"] for converter in converters.json()])
-        assert actual == expected
+        expected = ['tabular_to_csv']
+        actual =[]
+        for converter in converters.json():
+            actual.append(converter["tool_id"])
+        assert sorted(actual) == sorted(expected)
 
     def test_get_suitable_converters_different_datatypes_no_matches(self):
         response = self.dataset_collection_populator.upload_collection(self.history_id, "list:paired", elements=[
@@ -435,9 +439,11 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
         converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
-        expected = Counter([])
-        actual = Counter([converter["tool_id"] for converter in converters.json()])
-        assert actual == expected
+        expected = []
+        actual =[]
+        for converter in converters.json():
+            actual.append(converter["tool_id"])
+        assert sorted(actual) == sorted(expected)
 
     def test_collection_tools_tag_propagation(self):
         elements = [{"src": "files", "tags": ["name:element_tag"]}]
