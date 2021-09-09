@@ -127,7 +127,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     @web.legacy_expose_api_anonymous
     def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):
         """
-        GET  datasets/{encoded_dataset_id}
+        GET /api/datasets/{encoded_dataset_id}
         Displays information about and/or content of a dataset.
         """
         # Get dataset.
