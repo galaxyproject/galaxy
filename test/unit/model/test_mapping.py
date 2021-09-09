@@ -5031,9 +5031,19 @@ class TestUserAddress(BaseTest):
     def test_columns_and_relationships(self, session, cls_, user):
         desc, name, institution, address, city, state, postal_code, country, phone, deleted, purged = \
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', True, False
-        obj = cls_(user, desc, name, institution, address, city, state, postal_code, country, phone)
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
+        obj = cls_()
+        obj.user = user
+        obj.desc = desc
+        obj.name = name
+        obj.institution = institution
+        obj.address = address
+        obj.city = city
+        obj.state = state
+        obj.postal_code = postal_code
+        obj.country = country
+        obj.phone = phone
         obj.create_time = create_time
         obj.update_time = update_time
         obj.deleted = deleted

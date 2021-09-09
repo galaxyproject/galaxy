@@ -7690,20 +7690,6 @@ class UserAddress(Base, RepresentById):
     # TODO: db migration to rename column, then use `desc`
     user = relationship('User', back_populates='addresses', order_by=sqlalchemy.desc('update_time'))
 
-    def __init__(self, user=None, desc=None, name=None, institution=None,
-                 address=None, city=None, state=None, postal_code=None,
-                 country=None, phone=None):
-        self.user = user
-        self.desc = desc
-        self.name = name
-        self.institution = institution
-        self.address = address
-        self.city = city
-        self.state = state
-        self.postal_code = postal_code
-        self.country = country
-        self.phone = phone
-
     def to_dict(self, trans):
         return {'id': trans.security.encode_id(self.id),
                 'name': sanitize_html(self.name),
