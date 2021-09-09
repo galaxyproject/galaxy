@@ -2865,10 +2865,6 @@ class HistoryUserShareAssociation(Base, UserShareAssociation):
     user = relationship('User', back_populates='histories_shared_by_others')
     history = relationship('History', back_populates='users_shared_with')
 
-    def __init__(self):
-        self.history = None
-        self.user = None
-
 
 class UserRoleAssociation(Base, RepresentById):
     __tablename__ = 'user_role_association'
