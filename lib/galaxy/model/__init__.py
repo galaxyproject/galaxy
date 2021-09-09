@@ -6458,18 +6458,7 @@ class WorkflowStep(Base, RepresentById):
     DEFAULT_POSITION = {"left": 0, "top": 0}
 
     def __init__(self):
-        self.id = None
-        self.type = None
-        self.tool_id = None
-        self.tool_inputs = None
-        self.tool_errors = None
-        self.dynamic_tool = None
-        self.position = None
-        self.inputs = []
-        self.config = None
-        self.label = None
         self.uuid = uuid4()
-        self.workflow_outputs = []
         self._input_connections_by_name = None
 
     @property
