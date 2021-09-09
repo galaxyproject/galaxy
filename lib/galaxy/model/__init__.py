@@ -6657,16 +6657,9 @@ class WorkflowStepInput(Base, RepresentById):
         back_populates='input_step_input',
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id))  # type: ignore
 
-    default_merge_type = None
-    default_scatter_type = None
-
     def __init__(self, workflow_step):
         self.workflow_step = workflow_step
-        self.name = None
-        self.default_value = None
         self.default_value_set = False
-        self.merge_type = self.default_merge_type
-        self.scatter_type = self.default_scatter_type
 
     def copy(self, copied_step):
         copied_step_input = WorkflowStepInput(copied_step)
