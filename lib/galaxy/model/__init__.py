@@ -7604,16 +7604,6 @@ class FormDefinition(Base, Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout']
 
-    def __init__(self, name=None, desc=None, fields=None, form_definition_current=None, form_type=None, layout=None):
-        if fields is None:
-            fields = []
-        self.name = name
-        self.desc = desc
-        self.fields = fields
-        self.form_definition_current = form_definition_current
-        self.type = form_type
-        self.layout = layout
-
     def to_dict(self, user=None, values=None, security=None):
         values = values or {}
         form_def = {'id': security.encode_id(self.id) if security else self.id, 'name': self.name, 'inputs': []}
