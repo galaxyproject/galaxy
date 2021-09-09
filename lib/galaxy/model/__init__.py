@@ -8733,11 +8733,6 @@ class DataManagerJobAssociation(Base, RepresentById):
     data_manager_id = Column(TEXT)
     job = relationship('Job', back_populates='data_manager_association', uselist=False)
 
-    def __init__(self, id=None, job=None, data_manager_id=None):
-        self.id = id
-        self.job = job
-        self.data_manager_id = data_manager_id
-
 
 class UserPreference(Base, RepresentById):
     __tablename__ = 'user_preference'
