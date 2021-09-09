@@ -1823,7 +1823,6 @@ class JobToInputDatasetCollectionAssociation(Base, RepresentById):
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
     dataset_collection_id = Column(Integer,
         ForeignKey('history_dataset_collection_association.id'), index=True)
-    dataset_version = Column(Integer)
     name = Column(String(255))
     dataset_collection = relationship('HistoryDatasetCollectionAssociation', lazy=False)
     job = relationship('Job', back_populates='input_dataset_collections')
