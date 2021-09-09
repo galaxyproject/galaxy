@@ -8719,11 +8719,6 @@ class DataManagerHistoryAssociation(Base, RepresentById):
     history = relationship('History')
     user = relationship('User', back_populates='data_manager_histories')
 
-    def __init__(self, id=None, history=None, user=None):
-        self.id = id
-        self.history = history
-        self.user = user
-
 
 class DataManagerJobAssociation(Base, RepresentById):
     __tablename__ = 'data_manager_job_association'
