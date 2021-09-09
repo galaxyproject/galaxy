@@ -1,6 +1,5 @@
 import json
 import zipfile
-from collections import Counter
 from io import BytesIO
 
 from galaxy_test.base.api_asserts import assert_object_id_error
