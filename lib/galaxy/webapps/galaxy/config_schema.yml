@@ -3054,6 +3054,13 @@ mapping:
           if the filesystem is mounted read-only or the jobs are run by a different
           user than the galaxy user).
 
+      inputs_to_working_directory:
+        type: any
+        default: false
+        required: false
+        desc: |
+          TODO
+
       retry_job_output_collection:
         type: int
         default: 0
