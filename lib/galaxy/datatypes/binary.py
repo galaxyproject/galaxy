@@ -371,26 +371,6 @@ class BamNative(CompressedArchive, _BamOrSam):
     MetadataElement(name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={})
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        """
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
-        >>> from galaxy.model import Dataset, set_datatypes_registry
-        >>> from galaxy.model import History, HistoryDatasetAssociation
-        >>> from galaxy.model.mapping import init
-        >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
-        >>> hist = History()
-        >>> sa_session.add(hist)
-        >>> sa_session.flush()
-        >>> set_datatypes_registry(example_datatype_registry_for_sample())
-        >>> fname = get_test_fname('bam_from_sam.bam')
-        >>> samds = Dataset(external_filename=fname)
-        >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='bam', create_dataset=True, sa_session=sa_session, dataset=samds))
-        >>> BamNative().set_meta(hda)
-        >>> hda.metadata.bam_header
-        {'HD': {'VN': '1.3', 'SO': 'coordinate'}, 'SQ': [{'SN': 'ref', 'LN': 45}, {'SN': 'ref2', 'LN': 40}]}
-        >>> hda.metadata.reference_names
-        ['ref', 'ref2']
-        """
         _BamOrSam().set_meta(dataset)
 
     @staticmethod
