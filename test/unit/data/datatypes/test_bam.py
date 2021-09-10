@@ -56,5 +56,5 @@ def test_set_meta_header_info():
     b = Bam()
     with get_dataset('bam_from_sam.bam') as dataset:
         b.set_meta(dataset=dataset)
-        assert b.metadata.bam_header == {'HD': {'VN': '1.3', 'SO': 'coordinate'}, 'SQ': [{'SN': 'ref', 'LN': 45}, {'SN': 'ref2', 'LN': 40}]}
-        assert b.metadata.reference_names == ['ref', 'ref2']
+        assert dataset.metadata.bam_header == {'HD': {'VN': '1.3', 'SO': 'coordinate'}, 'SQ': [{'SN': 'ref', 'LN': 45}, {'SN': 'ref2', 'LN': 40}]}
+        assert dataset.metadata.reference_names == ['ref', 'ref2']
