@@ -2817,7 +2817,7 @@ the tool form widget is different. Currently valid parameter types are:
 ``text``,  ``integer``,  ``float``,  ``boolean``,  ``genomebuild``,  ``select``,
 ``color``,  ``data_column``,  ``hidden``,  ``hidden_data``,  ``baseurl``,
 ``file``,  ``ftpfile``,  ``data``,  ``data_collection``,  ``library_data``,
-``drill_down`` and ``json``. The definition of supported parameter types as defined in the
+``drill_down``. The definition of supported parameter types as defined in the
 ``parameter_types`` dictionary in
 [/lib/galaxy/tools/parameters/basic.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/basic.py).
 
@@ -3095,7 +3095,6 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="file"/>
       <xs:enumeration value="data"/>
       <xs:enumeration value="drill_down"/>
-      <xs:enumeration value="json"/>
       <xs:enumeration value="group_tag"/>
       <xs:enumeration value="data_collection"/>
       <xs:enumeration value="directory_uri" />

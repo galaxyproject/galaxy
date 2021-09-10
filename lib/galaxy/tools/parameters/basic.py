@@ -2391,10 +2391,6 @@ class BaseJsonToolParameter(ToolParameter):
     In particular value_to_basic is overloaded to prevent params_to_strings from
     double encoding JSON and to_python using loads to produce values.
     """
-    def __init__(self, tool, input_source, context=None):
-        input_source = ensure_input_source(input_source)
-        super().__init__(tool, input_source)
-        self.optional = input_source.get_bool('optional', False)
 
     def value_to_basic(self, value, app, use_security=False):
         if is_runtime_value(value):
@@ -2407,8 +2403,6 @@ class BaseJsonToolParameter(ToolParameter):
 
     def to_python(self, value, app):
         """Convert a value created with to_json back to an object representation"""
-        if value is None and self.optional:
-            return None
         return json.loads(value)
 
 
@@ -2418,18 +2412,6 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
         SimpleTextToolParameter.__init__(self, tool, input_source)
-
-
-class JSONToolParameter(BaseJsonToolParameter):
-    """
-    Parameter that accepts arbitrary JSON
-    """
-
-    def to_text(self, value):
-        return json.dumps(value)
-
-    def to_param_dict_string(self, value, other_values=None):
-        return self.to_text(value)
 
 
 class RulesListToolParameter(BaseJsonToolParameter):
@@ -2493,7 +2475,6 @@ parameter_types = dict(
     data_collection=DataCollectionToolParameter,
     library_data=LibraryDatasetToolParameter,
     rules=RulesListToolParameter,
-    json=JSONToolParameter,
     directory_uri=DirectoryUriToolParameter,
     drill_down=DrillDownSelectToolParameter
 )
