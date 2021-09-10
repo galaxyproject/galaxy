@@ -59,11 +59,10 @@ def produce_k8s_job_prefix(app_prefix=None, instance_id=None):
 
 
 def pull_policy(params):
-    # If this doesn't validate it returns None, that seems odd?
     if "k8s_pull_policy" in params:
         if params['k8s_pull_policy'] in ["Always", "IfNotPresent", "Never"]:
             return params['k8s_pull_policy']
-    return None
+    return "IfNotPresent"
 
 
 def find_service_object_by_name(pykube_api, service_name, namespace=None):
