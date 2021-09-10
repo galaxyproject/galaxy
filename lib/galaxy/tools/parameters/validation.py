@@ -838,7 +838,6 @@ class MetadataInDataTableColumnValidator(ValueInDataTableColumnValidator):
     """
     Validator that checks if the value for a dataset's metadata item exists in a file.
 
-    TODO Could be derived from ValueInDataTableColumnValidator
     note: this is covered in a framework test (validation_metadata_in_datatable)
     """
     requires_dataset_metadata = True
