@@ -50,6 +50,8 @@ from galaxy.util import ready_name_for_url
 
 log = logging.getLogger(__name__)
 
+UserIdentifier = Union[EncodedDatabaseIdField, str]
+
 
 class SharingOptions(str, Enum):
     """Options for sharing resources that may have restricted access to all or part of their contents."""
@@ -70,11 +72,12 @@ class ShareWithExtra(BaseModel):
 
 
 class ShareWithPayload(BaseModel):
-    user_ids: List[Union[EncodedDatabaseIdField, str]] = Field(
+    user_ids: List[UserIdentifier] = Field(
         ...,
         title="User Identifiers",
         description=(
-            "A collection of encoded IDs (or email addresses) of users."
+            "A collection of encoded IDs (or email addresses) of users "
+            "that this resource will be shared with."
         ),
     )
     share_option: Optional[SharingOptions] = Field(
@@ -368,6 +371,24 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         to provide the extra information, otherwise, it will be None by default."""
         return None
 
+    def update_current_shares(self, item, new_users_shared_with: Set[User], flush=True):
+        """Updates the currently list of users this item is shared with by adding new
+        users and removing missing ones."""
+        current_shares = self.get_share_assocs(item)
+        currently_shared_with = {share.user for share in current_shares}
+
+        needs_adding = new_users_shared_with - currently_shared_with
+        for user in needs_adding:
+            current_shares.append(self.share_with(item, user, flush=False))
+
+        needs_removing = currently_shared_with - new_users_shared_with
+        for user in needs_removing:
+            current_shares.remove(self.unshare_with(item, user, flush=False))
+
+        if flush:
+            self.session().flush()
+        return current_shares
+
     # .... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
     # TODO: as validator, deserializer, etc. (maybe another object entirely?)
@@ -577,18 +598,7 @@ class SharableModelDeserializer(base.ModelDeserializer,
         """
         unencoded_ids = [self.app.security.decode_id(id_) for id_ in val]
         new_users_shared_with = set(self.manager.user_manager.by_ids(unencoded_ids))
-        current_shares = self.manager.get_share_assocs(item)
-        currently_shared_with = {share.user for share in current_shares}
-
-        needs_adding = new_users_shared_with - currently_shared_with
-        for user in needs_adding:
-            current_shares.append(self.manager.share_with(item, user, flush=False))
-
-        needs_removing = currently_shared_with - new_users_shared_with
-        for user in needs_removing:
-            current_shares.remove(self.manager.unshare_with(item, user, flush=False))
-
-        self.manager.session().flush()
+        current_shares = self.manager.update_current_shares(item, new_users_shared_with)
         # TODO: or should this return the list of ids?
         return current_shares
 
@@ -692,7 +702,7 @@ class ShareableService:
         self.manager.unpublish(item)
         return self._get_sharing_status(trans, item)
 
-    def share_with(self, trans, id: EncodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
+    def set_sharing_with_users(self, trans, id: EncodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
         item = self._get_item_by_id(trans, id)
         users, errors = self._get_users(trans, payload.user_ids)
         extra = self._share_with_options(trans, item, users, errors, payload.share_option)
@@ -702,21 +712,17 @@ class ShareableService:
         status.errors.extend(errors)
         return status
 
-    def unshare_with(self, trans, id: EncodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
-        item = self._get_item_by_id(trans, id)
-        users, errors = self._get_users(trans, payload.user_ids)
-        self.manager.unshare_with(item, list(users))
-        base_status = self._get_sharing_status(trans, item)
-        status = ShareWithStatus.parse_obj(base_status)
-        status.errors.extend(errors)
-        return status
-
-    def _share_with_options(self, trans, item, users: Set[User], errors: Set[str], share_option: Optional[SharingOptions] = None):
-        if not users:
-            return None
+    def _share_with_options(
+        self,
+        trans,
+        item,
+        users: Set[User],
+        errors: Set[str],
+        share_option: Optional[SharingOptions] = None,
+    ):
         extra = self.manager.get_sharing_extra_information(trans, item, users, errors, share_option)
         if not extra or extra.can_share:
-            self.manager.share_with(item, list(users))
+            self.manager.update_current_shares(item, users)
             extra = None
         return extra
 

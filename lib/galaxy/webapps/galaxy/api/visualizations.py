@@ -119,27 +119,14 @@ class FastAPIVisualizations:
         '/api/visualizations/{id}/share_with',
         summary="Share this item with specific users.",
     )
-    def share_with(
+    def set_sharing_with_users(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = VisualizationIdPathParam,
         payload: ShareWithPayload = Body(...)
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
-        return self.service.shareable_service.share_with(trans, id, payload)
-
-    @router.put(
-        '/api/visualizations/{id}/unshare_with',
-        summary="Stop sharing this item with specific users.",
-    )
-    def unshare_with(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = VisualizationIdPathParam,
-        payload: ShareWithPayload = Body(...)
-    ) -> ShareWithStatus:
-        """Stops sharing this item with specific users and return the current sharing status."""
-        return self.service.shareable_service.unshare_with(trans, id, payload)
+        return self.service.shareable_service.set_sharing_with_users(trans, id, payload)
 
     @router.put(
         '/api/visualizations/{id}/slug',
@@ -317,20 +304,12 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         return self.service.shareable_service.unpublish(trans, id)
 
     @expose_api
-    def share_with(self, trans, id, payload, **kwd):
+    def set_sharing_with_users(self, trans, id, payload, **kwd):
         """
-        * PUT /api/visualizations/{id}/share_with
-        """
-        payload = ShareWithPayload(**payload)
-        return self.service.shareable_service.share_with(trans, id, payload)
-
-    @expose_api
-    def unshare_with(self, trans, id, payload, **kwd):
-        """
-        * PUT /api/visualizations/{id}/unshare_with
+        * PUT /api/visualizations/{id}/set_sharing_with_users
         """
         payload = ShareWithPayload(**payload)
-        return self.service.shareable_service.unshare_with(trans, id, payload)
+        return self.service.shareable_service.set_sharing_with_users(trans, id, payload)
 
     @expose_api
     def set_slug(self, trans, id, payload, **kwd):

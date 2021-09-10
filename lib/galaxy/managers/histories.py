@@ -306,10 +306,10 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         total_dataset_count = len(datasets)
         for user in users:
             if self.is_history_shared_with(history, user):
-                errors.add(f"History ({history.name}) already shared with user ({user.email})")
                 continue
 
             user_roles = user.all_roles()
+            # TODO: Handle this is a more performant way
             # Only deal with datasets that have not been purged
             for hda in datasets:
                 if trans.app.security_agent.can_access_dataset(user_roles, hda.dataset):
