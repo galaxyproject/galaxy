@@ -143,6 +143,12 @@ else:
     _HasTable = object
 
 
+def get_uuid(uuid):
+    if uuid is None:
+        return uuid4()
+    return UUID(str(uuid))
+
+
 class Base(metaclass=DeclarativeMeta):
     __abstract__ = True
     registry = mapper_registry
@@ -3267,13 +3273,6 @@ class DefaultHistoryPermissions(Base, RepresentById):
 
 class StorableObject:
 
-    def __init__(self, id, uuid):
-        self.id = id
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
-
     def flush(self):
         sa_session = object_session(self)
         if sa_session:
@@ -3335,7 +3334,8 @@ class Dataset(StorableObject, RepresentById, _HasTable):
     engine = None
 
     def __init__(self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None):
-        super().__init__(id=id, uuid=uuid)
+        self.id = id
+        self.uuid = get_uuid(uuid)
         self.state = state
         self.deleted = False
         self.purged = False
@@ -7707,7 +7707,8 @@ class MetadataFile(Base, StorableObject, RepresentById):
     library_dataset = relationship('LibraryDatasetDatasetAssociation')
 
     def __init__(self, dataset=None, name=None, uuid=None):
-        super().__init__(id=None, uuid=uuid)
+        self.id = None
+        self.uuid = get_uuid(uuid)
         if isinstance(dataset, HistoryDatasetAssociation):
             self.history_dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
