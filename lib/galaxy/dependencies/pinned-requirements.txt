@@ -184,7 +184,7 @@ sortedcontainers==2.3.0
 sqlalchemy-migrate==0.13.0
 sqlalchemy==1.4.20
 sqlitedict==1.7.0
-sqlparse==0.4.1; python_version >= "3.5"
+sqlparse==0.4.2; python_version >= "3.5"
 starlette-context==0.3.2; python_version >= "3.7"
 starlette==0.14.2; python_version >= "3.6"
 stevedore==3.3.0; python_version >= "3.6"
