@@ -619,7 +619,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
     def _patch_library_inputs(self, trans: GalaxyWebTransaction, inputs, target_history):
         """
-        Transform inputs from the data libaray to history items.
+        Transform inputs from the data library to history items.
         """
         for k, v in inputs.items():
             new_value = self._patch_library_dataset(trans, v, target_history)
