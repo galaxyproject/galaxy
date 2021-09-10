@@ -47,7 +47,7 @@ class ToolSection(Dictifiable, HasPanelItems):
     group in the user interface.
     """
 
-    dict_collection_visible_keys = ['id', 'name', 'version']
+    dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'links']
 
     def __init__(self, item=None):
         """ Build a ToolSection from an ElementTree element or a dictionary.
@@ -57,6 +57,8 @@ class ToolSection(Dictifiable, HasPanelItems):
         self.name = item.get('name') or ''
         self.id = item.get('id') or ''
         self.version = item.get('version') or ''
+        self.description = item.get('description') or None
+        self.links = item.get('links') or None
         self.elems = ToolPanelElements()
 
     def copy(self):
@@ -64,6 +66,8 @@ class ToolSection(Dictifiable, HasPanelItems):
         copy.name = self.name
         copy.id = self.id
         copy.version = self.version
+        copy.description = self.description
+        copy.links = self.links
         copy.elems.update(self.elems)
         return copy
 
@@ -95,7 +99,7 @@ class ToolSectionLabel(Dictifiable):
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
     """
-    dict_collection_visible_keys = ['id', 'text', 'version']
+    dict_collection_visible_keys = ['id', 'text', 'version', 'description', 'links']
 
     def __init__(self, item):
         """ Build a ToolSectionLabel from an ElementTree element or a
@@ -105,6 +109,8 @@ class ToolSectionLabel(Dictifiable):
         self.text = item.get("text")
         self.id = item.get("id")
         self.version = item.get("version") or ''
+        self.description = item.get('description') or None
+        self.links = item.get('links', None)
 
     def to_dict(self, **kwds):
         return super().to_dict()
@@ -135,9 +141,9 @@ class ToolPanelElements(odict, HasPanelItems):
                     self[key].elems[tool_key] = new_tool
                     break
 
-    def get_or_create_section(self, sec_id: str, sec_nm: str) -> ToolSection:
+    def get_or_create_section(self, sec_id: str, sec_nm: str, description: Optional[str] = None, links: Optional[Dict[str, str]] = None) -> ToolSection:
         if sec_id not in self:
-            section = ToolSection({'id': sec_id, 'name': sec_nm, 'version': ''})
+            section = ToolSection({'id': sec_id, 'name': sec_nm, 'description': description, 'version': '', 'links': links})
             self[sec_id] = section
         else:
             section = self[sec_id]
