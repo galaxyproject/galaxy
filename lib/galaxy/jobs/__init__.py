@@ -1014,7 +1014,7 @@ class JobWrapper(HasResourceParameters):
 
     @property
     def inputs_directory(self):
-        return None if self.created_with_galaxy_version < packaging.version.parse("22.01") else "inputs"
+        return "inputs"
 
     @property
     def created_with_galaxy_version(self):
