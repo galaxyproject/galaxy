@@ -88,9 +88,7 @@
                 <slot></slot>
                 <tr v-if="job && job.id">
                     <td>Job API ID:</td>
-                    <td id="encoded-job-id">
-                        {{ job.id }} <decoded-id :id="job.id" />
-                    </td>
+                    <td id="encoded-job-id">{{ job.id }} <decoded-id :id="job.id" /></td>
                 </tr>
                 <tr v-if="job && job.copied_from_job_id">
                     <td>Copied from Job API ID:</td>

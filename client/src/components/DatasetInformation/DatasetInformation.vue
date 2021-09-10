@@ -45,7 +45,10 @@
                         <td>
                             <div id="history_id">
                                 {{ dataset.history_id }} <decoded-id :id="dataset.history_id" />
-                                <a title="View dataset" :href="`${root}histories/view?id=${dataset.history_id}`" target="_top"
+                                <a
+                                    title="View dataset"
+                                    :href="`${root}histories/view?id=${dataset.history_id}`"
+                                    target="_top"
                                     ><font-awesome-icon icon="eye"
                                 /></a>
                             </div>
