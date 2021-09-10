@@ -3648,7 +3648,8 @@ a given range.
 Deprecated data validators:
 
 - ``dataset_metadata_in_file``: Use data tables with ``dataset_metadata_in_data_table``.
-Check if a metadata value is contained in a specific column of another data set.
+Check if a metadata value is contained in a specific column of a file in the ``tool_data_path``
+(which is set in Galaxy's config).
 - ``dataset_metadata_not_in_data_table``: Use ``dataset_metadata_in_data_table`` with ``negate="true"``.
 
 ### Validators for textual inputs (``text``, ``select``, ...)
@@ -3775,7 +3776,7 @@ more information.</xs:documentation>
         </xs:attribute>
         <xs:attribute name="filename" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Tool data filename to check against
+            <xs:documentation xml:lang="en">Deprecated: use ``dataset_metadata_in_data_table``. Tool data filename to check against
 if ``type`` is ``dataset_metadata_in_file``. File should be present Galaxy's
 ``tool-data`` directory.</xs:documentation>
           </xs:annotation>
