@@ -1,23 +1,7 @@
 <template>
     <DatasetProvider :id="hda_id" v-slot="{ item: dataset, loading }">
         <div v-if="!loading">
-            <tr>
-                <td>
-                    <h3>Dataset Information</h3>
-                </td>
-                <td>
-                    <b-button
-                        class="edit-button"
-                        variant="light"
-                        size="sm"
-                        title="Edit dataset attributes"
-                        :href="`${root}datasets/edit?dataset_id=${dataset.id}`"
-                        target="_top"
-                    >
-                        <font-awesome-icon icon="edit" />
-                    </b-button>
-                </td>
-            </tr>
+            <h3>Dataset Information</h3>
             <table id="dataset-details" class="tabletip info_data_table">
                 <tbody>
                     <tr>

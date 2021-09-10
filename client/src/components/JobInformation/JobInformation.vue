@@ -90,9 +90,6 @@
                     <td>Job API ID:</td>
                     <td id="encoded-job-id">
                         {{ job.id }} <decoded-id :id="job.id" />
-                        <a title="Rerun job" :href="`${getAppRoot()}root?job_id=${job.id}`" target="_top"
-                            ><font-awesome-icon icon="redo"
-                        /></a>
                     </td>
                 </tr>
                 <tr v-if="job && job.copied_from_job_id">
