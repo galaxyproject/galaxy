@@ -816,8 +816,7 @@ class ValueInDataTableColumnValidator(Validator):
 class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
     """
     Validator that checks if a value is NOT in a tool data table column.
-
-    Deprecated: use now the `negate` attribute
+    Equivalent to ValueInDataTableColumnValidator with `negate="true"`.
 
     note: this is covered in a framework test (validation_value_in_datatable)
     """
@@ -871,8 +870,7 @@ class MetadataInDataTableColumnValidator(ValueInDataTableColumnValidator):
 class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
     """
     Validator that checks if the value for a dataset's metadata item doesn't exists in a file.
-
-    Deprecated: use now the `negate` attribute
+    Equivalent to MetadataInDataTableColumnValidator with `negate="true"`.
 
     note: this is covered in a framework test (validation_metadata_in_datatable)
     """
@@ -940,15 +938,15 @@ validator_types = dict(
     empty_dataset=DatasetEmptyValidator,
     empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
     dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
+    dataset_metadata_not_in_data_table=MetadataNotInDataTableColumnValidator,
     dataset_metadata_in_range=MetadataInRangeValidator,
     value_in_data_table=ValueInDataTableColumnValidator,
+    value_not_in_data_table=ValueNotInDataTableColumnValidator,
     dataset_ok_validator=DatasetOkValidator,
 )
 
 deprecated_validator_types = dict(
-    dataset_metadata_in_file=MetadataInFileColumnValidator,
-    dataset_metadata_not_in_data_table=MetadataNotInDataTableColumnValidator,
-    value_not_in_data_table=ValueNotInDataTableColumnValidator,
+    dataset_metadata_in_file=MetadataInFileColumnValidator
 )
 validator_types.update(deprecated_validator_types)
 

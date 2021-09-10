@@ -3644,13 +3644,13 @@ parameters a ``metadata`` validator is added automatically.
 - ``dataset_metadata_in_range``: Check if a numeric metadata value is within
 a given range.
 - ``dataset_metadata_in_data_table``: Check if a metadata value is contained in a column of a data table.
+- ``dataset_metadata_not_in_data_table``: Equivalent to ``dataset_metadata_in_data_table`` with ``negate="true"``.
 
 Deprecated data validators:
 
 - ``dataset_metadata_in_file``: Use data tables with ``dataset_metadata_in_data_table``.
 Check if a metadata value is contained in a specific column of a file in the ``tool_data_path``
 (which is set in Galaxy's config).
-- ``dataset_metadata_not_in_data_table``: Use ``dataset_metadata_in_data_table`` with ``negate="true"``.
 
 ### Validators for textual inputs (``text``, ``select``, ...)
 
@@ -3672,10 +3672,7 @@ For ``text`` inputs the following validators are useful:
 - ``empty_field``: Check if the string is not empty
 - ``value_in_data_table``: Check if the value is
 contained in a column of a given data table.
-
-Deprecated:
-
-- ``value_not_in_data_table``: Use ``value_in_data_table`` with ``negate="true"``.
+- ``value_not_in_data_table``: Equivalent to ``value_in_data_table`` with ``negate="true"``.
 
 ### Validators for numeric inputs (``integer``, ``float``)
 
@@ -3736,9 +3733,10 @@ use in filenames may not contain ``..``.
             <xs:documentation xml:lang="en"><![CDATA[
 Valid values are: ``expression``, ``regex``, ``in_range``, ``length``,
 ``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
-``dataset_metadata_in_data_table``, ``value_in_data_table``,
+``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``,
+``value_in_data_table``, ``value_not_in_data_table``,
 ``dataset_ok_validator``, ``dataset_metadata_in_range``.
-Deprecated validators: ``dataset_metadata_in_file``, ``value_not_in_data_table``, ``dataset_metadata_not_in_data_table``.
+Deprecated validator: ``dataset_metadata_in_file``.
 The list of supported
 validators is in the ``validator_types`` dictionary in
 [/lib/galaxy/tools/parameters/validation.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/validation.py).
