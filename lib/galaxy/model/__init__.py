@@ -147,6 +147,7 @@ class Base(metaclass=DeclarativeMeta):
     __abstract__ = True
     registry = mapper_registry
     metadata = mapper_registry.metadata
+    __init__ = mapper_registry.constructor
 
     @classmethod
     def __declare_last__(cls):
@@ -816,15 +817,17 @@ class DynamicTool(Base, Dictifiable, RepresentById):
             self.uuid = UUID(str(uuid))
 
 
-class BaseJobMetric:
+class BaseJobMetric(Base):
+    __abstract__ = True
 
     def __init__(self, plugin, metric_name, metric_value):
+        super().__init__()
         self.plugin = plugin
         self.metric_name = metric_name
         self.metric_value = metric_value
 
 
-class JobMetricText(Base, BaseJobMetric, RepresentById):
+class JobMetricText(BaseJobMetric, RepresentById):
     __tablename__ = 'job_metric_text'
 
     id = Column(Integer, primary_key=True)
@@ -835,7 +838,7 @@ class JobMetricText(Base, BaseJobMetric, RepresentById):
     job = relationship('Job', back_populates='text_metrics')
 
 
-class JobMetricNumeric(Base, BaseJobMetric, RepresentById):
+class JobMetricNumeric(BaseJobMetric, RepresentById):
     __tablename__ = 'job_metric_numeric'
 
     id = Column(Integer, primary_key=True)
@@ -846,7 +849,7 @@ class JobMetricNumeric(Base, BaseJobMetric, RepresentById):
     job = relationship('Job', back_populates='numeric_metrics')
 
 
-class TaskMetricText(Base, BaseJobMetric, RepresentById):
+class TaskMetricText(BaseJobMetric, RepresentById):
     __tablename__ = 'task_metric_text'
 
     id = Column(Integer, primary_key=True)
@@ -857,7 +860,7 @@ class TaskMetricText(Base, BaseJobMetric, RepresentById):
     task = relationship('Task', back_populates='text_metrics')
 
 
-class TaskMetricNumeric(Base, BaseJobMetric, RepresentById):
+class TaskMetricNumeric(BaseJobMetric, RepresentById):
     __tablename__ = 'task_metric_numeric'
 
     id = Column(Integer, primary_key=True)
