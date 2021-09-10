@@ -345,9 +345,6 @@ class DatasetOkValidator(Validator):
     >>> ok_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> ok_hda.set_dataset_state(model.Dataset.states.OK)
     >>> notok_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
-    >>> # TODO I do not get 100% why for state!=OK the validator is called
-    >>> # TODO because DataToolParameter.validate.do_validate calls the validator only of state=OK
-    >>> # TODO in this light I wonder about the use of this validator at all....
     >>> notok_hda.set_dataset_state(model.Dataset.states.EMPTY)
     >>>
     >>> p = ToolParameter.build(None, XML('''
