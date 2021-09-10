@@ -14,6 +14,7 @@ from tempfile import (
     SpooledTemporaryFile,
 )
 from typing import (
+    cast,
     List,
     Optional,
     Set,

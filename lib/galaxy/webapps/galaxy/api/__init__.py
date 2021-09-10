@@ -249,3 +249,11 @@ def as_form(cls: Type[BaseModel]):
     _as_form.__signature__ = sig    # type: ignore
     cls.as_form = _as_form          # type: ignore
     return cls
+
+
+async def try_get_request_body_as_json(request: Request) -> Optional[Any]:
+    """Returns the request body as a JSON object if the content type is JSON."""
+    if "application/json" in request.headers.get("content-type", ""):
+        body = await request.json()
+        return body
+    return None
