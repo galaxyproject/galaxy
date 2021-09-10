@@ -18,7 +18,11 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import binary, data, metadata
-from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.binary import _BamOrSam
+from galaxy.datatypes.metadata import (
+    MetadataElement,
+    MetadataParameter,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     get_headers,
@@ -462,12 +466,19 @@ class Taxonomy(Tabular):
 
 @dataproviders.decorators.has_dataproviders
 @build_sniff_from_prefix
-class Sam(Tabular):
+class Sam(Tabular, _BamOrSam):
     edam_format = "format_2573"
     edam_data = "data_0863"
     file_ext = 'sam'
     track_type = "ReadTrack"
     data_sources = {"data": "bam", "index": "bigwig"}
+
+    MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
+    MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
+    MetadataElement(name="read_groups", default=[], desc="Read Groups", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={})
 
     def __init__(self, **kwd):
         """Initialize sam datatype"""
@@ -537,6 +548,26 @@ class Sam(Tabular):
         return False
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+        >>> from galaxy.model import Dataset, set_datatypes_registry
+        >>> from galaxy.model import History, HistoryDatasetAssociation
+        >>> from galaxy.model.mapping import init
+        >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
+        >>> hist = History()
+        >>> sa_session.add(hist)
+        >>> sa_session.flush()
+        >>> set_datatypes_registry(example_datatype_registry_for_sample())
+        >>> fname = get_test_fname( 'sam_with_header.sam' )
+        >>> samds = Dataset(external_filename=fname)
+        >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='sam', create_dataset=True, sa_session=sa_session, dataset=samds))
+        >>> Sam().set_meta(hda)
+        >>> hda.metadata.comment_lines
+        2
+        >>> hda.metadata.reference_names
+        ['ref', 'ref2']
+        """
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
                 comment_lines = 0
@@ -558,6 +589,8 @@ class Sam(Tabular):
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.columns = 12
             dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
+
+            _BamOrSam().set_meta(dataset)
 
     @staticmethod
     def merge(split_files, output_file):
