@@ -216,7 +216,7 @@ class safe_update(NamedTuple):
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
 WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1")),
-    '__BUILD_LIST__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
+    '__BUILD_LIST__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
     '__APPLY_RULES__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
     '__EXTRACT_DATASET__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
     'Grep1': safe_update(packaging.version.parse("1.0.1"), packaging.version.parse("1.0.3")),
@@ -2959,7 +2959,7 @@ class BuildListCollectionTool(DatabaseOperationTool):
                 if incoming_repeat["id_cond"]["id_select"] == 'idx':
                     identifier = str(i)
                 elif incoming_repeat["id_cond"]["id_select"] == 'identifier':
-                    identifier = incoming_repeat["input"].name
+                    identifier = incoming_repeat["input"].element_identifier
                 elif incoming_repeat["id_cond"]["id_select"] == 'manual':
                     identifier = incoming_repeat["id_cond"]["identifier"]
                 new_elements[identifier] = incoming_repeat["input"].copy(copy_tags=incoming_repeat["input"].tags)
