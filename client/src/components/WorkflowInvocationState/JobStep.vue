@@ -23,7 +23,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { JobProvider } from "./providers";
+import { JobProvider } from "components/providers";
 import JobInformation from "components/JobInformation/JobInformation";
 import JobParameters from "components/JobParameters/JobParameters";
 import UtcDate from "components/UtcDate";

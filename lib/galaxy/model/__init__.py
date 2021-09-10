@@ -1450,6 +1450,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                         "uuid": str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
                     }
             rval['outputs'] = output_dict
+            rval['output_collections'] = {jtodca.name: {'id': jtodca.dataset_collection_instance.id, 'src': 'hdca'} for jtodca in self.output_dataset_collection_instances}
 
         return rval
 
@@ -1826,7 +1827,6 @@ class JobToInputDatasetCollectionAssociation(Base, RepresentById):
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
     dataset_collection_id = Column(Integer,
         ForeignKey('history_dataset_collection_association.id'), index=True)
-    dataset_version = Column(Integer)
     name = Column(String(255))
     dataset_collection = relationship('HistoryDatasetCollectionAssociation', lazy=False)
     job = relationship('Job', back_populates='input_dataset_collections')

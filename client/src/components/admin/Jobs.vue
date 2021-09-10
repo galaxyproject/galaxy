@@ -149,7 +149,7 @@
 import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
 import axios from "axios";
-import JobDetails from "./JobDetails";
+import JobDetails from "components/JobInformation/JobDetails";
 import JobLock from "./JobLock";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import { commonJobFields } from "./JobFields";

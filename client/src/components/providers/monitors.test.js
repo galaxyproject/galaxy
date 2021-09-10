@@ -1,10 +1,10 @@
 import { of } from "rxjs";
 import { ObserverSpy } from "@hirez_io/observer-spy";
-import { loadHistoryContents } from "../../History/caching";
+import { loadHistoryContents } from "components/History/caching";
 import { monitorHistoryUntilTrue, invocationStepMonitor } from "./monitors";
 import * as fetch from "./fetch";
 
-jest.mock("../../History/caching");
+jest.mock("components/History/caching");
 
 describe("invocationStepMonitor", () => {
     let monitor$;

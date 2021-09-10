@@ -85,7 +85,7 @@
 import Utils from "utils/utils";
 import UtcDate from "components/UtcDate";
 import DecodedId from "../DecodedId";
-import { DatasetProvider } from "../WorkflowInvocationState/providers";
+import { DatasetProvider } from "components/providers";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faEye } from "@fortawesome/free-solid-svg-icons";

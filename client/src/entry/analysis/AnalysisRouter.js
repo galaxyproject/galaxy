@@ -25,6 +25,7 @@ import CustomBuilds from "components/User/CustomBuilds.vue";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
+import JobDetails from "components/JobInformation/JobDetails.vue";
 import WorkflowImport from "components/Workflow/WorkflowImport.vue";
 import TrsImport from "components/Workflow/TrsImport.vue";
 import TrsSearch from "components/Workflow/TrsSearch.vue";
@@ -93,6 +94,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)histories/show_structure": "show_history_structure",
             "(/)histories(/)(:action_id)": "show_histories",
             "(/)datasets(/)list(/)": "show_datasets",
+            "(/)jobs(/)(:job_id)(/)view": "show_job",
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
@@ -341,6 +343,10 @@ export const getAnalysisRouter = (Galaxy) => {
             this._display_vue_helper(WorkflowImport);
         },
 
+        show_job: function (job_id) {
+            this._display_vue_helper(JobDetails, { jobId: job_id });
+        },
+
         show_workflows_trs_import: function () {
             const queryTrsServer = QueryStringParsing.get("trs_server");
             const queryTrsId = QueryStringParsing.get("trs_id");
@@ -372,7 +378,12 @@ export const getAnalysisRouter = (Galaxy) => {
 
         show_dataset_edit_attributes: function (params) {
             const datasetId = params.dataset_id;
-            this._display_vue_helper(DatasetAttributes, { datasetId: datasetId });
+            if (datasetId) {
+                this._display_vue_helper(DatasetAttributes, { datasetId: datasetId });
+            } else {
+                // can happen with faulty navigating, reloading datasets/edit
+                this._loadCenterIframe("welcome");
+            }
         },
 
         show_dataset_error: function (params) {

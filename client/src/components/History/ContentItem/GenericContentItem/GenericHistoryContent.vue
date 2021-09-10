@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { DatasetProvider, DatasetCollectionProvider } from "./providers/index";
+import { DatasetProvider, DatasetCollectionProvider } from "components/providers";
 import DatasetCollectionUIWrapper from "./DatasetCollectionUIWrapper";
 import DatasetUIWrapper from "./DatasetUIWrapper";
 import { STATES } from "components/History/model";
