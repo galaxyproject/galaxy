@@ -63,6 +63,17 @@ class DatasetPath:
         return dataset_path
 
 
+class DatasetPathRewriterRouter:
+    def __init__(self, path_rewriters):
+        self.path_rewriters = path_rewriters
+
+    def rewrite_dataset_path(self, dataset, dataset_type):
+        rewriter = self.path_rewriters.get(dataset_type)
+        if rewriter:
+            return rewriter.rewrite_dataset_path(dataset, dataset_type)
+        return None
+
+
 class DatasetPathRewriter(metaclass=ABCMeta):
     """ Used by runner to rewrite paths. """
 
@@ -82,14 +93,6 @@ class NullDatasetPathRewriter:
         """ Keep path the same.
         """
         return None
-
-
-class INeedANameForThis:
-    def __init__(self, path_rewriters):
-        self.path_rewriters = path_rewriters
-
-    def rewrite_dataset_path(self, dataset, dataset_type):
-        return self.path_rewriters[dataset_type].rewrite_dataset_path(dataset, dataset_type)
 
 
 class InputsToWorkingDirectoryPathRewriter:
