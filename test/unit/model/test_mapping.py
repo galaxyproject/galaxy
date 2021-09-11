@@ -2611,7 +2611,12 @@ class TestJobExportHistoryArchive(BaseTest):
 
     def test_columns(self, session, cls_, job, history, dataset):
         compressed, history_attrs_filename = True, 'a'
-        obj = cls_(job, history, dataset, compressed, history_attrs_filename)
+        obj = cls_()
+        obj.job = job
+        obj.history = history
+        obj.dataset = dataset
+        obj.compressed = compressed
+        obj.history_attrs_filename = history_attrs_filename
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -2623,7 +2628,10 @@ class TestJobExportHistoryArchive(BaseTest):
             assert stored_obj.history_attrs_filename == history_attrs_filename
 
     def test_relationships(self, session, cls_, job, history, dataset):
-        obj = cls_(job, history, dataset, True, None)
+        obj = cls_()
+        obj.job = job
+        obj.history = history
+        obj.dataset = dataset
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)

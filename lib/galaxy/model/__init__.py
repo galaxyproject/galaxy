@@ -2069,13 +2069,9 @@ class JobExportHistoryArchive(Base, RepresentById):
 
     ATTRS_FILENAME_HISTORY = 'history_attrs.txt'
 
-    def __init__(self, job=None, history=None, dataset=None, compressed=False,
-                 history_attrs_filename=None):
-        self.job = job
-        self.history = history
-        self.dataset = dataset
+    def __init__(self, compressed=False, **kwd):
+        super().__init__(**kwd)
         self.compressed = compressed
-        self.history_attrs_filename = history_attrs_filename
 
     @property
     def fda(self):
