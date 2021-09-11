@@ -6012,27 +6012,10 @@ class GalaxySession(Base, RepresentById):
     histories = relationship('GalaxySessionToHistoryAssociation', back_populates='galaxy_session')
     user = relationship('User', back_populates='galaxy_sessions')
 
-    def __init__(self,
-                 id=None,
-                 user=None,
-                 remote_host=None,
-                 remote_addr=None,
-                 referer=None,
-                 current_history=None,
-                 session_key=None,
-                 is_valid=False,
-                 prev_session_id=None,
-                 last_action=None):
-        self.id = id
-        self.user = user
-        self.remote_host = remote_host
-        self.remote_addr = remote_addr
-        self.referer = referer
-        self.current_history = current_history
-        self.session_key = session_key
+    def __init__(self, is_valid=False, **kwd):
+        super().__init__(**kwd)
         self.is_valid = is_valid
-        self.prev_session_id = prev_session_id
-        self.last_action = last_action or datetime.now()
+        self.last_action = self.last_action or datetime.now()
 
     def add_history(self, history, association=None):
         if association is None:
