@@ -5798,22 +5798,12 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
 
     editable_keys = ('name', 'deleted')
 
-    def __init__(
-        self,
-        id=None,
-        collection=None,
-        name=None,
-        deleted=False,
-        folder=None,
-    ):
-        self.collection = collection
+    def __init__(self, deleted=False, **kwd):
+        super().__init__(**kwd)
         # Since deleted property is shared between history and dataset collections,
         # it could be on either table - some places in the code however it is convient
         # it is on instance instead of collection.
         self.deleted = deleted
-        self.id = id
-        self.folder = folder
-        self.name = name
 
     def to_dict(self, view='collection'):
         dict_value = dict(
