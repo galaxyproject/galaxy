@@ -2581,7 +2581,11 @@ class TestJobContainerAssociation(BaseTest):
         modified_time = created_time + timedelta(hours=1)
 
         session.add(job)  # must be bound to a session for lazy load of attributes
-        obj = cls_(job, container_type, container_name, container_info)
+        obj = cls_()
+        obj.job = job
+        obj.container_type = container_type
+        obj.container_name = container_name
+        obj.container_info = container_info
         obj.created_time = created_time
         obj.modified_time = modified_time
 
@@ -2597,7 +2601,7 @@ class TestJobContainerAssociation(BaseTest):
 
     def test_relationships(self, session, cls_, job):
         session.add(job)  # must be bound to a session for lazy load of attributes
-        obj = cls_(job, None, None, None)
+        obj = cls_(job=job)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)

@@ -2165,11 +2165,9 @@ class JobContainerAssociation(Base, RepresentById):
     modified_time = Column(DateTime, default=now, onupdate=now)
     job = relationship('Job', back_populates='container')
 
-    def __init__(self, job=None, container_type=None, container_name=None, container_info=None):
-        self.job = job
-        self.container_type = container_type
-        self.container_name = container_name
-        self.container_info = container_info or {}
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self.container_info = self.container_info or {}
 
 
 class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
