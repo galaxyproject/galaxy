@@ -1065,6 +1065,7 @@
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
     <sniffer type="galaxy.datatypes.sequence:FastqCSSanger"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSanger"/>
+    <sniffer type="galaxy.datatypes.sequence:FastqSolexa"/>
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
     <sniffer type="galaxy.datatypes.text:Html"/>

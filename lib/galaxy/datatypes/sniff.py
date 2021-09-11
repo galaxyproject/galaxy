@@ -50,6 +50,24 @@ def get_test_fname(fname):
     return full_path
 
 
+def get_test_iter(fnames):
+    """Returns test data paths separated into those that
+    should evaluate positive and negative given a list
+    of basenames that should evaluate positive.
+    """
+    pos = set()
+    neg = set()
+    path, name = os.path.split(__file__)
+    path = os.path.join(path, 'test')
+    with os.scandir(path) as it:
+        for entry in it:
+            if entry.name in fnames:
+                pos.add(entry.path)
+            else:
+                neg.add(entry.path)
+    return pos, neg
+
+
 def sniff_with_cls(cls, fname):
     path = get_test_fname(fname)
     try:
@@ -349,7 +367,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('test.idpdb')
     >>> guess_ext(fname, sniff_order)
     'idpdb'
-    >>> fname = get_test_fname('test.mz5')
+    >>> fname = get_test_fname('test.h5')
     >>> guess_ext(fname, sniff_order)
     'h5'
     >>> fname = get_test_fname('issue1818.tabular')
@@ -480,7 +498,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('Accuri_C6_A01_H2O.fcs')
     >>> guess_ext(fname, sniff_order)
     'fcs'
-    >>> fname = get_test_fname('1imzml')
+    >>> fname = get_test_fname('1imzml.data')
     >>> guess_ext(fname, sniff_order)  # This test case is ensuring doesn't throw exception, actual value could change if non-utf encoding handling improves.
     'data'
     >>> fname = get_test_fname('too_many_comments_gff3.tabular')
@@ -489,7 +507,6 @@ def guess_ext(fname, sniff_order, is_binary=False):
     """
     file_prefix = FilePrefix(fname)
     file_ext = run_sniffers_raw(file_prefix, sniff_order, is_binary)
-    log.error(f"file_ext {file_ext}")
     # Ugly hack for tsv vs tabular sniffing, we want to prefer tabular
     # to tsv but it doesn't have a sniffer - is TSV was sniffed just check
     # if it is an okay tabular and use that instead.

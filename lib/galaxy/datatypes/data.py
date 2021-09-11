@@ -1095,7 +1095,7 @@ def get_file_peek(file_name, WIDTH=256, LINE_COUNT=5, skipchars=None, line_wrap=
     ...     path = get_test_fname(file_name)
     ...     peek = get_file_peek(path, *args, **kwd)
     ...     assert peek == expected, "%s != %s" % (peek, expected)
-    >>> assert_peek_is('0_nonewline', u'0')
+    >>> assert_peek_is('0_nonewline.txt', u'0')
     >>> assert_peek_is('0.txt', u'0\\n')
     >>> assert_peek_is('4.bed', u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n', LINE_COUNT=1)
     >>> assert_peek_is('1.bed', u'chr1\\t147962192\\t147962580\\tCCDS989.1_cds_0_0_chr1_147962193_r\\t0\\t-\\nchr1\\t147984545\\t147984630\\tCCDS990.1_cds_0_0_chr1_147984546_f\\t0\\t+\\n', LINE_COUNT=2)

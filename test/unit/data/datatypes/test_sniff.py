@@ -2,11 +2,14 @@ import tempfile
 
 import pytest
 
+from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.datatypes.sniff import (
     convert_newlines,
     convert_newlines_sep2tabs,
     convert_sep2tabs,
     get_test_fname,
+    get_test_iter,
+    guess_ext,
 )
 
 
@@ -64,11 +67,11 @@ def test_convert_newlines(source, block_size):
 
 
 def test_convert_newlines_non_utf():
-    fname = get_test_fname("dosimzml")
+    fname = get_test_fname("dosimzml.data")
     rval = convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), in_place=False)
     new_file = rval[1]
     assert new_file
-    assert open(new_file, "rb").read() == open(get_test_fname("1imzml"), "rb").read()
+    assert open(new_file, "rb").read() == open(get_test_fname("1imzml.data"), "rb").read()
 
 
 @pytest.mark.parametrize('source,expected', [
@@ -91,3 +94,15 @@ def test_convert_sep2tabs_only():
     assert_converts_to_1234_convert_sep2tabs_only(b"1 2\r3 4", b"1\t2\r3\t4")
     assert_converts_to_1234_convert_sep2tabs_only(b"1 2\n3 4", b"1\t2\n3\t4")
     assert_converts_to_1234_convert_sep2tabs_only(b"1    2\n3    4", b"1\t2\n3\t4")
+
+
+def test_all_guess_ext():
+    """
+    test guess_ext on all files in lib/galaxy/datatypes/tests
+    the extension of the files in this dir needs to match the guessed extension
+    """
+    datatypes_registry = example_datatype_registry_for_sample()
+    _, testdata = get_test_iter([])
+    for f in testdata:
+        ext = guess_ext(f, datatypes_registry.sniff_order)
+        assert f.endswith(ext), f"{f} is recognized as {ext}"
