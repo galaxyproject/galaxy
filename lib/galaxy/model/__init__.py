@@ -7455,7 +7455,6 @@ class MetadataFile(Base, StorableObject, RepresentById):
     library_dataset = relationship('LibraryDatasetDatasetAssociation')
 
     def __init__(self, dataset=None, name=None, uuid=None):
-        self.id = None
         self.uuid = get_uuid(uuid)
         if isinstance(dataset, HistoryDatasetAssociation):
             self.history_dataset = dataset
