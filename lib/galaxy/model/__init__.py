@@ -8138,13 +8138,6 @@ class VisualizationRevision(Base, RepresentById):
         back_populates='revisions',
         primaryjoin=(lambda: Visualization.id == VisualizationRevision.visualization_id))  # type: ignore
 
-    def __init__(self, visualization=None, title=None, dbkey=None, config=None):
-        self.id = None
-        self.visualization = visualization
-        self.title = title
-        self.dbkey = dbkey
-        self.config = config
-
     def copy(self, visualization=None):
         """
         Returns a copy of this object.

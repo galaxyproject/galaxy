@@ -5434,7 +5434,12 @@ class TestVisualizationRevision(BaseTest):
         visualization, title, dbkey, config = visualization, 'a', 'b', 'c'
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        obj = cls_(visualization, title, dbkey, config)
+        obj = cls_()
+        obj.visualization = visualization
+        obj.title = title
+        obj.dbkey = dbkey
+        obj.config = config
+
         obj.create_time = create_time
         obj.update_time = update_time
 
@@ -5449,7 +5454,7 @@ class TestVisualizationRevision(BaseTest):
             assert stored_obj.config == config
 
     def test_relationships(self, session, cls_, visualization):
-        obj = cls_(visualization)
+        obj = cls_(visualization=visualization)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
