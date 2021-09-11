@@ -5587,34 +5587,14 @@ class HistoryDatasetCollectionAssociation(
 
     editable_keys = ('name', 'deleted', 'visible')
 
-    def __init__(
-        self,
-        id=None,
-        hid=None,
-        collection=None,
-        history=None,
-        name=None,
-        deleted=False,
-        visible=True,
-        copied_from_history_dataset_collection_association=None,
-        implicit_output_name=None,
-        implicit_input_collections=None,
-    ):
-        if implicit_input_collections is None:
-            implicit_input_collections = []
-        self.collection = collection
+    def __init__(self, deleted=False, visible=True, **kwd):
+        super().__init__(**kwd)
         # Since deleted property is shared between history and dataset collections,
         # it could be on either table - some places in the code however it is convient
         # it is on instance instead of collection.
         self.deleted = deleted
-        self.id = id
-        self.hid = hid
-        self.history = history
-        self.name = name
         self.visible = visible
-        self.copied_from_history_dataset_collection_association = copied_from_history_dataset_collection_association
-        self.implicit_output_name = implicit_output_name
-        self.implicit_input_collections = implicit_input_collections
+        self.implicit_input_collections = self.implicit_input_collections or []
 
     @property
     def history_content_type(self):
