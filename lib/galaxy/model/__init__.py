@@ -2248,11 +2248,6 @@ class DeferredJob(Base, RepresentById):
         OK = 'ok'
         ERROR = 'error'
 
-    def __init__(self, state=None, plugin=None, params=None):
-        self.state = state
-        self.plugin = plugin
-        self.params = params
-
     def get_check_interval(self):
         if not hasattr(self, '_check_interval'):
             self._check_interval = None

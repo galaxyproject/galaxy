@@ -810,7 +810,10 @@ class TestDeferredJob(BaseTest):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         state, plugin, params = 'a', 'b', 'c'
-        obj = cls_(state, plugin, params)
+        obj = cls_()
+        obj.state = state
+        obj.plugin = plugin
+        obj.params = params
         obj.create_time = create_time
         obj.update_time = update_time
 
