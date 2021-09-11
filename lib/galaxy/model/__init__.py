@@ -5562,20 +5562,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
 
 
 class DatasetCollectionInstance(HasName):
-    """
-    """
-
-    def __init__(
-        self,
-        collection=None,
-        deleted=False,
-    ):
-        # Relationships
-        self.collection = collection
-        # Since deleted property is shared between history and dataset collections,
-        # it could be on either table - some places in the code however it is convient
-        # it is on instance instead of collection.
-        self.deleted = deleted
 
     @property
     def state(self):
@@ -5730,10 +5716,11 @@ class HistoryDatasetCollectionAssociation(
     ):
         if implicit_input_collections is None:
             implicit_input_collections = []
-        super().__init__(
-            collection=collection,
-            deleted=deleted,
-        )
+        self.collection = collection
+        # Since deleted property is shared between history and dataset collections,
+        # it could be on either table - some places in the code however it is convient
+        # it is on instance instead of collection.
+        self.deleted = deleted
         self.id = id
         self.hid = hid
         self.history = history
@@ -5953,10 +5940,11 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
         deleted=False,
         folder=None,
     ):
-        super().__init__(
-            collection=collection,
-            deleted=deleted,
-        )
+        self.collection = collection
+        # Since deleted property is shared between history and dataset collections,
+        # it could be on either table - some places in the code however it is convient
+        # it is on instance instead of collection.
+        self.deleted = deleted
         self.id = id
         self.folder = folder
         self.name = name
