@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 from pulsar.client.transport import post_file
 

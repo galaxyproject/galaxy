@@ -13,9 +13,8 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
+from galaxy.jobs import JobWrapper
 from galaxy.util import asbool
-
-from lib.galaxy.jobs import JobWrapper
 
 log = logging.getLogger(__name__)
 
