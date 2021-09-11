@@ -7891,16 +7891,6 @@ class CustosAuthnzToken(Base, RepresentById):
     refresh_expiration_time = Column(DateTime)
     user = relationship('User', back_populates='custos_auth')
 
-    def __init__(self, user, external_user_id, provider, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time):
-        self.user = user
-        self.external_user_id = external_user_id
-        self.provider = provider
-        self.access_token = access_token
-        self.id_token = id_token
-        self.refresh_token = refresh_token
-        self.expiration_time = expiration_time
-        self.refresh_expiration_time = refresh_expiration_time
-
 
 class CloudAuthz(Base, _HasTable):
     __tablename__ = 'cloudauthz'

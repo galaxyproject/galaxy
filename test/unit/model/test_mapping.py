@@ -297,6 +297,53 @@ class TestCleanupEventMetadataFileAssociation(BaseTest):
             assert stored_obj.metadata_file_id == metadata_file.id
 
 
+class TestCustosAuthnzToken(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'custos_authnz_token'
+        assert has_unique_constraint(cls_.__table__, ('user_id', 'external_user_id', 'provider'))
+        assert has_unique_constraint(cls_.__table__, ('external_user_id', 'provider'))
+
+    def test_columns(self, session, cls_, user):
+        external_user_id = 'a'
+        provider = 'b'
+        access_token = 'c'
+        id_token = 'd'
+        refresh_token = 'e'
+        expiration_time = datetime.now()
+        refresh_expiration_time = expiration_time + timedelta(hours=1)
+
+        obj = cls_()
+        obj.user = user
+        obj.external_user_id = external_user_id
+        obj.provider = provider
+        obj.access_token = access_token
+        obj.id_token = id_token
+        obj.refresh_token = refresh_token
+        obj.expiration_time = expiration_time
+        obj.refresh_expiration_time = refresh_expiration_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.external_user_id == external_user_id
+            assert stored_obj.provider == provider
+            assert stored_obj.access_token == access_token
+            assert stored_obj.id_token == id_token
+            assert stored_obj.refresh_token == refresh_token
+            assert stored_obj.expiration_time == expiration_time
+            assert stored_obj.refresh_expiration_time == refresh_expiration_time
+
+    def test_relationships(self, session, cls_, user):
+        obj = cls_()
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.user.id == user.id
+
+
 class TestCloudAuthz(BaseTest):
 
     def test_table(self, cls_):
@@ -6647,7 +6694,7 @@ def cloud_authz(model, session, user, user_authnz_token):
 
 @pytest.fixture
 def custos_authnz_token(model, session, user):
-    instance = model.CustosAuthnzToken(user, None, None, None, None, None, None, None)
+    instance = model.CustosAuthnzToken()
     yield from dbcleanup_wrapper(session, instance)
 
 
