@@ -143,7 +143,7 @@ else:
     _HasTable = object
 
 
-def get_uuid(uuid):
+def get_uuid(uuid=None):
     if uuid is None:
         return uuid4()
     return UUID(str(uuid))
@@ -817,10 +817,7 @@ class DynamicTool(Base, Dictifiable, RepresentById):
         self.active = active
         self.hidden = hidden
         self.value = value
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
+        self.uuid = get_uuid(uuid)
 
 
 class BaseJobMetric(Base):
@@ -6398,10 +6395,7 @@ class Workflow(Base, Dictifiable, RepresentById):
         self.has_errors = None
         self.steps = []
         self.stored_workflow_id = None
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
+        self.uuid = get_uuid(uuid)
 
     def has_outputs_defined(self):
         """
@@ -6883,10 +6877,7 @@ class WorkflowOutput(Base, RepresentById):
         self.workflow_step = workflow_step
         self.output_name = output_name
         self.label = label
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
+        self.uuid = get_uuid(uuid)
 
     def copy(self, copied_step):
         copied_output = WorkflowOutput(copied_step)
