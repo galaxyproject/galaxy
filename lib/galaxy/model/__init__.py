@@ -8077,17 +8077,10 @@ class Visualization(Base, RepresentById):
     # returns a list of users that visualization is shared with.
     users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
 
-    def __init__(self, id=None, user=None, type=None, title=None, dbkey=None, slug=None, latest_revision=None):
-        self.id = id
-        self.user = user
-        self.type = type
-        self.title = title
-        self.dbkey = dbkey
-        self.slug = slug
-        self.latest_revision = latest_revision
-        self.revisions = []  # TODO: review: this attempts to overwrite an instrumented attr (SA overwrites this?)
-        if self.latest_revision:  # TODO: but this happens ONLY if passed to constructor. Review.
-            self.revisions.append(latest_revision)
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        if self.latest_revision:
+            self.revisions.append(self.latest_revision)
 
     def copy(self, user=None, title=None):
         """
