@@ -62,7 +62,7 @@ See other model tests in this module for examples of more complex setups.
 
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import (
@@ -849,8 +849,17 @@ class TestDynamicTool(BaseTest):
         value = 'f'
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        obj = cls_(tool_format, tool_id, tool_version, tool_path, tool_directory, uuid,
-                active, hidden, value)
+
+        obj = cls_()
+        obj.tool_format = tool_format
+        obj.tool_id = tool_id
+        obj.tool_version = tool_version
+        obj.tool_path = tool_path
+        obj.tool_directory = tool_directory
+        obj.uuid = uuid
+        obj.active = active
+        obj.hidden = hidden
+        obj.value = value
         obj.create_time = create_time
         obj.update_time = update_time
 
@@ -876,6 +885,21 @@ class TestDynamicTool(BaseTest):
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.workflow_steps == [workflow_step]
+
+    def test_construct_with_uuid(self, session, cls_):
+        uuid = uuid4()
+        obj = cls_(uuid=uuid)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.uuid == uuid
+
+    def test_construct_without_uuid(self, session, cls_):
+        obj = cls_()
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert isinstance(stored_obj.uuid, UUID)
 
 
 class TestEvent(BaseTest):

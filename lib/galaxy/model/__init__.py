@@ -797,17 +797,12 @@ class DynamicTool(Base, Dictifiable, RepresentById):
     dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
     dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
 
-    def __init__(self, tool_format=None, tool_id=None, tool_version=None, tool_path=None, tool_directory=None,
-                 uuid=None, active=True, hidden=True, value=None):
-        self.tool_format = tool_format
-        self.tool_id = tool_id
-        self.tool_version = tool_version
-        self.tool_path = tool_path
-        self.tool_directory = tool_directory
+    def __init__(self, active=True, hidden=True, **kwd):
+        super().__init__(**kwd)
         self.active = active
         self.hidden = hidden
-        self.value = value
-        self.uuid = get_uuid(uuid)
+        _uuid = kwd.get('uuid')
+        self.uuid = get_uuid(_uuid)
 
 
 class BaseJobMetric(Base):
