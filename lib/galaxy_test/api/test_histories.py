@@ -540,12 +540,6 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         assert len(sharing_response["users_shared_with"]) == 1
         assert sharing_response["users_shared_with"][0]["id"] == target_user_id
 
-        # Do not share with the same user multiple times
-        payload = {"user_ids": [target_user_id]}
-        sharing_response = self._share_history_with_payload(history_id, payload)
-        assert sharing_response["errors"]
-        assert "already shared" in sharing_response["errors"][0]
-
     def _share_history_with_payload(self, history_id, payload):
         sharing_response = self._put(f"histories/{history_id}/share_with_users", data=payload, json=True)
         self._assert_status_code_is(sharing_response, 200)
