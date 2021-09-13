@@ -2,9 +2,6 @@ import logging
 import os
 import re
 
-from ase.io import read as ase_read
-from ase.io.extxyz import XYZError
-
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
@@ -728,7 +725,6 @@ class Cell(GenericMolFile):
         else:
             return False
 
-
     def set_meta(self, dataset, **kwd):
         """
         Find Atom IDs for metadata.
@@ -736,12 +732,11 @@ class Cell(GenericMolFile):
         with open(dataset.file_name) as f:
             cell = f.read()
         try:
-            block = cell.split('%BLOCK POSITIONS')[1].split('%ENDBLOCK POSITIONS').split('\n')[1:-1]
+            block = cell.split('%BLOCK POSITIONS')[1].split('%ENDBLOCK POSITIONS')[0].split('\n')[1:-1]
             dataset.metadata.atom_data = [atom.strip() for atom in block]
         except Exception as e:
             log.error("Error finding atom_data: %s", unicodify(e))
             raise
-
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -781,35 +776,36 @@ class CIF(GenericMolFile):
         >>> CIF().sniff(fname)
         False
         """
-        try:
-            ase_data = ase_read(filename, format="cif")
-            return True if ase_data else False
-        except (ValueError, AssertionError):
+        with open(filename) as f:
+            cif = f.read(1000)
+
+        for line in cif.split('\n'):
+            if line[0] == '#':  # comment so skip
+                continue
+            if line.beginswith('data_'):
+                if '_atom_site_fract_' in cif:
+                    return True
+            else:
+                return False
+
+        # if '_atom_site_fract_' not found check the rest of the file
+        with open(filename) as f:
+            cif = f.read(1000)
+        if '_atom_site_fract_' in cif:
+            return True
+        else:
             return False
 
-    def set_meta(self, dataset, **kwd):
-        """
-        Find Atom IDs for metadata.
-        """
-        ase_data = ase_read(dataset.file_name, format="cif")
-        try:
-            atom_data = [
-                str(sym) + str(pos)
-                for sym, pos in zip(
-                    ase_data.get_chemical_symbols(), ase_data.get_positions()
-                )
-            ]
-            dataset.metadata.atom_data = atom_data
-        except Exception as e:
-            log.error("Error finding atom_data: %s", unicodify(e))
-            raise
+    # def set_meta(self, dataset, **kwd):
+    #     """
+    #     Find Atom IDs for metadata.
+    #     """
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            ase_data = ase_read(dataset.file_name, format="cif")
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = (
-                f"CIF file containing {ase_data.get_global_number_of_atoms()} atoms"
+                "CIF file"
             )
         else:
             dataset.peek = "file does not exist"
