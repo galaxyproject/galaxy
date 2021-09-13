@@ -122,17 +122,17 @@ class FastAPIHistories:
         return self.service.shareable_service.unpublish(trans, id)
 
     @router.put(
-        '/api/histories/{id}/set_sharing_with_users',
+        '/api/histories/{id}/share_with_users',
         summary="Share this item with specific users.",
     )
-    def set_sharing_with_users(
+    def share_with_users(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIdPathParam,
         payload: sharable.ShareWithPayload = Body(...)
     ) -> sharable.ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
-        return self.service.shareable_service.set_sharing_with_users(trans, id, payload)
+        return self.service.shareable_service.share_with_users(trans, id, payload)
 
     @router.put(
         '/api/histories/{id}/slug',
@@ -517,12 +517,12 @@ class HistoriesController(BaseGalaxyAPIController):
         return self.service.shareable_service.unpublish(trans, id)
 
     @expose_api
-    def set_sharing_with_users(self, trans, id, payload, **kwd):
+    def share_with_users(self, trans, id, payload, **kwd):
         """
-        * PUT /api/histories/{id}/set_sharing_with_users
+        * PUT /api/histories/{id}/share_with_users
         """
         payload = sharable.ShareWithPayload(**payload)
-        return self.service.shareable_service.set_sharing_with_users(trans, id, payload)
+        return self.service.shareable_service.share_with_users(trans, id, payload)
 
     @expose_api
     def set_slug(self, trans, id, payload, **kwd):

@@ -371,7 +371,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         to provide the extra information, otherwise, it will be None by default."""
         return None
 
-    def update_current_shares(self, item, new_users_shared_with: Set[User], flush=True):
+    def update_current_sharing_with_users(self, item, new_users_shared_with: Set[User], flush=True):
         """Updates the currently list of users this item is shared with by adding new
         users and removing missing ones."""
         current_shares = self.get_share_assocs(item)
@@ -598,7 +598,7 @@ class SharableModelDeserializer(base.ModelDeserializer,
         """
         unencoded_ids = [self.app.security.decode_id(id_) for id_ in val]
         new_users_shared_with = set(self.manager.user_manager.by_ids(unencoded_ids))
-        current_shares = self.manager.update_current_shares(item, new_users_shared_with)
+        current_shares = self.manager.update_current_sharing_with_users(item, new_users_shared_with)
         # TODO: or should this return the list of ids?
         return current_shares
 
@@ -702,7 +702,7 @@ class ShareableService:
         self.manager.unpublish(item)
         return self._get_sharing_status(trans, item)
 
-    def set_sharing_with_users(self, trans, id: EncodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
+    def share_with_users(self, trans, id: EncodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
         item = self._get_item_by_id(trans, id)
         users, errors = self._get_users(trans, payload.user_ids)
         extra = self._share_with_options(trans, item, users, errors, payload.share_option)
@@ -722,7 +722,7 @@ class ShareableService:
     ):
         extra = self.manager.get_sharing_extra_information(trans, item, users, errors, share_option)
         if not extra or extra.can_share:
-            self.manager.update_current_shares(item, users)
+            self.manager.update_current_sharing_with_users(item, users)
             extra = None
         return extra
 

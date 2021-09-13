@@ -547,7 +547,7 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         assert "already shared" in sharing_response["errors"][0]
 
     def _share_history_with_payload(self, history_id, payload):
-        sharing_response = self._put(f"histories/{history_id}/set_sharing_with_users", data=payload, json=True)
+        sharing_response = self._put(f"histories/{history_id}/share_with_users", data=payload, json=True)
         self._assert_status_code_is(sharing_response, 200)
         return sharing_response.json()
 
