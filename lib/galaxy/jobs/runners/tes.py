@@ -151,7 +151,7 @@ class TESJobRunner(AsynchronousJobRunner):
         Utility method to quickly read small files (config files and tool
         wrappers) into memory as bytes.
         """
-        input = open(path, "r", encoding="utf-8")
+        input = open(path, "rb", encoding="utf-8")
         try:
             return input.read()
         finally:
