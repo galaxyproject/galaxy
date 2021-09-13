@@ -712,34 +712,41 @@ class Cell(GenericMolFile):
         >>> Cell().sniff(fname)
         False
         """
-        try:
-            ase_data = ase_read(filename, format="castep-cell")
-            return True if ase_data else False
-        except ValueError:
+        with open(filename) as f:
+            cell = f.read(1000)
+        if '\n%BLOCK ' in cell:
+            if '\n%ENDBLOCK ' in cell:
+                return True
+        else:
             return False
+
+        # if BLOCK was found but not ENDBLOCK, check the rest of the file
+        with open(filename) as f:
+            cell = f.read()
+        if '\n%ENDBLOCK ' in cell:
+            return True
+        else:
+            return False
+
 
     def set_meta(self, dataset, **kwd):
         """
         Find Atom IDs for metadata.
         """
-        ase_data = ase_read(dataset.file_name, format="castep-cell")
+        with open(dataset.file_name) as f:
+            cell = f.read()
         try:
-            atom_data = [
-                str(sym) + str(pos)
-                for sym, pos in zip(
-                    ase_data.get_chemical_symbols(), ase_data.get_positions()
-                )
-            ]
-            dataset.metadata.atom_data = atom_data
+            block = cell.split('%BLOCK POSITIONS')[1].split('%ENDBLOCK POSITIONS').split('\n')[1:-1]
+            dataset.metadata.atom_data = [atom.strip() for atom in block]
         except Exception as e:
             log.error("Error finding atom_data: %s", unicodify(e))
             raise
 
+
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            ase_data = ase_read(dataset.file_name, format="castep-cell")
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = f"CASTEP cell file containing {ase_data.get_global_number_of_atoms()} atoms"
+            dataset.blurb = f"CASTEP cell file containing {len(dataset.metadata.atom_data)} atoms"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -865,10 +872,9 @@ class XYZ(GenericMolFile):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            ase_data = ase_read(dataset.file_name, format="xyz")
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = (
-                f"XYZ file containing {ase_data.get_global_number_of_atoms()} atoms"
+                f"XYZ file containing {len(dataset.metadata.atom_data)} atoms"
             )
         else:
             dataset.peek = "file does not exist"
