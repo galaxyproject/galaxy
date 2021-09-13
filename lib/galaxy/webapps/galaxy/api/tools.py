@@ -1,10 +1,11 @@
+from lib.galaxy.web.framework.decorators import error
 import logging
 import os
 from json import dumps, loads
 from typing import Any, cast, Dict, Optional
 
 from galaxy import exceptions, util, web
-from galaxy.managers.hdcas import HDCAManager
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
@@ -37,7 +38,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     """
     history_manager: HistoryManager = depends(HistoryManager)
     hda_manager: HDAManager = depends(HDAManager)
-    hdca_manager: HDCAManager = depends(HDCAManager)
+    hdca_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans: GalaxyWebTransaction, **kwds):
@@ -449,7 +450,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 params[value.name] = deps[value.name]
             elif value.type == 'data':
                 input_name = key
-
         params[input_name] = {
             "values": [
                 {
@@ -459,15 +459,20 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             ],
             "batch": input_src == "hdca",
         }
-
         history_id = payload.get('history_id')
         if history_id:
             decoded_id = self.decode_id(history_id)
+            target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
         else:
-            encoded_id = int(trans.app.security.decode_id(input_id))
-            decoded_id = self.hdca_manager.get_accessible(encoded_id, trans.user).history_id
+            if input_src == "hdca":
+                target_history = self.hdca_manager.get_dataset_collection_instance(trans, instance_type='history', id=input_id).history
+            elif input_src == "hda":
+                encoded_id = int(trans.app.security.decode_id(input_id))
+                decoded_id = self.hda_manager.get_accessible(encoded_id, trans.user).history_id
+                target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
+            else:
+                raise exceptions.RequestParameterInvalidException("Must run conversion on either hdca or hda.")
 
-        target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
         # Make the target datatype available to the converter
         params['__target_datatype__'] = target_type
         vars = converter.handle_input(trans, params, history=target_history)
