@@ -1905,9 +1905,9 @@ class BasicRoleModel(BaseModel):
 
 
 class RoleModel(BasicRoleModel):
-    description: str = RoleDescriptionField
+    description: Optional[str] = RoleDescriptionField
     url: str = Field(title="URL", description="URL for the role")
-    model_class: str = Field(title="Model class", description="Database model class (Role)")
+    model_class: str = ModelClassField("Role")
 
 
 class RoleDefinitionModel(BaseModel):
