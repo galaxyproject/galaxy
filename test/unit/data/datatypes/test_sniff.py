@@ -8,7 +8,7 @@ from galaxy.datatypes.sniff import (
     convert_newlines_sep2tabs,
     convert_sep2tabs,
     get_test_fname,
-    get_test_iter,
+    get_test_data_set,
     guess_ext,
 )
 
@@ -102,7 +102,7 @@ def test_all_guess_ext():
     the extension of the files in this dir needs to match the guessed extension
     """
     datatypes_registry = example_datatype_registry_for_sample()
-    _, testdata = get_test_iter([])
+    testdata = get_test_data_set()
     for f in testdata:
         ext = guess_ext(f, datatypes_registry.sniff_order)
         assert f.endswith(ext), f"{f} is recognized as {ext}"
