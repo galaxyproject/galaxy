@@ -78,7 +78,7 @@
                                     <div v-if="item.users_shared_with.length === 0">
                                         <p>You have not shared this {{ modelClass }} with any users.</p>
                                     </div>
-                                    <div v-else>
+                                    <div>
                                         <b-row align-v="center" class="share_with_view">
                                             <b-col cols="10">
                                                 <!--                                              :show-no-results="!(config.expose_user_email || user.is_admin)"-->
@@ -148,8 +148,8 @@
                                                     class="sharing_icon submit-sharing-with"
                                                 >
                                                     Submit
-                                                </b-button></b-col
-                                            >
+                                                </b-button>
+                                            </b-col>
                                         </b-row>
                                     </div>
                                 </div>
@@ -318,8 +318,7 @@ export default {
                 disable_link_access: "disable_link_access",
                 publish: "publish",
                 unpublish: "unpublish",
-                share_with: "share_with",
-                unshare_with: "unshare_with",
+                share_with: "share_with_users",
             },
             share_option: {
                 make_public: "make_public",
@@ -447,17 +446,6 @@ export default {
                 user_ids = user_id;
             } else {
                 user_ids = user_id ? user_id.replace(/ /g, "").split(",") : undefined;
-            }
-            if (
-                action === this.actions.share_with &&
-                user_ids &&
-                this.item.users_shared_with.some(({ email }) => user_ids.includes(email))
-            ) {
-                this.addError(
-                    `You already shared this ${this.modelClass} with
-                    ${user_ids.filter((user) => this.item.users_shared_with.some(({ email }) => email === user))}`
-                );
-                return;
             }
 
             const data = {
