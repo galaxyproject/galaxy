@@ -1,0 +1,46 @@
+<tool id="CONVERTER_bcf_uncompressed_to_bcf" name="Converter for BCF and uncompressed BCF" version="0.0.1" hidden="false" profile="21.09">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <requirements>
+        <requirement type="package" version="1.12">bcftools</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+        bcftools view -o '$output1' 
+        #if $__target_datatype__ == 'bcf'
+            -O b
+        #else
+            -O u
+        #end if
+        '$input1' &&
+        cp '$ext_config' 'galaxy.json'
+    ]]></command>
+    <configfiles>
+        <configfile name="ext_config">{"output1": {
+  "name": "$input1.name converted to $__target_datatype__",
+  "ext": "$__target_datatype__"
+}}</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input1" type="data" format="bcf,bcf_uncompressed" label="Input uncompressed BCF dataset" />
+        <param name="__target_datatype__" type="select" label="Target data type">
+            <option value="bcf">bcf</option>
+            <option value="bcf_uncompressed">bcf_uncompressed</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output1" format="auto" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" ftype="bcf_uncompressed" value="bcf_uncompressed_index_metadata_test.bcf_uncompressed"/>
+            <param name="__target_datatype__" value="bcf"/>
+            <output name="output1" ftype="bcf" value="bcf_index_metadata_test.bcf" compare="sim_size"/>
+        </test>
+        <test>
+            <param name="input1" ftype="bcf" value="bcf_index_metadata_test.bcf"/>
+            <param name="__target_datatype__" value="bcf_uncompressed"/>
+            <output name="output1" ftype="bcf_uncompressed" value="bcf_uncompressed_index_metadata_test.bcf_uncompressed" compare="sim_size"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

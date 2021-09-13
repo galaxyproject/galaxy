@@ -431,12 +431,12 @@
       <display file="iobio/vcf.xml"/>
     </datatype>
     <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="true">
-      <converter file="bcf_to_bcf_uncompressed_converter.xml" target_datatype="bcf_uncompressed"/>
+      <converter file="bcf_bcf_uncompressed_converter.xml" target_datatype="bcf_uncompressed"/>
     </datatype>
     <!-- bcf_bgzip is just an alias for bcf for backward-compatibility -->
     <datatype extension="bcf_bgzip" type="galaxy.datatypes.binary:Bcf" subclass="true"/>
     <datatype extension="bcf_uncompressed" type="galaxy.datatypes.binary:BcfUncompressed" mimetype="application/octet-stream" display_in_upload="true">
-      <converter file="bcf_uncompressed_to_bcf_converter.xml" target_datatype="bcf"/>
+      <converter file="bcf_bcf_uncompressed_converter.xml" target_datatype="bcf"/>
     </datatype>
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="true"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true" description="The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Wig">
