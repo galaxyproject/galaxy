@@ -135,7 +135,7 @@ directory. This is what happens during a complete client build.
 
 During client-side development, it is more convenient to have granular testing
 options. The various testing scripts are defined inside package.json within the
-client folder, and are called either with `yarn` as demonstrated in the
+client folder, and are called with `yarn` as demonstrated in the
 following commands.
 
 This is what CI is going to run, and also what 'make client-test' invokes,
