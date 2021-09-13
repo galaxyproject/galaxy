@@ -33,7 +33,7 @@ OptionalExclusionList = Optional[List[Exclusions]]
 
 
 class Tool(BaseModel):
-    content_type: Literal['tool'] = Field(alias="type")
+    content_type: Literal['tool'] = Field("tool", alias="type")
     id: str
 
     class Config:
@@ -78,12 +78,16 @@ SectionContent = Union[
 
 
 class HasItems:
+    items: Optional[List['RootContent']]
 
     @property
-    def items_expanded(self):
+    def items_expanded(self) -> Optional[List['ExpandedRootContent']]:
+        if self.items is None:
+            return None
+
         # replace SectionAliases with individual SectionAlias objects
         # replace LabelShortcuts with Labels
-        items = []
+        items: List[ExpandedRootContent] = []
         for item in self.items:
             if isinstance(item, SectionAliases):
                 for section in item.sections:
@@ -108,7 +112,7 @@ class Section(BaseModel, HasItems):
     content_type: Literal['section'] = Field(alias="type")
     id: Optional[str]
     name: Optional[str]
-    items: Optional[List[SectionContent]]
+    items: Optional[List[RootContent]]  # really is just SectionContent but would need to use type variables to represent that.
     excludes: OptionalExclusionList
 
     class Config:
@@ -138,13 +142,22 @@ RootContent = Union[
     ItemsFrom,
 ]
 
+ExpandedRootContent = Union[
+    Section,
+    SectionAlias,
+    Tool,
+    Label,
+    Workflow,
+    ItemsFrom,
+]
+
 
 class StaticToolBoxView(BaseModel, HasItems):
     id: str
     name: str
     description: Optional[str]
     view_type: StaticToolBoxViewTypeEnum = Field(alias="type")
-    items: List[RootContent]
+    items: Optional[List[RootContent]]  # if empty, use integrated tool panel
     excludes: OptionalExclusionList
 
     @staticmethod
