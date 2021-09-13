@@ -441,14 +441,14 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         payload = {
             "src": "hda",
             "id": hda1["id"],
-            "source_datatype": "fasta",
-            "target_datatype": "tabular",
+            "source_type": "fasta",
+            "target_type": "tabular",
             "history_id": history_id
         }
         create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", data=payload)
         self.dataset_populator.wait_for_job(create_response.json()["jobs"][0]["id"], assert_ok=True)
         create_response.raise_for_status()
-        assert create_response.json()["implicit_collections"] == []
+        assert len(create_response.json()["implicit_collections"]) == 0
         for output in create_response.json()["outputs"]:
             assert output["file_ext"] == "tabular"
 
@@ -456,16 +456,17 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     def test_convert_dataset_implicit_history(self, history_id):
         fasta1_contents = open(self.get_filename("1.fasta")).read()
         hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+
         payload = {
             "src": "hda",
             "id": hda1["id"],
-            "source_datatype": "fasta",
-            "target_datatype": "tabular"
+            "source_type": "fasta",
+            "target_type": "tabular"
         }
         create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", data=payload)
         self.dataset_populator.wait_for_job(create_response.json()["jobs"][0]["id"], assert_ok=True)
         create_response.raise_for_status()
-        assert create_response.json()["implicit_collections"] == []
+        assert len(create_response.json()["implicit_collections"]) == 0
         for output in create_response.json()["outputs"]:
             assert output["file_ext"] == "tabular"
 
@@ -493,17 +494,20 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         payload = {
             "src": "hdca",
             "id": hdca1.json()["outputs"][0]["id"],
-            "source_datatype": "fasta",
-            "target_datatype": "tabular",
+            "source_type": "fasta",
+            "target_type": "tabular",
             "history_id": history_id
         }
         create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", payload)
 
         self.dataset_populator.wait_for_job(create_response.json()["jobs"][0]["id"], assert_ok=True)
         create_response.raise_for_status()
+        
         assert create_response.json()["implicit_collections"] != []
-        for output in create_response.json()["outputs"]:
-            assert output["file_ext"] == "tabular"
+        hdca_id = create_response.json()["implicit_collections"][0]["hid"]
+        fetchedResponse = self.dataset_populator.get_history_collection_details(history_id, hid=hdca_id)
+        for element in fetchedResponse["elements"][0]["object"]["elements"]:
+            assert element["object"]["file_ext"] == "tabular"
 
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:
