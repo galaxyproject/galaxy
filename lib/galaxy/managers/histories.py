@@ -270,15 +270,13 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         archive = trans.app.object_store.get_filename(jeha.dataset)
         return open(archive, mode='rb')
 
-    def serve_ready_history_export(self, trans, jeha):
+    def get_ready_history_export_file_path(self, trans, jeha) -> str:
         """
         Serves the history export archive for use as a streaming response so the file
         doesn't need to be loaded into memory.
         """
         assert jeha.ready
-        archive = trans.app.object_store.get_filename(jeha.dataset)
-        with open(archive, mode="rb") as archive_file:
-            yield from archive_file
+        return trans.app.object_store.get_filename(jeha.dataset)
 
     def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None):
         # Convert options to booleans.
@@ -1083,16 +1081,22 @@ class HistoriesService(ServiceBase):
         or raises an exception if not."""
         return self.history_export_view.get_ready_jeha(trans, id, jeha_id)
 
-    def archive_download(
+    def get_archive_download_path(
         self,
         trans: ProvidesHistoryContext,
         jeha: model.JobExportHistoryArchive,
-    ):
+    ) -> str:
         """
         If ready and available, return raw contents of exported history
         using a generator function.
         """
-        return self.manager.serve_ready_history_export(trans, jeha)
+        return self.manager.get_ready_history_export_file_path(trans, jeha)
+
+    def get_archive_media_type(self, jeha: model.JobExportHistoryArchive):
+        media_type = 'application/x-tar'
+        if jeha.compressed:
+            media_type = 'application/x-gzip'
+        return media_type
 
     # TODO: remove this function and HistoryManager.legacy_serve_ready_history_export when
     # removing the legacy HistoriesController

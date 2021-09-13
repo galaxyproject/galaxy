@@ -21,7 +21,7 @@ from fastapi import (
 )
 from pydantic.fields import Field
 from pydantic.main import BaseModel
-from starlette.responses import StreamingResponse
+from starlette.responses import FileResponse
 
 from galaxy import (
     util
@@ -89,7 +89,8 @@ JehaIDPathParam: Union[EncodedDatabaseIdField, LatestLiteral] = Path(
     description=(
         'The ID of the specific Job Export History Association or '
         '`latest` (default) to download the last generated archive.'
-    )
+    ),
+    example="latest"
 )
 
 
@@ -328,7 +329,7 @@ class FastAPIHistories:
         summary=(
             "If ready and available, return raw contents of exported history as a downloadable archive."
         ),
-        response_class=StreamingResponse,
+        response_class=FileResponse,
         responses={
             200: {
                 "description": "The archive file containing the History.",
@@ -347,13 +348,12 @@ class FastAPIHistories:
         code (instead of 202) and this route can be used to download the archive.
         """
         jeha = self.service.get_ready_history_export(trans, id, jeha_id)
-        media_type = 'application/x-tar'
-        if jeha.compressed:
-            media_type = 'application/x-gzip'
-        return StreamingResponse(
-            self.service.archive_download(trans, jeha),
-            headers={'Content-Disposition': f'attachment; filename="{jeha.export_name}"'},
+        media_type = self.service.get_archive_media_type(jeha)
+        file_path = self.service.get_archive_download_path(trans, jeha)
+        return FileResponse(
+            path=file_path,
             media_type=media_type,
+            filename=jeha.export_name,
         )
 
     @router.get(
