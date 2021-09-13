@@ -60,195 +60,187 @@
                 access it. Note that sharing a History will also allow access to all of its datasets.
             </div>
             <br />
-            <h4>Share {{ modelClass }} with Individual Users</h4>
-            <p>
-                The following users will see this {{ modelClass }} in their {{ modelClass }} list and will be able to
-                view, import and run it.
-            </p>
-            <ConfigProvider v-slot="{ config }">
-                <CurrentUser v-slot="{ user }">
-                    <div v-if="user && config">
-                        <div>
-                            <b-table
-                                class="share_with_view"
-                                show-empty
-                                :foot-clone="!permissionsChangeRequired"
-                                small
-                                caption-top
-                                :fields="shareFields"
-                                :items="item.users_shared_with"
-                            >
-                                <template v-slot:empty>
-                                    <p>You have not shared this {{ modelClass }} with any users.</p>
-                                </template>
+            <b-card no-body>
+                <b-button @click="isCollapseVisible = !isCollapseVisible" v-b-toggle.accordion-1 variant="light">
+                    Share {{ modelClass }} with Individual Users
+                    <font-awesome-icon :icon="isCollapseVisible ? `caret-up` : `caret-down`" />
+                </b-button>
+                <b-collapse id="accordion-1" accordion="my-accordion" role="tabpanel">
+                    <ConfigProvider v-slot="{ config }">
+                        <CurrentUser v-slot="{ user }">
+                            <div v-if="user && config">
+                                <p class="share_with_title">
+                                    The following users will see this {{ modelClass }} in their {{ modelClass }} list
+                                    and will be able to view, import and run it.
+                                </p>
 
-                                <template v-slot:cell(id)="cell">
-                                    <b-button
-                                        variant="outline-danger"
-                                        size="sm"
-                                        class="sharing_icon"
-                                        @click.stop="setSharing(actions.unshare_with, cell.value)"
-                                    >
-                                        <font-awesome-icon
-                                            class="unshare_user sharing_icon"
-                                            size="lg"
-                                            icon="user-slash"
-                                        />
-                                    </b-button>
-                                </template>
-                                <template v-slot:foot(email)>
-                                    <b-form-input
-                                        v-if="!(config.expose_user_email || user.is_admin)"
-                                        v-model="shareWithEmail"
-                                        class="user-email-input-form"
-                                        placeholder="Please enter user email(s) using comma separated values"
-                                    />
-                                    <multiselect
-                                        v-else-if="item && !permissionsChangeRequired"
-                                        class="multiselect-users"
-                                        v-model="shareWithEmail"
-                                        :options="usersList"
-                                        :clear-on-select="true"
-                                        :preserve-search="true"
-                                        :multiple="true"
-                                        label="email"
-                                        track-by="id"
-                                        @search-change="searchChanged"
-                                        :internal-search="false"
-                                        placeholder="Please enter user email"
-                                    >
-                                        <template slot="tag" slot-scope="{ option, remove }">
-                                            <span class="multiselect__tag">
-                                                <span>{{ option.email }}</span>
-                                                <i
-                                                    aria-hidden="true"
-                                                    @click="remove(option)"
-                                                    tabindex="1"
-                                                    class="multiselect__tag-icon"
-                                                ></i>
-                                            </span>
-                                        </template>
+                                <div>
+                                    <div v-if="item.users_shared_with.length === 0">
+                                        <p>You have not shared this {{ modelClass }} with any users.</p>
+                                    </div>
+                                    <div v-else>
+                                        <b-row align-v="center" class="share_with_view">
+                                            <b-col cols="10">
+                                                <!--                                              :show-no-results="!(config.expose_user_email || user.is_admin)"-->
+                                                <multiselect
+                                                    v-if="item && !permissionsChangeRequired"
+                                                    class="multiselect-users"
+                                                    v-model="item.users_shared_with"
+                                                    :options="usersList"
+                                                    :clear-on-select="true"
+                                                    :preserve-search="true"
+                                                    :multiple="true"
+                                                    label="email"
+                                                    :max-height="config.expose_user_email || user.is_admin ? 300 : 0"
+                                                    track-by="id"
+                                                    @search-change="
+                                                        searchChanged($event, config.expose_user_email || user.is_admin)
+                                                    "
+                                                    :internal-search="false"
+                                                    placeholder="Please enter user email"
+                                                >
+                                                    <template
+                                                        slot="caret"
+                                                        v-if="!(config.expose_user_email || user.is_admin)"
+                                                    >
+                                                        <div></div>
+                                                    </template>
+                                                    <template slot="tag" slot-scope="{ option, remove }">
+                                                        <span class="multiselect__tag">
+                                                            <span>{{ option.email }}</span>
+                                                            <i
+                                                                aria-hidden="true"
+                                                                @click="remove(option)"
+                                                                tabindex="1"
+                                                                class="multiselect__tag-icon"
+                                                            ></i>
+                                                        </span>
+                                                    </template>
 
-                                        <template slot="noOptions">
-                                            <div>
-                                                {{ emptyResult }}
-                                            </div>
-                                        </template>
-                                    </multiselect>
-                                </template>
-                                <template v-slot:foot(id)>
-                                    <b-row align-v="center">
-                                        <b-col>
-                                            <b-button
-                                                variant="outline-primary"
-                                                size="sm"
-                                                :disabled="shareWithEmail === ''"
-                                                @click.stop="
-                                                    setSharing(
-                                                        actions.share_with,
-                                                        config.expose_user_email || user.is_admin
-                                                            ? shareWithEmail.map(({ email }) => email)
-                                                            : shareWithEmail
-                                                    )
-                                                "
-                                                v-b-tooltip.hover.bottom
-                                                :title="
-                                                    shareWithEmail
-                                                        ? `Share with ${
-                                                              config.expose_user_email || user.is_admin
-                                                                  ? shareWithEmail.map(({ email }) => email)
-                                                                  : shareWithEmail
-                                                          }`
-                                                        : 'Please enter user email'
-                                                "
-                                                class="sharing_icon submit-sharing-with"
+                                                    <template slot="noOptions">
+                                                        <div>
+                                                            {{ emptyResult }}
+                                                        </div>
+                                                    </template>
+                                                </multiselect>
+                                            </b-col>
+                                            <b-col>
+                                                <b-button
+                                                    variant="primary"
+                                                    @click.stop="
+                                                        setSharing(
+                                                            actions.share_with,
+                                                            config.expose_user_email || user.is_admin
+                                                                ? item.users_shared_with.map(({ email }) => email)
+                                                                : item.users_shared_with
+                                                        )
+                                                    "
+                                                    v-b-tooltip.hover.bottom
+                                                    :title="
+                                                        item.users_shared_with
+                                                            ? `Share with ${
+                                                                  config.expose_user_email || user.is_admin
+                                                                      ? item.users_shared_with.map(({ email }) => email)
+                                                                      : item.users_shared_with
+                                                              }`
+                                                            : 'Please enter user email'
+                                                    "
+                                                    class="sharing_icon submit-sharing-with"
+                                                >
+                                                    Submit
+                                                </b-button></b-col
                                             >
-                                                <font-awesome-icon class="share_with" icon="user-plus" size="lg" />
-                                            </b-button>
-                                        </b-col>
-                                    </b-row>
-                                </template>
-                            </b-table>
+                                        </b-row>
+                                    </div>
+                                </div>
+                            </div>
+                        </CurrentUser>
+                    </ConfigProvider>
+                    <b-alert variant="warning" dismissible fade :show="permissionsChangeRequired">
+                        <div class="text-center">
+                            {{
+                                item.extra.can_change.length > 0
+                                    ? `${item.extra.can_change.length} datasets are exclusively private to you`
+                                    : `You are not authorized to share ${item.extra.cannot_change.length} datasets`
+                            }}
                         </div>
-                    </div>
-                </CurrentUser>
-            </ConfigProvider>
-            <b-alert variant="warning" dismissible fade :show="permissionsChangeRequired">
-                <div class="text-center">
-                    {{
-                        item.extra.can_change.length > 0
-                            ? `${item.extra.can_change.length} datasets are exclusively private to you`
-                            : `You are not authorized to share ${item.extra.cannot_change.length} datasets`
-                    }}
-                </div>
-            </b-alert>
-            <b-row v-if="permissionsChangeRequired">
-                <b-col v-if="item.extra.can_change.length > 0">
-                    <b-card>
-                        <b-card-header header-tag="header" class="p-1" role="tab">
-                            <b-button block v-b-toggle.can-share variant="warning"
-                                >Datasets can be shared by updating their permissions</b-button
+                    </b-alert>
+                    <b-row v-if="permissionsChangeRequired">
+                        <b-col v-if="item.extra.can_change.length > 0">
+                            <b-card>
+                                <b-card-header header-tag="header" class="p-1" role="tab">
+                                    <b-button block v-b-toggle.can-share variant="warning"
+                                        >Datasets can be shared by updating their permissions</b-button
+                                    >
+                                </b-card-header>
+                                <b-collapse id="can-share" visible accordion="my-accordion" role="tabpanel">
+                                    <b-list-group>
+                                        <b-list-group-item :key="dataset.id" v-for="dataset in item.extra.can_change">{{
+                                            dataset.name
+                                        }}</b-list-group-item>
+                                    </b-list-group>
+                                </b-collapse>
+                            </b-card>
+                        </b-col>
+                        <b-col v-if="item.extra.cannot_change.length > 0">
+                            <b-card>
+                                <b-card-header header-tag="header" class="p-1" role="tab">
+                                    <b-button block v-b-toggle.cannot-share variant="danger"
+                                        >Datasets cannot be shared, you are not authorized to change
+                                        permissions</b-button
+                                    >
+                                </b-card-header>
+                                <b-collapse id="cannot-share" visible accordion="my-accordion2" role="tabpanel">
+                                    <b-list-group>
+                                        <b-list-group-item
+                                            :key="dataset.id"
+                                            v-for="dataset in item.extra.cannot_change"
+                                            >{{ dataset.name }}</b-list-group-item
+                                        >
+                                    </b-list-group>
+                                </b-collapse>
+                            </b-card>
+                        </b-col>
+                        <b-col>
+                            <b-card
+                                border-variant="primary"
+                                header="How would like to proceed?"
+                                header-bg-variant="primary"
+                                header-text-variant="white"
+                                align="center"
                             >
-                        </b-card-header>
-                        <b-collapse id="can-share" visible accordion="my-accordion" role="tabpanel">
-                            <b-list-group>
-                                <b-list-group-item :key="dataset.id" v-for="dataset in item.extra.can_change">{{
-                                    dataset.name
-                                }}</b-list-group-item>
-                            </b-list-group>
-                        </b-collapse>
-                    </b-card>
-                </b-col>
-                <b-col v-if="item.extra.cannot_change.length > 0">
-                    <b-card>
-                        <b-card-header header-tag="header" class="p-1" role="tab">
-                            <b-button block v-b-toggle.cannot-share variant="danger"
-                                >Datasets cannot be shared, you are not authorized to change permissions</b-button
-                            >
-                        </b-card-header>
-                        <b-collapse id="cannot-share" visible accordion="my-accordion2" role="tabpanel">
-                            <b-list-group>
-                                <b-list-group-item :key="dataset.id" v-for="dataset in item.extra.cannot_change">{{
-                                    dataset.name
-                                }}</b-list-group-item>
-                            </b-list-group>
-                        </b-collapse>
-                    </b-card>
-                </b-col>
-                <b-col>
-                    <b-card
-                        border-variant="primary"
-                        header="How would like to proceed?"
-                        header-bg-variant="primary"
-                        header-text-variant="white"
-                        align="center"
-                    >
-                        <b-button
-                            @click="setSharing(actions.share_with, shareWithEmail, share_option.make_public)"
-                            v-if="item.extra.can_change.length > 0"
-                            block
-                            variant="outline-primary"
-                            >Make datasets public</b-button
-                        >
-                        <b-button
-                            @click="
-                                setSharing(actions.share_with, shareWithEmail, share_option.make_accessible_to_shared)
-                            "
-                            v-if="item.extra.can_change.length > 0"
-                            block
-                            variant="outline-primary"
-                            >Share only with {{ shareWithEmail }}</b-button
-                        >
-                        <b-button
-                            @click="setSharing(actions.share_with, shareWithEmail, share_option.no_changes)"
-                            block
-                            variant="outline-primary"
-                            >Share Anyway
-                        </b-button>
-                        <b-button @click="getModel()" block variant="outline-danger">Cancel </b-button>
-                    </b-card>
-                </b-col>
-            </b-row>
+                                <b-button
+                                    @click="setSharing(actions.share_with, shareWithEmail, share_option.make_public)"
+                                    v-if="item.extra.can_change.length > 0"
+                                    block
+                                    variant="outline-primary"
+                                    >Make datasets public</b-button
+                                >
+                                <b-button
+                                    @click="
+                                        setSharing(
+                                            actions.share_with,
+                                            shareWithEmail,
+                                            share_option.make_accessible_to_shared
+                                        )
+                                    "
+                                    v-if="item.extra.can_change.length > 0"
+                                    block
+                                    variant="outline-primary"
+                                    >Share only with {{ shareWithEmail }}</b-button
+                                >
+                                <b-button
+                                    @click="setSharing(actions.share_with, shareWithEmail, share_option.no_changes)"
+                                    block
+                                    variant="outline-primary"
+                                    >Share Anyway
+                                </b-button>
+                                <b-button @click="getModel()" block variant="outline-danger">Cancel </b-button>
+                            </b-card>
+                        </b-col>
+                    </b-row>
+                </b-collapse>
+            </b-card>
         </div>
     </div>
 </template>
@@ -258,7 +250,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCopy, faEdit, faUserPlus, faUserSlash } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import SlugInput from "components/Common/SlugInput";
@@ -269,8 +261,7 @@ import ConfigProvider from "components/providers/ConfigProvider";
 import CurrentUser from "components/providers/CurrentUser";
 
 Vue.use(BootstrapVue);
-[faCopy, faEdit, faUserPlus, faUserSlash].forEach((icon) => library.add(icon));
-
+library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
 const defaultExtra = () => {
     return {
         cannot_change: [],
@@ -303,6 +294,7 @@ export default {
     data() {
         const Galaxy = getGalaxyInstance();
         return {
+            isCollapseVisible: false,
             usersList: [],
             emptyResult: "Please enter user email",
             ready: false,
@@ -321,7 +313,6 @@ export default {
             makeMembersPublic: false,
             showUrl: true,
             tooltipClipboard: "Copy URL",
-            shareWithEmail: "",
             actions: {
                 enable_link_access: "enable_link_access",
                 disable_link_access: "disable_link_access",
@@ -486,8 +477,16 @@ export default {
                 })
                 .catch((error) => this.addError(error.response.data.err_msg));
         },
-        searchChanged(searchValue) {
-            if (searchValue.length < 3) {
+        searchChanged(searchValue, exposedUsers) {
+            console.log("searchValue");
+            console.log("searchValue");
+            console.log("searchValue");
+            console.log(this.usersList);
+            console.log(searchValue);
+            console.log(exposedUsers);
+            if (!exposedUsers) {
+                this.usersList = [{ email: searchValue, id: searchValue }];
+            } else if (searchValue.length < 3) {
                 this.usersList = [];
             } else {
                 axios
@@ -509,8 +508,14 @@ export default {
     margin-top: 0.15rem;
 }
 .share_with_view {
-    max-width: 680px;
+    margin-left: 0.3rem;
+    margin-bottom: 2em;
 }
+.share_with_title {
+    text-align: center;
+    padding-top: 1.1rem;
+}
+
 .multiselect-users {
     font-weight: normal;
 }
