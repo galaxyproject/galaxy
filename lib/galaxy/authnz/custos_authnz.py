@@ -331,8 +331,8 @@ class CustosAuthnz(IdentityProvider):
         if (trans.sa_session.query(trans.app.model.User).filter_by(username=username).first()):
             # if username already exists in database, append integer and iterate until unique username found
             count = 0
-            while (trans.sa_session.query(trans.app.model.User).filter_by(username=(username + str(count))).first()):
+            while (trans.sa_session.query(trans.app.model.User).filter_by(username=(f"{username}{count}")).first()):
                 count += 1
-            return username + str(count)
+            return f"{username}{count}"
         else:
             return username
