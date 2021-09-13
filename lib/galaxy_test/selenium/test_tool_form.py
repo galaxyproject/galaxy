@@ -42,7 +42,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         hda = self.latest_history_item()
         self._check_dataset_details_for_inttest_value(1)
 
-        dataset_details_key_value_pairs = self._table_to_key_value_elements("#dataset-details")
+        dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
         number_found = name_found = format_found = False
         for key, value in dataset_details_key_value_pairs:
             if "Number" in key.text:

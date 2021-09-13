@@ -80,6 +80,6 @@ export default {
     text-align: center;
 }
 .detail {
-    padding-top: .6rem;
+    padding-top: 0.6rem;
 }
 </style>
