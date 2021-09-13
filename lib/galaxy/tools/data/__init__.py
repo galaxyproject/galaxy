@@ -611,9 +611,21 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         filename = default
         for name, value in self.filenames.items():
             repo_info = value.get('tool_shed_repository', None)
-            if (not source_repo_info and not repo_info) or (source_repo_info and repo_info and source_repo_info == repo_info):
+            if source_repo_info and repo_info and source_repo_info == repo_info:
                 filename = name
                 break
+        # No toolshed data table entry was found, try the first file found in the OS
+        else:
+            for filename in self.filenames.keys():
+                if os.path.exists(filename):
+                    fmt_dict = dict(source_repo_info)
+                    fmt_dict['filename'] = filename
+                    log.debug(fmt_dict)
+                    message = 'No exact match found in the data table registry for '
+                    message += '{tool_shed}/repos/{owner}/{name}/{installed_changeset_revision}, '
+                    message += 'falling back to {filename}'
+                    log.debug(message.format(**fmt_dict))
+                    return filename
         return filename
 
     def _add_entry(self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
@@ -645,7 +657,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         if persist and (not is_error or persist_on_error):
             filename = self.get_filename_for_source(entry_source)
             if filename is None:
-                # should we default to using any filename here instead?
+                # If we reach this point, there is no data table with a corresponding .loc file.
                 log.error("Unable to determine filename for persisting data table '%s' values: '%s'.", self.name, fields)
                 is_error = True
             else:
