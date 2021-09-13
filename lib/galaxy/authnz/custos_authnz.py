@@ -90,7 +90,6 @@ class CustosAuthnz(IdentityProvider):
         else:
             userinfo = self._get_userinfo(oauth2_session)
         email = userinfo['email']
-        username = userinfo.get('preferred_username', self._generate_username(trans, email))
         user_id = userinfo['sub']
 
         # Create or update custos_authnz_token record
@@ -118,6 +117,9 @@ class CustosAuthnz(IdentityProvider):
                     login_redirect_url = f"{login_redirect_url}root/login?confirm=true&custos_token={json.dumps(token)}"
                     return login_redirect_url, None
                 else:
+                    username = userinfo.get('preferred_username', email)
+                    if "@" in username:
+                        username = self._username_from_email(trans, email)
                     user = trans.app.user_manager.create(email=email, username=username)
                     if trans.app.config.user_activation_on:
                         trans.app.user_manager.send_activation_email(trans, email, username)
@@ -157,7 +159,9 @@ class CustosAuthnz(IdentityProvider):
         # Get userinfo and create Galaxy user record
         email = userinfo['email']
         # Check if username if already taken
-        username = userinfo.get('preferred_username', self._generate_username(trans, email))
+        username = userinfo.get('preferred_username', email)
+        if "@" in username:
+            self._username_from_email(trans, email)
         user_id = userinfo['sub']
 
         user = trans.app.user_manager.create(email=email, username=username)
@@ -324,7 +328,7 @@ class CustosAuthnz(IdentityProvider):
         else:
             return self.config['verify_ssl']
 
-    def _generate_username(self, trans, email):
+    def _username_from_email(self, trans, email):
         temp_username = email.split('@')[0]  # username created from username portion of email
         count = 0
         if (trans.sa_session.query(trans.app.model.User).filter_by(username=temp_username).first()):
