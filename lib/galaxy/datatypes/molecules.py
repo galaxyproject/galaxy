@@ -780,17 +780,20 @@ class CIF(GenericMolFile):
             cif = f.read(1000)
 
         for line in cif.split('\n'):
-            if line[0] == '#':  # comment so skip
+            if not line:
                 continue
-            if line.beginswith('data_'):
+            elif line[0] == '#':  # comment so skip
+                continue
+            if line.startswith('data_'):
                 if '_atom_site_fract_' in cif:
                     return True
+                break
             else:
                 return False
 
         # if '_atom_site_fract_' not found check the rest of the file
         with open(filename) as f:
-            cif = f.read(1000)
+            cif = f.read()
         if '_atom_site_fract_' in cif:
             return True
         else:
