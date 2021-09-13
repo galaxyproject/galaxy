@@ -75,7 +75,7 @@ class TESJobRunner(AsynchronousJobRunner):
                 job_id = req.json()["id"]
                 return job_id
             except KeyError:
-                log.error(f"TES Server fialed to accept the job {req.json()}")
+                log.error(f"TES Server failed to accept the job {req.json()}")
         except requests.exceptions:
             log.error(f"{GENERIC_REMOTE_ERROR} on URL {master_addr}")
 
