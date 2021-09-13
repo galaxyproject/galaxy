@@ -14,17 +14,19 @@
         </div>
 
         <div id="aws-estimate" v-if="aws_estimate && computedAwsEstimate">
-            <h3>AWS estimate</h3>
-            <b>{{ computedAwsEstimate.price }} USD</b><br />
-            This job requested {{ computedAwsEstimate.vcpus }} cores and {{ computedAwsEstimate.memory }} Gb. Given
-            this, the smallest EC2 machine we could find is
-            <span id="aws_name">{{ computedAwsEstimate.instance.name }}</span> (<span id="aws_mem">{{
-                computedAwsEstimate.instance.mem
-            }}</span>
-            GB / <span id="aws_vcpus">{{ computedAwsEstimate.instance.vcpus }}</span> vCPUs /
-            <span id="aws_cpu">{{ computedAwsEstimate.instance.cpu }}</span
-            >). That instance is priced at {{ computedAwsEstimate.instance.price }} USD/hour.<br />
-            Please note, that those numbers are only estimates, all jobs are always free of charge for all users.
+            <div class="aws">
+                <h3>AWS estimate</h3>
+                <b>{{ computedAwsEstimate.price }} USD</b><br />
+                This job requested {{ computedAwsEstimate.vcpus }} cores and {{ computedAwsEstimate.memory }} Gb. Given
+                this, the smallest EC2 machine we could find is
+                <span id="aws_name">{{ computedAwsEstimate.instance.name }}</span> (<span id="aws_mem">{{
+                    computedAwsEstimate.instance.mem
+                }}</span>
+                GB / <span id="aws_vcpus">{{ computedAwsEstimate.instance.vcpus }}</span> vCPUs /
+                <span id="aws_cpu">{{ computedAwsEstimate.instance.cpu }}</span
+                >). That instance is priced at {{ computedAwsEstimate.instance.price }} USD/hour.<br />
+                Please note, that those numbers are only estimates, all jobs are always free of charge for all users.
+            </div>
         </div>
     </div>
 </template>
@@ -133,3 +135,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.aws {
+    padding-top: 0.6rem;
+}
+</style>
