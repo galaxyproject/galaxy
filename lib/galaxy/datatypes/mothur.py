@@ -484,12 +484,13 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         Determines whether the file is a pairwise distance matrix (Column-formatted distance matrix) format
         The first and second columns have the sequence names and the third column is the distance between those sequences.
 
-        >>> from galaxy.datatypes.sniff import get_test_iter
-        >>> pos, neg = get_test_iter(['mothur_datatypetest_true.mothur.pair.dist'])
-        >>> all([PairwiseDistanceMatrix().sniff(p) for p in pos])
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.pair.dist' )
+        >>> PairwiseDistanceMatrix().sniff( fname )
         True
-        >>> all([not PairwiseDistanceMatrix().sniff(n) for n in neg])
-        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.pair.dist' )
+        >>> PairwiseDistanceMatrix().sniff( fname )
+        False
         """
         headers = iter_headers(file_prefix, sep='\t')
         count = 0

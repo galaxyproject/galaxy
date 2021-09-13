@@ -38,24 +38,6 @@ def get_test_fname(fname):
     return full_path
 
 
-def get_test_iter(fnames):
-    """Returns test data paths separated into those that
-    should evaluate positive and negative given a list
-    of basenames that should evaluate positive.
-    """
-    pos = set()
-    neg = set()
-    path, name = os.path.split(__file__)
-    path = os.path.join(path, 'test')
-    with os.scandir(path) as it:
-        for entry in it:
-            if entry.name in fnames:
-                pos.add(entry.path)
-            else:
-                neg.add(entry.path)
-    return pos, neg
-
-
 def sniff_with_cls(cls, fname):
     path = get_test_fname(fname)
     try:
