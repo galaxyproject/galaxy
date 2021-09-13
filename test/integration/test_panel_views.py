@@ -95,6 +95,10 @@ class PanelViewsFromDirectoryIntegrationTestCase(integration_util.IntegrationTes
         assert len(index_as_list) == 2
         assert model_classes(index_as_list) == ["ToolSection", "ToolSection"]
 
+    def test_global_filters(self):
+        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_11"))
+        verify_custom_regex_filtered(index)
+
 
 class PanelViewsFromConfigIntegrationTestCase(integration_util.IntegrationTestCase):
 

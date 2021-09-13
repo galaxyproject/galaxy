@@ -145,7 +145,7 @@ class StaticToolBoxView(BaseModel, HasItems):
     description: Optional[str]
     view_type: StaticToolBoxViewTypeEnum = Field(alias="type")
     items: List[RootContent]
-    excludes: Optional[List[Exclusions]]
+    excludes: OptionalExclusionList
 
     @staticmethod
     def from_dict(as_dict):

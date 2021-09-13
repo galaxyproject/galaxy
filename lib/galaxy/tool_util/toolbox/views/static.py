@@ -5,6 +5,7 @@ from .definitions import (
     ExcludeTool,
     ExcludeToolRegex,
     ExcludeTypes,
+    Exclusions,
     Section,
     StaticToolBoxView,
     Workflow,
@@ -65,8 +66,9 @@ class StaticToolPanelView(ToolPanelView):
     def apply_view(self, base_tool_panel: ToolPanelElements, toolbox_registry: ToolBoxRegistry) -> ToolPanelElements:
 
         def apply_filter(definition, elems):
-            if definition.excludes:
-                elems.apply_filter(build_filter(definition.excludes))
+            excludes = self._all_excludes(definition)
+            if excludes:
+                elems.apply_filter(build_filter(excludes))
 
         def definition_with_items_to_panel(definition, allow_sections: bool = True):
             new_panel = ToolPanelElements()
@@ -145,12 +147,19 @@ class StaticToolPanelView(ToolPanelView):
                 else:
                     raise AssertionError("Unknown static toolbox configuration element encountered.")
 
-            if definition.excludes:
-                new_panel.apply_filter(build_filter(definition.excludes))
+            excludes = self._all_excludes(definition)
+            if excludes:
+                new_panel.apply_filter(build_filter(excludes))
 
             return new_panel
 
         return definition_with_items_to_panel(self._definition)
+
+    def _all_excludes(self, has_excludes):
+        excludes = has_excludes.excludes or []
+        if has_excludes != self._definition and self._definition.excludes:
+            excludes.extend(self._definition.excludes)
+        return excludes
 
     def to_model(self) -> ToolPanelViewModel:
         model_id = self._definition.id
