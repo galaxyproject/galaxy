@@ -24,6 +24,7 @@ import requests
 from galaxy import util
 from galaxy.util import RW_R__R__
 from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.filelock import FileLock
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.template import fill_template
 
@@ -648,19 +649,22 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 log.error("Unable to determine filename for persisting data table '%s' values: '%s'.", self.name, fields)
                 is_error = True
             else:
-                # FIXME: Need to lock these files for editing
                 log.debug("Persisting changes to file: %s", filename)
-                try:
-                    data_table_fh = open(filename, 'r+b')
-                except OSError as e:
-                    log.warning('Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e)
-                    data_table_fh = open(filename, 'wb')
-                if os.stat(filename).st_size != 0:
-                    # ensure last existing line ends with new line
-                    data_table_fh.seek(-1, 2)  # last char in file
-                    last_char = data_table_fh.read(1)
-                    if last_char not in [b'\n', b'\r']:
-                        data_table_fh.write(b'\n')
+                with FileLock(filename):
+                    try:
+                        if os.path.exists(filename):
+                            data_table_fh = open(filename, 'r+b')
+                            if os.stat(filename).st_size > 0:
+                                # ensure last existing line ends with new line
+                                data_table_fh.seek(-1, 2)  # last char in file
+                                last_char = data_table_fh.read(1)
+                                if last_char not in [b'\n', b'\r']:
+                                    data_table_fh.write(b'\n')
+                        else:
+                            data_table_fh = open(filename, 'wb')
+                    except OSError as e:
+                        log.exception('Error opening data table file (%s): %s', filename, e)
+                        raise
                 fields = f"{self.separator.join(fields)}\n"
                 data_table_fh.write(fields.encode('utf-8'))
         return not is_error
