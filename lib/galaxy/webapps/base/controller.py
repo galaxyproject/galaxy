@@ -754,7 +754,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         # precondition: only add new revision on owned vis's
         # TODO:?? should we default title, dbkey, config? to which: visualization or latest_revision?
-        revision = trans.model.VisualizationRevision(visualization, title, dbkey, config)
+        revision = trans.model.VisualizationRevision(visualization=visualization, title=title, dbkey=dbkey, config=config)
+
         visualization.latest_revision = revision
         # TODO:?? does this automatically add revision to visualzation.revisions?
         trans.sa_session.add(revision)

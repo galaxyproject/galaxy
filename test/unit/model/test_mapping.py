@@ -62,7 +62,7 @@ See other model tests in this module for examples of more complex setups.
 
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import (
@@ -295,6 +295,53 @@ class TestCleanupEventMetadataFileAssociation(BaseTest):
             assert stored_obj.create_time == create_time
             assert stored_obj.cleanup_event_id == cleanup_event.id
             assert stored_obj.metadata_file_id == metadata_file.id
+
+
+class TestCustosAuthnzToken(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == 'custos_authnz_token'
+        assert has_unique_constraint(cls_.__table__, ('user_id', 'external_user_id', 'provider'))
+        assert has_unique_constraint(cls_.__table__, ('external_user_id', 'provider'))
+
+    def test_columns(self, session, cls_, user):
+        external_user_id = 'a'
+        provider = 'b'
+        access_token = 'c'
+        id_token = 'd'
+        refresh_token = 'e'
+        expiration_time = datetime.now()
+        refresh_expiration_time = expiration_time + timedelta(hours=1)
+
+        obj = cls_()
+        obj.user = user
+        obj.external_user_id = external_user_id
+        obj.provider = provider
+        obj.access_token = access_token
+        obj.id_token = id_token
+        obj.refresh_token = refresh_token
+        obj.expiration_time = expiration_time
+        obj.refresh_expiration_time = refresh_expiration_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.external_user_id == external_user_id
+            assert stored_obj.provider == provider
+            assert stored_obj.access_token == access_token
+            assert stored_obj.id_token == id_token
+            assert stored_obj.refresh_token == refresh_token
+            assert stored_obj.expiration_time == expiration_time
+            assert stored_obj.refresh_expiration_time == refresh_expiration_time
+
+    def test_relationships(self, session, cls_, user):
+        obj = cls_()
+        obj.user = user
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.user.id == user.id
 
 
 class TestCloudAuthz(BaseTest):
@@ -810,7 +857,10 @@ class TestDeferredJob(BaseTest):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         state, plugin, params = 'a', 'b', 'c'
-        obj = cls_(state, plugin, params)
+        obj = cls_()
+        obj.state = state
+        obj.plugin = plugin
+        obj.params = params
         obj.create_time = create_time
         obj.update_time = update_time
 
@@ -849,8 +899,17 @@ class TestDynamicTool(BaseTest):
         value = 'f'
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        obj = cls_(tool_format, tool_id, tool_version, tool_path, tool_directory, uuid,
-                active, hidden, value)
+
+        obj = cls_()
+        obj.tool_format = tool_format
+        obj.tool_id = tool_id
+        obj.tool_version = tool_version
+        obj.tool_path = tool_path
+        obj.tool_directory = tool_directory
+        obj.uuid = uuid
+        obj.active = active
+        obj.hidden = hidden
+        obj.value = value
         obj.create_time = create_time
         obj.update_time = update_time
 
@@ -877,6 +936,21 @@ class TestDynamicTool(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.workflow_steps == [workflow_step]
 
+    def test_construct_with_uuid(self, session, cls_):
+        uuid = uuid4()
+        obj = cls_(uuid=uuid)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.uuid == uuid
+
+    def test_construct_without_uuid(self, session, cls_):
+        obj = cls_()
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert isinstance(stored_obj.uuid, UUID)
+
 
 class TestEvent(BaseTest):
 
@@ -887,7 +961,11 @@ class TestEvent(BaseTest):
         message, tool_id = 'a', 'b'
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        obj = cls_(message, history, user, galaxy_session)
+        obj = cls_()
+        obj.message = message
+        obj.history = history
+        obj.user = user
+        obj.galaxy_session = galaxy_session
         obj.create_time = create_time
         obj.update_time = update_time
         obj.tool_id = tool_id
@@ -904,7 +982,10 @@ class TestEvent(BaseTest):
             assert stored_obj.tool_id == tool_id
 
     def test_relationships(self, session, cls_, history, galaxy_session, user):
-        obj = cls_(None, history, user, galaxy_session)
+        obj = cls_()
+        obj.history = history
+        obj.user = user
+        obj.galaxy_session = galaxy_session
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -2550,7 +2631,11 @@ class TestJobContainerAssociation(BaseTest):
         modified_time = created_time + timedelta(hours=1)
 
         session.add(job)  # must be bound to a session for lazy load of attributes
-        obj = cls_(job, container_type, container_name, container_info)
+        obj = cls_()
+        obj.job = job
+        obj.container_type = container_type
+        obj.container_name = container_name
+        obj.container_info = container_info
         obj.created_time = created_time
         obj.modified_time = modified_time
 
@@ -2566,7 +2651,7 @@ class TestJobContainerAssociation(BaseTest):
 
     def test_relationships(self, session, cls_, job):
         session.add(job)  # must be bound to a session for lazy load of attributes
-        obj = cls_(job, None, None, None)
+        obj = cls_(job=job)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -2580,7 +2665,12 @@ class TestJobExportHistoryArchive(BaseTest):
 
     def test_columns(self, session, cls_, job, history, dataset):
         compressed, history_attrs_filename = True, 'a'
-        obj = cls_(job, history, dataset, compressed, history_attrs_filename)
+        obj = cls_()
+        obj.job = job
+        obj.history = history
+        obj.dataset = dataset
+        obj.compressed = compressed
+        obj.history_attrs_filename = history_attrs_filename
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -2592,7 +2682,10 @@ class TestJobExportHistoryArchive(BaseTest):
             assert stored_obj.history_attrs_filename == history_attrs_filename
 
     def test_relationships(self, session, cls_, job, history, dataset):
-        obj = cls_(job, history, dataset, True, None)
+        obj = cls_()
+        obj.job = job
+        obj.history = history
+        obj.dataset = dataset
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -2689,7 +2782,7 @@ class TestJobImportHistoryArchive(BaseTest):
 
     def test_columns(self, session, cls_, job, history):
         archive_dir = 'a'
-        obj = cls_(job, history, archive_dir)
+        obj = cls_(job=job, history=history, archive_dir=archive_dir)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -2699,7 +2792,7 @@ class TestJobImportHistoryArchive(BaseTest):
             assert stored_obj. archive_dir == archive_dir
 
     def test_relationships(self, session, cls_, job, history):
-        obj = cls_(job, history)
+        obj = cls_(job=job, history=history)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -3854,7 +3947,13 @@ class TestPSAAssociation(BaseTest):
 
     def test_columns(self, session, cls_):
         server_url, handle, secret, issued, lifetime, assoc_type = 'a', 'b', 'c', 1, 2, 'd'
-        obj = cls_(server_url, handle, secret, issued, lifetime, assoc_type)
+        obj = cls_()
+        obj.server_url = server_url
+        obj.handle = handle
+        obj.secret = secret
+        obj.issued = issued
+        obj.lifetime = lifetime
+        obj.assoc_type = assoc_type
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -4816,7 +4915,13 @@ class TestTransferJob(BaseTest):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         state, path, info, pid, socket, params = 'd', 'a', 'b', 2, 3, 'c'
-        obj = cls_(state, path, info, pid, socket, params)
+        obj = cls_()
+        obj.state = state
+        obj.path = path
+        obj.info = info
+        obj.pid = pid
+        obj.socket = socket
+        obj.params = params
         obj.create_time = create_time
         obj.update_time = update_time
 
@@ -4995,7 +5100,12 @@ class TestUserAction(BaseTest):
     def test_columns(self, session, cls_, user, galaxy_session):
         action, params, context = 'a', 'b', 'c'
         create_time = datetime.now()
-        obj = cls_(user, galaxy_session.id, action, params, context)
+        obj = cls_()
+        obj.user = user
+        obj.session_id = galaxy_session.id
+        obj.action = action
+        obj.params = params
+        obj.context = context
         obj.create_time = create_time
 
         with dbcleanup(session, obj) as obj_id:
@@ -5008,8 +5118,9 @@ class TestUserAction(BaseTest):
             assert stored_obj.context == context
             assert stored_obj.params == params
 
-    def test_relationships(self, session, cls_, user, galaxy_session):
-        obj = cls_(user, galaxy_session.id, None, None, None)
+    def test_relationships(self, session, cls_, user):
+        obj = cls_()
+        obj.user = user
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -5024,9 +5135,19 @@ class TestUserAddress(BaseTest):
     def test_columns_and_relationships(self, session, cls_, user):
         desc, name, institution, address, city, state, postal_code, country, phone, deleted, purged = \
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', True, False
-        obj = cls_(user, desc, name, institution, address, city, state, postal_code, country, phone)
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
+        obj = cls_()
+        obj.user = user
+        obj.desc = desc
+        obj.name = name
+        obj.institution = institution
+        obj.address = address
+        obj.city = city
+        obj.state = state
+        obj.postal_code = postal_code
+        obj.country = country
+        obj.phone = phone
         obj.create_time = create_time
         obj.update_time = update_time
         obj.deleted = deleted
@@ -5120,7 +5241,9 @@ class TestUserPreference(BaseTest):
 
     def test_columns(self, session, cls_, user):
         name, value = 'a', 'b'
-        obj = cls_(name, value)
+        obj = cls_()
+        obj.name = name
+        obj.value = value
         obj.user = user
 
         with dbcleanup(session, obj) as obj_id:
@@ -5358,7 +5481,12 @@ class TestVisualizationRevision(BaseTest):
         visualization, title, dbkey, config = visualization, 'a', 'b', 'c'
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        obj = cls_(visualization, title, dbkey, config)
+        obj = cls_()
+        obj.visualization = visualization
+        obj.title = title
+        obj.dbkey = dbkey
+        obj.config = config
+
         obj.create_time = create_time
         obj.update_time = update_time
 
@@ -5373,7 +5501,7 @@ class TestVisualizationRevision(BaseTest):
             assert stored_obj.config == config
 
     def test_relationships(self, session, cls_, visualization):
-        obj = cls_(visualization)
+        obj = cls_(visualization=visualization)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -5448,7 +5576,9 @@ class TestWorkerProcess(BaseTest):
     def test_columns(self, session, cls_):
         server_name, hostname = get_unique_value(), 'a'
         update_time = datetime.now()
-        obj = cls_(server_name, hostname)
+        obj = cls_()
+        obj.server_name = server_name
+        obj.hostname = hostname
         obj.update_time = update_time
 
         with dbcleanup(session, obj) as obj_id:
@@ -6080,7 +6210,10 @@ class TestWorkflowRequestInputParameter(BaseTest):
 
     def test_columns(self, session, cls_, workflow_invocation):
         name, value, type = 'a', 'b', 'c'
-        obj = cls_(name, value, type)
+        obj = cls_()
+        obj.name = name
+        obj.value = value
+        obj.type = type
         obj.workflow_invocation = workflow_invocation
 
         with dbcleanup(session, obj) as obj_id:
@@ -6137,7 +6270,9 @@ class TestWorkflowRequestStepState(BaseTest):
 
     def test_columns(self, session, cls_, workflow_step, workflow_invocation):
         value = 'a'
-        obj = cls_(workflow_step, None, value)
+        obj = cls_()
+        obj.workflow_step = workflow_step
+        obj.value = value
         obj.workflow_invocation = workflow_invocation
 
         with dbcleanup(session, obj) as obj_id:
@@ -6148,7 +6283,8 @@ class TestWorkflowRequestStepState(BaseTest):
             assert stored_obj.value == value
 
     def test_relationships(self, session, cls_, workflow_step, workflow_invocation):
-        obj = cls_(workflow_step)
+        obj = cls_()
+        obj.workflow_step = workflow_step
         obj.workflow_invocation = workflow_invocation
 
         with dbcleanup(session, obj) as obj_id:
@@ -6558,7 +6694,7 @@ def cloud_authz(model, session, user, user_authnz_token):
 
 @pytest.fixture
 def custos_authnz_token(model, session, user):
-    instance = model.CustosAuthnzToken(user, None, None, None, None, None, None, None)
+    instance = model.CustosAuthnzToken()
     yield from dbcleanup_wrapper(session, instance)
 
 
