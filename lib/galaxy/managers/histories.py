@@ -1134,7 +1134,7 @@ class HistoriesService(ServiceBase):
             history: model.History,
             serialization_params: SerializationParams,
             default_view: str = "detailed",
-    ) -> Union[AnyHistoryView]:
+    ) -> AnyHistoryView:
         """
         Returns a dictionary with the corresponding values depending on the
         serialization parameters provided.
