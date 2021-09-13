@@ -69,19 +69,18 @@
                     <ConfigProvider v-slot="{ config }">
                         <CurrentUser v-slot="{ user }">
                             <div v-if="user && config">
-                                <p class="share_with_title">
+                                <p class="share_with_title" v-if="item.users_shared_with.length === 0">
+                                    You have not shared this {{ modelClass }} with any users.
+                                </p>
+                                <p v-else class="share_with_title">
                                     The following users will see this {{ modelClass }} in their {{ modelClass }} list
                                     and will be able to view, import and run it.
                                 </p>
 
                                 <div>
-                                    <div v-if="item.users_shared_with.length === 0">
-                                        <p>You have not shared this {{ modelClass }} with any users.</p>
-                                    </div>
                                     <div>
                                         <b-row align-v="center" class="share_with_view">
                                             <b-col cols="10">
-                                                <!--                                              :show-no-results="!(config.expose_user_email || user.is_admin)"-->
                                                 <multiselect
                                                     v-if="item && !permissionsChangeRequired"
                                                     class="multiselect-users"
@@ -130,19 +129,15 @@
                                                     @click.stop="
                                                         setSharing(
                                                             actions.share_with,
-                                                            config.expose_user_email || user.is_admin
-                                                                ? item.users_shared_with.map(({ email }) => email)
-                                                                : item.users_shared_with
+                                                            item.users_shared_with.map(({ email }) => email)
                                                         )
                                                     "
                                                     v-b-tooltip.hover.bottom
                                                     :title="
                                                         item.users_shared_with
-                                                            ? `Share with ${
-                                                                  config.expose_user_email || user.is_admin
-                                                                      ? item.users_shared_with.map(({ email }) => email)
-                                                                      : item.users_shared_with
-                                                              }`
+                                                            ? `Share with ${item.users_shared_with.map(
+                                                                  ({ email }) => email
+                                                              )}`
                                                             : 'Please enter user email'
                                                     "
                                                     class="sharing_icon submit-sharing-with"
@@ -210,7 +205,9 @@
                                 align="center"
                             >
                                 <b-button
-                                    @click="setSharing(actions.share_with, shareWithEmail, share_option.make_public)"
+                                    @click="
+                                        setSharing(actions.share_with, item.users_shared_with, share_option.make_public)
+                                    "
                                     v-if="item.extra.can_change.length > 0"
                                     block
                                     variant="outline-primary"
@@ -227,10 +224,12 @@
                                     v-if="item.extra.can_change.length > 0"
                                     block
                                     variant="outline-primary"
-                                    >Share only with {{ shareWithEmail }}</b-button
+                                    >Share only with {{ item.users_shared_with }}</b-button
                                 >
                                 <b-button
-                                    @click="setSharing(actions.share_with, shareWithEmail, share_option.no_changes)"
+                                    @click="
+                                        setSharing(actions.share_with, item.users_shared_with, share_option.no_changes)
+                                    "
                                     block
                                     variant="outline-primary"
                                     >Share Anyway
@@ -259,6 +258,7 @@ import Multiselect from "vue-multiselect";
 import { copy } from "utils/clipboard";
 import ConfigProvider from "components/providers/ConfigProvider";
 import CurrentUser from "components/providers/CurrentUser";
+import { Toast } from "ui/toast";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
@@ -457,21 +457,13 @@ export default {
                 .then(({ data }) => {
                     this.errors = [];
                     this.assignItem(data);
-                    if (data.extra && data.extra.can_share) {
-                        this.shareWithEmail = "";
-                    } else {
-                        this.shareWithEmail = user_id || "";
+                    if (user_id) {
+                        Toast.success(`Your ${this.modelClass} is shared`);
                     }
                 })
                 .catch((error) => this.addError(error.response.data.err_msg));
         },
         searchChanged(searchValue, exposedUsers) {
-            console.log("searchValue");
-            console.log("searchValue");
-            console.log("searchValue");
-            console.log(this.usersList);
-            console.log(searchValue);
-            console.log(exposedUsers);
             if (!exposedUsers) {
                 this.usersList = [{ email: searchValue, id: searchValue }];
             } else if (searchValue.length < 3) {
