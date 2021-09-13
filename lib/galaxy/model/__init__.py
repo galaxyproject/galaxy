@@ -143,10 +143,17 @@ else:
     _HasTable = object
 
 
+def get_uuid(uuid=None):
+    if uuid is None:
+        return uuid4()
+    return UUID(str(uuid))
+
+
 class Base(metaclass=DeclarativeMeta):
     __abstract__ = True
     registry = mapper_registry
     metadata = mapper_registry.metadata
+    __init__ = mapper_registry.constructor
 
     @classmethod
     def __declare_last__(cls):
@@ -810,21 +817,20 @@ class DynamicTool(Base, Dictifiable, RepresentById):
         self.active = active
         self.hidden = hidden
         self.value = value
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
+        self.uuid = get_uuid(uuid)
 
 
-class BaseJobMetric:
+class BaseJobMetric(Base):
+    __abstract__ = True
 
     def __init__(self, plugin, metric_name, metric_value):
+        super().__init__()
         self.plugin = plugin
         self.metric_name = metric_name
         self.metric_value = metric_value
 
 
-class JobMetricText(Base, BaseJobMetric, RepresentById):
+class JobMetricText(BaseJobMetric, RepresentById):
     __tablename__ = 'job_metric_text'
 
     id = Column(Integer, primary_key=True)
@@ -835,7 +841,7 @@ class JobMetricText(Base, BaseJobMetric, RepresentById):
     job = relationship('Job', back_populates='text_metrics')
 
 
-class JobMetricNumeric(Base, BaseJobMetric, RepresentById):
+class JobMetricNumeric(BaseJobMetric, RepresentById):
     __tablename__ = 'job_metric_numeric'
 
     id = Column(Integer, primary_key=True)
@@ -846,7 +852,7 @@ class JobMetricNumeric(Base, BaseJobMetric, RepresentById):
     job = relationship('Job', back_populates='numeric_metrics')
 
 
-class TaskMetricText(Base, BaseJobMetric, RepresentById):
+class TaskMetricText(BaseJobMetric, RepresentById):
     __tablename__ = 'task_metric_text'
 
     id = Column(Integer, primary_key=True)
@@ -857,7 +863,7 @@ class TaskMetricText(Base, BaseJobMetric, RepresentById):
     task = relationship('Task', back_populates='text_metrics')
 
 
-class TaskMetricNumeric(Base, BaseJobMetric, RepresentById):
+class TaskMetricNumeric(BaseJobMetric, RepresentById):
     __tablename__ = 'task_metric_numeric'
 
     id = Column(Integer, primary_key=True)
@@ -3264,13 +3270,6 @@ class DefaultHistoryPermissions(Base, RepresentById):
 
 class StorableObject:
 
-    def __init__(self, id, uuid):
-        self.id = id
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
-
     def flush(self):
         sa_session = object_session(self)
         if sa_session:
@@ -3332,7 +3331,8 @@ class Dataset(StorableObject, RepresentById, _HasTable):
     engine = None
 
     def __init__(self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None):
-        super().__init__(id=id, uuid=uuid)
+        self.id = id
+        self.uuid = get_uuid(uuid)
         self.state = state
         self.deleted = False
         self.purged = False
@@ -5562,20 +5562,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
 
 
 class DatasetCollectionInstance(HasName):
-    """
-    """
-
-    def __init__(
-        self,
-        collection=None,
-        deleted=False,
-    ):
-        # Relationships
-        self.collection = collection
-        # Since deleted property is shared between history and dataset collections,
-        # it could be on either table - some places in the code however it is convient
-        # it is on instance instead of collection.
-        self.deleted = deleted
 
     @property
     def state(self):
@@ -5730,10 +5716,11 @@ class HistoryDatasetCollectionAssociation(
     ):
         if implicit_input_collections is None:
             implicit_input_collections = []
-        super().__init__(
-            collection=collection,
-            deleted=deleted,
-        )
+        self.collection = collection
+        # Since deleted property is shared between history and dataset collections,
+        # it could be on either table - some places in the code however it is convient
+        # it is on instance instead of collection.
+        self.deleted = deleted
         self.id = id
         self.hid = hid
         self.history = history
@@ -5953,10 +5940,11 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
         deleted=False,
         folder=None,
     ):
-        super().__init__(
-            collection=collection,
-            deleted=deleted,
-        )
+        self.collection = collection
+        # Since deleted property is shared between history and dataset collections,
+        # it could be on either table - some places in the code however it is convient
+        # it is on instance instead of collection.
+        self.deleted = deleted
         self.id = id
         self.folder = folder
         self.name = name
@@ -6395,10 +6383,7 @@ class Workflow(Base, Dictifiable, RepresentById):
         self.has_errors = None
         self.steps = []
         self.stored_workflow_id = None
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
+        self.uuid = get_uuid(uuid)
 
     def has_outputs_defined(self):
         """
@@ -6880,10 +6865,7 @@ class WorkflowOutput(Base, RepresentById):
         self.workflow_step = workflow_step
         self.output_name = output_name
         self.label = label
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
+        self.uuid = get_uuid(uuid)
 
     def copy(self, copied_step):
         copied_output = WorkflowOutput(copied_step)
@@ -7704,7 +7686,8 @@ class MetadataFile(Base, StorableObject, RepresentById):
     library_dataset = relationship('LibraryDatasetDatasetAssociation')
 
     def __init__(self, dataset=None, name=None, uuid=None):
-        super().__init__(id=None, uuid=uuid)
+        self.id = None
+        self.uuid = get_uuid(uuid)
         if isinstance(dataset, HistoryDatasetAssociation):
             self.history_dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
