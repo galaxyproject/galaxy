@@ -8,12 +8,12 @@ from re import escape, findall
 import requests
 
 from galaxy import model
+from galaxy.jobs import JobWrapper
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
-from galaxy.jobs import JobWrapper
 from galaxy.util import asbool
 
 log = logging.getLogger(__name__)
