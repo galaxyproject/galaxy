@@ -456,7 +456,6 @@ class TESJobRunner(AsynchronousJobRunner):
         """
         if(data['state'] == "COMPLETE"):
             return 0
-
         else:
             return 1
 
