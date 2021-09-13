@@ -103,7 +103,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
                 return false;
             }
 
-            estimates.cost = wrapper.find("#aws-estimate > b").text();
+            estimates.cost = wrapper.find("#aws-estimate b").text();
             estimates.vcpus = wrapper.find("#aws_vcpus").text();
             estimates.cpu = wrapper.find("#aws_cpu").text();
             estimates.mem = wrapper.find("#aws_mem").text();

@@ -56,9 +56,6 @@ export default {
             default: true,
         },
     },
-    data() {
-        return {};
-    },
     created: function () {
         if (this.jobId) {
             this.fetchJobMetricsForJobId(this.jobId);
