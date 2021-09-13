@@ -855,7 +855,9 @@ class RefgenieToolDataTable(TabularToolDataTable):
         rval = []
         for genome in rgc.list_genomes_by_asset(self.rg_asset):
             genome_attributes = rgc.get_genome_attributes(genome)
-            description = genome_attributes.get('description', None)
+            description = genome_attributes.get('genome_description', None)
+            if description:
+                description = f'{description} (refgenie: {genome})'
             asset_list = rgc.list(genome, include_tags=True)[genome]
             for tagged_asset in asset_list:
                 asset, tag = tagged_asset.rsplit(':', 1)
