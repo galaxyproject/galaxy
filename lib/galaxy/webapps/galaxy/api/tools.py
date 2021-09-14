@@ -1,4 +1,3 @@
-from lib.galaxy.web.framework.decorators import error
 import logging
 import os
 from json import dumps, loads

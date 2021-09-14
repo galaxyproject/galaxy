@@ -387,7 +387,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             'CONVERTER_interval_to_bedstrict_0',
             'CONVERTER_bed_to_tabix_0',
             'CONVERTER_interval_to_bed12_0']
-        actual =[]
+        actual = []
         for converter in converters.json():
             actual.append(converter["tool_id"])
         assert sorted(actual) == sorted(expected)
@@ -413,7 +413,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         hdca_list_id = response.json()["outputs"][0]["id"]
         converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
         expected = ['tabular_to_csv']
-        actual =[]
+        actual = []
         for converter in converters.json():
             actual.append(converter["tool_id"])
         assert sorted(actual) == sorted(expected)
@@ -439,7 +439,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         hdca_list_id = response.json()["outputs"][0]["id"]
         converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
         expected = []
-        actual =[]
+        actual = []
         for converter in converters.json():
             actual.append(converter["tool_id"])
         assert sorted(actual) == sorted(expected)
