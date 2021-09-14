@@ -620,7 +620,6 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 if os.path.exists(filename):
                     fmt_dict = dict(source_repo_info)
                     fmt_dict['filename'] = filename
-                    log.debug(fmt_dict)
                     message = 'No exact match found in the data table registry for '
                     message += '{tool_shed}/repos/{owner}/{name}/{installed_changeset_revision}, '
                     message += 'falling back to {filename}'
