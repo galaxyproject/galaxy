@@ -502,7 +502,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
         self.dataset_populator.wait_for_job(create_response.json()["jobs"][0]["id"], assert_ok=True)
         create_response.raise_for_status()
-        
+
         assert create_response.json()["implicit_collections"] != []
         hdca_id = create_response.json()["implicit_collections"][0]["hid"]
         fetchedResponse = self.dataset_populator.get_history_collection_details(history_id, hid=hdca_id)
