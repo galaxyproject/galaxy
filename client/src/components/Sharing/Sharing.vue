@@ -104,6 +104,15 @@
                                                     >
                                                         <div></div>
                                                     </template>
+                                                    <template
+                                                        slot="noResult"
+                                                        v-if="config.expose_user_email || user.is_admin"
+                                                    >
+                                                        <div v-if="threeCharactersEntered">
+                                                            {{ elementsNotFoundWarning }}
+                                                        </div>
+                                                        <div v-else>{{ charactersThresholdWarning }}</div>
+                                                    </template>
                                                     <template slot="tag" slot-scope="{ option, remove }">
                                                         <span class="multiselect__tag">
                                                             <span>{{ option.email }}</span>
@@ -115,10 +124,12 @@
                                                             ></i>
                                                         </span>
                                                     </template>
-
                                                     <template slot="noOptions">
-                                                        <div>
-                                                            {{ emptyResult }}
+                                                        <div v-if="threeCharactersEntered">
+                                                            {{ charactersThresholdWarning }}
+                                                        </div>
+                                                        <div v-else>
+                                                            {{ elementsNotFoundWarning }}
                                                         </div>
                                                     </template>
                                                 </multiselect>
@@ -228,7 +239,11 @@
                                 >
                                 <b-button
                                     @click="
-                                        setSharing(actions.share_with, item.users_shared_with, share_option.no_changes)
+                                        setSharing(
+                                            actions.share_with,
+                                            item.users_shared_with.map(({ email }) => email),
+                                            share_option.no_changes
+                                        )
                                     "
                                     block
                                     variant="outline-primary"
@@ -296,8 +311,10 @@ export default {
         return {
             isCollapseVisible: false,
             usersList: [],
-            emptyResult: "Please enter user email",
+            charactersThresholdWarning: "Enter at least 3 characters to see suggestions",
+            elementsNotFoundWarning: "No elements found. Consider changing the search query.",
             ready: false,
+            threeCharactersEntered: true,
             hasUsername: Galaxy.user.get("username"),
             newUsername: "",
             errors: [],
@@ -457,7 +474,7 @@ export default {
                 .then(({ data }) => {
                     this.errors = [];
                     this.assignItem(data);
-                    if (user_id) {
+                    if (user_id && !data.extra && data.errors.length === 0) {
                         Toast.success(`Your ${this.modelClass} is shared`);
                     }
                 })
@@ -467,8 +484,10 @@ export default {
             if (!exposedUsers) {
                 this.usersList = [{ email: searchValue, id: searchValue }];
             } else if (searchValue.length < 3) {
+                this.threeCharactersEntered = false;
                 this.usersList = [];
             } else {
+                this.threeCharactersEntered = true;
                 axios
                     .get(`${getAppRoot()}api/users?f_email=${searchValue}`)
                     .then((response) => {
@@ -478,6 +497,7 @@ export default {
                     })
                     .catch((error) => this.addError(error.response.data.err_msg));
             }
+            console.log(this.threeCharactersEntered);
         },
     },
 };
