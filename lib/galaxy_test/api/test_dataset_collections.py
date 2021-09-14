@@ -381,11 +381,11 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             'CONVERTER_interval_to_bed_0',
             'CONVERTER_bed_gff_or_vcf_to_bigwig_0',
             'CONVERTER_bed_to_gff_0',
-            'CONVERTER_bed_to_bgzip_0',
+            'CONVERTER_interval_to_bgzip_0',
             'tabular_to_csv',
             'CONVERTER_interval_to_bed6_0',
             'CONVERTER_interval_to_bedstrict_0',
-            'CONVERTER_bed_to_tabix_0',
+            'CONVERTER_interval_to_tabix_0',
             'CONVERTER_interval_to_bed12_0']
         actual = []
         for converter in converters.json():
