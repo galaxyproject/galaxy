@@ -5,6 +5,7 @@ from json import dumps, loads
 from typing import Any, cast, Dict, Optional
 
 from galaxy import exceptions, util, web
+from galaxy.datatypes.data import get_params_and_input_name
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.hdas import HDAManager
@@ -429,24 +430,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             rval.append(citation.to_dict('bibtex'))
         return rval
 
-    def get_params_and_input_name(self, converter, deps, target_context=None):
-        # Generate parameter dictionary
-        params = {}
-        # determine input parameter name and add to params
-        input_name = 'input1'
-        for key, value in converter.inputs.items():
-            if deps and value.name in deps:
-                params[value.name] = deps[value.name]
-            elif value.type == 'data':
-                input_name = key
-
-        # add potentially required/common internal tool parameters e.g. '__job_resource'
-        if target_context:
-            for key, value in target_context.items():
-                if key.startswith('__'):
-                    params[key] = value
-        return params, input_name
-
     @expose_api
     def conversion(self, trans: GalaxyWebTransaction, tool_id, payload, **kwd):
         converter = self._get_tool(tool_id, user=trans.user)
@@ -460,10 +443,10 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         except KeyError:
             deps = {}
         # Generate parameter dictionary
-        params, input_name = self.get_params_and_input_name(converter, deps)
+        params, input_name = get_params_and_input_name(converter, deps)
         params = {}
         # determine input parameter name and add to params
-       
+
         params[input_name] = {
             "values": [
                 {

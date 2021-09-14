@@ -76,6 +76,25 @@ def validate(dataset_instance):
     return datatype_validation
 
 
+def get_params_and_input_name(converter, deps, target_context=None):
+    # Generate parameter dictionary
+    params = {}
+    # determine input parameter name and add to params
+    input_name = 'input1'
+    for key, value in converter.inputs.items():
+        if deps and value.name in deps:
+            params[value.name] = deps[value.name]
+        elif value.type == 'data':
+            input_name = key
+
+    # add potentially required/common internal tool parameters e.g. '__job_resource'
+    if target_context:
+        for key, value in target_context.items():
+            if key.startswith('__'):
+                params[key] = value
+    return params, input_name
+
+
 class DataMeta(abc.ABCMeta):
     """
     Metaclass for Data class.  Sets up metadata spec.
@@ -620,20 +639,9 @@ class Data(metaclass=DataMeta):
 
         if converter is None:
             raise Exception(f"A converter does not exist for {original_dataset.ext} to {target_type}.")
-        # Generate parameter dictionary
-        params = {}
-        # determine input parameter name and add to params
-        input_name = 'input1'
-        for key, value in converter.inputs.items():
-            if deps and value.name in deps:
-                params[value.name] = deps[value.name]
-            elif value.type == 'data':
-                input_name = key
-        # add potentially required/common internal tool parameters e.g. '__job_resource'
-        if target_context:
-            for key, value in target_context.items():
-                if key.startswith('__'):
-                    params[key] = value
+
+        params, input_name = get_params_and_input_name(converter, deps, target_context)
+
         params[input_name] = original_dataset
         # Make the target datatype available to the converter
         params['__target_datatype__'] = target_type
