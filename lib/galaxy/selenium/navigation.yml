@@ -220,6 +220,7 @@ history_panel:
       elements_warning: '.dataset-collection-panel .controls .elements-warning'
       tag_area_input: '.controls .tags-display .tags-input input'
       list_items: '.dataset-collection-panel .list-items .list-item'
+      list_items_beta: '.dataset-collection-panel .listing .content-item'
 
   selectors:
     beta: '.beta.history'
@@ -228,8 +229,9 @@ history_panel:
     refresh_button: '.history-refresh-button'
     name: '.title .name'
     name_beta: '.history-title span:last-child'
-    name_edit_input: '.name input'
-    name_edit_input_beta: '.history-title input'
+    name_edit_input: 
+      selector: 'name input'
+      type: data-description
     contents: '#current-history-panel .history-content'
 
     empty_message: '.empty-message'
@@ -242,10 +244,13 @@ history_panel:
 
     annotation_icon: '.actions .history-annotate-btn'
     annotation_area: '.history-details .history-annotation'
-    annotation_editable_text: '.history-details .history-annotation .annotation.editable-text'
-    annotation_editable_text_beta: '.history-details .history-annotation.clickToEdit'
-    annotation_edit: '.history-details .history-annotation .annotation textarea'
-    annotation_edit_beta: '.history-details .history-annotation textarea'
+    annotation_editable_text:
+      selector: 'history annotation'
+      type: data-description
+    annotation_edit:
+      selector: 'annotation input'
+      type: data-description
+
     annotation_done: '.history-details .history-annotation .annotation button'
 
     options_button: '#history-options-button'
@@ -328,6 +333,9 @@ tool_panel:
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
     search: '.search-query'
     workflow_names: '#internal-workflows .toolTitle'
+    views_button: '.tool-panel-dropdown'
+    views_menu_item: '[data-panel-id="${panel_id}"]'
+    panel_labels: '.tool-panel-label'
 
 multi_history_view:
 

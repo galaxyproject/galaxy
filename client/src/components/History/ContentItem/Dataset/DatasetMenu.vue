@@ -129,12 +129,7 @@
                     v-if="notIn(STATES.NOT_VIEWABLE)"
                     key="dataset-details"
                     title="View Dataset Details"
-                    @click.stop.prevent="
-                        iframeAdd({
-                            path: dataset.getUrl('show_params'),
-                            title: 'View Dataset Details',
-                        })
-                    "
+                    @click.stop.prevent="backboneRoute(dataset.getUrl('show_params'))"
                 >
                     <Icon icon="info-circle" class="mr-1" />
                     <span v-localize>View Dataset Details</span>

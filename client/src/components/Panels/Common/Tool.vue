@@ -1,6 +1,6 @@
 <template>
     <div class="toolTitle">
-        <a v-if="tool.disabled" class="name text-muted">
+        <a v-if="tool.disabled" class="title-link name text-muted">
             <span v-if="!hideName">{{ tool.name }}</span>
             <span class="description">{{ tool.description }}</span>
         </a>
@@ -61,9 +61,9 @@ export default {
     computed: {
         targetClass() {
             if (this.toolKey) {
-                return `tool-menu-item-${this.tool[this.toolKey]}`;
+                return `tool-menu-item-${this.tool[this.toolKey]} title-link`;
             } else {
-                return null;
+                return `title-link`;
             }
         },
     },

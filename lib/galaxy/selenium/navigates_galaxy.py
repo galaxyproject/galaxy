@@ -8,11 +8,14 @@ import contextlib
 import random
 import string
 import time
+from abc import abstractmethod
 from functools import partial, wraps
+from typing import Union
 
 import requests
 import yaml
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webdriver import WebDriver
 
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from . import sizzle
@@ -33,6 +36,8 @@ DEFAULT_PASSWORD = '123456'
 
 RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT = .1
 RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
+
+GALAXY_MAIN_FRAME_ID = "galaxy_main"
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
 
@@ -147,13 +152,21 @@ class NavigatesGalaxy(HasDriver):
     class. For instance, the method for clicking an option in the workflow editor is
     workflow_editor_click_option instead of click_workflow_editor_option.
     """
+    timeout_multiplier: float
+    driver: WebDriver
+
+    @abstractmethod
+    def build_url(self, url: str, for_selenium: bool = True) -> str:
+        """Build URL to the target Galaxy."""
+
     default_password = DEFAULT_PASSWORD
     wait_types = WAIT_TYPES
     # set to True to reload each invocation (good for interactive test building)
     _interactive_components: bool = False
     _root_component: Component = load_root_component()
 
-    def get(self, url=""):
+    def get(self, url: str = ""):
+        """Expand supplied relative URL and navigate to page using Selenium driver."""
         full_url = self.build_url(url)
         return self.driver.get(full_url)
 
@@ -165,41 +178,55 @@ class NavigatesGalaxy(HasDriver):
             return self._root_component
 
     @property
-    def components(self):
+    def components(self) -> SmartComponent:
+        """Fetch root component describing the Galaxy DOM."""
         return SmartComponent(self.navigation, self)
 
-    def wait_length(self, wait_type):
+    def wait_length(self, wait_type: WaitType) -> float:
+        """Return the wait time specified by wait_type after applying `timeout_multipler`.
+
+        `timeout_multiplier` is used in production CI tests to reduce transient failures
+        in a uniform way across test suites to expand waiting.
+        """
         return wait_type.default_length * self.timeout_multiplier
 
-    def sleep_for(self, wait_type):
+    def sleep_for(self, wait_type: WaitType) -> None:
+        """Sleep on the Python client side for the specified wait_type.
+
+        This method uses `wait_length` to apply any `timeout_multiplier`.
+        """
         self.sleep_for_seconds(self.wait_length(wait_type))
 
-    def sleep_for_seconds(self, duration):
+    def sleep_for_seconds(self, duration: float) -> None:
+        """Sleep in the local thread for specified number of seconds.
+
+        Ideally, we would be sleeping on the Selenium server instead of in the local client
+        (e.g. test) thread.
+        """
         time.sleep(duration)
 
-    def timeout_for(self, **kwds):
-        wait_type = kwds.get("wait_type", DEFAULT_WAIT_TYPE)
+    def timeout_for(self, wait_type: WaitType = DEFAULT_WAIT_TYPE) -> float:
         return self.wait_length(wait_type)
 
-    def home(self):
+    def home(self) -> None:
+        """Return to root Galaxy page and wait for some basic widgets to appear."""
         self.get()
-        self.wait_for_visible(self.navigation.masthead.selector)
-        if not self.is_beta_history():
-            self.wait_for_visible(self.navigation.history_panel.selector)
+        self.components.masthead._.wait_for_visible()
 
-    def trs_search(self):
+    def trs_search(self) -> None:
         self.driver.get(self.build_url('workflows/trs_search'))
-        self.wait_for_visible(self.navigation.masthead.selector)
+        self.components.masthead._.wait_for_visible()
 
-    def trs_by_id(self):
+    def trs_by_id(self) -> None:
         self.driver.get(self.build_url('workflows/trs_import'))
-        self.wait_for_visible(self.navigation.masthead.selector)
+        self.components.masthead._.wait_for_visible()
 
     def switch_to_main_panel(self):
-        self.driver.switch_to.frame("galaxy_main")
+        self.driver.switch_to.frame(GALAXY_MAIN_FRAME_ID)
 
     @contextlib.contextmanager
-    def local_storage(self, key, value):
+    def local_storage(self, key: str, value: Union[float, str]):
+        """Method decorator to modify localStorage for the scope of the supplied context."""
         self.driver.execute_script(f'''window.localStorage.setItem("{key}", {value});''')
         try:
             yield
@@ -208,6 +235,7 @@ class NavigatesGalaxy(HasDriver):
 
     @contextlib.contextmanager
     def main_panel(self):
+        """Decorator to operate within the context of Galaxy's main frame."""
         try:
             self.switch_to_main_panel()
             yield
@@ -1192,6 +1220,22 @@ class NavigatesGalaxy(HasDriver):
     def workflow_run_submit(self):
         self.wait_for_and_click_selector("button.btn-primary")
 
+    def workflow_create_new(self, annotation=None, clear_placeholder=False):
+        self.workflow_index_open()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.click_button_new_workflow()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        form_element = self.driver.find_element_by_id("submit")
+        name = self._get_random_name()
+        annotation = annotation or self._get_random_name()
+        inputs = self.driver.find_elements_by_class_name("ui-input")
+        if clear_placeholder:
+            inputs[0].clear()
+        inputs[0].send_keys(name)
+        inputs[1].send_keys(annotation)
+        form_element.click()
+        return name
+
     def tool_open(self, tool_id, outer=False):
         if outer:
             tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
@@ -1354,10 +1398,11 @@ class NavigatesGalaxy(HasDriver):
         return editable_text_input_element
 
     def history_panel_name_input(self):
-        if self.is_beta_history():
-            editable_text_input_element = self.beta_history_element("name input").wait_for_visible()
-        else:
+        if not self.is_beta_history():
             editable_text_input_element = self.history_panel_click_to_rename()
+        history_panel = self.components.history_panel
+        edit = history_panel.name_edit_input
+        editable_text_input_element = edit.wait_for_visible()
         return editable_text_input_element
 
     def history_panel_click_to_rename(self):

@@ -143,10 +143,17 @@ else:
     _HasTable = object
 
 
+def get_uuid(uuid=None):
+    if uuid is None:
+        return uuid4()
+    return UUID(str(uuid))
+
+
 class Base(metaclass=DeclarativeMeta):
     __abstract__ = True
     registry = mapper_registry
     metadata = mapper_registry.metadata
+    __init__ = mapper_registry.constructor
 
     @classmethod
     def __declare_last__(cls):
@@ -308,10 +315,6 @@ class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
     hostname = Column(String(255))
     pid = Column(Integer)
     update_time = Column(DateTime, default=now, onupdate=now)
-
-    def __init__(self, server_name, hostname):
-        self.server_name = server_name
-        self.hostname = hostname
 
 
 def cached_id(galaxy_model_object):
@@ -519,13 +522,7 @@ class User(Base, Dictifiable, RepresentById):
         self.deleted = False
         self.purged = False
         self.active = False
-        self.activation_token = None
         self.username = username
-        self.last_password_change = None
-        # Relationships
-        self.histories = []
-        self.credentials = []
-        # ? self.roles = []
 
     @property
     def extra_preferences(self):
@@ -800,31 +797,25 @@ class DynamicTool(Base, Dictifiable, RepresentById):
     dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
     dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
 
-    def __init__(self, tool_format=None, tool_id=None, tool_version=None, tool_path=None, tool_directory=None,
-                 uuid=None, active=True, hidden=True, value=None):
-        self.tool_format = tool_format
-        self.tool_id = tool_id
-        self.tool_version = tool_version
-        self.tool_path = tool_path
-        self.tool_directory = tool_directory
+    def __init__(self, active=True, hidden=True, **kwd):
+        super().__init__(**kwd)
         self.active = active
         self.hidden = hidden
-        self.value = value
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
+        _uuid = kwd.get('uuid')
+        self.uuid = get_uuid(_uuid)
 
 
-class BaseJobMetric:
+class BaseJobMetric(Base):
+    __abstract__ = True
 
     def __init__(self, plugin, metric_name, metric_value):
+        super().__init__()
         self.plugin = plugin
         self.metric_name = metric_name
         self.metric_value = metric_value
 
 
-class JobMetricText(Base, BaseJobMetric, RepresentById):
+class JobMetricText(BaseJobMetric, RepresentById):
     __tablename__ = 'job_metric_text'
 
     id = Column(Integer, primary_key=True)
@@ -835,7 +826,7 @@ class JobMetricText(Base, BaseJobMetric, RepresentById):
     job = relationship('Job', back_populates='text_metrics')
 
 
-class JobMetricNumeric(Base, BaseJobMetric, RepresentById):
+class JobMetricNumeric(BaseJobMetric, RepresentById):
     __tablename__ = 'job_metric_numeric'
 
     id = Column(Integer, primary_key=True)
@@ -846,7 +837,7 @@ class JobMetricNumeric(Base, BaseJobMetric, RepresentById):
     job = relationship('Job', back_populates='numeric_metrics')
 
 
-class TaskMetricText(Base, BaseJobMetric, RepresentById):
+class TaskMetricText(BaseJobMetric, RepresentById):
     __tablename__ = 'task_metric_text'
 
     id = Column(Integer, primary_key=True)
@@ -857,7 +848,7 @@ class TaskMetricText(Base, BaseJobMetric, RepresentById):
     task = relationship('Task', back_populates='text_metrics')
 
 
-class TaskMetricNumeric(Base, BaseJobMetric, RepresentById):
+class TaskMetricNumeric(BaseJobMetric, RepresentById):
     __tablename__ = 'task_metric_numeric'
 
     id = Column(Integer, primary_key=True)
@@ -989,38 +980,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__(self):
-        self.session_id = None
-        self.user_id = None
-        self.tool_id = None
-        self.tool_version = None
-        self.copied_from_job_id = None
-        self.command_line = None
         self.dependencies = []
-        self.param_filename = None
-        self.parameters = []
-        self.input_datasets = []
-        self.output_datasets = []
-        self.input_dataset_collections = []
-        self.input_dataset_collection_elements = []
-        self.output_dataset_collection_instances = []
-        self.output_dataset_collections = []
-        self.input_library_datasets = []
-        self.output_library_datasets = []
         self.state = Job.states.NEW
-        self.info = None
-        self.job_runner_name = None
-        self.job_runner_external_id = None
-        self.destination_id = None
-        self.destination_params = None
-        self.post_job_actions = []
-        self.state_history = []
         self.imported = False
-        self.handler = None
-        self.create_time = None
-        self.exit_code = None
-        self.history_id = None
-        self.job_messages = None
-        self.update_time = None
         self._init_metrics()
         self.state_history.append(JobStateHistory(self))
 
@@ -1633,15 +1595,10 @@ class Task(Base, JobLike, RepresentById):
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__(self, job, working_directory, prepare_files_cmd):
-        self.command_line = None
         self.parameters = []
         self.state = Task.states.NEW
-        self.info = None
         self.working_directory = working_directory
-        self.task_runner_name = None
-        self.task_runner_external_id = None
         self.job = job
-        self.exit_code = None
         self.prepare_input_files_cmd = prepare_files_cmd
         self._init_metrics()
 
@@ -1823,7 +1780,6 @@ class JobToInputDatasetCollectionAssociation(Base, RepresentById):
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
     dataset_collection_id = Column(Integer,
         ForeignKey('history_dataset_collection_association.id'), index=True)
-    dataset_version = Column(Integer)
     name = Column(String(255))
     dataset_collection = relationship('HistoryDatasetCollectionAssociation', lazy=False)
     job = relationship('Job', back_populates='input_dataset_collections')
@@ -1979,12 +1935,7 @@ class ImplicitCollectionJobs(Base, RepresentById):
         OK = 'ok'  # Job associations are set and fixed.
         FAILED = 'failed'  # There were issues populating job associations, object is in error.
 
-    def __init__(
-        self,
-        id=None,
-        populated_state=None,
-    ):
-        self.id = id
+    def __init__(self, populated_state=None):
         self.populated_state = populated_state or ImplicitCollectionJobs.populated_states.NEW
 
     @property
@@ -2010,9 +1961,6 @@ class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
     order_index = Column(Integer, nullable=False)
     implicit_collection_jobs = relationship('ImplicitCollectionJobs', back_populates='jobs')
     job = relationship('Job', back_populates='implicit_collection_jobs_association')
-
-    def __init__(self):
-        self.implicit_collection_jobs_id = None
 
 
 class PostJobAction(Base, RepresentById):
@@ -2121,13 +2069,9 @@ class JobExportHistoryArchive(Base, RepresentById):
 
     ATTRS_FILENAME_HISTORY = 'history_attrs.txt'
 
-    def __init__(self, job=None, history=None, dataset=None, compressed=False,
-                 history_attrs_filename=None):
-        self.job = job
-        self.history = history
-        self.dataset = dataset
+    def __init__(self, compressed=False, **kwd):
+        super().__init__(**kwd)
         self.compressed = compressed
-        self.history_attrs_filename = history_attrs_filename
 
     @property
     def fda(self):
@@ -2208,11 +2152,6 @@ class JobImportHistoryArchive(Base, RepresentById):
     job = relationship('Job')
     history = relationship('History')
 
-    def __init__(self, job=None, history=None, archive_dir=None):
-        self.job = job
-        self.history = history
-        self.archive_dir = archive_dir
-
 
 class JobContainerAssociation(Base, RepresentById):
     __tablename__ = 'job_container_association'
@@ -2226,11 +2165,9 @@ class JobContainerAssociation(Base, RepresentById):
     modified_time = Column(DateTime, default=now, onupdate=now)
     job = relationship('Job', back_populates='container')
 
-    def __init__(self, job=None, container_type=None, container_name=None, container_info=None):
-        self.job = job
-        self.container_type = container_type
-        self.container_name = container_name
-        self.container_info = container_info or {}
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self.container_info = self.container_info or {}
 
 
 class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
@@ -2256,22 +2193,13 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'name', 'active', 'created_time', 'modified_time']
     dict_element_visible_keys = ['id', 'name', 'active', 'created_time', 'modified_time']
 
-    def __init__(self, job=None, name=None, token=None, tool_port=None, host=None, port=None, protocol=None,
-                 entry_url=None, requires_domain=True, info=None, configured=False, deleted=False):
-        self.job = job
-        self.name = name
-        if not token:
-            token = uuid4().hex
-        self.token = token
-        self.tool_port = tool_port
-        self.host = host
-        self.port = port
-        self.protocol = protocol
-        self.entry_url = entry_url
+    def __init__(self, requires_domain=True, configured=False, deleted=False, **kwd):
+        super().__init__(**kwd)
         self.requires_domain = requires_domain
-        self.info = info or {}
         self.configured = configured
         self.deleted = deleted
+        self.token = self.token or uuid4().hex
+        self.info = self.info or {}
 
     @property
     def active(self):
@@ -2300,19 +2228,6 @@ class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
     deferred = relationship('DeferredJob', back_populates='deferred_job')
     transfer = relationship('TransferJob', back_populates='transfer_job')
 
-    def __init__(self, job=None, params=None, dataset=None, deferred_job=None,
-                 transfer_job=None, fasta_path=None, created_time=None, modified_time=None,
-                 dbkey=None, user=None, indexer=None):
-        self.job = job
-        self.dataset = dataset
-        self.fasta_path = fasta_path
-        self.user = user
-        self.indexer = indexer
-        self.created_time = created_time
-        self.modified_time = modified_time
-        self.deferred = deferred_job
-        self.transfer = transfer_job
-
 
 class DeferredJob(Base, RepresentById):
     __tablename__ = 'deferred_job'
@@ -2332,11 +2247,6 @@ class DeferredJob(Base, RepresentById):
         RUNNING = 'running'
         OK = 'ok'
         ERROR = 'error'
-
-    def __init__(self, state=None, plugin=None, params=None):
-        self.state = state
-        self.plugin = plugin
-        self.params = params
 
     def get_check_interval(self):
         if not hasattr(self, '_check_interval'):
@@ -2535,14 +2445,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         self.deleted = False
         self.purged = False
         self.importing = False
-        self.genome_build = None
         self.published = False
-        self.update_time = None
-        # Relationships
         self.user = user
-        self.datasets = []
-        self.galaxy_sessions = []
-        self.tags = []
         # Objects to eventually add to history
         self._pending_additions = []
 
@@ -2932,10 +2836,6 @@ class HistoryUserShareAssociation(Base, UserShareAssociation):
     user = relationship('User', back_populates='histories_shared_by_others')
     history = relationship('History', back_populates='users_shared_with')
 
-    def __init__(self):
-        self.history = None
-        self.user = None
-
 
 class UserRoleAssociation(Base, RepresentById):
     __tablename__ = 'user_role_association'
@@ -3265,13 +3165,6 @@ class DefaultHistoryPermissions(Base, RepresentById):
 
 class StorableObject:
 
-    def __init__(self, id, uuid):
-        self.id = id
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
-
     def flush(self):
         sa_session = object_session(self)
         if sa_session:
@@ -3333,7 +3226,8 @@ class Dataset(StorableObject, RepresentById, _HasTable):
     engine = None
 
     def __init__(self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None):
-        super().__init__(id=id, uuid=uuid)
+        self.id = id
+        self.uuid = get_uuid(uuid)
         self.state = state
         self.deleted = False
         self.purged = False
@@ -4689,8 +4583,6 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
         self.item_count = item_count
         self.order_id = order_id
         self.genome_build = genome_build
-        self.folders = []
-        self.datasets = []
 
     def add_library_dataset(self, library_dataset, genome_build=None):
         library_dataset.folder_id = self.id
@@ -4793,13 +4685,6 @@ class LibraryDataset(Base, RepresentById):
                       ('upload_directory', 'Upload directory of files'),
                       ('upload_paths', 'Upload files from filesystem paths'),
                       ('import_from_history', 'Import datasets from your current history')]
-
-    def __init__(self, folder=None, order_id=None, name=None, info=None, library_dataset_dataset_association=None, **kwd):
-        self.folder = folder
-        self.order_id = order_id
-        self.name = name
-        self.info = info
-        self.library_dataset_dataset_association = library_dataset_dataset_association
 
     def get_info(self):
         if self.library_dataset_dataset_association:
@@ -5563,20 +5448,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
 
 
 class DatasetCollectionInstance(HasName):
-    """
-    """
-
-    def __init__(
-        self,
-        collection=None,
-        deleted=False,
-    ):
-        # Relationships
-        self.collection = collection
-        # Since deleted property is shared between history and dataset collections,
-        # it could be on either table - some places in the code however it is convient
-        # it is on instance instead of collection.
-        self.deleted = deleted
 
     @property
     def state(self):
@@ -5717,33 +5588,14 @@ class HistoryDatasetCollectionAssociation(
     dict_dbkeysandextensions_visible_keys = ['dbkeys', 'extensions']
     editable_keys = ('name', 'deleted', 'visible')
 
-    def __init__(
-        self,
-        id=None,
-        hid=None,
-        collection=None,
-        history=None,
-        name=None,
-        deleted=False,
-        visible=True,
-        copied_from_history_dataset_collection_association=None,
-        implicit_output_name=None,
-        implicit_input_collections=None,
-    ):
-        if implicit_input_collections is None:
-            implicit_input_collections = []
-        super().__init__(
-            collection=collection,
-            deleted=deleted,
-        )
-        self.id = id
-        self.hid = hid
-        self.history = history
-        self.name = name
+    def __init__(self, deleted=False, visible=True, **kwd):
+        super().__init__(**kwd)
+        # Since deleted property is shared between history and dataset collections,
+        # it could be on either table - some places in the code however it is convient
+        # it is on instance instead of collection.
+        self.deleted = deleted
         self.visible = visible
-        self.copied_from_history_dataset_collection_association = copied_from_history_dataset_collection_association
-        self.implicit_output_name = implicit_output_name
-        self.implicit_input_collections = implicit_input_collections
+        self.implicit_input_collections = self.implicit_input_collections or []
 
     @property
     def history_content_type(self):
@@ -5972,21 +5824,12 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
 
     editable_keys = ('name', 'deleted')
 
-    def __init__(
-        self,
-        id=None,
-        collection=None,
-        name=None,
-        deleted=False,
-        folder=None,
-    ):
-        super().__init__(
-            collection=collection,
-            deleted=deleted,
-        )
-        self.id = id
-        self.folder = folder
-        self.name = name
+    def __init__(self, deleted=False, **kwd):
+        super().__init__(**kwd)
+        # Since deleted property is shared between history and dataset collections,
+        # it could be on either table - some places in the code however it is convient
+        # it is on instance instead of collection.
+        self.deleted = deleted
 
     def to_dict(self, view='collection'):
         dict_value = dict(
@@ -6172,13 +6015,6 @@ class Event(Base, RepresentById):
     user = relationship('User')
     galaxy_session = relationship('GalaxySession')
 
-    def __init__(self, message=None, history=None, user=None, galaxy_session=None):
-        self.history = history
-        self.galaxy_session = galaxy_session
-        self.user = user
-        self.tool_id = None
-        self.message = message
-
 
 class GalaxySession(Base, RepresentById):
     __tablename__ = 'galaxy_session'
@@ -6202,28 +6038,10 @@ class GalaxySession(Base, RepresentById):
     histories = relationship('GalaxySessionToHistoryAssociation', back_populates='galaxy_session')
     user = relationship('User', back_populates='galaxy_sessions')
 
-    def __init__(self,
-                 id=None,
-                 user=None,
-                 remote_host=None,
-                 remote_addr=None,
-                 referer=None,
-                 current_history=None,
-                 session_key=None,
-                 is_valid=False,
-                 prev_session_id=None,
-                 last_action=None):
-        self.id = id
-        self.user = user
-        self.remote_host = remote_host
-        self.remote_addr = remote_addr
-        self.referer = referer
-        self.current_history = current_history
-        self.session_key = session_key
+    def __init__(self, is_valid=False, **kwd):
+        super().__init__(**kwd)
         self.is_valid = is_valid
-        self.prev_session_id = prev_session_id
-        self.histories = []
-        self.last_action = last_action or datetime.now()
+        self.last_action = self.last_action or datetime.now()
 
     def add_history(self, history, association=None):
         if association is None:
@@ -6332,14 +6150,12 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     dict_element_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted', 'hidden']
 
     def __init__(self, user=None, name=None, slug=None, create_time=None, update_time=None, published=False, latest_workflow_id=None, workflow=None, hidden=False):
-        self.id = None
         self.user = user
         self.name = name
         self.slug = slug
         self.create_time = create_time
         self.update_time = update_time
         self.published = published
-        self.latest_workflow_id = None
         self.latest_workflow = workflow
         self.workflows = listify(workflow)
         self.hidden = hidden
@@ -6415,17 +6231,8 @@ class Workflow(Base, Dictifiable, RepresentById):
     input_step_types = ['data_input', 'data_collection_input', 'parameter_input']
 
     def __init__(self, uuid=None):
-        self.id = None
         self.user = None
-        self.name = None
-        self.has_cycles = None
-        self.has_errors = None
-        self.steps = []
-        self.stored_workflow_id = None
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
+        self.uuid = get_uuid(uuid)
 
     def has_outputs_defined(self):
         """
@@ -6601,18 +6408,7 @@ class WorkflowStep(Base, RepresentById):
     DEFAULT_POSITION = {"left": 0, "top": 0}
 
     def __init__(self):
-        self.id = None
-        self.type = None
-        self.tool_id = None
-        self.tool_inputs = None
-        self.tool_errors = None
-        self.dynamic_tool = None
-        self.position = None
-        self.inputs = []
-        self.config = None
-        self.label = None
         self.uuid = uuid4()
-        self.workflow_outputs = []
         self._input_connections_by_name = None
 
     @property
@@ -6811,16 +6607,9 @@ class WorkflowStepInput(Base, RepresentById):
         back_populates='input_step_input',
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id))  # type: ignore
 
-    default_merge_type = None
-    default_scatter_type = None
-
     def __init__(self, workflow_step):
         self.workflow_step = workflow_step
-        self.name = None
-        self.default_value = None
         self.default_value_set = False
-        self.merge_type = self.default_merge_type
-        self.scatter_type = self.default_scatter_type
 
     def copy(self, copied_step):
         copied_step_input = WorkflowStepInput(copied_step)
@@ -6862,11 +6651,6 @@ class WorkflowStepConnection(Base, RepresentById):
     # outside of Galaxy.
     NON_DATA_CONNECTION = "__NO_INPUT_OUTPUT_NAME__"
 
-    def __init__(self):
-        self.output_step_id = None
-        self.output_name = None
-        self.input_step_input_id = None
-
     @property
     def non_data_connection(self):
         return (self.output_name == self.input_name == WorkflowStepConnection.NON_DATA_CONNECTION)
@@ -6907,10 +6691,7 @@ class WorkflowOutput(Base, RepresentById):
         self.workflow_step = workflow_step
         self.output_name = output_name
         self.label = label
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
+        self.uuid = get_uuid(uuid)
 
     def copy(self, copied_step):
         copied_output = WorkflowOutput(copied_step)
@@ -6928,10 +6709,6 @@ class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
     user = relationship('User', back_populates='workflows_shared_by_others')
     stored_workflow = relationship('StoredWorkflow', back_populates='users_shared_with')
 
-    def __init__(self):
-        self.stored_workflow = None
-        self.user = None
-
 
 class StoredWorkflowMenuEntry(Base, RepresentById):
     __tablename__ = 'stored_workflow_menu_entry'
@@ -6948,11 +6725,6 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
             & (StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)  # type: ignore
             & not_(StoredWorkflow.deleted))  # type: ignore
     )
-
-    def __init__(self):
-        self.stored_workflow = None
-        self.user = None
-        self.order_index = None
 
 
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
@@ -7010,12 +6782,6 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
         FAILED = 'failed'
 
     non_terminal_states = [states.NEW, states.READY]
-
-    def __init__(self):  # TODO no need
-        self.subworkflow_invocations = []  # TODO instrumented attribute / overwritten
-        self.step_states = []  # TODO instrumented attribute / overwritten
-        self.steps = []  # TODO instrumented attribute / overwritten
-        self.workflow_id = None
 
     def create_subworkflow_invocation_for_step(self, step):
         assert step.type == "subworkflow"
@@ -7430,11 +7196,6 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
         # CANCELLED = 'cancelled',  TODO: implement and expose
         # FAILED = 'failed',  TODO: implement and expose
 
-    def __init__(self):
-        self.implicit_collection_jobs_id = None
-        self.job_id = None
-        self.workflow_invocation_id = None
-
     @property
     def is_new(self):
         return self.state == self.states.NEW
@@ -7520,11 +7281,6 @@ class WorkflowRequestInputParameter(Base, Dictifiable, RepresentById):
         META_PARAMETERS = 'meta'
         RESOURCE_PARAMETERS = 'resource'
 
-    def __init__(self, name=None, value=None, type=None):
-        self.name = name
-        self.value = value
-        self.type = type
-
 
 class WorkflowRequestStepState(Base, Dictifiable, RepresentById):
     """ Workflow step value parameters.
@@ -7540,12 +7296,6 @@ class WorkflowRequestStepState(Base, Dictifiable, RepresentById):
     workflow_invocation = relationship('WorkflowInvocation', back_populates='step_states')
 
     dict_collection_visible_keys = ['id', 'name', 'value', 'workflow_step_id']
-
-    def __init__(self, workflow_step=None, name=None, value=None):
-        self.workflow_step = workflow_step
-        self.name = name  # TODO this is unused and not persisted. Verify and remove.
-        self.value = value
-        self.type = type  # TODO this is incorrect. Verify and remove.
 
 
 class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, RepresentById):
@@ -7731,13 +7481,11 @@ class MetadataFile(Base, StorableObject, RepresentById):
     library_dataset = relationship('LibraryDatasetDatasetAssociation')
 
     def __init__(self, dataset=None, name=None, uuid=None):
-        super().__init__(id=None, uuid=uuid)
+        self.uuid = get_uuid(uuid)
         if isinstance(dataset, HistoryDatasetAssociation):
             self.history_dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
             self.library_dataset = dataset
-        self.hda_id = None
-        self.lda_id = None
         self.name = name
 
     @property
@@ -7804,16 +7552,6 @@ class FormDefinition(Base, Dictifiable, RepresentById):
 
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout']
-
-    def __init__(self, name=None, desc=None, fields=None, form_definition_current=None, form_type=None, layout=None):
-        if fields is None:
-            fields = []
-        self.name = name
-        self.desc = desc
-        self.fields = fields
-        self.form_definition_current = form_definition_current
-        self.type = form_type
-        self.layout = layout
 
     def to_dict(self, user=None, values=None, security=None):
         values = values or {}
@@ -7901,20 +7639,6 @@ class UserAddress(Base, RepresentById):
     # TODO: db migration to rename column, then use `desc`
     user = relationship('User', back_populates='addresses', order_by=sqlalchemy.desc('update_time'))
 
-    def __init__(self, user=None, desc=None, name=None, institution=None,
-                 address=None, city=None, state=None, postal_code=None,
-                 country=None, phone=None):
-        self.user = user
-        self.desc = desc
-        self.name = name
-        self.institution = institution
-        self.address = address
-        self.city = city
-        self.state = state
-        self.postal_code = postal_code
-        self.country = country
-        self.phone = phone
-
     def to_dict(self, trans):
         return {'id': trans.security.encode_id(self.id),
                 'name': sanitize_html(self.name),
@@ -7941,14 +7665,6 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
-
-    def __init__(self, server_url=None, handle=None, secret=None, issued=None, lifetime=None, assoc_type=None):
-        self.server_url = server_url
-        self.handle = handle
-        self.secret = secret
-        self.issued = issued
-        self.lifetime = lifetime
-        self.assoc_type = assoc_type
 
     def save(self):
         self.sa_session.add(self)
@@ -8201,16 +7917,6 @@ class CustosAuthnzToken(Base, RepresentById):
     refresh_expiration_time = Column(DateTime)
     user = relationship('User', back_populates='custos_auth')
 
-    def __init__(self, user, external_user_id, provider, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time):
-        self.user = user
-        self.external_user_id = external_user_id
-        self.provider = provider
-        self.access_token = access_token
-        self.id_token = id_token
-        self.refresh_token = refresh_token
-        self.expiration_time = expiration_time
-        self.refresh_expiration_time = refresh_expiration_time
-
 
 class CloudAuthz(Base, _HasTable):
     __tablename__ = 'cloudauthz'
@@ -8299,16 +8005,6 @@ class Page(Base, Dictifiable, RepresentById):
 
     dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted', 'username']
 
-    def __init__(self):
-        self.id = None
-        self.user = None
-        self.title = None
-        self.slug = None
-        self.latest_revision_id = None
-        self.revisions = []
-        self.importable = None
-        self.published = None
-
     def to_dict(self, view='element'):
         rval = super().to_dict(view=view)
         rev = []
@@ -8356,10 +8052,6 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
     user = relationship('User', back_populates='pages_shared_by_others')
     page = relationship('Page', back_populates='users_shared_with')
-
-    def __init__(self):
-        self.page = None
-        self.user = None
 
 
 class Visualization(Base, RepresentById):
@@ -8411,17 +8103,10 @@ class Visualization(Base, RepresentById):
     # returns a list of users that visualization is shared with.
     users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
 
-    def __init__(self, id=None, user=None, type=None, title=None, dbkey=None, slug=None, latest_revision=None):
-        self.id = id
-        self.user = user
-        self.type = type
-        self.title = title
-        self.dbkey = dbkey
-        self.slug = slug
-        self.latest_revision = latest_revision
-        self.revisions = []  # TODO: review: this attempts to overwrite an instrumented attr (SA overwrites this?)
-        if self.latest_revision:  # TODO: but this happens ONLY if passed to constructor. Review.
-            self.revisions.append(latest_revision)
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        if self.latest_revision:
+            self.revisions.append(self.latest_revision)
 
     def copy(self, user=None, title=None):
         """
@@ -8462,13 +8147,6 @@ class VisualizationRevision(Base, RepresentById):
         back_populates='revisions',
         primaryjoin=(lambda: Visualization.id == VisualizationRevision.visualization_id))  # type: ignore
 
-    def __init__(self, visualization=None, title=None, dbkey=None, config=None):
-        self.id = None
-        self.visualization = visualization
-        self.title = title
-        self.dbkey = dbkey
-        self.config = config
-
     def copy(self, visualization=None):
         """
         Returns a copy of this object.
@@ -8492,10 +8170,6 @@ class VisualizationUserShareAssociation(Base, UserShareAssociation):
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user = relationship('User', back_populates='visualizations_shared_by_others')
     visualization = relationship('Visualization', back_populates='users_shared_with')
-
-    def __init__(self):
-        self.visualization = None
-        self.user = None
 
 
 class TransferJob(Base, RepresentById):
@@ -8523,14 +8197,6 @@ class TransferJob(Base, RepresentById):
         DONE = 'done'
     terminal_states = [states.ERROR,
                        states.DONE]
-
-    def __init__(self, state=None, path=None, info=None, pid=None, socket=None, params=None):
-        self.state = state
-        self.path = path
-        self.info = info
-        self.pid = pid
-        self.socket = socket
-        self.params = params
 
 
 class Tag(Base, RepresentById):
@@ -8978,11 +8644,6 @@ class DataManagerHistoryAssociation(Base, RepresentById):
     history = relationship('History')
     user = relationship('User', back_populates='data_manager_histories')
 
-    def __init__(self, id=None, history=None, user=None):
-        self.id = id
-        self.history = history
-        self.user = user
-
 
 class DataManagerJobAssociation(Base, RepresentById):
     __tablename__ = 'data_manager_job_association'
@@ -8997,11 +8658,6 @@ class DataManagerJobAssociation(Base, RepresentById):
     data_manager_id = Column(TEXT)
     job = relationship('Job', back_populates='data_manager_association', uselist=False)
 
-    def __init__(self, id=None, job=None, data_manager_id=None):
-        self.id = id
-        self.job = job
-        self.data_manager_id = data_manager_id
-
 
 class UserPreference(Base, RepresentById):
     __tablename__ = 'user_preference'
@@ -9013,6 +8669,8 @@ class UserPreference(Base, RepresentById):
     user = relationship('User', back_populates='_preferences')
 
     def __init__(self, name=None, value=None):
+        # Do not remove this constructor: it is set as the creator for the User.preferences
+        # AssociationProxy to which 2 args are passed.
         self.name = name
         self.value = value
 
@@ -9028,13 +8686,6 @@ class UserAction(Base, RepresentById):
     context = Column(Unicode(512))
     params = Column(Unicode(1024))
     user = relationship('User')
-
-    def __init__(self, user=None, session_id=None, action=None, params=None, context=None):
-        self.user = user
-        self.session_id = session_id
-        self.action = action
-        self.params = params
-        self.context = context
 
 
 class APIKeys(Base, RepresentById):

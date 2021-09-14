@@ -59,8 +59,8 @@
     </datatype>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true" description="BED format provides a flexible way to define the data lines that are displayed in an annotation track. BED lines have three required columns and nine additional optional columns. The three required columns are chrom, chromStart and chromEnd." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Bed">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
-      <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
-      <converter file="bed_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+      <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="bed_to_fli_converter.xml" target_datatype="fli"/>
       <!-- <display file="ucsc/interval_as_bed.xml" /> -->
@@ -155,7 +155,8 @@
       <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="gff_to_fli_converter.xml" target_datatype="fli"/>
-      <converter file="gff_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <display file="ensembl/ensembl_gff.xml" inherit="true"/>
       <display file="igv/gff.xml" inherit="true"/>
       <!-- <display file="gbrowse/gbrowse_gff.xml" inherit="true" /> -->
@@ -366,8 +367,8 @@
     <datatype extension="mtx" type="galaxy.datatypes.tabular:MatrixMarket" display_in_upload="true"/>
     <datatype extension="cmap" type="galaxy.datatypes.tabular:CMAP" display_in_upload="true" description="The Bionano Genomics cmap format provides location information for label sites within a genome map or an in silico digestion of a reference or sequence data. A CMAP file contains two sections, header and the map information block" description_url="https://bionanogenomics.com/wp-content/uploads/2017/03/30039-CMAP-File-Format-Specification-Sheet.pdf" />
     <datatype extension="encodepeak" type="galaxy.datatypes.interval:ENCODEPeak" display_in_upload="true">
-      <converter file="encodepeak_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
-      <converter file="encodepeak_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+      <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf" display_in_upload="true"/>
@@ -421,9 +422,9 @@
     <datatype extension="xml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="dzi" type="galaxy.datatypes.xml:Dzi" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
-      <converter file="vcf_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="vcf_to_vcf_bgzip_converter.xml" target_datatype="vcf_bgzip"/>
-      <converter file="vcf_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+      <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="ucsc/vcf.xml"/>
       <display file="igv/vcf.xml"/>
@@ -431,12 +432,12 @@
       <display file="iobio/vcf.xml"/>
     </datatype>
     <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="true">
-      <converter file="bcf_to_bcf_uncompressed_converter.xml" target_datatype="bcf_uncompressed"/>
+      <converter file="bcf_bcf_uncompressed_converter.xml" target_datatype="bcf_uncompressed"/>
     </datatype>
     <!-- bcf_bgzip is just an alias for bcf for backward-compatibility -->
     <datatype extension="bcf_bgzip" type="galaxy.datatypes.binary:Bcf" subclass="true"/>
     <datatype extension="bcf_uncompressed" type="galaxy.datatypes.binary:BcfUncompressed" mimetype="application/octet-stream" display_in_upload="true">
-      <converter file="bcf_uncompressed_to_bcf_converter.xml" target_datatype="bcf"/>
+      <converter file="bcf_bcf_uncompressed_converter.xml" target_datatype="bcf"/>
     </datatype>
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="true"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true" description="The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Wig">
@@ -451,6 +452,7 @@
     <datatype extension="xg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs with vg index." display_in_upload="true"/>
     <datatype extension="protobuf2" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data." display_in_upload="true"/>
     <datatype extension="protobuf3" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data." display_in_upload="true"/>
+    <datatype extension="onnx" type="galaxy.datatypes.binary:Binary" subclass="true" description="ONNX (Open neural network exchange) is data format for storing and sharing machine learning and deep learning models." display_in_upload="true"/>
     <datatype extension="tabix" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true"/>
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true">
@@ -726,12 +728,12 @@
     <datatype extension="pdbqt" type="galaxy.datatypes.molecules:PDBQT" display_in_upload="true"/>
     <datatype extension="pqr" type="galaxy.datatypes.molecules:PQR" display_in_upload="true" />
     <datatype extension="trr" type="galaxy.datatypes.binary:Trr" display_in_upload="true">
-      <converter file="trr_or_dcd_to_xtc.xml" target_datatype="xtc"/>
-      <converter file="xtc_or_trr_to_dcd.xml" target_datatype="dcd"/>
+      <converter file="mdconvert.xml" target_datatype="xtc"/>
+      <converter file="mdconvert.xml" target_datatype="dcd"/>
     </datatype>
     <datatype extension="dcd" type="galaxy.datatypes.binary:Dcd" display_in_upload="true">
-      <converter file="trr_or_dcd_to_xtc.xml" target_datatype="xtc"/>
-      <converter file="xtc_or_dcd_to_trr.xml" target_datatype="trr"/>
+      <converter file="mdconvert.xml" target_datatype="xtc"/>
+      <converter file="mdconvert.xml" target_datatype="trr"/>
     </datatype>
     <datatype extension="top" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="itp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
@@ -739,8 +741,8 @@
     <datatype extension="ndx" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="xvg" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="xtc" type="galaxy.datatypes.binary:Xtc" display_in_upload="true">
-      <converter file="xtc_or_dcd_to_trr.xml" target_datatype="trr"/>
-      <converter file="xtc_or_trr_to_dcd.xml" target_datatype="dcd"/>
+      <converter file="mdconvert.xml" target_datatype="trr"/>
+      <converter file="mdconvert.xml" target_datatype="dcd"/>
     </datatype>
     <datatype extension="cpt" type="galaxy.datatypes.binary:Cpt" display_in_upload="true"/>
     <datatype extension="edr" type="galaxy.datatypes.binary:Edr" display_in_upload="true"/>

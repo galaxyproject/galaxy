@@ -181,6 +181,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route('/collection/edit/{collection_id}')
     webapp.add_client_route('/datasets/error')
     webapp.add_client_route('/jobs/{job_id}/view')
+    webapp.add_client_route('/datasets/{dataset_id}/details')
     webapp.add_client_route('/workflows/list')
     webapp.add_client_route('/workflows/list_published')
     webapp.add_client_route('/workflows/create')
@@ -297,6 +298,11 @@ def populate_api_routes(webapp, app):
                           '/api/datasets/{dataset_id}/storage',
                           controller='datasets',
                           action='show_storage',
+                          conditions=dict(method=["GET"]))
+    webapp.mapper.connect('dataset_inheritance_chain',
+                          '/api/datasets/{dataset_id}/inheritance_chain',
+                          controller='datasets',
+                          action='show_inheritance_chain',
                           conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",

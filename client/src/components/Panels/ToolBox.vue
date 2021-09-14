@@ -51,7 +51,7 @@
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
                     <div class="toolTitle" v-for="wf in workflows" :key="wf.id">
-                        <a :href="wf.href">{{ wf.title }}</a>
+                        <a class="title-link" :href="wf.href">{{ wf.title }}</a>
                     </div>
                 </div>
             </div>

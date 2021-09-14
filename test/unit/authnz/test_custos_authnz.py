@@ -67,6 +67,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.test_nonce_hash = hashlib.sha256(self.test_nonce).hexdigest()
         self.test_code = "test-code"
         self.test_username = "test-username"
+        self.test_username_invalid = "test-username@test.com"
         self.test_email = "test-email"
         self.test_sub = "test-sub"
         self.test_alt_username = "test-alt-username"
@@ -377,7 +378,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
                 {
                     "nonce": self.test_nonce_hash,
                     "email": self.test_email,
-                    "preferred_username": self.test_username,
+                    "preferred_username": self.test_username_invalid,
                     "sub": self.test_sub,
                     "aud": "test-client-id",
                 },
