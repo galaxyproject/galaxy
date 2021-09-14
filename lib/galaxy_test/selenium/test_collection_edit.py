@@ -12,8 +12,8 @@ class CollectionEditTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_change_dbkey_simple_list(self):
-        self.create_simple_list_collection()
         self.use_beta_history()
+        self.create_simple_list_collection()
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
         dbkeyValue = "Additional"
@@ -28,16 +28,14 @@ class CollectionEditTestCase(SeleniumTestCase):
 
     def create_simple_list_collection(self):
         self.perform_upload(self.get_filename("1.fasta"))
-        self.history_panel_wait_for_hid_ok(1)
+        self._wait_for_and_select([1])
 
-        self.history_panel_multi_operations_show()
-        self.history_panel_muli_operation_select_hid(1)
-        self.history_panel_multi_operation_action_click(self.navigation.history_panel.multi_operations.labels.build_list)
+        self._collection_dropdown("build list")
 
         self.collection_builder_set_name("my cool list")
         self.screenshot("collection_builder_list")
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(2)
+        self._wait_for_hid_visible(2)
 
     def open_collection_edit_view(self):
         self.components.history_panel.collection_menu_edit_attributes.wait_for_and_click()
@@ -53,3 +51,24 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.driver.find_element_by_css_selector("input.multiselect__input").send_keys(dbkeyNew)
         self.driver.find_element_by_css_selector("input.multiselect__input").send_keys(Keys.ENTER)
         self.components.edit_collection_attributes.save_btn.wait_for_and_click()
+
+    def _wait_for_and_select(self, hids):
+        """
+        Waits for uploads to pass through queued, running, ok. Not all the states are not guaranteed
+        depending on how fast the upload goes compared to the history polling updates, it might just
+        skip to the end for a really fast upload
+        """
+
+        for hid in hids:
+            timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+            row_selector = self.content_item_by_attributes(hid=hid, state="ok")
+            row = self.wait_for_present(row_selector, timeout=timeout)
+            row.send_keys(" ")
+
+    def _collection_dropdown(self, option_description):
+        return self.use_bootstrap_dropdown(option=option_description, menu="new content menu")
+
+    def _wait_for_hid_visible(self, hid, state="ok"):
+        timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+        row_selector = self.content_item_by_attributes(hid=hid, state=state)
+        self.wait_for_visible(row_selector, timeout=timeout)
