@@ -195,7 +195,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         Display inheritance chain for the given dataset
 
-        @Deprecated, we want to return dataset and job ids in the future.
+        For internal use, this endpoint may change without warning.
         """
         dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
         inherit_chain = dataset_instance.source_dataset_chain
