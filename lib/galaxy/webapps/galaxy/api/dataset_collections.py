@@ -73,13 +73,17 @@ class DatasetCollectionsController(
     def update(self, trans: ProvidesHistoryContext, payload: dict, id):
         """
         Iterate over all datasets of a collection and copy datasets with new attributes to a new collection.
-        e.g attributes = {'dbkey': 'dm3', 'file_ext' = 'txt'}
+        e.g attributes = {'dbkey': 'dm3'}
 
         * PUT /api/dataset_collections/{hdca_id}:
             create a new dataset collection instance.
         """
+        # {'dbkey': 'apiMel1'}
+        if len(payload) != 1:
+            raise Exception ("Update one attribute at a time.")
+        if 'dbkey' not in payload:
+            raise Exception ("This attribute cannot be modified.")
 
-        # TODO: make sure attributes are valid
         self.collection_manager.copy(trans, trans.history, "hdca", id, copy_elements=True, dataset_instance_attributes=payload)
         trans.sa_session.flush()
 
