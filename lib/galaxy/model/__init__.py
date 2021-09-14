@@ -14,7 +14,6 @@ import os
 import pwd
 import random
 import string
-import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
@@ -2214,8 +2213,6 @@ class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
 
     id = Column(Integer, primary_key=True)
     job_id = Column(Integer, ForeignKey("job.id"), index=True)
-    deferred_job_id = Column(Integer, ForeignKey('deferred_job.id'), index=True)
-    transfer_job_id = Column(Integer, ForeignKey('transfer_job.id'), index=True)
     dataset_id = Column(Integer, ForeignKey('dataset.id'), index=True)
     fasta_path = Column(String(255))
     created_time = Column(DateTime, default=now)
@@ -2225,58 +2222,6 @@ class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
     job = relationship('Job', back_populates='job')
     dataset = relationship('Dataset', back_populates='genome_index_tool_data')
     user = relationship('User')
-    deferred = relationship('DeferredJob', back_populates='deferred_job')
-    transfer = relationship('TransferJob', back_populates='transfer_job')
-
-
-class DeferredJob(Base, RepresentById):
-    __tablename__ = 'deferred_job'
-
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    state = Column(String(64), index=True)
-    plugin = Column(String(128), index=True)
-    params = Column(MutableJSONType)
-    deferred_job = relationship('GenomeIndexToolData', back_populates='deferred')
-
-    class states(str, Enum):
-        NEW = 'new'
-        WAITING = 'waiting'
-        QUEUED = 'queued'
-        RUNNING = 'running'
-        OK = 'ok'
-        ERROR = 'error'
-
-    def get_check_interval(self):
-        if not hasattr(self, '_check_interval'):
-            self._check_interval = None
-        return self._check_interval
-
-    def set_check_interval(self, seconds):
-        self._check_interval = seconds
-    check_interval = property(get_check_interval, set_check_interval)
-
-    def get_last_check(self):
-        if not hasattr(self, '_last_check'):
-            self._last_check = 0
-        return self._last_check
-
-    def set_last_check(self, seconds):
-        try:
-            self._last_check = int(seconds)
-        except ValueError:
-            self._last_check = time.time()
-    last_check = property(get_last_check, set_last_check)
-
-    @property
-    def is_check_time(self):
-        if self.check_interval is None:
-            return True
-        elif (int(time.time()) - self.last_check) > self.check_interval:
-            return True
-        else:
-            return False
 
 
 class Group(Base, Dictifiable, RepresentById):
@@ -8144,33 +8089,6 @@ class VisualizationUserShareAssociation(Base, UserShareAssociation):
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user = relationship('User', back_populates='visualizations_shared_by_others')
     visualization = relationship('Visualization', back_populates='users_shared_with')
-
-
-class TransferJob(Base, RepresentById):
-    __tablename__ = 'transfer_job'
-
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    state = Column(String(64), index=True)
-    path = Column(String(1024))
-    info = Column(TEXT)
-    pid = Column(Integer)
-    socket = Column(Integer)
-    params = Column(MutableJSONType)
-    transfer_job = relationship('GenomeIndexToolData', back_populates='transfer')
-
-    # These states are used both by the transfer manager's IPC and the object
-    # state in the database.  Not all states are used by both.
-    class states(str, Enum):
-        NEW = 'new'
-        UNKNOWN = 'unknown'
-        PROGRESS = 'progress'
-        RUNNING = 'running'
-        ERROR = 'error'
-        DONE = 'done'
-    terminal_states = [states.ERROR,
-                       states.DONE]
 
 
 class Tag(Base, RepresentById):
