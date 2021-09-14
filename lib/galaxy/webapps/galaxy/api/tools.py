@@ -430,7 +430,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return rval
 
     def get_params_and_input_name(self, converter, deps, target_context=None):
-        print ("CONVERTER IN GETPARAMS" + str(converter))
         # Generate parameter dictionary
         params = {}
         # determine input parameter name and add to params
@@ -461,7 +460,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         except KeyError:
             deps = {}
         # Generate parameter dictionary
-        print ("CONVERTER IN CONVERSION" + str(converter))
         params, input_name = self.get_params_and_input_name(converter, deps)
         params = {}
         # determine input parameter name and add to params
