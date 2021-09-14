@@ -583,7 +583,7 @@ class HistoriesContentsService(ServiceBase):
                 hda, user=trans.user, trans=trans, **serialization_params
             ))
         for hdca_id in hdca_ids:
-            self.__update_dataset_collection(trans, hdca_id, payload)
+            self.__update_dataset_collection(trans, hdca_id, payload.dict(exclude_defaults=True))
             dataset_collection_instance = self.__get_accessible_collection(trans, hdca_id)
             rval.append(self.__collection_dict(trans, dataset_collection_instance, view="summary"))
         return rval
