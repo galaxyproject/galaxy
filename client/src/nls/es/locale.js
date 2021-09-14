@@ -4,7 +4,7 @@ define({
     // ----------------------------------------------------------------------------- masthead
 
     "Analyze Data": "Analizar Datos",
-    "Tools and current history": "Herramientas e historial actual",
+    "Tools and Current History": "Herramientas e Historial Actual",
 
     Workflow: "Flujo de Trabajo",
 
@@ -97,8 +97,15 @@ define({
     "Analysis home view": "Vista de inicio del análisis",
 
     // ---------------------------------------------------------------------------- toolbox
-    "Tools": "Herramientas (parte superior izquierda)",
+    "Tools": "Herramientas",
+
     "Show favorites": "Mostrar favoritos",
+
+    "search tools": "Buscar herramientas",
+
+    "All workflows": "Todos los flujos de trabajo",
+
+    "Upload Data": "Cargar Datos",
     // ---------------------------------------------------------------------------- histories
 
     // ---- history/options-menu
@@ -197,6 +204,8 @@ define({
     //false,
 
     "search datasets": "buscar conjuntos de datos",
+    "search all datasets": "buscar todos los conjuntos de datos",
+    "search histories": "buscar los historiales",
     "Search tips": "Consejos de búsqueda",
 
     "clear search (esc)": "limpiar búsqueda (esc)",
@@ -222,6 +231,10 @@ define({
     "Edit history annotation": "Editar anotación del historial",
 
     "Click to rename history": "Haz clic para cambiar el nombre del historial",
+
+    "Rename history...": "Cambiar el nombre del historial",
+
+    "Switch to": "Cambiar a",
 
     // multi operations
 
@@ -279,11 +292,19 @@ define({
 
     // ---------------------------------------------------------------------------- workflow list
     "Search Workflows": "Buscar Flujos de Trabajo",
-    "Name": "Nombre",
-    "Tags": "Etiquetas",
+    // Defined elsewhere
+    //"Name"
+    //"Tags"
+    //
     "Updated": "Actualizado",
+
     "Sharing": "Compartir",
+
     "Bookmarked": "Página marcada",
+
+    "Create": "Crear",
+
+    "Import": "Importar",
 
 
     // ---------------------------------------------------------------------------- datasets
@@ -452,6 +473,12 @@ define({
     "per page": "por página",
 
     "total": "total",
+
+    "Cancel": "Cancelar",
+
+    "Edit": "Editar",
+
+    "Manage": "Administrar",
 
     // ---------------------------------------------------------------------------- misc. MVC
 
@@ -728,6 +755,7 @@ define({
     Remove: false,
     // ---------------------------------------------------------------------------- visualization
     "Select datasets for new tracks": "Seleccionar conjuntos de datos para nuevas pistas",
+    "Select a dataset to visualize:": "Seleccionar un conjunto de datos para visualizar",
     Libraries: false,
     // ---------------------------------------------------------------------------- phyloviz
     "Zoom out": "Alejar",
@@ -778,6 +806,12 @@ define({
     "You can load your own data": "Puedes cargar tus propios datos",
     "or": "u",
     "get data from an external source": "obtenerlos de una fuente externa",
+
+    // But wait, there's more! An old version of this is still in use with a different structure
+    "You can ": "Puedes ",
+    "load your own data": "cargar tus propios datos",
+    " or ": " u ",
+
 
     // ---------------------------------------------------------------------------- workflow_editor_tests
     "tool tooltip": "Mensaje de información sobre herramientas",

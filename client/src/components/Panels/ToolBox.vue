@@ -11,14 +11,14 @@
                         v-if="panelViews && Object.keys(panelViews).length > 1"
                     />
                 </div>
-                <div class="panel-header-text">Tools</div>
+                <div class="panel-header-text" v-localize>Tools</div>
             </div>
         </div>
         <div class="unified-panel-controls">
             <tool-search
                 :current-panel-view="currentPanelView"
                 :query="query"
-                placeholder="search tools"
+                :placeholder="titleSearchTools"
                 @onQuery="onQuery"
                 @onResults="onResults"
             />
@@ -87,6 +87,7 @@ export default {
             showSections: false,
             buttonText: "",
             buttonIcon: "",
+            titleSearchTools: _l("search tools"),
         };
     },
     props: {
@@ -179,7 +180,7 @@ export default {
             this.setButtonText();
         },
         setButtonText() {
-            this.buttonText = this.showSections ? "Hide Sections" : "Show Sections";
+            this.buttonText = this.showSections ? _l("Hide Sections") : _l("Show Sections");
             this.buttonIcon = this.showSections ? "fa fa-eye-slash" : "fa fa-eye";
         },
         updatePanelView(panelView) {

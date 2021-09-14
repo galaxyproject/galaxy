@@ -9,7 +9,7 @@ Emit new History model object when done via .sync syntax
             <h3 data-description="history name display">{{ historyName || "(History Name)" }}</h3>
             <h5 class="history-size">
                 <span v-if="history.size">{{ history.size | niceFileSize }}</span>
-                <span v-else>(empty)</span>
+                <span v-else v-localize>(empty)</span>
             </h5>
 
             <!-- display title, annotation, tags -->
