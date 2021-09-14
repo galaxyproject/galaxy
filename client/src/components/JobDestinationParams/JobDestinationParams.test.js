@@ -47,7 +47,6 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
             },
         });
         expect(responseKeys.length > 0).toBeTruthy();
-        console.log(wrapper.html());
     });
 
     it("destination parameters should exist", async () => {
