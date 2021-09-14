@@ -94,7 +94,7 @@ define({
     "For all selected": "Für alle ausgewählt",
     // ---- history-view-edit
     "Edit history tags": "Geschichte bearbeiten",
-    "Edit history Annotation": "Historie bearbeiten",
+    "Edit history annotation": "Historie bearbeiten",
     "Click to rename history": "Klicken Sie hier, um den Verlauf umzubenennen",
     // multi operations
     "Operations on multiple datasets": "Operationen auf mehreren Datensätzen",
