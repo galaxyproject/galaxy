@@ -49,6 +49,7 @@ import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import Confirmation from "components/login/Confirmation.vue";
+import DatasetDetails from "components/Details/DatasetDetails.vue";
 import Libraries from "components/Libraries";
 import { mountVueComponent } from "utils/mountVueComponent";
 
@@ -98,6 +99,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
+            "(/)datasets(/)(:dataset_id)/details": "show_dataset_details",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
             "(/)libraries*path": "show_library_folder",
         },
@@ -389,6 +391,10 @@ export const getAnalysisRouter = (Galaxy) => {
         show_dataset_error: function (params) {
             const datasetId = params.dataset_id;
             this._display_vue_helper(DatasetError, { datasetId: datasetId });
+        },
+
+        show_dataset_details: function (dataset_id) {
+            this._display_vue_helper(DatasetDetails, { datasetId: dataset_id });
         },
 
         /**  */
