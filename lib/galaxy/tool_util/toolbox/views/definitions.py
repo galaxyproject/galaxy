@@ -112,7 +112,7 @@ class Section(BaseModel, HasItems):
     content_type: Literal['section'] = Field(alias="type")
     id: Optional[str]
     name: Optional[str]
-    items: Optional[List[RootContent]]  # really is just SectionContent but would need to use type variables to represent that.
+    items: Optional[List['RootContent']]  # really is just SectionContent but would need to use type variables to represent that.
     excludes: OptionalExclusionList
 
     class Config:
