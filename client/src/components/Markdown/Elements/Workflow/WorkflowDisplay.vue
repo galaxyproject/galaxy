@@ -1,5 +1,5 @@
 <template>
-    <div class="w-50 p-2 float-left">
+    <div class="w-100 p-2">
         <b-card body-class="p-0">
             <b-card-header v-if="!embedded">
                 <span class="float-right">
