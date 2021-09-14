@@ -614,7 +614,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             if source_repo_info and repo_info and source_repo_info == repo_info:
                 filename = name
                 break
-        # No toolshed data table entry was found, try the first file found in the OS
+        # No toolshed data table entry was found, try the first file found on disk
         else:
             for filename in self.filenames.keys():
                 if os.path.exists(filename):
