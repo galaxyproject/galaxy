@@ -617,13 +617,12 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         # No toolshed data table entry was found, try the first file found on disk
         else:
             for filename in self.filenames.keys():
-                if os.path.exists(filename):
-                    fmt_dict = dict(source_repo_info)
-                    fmt_dict['filename'] = filename
+                if source_repo_info is not None:
+                    source_repo_info['filename'] = filename
                     message = 'No exact match found in the data table registry for '
                     message += '{tool_shed}/repos/{owner}/{name}/{installed_changeset_revision}, '
                     message += 'falling back to {filename}'
-                    log.debug(message.format(**fmt_dict))
+                    log.debug(message.format(**source_repo_info))
                     return filename
         return filename
 
