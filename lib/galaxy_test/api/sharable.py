@@ -103,7 +103,7 @@ class SharingApiTests(UsesApiTestCaseMixin):
         for email in all_user_emails:
             self._setup_user(email)
 
-        resource_id = self.create("resource-to-share-user-email")
+        resource_id = self.create("resource-to-share-and-update")
 
         payload = {"user_ids": all_user_emails}
         sharing_response = self._set_resource_sharing(resource_id, action="share_with_users", payload=payload)
