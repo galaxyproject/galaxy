@@ -25,6 +25,8 @@ class JobIO(Dictifiable):
         'home_directory',
         'tmp_directory',
         'new_file_path',
+        'len_file_path',
+        'builds_file_path',
         'check_job_script_integrity',
         'check_job_script_integrity_count',
         'check_job_script_integrity_sleep',
@@ -43,6 +45,8 @@ class JobIO(Dictifiable):
             home_directory,
             tmp_directory,
             new_file_path,
+            len_file_path,
+            builds_file_path,
             check_job_script_integrity,
             check_job_script_integrity_count,
             check_job_script_integrity_sleep):
@@ -57,6 +61,8 @@ class JobIO(Dictifiable):
         self.home_directory = home_directory
         self.tmp_directory = tmp_directory
         self.new_file_path = new_file_path
+        self.len_file_path = len_file_path
+        self.builds_file_path = builds_file_path
         self.check_job_script_integrity = check_job_script_integrity
         self.check_job_script_integrity_count = check_job_script_integrity_count
         self.check_job_script_integrity_sleep = check_job_script_integrity_sleep

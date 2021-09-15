@@ -1002,6 +1002,8 @@ class JobWrapper(HasResourceParameters):
                 home_directory=self.home_directory(),
                 tmp_directory=self.tmp_directory(),
                 new_file_path=self.app.config.new_file_path,
+                builds_file_path=self.app.config.builds_file_path,
+                len_file_path=self.app.config.len_file_path,
                 check_job_script_integrity=self.app.config.check_job_script_integrity,
                 check_job_script_integrity_count=self.app.config.check_job_script_integrity_count,
                 check_job_script_integrity_sleep=self.app.config.check_job_script_integrity_sleep,
