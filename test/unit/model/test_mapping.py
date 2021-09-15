@@ -848,40 +848,6 @@ class TestDefaultUserPermissions(BaseTest):
             assert stored_obj.role.id == role.id
 
 
-class TestDeferredJob(BaseTest):
-
-    def test_table(self, cls_):
-        assert cls_.__tablename__ == 'deferred_job'
-
-    def test_columns(self, session, cls_):
-        create_time = datetime.now()
-        update_time = create_time + timedelta(hours=1)
-        state, plugin, params = 'a', 'b', 'c'
-        obj = cls_()
-        obj.state = state
-        obj.plugin = plugin
-        obj.params = params
-        obj.create_time = create_time
-        obj.update_time = update_time
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.id == obj_id
-            assert stored_obj.create_time == create_time
-            assert stored_obj.update_time == update_time
-            assert stored_obj.state == state
-            assert stored_obj.plugin == plugin
-            assert stored_obj.params == params
-
-    def test_relationships(self, session, cls_, genome_index_tool_data):
-        obj = cls_()
-        obj.deferred_job.append(genome_index_tool_data)
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.deferred_job == [genome_index_tool_data]
-
-
 class TestDynamicTool(BaseTest):
 
     def test_table(self, cls_):
@@ -1232,15 +1198,13 @@ class TestGenomeIndexToolData(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == 'genome_index_tool_data'
 
-    def test_columns(self, session, cls_, job, deferred_job, transfer_job, dataset, user):
+    def test_columns(self, session, cls_, job, dataset, user):
         fasta_path = 'a'
         created_time = datetime.now()
         modified_time = created_time + timedelta(hours=1)
         indexer = 'b'
         obj = cls_()
         obj.job = job
-        obj.deferred = deferred_job
-        obj.transfer = transfer_job
         obj.dataset = dataset
         obj.fasta_path = fasta_path
         obj.created_time = created_time
@@ -1252,8 +1216,6 @@ class TestGenomeIndexToolData(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
             assert stored_obj.job_id == job.id
-            assert stored_obj.deferred_job_id == deferred_job.id
-            assert stored_obj.transfer_job_id == transfer_job.id
             assert stored_obj.dataset_id == dataset.id
             assert stored_obj.fasta_path == fasta_path
             assert stored_obj.created_time == created_time
@@ -1261,19 +1223,15 @@ class TestGenomeIndexToolData(BaseTest):
             assert stored_obj.indexer == indexer
             assert stored_obj.user_id == user.id
 
-    def test_relationships(self, session, cls_, job, deferred_job, transfer_job, dataset, user):
+    def test_relationships(self, session, cls_, job, dataset, user):
         obj = cls_()
         obj.job = job
-        obj.deferred = deferred_job
-        obj.transfer = transfer_job
         obj.dataset = dataset
         obj.user = user
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.job.id == job.id
-            assert stored_obj.deferred.id == deferred_job.id
-            assert stored_obj.transfer.id == transfer_job.id
             assert stored_obj.dataset.id == dataset.id
             assert stored_obj.user.id == user.id
 
@@ -4906,46 +4864,6 @@ class TestToolTagAssociation(BaseTest):
             assert stored_obj.user.id == user.id
 
 
-class TestTransferJob(BaseTest):
-
-    def test_table(self, cls_):
-        assert cls_.__tablename__ == 'transfer_job'
-
-    def test_columns(self, session, cls_):
-        create_time = datetime.now()
-        update_time = create_time + timedelta(hours=1)
-        state, path, info, pid, socket, params = 'd', 'a', 'b', 2, 3, 'c'
-        obj = cls_()
-        obj.state = state
-        obj.path = path
-        obj.info = info
-        obj.pid = pid
-        obj.socket = socket
-        obj.params = params
-        obj.create_time = create_time
-        obj.update_time = update_time
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.id == obj_id
-            assert stored_obj.create_time == create_time
-            assert stored_obj.update_time == update_time
-            assert stored_obj.state == state
-            assert stored_obj.path == path
-            assert stored_obj.info == info
-            assert stored_obj.pid == pid
-            assert stored_obj.socket == socket
-            assert stored_obj.params == params
-
-    def test_relationships(self, session, cls_, genome_index_tool_data):
-        obj = cls_()
-        obj.transfer_job.append(genome_index_tool_data)
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.transfer_job == [genome_index_tool_data]
-
-
 class TestUser(BaseTest):
 
     def test_table(self, cls_):
@@ -6774,12 +6692,6 @@ def default_user_permissions(model, session, user, role):
 
 
 @pytest.fixture
-def deferred_job(model, session):
-    instance = model.DeferredJob()
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
 def dynamic_tool(model, session):
     instance = model.DynamicTool()
     yield from dbcleanup_wrapper(session, instance)
@@ -7335,12 +7247,6 @@ def task_metric_text(model, session):
 @pytest.fixture
 def tool_tag_association(model, session):
     instance = model.ToolTagAssociation()
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
-def transfer_job(model, session):
-    instance = model.TransferJob()
     yield from dbcleanup_wrapper(session, instance)
 
 
