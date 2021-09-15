@@ -47,7 +47,8 @@
                                     class="ui-button-default float-left mt-3 btn btn-primary"
                                     @click="create(plugin)"
                                 >
-                                    <i class="icon fa fa-check" /> <span class="title">{{ titleCreateVisualization }}</span>
+                                    <i class="icon fa fa-check" />
+                                    <span class="title">{{ titleCreateVisualization }}</span>
                                 </button>
                             </div>
                             <div v-else class="alert alert-danger" v-localize>

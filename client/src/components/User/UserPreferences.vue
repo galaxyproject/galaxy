@@ -5,7 +5,8 @@
             {{ message }}
         </b-alert>
         <p>
-            {{ titleLoggedInAs }} <strong id="user-preferences-current-email">{{ email }}</strong>.
+            {{ titleLoggedInAs }} <strong id="user-preferences-current-email">{{ email }}</strong
+            >.
         </p>
         <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
             <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
@@ -74,7 +75,9 @@
             {{ titleYouAreUsing }} <strong>{{ diskUsage }}</strong> {{ titleOfDiskSpace }}
             <span v-html="quotaUsageString"></span>
             {{ titleIsYourUsage }}
-            <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"><b v-localize>documentation</b></a>
+            <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"
+                ><b v-localize>documentation</b></a
+            >
             {{ titleForTipsOnHow }}
         </p>
     </b-container>

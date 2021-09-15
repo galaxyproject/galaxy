@@ -54,7 +54,7 @@ export default {
             queryInput: null,
             queryTimer: null,
             queryCurrent: null,
-            titleClearSearch: _l('clear search (esc)'),
+            titleClearSearch: _l("clear search (esc)"),
         };
     },
     watch: {

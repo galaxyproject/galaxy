@@ -97,7 +97,7 @@ define({
     "Analysis home view": "Vista de inicio del análisis",
 
     // ---------------------------------------------------------------------------- toolbox
-    "Tools": "Herramientas",
+    Tools: "Herramientas",
 
     "Show favorites": "Mostrar favoritos",
 
@@ -109,7 +109,7 @@ define({
     // ---------------------------------------------------------------------------- histories
 
     // ---- history/options-menu
-    "History": "Historial",
+    History: "Historial",
 
     "History Lists": "Listas de historiales",
 
@@ -130,7 +130,7 @@ define({
     "Create New": "Crear nuevo",
     "Create new history": "Crear historial huevo",
 
-    "Copy": "Copiar",
+    Copy: "Copiar",
 
     "Share or Publish": "Compartir o Publicar",
 
@@ -296,16 +296,15 @@ define({
     //"Name"
     //"Tags"
     //
-    "Updated": "Actualizado",
+    Updated: "Actualizado",
 
-    "Sharing": "Compartir",
+    Sharing: "Compartir",
 
-    "Bookmarked": "Página marcada",
+    Bookmarked: "Página marcada",
 
-    "Create": "Crear",
+    Create: "Crear",
 
-    "Import": "Importar",
-
+    Import: "Importar",
 
     // ---------------------------------------------------------------------------- datasets
 
@@ -459,26 +458,26 @@ define({
 
     // ---------------------------------------------------------------------------- Data library
 
-    "Library": "Biblioteca",
+    Library: "Biblioteca",
 
     "exclude restricted": "Excluir restringidos",
 
     "include deleted": "incluir eliminada",
 
     // Name is elsewhere
-    "Description": "Descripción",
+    Description: "Descripción",
 
-    "Synopsis": "Sinopsis",
+    Synopsis: "Sinopsis",
 
     "per page": "por página",
 
-    "total": "total",
+    total: "total",
 
-    "Cancel": "Cancelar",
+    Cancel: "Cancelar",
 
-    "Edit": "Editar",
+    Edit: "Editar",
 
-    "Manage": "Administrar",
+    Manage: "Administrar",
 
     // ---------------------------------------------------------------------------- misc. MVC
 
@@ -548,17 +547,19 @@ define({
     Convert: false,
     Attributes: false,
 
-    "This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.": "Esto cambiará el tipo de datos del conjunto de datos existente pero no modificará su contenido. Utilícelo si Galaxy identificó incorrectamente el tipo de su conjunto de datos",
-    "Attributes": "Atributos",
-    "Convert": "Convertir",
-    "Datatypes": "Tipos de datos",
-    "Permissions": "Permisos",
+    "This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.":
+        "Esto cambiará el tipo de datos del conjunto de datos existente pero no modificará su contenido. Utilícelo si Galaxy identificó incorrectamente el tipo de su conjunto de datos",
+    Attributes: "Atributos",
+    Convert: "Convertir",
+    Datatypes: "Tipos de datos",
+    Permissions: "Permisos",
     "Auto-detect": "Autodetectar",
-    "Save": "Guardar",
-    "Name": "Nombre",
-    "Info": "Información",
-    "Annotation": "Anotación",
-    "Add an annotation or notes to a dataset; annotations are available when a history is viewed.": "Agregar una anotación o notas al conjunto de datos; las anotaciones están disponibles cuando se visualiza un historial",
+    Save: "Guardar",
+    Name: "Nombre",
+    Info: "Información",
+    Annotation: "Anotación",
+    "Add an annotation or notes to a dataset; annotations are available when a history is viewed.":
+        "Agregar una anotación o notas al conjunto de datos; las anotaciones están disponibles cuando se visualiza un historial",
 
     // ---------------------------------------------------------------------------- library-dataset-view
     "Import into History": "Importar al historial",
@@ -582,7 +583,8 @@ define({
         "Personalizar Toolbox para mostrar u omitir conjuntos de herramientas",
     "Access your current API key or create a new one.": "Acceder a su clave API actual o crear una nueva",
     "Allows you to change your login credentials.": "Permitir modificar tus credenciales de inicio de sesión ",
-    "Edit your email, addresses and custom parameters or change your public name.": "Edita tus direcciones de correo y personaliza los parámetros o cambia tu nombre público.",
+    "Edit your email, addresses and custom parameters or change your public name.":
+        "Edita tus direcciones de correo y personaliza los parámetros o cambia tu nombre público.",
     "User preferences": "Preferencias de usuario",
     "You are logged in as": "Iniciaste sesión como",
     "Sign out": "Cerrar sesión",
@@ -594,67 +596,74 @@ define({
     "Change Password": "Cambiar contraseña",
     "Manage Information": "Administrar información",
     "Manage Third-Party Identities": "Manejar identidades de terceros",
-    "Connect or disconnect access to your third-party identities.": "Conectar o desconectar el acceso a tus identidades de terceros.",
-    "Set Dataset Permissions for New Histories": "Establecer los permisos de los conjuntos de datos para los nuevos historiales",
-    "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.": "Otorga a otras personas acceso predeterminado a los historiales recién creados. Los cambios que aquí realices solo afectarán a los historiales creados después de que se hayan almacenado estos ajustes.",
+    "Connect or disconnect access to your third-party identities.":
+        "Conectar o desconectar el acceso a tus identidades de terceros.",
+    "Set Dataset Permissions for New Histories":
+        "Establecer los permisos de los conjuntos de datos para los nuevos historiales",
+    "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.":
+        "Otorga a otras personas acceso predeterminado a los historiales recién creados. Los cambios que aquí realices solo afectarán a los historiales creados después de que se hayan almacenado estos ajustes.",
     "Make All Data Private": "Privatizar todos mis datos",
     "Click here to make all data private.": "Haz clic aquí para privatizar todos tus datos",
     "Manage Cloud Authorization": "Manejar autorización para la nube",
-    "Add or modify the configuration that grants Galaxy to access your cloud-based resources": "Agregar o modificar la configuración que permite que Galaxy acceda a tus recursos en la nube",
+    "Add or modify the configuration that grants Galaxy to access your cloud-based resources":
+        "Agregar o modificar la configuración que permite que Galaxy acceda a tus recursos en la nube",
 
     "Manage Toolbox Filters": "Manejar filtros de la caja de herramientas",
     "Manage Custom Builds": "Administrar compilaciones personalizadas",
 
     "Enable notifications": "Habilitar notificaciones",
-    "Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in your browser.": "Permitir las notificaciones automáticas y de pestaña al completar un trabajo. Para deshabilitar, en tu navegador revoca los privilegios de notificaciones de sitio",
+    "Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in your browser.":
+        "Permitir las notificaciones automáticas y de pestaña al completar un trabajo. Para deshabilitar, en tu navegador revoca los privilegios de notificaciones de sitio",
     "Delete Account": "Eliminar cuenta",
     "Delete your account on this Galaxy server.": "Eliminar tu cuenta del servidor Galaxy.",
 
     "You are using": "Estás utilizando",
     "of disk space in this Galaxy instance.": "de espacio de disco en esta instancia de Galaxy.",
     "Is your usage more than expected? See the": "¿Utilizarás más espacio del que planeabas originalmente? Ve la",
-    "documentation": "documentación",
-    "for tips on how to find all of the data in your account.": "para consultar consejos sobre el cómo encontrar todos los datos de tu cuenta",
-
+    documentation: "documentación",
+    "for tips on how to find all of the data in your account.":
+        "para consultar consejos sobre el cómo encontrar todos los datos de tu cuenta",
 
     // ---------------------------------------------------------------------------- user-prefs/manage information
     "Manage Information": "Manejar información",
     "Email address": "Dirección de correo electrónico",
-    "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.": "Si cambias tu dirección de correo electrónico recibirás un vínculo de activación en tu nuevo correo. Debes activar tu cuenta recurriendo a esta notificación.",
+    "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.":
+        "Si cambias tu dirección de correo electrónico recibirás un vínculo de activación en tu nuevo correo. Debes activar tu cuenta recurriendo a esta notificación.",
     "Public name": "Nombre público",
-    'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.': 'Tu nombre público es un identificador que será utilizado para generar direcciones de información que compartas al público. Los nombres públicos deben contener al menos tres caracteres de longitud, solo letras minúsculas, números o el símbolo "-". ',
-    "Address": "Dirección",
+    'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.':
+        'Tu nombre público es un identificador que será utilizado para generar direcciones de información que compartas al público. Los nombres públicos deben contener al menos tres caracteres de longitud, solo letras minúsculas, números o el símbolo "-". ',
+    Address: "Dirección",
     "Insert address": "Escribir dirección",
     "Do you want to be able to re-use equivalent jobs ?": "¿Deseas poder reutilizar trabajos equivalentes?",
-    "No": "No",
-    "Yes": "Sí",
-    "If you select yes, you will be able to select for each tool and workflow run if you would like to use this feature.": "Si seleccionas ‘sí’, podrás seleccionar si deseas utilizar esta función para cada herramienta y ejecución de flujo de trabajo.",
-    "Localization": "Ubicación",
+    No: "No",
+    Yes: "Sí",
+    "If you select yes, you will be able to select for each tool and workflow run if you would like to use this feature.":
+        "Si seleccionas ‘sí’, podrás seleccionar si deseas utilizar esta función para cada herramienta y ejecución de flujo de trabajo.",
+    Localization: "Ubicación",
     "Prefered language": "Idioma de preferencia",
     "Use distributed compute resources": "Utilizar recursos de cómputo distribuido",
     "Remote resource id": "Identificador de recurso remoto",
-    "default - Galaxy will decide where to put your jobs": "Por defecto - Galaxy decidirá en donde colocar tus trabajos",
+    "default - Galaxy will decide where to put your jobs":
+        "Por defecto - Galaxy decidirá en donde colocar tus trabajos",
     "Your EGA (European Genome Archive) Account": "Tu cuenta EGA (European Genome Archive)",
-    "Username": "Nombre de usuario",
-    "Password": "Contraseña",
+    Username: "Nombre de usuario",
+    Password: "Contraseña",
     "Your Dropbox Account": "Tu cuenta Dropbox",
     "Dropbox access token": "Token de acceso de Dropbox",
     "Your B2DROP Account": "Tu cuenta B2DROP",
-    "Username": "Nombre de usuario",
-    "Password": "Contraseña",
+    Username: "Nombre de usuario",
+    Password: "Contraseña",
     "Your OMERO instance connection details": "Detalles de conección de tu instancia OMERO",
-    "Username": "Nombre de usuario",
-    "Password": "Contraseña",
+    Username: "Nombre de usuario",
+    Password: "Contraseña",
     "Your ENA Webin account details": "Detalles de tu cuenta Webin de ENA",
     "ENA Webin ID": "Identificador Webin de ENA",
-    "Password": "Contraseña",
+    Password: "Contraseña",
     "Your CDS API Key": "Tu llave CDS API",
-    "Key": "Llave",
-    "Save": "Guardar",
+    Key: "Llave",
+    Save: "Guardar",
 
-
-
-     //X GB  Tu cuota de disco es: X GB.
+    //X GB  Tu cuota de disco es: X GB.
     //
     //
 
@@ -804,14 +813,13 @@ define({
 
     // This feels awkward structure wise.
     "You can load your own data": "Puedes cargar tus propios datos",
-    "or": "u",
+    or: "u",
     "get data from an external source": "obtenerlos de una fuente externa",
 
     // But wait, there's more! An old version of this is still in use with a different structure
     "You can ": "Puedes ",
     "load your own data": "cargar tus propios datos",
     " or ": " u ",
-
 
     // ---------------------------------------------------------------------------- workflow_editor_tests
     "tool tooltip": "Mensaje de información sobre herramientas",

@@ -153,7 +153,7 @@ export default {
             messageVariant: null,
             nWorkflows: 0,
             workflows: [],
-            titleSearchWorkflows: _l('Search Workflows'),
+            titleSearchWorkflows: _l("Search Workflows"),
             titleCreate: _l("Create"),
             titleImport: _l("Import"),
             titleRunWorkflow: _l("Run workflow"),

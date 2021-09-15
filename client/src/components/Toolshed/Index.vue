@@ -53,7 +53,7 @@ export default {
                 { text: "Search All", value: true },
                 { text: "Installed Only", value: false },
             ],
-            titleClearSearch: _l("clear search (esc)")
+            titleClearSearch: _l("clear search (esc)"),
         };
     },
     watch: {

@@ -9,8 +9,12 @@
                 {{ titleLibrary }}
             </b-button>
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
-            <b-form-checkbox v-if="isAdmin" class="mr-1" @input="toggle_include_deleted($event)" v-localize>include deleted</b-form-checkbox>
-            <b-form-checkbox class="mr-1" @input="toggle_exclude_restricted($event)" v-localize>exclude restricted</b-form-checkbox>
+            <b-form-checkbox v-if="isAdmin" class="mr-1" @input="toggle_include_deleted($event)" v-localize
+                >include deleted</b-form-checkbox
+            >
+            <b-form-checkbox class="mr-1" @input="toggle_exclude_restricted($event)" v-localize
+                >exclude restricted</b-form-checkbox
+            >
         </div>
         <b-collapse v-model="isNewLibFormVisible" id="collapse-2">
             <b-card>
@@ -162,7 +166,9 @@
                                 />
                             </td>
                             <td class="text-muted ml-1 paginator-text">
-                                <span class="pagination-total-pages-text">{{ titlePerPage }}, {{ rows }} {{ titleTotal }}</span>
+                                <span class="pagination-total-pages-text"
+                                    >{{ titlePerPage }}, {{ rows }} {{ titleTotal }}</span
+                                >
                             </td>
                         </tr>
                     </table>

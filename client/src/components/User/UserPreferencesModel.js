@@ -37,8 +37,9 @@ export const getUserPreferencesModel = (user_id) => {
         permissions: {
             title: _l("Set Dataset Permissions for New Histories"),
             id: "edit-preferences-permissions",
-            description:
-                _l("Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."),
+            description: _l(
+                "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
+            ),
             url: `api/users/${user_id}/permissions/inputs`,
             icon: "fa-users",
             submitTitle: "Save Permissions",
