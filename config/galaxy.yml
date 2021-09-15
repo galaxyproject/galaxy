@@ -16,12 +16,15 @@
 # 
 # Config hackers are encouraged to check there before asking for help.
 # 
+
+# AMP configuration for Galaxy
+
 uwsgi:
 
   # The address and port on which to listen.  By default, only listen to
   # localhost (galaxy will not be accessible over the network).  Use
   # ':8080' to listen on all available network interfaces.
-  # AMP host and port
+  # AMP customization 
   http: :8300
 
   # By default uWSGI allocates a very small buffer (4096 bytes) for the
@@ -107,9 +110,10 @@ uwsgi:
   # submits jobs as real user then all users needs to be able to read
   # the files, i.e. the umask needs to be '022' or the Galaxy users need
   # to be in the same group as the Galaxy system user
+  # AMP customization 
   umask: 002
 
-  # AMP Galaxy metrics settings
+  # AMP customization: metrics settings
   # enable API performance logging  
   enable-metrics: true
   dlopen: amp_metrics/system_metrics.so
@@ -140,7 +144,7 @@ galaxy:
   # to upload a directory of files.
   # Below property is commented out as Galaxy always tries to create a new directory for it upon start,
   # which will cause error in our case, since /srv/amp/media/ already exists
-  # AMP library_import_dir points to media dir
+  # AMP customization: points to media dir
   # library_import_dir: /srv/amp/media/
   
   # Allow admins to paste filesystem paths during upload. For libraries
@@ -151,18 +155,36 @@ galaxy:
   # to True to enable.  Please note the security implication that this
   # will give Galaxy Admins access to anything your Galaxy user has
   # access to.
-  # AMP allow_path_paste
   allow_path_paste: true
   
+  # Force everyone to log in (disable anonymous access).
+  # AMP customization 
+  require_login: true
+  
+  # Allow unregistered users to create new accounts (otherwise, they
+  # will have to be created by an admin).
+  # AMP customization 
+  allow_user_creation: false  
+        
   # Administrative users - set this to a comma-separated list of valid
   # Galaxy users (email addresses).  These users will have access to the
   # Admin section of the server, and will have access to create users,
   # groups, roles, libraries, and more.  For more information, see:
   # https://galaxyproject.org/admin/
-  # AMP admin users
-  admin_users: amppd@iu.edu,amppd-ci@iu.edu
+  # AMP customization: placeholder to be overwritten during deployment
+  admin_users:
       
-  # AMP Logging configuration (with performance log added)
+  # Galaxy encodes various internal values when these values will be
+  # output in some format (for example, in a URL or cookie).  You should
+  # set a key to be used by the algorithm that encodes and decodes these
+  # values. It can be any string with a length between 5 and 56 bytes.
+  # One simple way to generate a value for this is with the shell
+  # command:   python -c 'from __future__ import print_function; import
+  # time; print(time.time())' | md5sum | cut -f 1 -d ' '
+  # AMP customization: placeholder to be overwritten during deployment
+  id_secret:
+          
+  # AMP customization: logging configuration (with performance log added)
   logging:
     version: 1
     disable_existing_loggers: False
