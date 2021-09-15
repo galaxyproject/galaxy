@@ -144,7 +144,7 @@ galaxy:
   # to upload a directory of files.
   # Below property is commented out as Galaxy always tries to create a new directory for it upon start,
   # which will cause error in our case, since /srv/amp/media/ already exists
-  # points to media dir
+  # AMP customization: points to media dir
   # library_import_dir: /srv/amp/media/
   
   # Allow admins to paste filesystem paths during upload. For libraries
