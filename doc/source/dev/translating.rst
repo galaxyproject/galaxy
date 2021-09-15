@@ -4,9 +4,9 @@ Translating the Interface
 A quick tutorial on translating the Galaxy UI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Translations in Galaxy are done by simple dictionary lookup of text. Whatever text is written in the interface, the client will look it up in its dictionary, and if it's there, return it. If it's not, it will return the english text that was used to search.
+Translations in Galaxy are done by simple dictionary lookup of text. Whatever text is written in the interface, the client will look it up in its dictionary, and if it's there, return it. If it's not, it will return the English text that was used to search.
 
-Translations are stored in ``client/src/nls/*/locale.js`` and look like this:
+Translations are stored in ``client/src/nls/XX/locale.js`` files where `XX` is the ISO 639 2-letter code for a language. A `locale.js` file looks like this:
 
 .. code-block:: js
 
@@ -21,8 +21,8 @@ The last three lines contain a mapping of English text to their Spanish equivale
 
 - Find untranslated text in the UI
 - Find the corresponding text in the codebase
-- Ensure that it uses `_l` (localisation) statements
-- Check that that text has a translation in the locale file.
+- Ensure that it uses `_l()` localisation statements
+- Add the translation for that text to the `locale.js` file.
 
 A quick example.
 ~~~~~~~~~~~~~~~~
@@ -31,7 +31,7 @@ In the user preferences menu I saw the text: "You are logged in as hxr@local.hos
 
 .. code-block:: shell
 
-    $ grep 'You are logged in as' -R client/src
+    $ grep -R 'You are logged in as' client/src/
     client/src/mvc/library/library-library-view.js:                        You are logged in as an <strong>administrator</strong> therefore you can manage any library
     client/src/components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue:                You are logged in as an <strong>administrator</strong> therefore you can manage any folder on this
     client/src/components/User/UserPreferences.vue:            You are logged in as <strong id="user-preferences-current-email">{{ email }}</strong
@@ -41,7 +41,7 @@ There! That's a hit, the last file has the string we're looking for. Let's open 
 Types of Strings and how to translate them
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are a number of ways text gets used in the codebase, especially the new Vue frontend.
+There are a number of ways text gets used in the codebase, especially the new Vue JavaScript framework.
 
 1. Text within an element:
 
