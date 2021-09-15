@@ -8103,7 +8103,6 @@ class Tag(Base, RepresentById):
     name = Column(TrimmedString(255))
     children = relationship('Tag', back_populates='parent')
     parent = relationship('Tag', back_populates='children', remote_side=[id])
-    tagged_pages = relationship('PageTagAssociation', back_populates='tag')
     tagged_workflow_steps = relationship('WorkflowStepTagAssociation', back_populates='tag')
     tagged_stored_workflows = relationship('StoredWorkflowTagAssociation', back_populates='tag')
     tagged_visualizations = relationship('VisualizationTagAssociation', back_populates='tag')
@@ -8197,7 +8196,7 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
     page = relationship('Page', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_pages')
+    tag = relationship('Tag')
     user = relationship('User')
 
 

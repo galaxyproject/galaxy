@@ -4647,7 +4647,6 @@ class TestTag(BaseTest):
         self,
         session,
         cls_,
-        page_tag_association,
         workflow_step_tag_association,
         stored_workflow_tag_association,
         visualization_tag_association,
@@ -4665,7 +4664,6 @@ class TestTag(BaseTest):
             assoc_object.tag = obj
             getattr(obj, assoc_attribute).append(assoc_object)
 
-        add_association(page_tag_association, 'tagged_pages')
         add_association(workflow_step_tag_association, 'tagged_workflow_steps')
         add_association(stored_workflow_tag_association, 'tagged_stored_workflows')
         add_association(visualization_tag_association, 'tagged_visualizations')
@@ -4679,7 +4677,6 @@ class TestTag(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.parent.id == parent_tag.id
             assert stored_obj.children == [child_tag]
-            assert stored_obj.tagged_pages == [page_tag_association]
             assert stored_obj.tagged_workflow_steps == [workflow_step_tag_association]
             assert stored_obj.tagged_stored_workflows == [stored_workflow_tag_association]
             assert stored_obj.tagged_visualizations == [visualization_tag_association]
