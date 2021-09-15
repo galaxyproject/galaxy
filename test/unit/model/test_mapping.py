@@ -4647,7 +4647,6 @@ class TestTag(BaseTest):
         self,
         session,
         cls_,
-        history_tag_association,
         history_dataset_association_tag_association,
         library_dataset_dataset_association_tag_association,
         page_tag_association,
@@ -4668,7 +4667,6 @@ class TestTag(BaseTest):
             assoc_object.tag = obj
             getattr(obj, assoc_attribute).append(assoc_object)
 
-        add_association(history_tag_association, 'tagged_histories')
         add_association(
             history_dataset_association_tag_association, 'tagged_history_dataset_associations')
         add_association(
@@ -4688,7 +4686,6 @@ class TestTag(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.parent.id == parent_tag.id
             assert stored_obj.children == [child_tag]
-            assert stored_obj.tagged_histories == [history_tag_association]
             assert (stored_obj.tagged_history_dataset_associations
                 == [history_dataset_association_tag_association])
             assert (stored_obj.tagged_library_dataset_dataset_associations
