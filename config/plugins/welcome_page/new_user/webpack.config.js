@@ -22,7 +22,7 @@ module.exports = {
         }),
         new CopyPlugin({
             patterns: [
-                {from: 'node_modules/galaxy_new_user_welcome', to: 'topics'}
+                {from: 'node_modules/@galaxyproject/new_user_welcome', to: 'topics'}
                 // {from: 'src/topics', to: 'topics'},
             ],
         }),

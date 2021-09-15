@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "fbjs": "^1.0.0",
-    "galaxy_new_user_welcome": "^1.0.4",
+    "@galaxyproject/new_user_welcome": "^1.0.6",
     "underscore": "^1.9.2"
   },
   "devDependencies": {
