@@ -8103,8 +8103,6 @@ class Tag(Base, RepresentById):
     name = Column(TrimmedString(255))
     children = relationship('Tag', back_populates='parent')
     parent = relationship('Tag', back_populates='children', remote_side=[id])
-    tagged_library_dataset_collections = relationship(
-        'LibraryDatasetCollectionTagAssociation', back_populates='tag')
     tagged_tools = relationship('ToolTagAssociation', back_populates='tag')
 
     def __str__(self):
@@ -8268,7 +8266,7 @@ class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
     dataset_collection = relationship('LibraryDatasetCollectionAssociation', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_library_dataset_collections')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
