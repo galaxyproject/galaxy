@@ -193,8 +193,9 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         GET /api/datasets/{dataset_id}/inheritance_chain
 
-        Display user-facing storage details related to the objectstore a
-        dataset resides in.
+        Display inheritance chain for the given dataset
+
+        For internal use, this endpoint may change without warning.
         """
         dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
         inherit_chain = dataset_instance.source_dataset_chain

@@ -410,6 +410,9 @@ def view_show_job(trans, job, full: bool) -> typing.Dict:
             dependencies=job.dependencies
         ))
 
+        tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
+        job_dict.update(tool_name=tool.name)
+
         if is_admin:
             if job.user:
                 job_dict['user_email'] = job.user.email
@@ -417,8 +420,6 @@ def view_show_job(trans, job, full: bool) -> typing.Dict:
                 job_dict['user_email'] = None
 
             job_dict['job_metrics'] = summarize_job_metrics(trans, job)
-    tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
-    job_dict.update(tool_name=tool.name)
     return job_dict
 
 
