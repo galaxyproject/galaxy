@@ -432,11 +432,11 @@ export const getAnalysisRouter = (Galaxy) => {
             }
         },
 
-        mountWelcome: async function() {
-                const propsData = {
-                    newUserDict,
-                };
-                this._display_vue_helper(NewUserWelcome, propsData);
+        mountWelcome: async function () {
+            const propsData = {
+                newUserDict,
+            };
+            this._display_vue_helper(NewUserWelcome, propsData);
         },
 
         /** load the center panel with a tool form described by the given params obj */

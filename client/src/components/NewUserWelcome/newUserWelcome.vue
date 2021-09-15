@@ -1,39 +1,51 @@
 <template>
     <div>
         <ConfigProvider v-slot="config">
-            <component 
+            <component
                 :is="viewElement"
                 v-bind="currentNode"
                 @select="down"
                 @back="up"
                 :image-loc="config.welcome_directory"
-                >
+            >
             </component>
         </ConfigProvider>
     </div>
-
-
 </template>
 <script>
 import { BCard, BCardGroup, BTabs, BTab, BCarousel, BCarouselSlide, BButton, BRow, BCol } from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
-import Topics from "components/NewUserWelcome/components/Topics"
-import Subtopics from "components/NewUserWelcome/components/Subtopics"
-import Slides from "components/NewUserWelcome/components/Slides"
-import ConfigProvider from 'components/providers/ConfigProvider'
+import Topics from "components/NewUserWelcome/components/Topics";
+import Subtopics from "components/NewUserWelcome/components/Subtopics";
+import Slides from "components/NewUserWelcome/components/Slides";
+import ConfigProvider from "components/providers/ConfigProvider";
 
 export default {
-    components: { BCard, BCardGroup, BTabs, BTab, BCarousel, BCarouselSlide, BButton, BRow, BCol , Topics, Subtopics, Slides, ConfigProvider},
+    components: {
+        BCard,
+        BCardGroup,
+        BTabs,
+        BTab,
+        BCarousel,
+        BCarouselSlide,
+        BButton,
+        BRow,
+        BCol,
+        Topics,
+        Subtopics,
+        Slides,
+        ConfigProvider,
+    },
     data() {
         return {
             position: [],
-        }
+        };
     },
     props: {
-        newUserDict: {type: Object, required: true},
+        newUserDict: { type: Object, required: true },
     },
     computed: {
-        depth(){
+        depth() {
             return this.position.length;
         },
         currentNode() {
@@ -41,9 +53,9 @@ export default {
                 return node.topics[i];
             }, this.newUserDict);
         },
-        viewElement(){
+        viewElement() {
             let element;
-            switch(this.depth) {
+            switch (this.depth) {
                 case 0:
                     element = Topics;
                     break;
@@ -55,7 +67,7 @@ export default {
                     break;
             }
             return element;
-        }
+        },
     },
     methods: {
         imgUrl(src) {
@@ -63,104 +75,103 @@ export default {
             const url = `${root}static/${this.imageLoc}${src}`.replace("//", "/");
             return url;
         },
-        up(){
+        up() {
             this.position.pop();
         },
-        down(index){
+        down(index) {
             this.position.push(index);
-        }
-    }
+        },
+    },
 };
-
 </script>
 
 <style type="text/css">
-    .card {
-        border: 0px;
-    }
-    .card-img {
-        height: 12rem;
-    }
-    .card-header,
-    .card-footer {
-        border-bottom: 0px;
-        border-top: 0px;
-        background-color: #ffffff;
-    }
-    .carousel-fig {
-        padding-bottom: 10;
-    }
-    .carousel-caption {
-        position: relative;
-        left: 0;
-        top: 0;
-        color: black;
-        padding-bottom: 10;
-        padding-left: 1vw;
-        padding-right: 1vw
-    }
-    .carousel-item {
-        float: none;
-        margin-right: auto;
-        margin-left: auto;
-    }
-    .carousel-indicators {
-        position: sticky;
-        bottom: 30px;
-    }
-    .button-housing {
-        position: sticky;
-        z-index: 21;
-        padding-right: 67.88px;
-    }
-    .carousel-button {
-        position: fixed;
-        z-index: 20;
-        bottom: 10px;
-    }
-    .carousel-control-next,
-    .carousel-control-prev,
-    .carousel-indicators {
-        filter: invert(100%);
-    }
-    .carousel-control-next,
-    .carousel-control-prev {
-        border-left: 1px;
-        border-right: 1px;
-        z-index: 11;
-        align-items: center;
-        justify-content: center;
-        height: fit-content;
-        height: 85vh;
-        width: 2vw;
-    }
-    .carousel-control-next:hover,
-    .carousel-control-prev:hover {
-        background-color: grey;
-    }
-    #logos img {
-        max-width: 100%;
-    }
-    .carousel-inner {
-        position: absolute;
-    }
-    .mini-img {
-        max-width: 100px;
-    }
-    .small-img {
-        max-width: 300px;
-    }
-    .med-img {
-        max-width: 500px;
-    }
-    .large-img {
-        max-width: 700px;
-    }
-    .slide-header {
-        text-align: center;
-        padding-bottom: 3;
-    }
-    .section-header {
-        filter: invert(16%) sepia(14%) saturate(1113%) hue-rotate(189deg) brightness(99%) contrast(91%);
-    }
+.card {
+    border: 0px;
+}
+.card-img {
+    height: 12rem;
+}
+.card-header,
+.card-footer {
+    border-bottom: 0px;
+    border-top: 0px;
+    background-color: #ffffff;
+}
+.carousel-fig {
+    padding-bottom: 10;
+}
+.carousel-caption {
+    position: relative;
+    left: 0;
+    top: 0;
+    color: black;
+    padding-bottom: 10;
+    padding-left: 1vw;
+    padding-right: 1vw;
+}
+.carousel-item {
+    float: none;
+    margin-right: auto;
+    margin-left: auto;
+}
+.carousel-indicators {
+    position: sticky;
+    bottom: 30px;
+}
+.button-housing {
+    position: sticky;
+    z-index: 21;
+    padding-right: 67.88px;
+}
+.carousel-button {
+    position: fixed;
+    z-index: 20;
+    bottom: 10px;
+}
+.carousel-control-next,
+.carousel-control-prev,
+.carousel-indicators {
+    filter: invert(100%);
+}
+.carousel-control-next,
+.carousel-control-prev {
+    border-left: 1px;
+    border-right: 1px;
+    z-index: 11;
+    align-items: center;
+    justify-content: center;
+    height: fit-content;
+    height: 85vh;
+    width: 2vw;
+}
+.carousel-control-next:hover,
+.carousel-control-prev:hover {
+    background-color: grey;
+}
+#logos img {
+    max-width: 100%;
+}
+.carousel-inner {
+    position: absolute;
+}
+.mini-img {
+    max-width: 100px;
+}
+.small-img {
+    max-width: 300px;
+}
+.med-img {
+    max-width: 500px;
+}
+.large-img {
+    max-width: 700px;
+}
+.slide-header {
+    text-align: center;
+    padding-bottom: 3;
+}
+.section-header {
+    filter: invert(16%) sepia(14%) saturate(1113%) hue-rotate(189deg) brightness(99%) contrast(91%);
+}
 </style>

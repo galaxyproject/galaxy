@@ -7,5 +7,5 @@ export default {
         adapter: "memory",
         revs_limit: 1,
         pageSize: 60,
-    }
+    },
 };
