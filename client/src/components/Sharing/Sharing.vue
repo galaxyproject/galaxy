@@ -68,7 +68,7 @@
                 <b-collapse id="accordion-1" accordion="my-accordion" role="tabpanel">
                     <ConfigProvider v-slot="{ config }">
                         <CurrentUser v-slot="{ user }">
-                            <div v-if="user && config">
+                            <div v-if="user && config && !permissionsChangeRequired">
                                 <p class="share_with_title" v-if="item.users_shared_with.length === 0">
                                     You have not shared this {{ modelClass }} with any users.
                                 </p>
@@ -77,86 +77,89 @@
                                     and will be able to view, import and run it.
                                 </p>
 
-                                <div>
-                                    <div>
-                                        <b-row align-v="center" class="share_with_view">
-                                            <b-col cols="10">
-                                                <multiselect
-                                                    v-if="item && !permissionsChangeRequired"
-                                                    class="multiselect-users"
-                                                    v-model="item.users_shared_with"
-                                                    :options="usersList"
-                                                    :clear-on-select="true"
-                                                    :preserve-search="true"
-                                                    :multiple="true"
-                                                    label="email"
-                                                    :max-height="config.expose_user_email || user.is_admin ? 300 : 0"
-                                                    track-by="id"
-                                                    @search-change="
-                                                        searchChanged($event, config.expose_user_email || user.is_admin)
-                                                    "
-                                                    :internal-search="false"
-                                                    placeholder="Please enter user email"
-                                                >
-                                                    <template
-                                                        slot="caret"
-                                                        v-if="!(config.expose_user_email || user.is_admin)"
-                                                    >
-                                                        <div></div>
-                                                    </template>
-                                                    <template
-                                                        slot="noResult"
-                                                        v-if="config.expose_user_email || user.is_admin"
-                                                    >
-                                                        <div v-if="threeCharactersEntered">
-                                                            {{ elementsNotFoundWarning }}
-                                                        </div>
-                                                        <div v-else>{{ charactersThresholdWarning }}</div>
-                                                    </template>
-                                                    <template slot="tag" slot-scope="{ option, remove }">
-                                                        <span class="multiselect__tag">
-                                                            <span>{{ option.email }}</span>
-                                                            <i
-                                                                aria-hidden="true"
-                                                                @click="remove(option)"
-                                                                tabindex="1"
-                                                                class="multiselect__tag-icon"
-                                                            ></i>
-                                                        </span>
-                                                    </template>
-                                                    <template slot="noOptions">
-                                                        <div v-if="threeCharactersEntered">
-                                                            {{ charactersThresholdWarning }}
-                                                        </div>
-                                                        <div v-else>
-                                                            {{ elementsNotFoundWarning }}
-                                                        </div>
-                                                    </template>
-                                                </multiselect>
-                                            </b-col>
-                                            <b-col>
-                                                <b-button
-                                                    variant="primary"
-                                                    @click.stop="
-                                                        setSharing(
-                                                            actions.share_with,
-                                                            item.users_shared_with.map(({ email }) => email)
-                                                        )
-                                                    "
-                                                    v-b-tooltip.hover.bottom
-                                                    :title="
-                                                        item.users_shared_with
-                                                            ? `Share with ${item.users_shared_with.map(
-                                                                  ({ email }) => email
-                                                              )}`
-                                                            : 'Please enter user email'
-                                                    "
-                                                    class="sharing_icon submit-sharing-with"
-                                                >
-                                                    Submit
-                                                </b-button>
-                                            </b-col>
-                                        </b-row>
+                                <b-alert
+                                    :show="dismissCountDown"
+                                    dismissible
+                                    class="success-alert"
+                                    variant="success"
+                                    @dismissed="dismissCountDown = 0"
+                                    @dismiss-count-down="dismissCountDown = $event"
+                                >
+                                    Sharing preferences are saved!
+                                </b-alert>
+
+                                <div class="share_with_view">
+                                    <multiselect
+                                        class="multiselect-users"
+                                        v-model="sharingCandidates"
+                                        :options="userOptions"
+                                        :clear-on-select="true"
+                                        :preserve-search="true"
+                                        :multiple="true"
+                                        label="email"
+                                        :max-height="config.expose_user_email || user.is_admin ? 300 : 0"
+                                        track-by="id"
+                                        @search-change="
+                                            searchChanged($event, config.expose_user_email || user.is_admin)
+                                        "
+                                        :internal-search="false"
+                                        placeholder="Please enter user email"
+                                    >
+                                        <template slot="caret" v-if="!(config.expose_user_email || user.is_admin)">
+                                            <div></div>
+                                        </template>
+                                        <template slot="noResult" v-if="config.expose_user_email || user.is_admin">
+                                            <div v-if="threeCharactersEntered">
+                                                {{ elementsNotFoundWarning }}
+                                            </div>
+                                            <div v-else>{{ charactersThresholdWarning }}</div>
+                                        </template>
+                                        <template slot="tag" slot-scope="{ option, remove }">
+                                            <span class="multiselect__tag">
+                                                <span>{{ option.email }}</span>
+                                                <i
+                                                    aria-hidden="true"
+                                                    @click="remove(option)"
+                                                    tabindex="1"
+                                                    class="multiselect__tag-icon"
+                                                ></i>
+                                            </span>
+                                        </template>
+                                        <template slot="noOptions">
+                                            <div v-if="threeCharactersEntered">
+                                                {{ charactersThresholdWarning }}
+                                            </div>
+                                            <div v-else>
+                                                {{ elementsNotFoundWarning }}
+                                            </div>
+                                        </template>
+                                    </multiselect>
+                                    <div class="share-with-card-buttons">
+                                        <!--submit/cancel buttons-->
+                                        <b-button
+                                            @click="getModel()"
+                                            variant="danger"
+                                            class="sharing_icon submit-sharing-with"
+                                        >
+                                            Cancel
+                                        </b-button>
+                                        <b-button
+                                            @click.stop="
+                                                setSharing(
+                                                    actions.share_with,
+                                                    sharingCandidates.map(({ email }) => email)
+                                                )
+                                            "
+                                            v-b-tooltip.hover.bottom
+                                            :title="
+                                                item.users_shared_with
+                                                    ? `Share with ${sharingCandidates.map(({ email }) => email)}`
+                                                    : 'Please enter user email'
+                                            "
+                                            class="sharing_icon submit-sharing-with"
+                                        >
+                                            Submit
+                                        </b-button>
                                     </div>
                                 </div>
                             </div>
@@ -175,9 +178,9 @@
                         <b-col v-if="item.extra.can_change.length > 0">
                             <b-card>
                                 <b-card-header header-tag="header" class="p-1" role="tab">
-                                    <b-button block v-b-toggle.can-share variant="warning"
-                                        >Datasets can be shared by updating their permissions</b-button
-                                    >
+                                    <b-button block v-b-toggle.can-share variant="warning">
+                                        Datasets can be shared by updating their permissions
+                                    </b-button>
                                 </b-card-header>
                                 <b-collapse id="can-share" visible accordion="my-accordion" role="tabpanel">
                                     <b-list-group>
@@ -228,7 +231,7 @@
                                     @click="
                                         setSharing(
                                             actions.share_with,
-                                            shareWithEmail,
+                                            sharingCandidates.map(({ email }) => email),
                                             share_option.make_accessible_to_shared
                                         )
                                     "
@@ -241,13 +244,14 @@
                                     @click="
                                         setSharing(
                                             actions.share_with,
-                                            item.users_shared_with.map(({ email }) => email),
+                                            sharingCandidates.map(({ email }) => email),
                                             share_option.no_changes
                                         )
                                     "
                                     block
                                     variant="outline-primary"
-                                    >Share Anyway
+                                >
+                                    Share Anyway
                                 </b-button>
                                 <b-button @click="getModel()" block variant="outline-danger">Cancel </b-button>
                             </b-card>
@@ -273,7 +277,6 @@ import Multiselect from "vue-multiselect";
 import { copy } from "utils/clipboard";
 import ConfigProvider from "components/providers/ConfigProvider";
 import CurrentUser from "components/providers/CurrentUser";
-import { Toast } from "ui/toast";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
@@ -310,7 +313,8 @@ export default {
         const Galaxy = getGalaxyInstance();
         return {
             isCollapseVisible: false,
-            usersList: [],
+            dismissCountDown: 0,
+            userOptions: [],
             charactersThresholdWarning: "Enter at least 3 characters to see suggestions",
             elementsNotFoundWarning: "No elements found. Consider changing the search query.",
             ready: false,
@@ -318,6 +322,7 @@ export default {
             hasUsername: Galaxy.user.get("username"),
             newUsername: "",
             errors: [],
+            sharingCandidates: [],
             item: {
                 title: "title",
                 username_and_slug: "username/slug",
@@ -401,11 +406,14 @@ export default {
         onEdit() {
             this.showUrl = false;
         },
-        assignItem(newItem) {
+        assignItem(newItem, overwriteCandidates) {
             if (newItem.errors) {
                 this.errors = newItem.errors;
             }
             this.item = newItem;
+            if (overwriteCandidates) {
+                this.sharingCandidates = newItem.users_shared_with;
+            }
             if (!this.item.extra || newItem.errors.length > 0) {
                 this.item.extra = defaultExtra();
             }
@@ -442,7 +450,7 @@ export default {
             this.ready = false;
             axios
                 .get(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`)
-                .then((response) => this.assignItem(response.data))
+                .then((response) => this.assignItem(response.data, true))
                 .catch((error) => this.addError(error.response.data.err_msg));
         },
         setUsername() {
@@ -474,30 +482,30 @@ export default {
                 .then(({ data }) => {
                     this.errors = [];
                     this.assignItem(data);
-                    if (user_id && !data.extra && data.errors.length === 0) {
-                        Toast.success(`Your ${this.modelClass} is shared`);
+
+                    if (user_id && data.errors.length === 0) {
+                        this.dismissCountDown = 3;
                     }
                 })
                 .catch((error) => this.addError(error.response.data.err_msg));
         },
         searchChanged(searchValue, exposedUsers) {
             if (!exposedUsers) {
-                this.usersList = [{ email: searchValue, id: searchValue }];
+                this.userOptions = [{ email: searchValue, id: searchValue }];
             } else if (searchValue.length < 3) {
                 this.threeCharactersEntered = false;
-                this.usersList = [];
+                this.userOptions = [];
             } else {
                 this.threeCharactersEntered = true;
                 axios
                     .get(`${getAppRoot()}api/users?f_email=${searchValue}`)
                     .then((response) => {
-                        this.usersList = response.data.filter(
-                            ({ email }) => !this.item.users_shared_with.map(({ email }) => email).includes(email)
+                        this.userOptions = response.data.filter(
+                            ({ email }) => !this.sharingCandidates.map(({ email }) => email).includes(email)
                         );
                     })
                     .catch((error) => this.addError(error.response.data.err_msg));
             }
-            console.log(this.threeCharactersEntered);
         },
     },
 };
@@ -508,8 +516,7 @@ export default {
     margin-top: 0.15rem;
 }
 .share_with_view {
-    margin-left: 0.3rem;
-    margin-bottom: 2em;
+    margin: 1rem 1rem;
 }
 .share_with_title {
     text-align: center;
@@ -520,10 +527,12 @@ export default {
     font-weight: normal;
 }
 .multiselect-users::v-deep .multiselect__option--highlight {
-    background: #25537b;
+    background: #dee2e6;
+    color: #2c3143;
 }
 .multiselect__tag {
-    background: #25537b;
+    background: #dee2e6;
+    color: #2c3143;
 }
 .multiselect__tag-icon:after {
     color: white;
@@ -531,5 +540,12 @@ export default {
 .multiselect__tag-icon:focus,
 .multiselect__tag-icon:hover {
     background: #132c40;
+}
+.success-alert {
+    margin: 0.3rem 2rem 0.9rem;
+}
+.share-with-card-buttons {
+    margin: 0.5rem 0;
+    float: right;
 }
 </style>
