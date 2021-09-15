@@ -65,7 +65,7 @@
                     Share {{ modelClass }} with Individual Users
                     <font-awesome-icon :icon="isCollapseVisible ? `caret-up` : `caret-down`" />
                 </b-button>
-                <b-collapse id="accordion-1" accordion="my-accordion" role="tabpanel">
+                <b-collapse id="accordion-1" accordion="main-accordion" role="tabpanel">
                     <ConfigProvider v-slot="{ config }">
                         <CurrentUser v-slot="{ user }">
                             <div v-if="user && config && !permissionsChangeRequired">
@@ -138,12 +138,13 @@
                                         <!--submit/cancel buttons-->
                                         <b-button
                                             @click="getModel()"
-                                            variant="danger"
+                                            variant="outline-danger"
                                             class="sharing_icon submit-sharing-with"
                                         >
                                             Cancel
                                         </b-button>
                                         <b-button
+                                            variant="outline-primary"
                                             @click.stop="
                                                 setSharing(
                                                     actions.share_with,
@@ -182,7 +183,7 @@
                                         Datasets can be shared by updating their permissions
                                     </b-button>
                                 </b-card-header>
-                                <b-collapse id="can-share" visible accordion="my-accordion" role="tabpanel">
+                                <b-collapse id="can-share" visible accordion="can-share-accordion" role="tabpanel">
                                     <b-list-group>
                                         <b-list-group-item :key="dataset.id" v-for="dataset in item.extra.can_change">{{
                                             dataset.name
@@ -199,7 +200,7 @@
                                         permissions</b-button
                                     >
                                 </b-card-header>
-                                <b-collapse id="cannot-share" visible accordion="my-accordion2" role="tabpanel">
+                                <b-collapse id="cannot-share" visible accordion="cannot-accordion2" role="tabpanel">
                                     <b-list-group>
                                         <b-list-group-item
                                             :key="dataset.id"
@@ -220,7 +221,7 @@
                             >
                                 <b-button
                                     @click="
-                                        setSharing(actions.share_with, item.users_shared_with, share_option.make_public)
+                                        setSharing(actions.share_with, sharingCandidates.map(({ email }) => email), share_option.make_public)
                                     "
                                     v-if="item.extra.can_change.length > 0"
                                     block
@@ -238,7 +239,7 @@
                                     v-if="item.extra.can_change.length > 0"
                                     block
                                     variant="outline-primary"
-                                    >Share only with {{ item.users_shared_with }}</b-button
+                                    >Make datasets private to me and {{ sharingCandidates.map(({ email }) => email).join() }}</b-button
                                 >
                                 <b-button
                                     @click="
