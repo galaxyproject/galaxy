@@ -6,27 +6,27 @@
             </b-button>
             <b-button id="create-new-lib" v-b-toggle.collapse-2 v-if="isAdmin" title="Create new folder" class="mr-1">
                 <font-awesome-icon icon="plus" />
-                Library
+                {{ titleLibrary }}
             </b-button>
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
-            <b-form-checkbox v-if="isAdmin" class="mr-1" @input="toggle_include_deleted($event)">
-                include deleted
-            </b-form-checkbox>
-            <b-form-checkbox class="mr-1" @input="toggle_exclude_restricted($event)">
-                exclude restricted
-            </b-form-checkbox>
+            <b-form-checkbox v-if="isAdmin" class="mr-1" @input="toggle_include_deleted($event)" v-localize
+                >include deleted</b-form-checkbox
+            >
+            <b-form-checkbox class="mr-1" @input="toggle_exclude_restricted($event)" v-localize
+                >exclude restricted</b-form-checkbox
+            >
         </div>
         <b-collapse v-model="isNewLibFormVisible" id="collapse-2">
             <b-card>
                 <b-form @submit.prevent="newLibrary">
                     <b-input-group class="mb-2 new-row">
-                        <b-form-input v-model="newLibraryForm.name" required placeholder="Name" />
-                        <b-form-input v-model="newLibraryForm.description" required placeholder="Description" />
-                        <b-form-input v-model="newLibraryForm.synopsis" placeholder="Synopsis" />
+                        <b-form-input v-model="newLibraryForm.name" required :placeholder="titleName" />
+                        <b-form-input v-model="newLibraryForm.description" required :placeholder="titleDescription" />
+                        <b-form-input v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
                         <template v-slot:append>
-                            <b-button id="save_new_library" type="submit" title="save">
+                            <b-button id="save_new_library" type="submit" :title="titleSave">
                                 <font-awesome-icon :icon="['far', 'save']" />
-                                Save
+                                {{ titleSave }}
                             </b-button>
                         </template>
                     </b-input-group>
@@ -88,7 +88,7 @@
             <template v-slot:cell(buttons)="row">
                 <b-button @click="undelete(row.item)" v-if="row.item.deleted" :title="'Undelete ' + row.item.name">
                     <font-awesome-icon icon="unlock" />
-                    Undelete
+                    {{ titleUndelete }}
                 </b-button>
                 <div v-else-if="isAdmin">
                     <b-button
@@ -99,7 +99,7 @@
                         @click="saveChanges(row.item)"
                     >
                         <font-awesome-icon :icon="['far', 'save']" />
-                        Save
+                        {{ titleSave }}
                     </b-button>
                     <b-button
                         v-if="row.item.can_user_modify"
@@ -110,11 +110,11 @@
                     >
                         <div v-if="!row.item.editMode">
                             <font-awesome-icon icon="pencil-alt" />
-                            Edit
+                            {{ titleEdit }}
                         </div>
                         <div v-else>
                             <font-awesome-icon :icon="['fas', 'times']" />
-                            Cancel
+                            {{ titleCancel }}
                         </div>
                     </b-button>
                     <b-button
@@ -135,7 +135,7 @@
                         @click="deleteLibrary(row.item)"
                     >
                         <font-awesome-icon icon="trash" />
-                        Delete
+                        {{ titleDelete }}
                     </b-button>
                 </div>
             </template>
@@ -166,7 +166,9 @@
                                 />
                             </td>
                             <td class="text-muted ml-1 paginator-text">
-                                <span class="pagination-total-pages-text">per page, {{ rows }} total</span>
+                                <span class="pagination-total-pages-text"
+                                    >{{ titlePerPage }}, {{ rows }} {{ titleTotal }}</span
+                                >
                             </td>
                         </tr>
                     </table>
@@ -177,6 +179,7 @@
 </template>
 
 <script>
+import _l from "utils/localization";
 import Vue from "vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
@@ -228,6 +231,17 @@ export default {
                 description: "",
                 synopsis: "",
             },
+            titleLibrary: _l("Library"),
+            titleName: _l("Name"),
+            titleDescription: _l("Description"),
+            titleSynopsis: _l("Synopsis"),
+            titleSave: _l("Save"),
+            titleUndelete: _l("Undelete"),
+            titleEdit: _l("Edit"),
+            titleCancel: _l("Cancel"),
+            titleDelete: _l("Delete"),
+            titlePerPage: _l("per page"),
+            titleTotal: _l("total"),
         };
     },
     created() {
