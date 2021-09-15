@@ -429,13 +429,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert not datasets[1]["visible"]
 
     def test_update_dataset_collection(self):
-        payload = self.dataset_collection_populator.create_pair_payload(
-            self.history_id,
-            type="dataset_collection"
-        )
-        dataset_collection_response = self._post(f"histories/{self.history_id}/contents", payload)
-        self._assert_status_code_is(dataset_collection_response, 200)
-        hdca = dataset_collection_response.json()
+        hdca = self._create_pair_collection()
         update_url = self._api_url(f"histories/{self.history_id}/contents/dataset_collections/{hdca['id']}", use_key=True)
         # Awkward json.dumps required here because of https://trello.com/c/CQwmCeG6
         body = json.dumps(dict(name="newnameforpair"))
@@ -443,6 +437,30 @@ class HistoryContentsApiTestCase(ApiTestCase):
         self._assert_status_code_is(update_response, 200)
         show_response = self.__show(hdca)
         assert str(show_response.json()["name"]) == "newnameforpair"
+
+    def test_update_batch_dataset_collection(self):
+        hdca = self._create_pair_collection()
+        body = {
+            "items": [{
+                "history_content_type": "dataset_collection",
+                "id": hdca["id"]
+            }],
+            "name": "newnameforpair"
+        }
+        update_response = self._put(f"histories/{self.history_id}/contents", data=body, json=True)
+        self._assert_status_code_is(update_response, 200)
+        show_response = self.__show(hdca)
+        assert str(show_response.json()["name"]) == "newnameforpair"
+
+    def _create_pair_collection(self):
+        payload = self.dataset_collection_populator.create_pair_payload(
+            self.history_id,
+            type="dataset_collection"
+        )
+        dataset_collection_response = self._post(f"histories/{self.history_id}/contents", payload)
+        self._assert_status_code_is(dataset_collection_response, 200)
+        hdca = dataset_collection_response.json()
+        return hdca
 
     def test_hdca_copy(self):
         hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()

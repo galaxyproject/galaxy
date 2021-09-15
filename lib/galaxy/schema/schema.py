@@ -634,7 +634,12 @@ class UpdateHDCAPayload(HDCADetailed):
     pass
 
 
-class UpdateHistoryContentsBatchPayload(Model):
+class UpdateHistoryContentsBatchPayload(BaseModel):
+    class Config:
+        use_enum_values = True  # when using .dict()
+        allow_population_by_field_name = True
+        extra = Extra.allow  # Allow any additional field
+
     items: List[Union[UpdateHDAPayload, UpdateHDCAPayload]] = Field(
         ...,
         title="Items",
