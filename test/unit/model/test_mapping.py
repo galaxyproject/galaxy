@@ -4647,7 +4647,6 @@ class TestTag(BaseTest):
         self,
         session,
         cls_,
-        tool_tag_association,
     ):
         obj = cls_()
         parent_tag = cls_()
@@ -4659,13 +4658,10 @@ class TestTag(BaseTest):
             assoc_object.tag = obj
             getattr(obj, assoc_attribute).append(assoc_object)
 
-        add_association(tool_tag_association, 'tagged_tools')
-
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.parent.id == parent_tag.id
             assert stored_obj.children == [child_tag]
-            assert stored_obj.tagged_tools == [tool_tag_association]
 
 
 class TestTask(BaseTest):

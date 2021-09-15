@@ -8103,7 +8103,6 @@ class Tag(Base, RepresentById):
     name = Column(TrimmedString(255))
     children = relationship('Tag', back_populates='parent')
     parent = relationship('Tag', back_populates='children', remote_side=[id])
-    tagged_tools = relationship('ToolTagAssociation', back_populates='tag')
 
     def __str__(self):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type or -1, self.parent_id, self.name)
@@ -8280,7 +8279,7 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
-    tag = relationship('Tag', back_populates='tagged_tools')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
