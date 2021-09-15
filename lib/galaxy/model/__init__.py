@@ -8103,8 +8103,6 @@ class Tag(Base, RepresentById):
     name = Column(TrimmedString(255))
     children = relationship('Tag', back_populates='parent')
     parent = relationship('Tag', back_populates='children', remote_side=[id])
-    tagged_library_dataset_dataset_associations = relationship(
-        'LibraryDatasetDatasetAssociationTagAssociation', back_populates='tag')
     tagged_pages = relationship('PageTagAssociation', back_populates='tag')
     tagged_workflow_steps = relationship('WorkflowStepTagAssociation', back_populates='tag')
     tagged_stored_workflows = relationship('StoredWorkflowTagAssociation', back_populates='tag')
@@ -8184,7 +8182,7 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
     user_value = Column(TrimmedString(255), index=True)
     library_dataset_dataset_association = relationship(
         'LibraryDatasetDatasetAssociation', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_library_dataset_dataset_associations')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
