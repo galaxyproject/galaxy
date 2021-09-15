@@ -78,7 +78,6 @@
                                 </p>
 
                                 <b-alert
-                                    v-if="!permissionsChangeRequired"
                                     :show="dismissCountDown"
                                     dismissible
                                     class="success-alert"
@@ -471,6 +470,7 @@ export default {
         },
         getModel() {
             this.ready = false;
+            this.dismissCountDown = 0;
             axios
                 .get(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`)
                 .then((response) => this.assignItem(response.data, true))
