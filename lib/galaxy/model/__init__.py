@@ -8103,8 +8103,6 @@ class Tag(Base, RepresentById):
     name = Column(TrimmedString(255))
     children = relationship('Tag', back_populates='parent')
     parent = relationship('Tag', back_populates='children', remote_side=[id])
-    tagged_history_dataset_associations = relationship(
-        'HistoryDatasetAssociationTagAssociation', back_populates='tag')
     tagged_library_dataset_dataset_associations = relationship(
         'LibraryDatasetDatasetAssociationTagAssociation', back_populates='tag')
     tagged_pages = relationship('PageTagAssociation', back_populates='tag')
@@ -8169,7 +8167,7 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
     history_dataset_association = relationship('HistoryDatasetAssociation', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_history_dataset_associations')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
