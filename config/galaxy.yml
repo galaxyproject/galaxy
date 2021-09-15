@@ -24,6 +24,7 @@ uwsgi:
   # The address and port on which to listen.  By default, only listen to
   # localhost (galaxy will not be accessible over the network).  Use
   # ':8080' to listen on all available network interfaces.
+  # AMP configuration 
   http: :8300
 
   # By default uWSGI allocates a very small buffer (4096 bytes) for the
@@ -109,6 +110,7 @@ uwsgi:
   # submits jobs as real user then all users needs to be able to read
   # the files, i.e. the umask needs to be '022' or the Galaxy users need
   # to be in the same group as the Galaxy system user
+  # AMP configuration 
   umask: 002
 
   # AMP Galaxy metrics settings
@@ -156,10 +158,12 @@ galaxy:
   allow_path_paste: true
   
   # Force everyone to log in (disable anonymous access).
+  # AMP configuration 
   require_login: true
   
   # Allow unregistered users to create new accounts (otherwise, they
   # will have to be created by an admin).
+  # AMP configuration 
   allow_user_creation: false  
         
   # Administrative users - set this to a comma-separated list of valid
@@ -167,7 +171,7 @@ galaxy:
   # Admin section of the server, and will have access to create users,
   # groups, roles, libraries, and more.  For more information, see:
   # https://galaxyproject.org/admin/
-  # placeholder to be overwritten during deployment
+  # AMP placeholder to be overwritten during deployment
   admin_users:
       
   # Galaxy encodes various internal values when these values will be
@@ -177,7 +181,7 @@ galaxy:
   # One simple way to generate a value for this is with the shell
   # command:   python -c 'from __future__ import print_function; import
   # time; print(time.time())' | md5sum | cut -f 1 -d ' '
-  # placeholder to be overwritten during deployment
+  # AMP placeholder to be overwritten during deployment
   id_secret:
           
   # AMP Galaxy logging configuration (with performance log added)
