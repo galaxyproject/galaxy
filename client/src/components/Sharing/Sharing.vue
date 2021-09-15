@@ -78,6 +78,7 @@
                                 </p>
 
                                 <b-alert
+                                    v-if="!permissionsChangeRequired"
                                     :show="dismissCountDown"
                                     dismissible
                                     class="success-alert"
