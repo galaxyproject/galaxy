@@ -91,19 +91,19 @@
                                 <div class="share_with_view">
                                     <multiselect
                                         class="multiselect-users"
-                                        v-model="sharingCandidates"
-                                        :options="userOptions"
+                                        v-model="multiselectValues.sharingCandidates"
+                                        :options="multiselectValues.userOptions"
                                         :clear-on-select="true"
-                                        :preserve-search="true"
                                         :multiple="true"
-                                        label="email"
+                                        :internal-search="false"
                                         :max-height="config.expose_user_email || user.is_admin ? 300 : 0"
-                                        track-by="id"
+                                        label="email"
+                                        @close="onMultiselectBlur(config.expose_user_email || user.is_admin)"
+                                        track-by="email"
                                         @search-change="
                                             searchChanged($event, config.expose_user_email || user.is_admin)
                                         "
-                                        :internal-search="false"
-                                        placeholder="Please enter user email"
+                                        placeholder="Please specify user email"
                                     >
                                         <template slot="caret" v-if="!(config.expose_user_email || user.is_admin)">
                                             <div></div>
@@ -148,18 +148,14 @@
                                             @click.stop="
                                                 setSharing(
                                                     actions.share_with,
-                                                    sharingCandidates.map(({ email }) => email)
+                                                    multiselectValues.sharingCandidates.map(({ email }) => email)
                                                 )
                                             "
                                             v-b-tooltip.hover.bottom
-                                            :title="
-                                                item.users_shared_with
-                                                    ? `Share with ${sharingCandidates.map(({ email }) => email)}`
-                                                    : 'Please enter user email'
-                                            "
+                                            :title="submitBtnTitle"
                                             class="sharing_icon submit-sharing-with"
                                         >
-                                            Submit
+                                            {{ multiselectValues.currentUserSearch ? `Add` : `Save` }}
                                         </b-button>
                                     </div>
                                 </div>
@@ -221,7 +217,11 @@
                             >
                                 <b-button
                                     @click="
-                                        setSharing(actions.share_with, sharingCandidates.map(({ email }) => email), share_option.make_public)
+                                        setSharing(
+                                            actions.share_with,
+                                            multiselectValues.sharingCandidates.map(({ email }) => email),
+                                            share_option.make_public
+                                        )
                                     "
                                     v-if="item.extra.can_change.length > 0"
                                     block
@@ -232,20 +232,21 @@
                                     @click="
                                         setSharing(
                                             actions.share_with,
-                                            sharingCandidates.map(({ email }) => email),
+                                            multiselectValues.sharingCandidates.map(({ email }) => email),
                                             share_option.make_accessible_to_shared
                                         )
                                     "
                                     v-if="item.extra.can_change.length > 0"
                                     block
                                     variant="outline-primary"
-                                    >Make datasets private to me and {{ sharingCandidates.map(({ email }) => email).join() }}</b-button
+                                    >Make datasets private to me and
+                                    {{ multiselectValues.sharingCandidates.map(({ email }) => email).join() }}</b-button
                                 >
                                 <b-button
                                     @click="
                                         setSharing(
                                             actions.share_with,
-                                            sharingCandidates.map(({ email }) => email),
+                                            multiselectValues.sharingCandidates.map(({ email }) => email),
                                             share_option.no_changes
                                         )
                                     "
@@ -315,7 +316,6 @@ export default {
         return {
             isCollapseVisible: false,
             dismissCountDown: 0,
-            userOptions: [],
             charactersThresholdWarning: "Enter at least 3 characters to see suggestions",
             elementsNotFoundWarning: "No elements found. Consider changing the search query.",
             ready: false,
@@ -323,7 +323,11 @@ export default {
             hasUsername: Galaxy.user.get("username"),
             newUsername: "",
             errors: [],
-            sharingCandidates: [],
+            multiselectValues: {
+                sharingCandidates: [],
+                userOptions: [],
+                currentUserSearch: "",
+            },
             item: {
                 title: "title",
                 username_and_slug: "username/slug",
@@ -351,6 +355,15 @@ export default {
         };
     },
     computed: {
+        submitBtnTitle() {
+            if (this.multiselectValues.currentUserSearch) {
+                return "";
+            } else {
+                return this.multiselectValues.sharingCandidates
+                    ? `Share with ${this.multiselectValues.sharingCandidates.map(({ email }) => email)}`
+                    : "Please enter user email";
+            }
+        },
         permissionsChangeRequired() {
             if (!this.item.extra) {
                 return false;
@@ -393,6 +406,14 @@ export default {
         this.getModel();
     },
     methods: {
+        onMultiselectBlur(isAdmin) {
+            const isValueChosen = this.multiselectValues.sharingCandidates.some(
+                (item) => item.email === this.multiselectValues.currentUserSearch
+            );
+            if (this.multiselectValues.currentUserSearch && !isValueChosen && !isAdmin) {
+                this.multiselectValues.sharingCandidates.push({ email: this.multiselectValues.currentUserSearch });
+            }
+        },
         addError(newError) {
             // temporary turning Set into Array, until we update till Vue 3.0, that supports Set reactivity
             this.errors = Array.from(new Set(this.errors).add(newError));
@@ -413,7 +434,7 @@ export default {
             }
             this.item = newItem;
             if (overwriteCandidates) {
-                this.sharingCandidates = newItem.users_shared_with;
+                this.multiselectValues.sharingCandidates = newItem.users_shared_with;
             }
             if (!this.item.extra || newItem.errors.length > 0) {
                 this.item.extra = defaultExtra();
@@ -491,18 +512,20 @@ export default {
                 .catch((error) => this.addError(error.response.data.err_msg));
         },
         searchChanged(searchValue, exposedUsers) {
+            this.multiselectValues.currentUserSearch = searchValue;
             if (!exposedUsers) {
-                this.userOptions = [{ email: searchValue, id: searchValue }];
+                this.multiselectValues.userOptions = [{ email: searchValue }];
             } else if (searchValue.length < 3) {
                 this.threeCharactersEntered = false;
-                this.userOptions = [];
+                this.multiselectValues.userOptions = [];
             } else {
                 this.threeCharactersEntered = true;
                 axios
                     .get(`${getAppRoot()}api/users?f_email=${searchValue}`)
                     .then((response) => {
-                        this.userOptions = response.data.filter(
-                            ({ email }) => !this.sharingCandidates.map(({ email }) => email).includes(email)
+                        this.multiselectValues.userOptions = response.data.filter(
+                            ({ email }) =>
+                                !this.multiselectValues.sharingCandidates.map(({ email }) => email).includes(email)
                         );
                     })
                     .catch((error) => this.addError(error.response.data.err_msg));
