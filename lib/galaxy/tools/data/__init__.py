@@ -617,7 +617,10 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         # No toolshed data table entry was found, try the first file found on disk
         else:
             for filename in self.filenames.keys():
-                if source_repo_info is not None:
+                # If the path to the file exists, that's good enough. This function
+                # is only called from _add_entry below, which handles creating the
+                # file, but would return an error if the path doesn't exist.
+                if source_repo_info is not None and os.path.exists(os.path.split(filename)[0]):
                     source_repo_info['filename'] = filename
                     message = 'No exact match found in the data table registry for '
                     message += '{tool_shed}/repos/{owner}/{name}/{installed_changeset_revision}, '
