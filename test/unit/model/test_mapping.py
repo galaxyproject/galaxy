@@ -4647,7 +4647,6 @@ class TestTag(BaseTest):
         self,
         session,
         cls_,
-        visualization_tag_association,
         history_dataset_collection_tag_association,
         library_dataset_collection_tag_association,
         tool_tag_association,
@@ -4662,7 +4661,6 @@ class TestTag(BaseTest):
             assoc_object.tag = obj
             getattr(obj, assoc_attribute).append(assoc_object)
 
-        add_association(visualization_tag_association, 'tagged_visualizations')
         add_association(
             history_dataset_collection_tag_association, 'tagged_history_dataset_collections')
         add_association(
@@ -4673,7 +4671,6 @@ class TestTag(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.parent.id == parent_tag.id
             assert stored_obj.children == [child_tag]
-            assert stored_obj.tagged_visualizations == [visualization_tag_association]
             assert (stored_obj.tagged_history_dataset_collections
                 == [history_dataset_collection_tag_association])
             assert (stored_obj.tagged_library_dataset_collections
