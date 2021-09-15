@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Generic, List, Optional, TypeVar, Union
+from typing import Any, cast, List, Optional, Union
 
 from pydantic import BaseModel, Field
 from typing_extensions import Literal
@@ -77,11 +77,8 @@ SectionContent = Union[
 ]
 
 
-C = TypeVar('C', bound="RootContent")
-
-
-class HasItems(Generic[C]):
-    items: Optional[List[C]]
+class HasItems:
+    items: Optional[List[Any]]
 
     @property
     def items_expanded(self) -> Optional[List['ExpandedRootContent']]:
@@ -92,6 +89,7 @@ class HasItems(Generic[C]):
         # replace LabelShortcuts with Labels
         items: List[ExpandedRootContent] = []
         for item in self.items:
+            item = cast(RootContent, item)
             if isinstance(item, SectionAliases):
                 for section in item.sections:
                     section_alias = SectionAlias(
@@ -111,11 +109,11 @@ class HasItems(Generic[C]):
         return items
 
 
-class Section(BaseModel, HasItems[SectionContent]):
+class Section(BaseModel, HasItems):
     content_type: Literal['section'] = Field(alias="type")
     id: Optional[str]
     name: Optional[str]
-    items: Optional[List[SectionContent]]  # really is just SectionContent but would need to use type variables to represent that.
+    items: Optional[List[SectionContent]]
     excludes: OptionalExclusionList
 
     class Config:
@@ -155,7 +153,7 @@ ExpandedRootContent = Union[
 ]
 
 
-class StaticToolBoxView(BaseModel, HasItems[RootContent]):
+class StaticToolBoxView(BaseModel, HasItems):
     id: str
     name: str
     description: Optional[str]
