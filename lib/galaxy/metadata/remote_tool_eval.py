@@ -54,14 +54,14 @@ def main():
     datatypes_config = metadata_params["datatypes_config"]
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
     object_store = get_object_store()
-    import_store = store.imported_store_for_metadata(WORKING_DIRECTORY)
+    import_store = store.imported_store_for_metadata(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new'))
     job = next(iter(import_store.sa_session.objects_by_class_and_id[Job].values()))
     tool_app_config = ToolAppConfig('tool_app', '/tmp')
     with open(os.path.join(WORKING_DIRECTORY, 'tool_data_tables.json')) as data_tables_json:
         tdtm = ToolDataTableManager.from_dict(json.load(data_tables_json))
     app = ToolApp(sa_session=import_store.sa_session, tool_app_config=tool_app_config, datatypes_registry=datatypes_registry, object_store=object_store, tool_data_table_manager=tdtm)
     # TODO: could try to serialize just a minimal tool variant instead of the whole thing ?
-    tool_source = get_tool_source(os.path.join(WORKING_DIRECTORY, 'tool.xml'))
+    tool_source = get_tool_source(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'tool.xml'))
     tool = create_tool_from_source(app, tool_source=tool_source)
     job_io = JobIO.from_json(os.path.join(WORKING_DIRECTORY, 'job_io.json'), sa_session=import_store.sa_session, job=job)
 

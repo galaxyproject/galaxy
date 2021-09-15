@@ -1179,8 +1179,6 @@ class JobWrapper(HasResourceParameters):
         if job.tool_id == 'upload1':
             self.__prepare_upload_paramfile(tool_evaluator)
 
-        with store.DirectoryModelExportStore(export_directory=self.working_directory, app=self.app, for_edit=True, serialize_dataset_objects=True, serialize_jobs=False, encode_ids=False) as export_store:
-            export_store.export_job(job, tool=self.tool)
         self.job_io.to_json(path=os.path.join(self.working_directory, 'job_io.json'))
         self.app.tool_data_tables.to_json(path=os.path.join(self.working_directory, 'tool_data_tables.json'))
 
