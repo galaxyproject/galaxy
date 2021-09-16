@@ -570,18 +570,14 @@ class TestDatasetCollection(BaseTest):
         session,
         cls_,
         dataset_collection_element,
-        job_to_implicit_output_dataset_collection_association,
     ):
         obj = cls_()
         obj.collection_type, obj.populated_state = 'a', 'b'
         obj.elements.append(dataset_collection_element)
-        obj.output_dataset_collections.append(job_to_implicit_output_dataset_collection_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.elements == [dataset_collection_element]
-            assert (stored_obj.output_dataset_collections
-                == [job_to_implicit_output_dataset_collection_association])
 
 
 class TestDatasetCollectionElement(BaseTest):

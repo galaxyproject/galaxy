@@ -1827,8 +1827,7 @@ class JobToImplicitOutputDatasetCollectionAssociation(Base, RepresentById):
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
     dataset_collection_id = Column(Integer, ForeignKey('dataset_collection.id'), index=True)
     name = Column(Unicode(255))
-    dataset_collection = relationship(
-        'DatasetCollection', back_populates="output_dataset_collections")
+    dataset_collection = relationship('DatasetCollection')
     job = relationship('Job', back_populates='output_dataset_collections')
 
     def __init__(self, name, dataset_collection):
@@ -5072,8 +5071,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
         primaryjoin=(lambda: DatasetCollection.id == DatasetCollectionElement.dataset_collection_id),  # type: ignore
         back_populates='collection',
         order_by=lambda: DatasetCollectionElement.element_index)  # type: ignore
-    output_dataset_collections = relationship(
-        'JobToImplicitOutputDatasetCollectionAssociation', back_populates='dataset_collection')
 
     dict_collection_visible_keys = ['id', 'collection_type']
     dict_element_visible_keys = ['id', 'collection_type']
