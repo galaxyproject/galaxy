@@ -61,7 +61,12 @@
             </div>
             <br />
             <b-card no-body>
-                <b-button @click="isCollapseVisible = !isCollapseVisible" v-b-toggle.accordion-1 variant="light">
+                <b-button
+                    class="share-with-collapse"
+                    @click="isCollapseVisible = !isCollapseVisible"
+                    v-b-toggle.accordion-1
+                    variant="light"
+                >
                     Share {{ modelClass }} with Individual Users
                     <font-awesome-icon :icon="isCollapseVisible ? `caret-up` : `caret-down`" />
                 </b-button>
@@ -139,7 +144,7 @@
                                         <b-button
                                             @click="getModel()"
                                             variant="outline-danger"
-                                            class="sharing_icon submit-sharing-with"
+                                            class="sharing_icon cancel-sharing-with"
                                         >
                                             Cancel
                                         </b-button>
@@ -363,6 +368,13 @@ export default {
                 return true;
             }
 
+            console.log(
+                !this.multiselectValues.sharingCandidates.every(({ email }) =>
+                    this.item.users_shared_with.some((user) => user.email === email)
+                )
+            );
+            console.log(this.multiselectValues.sharingCandidates.map(({ email }) => email));
+            console.log(this.item.users_shared_with.map(({ email }) => email));
             return !this.multiselectValues.sharingCandidates.every(({ email }) =>
                 this.item.users_shared_with.some((user) => user.email === email)
             );
@@ -446,7 +458,7 @@ export default {
             }
             this.item = newItem;
             if (overwriteCandidates) {
-                this.multiselectValues.sharingCandidates = newItem.users_shared_with;
+                this.multiselectValues.sharingCandidates = Array.from(newItem.users_shared_with);
             }
             if (!this.item.extra || newItem.errors.length > 0) {
                 this.item.extra = defaultExtra();
