@@ -89,7 +89,7 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
         if domain in trans.app.config.email_domain_blocklist_content:
             message = "Please enter your permanent email address."
     if not message and validate_domain:
-        domain = email.split('@', 1)[1]
+        domain = extract_domain(email)
         message = validate_domain(domain)
     return message
 
