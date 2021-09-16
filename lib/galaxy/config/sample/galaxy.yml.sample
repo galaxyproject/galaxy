@@ -765,8 +765,16 @@ galaxy:
   # list. This is the address used to subscribe to the list. Uncomment
   # and leave empty if you want to remove this option from the user
   # registration form.
-  # Example value 'galaxy-announce-join@bx.psu.edu'
+  # Example value 'galaxy-announce-join@lists.galaxyproject.org'
   #mailing_join_addr: null
+
+  # The subject of the email sent to the mailing list join address. See
+  # the `mailing_join_addr` option for more information.
+  #mailing_join_subject: Join Mailing List
+
+  # The body of the email sent to the mailing list join address. See the
+  # `mailing_join_addr` option for more information.
+  #mailing_join_body: Join Mailing List
 
   # Datasets in an error state include a link to report the error.
   # Those reports will be sent to this address.  Error reports are

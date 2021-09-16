@@ -580,10 +580,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.app.config.smtp_server is None:
             return "Subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. Please contact your local Galaxy administrator."
         else:
-            body = 'Join Mailing list.\n'
+            body = (self.app.config.mailing_join_body or '') + '\n'
             to = self.app.config.mailing_join_addr
             frm = email
-            subject = 'Join Mailing List'
+            subject = self.app.config.mailing_join_subject or ''
             try:
                 util.send_mail(frm, to, subject, body, self.app.config)
             except Exception:

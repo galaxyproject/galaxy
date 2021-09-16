@@ -1370,8 +1370,30 @@
     list. This is the address used to subscribe to the list. Uncomment
     and leave empty if you want to remove this option from the user
     registration form.
-    Example value 'galaxy-announce-join@bx.psu.edu'
+    Example value 'galaxy-announce-join@lists.galaxyproject.org'
 :Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``mailing_join_subject``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The subject of the email sent to the mailing list join address.
+    See the `mailing_join_addr` option for more information.
+:Default: ``Join Mailing List``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``mailing_join_body``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The body of the email sent to the mailing list join address. See
+    the `mailing_join_addr` option for more information.
+:Default: ``Join Mailing List``
 :Type: str
 
 
