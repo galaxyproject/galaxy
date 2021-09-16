@@ -58,8 +58,6 @@ def read_dbnames(filename):
             ucsc_builds[db_base].reverse()
             ucsc_builds[db_base] = [(build, name) for _, build, name in ucsc_builds[db_base]]
             db_names = list(db_names + ucsc_builds[db_base])
-        if len(db_names) > 1 and len(man_builds) > 0:
-            db_names.append((GenomeBuilds.default_value, '----- Additional Species Are Below -----'))
         man_builds.sort()
         man_builds = [(build, name) for name, build in man_builds]
         db_names = list(db_names + man_builds)
