@@ -508,7 +508,7 @@ def arg_parser():
     history_per_group.add_argument('--history-per-suite', dest="history_per_test_case", default=False, action="store_false", help="Create new history per test suite (all tests in same history).")
     history_per_group.add_argument('--history-per-test-case', dest="history_per_test_case", action="store_true", help="Create new history per test case.")
     history_per_group.add_argument('--history-name', default=None, help="Override default history name")
-    parser.add_argument('--no-history-reuse', default=False, action="store_true", help="Do not reuse histories if a matchine one already exists.")
+    parser.add_argument('--no-history-reuse', default=False, action="store_true", help="Do not reuse histories if a matching one already exists.")
     parser.add_argument('--no-history-cleanup', default=False, action="store_true", help="Perserve histories created for testing.")
     parser.add_argument('--publish-history', default=False, action="store_true", help="Publish test history. Useful for CI testing.")
     parser.add_argument('--parallel-tests', default=1, type=int, help="Parallel tests.")
