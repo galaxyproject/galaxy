@@ -4895,7 +4895,6 @@ class TestUser(BaseTest):
         user_role_association,
         stored_workflow,
         stored_workflow_menu_entry_factory,
-        visualization_user_share_association,
     ):
         history1 = history_factory(deleted=False)
         history2 = history_factory(deleted=True)
@@ -4928,7 +4927,6 @@ class TestUser(BaseTest):
         obj.data_manager_histories.append(data_manager_history_association)
         obj.roles.append(user_role_association)
         obj.stored_workflows.append(stored_workflow)
-        obj.visualizations_shared_by_others.append(visualization_user_share_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -4949,8 +4947,6 @@ class TestUser(BaseTest):
             assert stored_obj.data_manager_histories == [data_manager_history_association]
             assert stored_obj.roles == [user_role_association]
             assert stored_obj.stored_workflows == [stored_workflow]
-            assert (stored_obj.visualizations_shared_by_others
-                == [visualization_user_share_association])
 
         delete_from_database(session, [history1, history2, swme])
 

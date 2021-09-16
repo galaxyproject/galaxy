@@ -499,8 +499,6 @@ class User(Base, Dictifiable, RepresentById):
     roles = relationship('UserRoleAssociation', back_populates='user')
     stored_workflows = relationship('StoredWorkflow', back_populates='user',
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id))  # type: ignore
-    visualizations_shared_by_others = relationship('VisualizationUserShareAssociation',
-        back_populates='user')
 
     preferences: association_proxy  # defined at the end of this module
 
@@ -8082,7 +8080,7 @@ class VisualizationUserShareAssociation(Base, UserShareAssociation):
     id = Column(Integer, primary_key=True)
     visualization_id = Column(Integer, ForeignKey('visualization.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    user = relationship('User', back_populates='visualizations_shared_by_others')
+    user = relationship('User')
     visualization = relationship('Visualization', back_populates='users_shared_with')
 
 
