@@ -18,37 +18,37 @@ class SanitizeAllowController(BaseAPIController):
         GET /api/sanitize_allow
         Return an object showing the current state of the toolbox and allow list.
         """
-        return {'status': 'done', 'message': 'Tool allow list loaded.', 'data': self._generate_allowlist(trans)}
+        return self._generate_allowlist(trans)
 
     @web.require_admin
     @web.expose_api
     def create(self, trans, tool_id, **kwd):
         """
         PUT /api/sanitize_allow
-        Add a new tool specification to the allow list.
+        Add a new tool_id to the allowlist.
         """
         if tool_id not in trans.app.config.sanitize_allowlist:
             trans.app.config.sanitize_allowlist.append(tool_id)
             self._save_allowlist(trans)
-        return {'status': 'done', 'message': '%s added to allowlist.' % tool_id, 'data': self._generate_allowlist(trans)}
+        return self._generate_allowlist(trans)
 
     @web.require_admin
     @web.expose_api
     def delete(self, trans, tool_id, **kwd):
         """
         DELETE /api/sanitize_allow
-        Add a new tool specification to the allow list.
+        Remove tool_id from allowlist.
         """
         if tool_id in trans.app.config.sanitize_allowlist:
             trans.app.config.sanitize_allowlist.remove(tool_id)
             self._save_allowlist(trans)
-        return {'status': 'done', 'message': '%s removed from allowlist.' % tool_id, 'data': self._generate_allowlist(trans)}
+        return self._generate_allowlist(trans)
 
     def _save_allowlist(self, trans):
-        new_allowlist = sorted([tid for tid in trans.app.config.sanitize_allowlist])
-        trans.app.config.sanitize_allowlist = new_allowlist
-        with open(trans.app.config.sanitize_allowlist_file, 'wt') as f:
+        trans.app.config.sanitize_allowlist = sorted(trans.app.config.sanitize_allowlist)
+        with open(trans.app.config.sanitize_allowlist_file, 'w') as f:
             f.write("\n".join(new_allowlist))
+        trans.app.queue_worker.send_control_task('reload_sanitize_allowlist', noop_self=True)
 
     def _generate_allowlist(self, trans):
         sanitize_dict = dict(blocked_toolshed=[], allowed_toolshed=[], blocked_local=[], allowed_local=[])
