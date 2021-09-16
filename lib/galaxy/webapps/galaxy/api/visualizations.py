@@ -116,7 +116,7 @@ class FastAPIVisualizations:
         return self.service.shareable_service.unpublish(trans, id)
 
     @router.put(
-        '/api/visualizations/{id}/share_with',
+        '/api/visualizations/{id}/share_with_users',
         summary="Share this item with specific users.",
     )
     def share_with_users(
