@@ -10,7 +10,7 @@ module.exports = {
     entry: path.resolve(__dirname, "src/index.js"),
     output: {
         filename: "topics.js",
-        path: path.resolve(__dirname, "static")
+        path: path.resolve(__dirname, "dist")
     },
     plugins: [
         new MiniCssExtractPlugin(),
@@ -22,29 +22,10 @@ module.exports = {
         }),
         new CopyPlugin({
             patterns: [
-                {from: 'node_modules/@galaxyproject/new_user_welcome', to: 'topics'}
-                // {from: 'src/topics', to: 'topics'},
+                {from: 'node_modules/@galaxyproject/new_user_welcome', to: 'static/topics'}
             ],
         }),
     ],
-    // module: {
-    //     rules: [
-    //         {
-    //             test: /\.json$/i,
-    //             // type: 'asset/resource',
-    //             use: {
-    //                 loader: "file-loader",
-    //             },
-    //         },
-    //         {
-    //             test: /\.(png|svg|jpg|jpeg|gif)$/i,
-    //             // type: 'asset/resource',
-    //             use: {
-    //                 loader: "file-loader",
-    //             },
-    //         },
-    //     ]
-    // },
     resolve: {
         modules: ["node_modules"],
     }

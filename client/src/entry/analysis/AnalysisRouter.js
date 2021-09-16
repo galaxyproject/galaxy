@@ -54,7 +54,7 @@ import DatasetDetails from "components/Details/DatasetDetails.vue";
 import Libraries from "components/Libraries";
 import { mountVueComponent } from "utils/mountVueComponent";
 
-import { newUserDict } from "../../../../static/plugins/welcome_page/new_user/static/topics/index";
+import { newUserDict } from "../../../../static/plugins/welcome_page/new_user/dist/static/topics/index";
 
 /** Routes */
 export const getAnalysisRouter = (Galaxy) => {
