@@ -73,7 +73,7 @@
                 <b-collapse id="accordion-1" accordion="main-accordion" role="tabpanel">
                     <ConfigProvider v-slot="{ config }">
                         <CurrentUser v-slot="{ user }">
-                            <div v-if="user && config && !permissionsChangeRequired">
+                            <div v-if="user && config && !permissionsChangeRequired(item)">
                                 <p class="share_with_title" v-if="item.users_shared_with.length === 0">
                                     You have not shared this {{ modelClass }} with any users.
                                 </p>
@@ -170,7 +170,7 @@
                             </div>
                         </CurrentUser>
                     </ConfigProvider>
-                    <b-alert variant="warning" dismissible fade :show="permissionsChangeRequired">
+                    <b-alert variant="warning" dismissible fade :show="permissionsChangeRequired(item)">
                         <div class="text-center">
                             {{
                                 item.extra.can_change.length > 0
@@ -179,7 +179,7 @@
                             }}
                         </div>
                     </b-alert>
-                    <b-row v-if="permissionsChangeRequired">
+                    <b-row v-if="permissionsChangeRequired(item)">
                         <b-col v-if="item.extra.can_change.length > 0">
                             <b-card>
                                 <b-card-header header-tag="header" class="p-1" role="tab">
@@ -367,7 +367,7 @@ export default {
             if (this.item.users_shared_with.length !== this.multiselectValues.sharingCandidates.length) {
                 return true;
             }
-          
+
             return !this.multiselectValues.sharingCandidates.every(({ email }) =>
                 this.item.users_shared_with.some((user) => user.email === email)
             );
@@ -381,14 +381,7 @@ export default {
                     : "Please enter user email";
             }
         },
-        permissionsChangeRequired() {
-            if (!this.item.extra) {
-                return false;
-            }
-            return (
-                this.item.extra && (this.item.extra.can_change.length > 0 || this.item.extra.cannot_change.length > 0)
-            );
-        },
+
         pluralNameLower() {
             return this.pluralName.toLowerCase();
         },
@@ -423,6 +416,12 @@ export default {
         this.getModel();
     },
     methods: {
+        permissionsChangeRequired(item) {
+            if (!item.extra) {
+                return false;
+            }
+            return item.extra && (item.extra.can_change.length > 0 || item.extra.cannot_change.length > 0);
+        },
         onMultiselectBlur(isAdmin) {
             const isValueChosen = this.multiselectValues.sharingCandidates.some(
                 (item) => item.email === this.multiselectValues.currentUserSearch
@@ -521,9 +520,10 @@ export default {
                 .put(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/${action}`, data)
                 .then(({ data }) => {
                     this.errors = [];
-                    this.assignItem(data);
+                    const userIdsSaved = user_ids && !this.permissionsChangeRequired(data) && data.errors.length === 0;
+                    this.assignItem(data, userIdsSaved);
 
-                    if (user_id && data.errors.length === 0) {
+                    if (userIdsSaved) {
                         this.dismissCountDown = 3;
                     }
                 })
