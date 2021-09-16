@@ -69,28 +69,25 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
     if (user and user.email == email) or (email == "" and allow_empty):
         return ""
     message = validate_email_str(email)
-    if message:
-        pass
-    elif (
-        check_dup
-        and trans.sa_session.query(trans.app.model.User)
-        .filter(func.lower(trans.app.model.User.table.c.email) == email.lower())
-        .first()
-    ):
-        message = f"User with email '{email}' already exists."
-    #  If the allowlist is not empty filter out any domain not in the list and ignore blocklist.
-    elif trans.app.config.email_domain_allowlist_content is not None:
-        domain = extract_domain(email)
-        if domain not in trans.app.config.email_domain_allowlist_content:
-            message = "Please enter an allowed domain email address for this server."
-    #  If the blocklist is not empty filter out the disposable domains.
-    elif trans.app.config.email_domain_blocklist_content is not None:
-        domain = extract_domain(email, base_only=True)
-        if domain in trans.app.config.email_domain_blocklist_content:
-            message = "Please enter your permanent email address."
     if not message and validate_domain:
         domain = extract_domain(email)
         message = validate_domain(domain)
+
+    if not message and check_dup and trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == email.lower()).first():
+        message = f"User with email '{email}' already exists."
+
+    if not message
+        # If the allowlist is not empty filter out any domain not in the list and ignore blocklist.
+        if trans.app.config.email_domain_allowlist_content is not None:
+            domain = extract_domain(email)
+            if domain not in trans.app.config.email_domain_allowlist_content:
+                message = "Please enter an allowed domain email address for this server."
+        # If the blocklist is not empty filter out the disposable domains.
+        elif trans.app.config.email_domain_blocklist_content is not None:
+            domain = extract_domain(email, base_only=True)
+            if domain in trans.app.config.email_domain_blocklist_content:
+                message = "Please enter your permanent email address."
+
     return message
 
 
