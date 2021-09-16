@@ -894,14 +894,6 @@ class TestDynamicTool(BaseTest):
             assert stored_obj.active == active
             assert stored_obj.value == value
 
-    def test_relationships(self, session, cls_, workflow_step):
-        obj = cls_()
-        obj.workflow_steps.append(workflow_step)
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.workflow_steps == [workflow_step]
-
     def test_construct_with_uuid(self, session, cls_):
         uuid = uuid4()
         obj = cls_(uuid=uuid)

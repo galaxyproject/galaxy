@@ -784,7 +784,6 @@ class DynamicTool(Base, Dictifiable, RepresentById):
     hidden = Column(Boolean, default=True)
     active = Column(Boolean, default=True)
     value = Column(MutableJSONType)
-    workflow_steps = relationship('WorkflowStep', back_populates='dynamic_tool')
 
     dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
     dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
@@ -6290,8 +6289,7 @@ class WorkflowStep(Base, RepresentById):
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),  # type: ignore
         back_populates='parent_workflow_steps')
     dynamic_tool = relationship('DynamicTool',
-        primaryjoin=(lambda: DynamicTool.id == WorkflowStep.dynamic_tool_id),  # type: ignore
-        back_populates='workflow_steps')
+        primaryjoin=(lambda: DynamicTool.id == WorkflowStep.dynamic_tool_id))  # type: ignore
     tags = relationship('WorkflowStepTagAssociation',
         order_by=lambda: WorkflowStepTagAssociation.id,  # type: ignore
         back_populates='workflow_step')
