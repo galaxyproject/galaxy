@@ -82,6 +82,18 @@ class UserManagerTestCase(BaseTestCase):
             **dict(email="user2a@user2.user2", username="user2", password=default_password),
         )
 
+    def test_trimming(self):
+        self.log("emails must be trimmed")
+        user2b, message = self.user_manager.register(self.trans, email=' user2b@user2.user2 ', username='user2b',
+                                                     password=default_password, confirm=default_password)
+        self.assertIsNone(message)
+        self.assertEqual(user2b.email, 'user2b@user2.user2')
+        self.log("usernames must be trimmed")
+        user2c, message = self.user_manager.register(self.trans, email='user2c@user2.user2', username=' user2c ',
+                                                     password=default_password, confirm=default_password)
+        self.assertIsNone(message)
+        self.assertEqual(user2c.username, 'user2c')
+
     def test_email_queries(self):
         user2 = self.user_manager.create(**user2_data)
 

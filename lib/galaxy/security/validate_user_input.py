@@ -6,13 +6,22 @@ user inputs - so these methods do not need to be escaped.
 """
 import logging
 import re
+import socket
 
 from sqlalchemy import func
 
 log = logging.getLogger(__name__)
 
 # Email validity parameters
-VALID_EMAIL_RE = re.compile(r"[^@]+@[^@]+\.[^@]+")
+#
+# Many words (and regexes) have been written about validating email addresses and there is no perfect answer on how it
+# should be done. We choose to use the HTML5 spec (and corresponding regex) that engages in a "willful violation" of RFC
+# 5322 to provide a reasonably good validation. Additionally, we allow Unicode characters in both the user and domain
+# parts of the email by using re's '\w' character. Note that \w includes "word" characters but appears to exclude emoji
+# characters, which should in fact be valid.
+#
+# https://html.spec.whatwg.org/multipage/input.html#e-mail-state-(type%3Demail)
+VALID_EMAIL_RE = re.compile(r"^[\w.!#$%&'*+\/=?^_`{|}~-]+@[\w](?:[\w-]{0,61}[\w])?(?:\.[\w](?:[\w-]{0,61}[\w])?)*$")
 EMAIL_MAX_LEN = 255
 
 # Public name validity parameters
@@ -53,7 +62,7 @@ def validate_publicname_str(publicname):
     return ""
 
 
-def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
+def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, validate_domain=False):
     """
     Validates the email format, also checks whether the domain is blocklisted in the disposable domains configuration.
     """
@@ -79,11 +88,23 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
         domain = extract_domain(email, base_only=True)
         if domain in trans.app.config.email_domain_blocklist_content:
             message = "Please enter your permanent email address."
+    if not message and validate_domain:
+        domain = email.split('@', 1)[1]
+        message = validate_domain(domain)
+    return message
+
+
+def validate_domain(domain):
+    message = None
+    try:
+        socket.gethostbyname(domain)
+    except socket.gaierror:
+        message = "The email domain cannot be resolved."
     return message
 
 
 def extract_domain(email, base_only=False):
-    domain = email.split("@")[1]
+    domain = email.split('@', 1)[1]
     parts = domain.split(".")
     if len(parts) > 2 and base_only:
         return (".").join(parts[-2:])

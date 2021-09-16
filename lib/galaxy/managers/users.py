@@ -82,17 +82,17 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return None, message
         if not email or not username or not password or not confirm:
             return None, "Please provide email, username and password."
-        message = "\n".join(
-            (
-                validate_email(trans, email),
-                validate_password(trans, password, confirm),
-                validate_publicname(trans, username),
-            )
-        ).rstrip()
+
+        email = util.restore_text(email).strip()
+        username = util.restore_text(username).strip()
+        # We could add a separate option here for enabling or disabling domain validation (DNS resolution test)
+        validate_domain = trans.app.config.user_activation_on
+        message = "\n".join((validate_email(trans, email, validate_domain=validate_domain),
+                             validate_password(trans, password, confirm),
+                             validate_publicname(trans, username))).rstrip()
+
         if message:
             return None, message
-        email = util.restore_text(email)
-        username = util.restore_text(username)
         message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
         if message:
             return None, message
