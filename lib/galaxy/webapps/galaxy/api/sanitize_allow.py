@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 class SanitizeAllowController(BaseAPIController):
 
     @web.require_admin
-    @web.legacy_expose_api
+    @web.expose_api
     def index(self, trans, **kwd):
         """
         GET /api/sanitize_allow
@@ -21,7 +21,7 @@ class SanitizeAllowController(BaseAPIController):
         return {'status': 'done', 'message': 'Tool allow list loaded.', 'data': self._generate_allowlist(trans)}
 
     @web.require_admin
-    @web.legacy_expose_api
+    @web.expose_api
     def create(self, trans, tool_id, **kwd):
         """
         PUT /api/sanitize_allow
@@ -33,7 +33,7 @@ class SanitizeAllowController(BaseAPIController):
         return {'status': 'done', 'message': '%s added to allowlist.' % tool_id, 'data': self._generate_allowlist(trans)}
 
     @web.require_admin
-    @web.legacy_expose_api
+    @web.expose_api
     def delete(self, trans, tool_id, **kwd):
         """
         DELETE /api/sanitize_allow
