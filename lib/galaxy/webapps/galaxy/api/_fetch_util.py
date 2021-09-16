@@ -161,6 +161,7 @@ def validate_and_normalize_targets(trans, payload):
             item["purge_source"] = purge_ftp_source
         elif src == "url":
             url = item["url"]
+            url = url.strip()
             looks_like_url = False
             for url_prefix in ["http://", "https://", "ftp://", "ftps://"]:
                 if url.startswith(url_prefix):
