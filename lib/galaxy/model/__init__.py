@@ -495,7 +495,6 @@ class User(Base, Dictifiable, RepresentById):
     api_keys: 'List[APIKeys]' = relationship('APIKeys',
         back_populates='user',
         order_by=lambda: desc(APIKeys.create_time))  # type: ignore
-    histories_shared_by_others = relationship('HistoryUserShareAssociation', back_populates='user')
     data_manager_histories = relationship('DataManagerHistoryAssociation', back_populates='user')
     workflows_shared_by_others = relationship('StoredWorkflowUserShareAssociation', back_populates='user')
     roles = relationship('UserRoleAssociation', back_populates='user')
@@ -2775,7 +2774,7 @@ class HistoryUserShareAssociation(Base, UserShareAssociation):
     id = Column(Integer, primary_key=True)
     history_id = Column(Integer, ForeignKey('history.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    user = relationship('User', back_populates='histories_shared_by_others')
+    user = relationship('User')
     history = relationship('History', back_populates='users_shared_with')
 
 
