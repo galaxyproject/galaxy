@@ -1911,8 +1911,6 @@ class ImplicitCollectionJobs(Base, RepresentById):
     populated_state = Column(TrimmedString(64), default='new', nullable=False)
     jobs = relationship('ImplicitCollectionJobsJobAssociation',
         back_populates='implicit_collection_jobs')
-    history_dataset_collection_associations = relationship('HistoryDatasetCollectionAssociation',
-        back_populates='implicit_collection_jobs')
     workflow_invocation_step = relationship('WorkflowInvocationStep',
         back_populates='implicit_collection_jobs', uselist=False)
 
@@ -5472,11 +5470,7 @@ class HistoryDatasetCollectionAssociation(
         primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
                 == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id)  # type: ignore
     )
-    implicit_collection_jobs = relationship(
-        'ImplicitCollectionJobs',
-        back_populates='history_dataset_collection_associations',
-        uselist=False
-    )
+    implicit_collection_jobs = relationship('ImplicitCollectionJobs', uselist=False)
     job = relationship(
         'Job',
         back_populates='history_dataset_collection_associations',
