@@ -110,7 +110,7 @@ class LibrariesApiTestCase(ApiTestCase):
         library_id = library["id"]
         role_id = self.library_populator.user_private_role_id()
         # As we can manage this library our role will be available
-        available = self.library_populator.get_permissions(library_id, scope="available", page_limit=1000)
+        available = self.library_populator.get_permissions(library_id, scope="available")
         available_role_ids = [role["id"] for role in available["roles"]]
         assert role_id in available_role_ids
 
