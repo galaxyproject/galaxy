@@ -42,7 +42,7 @@ import { getAppRoot } from "onload/loadConfig";
 export default {
     props: {
         topics: { type: Array, required: true },
-        imageLoc: { type: String, required: false, default: "plugins/welcome_page/new_user/static/topics/" },
+        imageLoc: { type: String, required: false, default: "plugins/welcome_page/new_user/dist/static/topics/" },
     },
     methods: {
         imgUrl(src) {
