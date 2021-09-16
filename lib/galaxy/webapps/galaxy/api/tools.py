@@ -463,9 +463,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             if input_src == "hdca":
                 target_history = self.hdca_manager.get_dataset_collection_instance(trans, instance_type='history', id=input_id).history
             elif input_src == "hda":
-                encoded_id = int(trans.app.security.decode_id(input_id))
-                decoded_id = self.hda_manager.get_accessible(encoded_id, trans.user).history_id
-                target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
+                decoded_id = trans.app.security.decode_id(input_id)
+                target_history = self.hda_manager.get_accessible(decoded_id, trans.user).history
+                self.history_manager.error_unless_owner(target_history, trans.user, current_history=trans.history)
             else:
                 raise exceptions.RequestParameterInvalidException("Must run conversion on either hdca or hda.")
 
