@@ -121,6 +121,12 @@ class DRMAAJobRunner(AsynchronousJobRunner):
 
     def queue_job(self, job_wrapper):
         """Create job script and submit it to the DRM"""
+
+        # Print job start time
+        job_start_time = time.time()
+        job_id = job_wrapper.job_id
+        log.debug(f"Job id {job_id} start time {job_start_time}")
+
         # prepare the job
 
         # external_runJob_script can be None, in which case it's not used.
