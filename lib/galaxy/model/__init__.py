@@ -1899,10 +1899,6 @@ class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
         primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
             == ImplicitlyCreatedDatasetCollectionInput.input_dataset_collection_id)  # type: ignore
     )
-    dataset_collection = relationship('HistoryDatasetCollectionAssociation',
-        primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
-            == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id),  # type: ignore
-        back_populates='implicit_input_collections')
 
     def __init__(self, name, input_dataset_collection):
         self.name = name
@@ -5479,8 +5475,7 @@ class HistoryDatasetCollectionAssociation(
     )
     implicit_input_collections = relationship('ImplicitlyCreatedDatasetCollectionInput',
         primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
-                == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id),  # type: ignore
-        back_populates='dataset_collection',
+                == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id)  # type: ignore
     )
     implicit_collection_jobs = relationship(
         'ImplicitCollectionJobs',

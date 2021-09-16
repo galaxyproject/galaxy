@@ -2281,20 +2281,12 @@ class TestImplicitlyCreatedDatasetCollectionInput(BaseTest):
         session,
         cls_,
         history_dataset_collection_association,
-        history_dataset_collection_association_factory,
     ):
-        hdca2 = history_dataset_collection_association_factory()
-        persist(session, hdca2)
-
         obj = cls_(None, history_dataset_collection_association)
-        obj.dataset_collection_id = hdca2.id
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.input_dataset_collection.id == history_dataset_collection_association.id
-            assert stored_obj.dataset_collection.id == hdca2.id
-
-        delete_from_database(session, [hdca2])
 
 
 class TestInteractiveToolEntryPoint(BaseTest):
