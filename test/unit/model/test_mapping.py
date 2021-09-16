@@ -5030,13 +5030,11 @@ class TestUserAuthnzToken(BaseTest):
             assert stored_obj.lifetime == lifetime
             assert stored_obj.assoc_type == assoc_type
 
-    def test_relationships(self, session, cls_, user, cloud_authz):
+    def test_relationships(self, session, cls_, user):
         obj = cls_(get_unique_value(), None, user=user)
-        obj.cloudauthz.append(cloud_authz)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.cloudauthz == [cloud_authz]
             assert stored_obj.user.id == user.id
 
 

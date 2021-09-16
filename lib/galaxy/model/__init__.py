@@ -7693,7 +7693,6 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     extra_data = Column(MutableJSONType, nullable=True)
     lifetime = Column(Integer)
     assoc_type = Column(VARCHAR(64))
-    cloudauthz = relationship('CloudAuthz', back_populates='authn')
     user = relationship('User', back_populates='social_auth')
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
@@ -7832,7 +7831,7 @@ class CloudAuthz(Base, _HasTable):
     description = Column(TEXT)
     create_time = Column(DateTime, default=now)
     user = relationship('User', back_populates='cloudauthz')
-    authn = relationship('UserAuthnzToken', back_populates='cloudauthz')
+    authn = relationship('UserAuthnzToken')
 
     def __init__(self, user_id, provider, config, authn_id, description=None):
         self.user_id = user_id
