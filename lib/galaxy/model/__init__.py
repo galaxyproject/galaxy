@@ -495,7 +495,6 @@ class User(Base, Dictifiable, RepresentById):
     api_keys: 'List[APIKeys]' = relationship('APIKeys',
         back_populates='user',
         order_by=lambda: desc(APIKeys.create_time))  # type: ignore
-    pages = relationship('Page', back_populates='user')
     reset_tokens = relationship('PasswordResetToken', back_populates='user')
     histories_shared_by_others = relationship('HistoryUserShareAssociation', back_populates='user')
     data_manager_histories = relationship('DataManagerHistoryAssociation', back_populates='user')
@@ -7887,7 +7886,7 @@ class Page(Base, Dictifiable, RepresentById):
     importable = Column(Boolean, index=True, default=False)
     slug = Column(TEXT)
     published = Column(Boolean, index=True, default=False)
-    user = relationship('User', back_populates='pages')
+    user = relationship('User')
     revisions = relationship(
         'PageRevision',
         cascade="all, delete-orphan",
