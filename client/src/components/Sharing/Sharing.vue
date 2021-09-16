@@ -367,14 +367,7 @@ export default {
             if (this.item.users_shared_with.length !== this.multiselectValues.sharingCandidates.length) {
                 return true;
             }
-
-            console.log(
-                !this.multiselectValues.sharingCandidates.every(({ email }) =>
-                    this.item.users_shared_with.some((user) => user.email === email)
-                )
-            );
-            console.log(this.multiselectValues.sharingCandidates.map(({ email }) => email));
-            console.log(this.item.users_shared_with.map(({ email }) => email));
+          
             return !this.multiselectValues.sharingCandidates.every(({ email }) =>
                 this.item.users_shared_with.some((user) => user.email === email)
             );
