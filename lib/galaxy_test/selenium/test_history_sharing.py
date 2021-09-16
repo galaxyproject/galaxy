@@ -28,9 +28,11 @@ class HistorySharingTestCase(SeleniumTestCase):
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
         self.submit_login(user1_email, retries=VALID_LOGIN_RETRIES)
         self.navigate_to_history_share_page()
+        self.components.histories.sharing.share_with_collapse.wait_for_and_click()
 
         unshare_user_button = self.components.histories.sharing.unshare_user_button
         unshare_user_button.wait_for_and_click()
+        self.components.histories.sharing.submit_sharing_with.wait_for_and_click()
 
         self.navigate_to_history_share_page()
         unshare_user_button.assert_absent()
