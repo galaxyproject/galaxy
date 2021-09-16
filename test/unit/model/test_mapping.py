@@ -2137,16 +2137,13 @@ class TestImplicitCollectionJobs(BaseTest):
         session,
         cls_,
         implicit_collection_jobs_job_association,
-        workflow_invocation_step,
     ):
         obj = cls_()
         obj.jobs.append(implicit_collection_jobs_job_association)
-        obj.workflow_invocation_step = workflow_invocation_step
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.jobs == [implicit_collection_jobs_job_association]
-            assert stored_obj.workflow_invocation_step.id == workflow_invocation_step.id
 
 
 class TestImplicitCollectionJobsJobAssociation(BaseTest):

@@ -1911,8 +1911,6 @@ class ImplicitCollectionJobs(Base, RepresentById):
     populated_state = Column(TrimmedString(64), default='new', nullable=False)
     jobs = relationship('ImplicitCollectionJobsJobAssociation',
         back_populates='implicit_collection_jobs')
-    workflow_invocation_step = relationship('WorkflowInvocationStep',
-        back_populates='implicit_collection_jobs', uselist=False)
 
     class populated_states(str, Enum):
         NEW = 'new'  # New implicit jobs object, unpopulated job associations
@@ -7059,8 +7057,7 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
 
     workflow_step = relationship('WorkflowStep')
     job = relationship('Job', back_populates='workflow_invocation_step', uselist=False)
-    implicit_collection_jobs = relationship('ImplicitCollectionJobs',
-        back_populates='workflow_invocation_step', uselist=False)
+    implicit_collection_jobs = relationship('ImplicitCollectionJobs', uselist=False)
     output_dataset_collections = relationship(
         'WorkflowInvocationStepOutputDatasetCollectionAssociation',
         back_populates='workflow_invocation_step')
