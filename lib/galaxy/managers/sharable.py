@@ -281,17 +281,11 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
             query = query.filter_by(user=user)
         return query.all()
 
-    def share_with(self, item, user, flush=True):
+    def share_with(self, item, user: User, flush: bool = True):
         """
-        Get or create a share for the given user (or users if `user` is a list).
+        Get or create a share for the given user.
         """
         # precondition: user has been validated
-        # allow user to be a list and call recursively
-        if isinstance(user, list):
-            user_assocs = [self.share_with(item, _, flush=False) for _ in user]
-            if flush:
-                self.session().flush()
-            return user_assocs
         # get or create
         existing = self.get_share_assocs(item, user=user)
         if existing:
@@ -315,15 +309,10 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
             self.session().flush()
         return user_share_assoc
 
-    def unshare_with(self, item, user, flush=True):
+    def unshare_with(self, item, user: User, flush: bool = True):
         """
-        Delete a user share (or list of shares) from the database.
+        Delete a user share from the database.
         """
-        if isinstance(user, list):
-            user_assocs = [self.unshare_with(item, _, flush=False) for _ in user]
-            if flush:
-                self.session().flush()
-            return user_assocs
         # Look for and delete sharing relation for user.
         user_share_assoc = self.get_share_assocs(item, user=user)[0]
         self.session().delete(user_share_assoc)
