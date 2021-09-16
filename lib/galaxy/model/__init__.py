@@ -5530,6 +5530,7 @@ class HistoryDatasetCollectionAssociation(
             == HistoryDatasetCollectionAssociation.id),  # type: ignore
         back_populates='hidden_beneath_collection_instance')
 
+    dict_dbkeysandextensions_visible_keys = ['dbkeys', 'extensions']
     editable_keys = ('name', 'deleted', 'visible')
 
     def __init__(self, deleted=False, visible=True, **kwd):
@@ -5565,6 +5566,24 @@ class HistoryDatasetCollectionAssociation(
             return "Job"
         else:
             return None
+
+    @property
+    def dataset_dbkeys_and_extensions_summary(self):
+        if not hasattr(self, '_dataset_dbkeys_and_extensions_summary'):
+            rows = self.collection._get_nested_collection_attributes(hda_attributes=('_metadata', 'extension'))
+            extensions = set()
+            dbkeys = set()
+            for row in rows:
+                if row is not None:
+                    dbkey_field = row._metadata.get('dbkey')
+                    if isinstance(dbkey_field, list):
+                        for dbkey in dbkey_field:
+                            dbkeys.add(dbkey)
+                    else:
+                        dbkeys.add(dbkey_field)
+                    extensions.add(row.extension)
+            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions)
+        return self._dataset_dbkeys_and_extensions_summary
 
     @property
     def job_source_id(self):
@@ -5620,16 +5639,23 @@ class HistoryDatasetCollectionAssociation(
 
     def to_dict(self, view='collection'):
         original_dict_value = super().to_dict(view=view)
-        dict_value = dict(
-            hid=self.hid,
-            history_id=self.history.id,
-            history_content_type=self.history_content_type,
-            visible=self.visible,
-            deleted=self.deleted,
-            job_source_id=self.job_source_id,
-            job_source_type=self.job_source_type,
-            **self._base_to_dict(view=view)
-        )
+        if (view == 'dbkeysandextensions'):
+            (dbkeys, extensions) = self.dataset_dbkeys_and_extensions_summary
+            dict_value = dict(
+                dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
+                extension=extensions.pop() if len(extensions) == 1 else "auto"
+            )
+        else:
+            dict_value = dict(
+                hid=self.hid,
+                history_id=self.history.id,
+                history_content_type=self.history_content_type,
+                visible=self.visible,
+                deleted=self.deleted,
+                job_source_id=self.job_source_id,
+                job_source_type=self.job_source_type,
+                **self._base_to_dict(view=view)
+            )
 
         dict_value.update(original_dict_value)
 

@@ -269,6 +269,14 @@ history_panel:
     options_use_beta_history:
       type: xpath
       selector: '//a[text()="Use Beta History Panel"]'
+    options_use_legacy_history:
+      type: xpath
+      selector: '//button[contains(span, "Return to legacy history panel")]'
+    
+    collection_menu_button: '.collection-menu'
+    collection_menu_edit_attributes: 
+      type: xpath
+      selector: '//button[@title="Edit attributes"]'
     new_history_button: '.history-new-button'
     multi_view_button: '.history-view-multi-button'
     histories_operation_menu: '.histories-operation-menu'
@@ -305,6 +313,16 @@ edit_dataset_attributes:
       dbkey_dropdown_option:
         type: xpath
         selector: '//li[normalize-space() = "${dbkey_text}"]'
+
+edit_collection_attributes:
+  selectors:
+    database_genome_tab: 
+      type: xpath
+      selector: '//a[contains(text(), "Database/Build")]'
+    database_value: 
+      type: xpath
+      selector: '//span[contains(text(), "${dbkey}")]'
+    save_btn: '.save-collection-edit'
 
 
 

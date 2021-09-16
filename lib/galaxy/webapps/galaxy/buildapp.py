@@ -178,6 +178,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route('/histories/show_structure')
     webapp.add_client_route('/datasets/list')
     webapp.add_client_route('/datasets/edit')
+    webapp.add_client_route('/collection/edit/{collection_id}')
     webapp.add_client_route('/datasets/error')
     webapp.add_client_route('/jobs/{job_id}/view')
     webapp.add_client_route('/datasets/{dataset_id}/details')
@@ -425,6 +426,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}/test_data', action='test_data', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/citations', action='citations', controller="tools")
+    webapp.mapper.connect('/api/tools/{tool_id:.+?}/convert', action='conversion', controller="tools", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/{id:.+?}/xrefs', action='xrefs', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/download', action='download', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/requirements', action='requirements', controller="tools")
@@ -549,6 +551,22 @@ def populate_api_routes(webapp, app):
                           controller='history_contents',
                           action='download_dataset_collection',
                           conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect("/api/dataset_collections/{id}",
+                          controller='dataset_collections',
+                          action='update',
+                          conditions=dict(method=["PUT"]))
+
+    webapp.mapper.connect("/api/dataset_collections/{id}/attributes",
+                          controller='dataset_collections',
+                          action='attributes',
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect("api_suitable_converters",
+                          "/api/dataset_collections/{id}/suitable_converters",
+                          controller='dataset_collections',
+                          action='suitable_converters',
+                          conditions=dict(method=['GET']))
 
     webapp.mapper.connect("/api/histories/{history_id}/jobs_summary",
                           action="index_jobs_summary",

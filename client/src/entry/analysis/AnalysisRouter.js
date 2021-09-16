@@ -31,6 +31,7 @@ import TrsImport from "components/Workflow/TrsImport.vue";
 import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
+import CollectionEditView from "components/Collections/common/CollectionEditView.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryView from "components/HistoryView.vue";
@@ -98,6 +99,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)jobs(/)(:job_id)(/)view": "show_job",
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
+            "(/)collection(/)edit(/)(:collection_id)": "show_collection_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
             "(/)datasets(/)(:dataset_id)/details": "show_dataset_details",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
@@ -386,6 +388,10 @@ export const getAnalysisRouter = (Galaxy) => {
                 // can happen with faulty navigating, reloading datasets/edit
                 this._loadCenterIframe("welcome");
             }
+        },
+
+        show_collection_edit_attributes: function (collection_id) {
+            this._display_vue_helper(CollectionEditView, { collection_id: collection_id });
         },
 
         show_dataset_error: function (params) {
