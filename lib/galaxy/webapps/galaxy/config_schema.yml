@@ -985,7 +985,23 @@ mapping:
           is the address used to subscribe to the list. Uncomment and leave empty if you
           want to remove this option from the user registration form.
 
-          Example value 'galaxy-announce-join@bx.psu.edu'
+          Example value 'galaxy-announce-join@lists.galaxyproject.org'
+
+      mailing_join_subject:
+        type: str
+        default: Join Mailing List
+        required: false
+        desc: |
+          The subject of the email sent to the mailing list join address. See the
+          `mailing_join_addr` option for more information.
+
+      mailing_join_body:
+        type: str
+        default: Join Mailing List
+        required: false
+        desc: |
+          The body of the email sent to the mailing list join address. See the
+          `mailing_join_addr` option for more information.
 
       error_email_to:
         type: str
