@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 # Don't display the pip progress bar when running under CI
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
