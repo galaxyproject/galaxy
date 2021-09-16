@@ -496,7 +496,6 @@ class User(Base, Dictifiable, RepresentById):
         back_populates='user',
         order_by=lambda: desc(APIKeys.create_time))  # type: ignore
     data_manager_histories = relationship('DataManagerHistoryAssociation', back_populates='user')
-    workflows_shared_by_others = relationship('StoredWorkflowUserShareAssociation', back_populates='user')
     roles = relationship('UserRoleAssociation', back_populates='user')
     stored_workflows = relationship('StoredWorkflow', back_populates='user',
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id))  # type: ignore
@@ -6621,7 +6620,7 @@ class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
     id = Column(Integer, primary_key=True)
     stored_workflow_id = Column(Integer, ForeignKey('stored_workflow.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    user = relationship('User', back_populates='workflows_shared_by_others')
+    user = relationship('User')
     stored_workflow = relationship('StoredWorkflow', back_populates='users_shared_with')
 
 

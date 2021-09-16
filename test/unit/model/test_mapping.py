@@ -4892,7 +4892,6 @@ class TestUser(BaseTest):
         user_preference,
         api_keys,
         data_manager_history_association,
-        stored_workflow_user_share_association,
         user_role_association,
         stored_workflow,
         stored_workflow_menu_entry_factory,
@@ -4927,7 +4926,6 @@ class TestUser(BaseTest):
 
         obj.api_keys.append(api_keys)
         obj.data_manager_histories.append(data_manager_history_association)
-        obj.workflows_shared_by_others.append(stored_workflow_user_share_association)
         obj.roles.append(user_role_association)
         obj.stored_workflows.append(stored_workflow)
         obj.visualizations_shared_by_others.append(visualization_user_share_association)
@@ -4949,7 +4947,6 @@ class TestUser(BaseTest):
             assert user_preference in stored_obj._preferences.values()
             assert stored_obj.api_keys == [api_keys]
             assert stored_obj.data_manager_histories == [data_manager_history_association]
-            assert stored_obj.workflows_shared_by_others == [stored_workflow_user_share_association]
             assert stored_obj.roles == [user_role_association]
             assert stored_obj.stored_workflows == [stored_workflow]
             assert (stored_obj.visualizations_shared_by_others
