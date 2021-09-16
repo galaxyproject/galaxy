@@ -4100,17 +4100,35 @@
 :Type: int
 
 
-~~~~~~~~~~~~~~~~~~~~~~~
-``enable_job_recovery``
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``job_handler_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable job recovery (if Galaxy is restarted while cluster jobs are
-    running, it can "recover" them when it starts).  This is not safe
-    to use if you are running more than one Galaxy server using the
-    same database.
-:Default: ``true``
-:Type: bool
+    Each Galaxy job handler process runs one thread responsible for
+    discovering jobs and dispatching them to runners. This thread
+    operates in a loop and sleeps for the given number of seconds at
+    the end of each iteration. This can be decreased if extremely high
+    job throughput is necessary, but doing so can increase CPU usage
+    of handler processes. Float values are allowed.
+:Default: ``1.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``job_runner_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Each Galaxy job handler process runs one thread per job runner
+    plugin responsible for checking the state of queued and running
+    jobs.  This thread operates in a loop and sleeps for the given
+    number of seconds at the end of each iteration. This can be
+    decreased if extremely high job throughput is necessary, but doing
+    so can increase CPU usage of handler processes. Float values are
+    allowed.
+:Default: ``1.0``
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~
