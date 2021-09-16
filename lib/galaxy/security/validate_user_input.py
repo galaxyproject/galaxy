@@ -76,7 +76,7 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
     if not message and check_dup and trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == email.lower()).first():
         message = f"User with email '{email}' already exists."
 
-    if not message
+    if not message:
         # If the allowlist is not empty filter out any domain not in the list and ignore blocklist.
         if trans.app.config.email_domain_allowlist_content is not None:
             domain = extract_domain(email)
@@ -101,7 +101,7 @@ def validate_domain(domain):
 
 
 def extract_domain(email, base_only=False):
-    domain = email.split('@', 1)[1]
+    domain = email.rsplit('@', 1)[-1]
     parts = domain.split(".")
     if len(parts) > 2 and base_only:
         return (".").join(parts[-2:])
