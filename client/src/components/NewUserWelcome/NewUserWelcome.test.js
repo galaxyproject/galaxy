@@ -1,5 +1,5 @@
 import { shallowMount, mount } from "@vue/test-utils";
-import newUserWelcome from "./newUserWelcome.vue";
+import NewUserWelcome from "./NewUserWelcome.vue";
 import { getLocalVue } from "jest/helpers";
 import Topics from "components/NewUserWelcome/components/Topics";
 import Subtopics from "components/NewUserWelcome/components/Subtopics";
@@ -7,6 +7,8 @@ import Slides from "components/NewUserWelcome/components/Slides";
 import testData from "./testData.json";
 
 const localVue = getLocalVue();
+jest.mock("components/providers/ConfigProvider")
+jest.mock("onload/loadConfig")
 
 describe("New user first view", () => {
     let wrapper;
