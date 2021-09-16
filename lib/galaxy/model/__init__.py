@@ -4390,7 +4390,6 @@ class Library(Base, Dictifiable, HasName, RepresentById):
     synopsis = Column(TEXT)
     root_folder = relationship('LibraryFolder', back_populates='library_root')
     actions = relationship('LibraryPermissions', back_populates='library')
-    info_association = relationship('LibraryInfoAssociation', back_populates='library')
 
     permitted_actions = get_permitted_actions(filter='LIBRARY')
     dict_collection_visible_keys = ['id', 'name']
@@ -4913,8 +4912,7 @@ class LibraryInfoAssociation(Base, RepresentById):
             lambda: and_(
                 LibraryInfoAssociation.library_id == Library.id,  # type: ignore
                 not_(LibraryInfoAssociation.deleted))  # type: ignore
-        ),
-        back_populates='info_association')
+        ))
     template = relationship('FormDefinition',
         primaryjoin=lambda: LibraryInfoAssociation.form_definition_id == FormDefinition.id)  # type: ignore
     info = relationship('FormValues',

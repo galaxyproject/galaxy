@@ -3094,18 +3094,14 @@ class TestLibrary(BaseTest):
         cls_,
         library_folder,
         library_permission,
-        library_info_association,
     ):
         obj = cls_(None, None, None, library_folder)
         obj.actions.append(library_permission)
-        session.add(library_info_association)  # must be bound to a session for lazy load of attributes
-        obj.info_association.append(library_info_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.root_folder.id == library_folder.id
             assert stored_obj.actions == [library_permission]
-            assert stored_obj.info_association == [library_info_association]
 
 
 class TestLibraryDataset(BaseTest):
@@ -7023,12 +7019,6 @@ def library_folder_info_association(model, session, library_folder, form_definit
 @pytest.fixture
 def library_folder_permission(model, session, library_folder, role):
     instance = model.LibraryFolderPermissions('a', library_folder, role)
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
-def library_info_association(model, session, library, form_definition, form_values):
-    instance = model.LibraryInfoAssociation(library, form_definition, form_values)
     yield from dbcleanup_wrapper(session, instance)
 
 
