@@ -88,6 +88,18 @@ class UserListGrid(grids.Grid):
         def get_value(self, trans, grid, user):
             return user.get_disk_usage(nice_size=True)
 
+        def sort(self, trans, query, ascending, column_name=None):
+            if column_name is None:
+                column_name = self.key
+            column = self.model_class.table.c.get(column_name)
+            if column is None:
+                column = getattr(self.model_class, column_name)
+            if ascending:
+                query = query.order_by(column.asc().nullsfirst())
+            else:
+                query = query.order_by(column.desc().nullslast())
+            return query
+
     # Grid definition
     title = "Users"
     title_id = "users-grid"
