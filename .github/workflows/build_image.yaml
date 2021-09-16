@@ -1,0 +1,69 @@
+name: Build Image
+on: push
+jobs:
+  test:
+    name: Build image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
+      - name: Set outputs
+        id: vars
+        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+      - name: Set branch name
+        id: branch
+        run: echo "::set-output name=name::$(BRANCH_NAME=${GITHUB_REF##*/}; echo ${BRANCH_NAME/release_/}-auto)"
+      - name: Login to docker hub
+        uses: actions-hub/docker/login@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      - run: docker build . -t galaxy/galaxy-anvil:${{ steps.vars.outputs.sha_short }} -f .k8s_ci.Dockerfile
+      - name: Push to docker hub with commit ID
+        uses: actions-hub/docker@master
+        with:
+          args: push galaxy/galaxy-anvil:${{ steps.vars.outputs.sha_short }}
+      - run: docker tag galaxy/galaxy-anvil:${{ steps.vars.outputs.sha_short }} galaxy/galaxy-anvil:${{ steps.branch.outputs.name }}
+      - name: Push to docker hub with branch name
+        uses: actions-hub/docker@master
+        with:
+          args: push galaxy/galaxy-anvil:${{ steps.branch.outputs.name }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+      - run: docker tag galaxy/galaxy-anvil:${{ steps.vars.outputs.sha_short }} gcr.io/anvil-galaxy/galaxy:${{ steps.branch.outputs.name }} && docker tag galaxy/galaxy-anvil:${{ steps.vars.outputs.sha_short }} gcr.io/anvil-galaxy/galaxy:${{ steps.vars.outputs.sha_short }}
+      - uses: RafikFarhad/push-to-gcr-github-action@v4
+        with:
+          gcloud_service_key: ${{ secrets.GCP_SA_KEY }}
+          registry: gcr.io
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          image_name: galaxy
+          image_tag: ${{ steps.vars.outputs.sha_short }}
+          push_only: true
+      - uses: RafikFarhad/push-to-gcr-github-action@v4
+        with:
+          gcloud_service_key: ${{ secrets.GCP_SA_KEY }}
+          registry: gcr.io
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          image_name: galaxy
+          image_tag: ${{ steps.branch.outputs.name }}
+          push_only: true
+
+      - run: docker tag galaxy/galaxy-anvil:${{ steps.vars.outputs.sha_short }} quay.io/galaxy-k8s/galaxy-anvil:${{ steps.branch.outputs.name }} && docker tag galaxy/galaxy-anvil:${{ steps.vars.outputs.sha_short }} quay.io/galaxy-k8s/galaxy-anvil:${{ steps.vars.outputs.sha_short }}
+      - name: Login to docker hub
+        uses: actions-hub/docker/login@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+          DOCKER_REGISTRY_URL: quay.io
+      - name: Push to quay.io with commit ID
+        uses: actions-hub/docker@master
+        with:
+          args: push quay.io/galaxy-k8s/galaxy-anvil:${{ steps.vars.outputs.sha_short }}
+      - name: Push to quay.io with branch name
+        uses: actions-hub/docker@master
+        with:
+          args: push quay.io/galaxy-k8s/galaxy-anvil:${{ steps.branch.outputs.name }}
