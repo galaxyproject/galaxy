@@ -9,6 +9,7 @@ from galaxy.security.validate_user_input import (
 def test_extract_full_domain():
     assert extract_domain("jack@foo.com") == "foo.com"
     assert extract_domain("jack@foo.bar.com") == "foo.bar.com"
+    assert extract_domain("foo.bar.com") == "foo.bar.com"
 
 
 def test_extract_base_domain():
