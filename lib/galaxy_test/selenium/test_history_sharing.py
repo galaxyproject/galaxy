@@ -105,14 +105,19 @@ class HistorySharingTestCase(SeleniumTestCase):
         the result if ``assert_valid`` is True.
         """
         self.navigate_to_history_share_page()
-        self.components.histories.sharing.user_email_input.wait_for_and_send_keys(user_id or user_email)
+        self.components.histories.sharing.share_with_collapse.wait_for_and_click()
+        self.components.histories.sharing.share_with_multiselect.wait_for_and_click()
+        self.components.histories.sharing.share_with_input.wait_for_and_send_keys(user_id or user_email)
 
         if screenshot:
             self.screenshot("history_sharing_user")
+        # first click to add the item
+        self.components.histories.sharing.submit_sharing_with.wait_for_and_click()
+        # second click to save the sharing preferences
         self.components.histories.sharing.submit_sharing_with.wait_for_and_click()
 
         if assert_valid:
             self.assert_no_error_message()
 
-            xpath = f'//td[contains(text(), "{user_email}")]'
+            xpath = f'//span[contains(text(), "{user_email}")]'
             self.wait_for_xpath_visible(xpath)
