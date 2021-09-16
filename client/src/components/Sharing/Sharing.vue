@@ -145,6 +145,9 @@
                                         </b-button>
                                         <b-button
                                             variant="outline-primary"
+                                            :disabled="
+                                                !(sharedWithUsersChanged || !!multiselectValues.currentUserSearch)
+                                            "
                                             @click.stop="
                                                 setSharing(
                                                     actions.share_with,
@@ -355,11 +358,20 @@ export default {
         };
     },
     computed: {
+        sharedWithUsersChanged() {
+            if (this.item.users_shared_with.length !== this.multiselectValues.sharingCandidates.length) {
+                return true;
+            }
+
+            return !this.multiselectValues.sharingCandidates.every(({ email }) =>
+                this.item.users_shared_with.some((user) => user.email === email)
+            );
+        },
         submitBtnTitle() {
             if (this.multiselectValues.currentUserSearch) {
                 return "";
             } else {
-                return this.multiselectValues.sharingCandidates
+                return this.multiselectValues.sharingCandidates && this.multiselectValues.sharingCandidates.length > 0
                     ? `Share with ${this.multiselectValues.sharingCandidates.map(({ email }) => email)}`
                     : "Please enter user email";
             }
