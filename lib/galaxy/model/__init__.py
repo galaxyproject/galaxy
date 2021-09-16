@@ -486,9 +486,7 @@ class User(Base, Dictifiable, RepresentById):
         back_populates='user',
         cascade='all, delete-orphan',
         collection_class=ordering_list('order_index'))
-    _preferences = relationship('UserPreference',
-        back_populates='user',
-        collection_class=attribute_mapped_collection('name'))
+    _preferences = relationship('UserPreference', collection_class=attribute_mapped_collection('name'))
     values = relationship('FormValues',
         primaryjoin=(lambda: User.form_values_id == FormValues.id))  # type: ignore
     # Add type hint (will this work w/SA?)
@@ -8515,7 +8513,6 @@ class UserPreference(Base, RepresentById):
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     name = Column(Unicode(255), index=True)
     value = Column(Text)
-    user = relationship('User', back_populates='_preferences')
 
     def __init__(self, name=None, value=None):
         # Do not remove this constructor: it is set as the creator for the User.preferences

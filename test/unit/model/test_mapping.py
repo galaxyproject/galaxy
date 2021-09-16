@@ -5070,7 +5070,7 @@ class TestUserPreference(BaseTest):
         obj = cls_()
         obj.name = name
         obj.value = value
-        obj.user = user
+        obj.user_id = user.id
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -5078,14 +5078,6 @@ class TestUserPreference(BaseTest):
             assert stored_obj.name == name
             assert stored_obj.value == value
             assert stored_obj.user_id == user.id
-
-    def test_relationships(self, session, cls_, user):
-        obj = cls_()
-        obj.user = user
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.user.id == user.id
 
 
 class TestUserQuotaAssociation(BaseTest):
