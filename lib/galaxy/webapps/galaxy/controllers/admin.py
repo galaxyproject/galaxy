@@ -2,7 +2,7 @@ import imp
 import logging
 import os
 
-from sqlalchemy import false
+from sqlalchemy import false, func
 
 from galaxy import (
     model,
@@ -95,9 +95,9 @@ class UserListGrid(grids.Grid):
             if column is None:
                 column = getattr(self.model_class, column_name)
             if ascending:
-                query = query.order_by(column.asc().nullsfirst())
+                query = query.order_by(func.coalesce(column, 0).asc())
             else:
-                query = query.order_by(column.desc().nullslast())
+                query = query.order_by(func.coalesce(column, 0).desc())
             return query
 
     # Grid definition
