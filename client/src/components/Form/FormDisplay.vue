@@ -3,7 +3,9 @@
 </template>
 
 <script>
+import _ from "underscore";
 import Form from "mvc/form/form-view";
+import { visitInputs } from "components/Form/utilities";
 
 export default {
     props: {
@@ -15,6 +17,18 @@ export default {
             type: Array,
             required: true,
         },
+        errors: {
+            type: Object,
+            default: null,
+        },
+        sustainRepeats: {
+            type: Boolean,
+            default: false,
+        },
+        sustainConditionals: {
+            type: Boolean,
+            default: false,
+        },
         textEnable: {
             type: String,
             default: null,
@@ -23,19 +37,11 @@ export default {
             type: String,
             default: null,
         },
-        initialErrors: {
-            type: Boolean,
-            default: false,
-        },
         validationScrollTo: {
             type: Array,
             default: null,
         },
-        validationErrors: {
-            type: Object,
-            default: null,
-        },
-        formConfig: {
+        replaceParams: {
             type: Object,
             default: null,
         },
@@ -56,19 +62,18 @@ export default {
             this.onHighlight(this.validation, true);
             this.$emit("onValidation", this.validation);
         },
-        validationErrors() {
-            const matchedErrors = Object.entries(this.form.data.matchResponse(this.validationErrors));
-            if (matchedErrors.length > 0) {
-                this.onHighlight(matchedErrors[0]);
-            }
-        },
-        formConfig() {
+        inputs() {
             this.$nextTick(() => {
-                this.form.update(this.formConfig);
-                if (this.initialErrors) {
-                    this.form.errors(this.formConfig);
-                }
+                this.form.update(this.inputs);
             });
+        },
+        errors() {
+            this.$nextTick(() => {
+                this.form.errors(this.errors);
+            });
+        },
+        replaceParams() {
+            this.onReplaceParams();
         },
     },
     mounted() {
@@ -86,16 +91,27 @@ export default {
                 const input_id = this.form.data.match(job_input_id);
                 const input_field = this.form.field_list[input_id];
                 const input_def = this.form.input_list[input_id];
-                if (!input_id || !input_def || !input_field) {
+                if (!input_id || !input_def || !input_field || input_def.step_linked) {
                     continue;
                 }
-                if (!input_def.optional && input_value == null && input_def.type != "hidden") {
-                    return [input_id, "Please provide a value for this option."];
+                if (
+                    input_value &&
+                    Array.isArray(input_value.values) &&
+                    input_value.values.length == 0 &&
+                    !input_def.optional
+                ) {
+                    return [job_input_id, "Please provide data for this input."];
+                }
+                if (input_value == null && !input_def.optional && input_def.type != "hidden") {
+                    return [job_input_id, "Please provide a value for this option."];
+                }
+                if (input_def.wp_linked && input_def.text_value == input_value) {
+                    return [job_input_id, "Please provide a value for this workflow parameter."];
                 }
                 if (input_field.validate) {
                     const message = input_field.validate();
                     if (message) {
-                        return [input_id, message];
+                        return [job_input_id, message];
                     }
                 }
                 if (input_value && input_value.batch) {
@@ -106,7 +122,7 @@ export default {
                             batch_src = src;
                         } else if (batch_src !== src) {
                             return [
-                                input_id,
+                                job_input_id,
                                 "Please select either dataset or dataset list fields for all batch mode fields.",
                             ];
                         }
@@ -115,7 +131,7 @@ export default {
                         batch_n = n;
                     } else if (batch_n !== n) {
                         return [
-                            input_id,
+                            job_input_id,
                             `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`,
                         ];
                     }
@@ -125,9 +141,25 @@ export default {
         },
     },
     methods: {
-        onChange() {
+        onReplaceParams() {
+            if (this.replaceParams) {
+                this.params = {};
+                visitInputs(this.inputs, (input, name) => {
+                    this.params[name] = input;
+                });
+                _.each(this.params, (input, name) => {
+                    const newValue = this.replaceParams[name];
+                    if (newValue) {
+                        const field = this.form.field_list[this.form.data.match(name)];
+                        field.value(newValue);
+                    }
+                });
+                this.form.trigger("change");
+            }
+        },
+        onChange(refreshRequest) {
             this.formData = this.form.data.create();
-            this.$emit("onChange", this.formData);
+            this.$emit("onChange", this.formData, refreshRequest);
         },
         onRender() {
             this.$nextTick(() => {
@@ -135,11 +167,12 @@ export default {
                 this.form = new Form({
                     el,
                     inputs: this.inputs,
-                    initial_errors: this.initialErrors,
                     text_enable: this.textEnable,
                     text_disable: this.textDisable,
-                    onchange: () => {
-                        this.onChange();
+                    sustain_repeats: this.sustainRepeats,
+                    sustain_conditionals: this.sustainConditionals,
+                    onchange: (refreshRequest) => {
+                        this.onChange(refreshRequest);
                     },
                 });
                 this.onChange();
@@ -148,7 +181,8 @@ export default {
         onHighlight(validation, silent = false) {
             this.form.trigger("reset");
             if (validation && validation.length == 2) {
-                this.form.highlight(validation[0], validation[1], silent);
+                const input_id = this.form.data.match(validation[0]);
+                this.form.highlight(input_id, validation[1], silent);
             }
         },
     },

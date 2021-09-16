@@ -15,7 +15,7 @@ from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
-from .test_toolbox_filters import mock_trans
+from ..tool_util.toolbox.test_toolbox_filters import mock_trans
 from ..tools_support import UsesApp, UsesTools
 from ..unittest_utils.sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 
@@ -370,6 +370,10 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         section = self.toolbox._tool_panel["tid"]
         assert len(section.elems) == 1
         assert next(iter(section.elems.values())).id == "github.com/galaxyproject/example/test_tool/0.2"
+
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="0.1")
+        section_pair = self.toolbox.get_section_for_tool(test_tool)
+        assert section_pair == ("tid", "TID")
 
     def test_group_tools_out_of_section(self):
         self._init_tool()

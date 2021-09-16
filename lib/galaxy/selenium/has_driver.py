@@ -50,6 +50,9 @@ class HasDriver:
     def assert_absent(self, selector_template):
         assert len(self.find_elements(selector_template)) == 0
 
+    def element_absent(self, selector_template):
+        return len(self.find_elements(selector_template)) == 0
+
     def wait_for_xpath(self, xpath, **kwds):
         element = self._wait_on(
             ec.presence_of_element_located((By.XPATH, xpath)),
@@ -205,8 +208,12 @@ class HasDriver:
         submit_button.click()
 
     def prepend_timeout_message(self, timeout_exception, message):
+        msg = message
+        timeout_msg = timeout_exception.msg
+        if timeout_msg:
+            msg += f" {timeout_msg}"
         return TimeoutException(
-            msg=message + (timeout_exception.msg or ''),
+            msg=msg,
             screen=timeout_exception.screen,
             stacktrace=timeout_exception.stacktrace,
         )

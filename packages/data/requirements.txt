@@ -15,5 +15,6 @@ pysam
 social-auth-core[openidconnect]==3.3.0
 SQLAlchemy>=1.4.20,<2
 sqlalchemy-migrate
-tifffile<=2021.2.26 # Last release compatible with python 3.6
+tempita @ git+https://git@github.com/nsoranzo/tempita@main#egg=tempita  # Required by sqlalchemy-migrate, see https://github.com/galaxyproject/galaxy/issues/12412
+tifffile<=2020.9.3  # Last version compatible with python 3.6
 WebOb

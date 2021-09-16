@@ -11,13 +11,14 @@ import tempfile
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import List, NamedTuple, Type, Union
+from typing import cast, Dict, List, NamedTuple, Optional, Tuple, Type, Union
 from urllib.parse import unquote_plus
 
 import packaging.version
 import webob.exc
 from lxml import etree
 from mako.template import Template
+from pkg_resources import resource_string
 from webob.compat import cgi_FieldStorage
 
 from galaxy import (
@@ -42,10 +43,13 @@ from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parser import (
     get_tool_source,
     get_tool_source_from_representation,
+    RequiredFiles,
     ToolOutputCollectionPart
 )
 from galaxy.tool_util.parser.xml import XmlPageSource
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
+from galaxy.tool_util.toolbox import BaseGalaxyToolBox
+from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tools import expressions
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -80,7 +84,6 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.tools.test import parse_tests
-from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
     in_directory,
     listify,
@@ -191,6 +194,19 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "winSplitter": packaging.version.parse("1.0.1"),
 }
 
+BIOTOOLS_MAPPING_CONTENT = resource_string(__name__, 'biotools_mappings.tsv').decode("UTF-8")
+BIOTOOLS_MAPPING: Dict[str, str] = dict([cast(Tuple[str, str], tuple(x.split("\t"))) for x in BIOTOOLS_MAPPING_CONTENT.splitlines() if not x.startswith("#")])
+
+REQUIRE_FULL_DIRECTORY = {
+    "includes": [{"path": "**", "path_type": "glob"}],
+}
+IMPLICITLY_REQUIRED_TOOL_FILES: Dict[str, Dict] = {
+    "deseq2": {"version": packaging.version.parse("2.11.40.6"), "required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
+    # minimum example:
+    # "foobar": {"required": REQUIRE_FULL_DIRECTORY}
+    # if no version is specified, all versions without explicit RequiredFiles will be selected
+}
+
 
 class safe_update(NamedTuple):
     min_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
@@ -264,10 +280,17 @@ class ToolBox(BaseGalaxyToolBox):
         # FIXME: ./
         if tool_root_dir == './tools':
             tool_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'bundled'))
+        view_sources = StaticToolBoxViewSources(
+            view_directories=app.config.panel_views_dir,
+            view_dicts=app.config.panel_views,
+        )
+        default_panel_view = app.config.default_panel_view
         super().__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
+            view_sources=view_sources,
+            default_panel_view=default_panel_view,
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
 
@@ -756,7 +779,7 @@ class Tool(Dictifiable):
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
 
     def get_panel_section(self):
-        return self.app.toolbox.get_integrated_section_for_tool(self)
+        return self.app.toolbox.get_section_for_tool(self)
 
     def allow_user_access(self, user, attempting_access=True):
         """
@@ -809,9 +832,6 @@ class Tool(Dictifiable):
                 self.version = "1.0.0"
             else:
                 raise Exception(f"Missing tool 'version' for tool with id '{self.id}' at '{tool_source}'")
-
-        self.edam_operations = tool_source.parse_edam_operations()
-        self.edam_topics = tool_source.parse_edam_topics()
 
         # Support multi-byte tools
         self.is_multi_byte = tool_source.parse_is_multi_byte()
@@ -959,8 +979,41 @@ class Tool(Dictifiable):
         self.requirements = requirements
         self.containers = containers
 
+        required_files = tool_source.parse_required_files()
+        if required_files is None:
+            old_id = self.old_id
+            if old_id in IMPLICITLY_REQUIRED_TOOL_FILES:
+                lineage_requirement = IMPLICITLY_REQUIRED_TOOL_FILES[old_id]
+                lineage_requirement_until = lineage_requirement.get("version")
+                if lineage_requirement_until is None or self.version_object < lineage_requirement_until:
+                    required_files = RequiredFiles.from_dict(lineage_requirement["required"])
+        self.required_files = required_files
+
         self.citations = self._parse_citations(tool_source)
-        self.xrefs = tool_source.parse_xrefs()
+        xrefs = tool_source.parse_xrefs()
+        has_biotools_reference = any(x["reftype"] == "bio.tools" for x in xrefs)
+        if not has_biotools_reference:
+            legacy_biotools_ref = self.legacy_biotools_external_reference
+            if legacy_biotools_ref is not None:
+                xrefs.append({"value": legacy_biotools_ref, "reftype": "bio.tools"})
+        self.xrefs = xrefs
+
+        edam_operations = tool_source.parse_edam_operations()
+        edam_topics = tool_source.parse_edam_topics()
+        has_missing_data = len(edam_operations) == 0 or len(edam_topics) == 0
+        if has_missing_data:
+            biotools_reference = self.biotools_reference
+            if biotools_reference:
+                biotools_entry = self.app.biotools_metadata_source.get_biotools_metadata(biotools_reference)
+                if biotools_entry:
+                    edam_info = biotools_entry.edam_info
+                    if len(edam_operations) == 0:
+                        edam_operations = edam_info.edam_operations
+                    if len(edam_topics) == 0:
+                        edam_topics = edam_info.edam_topics
+
+        self.edam_operations = edam_operations
+        self.edam_topics = edam_topics
 
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
@@ -1397,6 +1450,25 @@ class Tool(Dictifiable):
             self.sharable_url = get_tool_shed_repository_url(
                 self.app, self.tool_shed, self.repository_owner, self.repository_name
             )
+
+    @property
+    def legacy_biotools_external_reference(self) -> Optional[str]:
+        """Return a bio.tools ID if any of tool's IDs are BIOTOOLS_MAPPING."""
+        for tool_id in self.all_ids:
+            if tool_id in BIOTOOLS_MAPPING:
+                return BIOTOOLS_MAPPING[tool_id]
+        return None
+
+    @property
+    def biotools_reference(self) -> Optional[str]:
+        """Return a bio.tools ID if external reference to it is found.
+
+        If multiple bio.tools references are found, return just the first one.
+        """
+        for xref in self.xrefs:
+            if xref["reftype"] == "bio.tools":
+                return xref["value"]
+        return None
 
     @property
     def help(self):

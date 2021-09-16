@@ -1,5 +1,6 @@
 import json
 import time
+import urllib
 from datetime import datetime
 
 from requests import delete, put
@@ -225,10 +226,28 @@ class HistoryContentsApiTestCase(ApiTestCase):
     def test_update_batch(self):
         hda1 = self._wait_for_new_hda()
         assert str(hda1["deleted"]).lower() == "false"
+        assert str(hda1["visible"]).lower() == "true"
+
+        # update deleted flag => true
         payload = dict(items=[{"history_content_type": "dataset", "id": hda1["id"]}], deleted=True)
         update_response = self._raw_update_batch(payload)
         objects = update_response.json()
-        assert objects[0]["deleted"]
+        assert objects[0]["deleted"] is True
+        assert objects[0]["visible"] is True
+
+        # update visibility flag => false
+        payload = dict(items=[{"history_content_type": "dataset", "id": hda1["id"]}], visible=False)
+        update_response = self._raw_update_batch(payload)
+        objects = update_response.json()
+        assert objects[0]["deleted"] is True
+        assert objects[0]["visible"] is False
+
+        # update both flags
+        payload = dict(items=[{"history_content_type": "dataset", "id": hda1["id"]}], deleted=False, visible=True)
+        update_response = self._raw_update_batch(payload)
+        objects = update_response.json()
+        assert objects[0]["deleted"] is False
+        assert objects[0]["visible"] is True
 
     def test_update_type_failures(self):
         hda1 = self._wait_for_new_hda()
@@ -410,13 +429,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert not datasets[1]["visible"]
 
     def test_update_dataset_collection(self):
-        payload = self.dataset_collection_populator.create_pair_payload(
-            self.history_id,
-            type="dataset_collection"
-        )
-        dataset_collection_response = self._post(f"histories/{self.history_id}/contents", payload)
-        self._assert_status_code_is(dataset_collection_response, 200)
-        hdca = dataset_collection_response.json()
+        hdca = self._create_pair_collection()
         update_url = self._api_url(f"histories/{self.history_id}/contents/dataset_collections/{hdca['id']}", use_key=True)
         # Awkward json.dumps required here because of https://trello.com/c/CQwmCeG6
         body = json.dumps(dict(name="newnameforpair"))
@@ -424,6 +437,30 @@ class HistoryContentsApiTestCase(ApiTestCase):
         self._assert_status_code_is(update_response, 200)
         show_response = self.__show(hdca)
         assert str(show_response.json()["name"]) == "newnameforpair"
+
+    def test_update_batch_dataset_collection(self):
+        hdca = self._create_pair_collection()
+        body = {
+            "items": [{
+                "history_content_type": "dataset_collection",
+                "id": hdca["id"]
+            }],
+            "name": "newnameforpair"
+        }
+        update_response = self._put(f"histories/{self.history_id}/contents", data=body, json=True)
+        self._assert_status_code_is(update_response, 200)
+        show_response = self.__show(hdca)
+        assert str(show_response.json()["name"]) == "newnameforpair"
+
+    def _create_pair_collection(self):
+        payload = self.dataset_collection_populator.create_pair_payload(
+            self.history_id,
+            type="dataset_collection"
+        )
+        dataset_collection_response = self._post(f"histories/{self.history_id}/contents", payload)
+        self._assert_status_code_is(dataset_collection_response, 200)
+        hdca = dataset_collection_response.json()
+        return hdca
 
     def test_hdca_copy(self):
         hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
@@ -567,7 +604,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
             assert isinstance(c['job_state_summary'], dict)
 
     def _get_content(self, history_id, update_time):
-        return self._get(f"/api/histories/{history_id}/contents/near/100/100?update_time-ge={update_time}").json()
+        return self._get(f"/api/histories/{history_id}/contents/near/100/100?update_time-gt={update_time}").json()
 
     def test_history_contents_near_with_update_time(self):
         with self.dataset_populator.test_history() as history_id:
@@ -578,6 +615,63 @@ class HistoryContentsApiTestCase(ApiTestCase):
             self.dataset_populator.wait_for_history(history_id)
             all_datasets_finished = first_time = datetime.utcnow().isoformat()
             assert len(self._get_content(history_id, update_time=all_datasets_finished)) == 0
+
+    def test_history_contents_near_with_since(self):
+        with self.dataset_populator.test_history() as history_id:
+            original_history = self._get(f"/api/histories/{history_id}").json()
+            original_history_stamp = original_history['update_time']
+
+            # check empty contents, with no since flag, should return an empty 200 result
+            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100")
+            assert history_contents.status_code == 200
+            assert len(history_contents.json()) == 0
+
+            # adding a since parameter, should return a 204 if history has not changed at all
+            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={original_history_stamp}")
+            assert history_contents.status_code == 204
+
+            # add some stuff
+            self.dataset_collection_populator.create_list_in_history(history_id=history_id)
+            self.dataset_populator.wait_for_history(history_id)
+
+            # check to make sure the added stuff is there
+            changed_history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100")
+            assert changed_history_contents.status_code == 200
+            assert len(changed_history_contents.json()) == 4
+
+            # check to make sure the history date has actually changed due to changing the contents
+            changed_history = self._get(f"/api/histories/{history_id}").json()
+            changed_history_stamp = changed_history['update_time']
+            assert original_history_stamp != changed_history_stamp
+
+            # a repeated contents request with since=original_history_stamp should now return data
+            # because we have added datasets and the update_time should have been changed
+            changed_content = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={original_history_stamp}")
+            assert changed_content.status_code == 200
+            assert len(changed_content.json()) == 4
+
+    def test_history_contents_near_since_with_standard_iso8601_date(self):
+        with self.dataset_populator.test_history() as history_id:
+            original_history = self._get(f"/api/histories/{history_id}").json()
+            original_history_stamp = original_history['update_time']
+
+            # this is the standard date format that javascript will emit using .toISOString(), it
+            # should be the expected date format for any modern api
+            # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString
+
+            # checking to make sure that the same exact history.update_time returns a "not changed"
+            # result after date parsing
+            valid_iso8601_date = original_history_stamp + 'Z'
+            encoded_valid_date = urllib.parse.quote_plus(valid_iso8601_date)
+            history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={encoded_valid_date}")
+            assert history_contents.status_code == 204
+
+            # test parsing for other standard is08601 formats
+            sample_formats = ['2021-08-26T15:53:02+00:00', '2021-08-26T15:53:02Z', '20210826T155302Z', '2002-10-10T12:00:00-05:00']
+            for date_str in sample_formats:
+                encoded_date = urllib.parse.quote_plus(date_str)  # handles pluses, minuses
+                history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={encoded_date}")
+                self._assert_status_code_is_ok(history_contents)
 
     @skip_without_tool('cat_data_and_sleep')
     def test_history_contents_near_with_update_time_implicit_collection(self):
@@ -621,3 +715,18 @@ class HistoryContentsApiTestCase(ApiTestCase):
                 if any(c for c in update if c['history_content_type'] == 'dataset_collection' and c['populated_state'] == 'ok'):
                     return
             raise Exception(f"History content update time query did not include populated_state update for dynamic nested collection {collection_id}")
+
+    def test_index_filter_by_type(self):
+        history_id = self.dataset_populator.new_history()
+        self.dataset_populator.new_dataset(history_id)
+        self.dataset_collection_populator.create_list_in_history(history_id=history_id)
+
+        contents_response = self._get(f"histories/{history_id}/contents").json()
+        num_items = len(contents_response)
+        expected_num_collections = 1
+        expected_num_datasets = num_items - expected_num_collections
+
+        contents_response = self._get(f"histories/{history_id}/contents?types=dataset").json()
+        assert len(contents_response) == expected_num_datasets
+        contents_response = self._get(f"histories/{history_id}/contents?types=dataset_collection").json()
+        assert len(contents_response) == expected_num_collections

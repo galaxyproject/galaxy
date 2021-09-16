@@ -1,8 +1,8 @@
 <template>
     <ConfigProvider v-slot="{ config }">
         <CurrentUser v-slot="{ user }">
-            <UserHistories v-if="user" :user="user" v-slot="{ currentHistory }">
-                <div>
+            <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
+                <div v-if="currentHistoryId">
                     <LoadingSpan v-if="showLoading" message="Loading Tool" />
                     <div v-if="showEntryPoints">
                         <ToolEntryPoints v-for="job in entryPoints" :job-id="job.id" :key="job.id" />
@@ -41,10 +41,8 @@
                         <template v-slot:body>
                             <FormDisplay
                                 :id="formConfig.id"
-                                :inputs="inputs"
-                                :validation-errors="validationErrors"
+                                :inputs="formConfig.inputs"
                                 :validation-scroll-to="validationScrollTo"
-                                :form-config="formConfig"
                                 @onChange="onChange"
                                 @onValidation="onValidation"
                             />
@@ -54,7 +52,7 @@
                                 title="Email notification"
                                 help="Send an email notification when the job completes."
                                 type="boolean"
-                                v-model="email"
+                                v-model="useEmail"
                             />
                             <FormElement
                                 v-if="remapAllowed"
@@ -62,7 +60,7 @@
                                 :title="remapTitle"
                                 :help="remapHelp"
                                 type="boolean"
-                                v-model="remap"
+                                v-model="useJobRemapping"
                             />
                             <FormElement
                                 v-if="reuseAllowed(user)"
@@ -70,14 +68,14 @@
                                 title="Attempt to re-use jobs with identical parameters?"
                                 help="This may skip executing jobs that you have already run."
                                 type="boolean"
-                                v-model="reuse"
+                                v-model="useCachedJobs"
                             />
                         </template>
                         <template v-slot:buttons>
                             <ButtonSpinner
                                 id="execute"
                                 title="Execute"
-                                @onClick="onExecute(config, currentHistory.id)"
+                                @onClick="onExecute(config, currentHistoryId)"
                                 :wait="showExecuting"
                                 :tooltip="tooltip"
                             />
@@ -90,9 +88,9 @@
 </template>
 
 <script>
-import Scroller from "vue-scrollto";
 import { getGalaxyInstance } from "app";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
+import { allowCachedJobs } from "./utilities";
 import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import CurrentUser from "components/providers/CurrentUser";
@@ -147,13 +145,14 @@ export default {
             error: null,
             formConfig: {},
             formData: {},
+            remapAllowed: false,
             errorTitle: null,
             errorContent: null,
             messageVariant: "",
             messageText: "",
-            reuse: false,
-            email: false,
-            remap: false,
+            useCachedJobs: false,
+            useEmail: false,
+            useJobRemapping: false,
             entryPoints: [],
             jobDef: {},
             jobResponse: {},
@@ -182,21 +181,15 @@ export default {
         errorContentPretty() {
             return JSON.stringify(this.errorContent, null, 4);
         },
-        inputs() {
-            return this.formConfig.inputs;
-        },
-        remapAllowed() {
-            return this.job_id && this.formConfig.job_remap;
-        },
         remapTitle() {
-            if (this.formConfig.job_remap === "job_produced_collection_elements") {
-                return "Replace elements in collection ?";
+            if (this.remapAllowed === "job_produced_collection_elements") {
+                return "Replace elements in collection?";
             } else {
-                return "Resume dependencies from this job ?";
+                return "Resume dependencies from this job?";
             }
         },
         remapHelp() {
-            if (this.formConfig.job_remap === "job_produced_collection_elements") {
+            if (this.remapAllowed === "job_produced_collection_elements") {
                 return "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collection that were produced during the previous tool run.";
             } else {
                 return "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
@@ -208,24 +201,19 @@ export default {
             return config.server_mail_configured && !user.isAnonymous;
         },
         reuseAllowed(user) {
-            if (user.preferences && "extra_user_preferences" in user.preferences) {
-                const extra_user_preferences = JSON.parse(user.preferences.extra_user_preferences);
-                const keyCached = "use_cached_job|use_cached_job_checkbox";
-                const hasCachedJobs = keyCached in extra_user_preferences;
-                return hasCachedJobs ? extra_user_preferences[keyCached] : false;
-            } else {
-                return false;
-            }
+            return allowCachedJobs(user.preferences);
         },
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
         },
-        onChange(newData) {
+        onChange(newData, refreshRequest) {
             this.formData = newData;
-            this.onUpdate();
+            if (refreshRequest) {
+                this.onUpdate();
+            }
         },
         onUpdate() {
-            updateToolFormData(this.formConfig.id, this.currentVersion, this.formData).then((data) => {
+            updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData).then((data) => {
                 this.formConfig = data;
             });
         },
@@ -239,6 +227,7 @@ export default {
             this.currentVersion = newVersion || this.currentVersion;
             getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
                 this.formConfig = data;
+                this.remapAllowed = this.job_id && data.job_remap;
                 this.showLoading = false;
                 this.showForm = true;
                 if (newVersion) {
@@ -262,13 +251,13 @@ export default {
                     ...this.formData,
                 },
             };
-            if (this.email) {
+            if (this.useEmail) {
                 jobDef.inputs["send_email_notification"] = true;
             }
-            if (this.remap) {
+            if (this.useJobRemapping) {
                 jobDef.inputs["rerun_remap_job_id"] = this.job_id;
             }
-            if (this.reuse) {
+            if (this.useCachedJobs) {
                 jobDef.inputs["use_cached_job"] = true;
             }
             console.debug("toolForm::onExecute()", jobDef);
@@ -295,14 +284,20 @@ export default {
                     if ([true, "true"].includes(config.enable_tool_recommendations)) {
                         this.showRecommendation = true;
                     }
-                    Scroller.scrollTo("body");
+                    document.querySelector(".center-panel").scrollTop = 0;
                 },
                 (e) => {
                     this.showExecuting = false;
+                    let genericError = true;
                     const errorData = e && e.response && e.response.data && e.response.data.err_data;
                     if (errorData) {
-                        this.validationErrors = errorData;
-                    } else {
+                        const errorEntries = Object.entries(errorData);
+                        if (errorEntries.length > 0) {
+                            this.validationScrollTo = errorEntries[0];
+                            genericError = false;
+                        }
+                    }
+                    if (genericError) {
                         this.showError = true;
                         this.showForm = false;
                         this.errorTitle = "Job submission failed";

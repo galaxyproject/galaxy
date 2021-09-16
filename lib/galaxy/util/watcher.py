@@ -1,4 +1,4 @@
-# TODO: this is largely copied from galaxy.tools.toolbox.galaxy and generalized, the tool-oriented watchers in that
+# TODO: this is largely copied from galaxy.tool_util.toolbox.galaxy and generalized, the tool-oriented watchers in that
 # module should probably be updated to use this where possible
 
 
@@ -65,10 +65,10 @@ def get_watcher(config, config_name, default="False", monitor_what_str=None, wat
 
 class BaseWatcher:
 
-    def __init__(self, observer_class, even_handler_class, **kwargs):
+    def __init__(self, observer_class, event_handler_class, **kwargs):
         self.observer = None
         self.observer_class = observer_class
-        self.event_handler = even_handler_class(self)
+        self.event_handler = event_handler_class(self)
         self.monitored_dirs = {}
 
     def start(self):

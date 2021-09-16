@@ -191,37 +191,6 @@ class BaseAPIController(BaseController):
             log.exception("Exception in get_object check for %s %s.", class_name, str(id))
             raise HTTPInternalServerError(comment=util.unicodify(e))
 
-    def validate_in_users_and_groups(self, trans, payload):
-        """
-        For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
-        """
-        def get_id(item, model_class, column):
-            try:
-                return trans.security.decode_id(item)
-            except Exception:
-                pass  # maybe an email/group name
-            # this will raise if the item is invalid
-            return trans.sa_session.query(model_class).filter(column == item).first().id
-        new_in_users = []
-        new_in_groups = []
-        invalid = []
-        for item in util.listify(payload.get('in_users', [])):
-            try:
-                new_in_users.append(get_id(item, trans.app.model.User, trans.app.model.User.table.c.email))
-            except Exception:
-                invalid.append(item)
-        for item in util.listify(payload.get('in_groups', [])):
-            try:
-                new_in_groups.append(get_id(item, trans.app.model.Group, trans.app.model.Group.name))
-            except Exception:
-                invalid.append(item)
-        if invalid:
-            msg = f"The following value(s) for associated users and/or groups could not be parsed: {', '.join(invalid)}."
-            msg += "  Valid values are email addresses of users, names of groups, or IDs of both."
-            raise Exception(msg)
-        payload['in_users'] = list(map(str, new_in_users))
-        payload['in_groups'] = list(map(str, new_in_groups))
-
     def not_implemented(self, trans, **kwd):
         raise HTTPNotImplemented()
 
@@ -307,7 +276,6 @@ class JSAppLauncher(BaseUIController):
         config = {
             'active_view': 'analysis',
             'enable_webhooks': True if trans.app.webhooks_registry.webhooks else False,
-            'toolbox': trans.app.toolbox.to_dict(trans),
             'message_box_visible': trans.app.config.message_box_visible,
             'show_inactivity_warning': trans.app.config.user_activation_on and trans.user and not trans.user.active,
             'tool_shed_urls': list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
@@ -336,7 +304,7 @@ class JSAppLauncher(BaseUIController):
             serializer = self.config_serializer
             if self.user_manager.is_admin(trans.user, trans=trans):
                 serializer = self.admin_config_serializer
-            return serializer.serialize_to_view(self.app.config, view='all')
+            return serializer.serialize_to_view(self.app.config, view='all', host=trans.host)
         except Exception as exc:
             log.exception(exc)
             return {}
@@ -786,7 +754,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         # precondition: only add new revision on owned vis's
         # TODO:?? should we default title, dbkey, config? to which: visualization or latest_revision?
-        revision = trans.model.VisualizationRevision(visualization, title, dbkey, config)
+        revision = trans.model.VisualizationRevision(visualization=visualization, title=title, dbkey=dbkey, config=config)
+
         visualization.latest_revision = revision
         # TODO:?? does this automatically add revision to visualzation.revisions?
         trans.sa_session.add(revision)
@@ -1345,12 +1314,6 @@ class SharableMixin:
     def get_item(self, trans, id):
         """ Return item based on id. """
         raise NotImplementedError()
-
-
-class UsesQuotaMixin:
-
-    def get_quota(self, trans, id, check_ownership=False, check_accessible=False, deleted=None):
-        return self.get_object(trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted)
 
 
 class UsesTagsMixin(SharableItemSecurityMixin):

@@ -1,5 +1,5 @@
 import { of, Observable, Subject, partition, merge } from "rxjs";
-import { tap, map, pluck, switchMap, publish, distinctUntilChanged, share } from "rxjs/operators";
+import { tap, map, pluck, switchMap, publish, distinctUntilChanged, share, throttleTime } from "rxjs/operators";
 import { chunk } from "utils/observable";
 import { SearchParams } from "../../model/SearchParams";
 import { loadDscContent } from "../../caching";
@@ -13,6 +13,8 @@ export const collectionPayload = (cfg = {}) => {
         pageSize = SearchParams.pageSize,
         debug = false,
         loadingEvents$ = new Subject(),
+        debouncePeriod = 100,
+        chunkSize = pageSize
     } = cfg;
 
     const { totalElements: totalMatches, contents_url } = dsc;
@@ -34,7 +36,7 @@ export const collectionPayload = (cfg = {}) => {
 
         // chunk the input to the server request so we don't request for every single mouse move
         const chunked$ = elementIndex$.pipe(
-            chunk(pageSize, false),
+            chunk(chunkSize),
             distinctUntilChanged(),
         );
 
@@ -48,6 +50,7 @@ export const collectionPayload = (cfg = {}) => {
         );
 
         const serverLoad$ = pagination$.pipe(
+            throttleTime(debouncePeriod, undefined, { trailing: true }),
             switchMap(pagination => of([contents_url, filters, pagination]).pipe(
                 tap(() => loadingEvents$.next(true)),
                 loadDscContent({ debug }),

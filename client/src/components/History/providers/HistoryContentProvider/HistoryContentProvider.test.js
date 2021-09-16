@@ -148,7 +148,7 @@ describe("HistoryContentProvider", () => {
 
         test("should show results when we pick a HID by scroller height", async () => {
             // set scroller to non-existent hid
-            wrapper.vm.setScrollPos({ cursor: 0.52323, key: null });
+            wrapper.vm.setScrollPos({ cursor: 0.52323 });
             const scrollPayload = await payloadChange({ vm: wrapper.vm });
             const { contents, startKey, topRows, bottomRows, totalMatches } = scrollPayload;
             const hids = payloadHids(scrollPayload);

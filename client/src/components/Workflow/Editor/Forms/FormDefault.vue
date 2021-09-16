@@ -27,7 +27,7 @@
             </b-button>
         </template>
         <template v-slot:body>
-            <FormMessage class="mt-2" :message="errorText" variant="danger" :persistent="true" />
+            <FormMessage :message="errorText" variant="danger" :persistent="true" />
             <FormElement
                 id="__label"
                 :value="node.label"

@@ -32,6 +32,7 @@ export { default as LegacyGridView } from "legacy/grid/grid-view";
 export { create_chart, create_histogram } from "reports/run_stats";
 export { default as ToolshedGroups } from "toolshed/toolshed.groups";
 export { default as IES } from "galaxy.interactive_environments";
+export { openGlobalUploadModal } from "components/Upload";
 
 export { Toast } from "ui/toast"; // TODO: remove when external consumers are updated/gone (IES right now)
 
@@ -92,15 +93,9 @@ export const chartUtilities = {
 export { initMasthead } from "components/Masthead/initMasthead";
 export { panelManagement } from "onload/globalInits/panelManagement";
 export { mountMakoTags } from "components/Tags";
-export { mountJobMetrics } from "components/JobMetrics";
-export { mountJobParameters } from "components/JobParameters";
 export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
 export { mountPageEditor } from "components/PageEditor/mount";
 export { mountPageDisplay } from "components/PageDisplay";
-export { mountDestinationParams } from "components/JobDestinationParams";
-export { mountDatasetInformation } from "components/DatasetInformation";
-export { mountDatasetStorage } from "components/Dataset/DatasetStorage";
-export { mountJobInformation } from "components/JobInformation";
 
 // Used in common.mako
 export { default as store } from "storemodern";

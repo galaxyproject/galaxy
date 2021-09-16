@@ -54,7 +54,7 @@ PATH_CONFIG_PROPERTIES = [
     'citation_cache_data_dir',
     'citation_cache_lock_dir',
     'cluster_files_directory',
-    'containers_resolvers_config_file',
+    'container_resolvers_config_file',
     'data_manager_config_file',
     'datatypes_config_file',
     'dependency_resolvers_config_file',

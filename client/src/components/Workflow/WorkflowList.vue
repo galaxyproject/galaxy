@@ -14,7 +14,7 @@
                             id="workflow-search"
                             class="m-1"
                             name="query"
-                            placeholder="Search Workflows"
+                            :placeholder="titleSearchWorkflows"
                             autocomplete="off"
                             type="text"
                             v-model="filter"
@@ -24,11 +24,11 @@
                         <span class="float-right">
                             <b-button id="workflow-create" class="m-1" @click="createWorkflow">
                                 <font-awesome-icon icon="plus" />
-                                Create
+                                {{ titleCreate }}
                             </b-button>
                             <b-button id="workflow-import" class="m-1" @click="importWorkflow">
                                 <font-awesome-icon icon="upload" />
-                                Import
+                                {{ titleImport }}
                             </b-button>
                         </span>
                     </b-col>
@@ -59,7 +59,10 @@
                         <font-awesome-icon v-if="row.item.shared" v-b-tooltip.hover title="Shared" icon="share-alt" />
                     </template>
                     <template v-slot:cell(show_in_tool_panel)="row">
-                        <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
+                        <b-form-checkbox
+                            :checked="row.item.show_in_tool_panel"
+                            @change="(checked) => bookmarkWorkflow(row.item, checked)"
+                        />
                     </template>
                     <template v-slot:cell(update_time)="data">
                         <UtcDate :date="data.value" mode="elapsed" />
@@ -67,7 +70,7 @@
                     <template v-slot:cell(execute)="row">
                         <b-button
                             v-b-tooltip.hover.bottom
-                            title="Run Workflow"
+                            :title="titleRunWorkflow"
                             class="workflow-run btn-sm btn-primary fa fa-play"
                             @click.stop="executeWorkflow(row.item)"
                         />
@@ -83,6 +86,7 @@
     </div>
 </template>
 <script>
+import _l from "utils/localization";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
@@ -115,24 +119,26 @@ export default {
             fields: [
                 {
                     key: "name",
+                    label: _l("Name"),
                     sortable: true,
                 },
                 {
                     key: "tags",
+                    label: _l("Tags"),
                     sortable: true,
                 },
                 {
-                    label: "Updated",
+                    label: _l("Updated"),
                     key: "update_time",
                     sortable: true,
                 },
                 {
-                    label: "Sharing",
+                    label: _l("Sharing"),
                     key: "published",
                     sortable: true,
                 },
                 {
-                    label: "Bookmarked",
+                    label: _l("Bookmarked"),
                     key: "show_in_tool_panel",
                     sortable: true,
                 },
@@ -147,6 +153,10 @@ export default {
             messageVariant: null,
             nWorkflows: 0,
             workflows: [],
+            titleSearchWorkflows: _l("Search Workflows"),
+            titleCreate: _l("Create"),
+            titleImport: _l("Import"),
+            titleRunWorkflow: _l("Run workflow"),
         };
     },
     computed: {
@@ -192,14 +202,13 @@ export default {
         executeWorkflow: function (workflow) {
             window.location = `${this.root}workflows/run?id=${workflow.id}`;
         },
-        bookmarkWorkflow: function (workflow) {
+        bookmarkWorkflow: function (workflow, checked) {
             // This reloads the whole page, so that the workflow appears in the tool panel.
             // Ideally we would notify only the tool panel of a change
             const id = workflow.id;
-            const show_in_tool_panel = workflow.show_in_tool_panel;
             const tags = workflow.tags;
             const data = {
-                show_in_tool_panel: !show_in_tool_panel,
+                show_in_tool_panel: checked,
                 tags: tags,
             };
             this.services

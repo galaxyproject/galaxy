@@ -135,6 +135,7 @@ export var DatasetListItemView = _super.extend(
             _super.prototype._swapNewRender.call(this, $newRender);
             if (this.model.has("state")) {
                 this.$el.addClass(`state-${this.model.get("state")}`);
+                this.$el.attr("data-state", this.model.get("state"));
             }
             return this.$el;
         },
@@ -278,15 +279,11 @@ export var DatasetListItemView = _super.extend(
                 href: this.model.urls.show_params,
                 target: this.linkTarget,
                 faIcon: "fa-info-circle",
-                onclick: function (ev) {
+                onclick: (ev) => {
                     const Galaxy = getGalaxyInstance();
-                    if (Galaxy.frame && Galaxy.frame.active) {
-                        Galaxy.frame.add({
-                            title: _l("Dataset details"),
-                            url: this.href,
-                        });
+                    if (Galaxy.router) {
                         ev.preventDefault();
-                        ev.stopPropagation();
+                        Galaxy.router.push(`/datasets/${this.model.get("id")}/details`);
                     }
                 },
             });

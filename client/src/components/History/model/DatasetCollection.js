@@ -7,29 +7,23 @@
 
 import { Content } from "./Content";
 import { JobStateSummary } from "./JobStateSummary";
+import { scrubModelProps } from "utils/safeAssign";
 
 export class DatasetCollection extends Content {
     loadProps(raw = {}) {
         if (!raw.contents_url) {
-            // console.log("ouch", raw);
             throw new Error("missing contents_url", raw);
         }
         super.loadProps(raw);
     }
 
-    // number of contained contents
-    // Need to do some manual handling, because once again, the API is
-    // inconsistent, element_count not returned in the case of a pair. It
-    // should be two, but we need to add that value in.
     get totalElements() {
         if ("element_count" in this) {
             return this.element_count;
         }
-
         if (this.collection_type == "paired") {
             return 2;
         }
-
         return undefined;
     }
 
@@ -58,14 +52,34 @@ export class DatasetCollection extends Content {
 
     // amalgam state value
     get state() {
-        return this.jobSummary.state || this.populated_state;
+        return this.jobSummary.state;
     }
 
     get jobSummary() {
-        return new JobStateSummary(this);
+        return Object.freeze(new JobStateSummary(this));
+    }
+
+    clone() {
+        const newProps = cleanDscProps(this);
+        return new DatasetCollection(newProps);
+    }
+
+    patch(newProps) {
+        const cleanProps = cleanDscProps({ ...this, ...newProps });
+        return new DatasetCollection(cleanProps);
+    }
+
+    equals(other) {
+        return DatasetCollection.equals(this, other);
     }
 }
 
 DatasetCollection.equals = function (a, b) {
     return JSON.stringify(a) == JSON.stringify(b);
+};
+
+const scrubber = scrubModelProps(DatasetCollection);
+export const cleanDscProps = (props = {}) => {
+    const cleanProps = JSON.parse(JSON.stringify(props));
+    return scrubber(cleanProps);
 };

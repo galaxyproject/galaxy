@@ -100,7 +100,7 @@
 
     <div class="unified-panel-body">
         <div style="overflow: auto; height: 100%;">
-            <div class="page-body">
+            <div class="page-body p-3">
                 <div style="float: right">
                     ${self.render_item_links( item )}
                 </div>

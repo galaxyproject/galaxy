@@ -40,6 +40,7 @@ PACKAGES = [
     'galaxy.model.dataset_collections',
     'galaxy.model.dataset_collections.types',
     'galaxy.model.migrate',
+    'galaxy.model.migrate.triggers',
     'galaxy.model.migrate.versions',
     'galaxy.model.orm',
     'galaxy.model.store',

@@ -1,0 +1,73 @@
+<tool id="CONVERTER_mdconvert" name="Converter for XTC, DCD, and TRR" version="1.0.0" hidden="true" profile="21.09">
+    <requirements>
+        <requirement type="package" version="1.9.4">mdtraj</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+        ln -s '$input1' ./input.${input1.ext} &&
+        mdconvert ./input.${input1.ext} -o ./output.$__target_datatype__ &&
+        mv ./output.$__target_datatype__ '$output1' &&
+        cp '$ext_config' 'galaxy.json'
+    ]]></command>
+    <configfiles>
+        <configfile name="ext_config">{"output1": {
+  "name": "$input1.name converted to $__target_datatype__",
+  "ext": "$__target_datatype__"
+}}</configfile>
+    </configfiles>
+    <inputs>
+        <param format="xtc,dcd,trr" name="input1" type="data" label="Choose input file"/>
+        <param name="__target_datatype__" type="select" label="Target data type">
+            <option value="dcd">dcd</option>
+            <option value="trr">trr</option>
+            <option value="xtc">xtc</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data format="auto" name="output1"/>
+    </outputs>
+    <tests>
+        <!-- to dcd-->
+        <test>
+            <param name="input1" ftype="xtc" value="traj.xtc"/>
+            <param name="__target_datatype__" value="dcd"/>
+            <output name="output1" ftype="dcd">
+                <assert_contents>
+                    <has_size value="540"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input1" ftype="trr" value="traj.trr"/>
+            <param name="__target_datatype__" value="dcd"/>
+            <output name="output1" ftype="dcd">
+                <assert_contents>
+                    <has_size value="540"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- to trr-->
+        <test>
+            <param name="input1" ftype="xtc" value="traj.xtc"/>
+            <param name="__target_datatype__" value="trr"/>
+            <output name="output1" ftype="trr" value="traj.trr"/>
+        </test>
+        <test>
+            <param name="input1" ftype="dcd" value="traj.dcd"/>
+            <param name="__target_datatype__" value="trr"/>
+            <output name="output1" ftype="trr" value="traj.trr"/>
+        </test>
+        <!-- to xtc-->
+        <test>
+            <param name="input1" ftype="xtc" value="traj.xtc"/>
+            <param name="__target_datatype__" value="xtc"/>
+            <output name="output1" ftype="xtc" value="traj.xtc"/>
+        </test>
+        <test>
+            <param name="input1" ftype="trr" value="traj.trr"/>
+            <param name="__target_datatype__" value="xtc"/>
+            <output name="output1" ftype="xtc" value="traj.xtc"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -438,9 +438,18 @@ galaxy:
 
   # Container resolvers configuration (beta). Set up a file describing
   # container resolvers to use when discovering containers for Galaxy.
-  # If this is set to None, the default containers loaded is determined
-  # by enable_mulled_containers.
-  #containers_resolvers_config_file: null
+  # If this is set to None, the default container resolvers loaded is
+  # determined by enable_mulled_containers.
+  #container_resolvers_config_file: null
+
+  # Rather than specifying a container_resolvers_config_file, the
+  # definition of the resolvers to enable can be embedded into Galaxy's
+  # config with this option. This has no effect if a
+  # container_resolvers_config_file is used.
+  # The syntax, available resolvers, and documentation of their options
+  # is explained in detail in the documentation:
+  # https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+  #container_resolvers: null
 
   # involucro is a tool used to build Docker or Singularity containers
   # for tools from Conda dependencies referenced in tools as
@@ -649,6 +658,31 @@ galaxy:
   # they are needed. This results in faster startup times but uses more
   # memory when using forked Galaxy processes.
   #delay_tool_initialization: false
+
+  # Point Galaxy at a repository consisting of a copy of the bio.tools
+  # database (e.g. https://github.com/bio-tools/content/) to resolve
+  # bio.tools data for tool metadata.
+  #biotools_content_directory: null
+
+  # Set this to true to attempt to resolve bio.tools metadata for tools
+  # for tool not resovled via biotools_content_directory.
+  #biotools_use_api: false
+
+  # bio.tools web service request related caching. The type of beaker
+  # cache used.
+  #biotools_service_cache_type: file
+
+  # bio.tools web service request related caching. The data directory to
+  # point beaker cache at.
+  # The value of this option will be resolved with respect to
+  # <cache_dir>.
+  #biotools_service_cache_data_dir: biotools/data
+
+  # bio.tools web service request related caching. The lock directory to
+  # point beaker cache at.
+  # The value of this option will be resolved with respect to
+  # <cache_dir>.
+  #biotools_service_cache_lock_dir: biotools/locks
 
   # Citation related caching.  Tool citations information maybe fetched
   # from external sources such as https://doi.org/ by Galaxy - the
@@ -1659,14 +1693,33 @@ galaxy:
   # workflows built using these modules may not function in the future.)
   #enable_beta_workflow_modules: false
 
-  # Enable beta EDAM organised toolbox which ignores admin managed
-  # sections in lieu of EDAM topics only.
-  #enable_beta_edam_toolbox: false
+  # Comma-separated list of the EDAM panel views to load - choose from
+  # merged, operations, topics. Set to empty string to disable EDAM all
+  # together. Set default_panel_view to 'ontology:edam_topics' to
+  # override default tool panel to use an EDAM view.
+  #edam_panel_views: operations,topics
 
-  # Sets the path to EDAM ontology file.
+  # Sets the path to EDAM ontology file - if the path doesn't exist PyPI
+  # package data will be loaded.
   # The value of this option will be resolved with respect to
   # <data_dir>.
-  #beta_edam_toolbox_ontology_path: EDAM.tsv
+  #edam_toolbox_ontology_path: EDAM.tsv
+
+  # Directory to check out for toolbox tool panel views. The path is
+  # relative to the Galaxy root dir.  To use an absolute path begin the
+  # path with '/'.  This is a comma-separated list.
+  #panel_views_dir: config/plugins/activities
+
+  # Definitions of static toolbox panel views embedded directly in the
+  # config instead of reading YAML from directory with panel_views_dir.
+  #panel_views: null
+
+  # Default tool panel view for the current Galaxy configuration. This
+  # should refer to an id of a panel view defined using the panel_views
+  # or panel_views_dir configuration options or an EDAM panel view. The
+  # default panel view is simply called `default` and refers to the tool
+  # panel state defined by the integrated tool panel.
+  #default_panel_view: default
 
   # Default format for the export of workflows. Possible values are 'ga'
   # or 'format2'.
@@ -2188,7 +2241,7 @@ galaxy:
   # The base module(s) that are searched for modules for toolbox
   # filtering (https://galaxyproject.org/user-defined-toolbox-filters/)
   # functions.
-  #toolbox_filter_base_modules: galaxy.tools.filters,galaxy.tools.toolbox.filters
+  #toolbox_filter_base_modules: galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters
 
   # Galaxy uses AMQP internally for communicating between processes.
   # For example, when reloading the toolbox or locking job execution,

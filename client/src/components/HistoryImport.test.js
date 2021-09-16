@@ -13,6 +13,7 @@ const TEST_SOURCE_URL = "http://galaxy.example/import";
 const TEST_PLUGINS_URL = "/api/remote_files/plugins";
 
 jest.mock("components/JobStates/wait");
+jest.mock("components/History/caching");
 
 describe("HistoryImport.vue", () => {
     let axiosMock;

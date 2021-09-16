@@ -83,7 +83,7 @@ export const ContentProvider = {
 
     methods: {
         resetScrollPos() {
-            this.setScrollPos(ScrollPos.create());
+            this.setScrollPos();
         },
 
         initStreams() {
@@ -96,8 +96,8 @@ export const ContentProvider = {
          * cursor (0-1 value representing how far down it is)
          * @param {object} Object consisting of key and cursor props
          */
-        setScrollPos({ cursor = 0.0, key = null } = {}) {
-            if (isValidNumber(cursor)) {
+        setScrollPos({ cursor = null, key = null } = {}) {
+            if (isValidNumber(cursor) || key !== null) {
                 this.scrollPos = ScrollPos.create({ cursor, key });
             }
         },

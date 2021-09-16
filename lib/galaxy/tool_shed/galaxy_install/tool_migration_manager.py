@@ -23,8 +23,8 @@ from galaxy.tool_shed.util.basic_util import remove_dir, strip_path
 from galaxy.tool_shed.util.hg_util import clone_repository, get_config_from_disk
 from galaxy.tool_shed.util.repository_util import create_or_update_tool_shed_repository
 from galaxy.tool_shed.util.tool_dependency_util import create_tool_dependency_objects
-from galaxy.tools.toolbox import ToolSection
-from galaxy.tools.toolbox.parser import ensure_tool_conf_item
+from galaxy.tool_util.toolbox import ToolSection
+from galaxy.tool_util.toolbox.parser import ensure_tool_conf_item
 from galaxy.util import RW_R__R__
 from galaxy.util.tool_shed import common_util
 from galaxy.util.tool_shed.xml_util import parse_xml

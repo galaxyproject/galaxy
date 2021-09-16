@@ -1,5 +1,6 @@
 import collections
 import os
+import random
 import unittest
 import uuid
 from tempfile import NamedTemporaryFile
@@ -129,52 +130,50 @@ class MappingTests(BaseModelTestCase):
     def test_ratings(self):
         model = self.model
 
-        u = model.User(email="rater@example.com", password="password")
+        user_email = "rater@example.com"
+        u = model.User(email=user_email, password="password")
         self.persist(u)
 
-        def persist_and_check_rating(rating_class, **kwds):
-            rating_association = rating_class()
-            rating_association.rating = 5
-            rating_association.user = u
-            for key, value in kwds.items():
-                setattr(rating_association, key, value)
+        def persist_and_check_rating(rating_class, item):
+            rating = 5
+            rating_association = rating_class(u, item, rating)
             self.persist(rating_association)
             self.expunge()
-            stored_annotation = self.query(rating_class).all()[0]
-            assert stored_annotation.rating == 5
-            assert stored_annotation.user.email == "rater@example.com"
+            stored_rating = self.query(rating_class).all()[0]
+            assert stored_rating.rating == rating
+            assert stored_rating.user.email == user_email
 
         sw = model.StoredWorkflow()
         sw.user = u
         self.persist(sw)
-        persist_and_check_rating(model.StoredWorkflowRatingAssociation, stored_workflow=sw)
+        persist_and_check_rating(model.StoredWorkflowRatingAssociation, sw)
 
         h = model.History(name="History for Rating", user=u)
         self.persist(h)
-        persist_and_check_rating(model.HistoryRatingAssociation, history=h)
+        persist_and_check_rating(model.HistoryRatingAssociation, h)
 
         d1 = model.HistoryDatasetAssociation(extension="txt", history=h, create_dataset=True, sa_session=model.session)
         self.persist(d1)
-        persist_and_check_rating(model.HistoryDatasetAssociationRatingAssociation, hda=d1)
+        persist_and_check_rating(model.HistoryDatasetAssociationRatingAssociation, d1)
 
         page = model.Page()
         page.user = u
         self.persist(page)
-        persist_and_check_rating(model.PageRatingAssociation, page=page)
+        persist_and_check_rating(model.PageRatingAssociation, page)
 
         visualization = model.Visualization()
         visualization.user = u
         self.persist(visualization)
-        persist_and_check_rating(model.VisualizationRatingAssociation, visualization=visualization)
+        persist_and_check_rating(model.VisualizationRatingAssociation, visualization)
 
         dataset_collection = model.DatasetCollection(collection_type="paired")
         history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=dataset_collection)
         self.persist(history_dataset_collection)
-        persist_and_check_rating(model.HistoryDatasetCollectionRatingAssociation, history_dataset_collection=history_dataset_collection)
+        persist_and_check_rating(model.HistoryDatasetCollectionRatingAssociation, history_dataset_collection)
 
         library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
         self.persist(library_dataset_collection)
-        persist_and_check_rating(model.LibraryDatasetCollectionRatingAssociation, library_dataset_collection=library_dataset_collection)
+        persist_and_check_rating(model.LibraryDatasetCollectionRatingAssociation, library_dataset_collection)
 
     def test_display_name(self):
 
@@ -254,7 +253,7 @@ class MappingTests(BaseModelTestCase):
 
         sw = model.StoredWorkflow()
         sw.user = u
-        tag_and_test(sw, model.StoredWorkflowTagAssociation, "tagged_workflows")
+        tag_and_test(sw, model.StoredWorkflowTagAssociation, "tagged_stored_workflows")
 
         h = model.History(name="History for Tagging", user=u)
         tag_and_test(h, model.HistoryTagAssociation, "tagged_histories")
@@ -289,6 +288,42 @@ class MappingTests(BaseModelTestCase):
         model.session.flush()
         for i in range(elements):
             assert c1[i] == dces[i]
+
+    def test_dataset_instance_order(self):
+        model = self.model
+        u = model.User(email="mary@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        elements = []
+        list_pair = model.DatasetCollection(collection_type="list:paired")
+        for i in range(20):
+            pair = model.DatasetCollection(collection_type="pair")
+            forward = model.HistoryDatasetAssociation(extension="txt", history=h1, name=f"forward_{i}", create_dataset=True, sa_session=model.session)
+            reverse = model.HistoryDatasetAssociation(extension="bam", history=h1, name=f"reverse_{i}", create_dataset=True, sa_session=model.session)
+            dce1 = model.DatasetCollectionElement(collection=pair, element=forward, element_identifier=f"forward_{i}", element_index=1)
+            dce2 = model.DatasetCollectionElement(collection=pair, element=reverse, element_identifier=f"reverse_{i}", element_index=2)
+            to_persist = [(forward, reverse), (dce1, dce2)]
+            self.persist(pair)
+            for item in to_persist:
+                if i % 2:
+                    self.persist(item[0])
+                    self.persist(item[1])
+                else:
+                    self.persist(item[1])
+                    self.persist(item[0])
+            elements.append(model.DatasetCollectionElement(collection=list_pair, element=pair, element_index=i, element_identifier=str(i)))
+        self.persist(list_pair)
+        random.shuffle(elements)
+        for item in elements:
+            self.persist(item)
+        forward = []
+        reverse = []
+        for i, dataset_instance in enumerate(list_pair.dataset_instances):
+            if i % 2:
+                reverse.append(dataset_instance)
+            else:
+                forward.append(dataset_instance)
+        assert all(d.name == f"forward_{i}" for i, d in enumerate(forward))
+        assert all(d.name == f"reverse_{i}" for i, d in enumerate(reverse))
 
     def test_collections_in_histories(self):
         model = self.model

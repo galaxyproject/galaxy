@@ -50,7 +50,7 @@ QUnit.test("form", function (assert) {
         "Created data correct"
     );
     var mapped_ids = [];
-    form.data.matchModel(form.model.attributes, function (input, id) {
+    form.data.matchModel(form.model.get("inputs"), function (input, id) {
         mapped_ids.push($("#" + id).attr("tour_id"));
     });
     assert.ok(

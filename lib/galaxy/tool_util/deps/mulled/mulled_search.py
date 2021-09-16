@@ -145,29 +145,23 @@ class GitHubSearch():
         Takes search_string variable and return results from the bioconda-recipes github repository in JSON format
         """
         response = requests.get(
-            f"https://api.github.com/search/code?q={search_string}+in:path+repo:bioconda/bioconda-recipes+path:recipes", timeout=MULLED_SOCKET_TIMEOUT).json()
-        return response
+            f"https://api.github.com/search/code?q={search_string}+in:path+repo:bioconda/bioconda-recipes+path:recipes", timeout=MULLED_SOCKET_TIMEOUT)
+        response.raise_for_status()
+        return response.json()
 
-    def process_json(self, json, search_string):
+    def process_json(self, json_response, search_string):
         """
         Take JSON input and process it, returning the required data
         """
-        json = json['items'][0:10]  # get top ten results
-
-        results = []
-
-        for result in json:
-            results.append({'name': result['name'], 'path': result['path']})
-        return results
+        top_10_items = json_response['items'][0:10]  # get top ten results
+        return [{'name': result['name'], 'path': result['path']} for result in top_10_items]
 
     def recipe_present(self, search_string):
         """
         Check if a recipe exists in bioconda-recipes which matches search_string exactly
         """
-        if requests.get(f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{search_string}", timeout=MULLED_SOCKET_TIMEOUT).status_code == 200:
-            return True
-        else:
-            return False
+        response = requests.get(f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{search_string}", timeout=MULLED_SOCKET_TIMEOUT)
+        return response.status_code == 200
 
 
 def get_package_hash(packages, versions):

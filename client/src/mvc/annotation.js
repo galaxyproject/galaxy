@@ -34,6 +34,7 @@ var AnnotationEditor = Backbone.View.extend(baseMVC.LoggableMixin)
             //TODO: handle empties better
             this.$annotation().make_text_editable({
                 use_textarea: true,
+                data_description: "annotation input",
                 on_finish: function (newAnnotation) {
                     view.$annotation().text(newAnnotation);
                     view.model.save({ annotation: newAnnotation }, { silent: true }).fail(() => {
@@ -53,7 +54,7 @@ var AnnotationEditor = Backbone.View.extend(baseMVC.LoggableMixin)
                 _l("Annotation"),
                 "</label>",
                 // set up initial tags by adding as CSV to input vals (necc. to init select2)
-                '<div class="annotation">',
+                '<div class="annotation" data-description="history annotation">',
                 _.escape(annotation),
                 "</div>",
             ].join("");
