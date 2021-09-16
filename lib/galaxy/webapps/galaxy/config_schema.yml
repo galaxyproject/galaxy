@@ -2998,14 +2998,27 @@ mapping:
           config.
           This is a new feature and not recommended for production servers yet.
 
-      enable_job_recovery:
-        type: bool
-        default: true
+      job_handler_monitor_sleep:
+        type: float
+        default: 1
         required: false
         desc: |
-          Enable job recovery (if Galaxy is restarted while cluster jobs are running,
-          it can "recover" them when it starts).  This is not safe to use if you are
-          running more than one Galaxy server using the same database.
+          Each Galaxy job handler process runs one thread responsible for discovering jobs and
+          dispatching them to runners. This thread operates in a loop and sleeps for the given
+          number of seconds at the end of each iteration. This can be decreased if extremely high
+          job throughput is necessary, but doing so can increase CPU usage of handler processes.
+          Float values are allowed.
+
+      job_runner_monitor_sleep:
+        type: float
+        default: 1
+        required: false
+        desc: |
+          Each Galaxy job handler process runs one thread per job runner plugin responsible for
+          checking the state of queued and running jobs.  This thread operates in a loop and
+          sleeps for the given number of seconds at the end of each iteration. This can be
+          decreased if extremely high job throughput is necessary, but doing so can increase CPU
+          usage of handler processes. Float values are allowed.
 
       metadata_strategy:
         type: str

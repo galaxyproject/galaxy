@@ -702,7 +702,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
             except Exception:
                 log.exception('Unhandled exception checking active jobs')
             # Sleep a bit before the next state check
-            time.sleep(1)
+            time.sleep(self.app.config.job_runner_monitor_sleep)
 
     def monitor_job(self, job_state):
         self.monitor_queue.put(job_state)
