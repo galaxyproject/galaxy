@@ -4891,7 +4891,6 @@ class TestUser(BaseTest):
         user_authnz_token,
         user_preference,
         api_keys,
-        password_reset_token,
         history_user_share_association,
         data_manager_history_association,
         stored_workflow_user_share_association,
@@ -4928,7 +4927,6 @@ class TestUser(BaseTest):
         obj._preferences.set(user_preference)
 
         obj.api_keys.append(api_keys)
-        obj.reset_tokens.append(password_reset_token)
         obj.histories_shared_by_others.append(history_user_share_association)
         obj.data_manager_histories.append(data_manager_history_association)
         obj.workflows_shared_by_others.append(stored_workflow_user_share_association)
@@ -4952,7 +4950,6 @@ class TestUser(BaseTest):
             assert stored_obj.stored_workflow_menu_entries == [swme]
             assert user_preference in stored_obj._preferences.values()
             assert stored_obj.api_keys == [api_keys]
-            assert stored_obj.reset_tokens == [password_reset_token]
             assert stored_obj.histories_shared_by_others == [history_user_share_association]
             assert stored_obj.data_manager_histories == [data_manager_history_association]
             assert stored_obj.workflows_shared_by_others == [stored_workflow_user_share_association]
@@ -7109,14 +7106,6 @@ def page_tag_association(model, session):
 def page_user_share_association(model, session):
     instance = model.PageUserShareAssociation()
     yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
-def password_reset_token(model, session, user):
-    token = get_unique_value()
-    instance = model.PasswordResetToken(user, token)
-    where_clause = type(instance).token == token
-    yield from dbcleanup_wrapper(session, instance, where_clause)
 
 
 @pytest.fixture

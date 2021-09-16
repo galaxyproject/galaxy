@@ -495,7 +495,6 @@ class User(Base, Dictifiable, RepresentById):
     api_keys: 'List[APIKeys]' = relationship('APIKeys',
         back_populates='user',
         order_by=lambda: desc(APIKeys.create_time))  # type: ignore
-    reset_tokens = relationship('PasswordResetToken', back_populates='user')
     histories_shared_by_others = relationship('HistoryUserShareAssociation', back_populates='user')
     data_manager_histories = relationship('DataManagerHistoryAssociation', back_populates='user')
     workflows_shared_by_others = relationship('StoredWorkflowUserShareAssociation', back_populates='user')
@@ -763,7 +762,7 @@ class PasswordResetToken(Base, _HasTable):
     token = Column(String(32), primary_key=True, unique=True, index=True)
     expiration_time = Column(DateTime)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    user = relationship('User', back_populates='reset_tokens')
+    user = relationship('User')
 
     def __init__(self, user, token=None):
         if token:
