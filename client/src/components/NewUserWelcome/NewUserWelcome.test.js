@@ -18,7 +18,7 @@ describe("New user first view", () => {
             propsData,
             localVue,
             stubs: {
-                ConfigProvider: MockConfigProvider({ id: "fakeconfig" })
+                ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
             },
         });
     });
@@ -26,10 +26,10 @@ describe("New user first view", () => {
     it("Contains standard header", async () => {
         expect(wrapper.find(".main-header").text()).toContain("Welcome to Galaxy");
     });
+
     it("Starts on overall topics", async () => {
         wrapper.setData({ position: [] });
         expect(wrapper.vm.depth).toBe(0);
-        //expect(wrapper.vm.currentDiv).toBe(Topics);
         expect(wrapper.vm.currentNode.topics).toHaveLength(1);
     });
 });
@@ -42,19 +42,15 @@ describe("New user first view", () => {
         propsData = {
             newUserDict: testData,
         };
-        wrapper = mount(NewUserWelcome, {
+        wrapper = shallowMount(NewUserWelcome, {
             propsData,
             localVue,
-            stubs: {
-                ConfigProvider: MockConfigProvider({ id: "fakeconfig" })
-            },
         });
     });
 
-    it("Starts on overall topics", async () => {
+    it("Displays second tier of topics", async () => {
         wrapper.setData({ position: [0] });
         expect(wrapper.vm.depth).toBe(1);
-        //expect(wrapper.vm.currentDiv).toBe(Subtopics);
         expect(wrapper.vm.currentNode.topics).toHaveLength(2);
         expect(wrapper.vm.currentNode.title).toBe("testTopic");
     });
@@ -74,10 +70,9 @@ describe("New user first view", () => {
         });
     });
 
-    it("Starts on overall topics", async () => {
+    it("Goes into subtopic", async () => {
         wrapper.setData({ position: [0, 0] });
         expect(wrapper.vm.depth).toBe(2);
-        //expect(wrapper.vm.currentDiv).toBe(Slides);
         expect(wrapper.vm.currentNode.title).toBe("subtopicTitle");
         expect(wrapper.vm.currentNode.slides).toHaveLength(3);
     });
