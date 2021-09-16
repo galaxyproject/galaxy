@@ -53,7 +53,6 @@ import Confirmation from "components/login/Confirmation.vue";
 import DatasetDetails from "components/Details/DatasetDetails.vue";
 import Libraries from "components/Libraries";
 import { mountVueComponent } from "utils/mountVueComponent";
-import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome.vue";
 
 import { newUserDict } from "../../../../static/plugins/welcome_page/new_user/static/topics/index";
 
@@ -436,7 +435,11 @@ export const getAnalysisRouter = (Galaxy) => {
             const propsData = {
                 newUserDict,
             };
-            this._display_vue_helper(NewUserWelcome, propsData);
+            return import(/* webpackChunkName: "NewUserWelcome" */ "components/NewUserWelcome/NewUserWelcome.vue").then(
+                (module) => {
+                    this._display_vue_helper(module.default, propsData);
+                }
+            );
         },
 
         /** load the center panel with a tool form described by the given params obj */
