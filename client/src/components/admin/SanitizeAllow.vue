@@ -7,8 +7,8 @@
                     <b-tab title="HTML Sanitized">
                         <base-grid :is-loaded="isLoaded" :columns="toolshedColumns" id="sanitize-allow-grid">
                             <template v-slot:rows>
-                                <template v-for="row in toolshedBlocked">
-                                    <tr :key="row.tool_id">
+                                <template v-for="(row, blockedIdx) in toolshedBlocked">
+                                    <tr :key="blockedIdx">
                                         <td>{{ row.tool_name }}</td>
                                         <td>
                                             <span>{{ row.tool_id[0] }}</span>
@@ -33,8 +33,8 @@
                     <b-tab title="HTML Rendered">
                         <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
                             <template v-slot:rows>
-                                <template v-for="row in toolshedAllowed">
-                                    <tr :key="row.tool_id">
+                                <template v-for="(row, allowedIdx) in toolshedAllowed">
+                                    <tr :key="allowedIdx">
                                         <td>{{ row.tool_name }}</td>
                                         <td>
                                             <template v-for="(part, part_idx) in row.tool_id">
@@ -56,8 +56,8 @@
                     <b-tab title="HTML Sanitized">
                         <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
                             <template v-slot:rows>
-                                <template v-for="row in localBlocked">
-                                    <tr :key="row.tool_id">
+                                <template v-for="(row, localBlockedIdx) in localBlocked">
+                                    <tr :key="localBlockedIdx">
                                         <td>{{ row.tool_name }}</td>
                                         <td>{{ row.tool_id[0] }}</td>
                                         <td>
@@ -71,8 +71,8 @@
                     <b-tab title="HTML Rendered">
                         <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
                             <template v-slot:rows>
-                                <template v-for="row in localAllowed">
-                                    <tr :key="row.tool_id">
+                                <template v-for="(row, localAllowedIdx) in localAllowed">
+                                    <tr :key="localAllowedIdx">
                                         <td>{{ row.tool_name }}</td>
                                         <td>{{ row.tool_id[0] }}</td>
                                         <td>
