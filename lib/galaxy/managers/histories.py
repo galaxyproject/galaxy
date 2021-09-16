@@ -335,7 +335,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         extra.can_change = list(can_change_dict.values())
         extra.cannot_change = list(cannot_change_dict.values())
         extra.accessible_count = total_dataset_count - len(extra.can_change) - len(extra.cannot_change)
-        if not extra.accessible_count and not share_anyway:
+        if not extra.accessible_count and not extra.can_change and not share_anyway:
             errors.add("The history you are sharing do not contain any datasets that can be accessed by the users with which you are sharing.")
 
         extra.can_share = not errors and (extra.accessible_count == total_dataset_count or option is not None)
