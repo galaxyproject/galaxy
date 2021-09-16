@@ -95,6 +95,21 @@ class PanelViewsFromDirectoryIntegrationTestCase(integration_util.IntegrationTes
         assert len(index_as_list) == 2
         assert model_classes(index_as_list) == ["ToolSection", "ToolSection"]
 
+    def test_global_filters(self):
+        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_11"))
+        verify_custom_regex_filtered(index)
+
+    def test_global_filters_on_integrated_panel(self):
+        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_12"))
+        index.raise_for_status()
+        index_as_list = index.json()
+        sections = [x for x in index_as_list if x["model_class"] == "ToolSection"]
+        assert len(sections) == 2
+        section = sections[0]
+        assert section["id"] == "test"
+        tools = section["elems"]
+        assert len(tools) == 2, len(tools)
+
 
 class PanelViewsFromConfigIntegrationTestCase(integration_util.IntegrationTestCase):
 
