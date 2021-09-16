@@ -4887,7 +4887,6 @@ class TestUser(BaseTest):
         user_group_association,
         history_factory,
         galaxy_session,
-        page_user_share_association,
         user_quota_association,
         user_authnz_token,
         user_preference,
@@ -4919,7 +4918,6 @@ class TestUser(BaseTest):
         obj.histories.append(history1)
         obj.histories.append(history2)
         obj.galaxy_sessions.append(galaxy_session)
-        obj.pages_shared_by_others.append(page_user_share_association)
         obj.quotas.append(user_quota_association)
         obj.social_auth.append(user_authnz_token)
 
@@ -4951,7 +4949,6 @@ class TestUser(BaseTest):
             assert are_same_entity_collections(stored_obj.histories, [history1, history2])
             assert stored_obj.active_histories == [history1]
             assert stored_obj.galaxy_sessions == [galaxy_session]
-            assert stored_obj.pages_shared_by_others == [page_user_share_association]
             assert stored_obj.quotas == [user_quota_association]
             assert stored_obj.social_auth == [user_authnz_token]
             assert stored_obj.stored_workflow_menu_entries == [swme]

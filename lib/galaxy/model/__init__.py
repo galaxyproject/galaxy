@@ -475,7 +475,6 @@ class User(Base, Dictifiable, RepresentById):
     galaxy_sessions = relationship('GalaxySession',
         back_populates='user',
         order_by=lambda: desc(GalaxySession.update_time))  # type: ignore
-    pages_shared_by_others = relationship('PageUserShareAssociation', back_populates='user')
     quotas = relationship('UserQuotaAssociation', back_populates='user')
     social_auth = relationship('UserAuthnzToken', back_populates='user')
     stored_workflow_menu_entries = relationship('StoredWorkflowMenuEntry',
@@ -7969,7 +7968,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     id = Column(Integer, primary_key=True)
     page_id = Column(Integer, ForeignKey("page.id"), index=True)
     user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
-    user = relationship('User', back_populates='pages_shared_by_others')
+    user = relationship('User')
     page = relationship('Page', back_populates='users_shared_with')
 
 
