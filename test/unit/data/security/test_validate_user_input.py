@@ -10,6 +10,7 @@ def test_extract_full_domain():
     assert extract_domain("jack@foo.com") == "foo.com"
     assert extract_domain("jack@foo.bar.com") == "foo.bar.com"
     assert extract_domain("foo.bar.com") == "foo.bar.com"
+    assert extract_domain('"i-like-to-break-email-valid@tors"@foo.com') == "foo.com"
 
 
 def test_extract_base_domain():
@@ -42,5 +43,6 @@ def test_validate_email():
     assert validate_email_str("test-invalid-local\\character@foo.com") != ""
     assert validate_email_str("test@invalid-domain-character!com") != ""
     assert validate_email_str("test@newlines.in.address.are.invalid\n\n.com") != ""
+    assert validate_email_str('"i-like-to-break-email-valid@tors"@foo.com') != ""
     too_long_email = "N" * 255 + "@foo.com"
     assert validate_email_str(too_long_email) != ""
