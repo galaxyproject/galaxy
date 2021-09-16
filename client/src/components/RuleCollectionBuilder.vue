@@ -1635,6 +1635,7 @@ export default {
             if (mappingAsDict.url) {
                 const urlColumn = mappingAsDict.url.columns[0];
                 let url = data[dataIndex][urlColumn];
+                url = url.trim();
                 if (url.indexOf("://") == -1) {
                     // special case columns containing SRA links. EBI serves these a lot
                     // faster over FTP.
