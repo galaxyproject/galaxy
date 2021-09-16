@@ -2005,7 +2005,7 @@ galaxy:
   # end of each iteration. This can be decreased if extremely high job
   # throughput is necessary, but doing so can increase CPU usage of
   # handler processes. Float values are allowed.
-  #job_handler_monitor_sleep: 1
+  #job_handler_monitor_sleep: 1.0
 
   # Each Galaxy job handler process runs one thread per job runner
   # plugin responsible for checking the state of queued and running
@@ -2014,7 +2014,7 @@ galaxy:
   # decreased if extremely high job throughput is necessary, but doing
   # so can increase CPU usage of handler processes. Float values are
   # allowed.
-  #job_runner_monitor_sleep: 1
+  #job_runner_monitor_sleep: 1.0
 
   # Determines how metadata will be set. Valid values are `directory`
   # and `extended`. In extended mode jobs will decide if a tool run

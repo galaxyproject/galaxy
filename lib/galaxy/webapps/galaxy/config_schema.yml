@@ -3000,7 +3000,7 @@ mapping:
 
       job_handler_monitor_sleep:
         type: float
-        default: 1
+        default: 1.0
         required: false
         desc: |
           Each Galaxy job handler process runs one thread responsible for discovering jobs and
@@ -3011,7 +3011,7 @@ mapping:
 
       job_runner_monitor_sleep:
         type: float
-        default: 1
+        default: 1.0
         required: false
         desc: |
           Each Galaxy job handler process runs one thread per job runner plugin responsible for

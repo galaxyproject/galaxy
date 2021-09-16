@@ -4089,7 +4089,7 @@
     the end of each iteration. This can be decreased if extremely high
     job throughput is necessary, but doing so can increase CPU usage
     of handler processes. Float values are allowed.
-:Default: ``1``
+:Default: ``1.0``
 :Type: float
 
 
@@ -4105,7 +4105,7 @@
     decreased if extremely high job throughput is necessary, but doing
     so can increase CPU usage of handler processes. Float values are
     allowed.
-:Default: ``1``
+:Default: ``1.0``
 :Type: float
 
 
