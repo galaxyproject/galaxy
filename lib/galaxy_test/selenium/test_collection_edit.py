@@ -16,7 +16,7 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.create_simple_list_collection()
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
-        dbkeyValue = "Additional"
+        dbkeyValue = "unspecified"
         self.check_current_dbkey_value(dbkeyValue)
         dbkeyNew = "hg17"
         self.change_dbkey_value_and_click_submit(dbkeyValue, dbkeyNew)
