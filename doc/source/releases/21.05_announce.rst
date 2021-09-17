@@ -35,6 +35,14 @@ Highlights
 
 Also check out the `21.05 user release notes <21.05_announce_user.html>`__
 
+Deprecation Notices
+===========================================================
+
+**Deprecation of support for PostgreSQL < 9.5**
+  When using PostgreSQL as database server, Galaxy now requires PostgreSQL 9.5
+  or newer. Instructions for updating PostgreSQL can be found in the
+  `official documentation <https://www.postgresql.org/docs/current/upgrading.html>`__.
+
 Upcoming Deprecation Notices
 ===========================================================
 
