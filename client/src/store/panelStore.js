@@ -23,7 +23,7 @@ const getters = {
 
 const actions = {
     initCurrentPanelView: async ({ commit, state, dispatch }, siteDefaultPanelView) => {
-        let panelView = state.currentPanelView || siteDefaultPanelView;
+        const panelView = state.currentPanelView || siteDefaultPanelView;
         if (state.currentPanelView == null) {
             commit("setCurrentPanelView", { panelView });
         }
