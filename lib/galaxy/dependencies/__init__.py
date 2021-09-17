@@ -232,6 +232,9 @@ class ConditionalDependencies:
         # use s3fs directly (skipping pyfilesystem) for direct access to more options
         return 's3fs' in self.file_sources
 
+    def check_fs_googledrivefs(self):
+        return 'googledrive' in self.file_sources
+
     def check_watchdog(self):
         install_set = {'auto', 'True', 'true', 'polling', True}
         return (self.config['watch_tools'] in install_set

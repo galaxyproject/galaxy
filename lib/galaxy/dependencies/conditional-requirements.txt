@@ -20,6 +20,7 @@ fs.sshfs  # type: ssh
 fs-s3fs  # type: s3
 s3fs  # type: s3fs
 fs.anvilfs # type: anvil
+fs.googledrivefs # type: googledrive
 
 # Chronos client
 chronos-python==1.2.1
