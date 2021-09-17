@@ -82,6 +82,9 @@ export const DatasetCollectionProvider = {
 
 export const GenomeProvider = {
     mixins: [SimpleProviderMixin],
+    props: {
+        id: null,
+    },
     async mounted() {
         await this.load();
     },
