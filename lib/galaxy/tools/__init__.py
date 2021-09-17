@@ -2956,11 +2956,16 @@ class BuildListCollectionTool(DatabaseOperationTool):
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
             if incoming_repeat["input"]:
-                if incoming_repeat["id_cond"]["id_select"] == 'idx':
+                try:
+                    id_select = incoming_repeat["id_cond"]["id_select"]
+                except KeyError:
+                    # Prior to tool version 1.2.0
+                    id_select = 'idx'
+                if id_select == 'idx':
                     identifier = str(i)
-                elif incoming_repeat["id_cond"]["id_select"] == 'identifier':
+                elif id_select == 'identifier':
                     identifier = getattr(incoming_repeat["input"], 'element_identifier', incoming_repeat["input"].name)
-                elif incoming_repeat["id_cond"]["id_select"] == 'manual':
+                elif id_select == 'manual':
                     identifier = incoming_repeat["id_cond"]["identifier"]
                 new_elements[identifier] = incoming_repeat["input"].copy(copy_tags=incoming_repeat["input"].tags)
 
