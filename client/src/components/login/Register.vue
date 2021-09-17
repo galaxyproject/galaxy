@@ -119,7 +119,7 @@ export default {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
                     }
-                    window.location = this.redirect || rootUrl;
+                    window.location = this.redirect || `${rootUrl}welcome/new`;
                 })
                 .catch((error) => {
                     this.disableCreate = false;

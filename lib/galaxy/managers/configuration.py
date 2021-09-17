@@ -207,6 +207,7 @@ class ConfigSerializer(base.ModelSerializer):
             'upload_from_form_button': _use_config,
             'release_doc_base_url': _use_config,
             'user_library_import_dir_available': lambda config, key, **context: bool(config.get('user_library_import_dir')),
+            'welcome_directory': _use_config,
         }
 
 
