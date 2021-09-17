@@ -1675,12 +1675,13 @@ class NavigatesGalaxy(HasDriver):
         return self.assert_message(element, contains=contains)
 
     def assert_message(self, element, contains=None):
-        if type(element) == list:
-            assert any([contains in el.text for el in element]), \
-                f"{contains} was not found in {[el.text for el in element]}"
-            return
-
         if contains is not None:
+
+            if type(element) == list:
+                assert any([contains in el.text for el in element]), \
+                    f"{contains} was not found in {[el.text for el in element]}"
+                return
+
             element = element.wait_for_visible()
             text = element.text
             if contains not in text:
