@@ -839,7 +839,6 @@ class TaskMetricText(BaseJobMetric, RepresentById):
     plugin = Column(Unicode(255))
     metric_name = Column(Unicode(255))
     metric_value = Column(Unicode(JOB_METRIC_MAX_LENGTH))
-    task = relationship('Task', back_populates='text_metrics')
 
 
 class TaskMetricNumeric(BaseJobMetric, RepresentById):
@@ -1572,7 +1571,7 @@ class Task(Base, JobLike, RepresentById):
     task_runner_external_id = Column(String(255))
     prepare_input_files_cmd = Column(TEXT)
     job = relationship('Job', back_populates='tasks')
-    text_metrics = relationship('TaskMetricText', back_populates='task')
+    text_metrics = relationship('TaskMetricText')
     numeric_metrics = relationship('TaskMetricNumeric', back_populates='task')
 
     _numeric_metric = TaskMetricNumeric
