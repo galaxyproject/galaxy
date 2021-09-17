@@ -3645,7 +3645,6 @@ class TestLibraryFolder(BaseTest):
         library_dataset,
         library,
         library_folder_permission,
-        library_folder_info_association,
         library_folder_factory,
     ):
         obj = cls_()
@@ -3654,7 +3653,6 @@ class TestLibraryFolder(BaseTest):
         obj.folders.append(folder1)
         obj.library_root.append(library)
         obj.actions.append(library_folder_permission)
-        obj.info_association.append(library_folder_info_association)
 
         # There's no back reference, so dataset does not update folder; so we have to flush to the database
         library_dataset.folder = obj
@@ -3670,7 +3668,6 @@ class TestLibraryFolder(BaseTest):
             # use identity equality instread of object equality.
             assert stored_obj.datasets[0].id == library_dataset.id
             assert stored_obj.active_datasets[0].id == library_dataset.id
-            assert stored_obj.info_association == [library_folder_info_association]
 
         delete_from_database(session, folder1)
 
@@ -6975,12 +6972,6 @@ def library_dataset_permission(model, session, library_dataset, role):
 @pytest.fixture
 def library_folder(model, session):
     instance = model.LibraryFolder()
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
-def library_folder_info_association(model, session, library_folder, form_definition, form_values):
-    instance = model.LibraryFolderInfoAssociation(library_folder, form_definition, form_values)
     yield from dbcleanup_wrapper(session, instance)
 
 

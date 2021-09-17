@@ -4496,7 +4496,6 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
 
     library_root = relationship('Library', back_populates='root_folder')
     actions = relationship('LibraryFolderPermissions', back_populates='folder')
-    info_association = relationship('LibraryFolderInfoAssociation', back_populates='folder')
 
     dict_element_visible_keys = ['id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted']
 
@@ -4929,8 +4928,7 @@ class LibraryFolderInfoAssociation(Base, RepresentById):
     folder = relationship('LibraryFolder',
         primaryjoin=(lambda:
             (LibraryFolderInfoAssociation.library_folder_id == LibraryFolder.id)  # type: ignore
-            & (not_(LibraryFolderInfoAssociation.deleted))),  # type: ignore
-        back_populates="info_association")
+            & (not_(LibraryFolderInfoAssociation.deleted))))  # type: ignore
     template = relationship('FormDefinition',
         primaryjoin=(lambda: LibraryFolderInfoAssociation.form_definition_id == FormDefinition.id))  # type: ignore
     info = relationship('FormValues',
