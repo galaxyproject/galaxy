@@ -2818,7 +2818,6 @@ class Role(Base, Dictifiable, RepresentById):
     deleted = Column(Boolean, index=True, default=False)
     dataset_actions = relationship('DatasetPermissions', back_populates='role')
     groups = relationship('GroupRoleAssociation', back_populates='role')
-    library_folder_actions = relationship('LibraryFolderPermissions', back_populates='role')
     library_dataset_actions = relationship('LibraryDatasetPermissions', back_populates='role')
     library_dataset_dataset_actions = relationship(
         'LibraryDatasetDatasetAssociationPermissions', back_populates='role')
@@ -3000,7 +2999,7 @@ class LibraryFolderPermissions(Base, RepresentById):
     library_folder_id = Column(Integer, ForeignKey('library_folder.id'), nullable=True, index=True)
     role_id = Column(Integer, ForeignKey('role.id'), index=True)
     folder = relationship('LibraryFolder', back_populates='actions')
-    role = relationship('Role', back_populates='library_folder_actions')
+    role = relationship('Role')
 
     def __init__(self, action, library_item, role):
         self.action = action
