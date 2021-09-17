@@ -1667,6 +1667,7 @@ class NavigatesGalaxy(HasDriver):
         assert text == expected, f"Tooltip text [{text}] was not expected text [{expected}]."
 
     def assert_error_message(self, contains=None):
+        self.components._.messages.error.wait_for_visible()
         elements = self.find_elements(self.components._.messages.selectors.error)
         return self.assert_message(elements, contains=contains)
 
