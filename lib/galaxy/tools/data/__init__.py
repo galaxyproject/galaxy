@@ -22,6 +22,7 @@ import refgenconf
 import requests
 
 from galaxy import util
+from galaxy.exceptions import MessageException
 from galaxy.util import RW_R__R__
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.filelock import FileLock
@@ -637,16 +638,16 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             if (allow_duplicates and self.allow_duplicate_entries) or fields not in self.get_fields():
                 self.data.append(fields)
             else:
-                raise Exception(f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False.")
+                raise MessageException(f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False.")
         else:
-            raise Exception(f"Attempted to add fields ({fields}) to data table '{self.name}', but there were not enough fields specified ( {len(fields)} < {self.largest_index + 1} ).")
+            raise MessageException(f"Attempted to add fields ({fields}) to data table '{self.name}', but there were not enough fields specified ( {len(fields)} < {self.largest_index + 1} ).")
         filename = None
 
         if persist:
             filename = self.get_filename_for_source(entry_source)
             if filename is None:
                 # If we reach this point, there is no data table with a corresponding .loc file.
-                raise Exception(f"Unable to determine filename for persisting data table '{self.name}' values: '{self.fields}'.")
+                raise MessageException(f"Unable to determine filename for persisting data table '{self.name}' values: '{self.fields}'.")
             else:
                 log.debug("Persisting changes to file: %s", filename)
                 with FileLock(filename):
