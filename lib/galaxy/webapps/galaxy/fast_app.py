@@ -77,7 +77,7 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             response.headers['X-Frame-Options'] = x_frame_options
             return response
 
-    nginx_x_accel_redirect_base = getattr(gx_app.config, 'nginx_x_accel_redirect_base', None)
+    nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
     apache_xsendfile = getattr(gx_app.config, 'apache_xsendfile', None)
     if nginx_x_accel_redirect_base or apache_xsendfile:
 
