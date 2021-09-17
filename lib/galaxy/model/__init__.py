@@ -497,6 +497,13 @@ class User(Base, Dictifiable, RepresentById):
     roles = relationship('UserRoleAssociation', back_populates='user')
     stored_workflows = relationship('StoredWorkflow', back_populates='user',
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id))  # type: ignore
+    non_private_roles = relationship(
+        'UserRoleAssociation',
+        primaryjoin=(lambda:
+            (User.id == UserRoleAssociation.user_id)  # type: ignore
+            & (UserRoleAssociation.role_id == Role.id)  # type: ignore
+            & not_(Role.name == User.email))  # type: ignore
+    )
 
     preferences: association_proxy  # defined at the end of this module
 
@@ -2773,17 +2780,6 @@ class UserRoleAssociation(Base, RepresentById):
 
     user = relationship('User', back_populates="roles")
     role = relationship('Role', back_populates="users")
-
-    # TODO: should be defined on the User model only?
-    non_private_roles = relationship(
-        'User',
-        backref="non_private_roles",
-        viewonly=True,
-        primaryjoin=(lambda:
-            (User.id == UserRoleAssociation.user_id)  # type: ignore
-            & (UserRoleAssociation.role_id == Role.id)  # type: ignore
-            & not_(Role.name == User.email))  # type: ignore
-    )
 
     def __init__(self, user, role):
         self.user = user

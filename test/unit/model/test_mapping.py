@@ -4834,7 +4834,8 @@ class TestUser(BaseTest):
         user_preference,
         api_keys,
         data_manager_history_association,
-        user_role_association,
+        role_factory,
+        user_role_association_factory,
         stored_workflow,
         stored_workflow_menu_entry_factory,
     ):
@@ -4858,6 +4859,14 @@ class TestUser(BaseTest):
         obj.quotas.append(user_quota_association)
         obj.social_auth.append(user_authnz_token)
 
+        _private_role = role_factory(name=obj.email)
+        private_user_role = user_role_association_factory(obj, _private_role)
+        obj.roles.append(private_user_role)
+
+        _non_private_role = role_factory(name='a')
+        non_private_user_role = user_role_association_factory(obj, _non_private_role)
+        obj.roles.append(non_private_user_role)
+
         swme = stored_workflow_menu_entry_factory()
         swme.stored_workflow = stored_workflow
         swme.user = obj
@@ -4867,7 +4876,6 @@ class TestUser(BaseTest):
 
         obj.api_keys.append(api_keys)
         obj.data_manager_histories.append(data_manager_history_association)
-        obj.roles.append(user_role_association)
         obj.stored_workflows.append(stored_workflow)
 
         with dbcleanup(session, obj) as obj_id:
@@ -4887,10 +4895,11 @@ class TestUser(BaseTest):
             assert user_preference in stored_obj._preferences.values()
             assert stored_obj.api_keys == [api_keys]
             assert stored_obj.data_manager_histories == [data_manager_history_association]
-            assert stored_obj.roles == [user_role_association]
+            assert are_same_entity_collections(stored_obj.roles, [private_user_role, non_private_user_role])
+            assert stored_obj.non_private_roles == [non_private_user_role]
             assert stored_obj.stored_workflows == [stored_workflow]
 
-        delete_from_database(session, [history1, history2, swme])
+        delete_from_database(session, [history1, history2, swme, private_user_role, non_private_user_role])
 
 
 class TestUserAction(BaseTest):
@@ -7380,6 +7389,13 @@ def page_rating_association_factory(model):
 
 
 @pytest.fixture
+def role_factory(model):
+    def make_instance(*args, **kwds):
+        return model.Role(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
 def stored_workflow_menu_entry_factory(model):
     def make_instance(*args, **kwds):
         return model.StoredWorkflowMenuEntry(*args, **kwds)
@@ -7397,6 +7413,13 @@ def stored_workflow_rating_association_factory(model):
 def stored_workflow_tag_association_factory(model):
     def make_instance(*args, **kwds):
         return model.StoredWorkflowTagAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def user_role_association_factory(model):
+    def make_instance(*args, **kwds):
+        return model.UserRoleAssociation(*args, **kwds)
     return make_instance
 
 
