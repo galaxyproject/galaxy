@@ -286,7 +286,10 @@ class ToolDataTable:
 
     def add_entries(self, entries, allow_duplicates=True, persist=False, entry_source=None, **kwd):
         for entry in entries:
-            self.add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
+            try:
+                self.add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
+            except Exception as e:
+                log.error(str(e))
         return self._loaded_content_version
 
     def _remove_entry(self, values):
@@ -629,25 +632,21 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 fields.append(field_value)
         else:
             fields = entry
-        is_error = False
         if self.largest_index < len(fields):
             fields = self._replace_field_separators(fields)
             if (allow_duplicates and self.allow_duplicate_entries) or fields not in self.get_fields():
                 self.data.append(fields)
             else:
-                log.debug("Attempted to add fields (%s) to data table '%s', but this entry already exists and allow_duplicates is False.", fields, self.name)
-                is_error = True
+                raise Exception(f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False.")
         else:
-            log.error("Attempted to add fields (%s) to data table '%s', but there were not enough fields specified ( %i < %i ).", fields, self.name, len(fields), self.largest_index + 1)
-            is_error = True
+            raise Exception(f"Attempted to add fields ({fields}) to data table '{self.name}', but there were not enough fields specified ( {len(fields)} < {self.largest_index + 1} ).")
         filename = None
 
-        if persist and not is_error:
+        if persist:
             filename = self.get_filename_for_source(entry_source)
             if filename is None:
-                # should we default to using any filename here instead?
-                log.error("Unable to determine filename for persisting data table '%s' values: '%s'.", self.name, fields)
-                is_error = True
+                # If we reach this point, there is no data table with a corresponding .loc file.
+                raise Exception(f"Unable to determine filename for persisting data table '{self.name}' values: '{self.fields}'.")
             else:
                 log.debug("Persisting changes to file: %s", filename)
                 with FileLock(filename):
@@ -667,7 +666,6 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                         raise
                 fields = f"{self.separator.join(fields)}\n"
                 data_table_fh.write(fields.encode('utf-8'))
-        return not is_error
 
     def _remove_entry(self, values):
 
