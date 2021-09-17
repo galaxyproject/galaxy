@@ -68,7 +68,7 @@ class GalaxyCORSMiddleware(CORSMiddleware):
 
 
 def add_galaxy_middleware(app: FastAPI, gx_app):
-    x_frame_options = getattr(gx_app.config, 'x_frame_options', None)
+    x_frame_options = gx_app.config.x_frame_options
     if x_frame_options:
 
         @app.middleware("http")
@@ -78,7 +78,7 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             return response
 
     nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
-    apache_xsendfile = getattr(gx_app.config, 'apache_xsendfile', None)
+    apache_xsendfile = gx_app.config.apache_xsendfile
     if nginx_x_accel_redirect_base or apache_xsendfile:
 
         @app.middleware("http")
