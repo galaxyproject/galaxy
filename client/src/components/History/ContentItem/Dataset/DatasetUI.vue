@@ -103,7 +103,7 @@ either through the props, and make updates through the events -->
                 <EditorMenu
                     class="ml-3 flex-grow-0 d-flex flex-column"
                     v-if="writable"
-                    model-name="Collection"
+                    model-name="Dataset"
                     :editing.sync="editing"
                     :writable="writable"
                     :valid="valid"
