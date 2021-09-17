@@ -277,16 +277,16 @@ class ToolDataTable:
     def get_empty_field_by_name(self, name):
         return self.empty_field_values.get(name, self.empty_field_value)
 
-    def _add_entry(self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+    def _add_entry(self, entry, allow_duplicates=True, persist=False, entry_source=None, **kwd):
         raise NotImplementedError("Abstract method")
 
-    def add_entry(self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
-        self._add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
+    def add_entry(self, entry, allow_duplicates=True, persist=False, entry_source=None, **kwd):
+        self._add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
         return self._update_version()
 
-    def add_entries(self, entries, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+    def add_entries(self, entries, allow_duplicates=True, persist=False, entry_source=None, **kwd):
         for entry in entries:
-            self.add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
+            self.add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
         return self._loaded_content_version
 
     def _remove_entry(self, values):
@@ -299,7 +299,7 @@ class ToolDataTable:
     def is_current_version(self, other_version):
         return self._loaded_content_version == other_version
 
-    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, entry_source=None, **kwd):
         raise NotImplementedError("Abstract method")
 
     def reload_from_files(self):
@@ -434,7 +434,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             if tmp_file is not None:
                 tmp_file.close()
 
-    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, entry_source=None, **kwd):
         assert self.columns == other_table.columns, f"Merging tabular data tables with non matching columns is not allowed: {self.name}:{self.columns} != {other_table.name}:{other_table.columns}"
         # merge filename info
         for filename, info in other_table.filenames.items():
@@ -448,7 +448,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             self.allow_duplicate_entries = False
             self._deduplicate_data()
         # add data entries and return current data table version
-        return self.add_entries(other_table.data, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
+        return self.add_entries(other_table.data, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
 
     def handle_found_index_file(self, filename):
         self.missing_index_file = None
@@ -616,7 +616,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 break
         return filename
 
-    def _add_entry(self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+    def _add_entry(self, entry, allow_duplicates=True, persist=False, entry_source=None, **kwd):
         # accepts dict or list of columns
         if isinstance(entry, dict):
             fields = []
@@ -642,7 +642,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             is_error = True
         filename = None
 
-        if persist and (not is_error or persist_on_error):
+        if persist and not is_error:
             filename = self.get_filename_for_source(entry_source)
             if filename is None:
                 # should we default to using any filename here instead?
