@@ -4304,13 +4304,11 @@ class TestRole(BaseTest):
         cls_,
         dataset_permission,
         group_role_association,
-        library_dataset_dataset_association_permission,
         user_role_association,
     ):
         name, description, type_ = get_unique_value(), 'b', cls_.types.SYSTEM
         obj = cls_(name, description, type_)
         obj.dataset_actions.append(dataset_permission)
-        obj.library_dataset_dataset_actions.append(library_dataset_dataset_association_permission)
         obj.groups.append(group_role_association)
         obj.users.append(user_role_association)
 
@@ -4318,8 +4316,6 @@ class TestRole(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.dataset_actions == [dataset_permission]
             assert stored_obj.groups == [group_role_association]
-            assert (stored_obj.library_dataset_dataset_actions
-                == [library_dataset_dataset_association_permission])
             assert stored_obj.users == [user_role_association]
 
 

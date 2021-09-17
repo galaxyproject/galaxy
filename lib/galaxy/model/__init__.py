@@ -2818,8 +2818,6 @@ class Role(Base, Dictifiable, RepresentById):
     deleted = Column(Boolean, index=True, default=False)
     dataset_actions = relationship('DatasetPermissions', back_populates='role')
     groups = relationship('GroupRoleAssociation', back_populates='role')
-    library_dataset_dataset_actions = relationship(
-        'LibraryDatasetDatasetAssociationPermissions', back_populates='role')
     users = relationship('UserRoleAssociation', back_populates='role')
 
     dict_collection_visible_keys = ['id', 'name']
@@ -3042,7 +3040,7 @@ class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
     role_id = Column(Integer, ForeignKey('role.id'), index=True)
     library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation',
         back_populates='actions')
-    role = relationship('Role', back_populates='library_dataset_dataset_actions')
+    role = relationship('Role')
 
     def __init__(self, action, library_item, role):
         self.action = action
