@@ -819,7 +819,6 @@ class JobMetricText(BaseJobMetric, RepresentById):
     plugin = Column(Unicode(255))
     metric_name = Column(Unicode(255))
     metric_value = Column(Unicode(JOB_METRIC_MAX_LENGTH))
-    job = relationship('Job', back_populates='text_metrics')
 
 
 class JobMetricNumeric(BaseJobMetric, RepresentById):
@@ -919,7 +918,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     tasks = relationship('Task', back_populates='job')
     output_datasets = relationship('JobToOutputDatasetAssociation', back_populates='job')
     state_history = relationship('JobStateHistory', back_populates='job')
-    text_metrics = relationship('JobMetricText', back_populates='job')
+    text_metrics = relationship('JobMetricText')
     numeric_metrics = relationship('JobMetricNumeric')
     job = relationship('GenomeIndexToolData', back_populates='job')
     interactivetool_entry_points = relationship('InteractiveToolEntryPoint',

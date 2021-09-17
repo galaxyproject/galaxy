@@ -2766,14 +2766,6 @@ class TestJobMetricText(BaseTest):
             assert stored_obj.plugin == plugin
             assert stored_obj.metric_value == metric_value
 
-    def test_relationships(self, session, cls_, job):
-        obj = cls_(None, None, None)
-        obj.job = job
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.job.id == job.id
-
 
 class TestJobParameter(BaseTest):
 
