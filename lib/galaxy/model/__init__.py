@@ -4494,7 +4494,6 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
         lazy=True,
         viewonly=True)
 
-    dataset_collections = relationship('LibraryDatasetCollectionAssociation', back_populates='folder')
     library_root = relationship('Library', back_populates='root_folder')
     actions = relationship('LibraryFolderPermissions', back_populates='folder')
     info_association = relationship('LibraryFolderInfoAssociation', back_populates='folder')
@@ -5700,7 +5699,7 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
     deleted = Column(Boolean, default=False)
 
     collection = relationship('DatasetCollection')
-    folder = relationship('LibraryFolder', back_populates='dataset_collections')
+    folder = relationship('LibraryFolder')
 
     tags = relationship('LibraryDatasetCollectionTagAssociation',
         order_by=lambda: LibraryDatasetCollectionTagAssociation.id,  # type: ignore

@@ -3644,7 +3644,6 @@ class TestLibraryFolder(BaseTest):
         library_folder,
         library_dataset,
         library,
-        library_dataset_collection_association,
         library_folder_permission,
         library_folder_info_association,
         library_folder_factory,
@@ -3653,7 +3652,6 @@ class TestLibraryFolder(BaseTest):
         obj.parent = library_folder
         folder1 = library_folder_factory()
         obj.folders.append(folder1)
-        obj.dataset_collections.append(library_dataset_collection_association)
         obj.library_root.append(library)
         obj.actions.append(library_folder_permission)
         obj.info_association.append(library_folder_info_association)
@@ -3672,7 +3670,6 @@ class TestLibraryFolder(BaseTest):
             # use identity equality instread of object equality.
             assert stored_obj.datasets[0].id == library_dataset.id
             assert stored_obj.active_datasets[0].id == library_dataset.id
-            assert stored_obj.dataset_collections == [library_dataset_collection_association]
             assert stored_obj.info_association == [library_folder_info_association]
 
         delete_from_database(session, folder1)
