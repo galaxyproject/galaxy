@@ -218,7 +218,7 @@
                         <b-col>
                             <b-card
                                 border-variant="primary"
-                                header="How would like to proceed?"
+                                header="How would you like to proceed?"
                                 header-bg-variant="primary"
                                 header-text-variant="white"
                                 align="center"
