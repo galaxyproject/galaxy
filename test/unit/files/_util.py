@@ -55,7 +55,10 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
         preferences={
             'webdav|password': 'secret1234',
             'dropbox|access_token': os.environ.get('GALAXY_TEST_DROPBOX_ACCESS_TOKEN'),
-            'googledrive|credentials_json': os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_CREDENTIALS_JSON')
+            'googledrive|access_token': os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_ACCESS_TOKEN'),
+            'googledrive|refresh_token': os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_REFRESH_TOKEN'),
+            'googledrive|client_id': os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_CLIENT_ID'),
+            'googledrive|client_secret': os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_CLIENT_SECRET'),
         },
         role_names=role_names or set(),
         group_names=group_names or set(),
