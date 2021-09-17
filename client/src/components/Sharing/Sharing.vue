@@ -142,7 +142,7 @@
                                     <div class="share-with-card-buttons">
                                         <!--submit/cancel buttons-->
                                         <b-button
-                                            @click="getModel()"
+                                            @click="getSharing()"
                                             variant="outline-danger"
                                             class="sharing_icon cancel-sharing-with"
                                         >
@@ -263,7 +263,7 @@
                                 >
                                     Share Anyway
                                 </b-button>
-                                <b-button @click="getModel()" block variant="outline-danger">Cancel </b-button>
+                                <b-button @click="getSharing()" block variant="outline-danger">Cancel </b-button>
                             </b-card>
                         </b-col>
                     </b-row>
@@ -413,7 +413,7 @@ export default {
         },
     },
     created: function () {
-        this.getModel();
+        this.getSharing();
     },
     methods: {
         permissionsChangeRequired(item) {
@@ -484,7 +484,7 @@ export default {
                 this.setSharing(this.actions.unpublish);
             }
         },
-        getModel() {
+        getSharing() {
             this.ready = false;
             this.dismissCountDown = 0;
             axios
@@ -500,7 +500,7 @@ export default {
                 })
                 .then((response) => {
                     this.hasUsername = true;
-                    this.getModel();
+                    this.getSharing();
                 })
                 .catch((error) => this.addError(error.response.data.err_msg));
         },
