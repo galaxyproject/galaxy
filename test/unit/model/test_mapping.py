@@ -2739,7 +2739,7 @@ class TestJobMetricNumeric(BaseTest):
     def test_columns(self, session, cls_, job):
         plugin, metric_name, metric_value = 'a', 'b', 9
         obj = cls_(plugin, metric_name, metric_value)
-        obj.job = job
+        obj.job_id = job.id
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -2747,14 +2747,6 @@ class TestJobMetricNumeric(BaseTest):
             assert stored_obj.job_id == job.id
             assert stored_obj.plugin == plugin
             assert stored_obj.metric_value == metric_value
-
-    def test_relationships(self, session, cls_, job):
-        obj = cls_(None, None, None)
-        obj.job = job
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.job.id == job.id
 
 
 class TestJobMetricText(BaseTest):
