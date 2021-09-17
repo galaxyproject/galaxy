@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import cast
 
 from fastapi import FastAPI, Request
@@ -88,7 +89,8 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
                 return response
             response = cast(FileResponse, response)
             if nginx_x_accel_redirect_base:
-                response.headers['X-Accel-Redirect'] = nginx_x_accel_redirect_base + response.path
+                full_path = Path(nginx_x_accel_redirect_base) / response.path
+                response.headers['X-Accel-Redirect'] = str(full_path)
             if apache_xsendfile:
                 response.headers['X-Sendfile'] = str(response.path)
             return response
