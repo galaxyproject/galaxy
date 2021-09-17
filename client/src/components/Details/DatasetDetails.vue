@@ -8,14 +8,9 @@
                     v-slot="{ result: job, loading: isJobLoading }"
                 >
                     <div v-if="!isJobLoading">
-                        <h2 class="tool-title">{{ job.tool_name }}</h2>
                         <dataset-information class="detail" :hda_id="datasetId" />
                         <job-parameters class="detail" dataset_type="hda" :dataset-id="datasetId" />
-                        <job-information
-                            class="detail"
-                            :job_id="dataset.creating_job"
-                            @current_tool_name="tool_name = $event"
-                        />
+                        <job-information class="detail" :job_id="dataset.creating_job" />
                         <dataset-storage class="detail" :dataset-id="datasetId" />
                         <inheritance-chain class="detail" :dataset-id="datasetId" :dataset-name="dataset.name" />
                         <job-metrics
