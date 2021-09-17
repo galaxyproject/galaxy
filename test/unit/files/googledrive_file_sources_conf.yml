@@ -1,0 +1,4 @@
+- type: googledrive
+  id: test1
+  doc: Test access to a Google drive.
+  credentials: ${user.preferences['googledrive|credentials_json']}
