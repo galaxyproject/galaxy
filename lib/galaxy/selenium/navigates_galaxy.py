@@ -1667,17 +1667,24 @@ class NavigatesGalaxy(HasDriver):
         assert text == expected, f"Tooltip text [{text}] was not expected text [{expected}]."
 
     def assert_error_message(self, contains=None):
-        element = self.components._.messages["error"]
-        return self.assert_message(element, contains=contains)
+        elements = self.find_elements(self.components._.messages.selectors.error)
+        return self.assert_message(elements, contains=contains)
 
     def assert_warning_message(self, contains=None):
         element = self.components._.messages["warning"]
         return self.assert_message(element, contains=contains)
 
     def assert_message(self, element, contains=None):
-        element = element.wait_for_visible()
+
+        if type(element) == list:
+            for el in element:
+                if contains in el.text:
+                    return
+            raise AssertionError(f"Text [{contains}] not found.")
+
         assert element, "No error message found, one expected."
         if contains is not None:
+            element = element.wait_for_visible()
             text = element.text
             if contains not in text:
                 message = f"Text [{contains}] expected inside of [{text}] but not found."
