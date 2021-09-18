@@ -2258,23 +2258,23 @@ class HistoryAudit(Base, RepresentById):
     history_id = Column(Integer, ForeignKey('history.id'), primary_key=True, nullable=False)
     update_time = Column(DateTime, default=now, primary_key=True, nullable=False)
 
-    __init__ = None  # This class should never be instantiated.
+    # This class should never be instantiated.
     # See https://github.com/galaxyproject/galaxy/pull/11914 for details.
+    __init__ = None  # type: ignore
 
     @classmethod
     def prune(cls, sa_session):
-        history_audit_table = cls.table
         latest_subq = sa_session.query(
-            history_audit_table.c.history_id,
-            func.max(history_audit_table.c.update_time).label('max_update_time')).group_by(history_audit_table.c.history_id).subquery()
+            cls.history_id,
+            func.max(cls.update_time).label('max_update_time')).group_by(cls.history_id).subquery()
         not_latest_query = sa_session.query(
-            history_audit_table.c.history_id, history_audit_table.c.update_time
+            cls.history_id, cls.update_time
         ).select_from(latest_subq).join(
-            history_audit_table, and_(
-                history_audit_table.c.update_time < latest_subq.columns.max_update_time,
-                history_audit_table.c.history_id == latest_subq.columns.history_id))
-        d = history_audit_table.delete()
-        sa_session.execute(d.where(tuple_(history_audit_table.c.history_id, history_audit_table.c.update_time).in_(not_latest_query)))
+            cls, and_(
+                cls.update_time < latest_subq.columns.max_update_time,
+                cls.history_id == latest_subq.columns.history_id))
+        q = cls.__table__.delete().where(tuple_(cls.history_id, cls.update_time).in_(not_latest_query))
+        sa_session.execute(q)
 
 
 class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
