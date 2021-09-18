@@ -5484,8 +5484,6 @@ class TestWorkflowInvocation(BaseTest):
     ):
         subworkflow_invocation_assoc = \
             workflow_invocation_to_subworkflow_invocation_association_factory()
-        parent_workflow_invocation_assoc = \
-            workflow_invocation_to_subworkflow_invocation_association_factory()
 
         obj = cls_()
         obj.workflow = workflow
@@ -5501,7 +5499,6 @@ class TestWorkflowInvocation(BaseTest):
         obj.output_dataset_collections.append(
             workflow_invocation_output_dataset_collection_association)
         obj.output_datasets.append(workflow_invocation_output_dataset_association)
-        obj.parent_workflow_invocation_association.append(parent_workflow_invocation_assoc)
         obj.output_values.append(workflow_invocation_output_value)
 
         with dbcleanup(session, obj) as obj_id:
@@ -5520,12 +5517,9 @@ class TestWorkflowInvocation(BaseTest):
             assert (stored_obj.output_dataset_collections
                 == [workflow_invocation_output_dataset_collection_association])
             assert stored_obj.output_datasets == [workflow_invocation_output_dataset_association]
-            assert (stored_obj.parent_workflow_invocation_association
-                == [parent_workflow_invocation_assoc])
             assert stored_obj.output_values == [workflow_invocation_output_value]
 
-        delete_from_database(
-            session, [subworkflow_invocation_assoc, parent_workflow_invocation_assoc])
+        delete_from_database(session, subworkflow_invocation_assoc)
 
 
 class TestWorkflowInvocationOutputDatasetAssociation(BaseTest):

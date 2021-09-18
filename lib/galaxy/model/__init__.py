@@ -6637,12 +6637,6 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
         back_populates='workflow_invocation')
     output_datasets = relationship('WorkflowInvocationOutputDatasetAssociation',
         back_populates='workflow_invocation')
-    parent_workflow_invocation_association = relationship(
-        'WorkflowInvocationToSubworkflowInvocationAssociation',
-        primaryjoin=(lambda:
-            WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id  # type: ignore
-                == WorkflowInvocation.id),  # type: ignore
-        back_populates='subworkflow_invocation')
     output_values = relationship('WorkflowInvocationOutputValue', back_populates='workflow_invocation')
 
     dict_collection_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
@@ -7006,7 +7000,6 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, Re
         primaryjoin=(lambda:
             WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id  # type: ignore
                 == WorkflowInvocation.id),  # type: ignore
-        back_populates='parent_workflow_invocation_association',
         uselist=False,
     )
     workflow_step = relationship('WorkflowStep')
