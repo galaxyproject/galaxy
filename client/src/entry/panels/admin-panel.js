@@ -154,6 +154,7 @@ const AdminPanel = Backbone.View.extend({
             _.each(category.get("items"), (item) => {
                 if (item.enabled === undefined || item.enabled) {
                     const $link = $("<a/>")
+                        .addClass("title-link")
                         .attr({ href: this.root + item.url })
                         .text(_l(item.title));
                     if (item.id) {
