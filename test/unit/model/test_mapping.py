@@ -2757,7 +2757,7 @@ class TestJobMetricText(BaseTest):
     def test_columns(self, session, cls_, job):
         plugin, metric_name, metric_value = 'a', 'b', 'c'
         obj = cls_(plugin, metric_name, metric_value)
-        obj.job = job
+        obj.job_id = job.id
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -4684,7 +4684,7 @@ class TestTaskMetricNumeric(BaseTest):
     def test_columns(self, session, cls_, task):
         plugin, metric_name, metric_value = 'a', 'b', 9
         obj = cls_(plugin, metric_name, metric_value)
-        obj.task = task
+        obj.task_id = task.id
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -4702,7 +4702,7 @@ class TestTaskMetricText(BaseTest):
     def test_columns(self, session, cls_, task):
         plugin, metric_name, metric_value = 'a', 'b', 'c'
         obj = cls_(plugin, metric_name, metric_value)
-        obj.task = task
+        obj.task_id = task.id
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
