@@ -2257,11 +2257,9 @@ class HistoryAudit(Base, RepresentById):
 
     history_id = Column(Integer, ForeignKey('history.id'), primary_key=True, nullable=False)
     update_time = Column(DateTime, default=now, primary_key=True, nullable=False)
-    history = relationship('History')
 
-    def __init__(self, history, update_time):
-        self.history = history
-        self.update_time = update_time
+    __init__ = None  # This class should never be instantiated.
+    # See https://github.com/galaxyproject/galaxy/pull/11914 for details.
 
     @classmethod
     def prune(cls, sa_session):

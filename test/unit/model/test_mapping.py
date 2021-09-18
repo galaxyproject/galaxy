@@ -66,7 +66,6 @@ from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import (
-    and_,
     delete,
     select,
     UniqueConstraint,
@@ -1460,26 +1459,6 @@ class TestHistoryAnnotationAssociation(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.history.id == history.id
             assert stored_obj.user.id == user.id
-
-
-class TestHistoryAudit(BaseTest):
-
-    def test_table(self, cls_):
-        assert cls_.__tablename__ == 'history_audit'
-
-    def test_columns_and_relationships(self, session, cls_, history):
-        update_time = datetime.now()
-        obj = cls_(history, update_time)
-
-        where_clause = and_(cls_.history_id == history.id, cls_.update_time == update_time)
-
-        with dbcleanup(session, obj, where_clause):
-            stored_obj = get_stored_obj(session, cls_, where_clause=where_clause)
-            # test columns
-            assert stored_obj.history_id == history.id
-            assert stored_obj.update_time == update_time
-            # test relationships
-            assert stored_obj.history.id == history.id
 
 
 class TestHistoryDatasetAssociation(BaseTest):
