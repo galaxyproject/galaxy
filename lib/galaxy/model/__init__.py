@@ -499,6 +499,7 @@ class User(Base, Dictifiable, RepresentById):
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id))  # type: ignore
     non_private_roles = relationship(
         'UserRoleAssociation',
+        viewonly=True,
         primaryjoin=(lambda:
             (User.id == UserRoleAssociation.user_id)  # type: ignore
             & (UserRoleAssociation.role_id == Role.id)  # type: ignore
