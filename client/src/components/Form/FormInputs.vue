@@ -17,7 +17,6 @@
                     :inputs="caseDetails.inputs"
                     :prefix="getPrefix(input.name)"
                     :add-parameters="addParameters"
-                    :remove-parameters="removeParameters"
                     :update-parameters="updateParameters"
                 />
             </div>
@@ -45,7 +44,6 @@
                             :inputs="cache"
                             :prefix="getRepeatPrefix(input.name, cacheId)"
                             :add-parameters="addParameters"
-                            :remove-parameters="removeParameters"
                             :update-parameters="updateParameters"
                         />
                     </template>
@@ -62,7 +60,6 @@
                             :inputs="input.inputs"
                             :prefix="getPrefix(input.name)"
                             :add-parameters="addParameters"
-                            :remove-parameters="removeParameters"
                             :update-parameters="updateParameters"
                         />
                     </template>
@@ -137,10 +134,6 @@ export default {
             type: Function,
             required: true,
         },
-        removeParameters: {
-            type: Function,
-            required: true,
-        },
         updateParameters: {
             type: Function,
             required: true,
@@ -195,7 +188,6 @@ export default {
         conditionalChange(value, identifier) {
             const prefixPos = identifier.lastIndexOf("|");
             const prefixStr = identifier.substring(0, prefixPos);
-            this.removeParameters(prefixStr);
             //this.addParameters(value, identifier, true);
         },
         repeatTitle(index, title) {
@@ -209,8 +201,9 @@ export default {
             this.updateParameters();
         },
         repeatDelete(input, cacheId) {
-            const prefix = this.getPrefix(input.name);
-            this.removeParameters(prefix, cacheId);
+            input.cache.splice(cacheId, 1);
+            this.formInputs = this.formInputs.slice();
+            this.updateParameters();
         },
         onHighlight(validation, silent = false) {
             /*this.form.trigger("reset");

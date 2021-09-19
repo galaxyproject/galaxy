@@ -11,13 +11,13 @@
         :replace-params="replaceParams"
         :errors="errors"
         :add-parameters="addParameters"
-        :remove-parameters="removeParameters"
         :update-parameters="updateParameters"
     />
 </template>
 
 <script>
 import FormInputs from "./FormInputs";
+import { visitInputs } from "./utilities";
 
 export default {
     components: {
@@ -162,40 +162,14 @@ export default {
                 this.updateParameters(requiresRequest);
             }
         },
-        removeParameters(prefix, cacheId) {
-            const filtered = {};
-            Object.keys(this.formData).forEach((key) => {
-                let currentKey = key;
-                if (cacheId != undefined) {
-                    const regstr = `^${prefix}_(\\d+)\\|(\\S+)$`;
-                    const regex = new RegExp(regstr);
-                    const match = regex.exec(key);
-                    if (match) {
-                        const groupId = parseInt(match[1]);
-                        if (groupId == cacheId) {
-                            currentKey = undefined;
-                        } else if (groupId > cacheId) {
-                            currentKey = `${prefix}_${groupId - 1}|${match[2]}`;
-                        }
-                    }
-                } else if (key.startsWith(`${prefix}|`)) {
-                    currentKey = undefined;
-                }
-                if (currentKey !== undefined) {
-                    filtered[currentKey] = this.formData[key];
-                }
-            });
-            this.formData = filtered;
-            console.log(filtered);
-            if (cacheId != undefined) {
-                //this.updateParameters();
-            }
-        },
         updateParameters(requiresRequest = true) {
             this.$nextTick(() => {
-                const formDataCopy = Object.assign({}, this.formData);
-                this.$emit("onChange", formDataCopy, requiresRequest);
-                console.log(this.formData, requiresRequest);
+                const params = {};
+                visitInputs(this.inputs, (input, name) => {
+                    params[name] = input.value;
+                });
+                this.$emit("onChange", params, requiresRequest);
+                console.log(params, requiresRequest);
             });
         },
         onHighlight(validation, silent = false) {
