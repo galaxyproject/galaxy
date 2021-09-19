@@ -164,7 +164,7 @@ export default {
                 return `${name}_${index}`;
             }
         },
-        getPrefix(name, index) {
+        getPrefix(name) {
             if (this.prefix) {
                 return `${this.prefix}|${name}`;
             } else {
@@ -182,10 +182,8 @@ export default {
             this.updateParameters();
         },
         repeatDelete(input, cacheId) {
-            input.cache.splice(cacheId, 1);
-            this.formInputs = this.formInputs.slice();
-            const prefix = this.getRepeatPrefix(input.name, cacheId);
-            this.removeParameters(`${prefix}|`);
+            const prefix = this.getPrefix(input.name);
+            this.removeParameters(prefix, cacheId);
         },
         onReplaceParams() {
             /*if (this.replaceParams) {

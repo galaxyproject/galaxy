@@ -174,6 +174,17 @@ export default {
                 this.form.trigger("change");
             }*/
         },
+        identifyRepeat(prefix) {
+            const separator = prefix.lastIndexOf("_");
+            let group = -1;
+            if (separator != -1) {
+                name = prefix.substring(0, separator);
+                group = parseInt(prefix.substring(separator + 1));
+                return [name, group];
+            } else {
+                return [-1, -1];
+            }
+        },
         addParameters(value, identifier, requiresRequest) {
             const currentValueString = JSON.stringify(this.formData[identifier]);
             if (currentValueString != JSON.stringify(value)) {
@@ -181,11 +192,25 @@ export default {
                 this.updateParameters(requiresRequest);
             }
         },
-        removeParameters(prefix) {
+        removeParameters(prefix, cacheId) {
             const filtered = {};
+            const filterName = `${prefix}_${cacheId}|`;
             Object.keys(this.formData).forEach((key) => {
-                if (!key.startsWith(prefix)) {
-                    filtered[key] = this.formData[key];
+                let currentKey = key;
+                if (!key.startsWith(filterName)) {
+                    if (key.startsWith(`${prefix}_`)) {
+                        const groupDetails = key.substring(prefix.length + 1);
+                        const groupFound = groupDetails.indexOf("|");
+                        let groupIndex = -1;
+                        if (groupFound > -1) {
+                            groupIndex = parseInt(groupDetails.substring(0, groupFound));
+                            if (groupIndex > cacheId) {
+                                const groupInput = groupDetails.substring(groupFound + 1);
+                                currentKey = `${prefix}_${groupIndex - 1}|${groupInput}`;
+                            }
+                        }
+                    }
+                    filtered[currentKey] = this.formData[key];
                 }
             });
             this.formData = filtered;

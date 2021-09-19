@@ -23,14 +23,14 @@ export default {
         },
     },
     watch: {
-        /*value() {
+        value() {
             if (this.parameter) {
                 const currentValue = this.parameter.field.value();
                 if (this.value !== currentValue) {
                     this.parameter.field.value(this.value);
                 }
             }
-        },*/
+        },
         attributes() {
             if (this.parameter) {
                 if (this.parameter.field.update) {
