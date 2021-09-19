@@ -1,26 +1,15 @@
 import os
 
-import pytest
-
 from galaxy.files import ConfiguredFileSources, ConfiguredFileSourcesConfig
 from ._util import (
-    assert_realizes_as,
-    find_file_a,
+    assert_realizes_contains,
+    find,
     user_context_fixture,
 )
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "googledrive_file_sources_conf.yml")
-
-skip_if_no_google_drive_access_token = pytest.mark.skipif(
-    not os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_ACCESS_TOKEN')
-    and os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_REFRESH_TOKEN')
-    and os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_CLIENT_ID')
-    and os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_CLIENT_SECRET'),
-    reason="GALAXY_TEST_GOOGLE_DRIVE_ACCESS_TOKEN not set"
-)
+FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "gcsfs_file_sources_conf.yml")
 
 
-@skip_if_no_google_drive_access_token
 def test_file_source():
     user_context = user_context_fixture()
     file_sources = _configured_file_sources()
@@ -29,10 +18,10 @@ def test_file_source():
     assert file_source_pair.path == "/"
     file_source = file_source_pair.file_source
     res = file_source.list("/", recursive=False, user_context=user_context)
-    a_file = find_file_a(res)
-    assert a_file
+    readme_file = find(res, class_="File", name="README")
+    assert readme_file
 
-    assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n", user_context=user_context)
+    assert_realizes_contains(file_sources, "gxfiles://test1/README", "1000genomes", user_context=user_context)
 
 
 def _configured_file_sources(conf_file=FILE_SOURCES_CONF):

@@ -1,0 +1,5 @@
+- type: googlecloudstorage
+  id: test1
+  doc: Test access to Google Cloud Storage.
+  project: ${user.preferences['googlecloudstorage|project']}
+  bucket_name: ${user.preferences['googlecloudstorage|bucket_name']}
