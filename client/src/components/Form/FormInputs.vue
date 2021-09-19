@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-for="(input, index) in formInputs" :key="index">
+        <div v-for="(input, index) in inputs" :key="index">
             <div v-if="input.type == 'conditional'">
                 <FormElement
                     v-bind="input.test_param"
@@ -64,12 +64,13 @@
             </div>
             <FormElement
                 v-else
-                v-bind="input"
+                v-model="input.value"
                 :id="getPrefix(input.name)"
                 :title="input.label"
                 :help="input.help"
+                :attributes="input"
                 :backbonejs="true"
-                @change="updateParameters"
+                @changed="updateParameters"
             />
         </div>
     </div>
@@ -135,13 +136,9 @@ export default {
     data() {
         return {
             formData: {},
-            formInputs: this.inputs.slice(),
         };
     },
     watch: {
-        inputs() {
-            this.formInputs = this.inputs.slice();
-        },
         validationScrollTo() {
             //this.onHighlight(this.validationScrollTo);
         },
@@ -189,12 +186,10 @@ export default {
             const newInputs = JSON.parse(JSON.stringify(input.inputs));
             input.cache = input.cache || [];
             input.cache.push(newInputs);
-            this.formInputs = this.formInputs.slice();
             this.updateParameters();
         },
         repeatDelete(input, cacheId) {
             input.cache.splice(cacheId, 1);
-            this.formInputs = this.formInputs.slice();
             this.updateParameters();
         },
         onHighlight(validation, silent = false) {

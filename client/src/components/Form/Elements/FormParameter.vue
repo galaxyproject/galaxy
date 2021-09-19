@@ -40,7 +40,7 @@ export default {
             }
         },
     },
-    created() {
+    mounted() {
         this.$nextTick(() => {
             this.parameter = new ParameterFactory();
             this.parameter.create({
