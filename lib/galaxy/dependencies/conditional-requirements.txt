@@ -22,6 +22,7 @@ s3fs  # type: s3fs
 fs.anvilfs # type: anvil
 fs.googledrivefs # type: googledrive
 fs-gcsfs # type: googlecloudstorage
+fs-onedatafs # type: onedata
 
 # Chronos client
 chronos-python==1.2.1

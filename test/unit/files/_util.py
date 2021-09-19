@@ -60,7 +60,9 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
             'googledrive|client_id': os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_CLIENT_ID'),
             'googledrive|client_secret': os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_CLIENT_SECRET'),
             'googlecloudstorage|project': os.environ.get('GALAXY_TEST_GCS_PROJECT'),
-            'googlecloudstorage|bucket_name': 'genomics-public-data'
+            'googlecloudstorage|bucket_name': 'genomics-public-data',
+            'onedata|provider_host': os.environ.get('GALAXY_TEST_ONEDATA_PROVIDER_HOST'),
+            'onedata|access_token': os.environ.get('GALAXY_TEST_ONEDATA_ACCESS_TOKEN'),
         },
         role_names=role_names or set(),
         group_names=group_names or set(),
