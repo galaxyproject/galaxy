@@ -96,6 +96,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         # Return everything.
         try:
             return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help, view=view)
+        except exceptions.MessageException:
+            raise
         except Exception:
             raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
 
