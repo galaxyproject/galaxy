@@ -268,6 +268,14 @@ class GalaxyInteractorApi:
     def __get_job_stdio(self, job_id):
         return self._get(f'jobs/{job_id}?full=true')
 
+    def get_history(self, history_name='test_history'):
+        # Return the most recent non-deleted history matching the provided name
+        response = self._get(f"histories?q=name&qv={history_name}&order=update_time")
+        try:
+            return response.json()[-1]
+        except IndexError:
+            return None
+
     def new_history(self, history_name='test_history', publish_history=False):
         create_response = self._post("histories", {"name": history_name})
         try:
