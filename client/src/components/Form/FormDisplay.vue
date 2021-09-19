@@ -164,21 +164,20 @@ export default {
         },
         removeParameters(prefix, cacheId) {
             const filtered = {};
-            const filterName = `${prefix}_${cacheId}|`;
             Object.keys(this.formData).forEach((key) => {
                 let currentKey = key;
-                if (!key.startsWith(filterName)) {
-                    if (key.startsWith(`${prefix}_`)) {
-                        const groupDetails = key.substring(prefix.length + 1);
-                        const groupFound = groupDetails.indexOf("|");
-                        if (groupFound > -1) {
-                            const groupIndex = parseInt(groupDetails.substring(0, groupFound));
-                            if (groupIndex > cacheId) {
-                                const groupInput = groupDetails.substring(groupFound + 1);
-                                currentKey = `${prefix}_${groupIndex - 1}|${groupInput}`;
-                            }
-                        }
+                const regstr = `^${prefix}_(\\d+)\\|(\\S+)$`;
+                const regex = new RegExp(regstr);
+                const match = regex.exec(key);
+                if (match) {
+                    const groupId = parseInt(match[1]);
+                    if (groupId == cacheId) {
+                        currentKey = undefined;
+                    } else if (groupId > cacheId) {
+                        currentKey = `${prefix}_${groupId - 1}|${match[2]}`;
                     }
+                }
+                if (currentKey !== undefined) {
                     filtered[currentKey] = this.formData[key];
                 }
             });
