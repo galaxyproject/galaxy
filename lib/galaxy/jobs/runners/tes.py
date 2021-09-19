@@ -435,20 +435,14 @@ class TESJobRunner(AsynchronousJobRunner):
         """"
         Utility for concatination required job logs
         """
-        s = ''
-        try:
-            logs_data = data.get('logs')
-            for log in logs_data:
-                actual_log = log.get('logs')
-                for log_output in actual_log:
-                    try:
-                        s += log_output[key] + "\n"
-                    except KeyError:
-                        s += ''
-            return s
-
-        except KeyError:
-            return s
+        logs_data = data.get('logs')
+        log_lines = []
+        for log in logs_data:
+            for log_output in log.get('logs'):
+                log_line = log_output.get(key)
+                if log_line is not None:
+                    log_lines.append(log_line)
+        return "\n".join(log_lines)
 
     def _get_exit_codes(self, data: dict):
         """"
