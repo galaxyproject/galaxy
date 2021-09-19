@@ -308,7 +308,7 @@ class TESJobRunner(AsynchronousJobRunner):
             For getting the docker image to be used
         """
         remote_container = self._find_container(job_wrapper)
-        remote_image = "vipchhabra99/pulsar-lib"
+        remote_image = None
 
         if(hasattr(job_wrapper.job_destination, "params")):
             if("default_docker_image" in job_wrapper.job_destination.params):
@@ -317,7 +317,10 @@ class TESJobRunner(AsynchronousJobRunner):
         if(hasattr(remote_container, "container_id")):
             remote_image = remote_container.container_id
 
-        return remote_image
+        if(remote_image is None):
+            raise Exception("default_docker_image not specified")
+        else:
+            return remote_image
 
     def build_script(self, job_wrapper: JobWrapper, client_args: dict):
         """
