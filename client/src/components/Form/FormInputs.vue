@@ -4,7 +4,7 @@
             <div v-if="input.type == 'conditional'">
                 <FormElement
                     v-bind="input.test_param"
-                    :id="getConditionalPrefix(input)"
+                    :id="conditionalPrefix(input, input.test_param.name)"
                     :title="input.test_param.label"
                     :help="input.test_param.help"
                     :backbonejs="true"
@@ -12,7 +12,7 @@
                 />
                 <FormNode
                     v-for="(caseDetails, caseId) in input.cases"
-                    v-if="getMatchCase(input, input.test_param.value) == caseId"
+                    v-if="conditionalMatch(input, caseId)"
                     :key="caseId"
                     :inputs="caseDetails.inputs"
                     :prefix="getPrefix(input.name)"
@@ -52,7 +52,7 @@
                 </FormCard>
                 <b-button @click="repeatInsert(input)">
                     <font-awesome-icon icon="plus" class="mr-1" />
-                    <span>Insert {{ input.title }}</span>
+                    <span>Insert {{ input.title || "Repeat" }}</span>
                 </b-button>
             </div>
             <div v-else-if="input.type == 'section'">
@@ -172,12 +172,6 @@ export default {
         },
     },
     methods: {
-        getMatchCase(input, value) {
-            return matchCase(input, value);
-        },
-        getConditionalPrefix(input) {
-            return this.getPrefix(`${input.name}|${input.test_param.name}`);
-        },
         getRepeatPrefix(name, index) {
             if (this.prefix) {
                 return `${this.prefix}|${name}_${index}`;
@@ -192,8 +186,17 @@ export default {
                 return name;
             }
         },
+        conditionalPrefix(input, name) {
+            return this.getPrefix(`${input.name}|${name}`);
+        },
+        conditionalMatch(input, caseId) {
+            return matchCase(input, input.test_param.value) == caseId;
+        },
         conditionalChange(value, identifier) {
-            this.addParameters(value, identifier, true);
+            const prefixPos = identifier.lastIndexOf("|");
+            const prefixStr = identifier.substring(0, prefixPos);
+            this.removeParameters(prefixStr);
+            //this.addParameters(value, identifier, true);
         },
         repeatTitle(index, title) {
             return `${parseInt(index) + 1}: ${title}`;

@@ -166,23 +166,30 @@ export default {
             const filtered = {};
             Object.keys(this.formData).forEach((key) => {
                 let currentKey = key;
-                const regstr = `^${prefix}_(\\d+)\\|(\\S+)$`;
-                const regex = new RegExp(regstr);
-                const match = regex.exec(key);
-                if (match) {
-                    const groupId = parseInt(match[1]);
-                    if (groupId == cacheId) {
-                        currentKey = undefined;
-                    } else if (groupId > cacheId) {
-                        currentKey = `${prefix}_${groupId - 1}|${match[2]}`;
+                if (cacheId != undefined) {
+                    const regstr = `^${prefix}_(\\d+)\\|(\\S+)$`;
+                    const regex = new RegExp(regstr);
+                    const match = regex.exec(key);
+                    if (match) {
+                        const groupId = parseInt(match[1]);
+                        if (groupId == cacheId) {
+                            currentKey = undefined;
+                        } else if (groupId > cacheId) {
+                            currentKey = `${prefix}_${groupId - 1}|${match[2]}`;
+                        }
                     }
+                } else if (key.startsWith(`${prefix}|`)) {
+                    currentKey = undefined;
                 }
                 if (currentKey !== undefined) {
                     filtered[currentKey] = this.formData[key];
                 }
             });
             this.formData = filtered;
-            this.updateParameters();
+            console.log(filtered);
+            if (cacheId != undefined) {
+                //this.updateParameters();
+            }
         },
         updateParameters(requiresRequest = true) {
             this.$nextTick(() => {
