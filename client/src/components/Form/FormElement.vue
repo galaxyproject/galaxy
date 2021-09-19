@@ -53,9 +53,6 @@ export default {
             default: false,
         },
     },
-    created() {
-        this.$emit("input", this.value, this.id, false);
-    },
     computed: {
         currentValue: {
             get() {
@@ -63,6 +60,7 @@ export default {
             },
             set(val) {
                 this.$emit("input", val, this.id, true);
+                this.$emit("change");
             },
         },
         hasError() {

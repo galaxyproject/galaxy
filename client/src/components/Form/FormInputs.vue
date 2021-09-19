@@ -16,7 +16,6 @@
                     :key="caseId"
                     :inputs="caseDetails.inputs"
                     :prefix="getPrefix(input.name)"
-                    :add-parameters="addParameters"
                     :update-parameters="updateParameters"
                 />
             </div>
@@ -43,7 +42,6 @@
                         <FormNode
                             :inputs="cache"
                             :prefix="getRepeatPrefix(input.name, cacheId)"
-                            :add-parameters="addParameters"
                             :update-parameters="updateParameters"
                         />
                     </template>
@@ -59,7 +57,6 @@
                         <FormNode
                             :inputs="input.inputs"
                             :prefix="getPrefix(input.name)"
-                            :add-parameters="addParameters"
                             :update-parameters="updateParameters"
                         />
                     </template>
@@ -72,7 +69,7 @@
                 :title="input.label"
                 :help="input.help"
                 :backbonejs="true"
-                @input="addParameters"
+                @change="updateParameters"
             />
         </div>
     </div>
@@ -130,10 +127,6 @@ export default {
             type: Object,
             default: null,
         },
-        addParameters: {
-            type: Function,
-            required: true,
-        },
         updateParameters: {
             type: Function,
             required: true,
@@ -188,7 +181,6 @@ export default {
         conditionalChange(value, identifier) {
             const prefixPos = identifier.lastIndexOf("|");
             const prefixStr = identifier.substring(0, prefixPos);
-            //this.addParameters(value, identifier, true);
         },
         repeatTitle(index, title) {
             return `${parseInt(index) + 1}: ${title}`;

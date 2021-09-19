@@ -10,7 +10,6 @@
         :validation-scroll-to="validationScrollTo"
         :replace-params="replaceParams"
         :errors="errors"
-        :add-parameters="addParameters"
         :update-parameters="updateParameters"
     />
 </template>
@@ -168,8 +167,12 @@ export default {
                 visitInputs(this.inputs, (input, name) => {
                     params[name] = input.value;
                 });
-                this.$emit("onChange", params, requiresRequest);
-                console.log(params, requiresRequest);
+                console.log(params);
+                if (JSON.stringify(params) != JSON.stringify(this.formData)) {
+                    this.formData = params;
+                    this.$emit("onChange", params, requiresRequest);
+                    console.log(params, requiresRequest);
+                }
             });
         },
         onHighlight(validation, silent = false) {
