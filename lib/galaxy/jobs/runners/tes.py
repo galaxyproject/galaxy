@@ -6,6 +6,7 @@ import os
 from re import escape, findall
 
 import requests
+import shlex
 
 from galaxy import model
 from galaxy.jobs import JobWrapper
@@ -53,7 +54,7 @@ class TESJobRunner(AsynchronousJobRunner):
         if(hasattr(app.config, "galaxy_infrastructure_url")):
             self.galaxy_url = f"{app.config.galaxy_infrastructure_url.rstrip('/')}/"
         else:
-            self.galaxy_url = DEFAULT_GALAXY_URL
+            raise Exception("Galaxy URL isn't specified")
 
         self.running_states = ["RUNNING", "INITIALIZING", "QUEUED", "PAUSED"]
         self.complete_states = ["COMPLETE"]
@@ -197,7 +198,7 @@ class TESJobRunner(AsynchronousJobRunner):
         job_executor = {
             "workdir": mounted_dir,
             "image": remote_image,
-            "command": command_line.split(),
+            "command": shlex.split(command_line),
             "env": env
         }
         return job_executor
