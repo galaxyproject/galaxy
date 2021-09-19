@@ -48,7 +48,7 @@ class TESJobRunner(AsynchronousJobRunner):
         """
             Initialize this job runner and start the monitor thread
         """
-        super(TESJobRunner, self).__init__(app, nworkers, **kwargs)
+        super().__init__(app, nworkers, **kwargs)
         self.container_workdir = "/tmp"
         if(hasattr(app.config, "galaxy_infrastructure_url")):
             self.galaxy_url = f"{app.config.galaxy_infrastructure_url.rstrip('/')}/"
