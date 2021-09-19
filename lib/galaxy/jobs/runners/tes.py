@@ -32,7 +32,7 @@ class TESJobState(AsynchronousJobState):
         """
         Encapsulates state related to a job.
         """
-        super(TESJobState, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.user_log = None
         self.user_log_size = 0
         self.cleanup_file_attributes = ['output_file', 'error_file', 'exit_code_file']
