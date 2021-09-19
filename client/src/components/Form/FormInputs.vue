@@ -1,7 +1,27 @@
 <template>
     <div>
         <div v-for="(input, index) in formInputs" :key="index">
-            <div v-if="input.type == 'repeat'">
+            <div v-if="input.type == 'conditional'">
+                <FormElement
+                    v-bind="input.test_param"
+                    :id="getConditionalPrefix(input)"
+                    :title="input.test_param.label"
+                    :help="input.test_param.help"
+                    :backbonejs="true"
+                    @input="conditionalChange"
+                />
+                <FormNode
+                    v-for="(caseDetails, caseId) in input.cases"
+                    v-if="getMatchCase(input, input.test_param.value) == caseId"
+                    :key="caseId"
+                    :inputs="caseDetails.inputs"
+                    :prefix="getPrefix(input.name)"
+                    :add-parameters="addParameters"
+                    :remove-parameters="removeParameters"
+                    :update-parameters="updateParameters"
+                />
+            </div>
+            <div v-else-if="input.type == 'repeat'">
                 <p class="font-weight-bold mb-2">{{ input.title }}</p>
                 <FormCard
                     v-for="(cache, cacheId) in input.cache"
@@ -69,6 +89,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
+import { matchCase } from "components/Form/utilities";
 
 library.add(faPlus, faTrashAlt);
 
@@ -151,6 +172,12 @@ export default {
         },
     },
     methods: {
+        getMatchCase(input, value) {
+            return matchCase(input, value);
+        },
+        getConditionalPrefix(input) {
+            return this.getPrefix(`${input.name}|${input.test_param.name}`);
+        },
         getRepeatPrefix(name, index) {
             if (this.prefix) {
                 return `${this.prefix}|${name}_${index}`;
@@ -164,6 +191,9 @@ export default {
             } else {
                 return name;
             }
+        },
+        conditionalChange(value, identifier) {
+            this.addParameters(value, identifier, true);
         },
         repeatTitle(index, title) {
             return `${parseInt(index) + 1}: ${title}`;
