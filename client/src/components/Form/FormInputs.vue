@@ -54,6 +54,7 @@
                 :id="getPrefix(input.name)"
                 :title="input.label"
                 :help="input.help"
+                :backbonejs="true"
                 @input="addParameters"
             />
         </div>
@@ -111,10 +112,6 @@ export default {
             type: Object,
             default: null,
         },
-        replaceParams: {
-            type: Object,
-            default: null,
-        },
         addParameters: {
             type: Function,
             required: true,
@@ -152,9 +149,6 @@ export default {
                 }
             });*/
         },
-        replaceParams() {
-            //this.onReplaceParams();
-        },
     },
     methods: {
         getRepeatPrefix(name, index) {
@@ -184,22 +178,6 @@ export default {
         repeatDelete(input, cacheId) {
             const prefix = this.getPrefix(input.name);
             this.removeParameters(prefix, cacheId);
-        },
-        onReplaceParams() {
-            /*if (this.replaceParams) {
-                this.params = {};
-                visitInputs(this.inputs, (input, name) => {
-                    this.params[name] = input;
-                });
-                _.each(this.params, (input, name) => {
-                    const newValue = this.replaceParams[name];
-                    if (newValue) {
-                        const field = this.form.field_list[this.form.data.match(name)];
-                        field.value(newValue);
-                    }
-                });
-                this.form.trigger("change");
-            }*/
         },
         onHighlight(validation, silent = false) {
             /*this.form.trigger("reset");

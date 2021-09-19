@@ -71,9 +71,6 @@ export default {
         };
     },
     watch: {
-        id() {
-            //this.onRender();
-        },
         validationScrollTo() {
             //this.onHighlight(this.validationScrollTo);
         },
@@ -81,22 +78,13 @@ export default {
             //this.onHighlight(this.validation, true);
             //this.$emit("onValidation", this.validation);
         },
-        inputs() {
-            //this.formInputs = Object.assign({}, this.inputs);
-            /*this.$nextTick(() => {
-                this.form.update(this.inputs);
-            });*/
-        },
-        formInputs() {
-            console.log(this.formInputs);
-        },
         errors() {
             /*this.$nextTick(() => {
                 this.form.errors(this.errors);
             });*/
         },
         replaceParams() {
-            //this.onReplaceParams();
+            this.onReplaceParams();
         },
     },
     computed: {
@@ -159,31 +147,13 @@ export default {
     },
     methods: {
         onReplaceParams() {
-            /*if (this.replaceParams) {
-                this.params = {};
-                visitInputs(this.inputs, (input, name) => {
-                    this.params[name] = input;
-                });
-                _.each(this.params, (input, name) => {
-                    const newValue = this.replaceParams[name];
-                    if (newValue) {
-                        const field = this.form.field_list[this.form.data.match(name)];
-                        field.value(newValue);
-                    }
-                });
-                this.form.trigger("change");
-            }*/
-        },
-        identifyRepeat(prefix) {
-            const separator = prefix.lastIndexOf("_");
-            let group = -1;
-            if (separator != -1) {
-                name = prefix.substring(0, separator);
-                group = parseInt(prefix.substring(separator + 1));
-                return [name, group];
-            } else {
-                return [-1, -1];
-            }
+            Object.keys(this.formData).forEach((key) => {
+                const newValue = this.replaceParams[key];
+                if (newValue != undefined) {
+                    this.formData[key] = newValue;
+                }
+            });
+            this.updateParameters();
         },
         addParameters(value, identifier, requiresRequest) {
             const currentValueString = JSON.stringify(this.formData[identifier]);
@@ -201,9 +171,8 @@ export default {
                     if (key.startsWith(`${prefix}_`)) {
                         const groupDetails = key.substring(prefix.length + 1);
                         const groupFound = groupDetails.indexOf("|");
-                        let groupIndex = -1;
                         if (groupFound > -1) {
-                            groupIndex = parseInt(groupDetails.substring(0, groupFound));
+                            const groupIndex = parseInt(groupDetails.substring(0, groupFound));
                             if (groupIndex > cacheId) {
                                 const groupInput = groupDetails.substring(groupFound + 1);
                                 currentKey = `${prefix}_${groupIndex - 1}|${groupInput}`;
@@ -218,7 +187,8 @@ export default {
         },
         updateParameters(requiresRequest = true) {
             this.$nextTick(() => {
-                this.$emit("onChange", this.formData, requiresRequest);
+                const formDataCopy = Object.assign({}, this.formData);
+                this.$emit("onChange", formDataCopy, requiresRequest);
                 console.log(this.formData, requiresRequest);
             });
         },
