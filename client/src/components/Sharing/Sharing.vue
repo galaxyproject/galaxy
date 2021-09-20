@@ -466,7 +466,7 @@ export default {
                     new_slug: newSlug,
                 })
                 .then(() => (this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`))
-                .catch((error) => this.addError(error));
+                .catch((error) => this.addError(error.response.data.err_msg));
         },
         onImportable(importable) {
             if (importable) {
