@@ -1366,7 +1366,7 @@ class CMAP(TabularData):
         for line in handle:
             if not line.startswith('#'):
                 return False
-            if line.startswith('# CMAP File Version:')
+            if line.startswith('# CMAP File Version:'):
                 return True
         return False
 
