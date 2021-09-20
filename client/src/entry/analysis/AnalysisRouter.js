@@ -17,7 +17,7 @@ import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
 import ToolForm from "components/Tool/ToolForm";
 import FormGeneric from "components/Form/FormGeneric";
-import Sharing from "components/Sharing.vue";
+import Sharing from "components/Sharing/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
 import DatasetList from "components/Dataset/DatasetList.vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
@@ -192,8 +192,8 @@ export const getAnalysisRouter = (Galaxy) => {
         show_visualizations_sharing: function () {
             this._display_vue_helper(Sharing, {
                 id: QueryStringParsing.get("id"),
-                plural_name: "Visualizations",
-                model_class: "Visualization",
+                pluralName: "Visualizations",
+                modelClass: "Visualization",
             });
         },
 
@@ -246,8 +246,8 @@ export const getAnalysisRouter = (Galaxy) => {
         show_histories_sharing: function () {
             this._display_vue_helper(Sharing, {
                 id: QueryStringParsing.get("id"),
-                plural_name: "Histories",
-                model_class: "History",
+                pluralName: "Histories",
+                modelClass: "History",
             });
         },
 
@@ -318,8 +318,8 @@ export const getAnalysisRouter = (Galaxy) => {
         show_pages_sharing: function () {
             this._display_vue_helper(Sharing, {
                 id: QueryStringParsing.get("id"),
-                plural_name: "Pages",
-                model_class: "Page",
+                pluralName: "Pages",
+                modelClass: "Page",
             });
         },
 

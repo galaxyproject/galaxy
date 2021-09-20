@@ -479,7 +479,13 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/genomes/{id}/indexes', controller='genomes', action='indexes')
     webapp.mapper.connect('/api/genomes/{id}/sequences', controller='genomes', action='sequences')
     webapp.mapper.resource('visualization', 'visualizations', path_prefix='/api')
-    webapp.mapper.connect('/api/visualizations/{id}/sharing', action='sharing', controller="visualizations", conditions=dict(method=["GET", "POST"]))
+    webapp.mapper.connect('/api/visualizations/{id}/sharing', action='sharing', controller="visualizations", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/visualizations/{id}/enable_link_access', action='enable_link_access', controller="visualizations", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/visualizations/{id}/disable_link_access', action='disable_link_access', controller="visualizations", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/visualizations/{id}/publish', action='publish', controller="visualizations", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/visualizations/{id}/unpublish', action='unpublish', controller="visualizations", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/visualizations/{id}/share_with_users', action='share_with_users', controller="visualizations", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/visualizations/{id}/slug', action='set_slug', controller="visualizations", conditions=dict(method=["PUT"]))
     webapp.mapper.resource('plugins', 'plugins', path_prefix='/api')
     webapp.mapper.connect('/api/workflows/build_module', action='build_module', controller="workflows")
     webapp.mapper.connect('/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict(method=["GET"]))
@@ -490,7 +496,13 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/licenses/{id}', controller='licenses', action='get', conditions=dict(method="GET"))
     webapp.mapper.resource_with_deleted('history', 'histories', path_prefix='/api')
     webapp.mapper.connect('/api/histories/{history_id}/citations', action='citations', controller="histories")
-    webapp.mapper.connect('/api/histories/{id}/sharing', action='sharing', controller="histories", conditions=dict(method=["GET", "POST"]))
+    webapp.mapper.connect('/api/histories/{id}/sharing', action='sharing', controller="histories", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/histories/{id}/enable_link_access', action='enable_link_access', controller="histories", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/histories/{id}/disable_link_access', action='disable_link_access', controller="histories", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/histories/{id}/publish', action='publish', controller="histories", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/histories/{id}/unpublish', action='unpublish', controller="histories", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/histories/{id}/share_with_users', action='share_with_users', controller="histories", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/histories/{id}/slug', action='set_slug', controller="histories", conditions=dict(method=["PUT"]))
     webapp.mapper.connect(
         'dynamic_tool_confs',
         '/api/configuration/dynamic_tool_confs',
@@ -529,7 +541,13 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('search', 'search', path_prefix='/api')
     webapp.mapper.connect('/api/pages/{id}.pdf', action='show_pdf', controller="pages", conditions=dict(method=["GET"]))
     webapp.mapper.resource('page', 'pages', path_prefix="/api")
-    webapp.mapper.connect('/api/pages/{id}/sharing', action='sharing', controller="pages", conditions=dict(method=["GET", "POST"]))
+    webapp.mapper.connect('/api/pages/{id}/sharing', action='sharing', controller="pages", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/pages/{id}/enable_link_access', action='enable_link_access', controller="pages", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/pages/{id}/disable_link_access', action='disable_link_access', controller="pages", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/pages/{id}/publish', action='publish', controller="pages", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/pages/{id}/unpublish', action='unpublish', controller="pages", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/pages/{id}/share_with_users', action='share_with_users', controller="pages", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/pages/{id}/slug', action='set_slug', controller="pages", conditions=dict(method=["PUT"]))
     webapp.mapper.resource('revision', 'revisions',
                            path_prefix='/api/pages/{page_id}',
                            controller='page_revisions',

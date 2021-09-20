@@ -286,12 +286,6 @@ class PagesService:
         trans.response.set_content_type("application/pdf")
         return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, 'page')
 
-    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
-        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
-        status of the resource.
-        """
-        return self.shareable_service.sharing(trans, id, payload)
-
 
 class PageManager(sharable.SharableModelManager, UsesAnnotations):
     """Provides operations for managing a Page."""

@@ -8,13 +8,20 @@ import glob
 import logging
 import os
 from typing import (
+    cast,
     List,
     Optional,
+    Set,
     Tuple,
     Union,
 )
 
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from sqlalchemy import (
+    and_,
     asc,
     desc,
     false,
@@ -58,6 +65,37 @@ from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import restore_text
 
 log = logging.getLogger(__name__)
+
+
+class HDABasicInfo(BaseModel):
+    id: EncodedDatabaseIdField
+    name: str
+
+
+class ShareHistoryExtra(sharable.ShareWithExtra):
+    can_change: List[HDABasicInfo] = Field(
+        [],
+        title="Can Change",
+        description=(
+            "A collection of datasets that are not accessible by one or more of the target users "
+            "and that can be made accessible for others by the user sharing the history."
+        ),
+    )
+    cannot_change: List[HDABasicInfo] = Field(
+        [],
+        title="Cannot Change",
+        description=(
+            "A collection of datasets that are not accessible by one or more of the target users "
+            "and that cannot be made accessible for others by the user sharing the history."
+        ),
+    )
+    accessible_count: int = Field(
+        0,
+        title="Accessible Count",
+        description=(
+            "The number of datasets in the history that are public or accessible by all the target users."
+        ),
+    )
 
 
 class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
@@ -248,6 +286,68 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
         job, _ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
         return job
+
+    def get_sharing_extra_information(
+        self, trans, item, users: Set[model.User], errors: Set[str], option: Optional[sharable.SharingOptions] = None
+    ) -> Optional[sharable.ShareWithExtra]:
+        """Returns optional extra information about the datasets of the history that can be accessed by the users."""
+        extra = ShareHistoryExtra()
+        history = cast(model.History, item)
+        if history.empty:
+            errors.add("You cannot share an empty history.")
+            return extra
+
+        owner = trans.user
+        owner_roles = owner.all_roles()
+        can_change_dict = {}
+        cannot_change_dict = {}
+        share_anyway = option is not None and option == sharable.SharingOptions.no_changes
+        datasets = history.activatable_datasets
+        total_dataset_count = len(datasets)
+        for user in users:
+            if self.is_history_shared_with(history, user):
+                continue
+
+            user_roles = user.all_roles()
+            # TODO: Handle this is a more performant way
+            # Only deal with datasets that have not been purged
+            for hda in datasets:
+                if trans.app.security_agent.can_access_dataset(user_roles, hda.dataset):
+                    continue
+                # The user with which we are sharing the history does not have access permission on the current dataset
+                owner_can_manage_dataset = (
+                    trans.app.security_agent.can_manage_dataset(owner_roles, hda.dataset)
+                    and not hda.dataset.library_associations
+                )
+                if option and owner_can_manage_dataset:
+                    if option == sharable.SharingOptions.make_accessible_to_shared:
+                        trans.app.security_agent.privately_share_dataset(hda.dataset, users=[owner, user])
+                    elif option == sharable.SharingOptions.make_public:
+                        trans.app.security_agent.make_dataset_public(hda.dataset)
+                else:
+                    hda_id = trans.security.encode_id(hda.id)
+                    hda_info = HDABasicInfo(id=hda_id, name=hda.name)
+                    if owner_can_manage_dataset:
+                        can_change_dict[hda_id] = hda_info
+                    else:
+                        cannot_change_dict[hda_id] = hda_info
+
+        extra.can_change = list(can_change_dict.values())
+        extra.cannot_change = list(cannot_change_dict.values())
+        extra.accessible_count = total_dataset_count - len(extra.can_change) - len(extra.cannot_change)
+        if not extra.accessible_count and not extra.can_change and not share_anyway:
+            errors.add("The history you are sharing do not contain any datasets that can be accessed by the users with which you are sharing.")
+
+        extra.can_share = not errors and (extra.accessible_count == total_dataset_count or option is not None)
+        return extra
+
+    def is_history_shared_with(self, history, user) -> bool:
+        return bool(self.session().query(self.user_share_model).filter(
+            and_(
+                self.user_share_model.table.c.user_id == user.id,
+                self.user_share_model.table.c.history_id == history.id,
+            )
+        ).first())
 
 
 class HistoryExportView:
@@ -954,12 +1054,6 @@ class HistoriesService(ServiceBase):
             installed_builds=[LabelValuePair(label=ins, value=ins) for ins in installed_builds],
             fasta_hdas=[LabelValuePair(label=f'{hda.hid}: {hda.name}', value=trans.security.encode_id(hda.id)) for hda in fasta_hdas],
         )
-
-    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
-        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
-        status of the resource.
-        """
-        return self.shareable_service.sharing(trans, id, payload)
 
     def _serialize_history(
             self,
