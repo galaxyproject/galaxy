@@ -84,6 +84,12 @@
 
         <h4>Tool Management</h4>
         <ul>
+            <li>
+                <strong>
+                    <a @click.prevent="useRouter" :href="adminSanitizeAllowUrl">Manage Allowlist</a>
+                </strong>
+                - Manage HTML rendering for installed tools' output datasets.
+            </li>
             <li v-if="isToolShedInstalled">
                 <strong>
                     <a @click.prevent="useRouter" :href="adminToolshedUrl">Install and Uninstall</a>
@@ -150,6 +156,7 @@ export default {
         adminQuotasUrl: () => `${root}admin/quotas`,
         adminGroupsUrl: () => `${root}admin/groups`,
         adminRolesUrl: () => `${root}admin/roles`,
+        adminSanitizeAllowUrl: () => `${root}admin/sanitize_allow`,
         adminFormsUrl: () => `${root}admin/forms`,
         adminToolshedUrl: () => `${root}admin/toolshed`,
         adminToolVersionsUrl: () => `${root}admin/tool_versions`,

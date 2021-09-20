@@ -143,6 +143,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')
     webapp.add_client_route('/admin/repositories', 'admin')
+    webapp.add_client_route('/admin/sanitize_allow', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
     webapp.add_client_route('/admin/toolshed', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
@@ -438,6 +439,10 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}', action='show', controller="tools")
     webapp.mapper.resource('tool', 'tools', path_prefix='/api')
     webapp.mapper.resource('dynamic_tools', 'dynamic_tools', path_prefix='/api')
+
+    webapp.mapper.connect('/api/sanitize_allow', action='index', controller='sanitize_allow', conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/sanitize_allow', action='create', controller='sanitize_allow', conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/sanitize_allow', action='delete', controller='sanitize_allow', conditions=dict(method=["DELETE"]))
 
     webapp.mapper.connect('/api/entry_points', action='index', controller="tool_entry_points")
     webapp.mapper.connect('/api/entry_points/{id:.+?}/access', action='access_entry_point', controller="tool_entry_points")

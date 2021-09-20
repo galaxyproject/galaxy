@@ -1571,27 +1571,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                                    unused_environments=view.unused_dependency_paths,
                                    viewkey=viewkey)
 
-    @web.expose
-    @web.require_admin
-    def sanitize_allowlist(self, trans, submit_allowlist=False, tools_to_allowlist=None):
-        tools_to_allowlist = tools_to_allowlist or []
-        if submit_allowlist:
-            # write the configured sanitize_allowlist_file with new allowlist
-            # and update in-memory list.
-            with open(trans.app.config.sanitize_allowlist_file, 'wt') as f:
-                if isinstance(tools_to_allowlist, str):
-                    tools_to_allowlist = [tools_to_allowlist]
-                new_allowlist = sorted([tid for tid in tools_to_allowlist if tid in trans.app.toolbox.tools_by_id])
-                f.write("\n".join(new_allowlist))
-            trans.app.config.sanitize_allowlist = new_allowlist
-            trans.app.queue_worker.send_control_task('reload_sanitize_allowlist', noop_self=True)
-            # dispatch a message to reload list for other processes
-        return trans.fill_template('/webapps/galaxy/admin/sanitize_allowlist.mako',
-                                   sanitize_all=trans.app.config.sanitize_all_html,
-                                   tools=trans.app.toolbox.tools_by_id)
-
-
 # ---- Utility methods -------------------------------------------------------
+
 
 def build_select_input(name, label, options, value):
     return {'type': 'select',
