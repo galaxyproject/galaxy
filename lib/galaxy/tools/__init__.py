@@ -1822,7 +1822,7 @@ class Tool(Dictifiable):
             elif isinstance(param, HiddenToolParameter):
                 args[key] = model.User.expand_user_properties(trans.user, param.value)
             else:
-                raise Exception("Unexpected parameter type")
+                args[key] = param.get_initial_value(trans, None)
         return args
 
     def execute(self, trans, incoming=None, set_output_hid=True, history=None, **kwargs):
