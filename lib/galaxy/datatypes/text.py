@@ -880,7 +880,8 @@ class Yaml(Text):
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
             # If the file is small enough - don't guess just check.
             try:
-                yaml.safe_load(file_prefix.contents_header)
+                item = yaml.safe_load(file_prefix.contents_header)
+                assert isinstance(item, (list, dict))
                 return True
             except yaml.YAMLError:
                 return False
@@ -888,7 +889,8 @@ class Yaml(Text):
             # If file is too big, load the first part. Trim the current line, in case it cut off in the middle of a key.
             file_start = file_prefix.string_io().read(50000).strip().rsplit("\n", 1)[0]
             try:
-                yaml.safe_load(file_start)
+                item = yaml.safe_load(file_start)
+                assert isinstance(item, (list, dict))
                 return True
             except yaml.YAMLError:
                 return False
