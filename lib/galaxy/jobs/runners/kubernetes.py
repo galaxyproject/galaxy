@@ -151,7 +151,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             return
 
         # Construction of Kubernetes objects follow: https://kubernetes.io/docs/concepts/workloads/controllers/job/
-        if self.__has_guest_ports(ajs):
+        if self.__has_guest_ports(job_wrapper):
             try:
                 self.__configure_port_routing(ajs)
             except HTTPError:
@@ -191,8 +191,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_wrapper.set_external_id(job_id)
         self.monitor_queue.put(ajs)
 
-    def __has_guest_ports(self, ajs):
-        return bool(ajs.job_wrapper.guest_ports)
+    def __has_guest_ports(self, job_wrapper):
+        return bool(job_wrapper.guest_ports)
 
     def __configure_port_routing(self, ajs):
         # Configure interactive tool entry points first
@@ -500,7 +500,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             extra_envs = yaml.safe_load(self.__get_overridable_params(ajs.job_wrapper, 'k8s_extra_job_envs') or "{}")
             for key in extra_envs:
                 envs.append({'name': key, 'value': extra_envs[key]})
-            if self.__has_guest_ports(ajs):
+            if self.__has_guest_ports(ajs.job_wrapper):
                 configured_eps = [ep for ep in ajs.job_wrapper.get_job().interactivetool_entry_points if ep.configured]
                 for entry_point in configured_eps:
                     # sending in self.app as `trans` since it's only used for `.security` so seems to work
@@ -720,7 +720,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_state.running = False
         self.mark_as_failed(job_state)
         try:
-            if self.__has_guest_ports(job_state):
+            if self.__has_guest_ports(job_state.job_wrapper):
                 self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
         except Exception:
@@ -744,7 +744,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_state.running = False
         self.mark_as_failed(job_state)
         try:
-            if self.__has_guest_ports(job_state):
+            if self.__has_guest_ports(job_state.job_wrapper):
                 self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
         except Exception:
@@ -826,7 +826,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_to_delete = find_job_object_by_name(self._pykube_api, job.get_job_runner_external_id(), self.runner_params['k8s_namespace'])
             if job_to_delete and len(job_to_delete.response['items']) > 0:
                 k8s_job = Job(self._pykube_api, job_to_delete.response['items'][0])
-                if self.__has_guest_ports(job_wrapper.get_state()):
+                if self.__has_guest_ports(job_wrapper):
                     self.__cleanup_k8s_guest_ports(job_wrapper, k8s_job)
                 self.__cleanup_k8s_job(k8s_job)
             # TODO assert whether job parallelism == 0
@@ -873,6 +873,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             log.warning("No k8s job found which matches job id '%s'. Ignoring...", job_state.job_id)
         else:
             job = Job(self._pykube_api, jobs.response['items'][0])
-            if self.__has_guest_ports(job_state):
+            if self.__has_guest_ports(job_state.job_wrapper):
                 self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
