@@ -6216,7 +6216,6 @@ class TestWorkflowStep(BaseTest):
         obj.workflow = workflow
         obj.subworkflow = subworkflow
         obj.dynamic_tool = dynamic_tool
-        obj.parent_workflow_input_connections.append(workflow_step_connection_in)
         obj.output_connections.append(workflow_step_connection_out)
 
         with dbcleanup(session, obj) as obj_id:
@@ -6224,7 +6223,6 @@ class TestWorkflowStep(BaseTest):
             assert stored_obj.workflow.id == workflow.id
             assert stored_obj.subworkflow.id == subworkflow.id
             assert stored_obj.dynamic_tool.id == dynamic_tool.id
-            assert stored_obj.parent_workflow_input_connections == [workflow_step_connection_in]
             assert stored_obj.output_connections == [workflow_step_connection_out]
 
         persisted = [subworkflow, workflow_step_connection_in, workflow_step_connection_out]

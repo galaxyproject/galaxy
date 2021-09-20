@@ -6262,9 +6262,6 @@ class WorkflowStep(Base, RepresentById):
     post_job_actions = relationship('PostJobAction', back_populates='workflow_step')
     inputs = relationship('WorkflowStepInput', back_populates='workflow_step')
     workflow_outputs = relationship('WorkflowOutput', back_populates='workflow_step')
-    parent_workflow_input_connections = relationship('WorkflowStepConnection',
-        primaryjoin=(lambda: WorkflowStepConnection.input_subworkflow_step_id == WorkflowStep.id)  # type: ignore
-    )
     output_connections = relationship('WorkflowStepConnection',
         primaryjoin=(lambda: WorkflowStepConnection.output_step_id == WorkflowStep.id)  # type: ignore
     )
@@ -6510,7 +6507,6 @@ class WorkflowStepConnection(Base, RepresentById):
         cascade='all',
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id))  # type: ignore
     input_subworkflow_step = relationship('WorkflowStep',
-        back_populates='parent_workflow_input_connections',
         primaryjoin=(lambda: WorkflowStepConnection.input_subworkflow_step_id == WorkflowStep.id))  # type: ignore
     output_step = relationship('WorkflowStep',
         back_populates='output_connections',
