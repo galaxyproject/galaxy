@@ -1808,10 +1808,7 @@ class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
     dataset_collection_id = Column(Integer,
         ForeignKey('history_dataset_collection_association.id'), index=True)
     name = Column(Unicode(255))
-    dataset_collection_instance = relationship(
-        'HistoryDatasetCollectionAssociation',
-        lazy=False,
-        back_populates="output_dataset_collection_instances")
+    dataset_collection_instance = relationship('HistoryDatasetCollectionAssociation', lazy=False)
     job = relationship('Job', back_populates='output_dataset_collection_instances')
 
     def __init__(self, name, dataset_collection_instance):
@@ -5475,10 +5472,6 @@ class HistoryDatasetCollectionAssociation(
         'HistoryDatasetCollectionRatingAssociation',
         order_by=lambda: HistoryDatasetCollectionRatingAssociation.id,  # type: ignore
         back_populates='dataset_collection',
-    )
-    output_dataset_collection_instances = relationship(
-        'JobToOutputDatasetCollectionAssociation',
-        back_populates='dataset_collection_instance',
     )
     hidden_dataset_instances = relationship('HistoryDatasetAssociation',
         primaryjoin=(lambda: HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id  # type: ignore
