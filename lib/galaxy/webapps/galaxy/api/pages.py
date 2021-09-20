@@ -8,6 +8,7 @@ from fastapi import (
     Body,
     Path,
     Query,
+    Response,
     status,
 )
 from starlette.responses import StreamingResponse
@@ -224,6 +225,7 @@ class FastAPIPages:
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
         self.service.shareable_service.set_slug(trans, id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 class PagesController(BaseGalaxyAPIController):
