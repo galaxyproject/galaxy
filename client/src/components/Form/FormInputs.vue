@@ -10,7 +10,7 @@
                     :help="input.test_param.help"
                     :attributes="input.test_param"
                     :backbonejs="true"
-                    @changed="updateParameters"
+                    @changed="changed"
                 />
                 <FormNode
                     v-for="(caseDetails, caseId) in input.cases"
@@ -18,7 +18,7 @@
                     :key="caseId"
                     :inputs="caseDetails.inputs"
                     :prefix="getPrefix(input.name)"
-                    :update-parameters="updateParameters"
+                    :changed="changed"
                 />
             </div>
             <div v-else-if="input.type == 'repeat'">
@@ -41,11 +41,7 @@
                         </b-button>
                     </template>
                     <template v-slot:body>
-                        <FormNode
-                            :inputs="cache"
-                            :prefix="getRepeatPrefix(input.name, cacheId)"
-                            :update-parameters="updateParameters"
-                        />
+                        <FormNode :inputs="cache" :prefix="getPrefix(input.name, cacheId)" :changed="changed" />
                     </template>
                 </FormCard>
                 <b-button @click="repeatInsert(input)">
@@ -56,11 +52,7 @@
             <div v-else-if="input.type == 'section'">
                 <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
                     <template v-slot:body>
-                        <FormNode
-                            :inputs="input.inputs"
-                            :prefix="getPrefix(input.name)"
-                            :update-parameters="updateParameters"
-                        />
+                        <FormNode :inputs="input.inputs" :prefix="getPrefix(input.name)" :changed="changed" />
                     </template>
                 </FormCard>
             </div>
@@ -73,7 +65,7 @@
                 :help="input.help"
                 :attributes="input"
                 :backbonejs="true"
-                @changed="updateParameters"
+                @changed="changed"
             />
         </div>
     </div>
@@ -131,7 +123,7 @@ export default {
             type: Object,
             default: null,
         },
-        updateParameters: {
+        changed: {
             type: Function,
             required: true,
         },
@@ -158,14 +150,10 @@ export default {
         },
     },
     methods: {
-        getRepeatPrefix(name, index) {
-            if (this.prefix) {
-                return `${this.prefix}|${name}_${index}`;
-            } else {
-                return `${name}_${index}`;
+        getPrefix(name, index) {
+            if (index) {
+                name = `${name}_${index}`;
             }
-        },
-        getPrefix(name) {
             if (this.prefix) {
                 return `${this.prefix}|${name}`;
             } else {
@@ -178,10 +166,6 @@ export default {
         conditionalMatch(input, caseId) {
             return matchCase(input, input.test_param.value) == caseId;
         },
-        conditionalChange(value, identifier) {
-            //const prefixPos = identifier.lastIndexOf("|");
-            //const prefixStr = identifier.substring(0, prefixPos);
-        },
         repeatTitle(index, title) {
             return `${parseInt(index) + 1}: ${title}`;
         },
@@ -189,11 +173,11 @@ export default {
             const newInputs = JSON.parse(JSON.stringify(input.inputs));
             input.cache = input.cache || [];
             input.cache.push(newInputs);
-            this.updateParameters();
+            this.changed();
         },
         repeatDelete(input, cacheId) {
             input.cache.splice(cacheId, 1);
-            this.updateParameters();
+            this.changed();
         },
         onHighlight(validation, silent = false) {
             /*this.form.trigger("reset");

@@ -10,7 +10,7 @@
         :validation-scroll-to="validationScrollTo"
         :replace-params="replaceParams"
         :errors="errors"
-        :update-parameters="updateParameters"
+        :changed="changed"
     />
 </template>
 
@@ -152,9 +152,9 @@ export default {
                     this.formData[key] = newValue;
                 }
             });
-            this.updateParameters();
+            this.changed();
         },
-        updateParameters(requiresRequest = true) {
+        changed(requiresRequest = true) {
             this.$nextTick(() => {
                 const params = {};
                 visitInputs(this.inputs, (input, name) => {
