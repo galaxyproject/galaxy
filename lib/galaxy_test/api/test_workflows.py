@@ -3130,6 +3130,10 @@ steps:
   - tool_id: __BUILD_LIST__
     in:
       datasets_0|input: input1
+    state:
+      datasets:
+      - id_cond:
+          id_select: id
     outputs:
       output:
         hide: true
@@ -3155,6 +3159,10 @@ steps:
   - tool_id: __BUILD_LIST__
     in:
       datasets_0|input: input1
+    state:
+      datasets:
+      - id_cond:
+          id_select: id
     outputs:
       output:
         delete_intermediate_datasets: true
@@ -3184,12 +3192,20 @@ steps:
   - tool_id: __BUILD_LIST__
     in:
       datasets_0|input: input1
+    state:
+      datasets:
+      - id_cond:
+          id_select: idx
     outputs:
       output:
         change_datatype: txt
   - tool_id: __BUILD_LIST__
     in:
       datasets_0|input: input1
+    state:
+      datasets:
+      - id_cond:
+          id_select: idx
 """, test_data="""
 input1:
   value: 1.fasta
@@ -3218,6 +3234,10 @@ steps:
   - tool_id: __BUILD_LIST__
     in:
       datasets_0|input: input1
+    state:
+      datasets:
+      - id_cond:
+          id_select: idx
     outputs:
       output:
         rename: "my new name"
