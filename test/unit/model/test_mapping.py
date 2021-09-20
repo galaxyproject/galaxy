@@ -1887,7 +1887,6 @@ class TestHistoryDatasetCollectionAssociation(BaseTest):
         history_dataset_collection_rating_association,
         history_dataset_collection_tag_association,
         job_to_output_dataset_collection_association,
-        history_dataset_association,
     ):
         copied_to_hdca = history_dataset_collection_association_factory()
 
@@ -1902,7 +1901,6 @@ class TestHistoryDatasetCollectionAssociation(BaseTest):
         obj.tags.append(history_dataset_collection_tag_association)
         obj.annotations.append(history_dataset_collection_annotation_association)
         obj.ratings.append(history_dataset_collection_rating_association)
-        obj.hidden_dataset_instances.append(history_dataset_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -1918,7 +1916,6 @@ class TestHistoryDatasetCollectionAssociation(BaseTest):
             assert stored_obj.annotations == [history_dataset_collection_annotation_association]
             assert stored_obj.ratings == [history_dataset_collection_rating_association]
             assert stored_obj.job_state_summary  # this is a view; TODO: can we test this better?
-            assert stored_obj.hidden_dataset_instances == [history_dataset_association]
 
         delete_from_database(session, copied_to_hdca)
 

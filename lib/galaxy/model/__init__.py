@@ -5473,10 +5473,6 @@ class HistoryDatasetCollectionAssociation(
         order_by=lambda: HistoryDatasetCollectionRatingAssociation.id,  # type: ignore
         back_populates='dataset_collection',
     )
-    hidden_dataset_instances = relationship('HistoryDatasetAssociation',
-        primaryjoin=(lambda: HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id  # type: ignore
-            == HistoryDatasetCollectionAssociation.id),  # type: ignore
-        back_populates='hidden_beneath_collection_instance')
 
     editable_keys = ('name', 'deleted', 'visible')
 
@@ -8787,8 +8783,7 @@ mapper_registry.map_imperatively(
         hidden_beneath_collection_instance=relationship(HistoryDatasetCollectionAssociation,
             primaryjoin=(HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id
                 == HistoryDatasetCollectionAssociation.id),
-            uselist=False,
-            back_populates="hidden_dataset_instances"),
+            uselist=False),
         _metadata=deferred(HistoryDatasetAssociation.table.c._metadata),
         dependent_jobs=relationship(JobToInputDatasetAssociation, back_populates='dataset'),
         creating_job_associations=relationship(
