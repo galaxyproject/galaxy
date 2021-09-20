@@ -131,10 +131,10 @@ export default {
             .get(`${getAppRoot()}api/sanitize_allow`)
             .then((response) => {
                 this.isLoaded = true;
-                this.localAllowed = response.data.data.allowed_local;
-                this.localBlocked = response.data.data.blocked_local;
-                this.toolshedAllowed = response.data.data.allowed_toolshed;
-                this.toolshedBlocked = response.data.data.blocked_toolshed;
+                this.localAllowed = response.data.allowed_local;
+                this.localBlocked = response.data.blocked_local;
+                this.toolshedAllowed = response.data.allowed_toolshed;
+                this.toolshedBlocked = response.data.blocked_toolshed;
                 this.message = response.data.message;
                 this.status = response.data.status;
             })
@@ -152,10 +152,10 @@ export default {
                     },
                 })
                 .then((response) => {
-                    this.localAllowed = response.data.data.allowed_local;
-                    this.localBlocked = response.data.data.blocked_local;
-                    this.toolshedAllowed = response.data.data.allowed_toolshed;
-                    this.toolshedBlocked = response.data.data.blocked_toolshed;
+                    this.localAllowed = response.data.allowed_local;
+                    this.localBlocked = response.data.blocked_local;
+                    this.toolshedAllowed = response.data.allowed_toolshed;
+                    this.toolshedBlocked = response.data.blocked_toolshed;
                     this.message = response.data.message;
                     this.status = response.data.status;
                 })
@@ -171,10 +171,10 @@ export default {
                     },
                 })
                 .then((response) => {
-                    this.localAllowed = response.data.data.allowed_local;
-                    this.localBlocked = response.data.data.blocked_local;
-                    this.toolshedAllowed = response.data.data.allowed_toolshed;
-                    this.toolshedBlocked = response.data.data.blocked_toolshed;
+                    this.localAllowed = response.data.allowed_local;
+                    this.localBlocked = response.data.blocked_local;
+                    this.toolshedAllowed = response.data.allowed_toolshed;
+                    this.toolshedBlocked = response.data.blocked_toolshed;
                     this.message = response.data.message;
                     this.status = response.data.status;
                 })

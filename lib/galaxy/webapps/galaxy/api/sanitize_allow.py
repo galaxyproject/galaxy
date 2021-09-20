@@ -47,7 +47,7 @@ class SanitizeAllowController(BaseAPIController):
     def _save_allowlist(self, trans):
         trans.app.config.sanitize_allowlist = sorted(trans.app.config.sanitize_allowlist)
         with open(trans.app.config.sanitize_allowlist_file, 'w') as f:
-            f.write("\n".join(new_allowlist))
+            f.write("\n".join(trans.app.config.sanitize_allowlist))
         trans.app.queue_worker.send_control_task('reload_sanitize_allowlist', noop_self=True)
 
     def _generate_allowlist(self, trans):
