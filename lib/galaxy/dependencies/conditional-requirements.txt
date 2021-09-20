@@ -23,6 +23,7 @@ fs.anvilfs # type: anvil
 fs.googledrivefs # type: googledrive
 fs-gcsfs # type: googlecloudstorage
 fs-onedatafs # type: onedata
+fs-basespace # type: basespace
 
 # Chronos client
 chronos-python==1.2.1

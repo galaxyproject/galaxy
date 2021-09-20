@@ -241,6 +241,9 @@ class ConditionalDependencies:
     def check_fs_onedatafs(self):
         return 'onedata' in self.file_sources
 
+    def check_fs_basespace(self):
+        return 'basespace' in self.file_sources
+
     def check_watchdog(self):
         install_set = {'auto', 'True', 'true', 'polling', True}
         return (self.config['watch_tools'] in install_set
