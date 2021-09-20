@@ -8,6 +8,7 @@ from fastapi import (
     Body,
     Path,
     Query,
+    Response,
     status,
 )
 from starlette.responses import StreamingResponse
@@ -93,6 +94,7 @@ class FastAPIPages:
     ):
         """Marks the Page with the given ID as deleted."""
         self.service.delete(trans, id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
         '/api/pages/{id}',
