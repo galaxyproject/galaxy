@@ -3,12 +3,14 @@
         <div v-for="(input, index) in inputs" :key="index">
             <div v-if="input.type == 'conditional'">
                 <FormElement
-                    v-bind="input.test_param"
+                    v-model="input.test_param.value"
                     :id="conditionalPrefix(input, input.test_param.name)"
                     :title="input.test_param.label"
+                    :type="input.test_param.type"
                     :help="input.test_param.help"
+                    :attributes="input.test_param"
                     :backbonejs="true"
-                    @input="conditionalChange"
+                    @changed="updateParameters"
                 />
                 <FormNode
                     v-for="(caseDetails, caseId) in input.cases"
@@ -177,8 +179,8 @@ export default {
             return matchCase(input, input.test_param.value) == caseId;
         },
         conditionalChange(value, identifier) {
-            const prefixPos = identifier.lastIndexOf("|");
-            const prefixStr = identifier.substring(0, prefixPos);
+            //const prefixPos = identifier.lastIndexOf("|");
+            //const prefixStr = identifier.substring(0, prefixPos);
         },
         repeatTitle(index, title) {
             return `${parseInt(index) + 1}: ${title}`;
