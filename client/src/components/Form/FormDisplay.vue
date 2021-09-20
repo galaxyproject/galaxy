@@ -155,17 +155,15 @@ export default {
             this.onChange();
         },
         onChange(requiresRequest = true) {
-            this.$nextTick(() => {
-                const params = {};
-                visitInputs(this.inputs, (input, name) => {
-                    params[name] = input.value;
-                });
-                if (JSON.stringify(params) != JSON.stringify(this.formData)) {
-                    this.formData = params;
-                    this.$emit("onChange", params, requiresRequest);
-                    console.log(params, requiresRequest);
-                }
+            const params = {};
+            visitInputs(this.inputs, (input, name) => {
+                params[name] = input.value;
             });
+            if (JSON.stringify(params) != JSON.stringify(this.formData)) {
+                this.formData = params;
+                this.$emit("onChange", params, requiresRequest);
+                console.log(params, requiresRequest);
+            }
         },
         onHighlight(validation, silent = false) {
             /*this.form.trigger("reset");
