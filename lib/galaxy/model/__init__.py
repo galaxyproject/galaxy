@@ -1362,12 +1362,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             # System level details that only admins should have.
             rval['external_id'] = self.job_runner_external_id
             rval['command_line'] = self.command_line
+            rval['traceback'] = self.traceback
         if view == 'admin_job_list':
             rval['user_email'] = self.user.email if self.user else None
             rval['handler'] = self.handler
             rval['job_runner_name'] = self.job_runner_name
             rval['info'] = self.info
-            rval['traceback'] = self.traceback
             rval['session_id'] = self.session_id
             if self.galaxy_session and self.galaxy_session.remote_host:
                 rval['remote_host'] = self.galaxy_session.remote_host

@@ -39,6 +39,12 @@
                 <code-row id="command-line" v-if="job" :code-label="'Command Line'" :code-item="job.command_line" />
                 <code-row id="stdout" v-if="job" :code-label="'Tool Standard Output'" :code-item="job.tool_stdout" />
                 <code-row id="stderr" v-if="job" :code-label="'Tool Standard Error'" :code-item="job.tool_stderr" />
+                <code-row
+                    id="traceback"
+                    v-if="job && job.traceback"
+                    :code-label="'Unexpected Job Errors'"
+                    :code-item="job.traceback"
+                />
                 <tr v-if="job">
                     <td>Tool Exit Code:</td>
                     <td id="exist-code">{{ job.exit_code }}</td>
