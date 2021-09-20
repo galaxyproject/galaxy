@@ -55,7 +55,7 @@ def lint_general(tool_source, lint_ctx):
     profile = tool_source.parse_profile()
     profile_valid = PROFILE_PATTERN.match(profile) is not None
     if not profile_valid:
-        lint_ctx.warn(PROFILE_INVALID_MSG)
+        lint_ctx.error(PROFILE_INVALID_MSG)
     elif profile == "16.01":
         lint_ctx.valid(PROFILE_INFO_DEFAULT_MSG)
     else:
