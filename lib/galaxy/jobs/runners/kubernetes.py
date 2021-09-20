@@ -1,7 +1,6 @@
 """
 Offload jobs to a Kubernetes cluster.
 """
-import copy
 import logging
 import math
 import os
@@ -16,6 +15,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
     JobState
 )
+from galaxy.jobs.runners import RunnerParams
 from galaxy.jobs.runners.util.pykube_util import (
     DEFAULT_JOB_API_VERSION,
     delete_ingress,
@@ -217,12 +217,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         ingress.create()
 
     def __get_job_params(self, job_wrapper):
-        params = copy.copy(self.runner_params)
+        params = RunnerParams(specs=self.runner_params.specs, params=dict(self.runner_params.params))
         params.update(job_wrapper.job_destination.params)
         return params
 
     def __get_job_param(self, job_wrapper, param_key):
-        return job_wrapper.job_destination.params.get(param_key, self.runner_params.get(param_key))
+        if param_key in job_wrapper.job_destination.params:
+            return job_wrapper.job_destination.params[param_key]
+        elif param_key in self.runner_params:
+            return self.runner_params[param_key]
+        else:
+            return None
 
     def __get_pull_policy(self, job_wrapper):
         return pull_policy(self.__get_job_params(job_wrapper))
