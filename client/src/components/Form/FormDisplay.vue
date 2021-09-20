@@ -160,12 +160,11 @@ export default {
                 visitInputs(this.inputs, (input, name) => {
                     params[name] = input.value;
                 });
-                console.log(params);
-                /*if (JSON.stringify(params) != JSON.stringify(this.formData)) {
+                if (JSON.stringify(params) != JSON.stringify(this.formData)) {
                     this.formData = params;
                     this.$emit("onChange", params, requiresRequest);
                     console.log(params, requiresRequest);
-                }*/
+                }
             });
         },
         onHighlight(validation, silent = false) {

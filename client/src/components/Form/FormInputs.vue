@@ -67,6 +67,7 @@
                 v-model="input.value"
                 :id="getPrefix(input.name)"
                 :title="input.label"
+                :type="input.type"
                 :help="input.help"
                 :attributes="input"
                 :backbonejs="true"
