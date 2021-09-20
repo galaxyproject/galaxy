@@ -146,10 +146,10 @@ export default {
     },
     methods: {
         onReplaceParams() {
-            Object.keys(this.formData).forEach((key) => {
-                const newValue = this.replaceParams[key];
+            visitInputs(this.inputs, (input, name) => {
+                const newValue = this.replaceParams[name];
                 if (newValue != undefined) {
-                    this.formData[key] = newValue;
+                    input.value = newValue;
                 }
             });
             this.onChange();
@@ -160,9 +160,9 @@ export default {
                 params[name] = input.value;
             });
             if (JSON.stringify(params) != JSON.stringify(this.formData)) {
-                this.formData = params;
                 this.$emit("onChange", params, requiresRequest);
-                console.log(params, requiresRequest);
+                console.log(params, this.formData, requiresRequest);
+                this.formData = params;
             }
         },
         onHighlight(validation, silent = false) {
