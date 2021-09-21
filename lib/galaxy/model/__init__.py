@@ -2202,7 +2202,7 @@ class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
     indexer = Column(String(64))
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     job = relationship('Job', back_populates='job')
-    dataset = relationship('Dataset', back_populates='genome_index_tool_data')
+    dataset = relationship('Dataset')
     user = relationship('User')
 
 
@@ -8734,7 +8734,6 @@ mapper_registry.map_imperatively(
         hashes=relationship(DatasetHash, back_populates='dataset'),
         sources=relationship(DatasetSource, back_populates='dataset'),
         job_export_history_archive=relationship(JobExportHistoryArchive, back_populates='dataset'),
-        genome_index_tool_data=relationship(GenomeIndexToolData, back_populates='dataset'),
         history_associations=relationship(HistoryDatasetAssociation, back_populates='dataset'),
         library_associations=relationship(LibraryDatasetDatasetAssociation,
             primaryjoin=(LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.table.c.id),
