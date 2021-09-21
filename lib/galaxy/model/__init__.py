@@ -2045,7 +2045,7 @@ class JobExportHistoryArchive(Base, RepresentById):
     compressed = Column(Boolean, index=True, default=False)
     history_attrs_filename = Column(TEXT)
     job = relationship('Job')
-    dataset = relationship('Dataset', back_populates='job_export_history_archive')
+    dataset = relationship('Dataset')
     history = relationship('History', back_populates='exports')
 
     ATTRS_FILENAME_HISTORY = 'history_attrs.txt'
@@ -8733,7 +8733,6 @@ mapper_registry.map_imperatively(
             viewonly=True),
         hashes=relationship(DatasetHash, back_populates='dataset'),
         sources=relationship(DatasetSource, back_populates='dataset'),
-        job_export_history_archive=relationship(JobExportHistoryArchive, back_populates='dataset'),
         history_associations=relationship(HistoryDatasetAssociation, back_populates='dataset'),
         library_associations=relationship(LibraryDatasetDatasetAssociation,
             primaryjoin=(LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.table.c.id),
