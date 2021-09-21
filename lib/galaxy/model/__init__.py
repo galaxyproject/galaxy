@@ -916,7 +916,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         lazy=True, back_populates='job')
     tasks = relationship('Task', back_populates='job')
     output_datasets = relationship('JobToOutputDatasetAssociation', back_populates='job')
-    state_history = relationship('JobStateHistory', back_populates='job')
+    state_history = relationship('JobStateHistory')
     text_metrics = relationship('JobMetricText')
     numeric_metrics = relationship('JobMetricNumeric')
     job = relationship('GenomeIndexToolData', back_populates='job')
@@ -1875,10 +1875,9 @@ class JobStateHistory(Base, RepresentById):
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
     state = Column(String(64), index=True)
     info = Column(TrimmedString(255))
-    job = relationship('Job', back_populates='state_history')
 
     def __init__(self, job):
-        self.job = job
+        self.job_id = job.id
         self.state = job.state
         self.info = job.info
 

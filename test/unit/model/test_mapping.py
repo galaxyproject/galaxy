@@ -2780,13 +2780,6 @@ class TestJobStateHistory(BaseTest):
             assert stored_obj.state == state
             assert stored_obj.info == info
 
-    def test_relationships(self, session, cls_, job):
-        obj = cls_(job)
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.job.id == job.id
-
 
 class TestJobToImplicitOutputDatasetCollectionAssociation(BaseTest):
 
