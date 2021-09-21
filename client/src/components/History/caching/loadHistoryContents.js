@@ -3,7 +3,7 @@ import { map, pluck, share, filter } from "rxjs/operators";
 import { hydrate } from "utils/observable";
 import { areDefined } from "utils/validation";
 import { requestWithUpdateTime } from "./operators/requestWithUpdateTime";
-import { prependPath } from "./workerConfig";
+import { prependPath } from "utils/redirect";
 import { bulkCacheContent } from "./db";
 import { SearchParams } from "../model/SearchParams";
 import { createDateStore } from "../model/DateStore";
