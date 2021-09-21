@@ -190,15 +190,12 @@ class ExpressionValidator(Validator):
             message = f"Value '%s' does not evaluate to {'True' if negate == 'false' else 'False'} for '{expression}'"
         super().__init__(message, negate)
         # Save compiled expression, code objects are thread safe (right?)
-        log.error(f"ExpressionValidator expression {expression}")
         self.expression = compile(expression, '<string>', 'eval')
 
     def validate(self, value, trans=None):
-        log.error(f"ExpressionValidator.validate value {value} expression {self.expression}")
         try:
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
-            log.debug(f"Validator '{self.expression}' could not be evaluated on '{str(value)}'", exc_info=True)
             super().validate(False, value, f"Validator '{self.expression}' could not be evaluated on '%s'")
         super().validate(evalresult, value_to_show=value)
 
