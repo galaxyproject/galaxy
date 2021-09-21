@@ -86,7 +86,7 @@ class ToolEvaluator:
         if get_special:
             special = get_special()
             if special:
-                out_data["output_file"] = special.fda
+                out_data["output_file"] = getattr(special, 'fda', None)
 
         # These can be passed on the command line if wanted as $__user_*__
         incoming.update(model.User.user_template_environment(job.history and job.history.user))
