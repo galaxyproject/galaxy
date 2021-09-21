@@ -5,7 +5,7 @@
         :disable-poll="false"
         :debug="false"
         :debounce-period="500"
-        v-slot="{ loading, payload, manualReload, setScrollPos }"
+        v-slot="{ loading, payload, manualReload }"
     >
         <ExpandedItems
             :scope-key="history.id"
@@ -63,13 +63,12 @@
                     <template v-slot:listing>
                         <HistoryEmpty v-if="history.empty" class="m-2" />
                         <HistoryEmpty v-else-if="payload && payload.noResults" message="No Results." class="m-2" />
-                        <Scroller
+                        <RecycleScroller
                             v-else-if="payload"
-                            :class="{ loadingBackground: loading }"
-                            key-field="hid"
-                            v-bind="payload"
-                            :debug="false"
-                            @scroll="setScrollPos"
+                            :class="scroller"
+                            :items="payload.contents"
+                            :item-size="20"
+                            :key-field="id"
                         >
                             <template v-slot="{ item, index, rowKey }">
                                 <HistoryContentItem
@@ -87,7 +86,7 @@
                                     :data-row-key="rowKey"
                                 />
                             </template>
-                        </Scroller>
+                        </RecycleScroller>
                     </template>
 
                     <template v-slot:modals>
@@ -108,10 +107,11 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
-import Scroller from "./Scroller";
+// import Scroller from "./Scroller";
 import { HistoryContentItem } from "./ContentItem";
 import { reportPayload } from "./providers/ContentProvider/helpers";
 import HistoryMenu from "./HistoryMenu";
+import { RecycleScroller } from "vue-virtual-scroller";
 
 export default {
     filters: {
@@ -125,7 +125,7 @@ export default {
         HistoryEmpty,
         ContentOperations,
         ToolHelpModal,
-        Scroller,
+        RecycleScroller,
         HistoryContentItem,
         ExpandedItems,
         SelectedItems,
@@ -147,3 +147,9 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.scroller {
+    height: 100%;
+}
+</style>

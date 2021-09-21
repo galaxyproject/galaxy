@@ -218,7 +218,7 @@ export class SearchParams {
 
 // Statics
 
-SearchParams.pageSize = 30;
+SearchParams.pageSize = 1000;
 
 SearchParams.equals = function (a, b) {
     if (a !== undefined && b !== undefined) {
