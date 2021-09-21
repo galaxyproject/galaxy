@@ -847,11 +847,15 @@ class BaseWorkflowPopulator(BasePopulator):
         workflow = self.load_workflow(name)
         return self.create_workflow(workflow, **create_kwds)
 
-    def import_workflow_from_path(self, from_path: str) -> str:
+    def import_workflow_from_path_raw(self, from_path: str) -> Response:
         data = dict(
             from_path=from_path
         )
         import_response = self._post("workflows", data=data)
+        return import_response
+
+    def import_workflow_from_path(self, from_path: str) -> str:
+        import_response = self.import_workflow_from_path_raw(from_path)
         api_asserts.assert_status_code_is(import_response, 200)
         return import_response.json()["id"]
 
