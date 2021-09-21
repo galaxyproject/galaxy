@@ -3365,7 +3365,6 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
         implicitly_converted_dataset_association_factory,
         job_to_input_library_dataset_association,
         job_to_output_library_dataset_association,
-        library_dataset_dataset_info_association,
     ):
         copied_from_ldda = library_dataset_dataset_association_factory()
         copied_to_ldda = library_dataset_dataset_association_factory()
@@ -3390,7 +3389,6 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
         obj.implicitly_converted_parent_datasets.append(icpda)
         obj.dependent_jobs.append(job_to_input_library_dataset_association)
         obj.creating_job_associations.append(job_to_output_library_dataset_association)
-        obj.info_association.append(library_dataset_dataset_info_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -3411,7 +3409,6 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
             assert stored_obj.dependent_jobs == [job_to_input_library_dataset_association]
             assert (stored_obj.creating_job_associations
                 == [job_to_output_library_dataset_association])
-            assert stored_obj.info_association == [library_dataset_dataset_info_association]
 
         delete_from_database(session, persisted)
 
@@ -6884,19 +6881,6 @@ def library_dataset_dataset_association_permission(
 @pytest.fixture
 def library_dataset_dataset_association_tag_association(model, session):
     instance = model.LibraryDatasetDatasetAssociationTagAssociation()
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
-def library_dataset_dataset_info_association(
-    model,
-    session,
-    library_dataset_dataset_association,
-    form_definition,
-    form_values
-):
-    instance = model.LibraryDatasetDatasetInfoAssociation(
-        library_dataset_dataset_association, form_definition, form_values)
     yield from dbcleanup_wrapper(session, instance)
 
 

@@ -4940,9 +4940,7 @@ class LibraryDatasetDatasetInfoAssociation(Base, RepresentById):
             (LibraryDatasetDatasetInfoAssociation.library_dataset_dataset_association_id
              == LibraryDatasetDatasetAssociation.id)
             & (not_(LibraryDatasetDatasetInfoAssociation.deleted))
-        ),
-        back_populates="info_association")
-
+        ))
     template = relationship('FormDefinition',
         primaryjoin=(lambda:
             LibraryDatasetDatasetInfoAssociation.form_definition_id == FormDefinition.id))  # type: ignore
@@ -8851,13 +8849,6 @@ mapper_registry.map_imperatively(
             primaryjoin=(HistoryDatasetAssociation.table.c.id
                 == LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id),
             back_populates='copied_to_library_dataset_dataset_associations'),
-        info_association=relationship(LibraryDatasetDatasetInfoAssociation,
-            primaryjoin=(lambda:
-                (LibraryDatasetDatasetInfoAssociation.library_dataset_dataset_association_id
-                 == LibraryDatasetDatasetAssociation.id)
-                & (not_(LibraryDatasetDatasetInfoAssociation.deleted))
-            ),
-            back_populates='library_dataset_dataset_association'),
     )
 )
 
