@@ -709,10 +709,13 @@ class Tool(Dictifiable):
         # seem to require Galaxy's Python.
         # FIXME: the (instantiated) tool class should emit this behavior, and not
         #        use inspection by string check
-        if self.tool_type not in ["default", "manage_data", "interactive"]:
+        if self.tool_type not in ["default", "manage_data", "interactive", "data_source"]:
             return True
 
         if self.tool_type == "manage_data" and self.profile < 18.09:
+            return True
+
+        if self.tool_type == "data_source" and self.profile < 21.09:
             return True
 
         config = self.app.config
