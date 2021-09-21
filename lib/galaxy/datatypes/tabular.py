@@ -1362,7 +1362,13 @@ class CMAP(TabularData):
     file_ext = "cmap"
 
     def sniff_prefix(self, file_prefix):
-        return file_prefix.startswith('# CMAP File Version:')
+        handle = file_prefix.string_io()
+        for line in handle:
+            if not line.startswith('#'):
+                return False
+            if line.startswith('# CMAP File Version:'):
+                return True
+        return False
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=7, **kwd):
         if dataset.has_data():
