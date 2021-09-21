@@ -19,6 +19,7 @@
                     :inputs="caseDetails.inputs"
                     :prefix="getPrefix(input.name)"
                     :onChange="onChange"
+                    :onChangeForm="onChangeForm"
                 />
             </div>
             <div v-else-if="input.type == 'repeat'">
@@ -41,7 +42,12 @@
                         </b-button>
                     </template>
                     <template v-slot:body>
-                        <FormNode :inputs="cache" :prefix="getPrefix(input.name, cacheId)" :onChange="onChange" />
+                        <FormNode
+                            :inputs="cache"
+                            :prefix="getPrefix(input.name, cacheId)"
+                            :onChange="onChange"
+                            :onChangeForm="onChangeForm"
+                        />
                     </template>
                 </FormCard>
                 <b-button @click="repeatInsert(input)">
@@ -52,7 +58,12 @@
             <div v-else-if="input.type == 'section'">
                 <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
                     <template v-slot:body>
-                        <FormNode :inputs="input.inputs" :prefix="getPrefix(input.name)" :onChange="onChange" />
+                        <FormNode
+                            :inputs="input.inputs"
+                            :prefix="getPrefix(input.name)"
+                            :onChange="onChange"
+                            :onChangeForm="onChangeForm"
+                        />
                     </template>
                 </FormCard>
             </div>
@@ -65,7 +76,6 @@
                 :help="input.help"
                 :attributes="input"
                 :backbonejs="true"
-                @changed="onChange"
             />
         </div>
     </div>
@@ -127,6 +137,10 @@ export default {
             type: Function,
             required: true,
         },
+        onChangeForm: {
+            type: Function,
+            required: true,
+        },
     },
     data() {
         return {
@@ -173,11 +187,11 @@ export default {
             const newInputs = JSON.parse(JSON.stringify(input.inputs));
             input.cache = input.cache || [];
             input.cache.push(newInputs);
-            this.onChange();
+            this.onChangeForm();
         },
         repeatDelete(input, cacheId) {
             input.cache.splice(cacheId, 1);
-            this.onChange();
+            this.onChangeForm();
         },
         onHighlight(validation, silent = false) {
             /*this.form.trigger("reset");

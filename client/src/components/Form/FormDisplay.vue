@@ -1,7 +1,7 @@
 <template>
     <FormInputs
         :id="id"
-        :inputs="inputs"
+        :inputs="formInputs"
         :prefix="prefix"
         :sustain-repeats="sustainRepeats"
         :sustain-conditionals="sustainConditionals"
@@ -11,13 +11,13 @@
         :replace-params="replaceParams"
         :errors="errors"
         :onChange="onChange"
+        :onChangeForm="onChangeForm"
     />
 </template>
 
 <script>
 import FormInputs from "./FormInputs";
 import { visitInputs } from "./utilities";
-
 export default {
     components: {
         FormInputs,
@@ -67,6 +67,8 @@ export default {
     data() {
         return {
             formData: {},
+            formInputs: this.inputs.slice(),
+            limit: 100,
         };
     },
     watch: {
@@ -154,16 +156,21 @@ export default {
             });
             this.onChange();
         },
+        onChangeForm(requiresRequest = true) {
+            this.formInputs = JSON.parse(JSON.stringify(this.formInputs));
+        },
         onChange(requiresRequest = true) {
-            const params = {};
+            /*const params = {};
             visitInputs(this.inputs, (input, name) => {
                 params[name] = input.value;
             });
-            if (JSON.stringify(params) != JSON.stringify(this.formData)) {
+            if (JSON.stringify(params) != JSON.stringify(this.formData) && this.limit > 0) {
+                this.limit--;
                 this.$emit("onChange", params, requiresRequest);
-                console.log(params, this.formData, requiresRequest);
+                //console.log(JSON.stringify(params), JSON.stringify(this.formData), JSON.stringify(params), requiresRequest);
+                console.log(params, requiresRequest);
                 this.formData = params;
-            }
+            }*/
         },
         onHighlight(validation, silent = false) {
             /*this.form.trigger("reset");

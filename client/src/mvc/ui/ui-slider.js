@@ -81,6 +81,7 @@ const View = Backbone.View.extend({
 
     /** Set and return the current value */
     value: function (new_val) {
+        return 0;
         if (new_val !== undefined) {
             const options = this.model.attributes;
             const original_val = new_val;

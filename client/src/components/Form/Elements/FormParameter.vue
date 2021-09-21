@@ -23,8 +23,8 @@ export default {
         },
     },
     watch: {
-        value() {
-            if (this.parameter) {
+        /*value() {
+            if (this.parameter && this.parameter.field) {
                 const currentValue = this.parameter.field.value();
                 if (this.value !== currentValue) {
                     this.parameter.field.value(this.value);
@@ -32,13 +32,11 @@ export default {
             }
         },
         attributes() {
-            if (this.parameter) {
-                if (this.parameter.field.update) {
-                    this.parameter.field.update(this.attributes);
-                    this.$emit("input", this.parameter.field.value());
-                }
+            if (this.parameter && this.parameter.update) {
+                this.parameter.field.update(this.attributes);
+                this.$emit("input", this.parameter.field.value());
             }
-        },
+        },*/
     },
     mounted() {
         this.$nextTick(() => {
