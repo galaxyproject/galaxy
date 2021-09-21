@@ -5,7 +5,6 @@ import logging
 import os
 import shutil
 from datetime import datetime
-from functools import partial
 from pathlib import Path
 
 try:
@@ -347,7 +346,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         collection_path = f"{self.home}/{str(subcollection_name)}"
         data_object_path = f"{collection_path}/{str(data_object_name)}"
-        data_obj = None
 
         try:
             cache_path = self._get_cache_path(rel_path)
