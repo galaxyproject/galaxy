@@ -1,0 +1,53 @@
+name: Release AnVIL Image
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release. eg: 22.01'
+        required: true
+jobs:
+  release:
+    name: Retag image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to docker hub
+        uses: actions-hub/docker/login@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Pull from Dockerhub
+        uses: actions-hub/docker@master
+        with:
+          args: pull galaxy/galaxy-anvil:${{ github.event.inputs.version }}-auto
+      - run: |
+          docker tag galaxy/galaxy-anvil:${{ github.event.inputs.version }}-auto galaxy/galaxy-anvil:${{ github.event.inputs.version }} &&
+          docker tag galaxy/galaxy-anvil:${{ github.event.inputs.version }}-auto gcr.io/${{ secrets.GCP_PROJECT_ID }}/galaxy:${{ github.event.inputs.version }} &&
+          docker tag galaxy/galaxy-anvil:${{ github.event.inputs.version }}-auto quay.io/galaxy-k8s/galaxy-anvil:${{ github.event.inputs.version }}
+      - name: Push to docker hub with branch name
+        uses: actions-hub/docker@master
+        with:
+          args: push galaxy/galaxy-anvil:${{ github.event.inputs.version }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+      - uses: RafikFarhad/push-to-gcr-github-action@v4
+        with:
+          gcloud_service_key: ${{ secrets.GCP_SA_KEY }}
+          registry: gcr.io
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          image_name: galaxy
+          image_tag: ${{ github.event.inputs.version }}
+          push_only: true
+      - name: Login to docker hub
+        uses: actions-hub/docker/login@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+          DOCKER_REGISTRY_URL: quay.io
+      - name: Push to quay.io with commit ID
+        uses: actions-hub/docker@master
+        with:
+          args: push quay.io/galaxy-k8s/galaxy-anvil:${{ github.event.inputs.version }}
