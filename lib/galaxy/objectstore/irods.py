@@ -350,26 +350,15 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_obj = None
 
         try:
-            data_obj = self.session.data_objects.get(data_object_path)
+            cache_path = self._get_cache_path(rel_path)
+            self.session.data_objects.get(data_object_path, cache_path)
+            log.debug("Pulled data object '%s' into cache to %s", rel_path, cache_path)
+            return True
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.warning("Collection or data object (%s) does not exist", data_object_path)
             return False
         finally:
             log.debug("irods_pt _download: %s", ipt_timer)
-
-        if self.cache_size > 0 and data_obj.__sizeof__() > self.cache_size:
-            log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
-                        rel_path, data_obj.__sizeof__(), self.cache_size)
-            log.debug("irods_pt _download: %s", ipt_timer)
-            return False
-
-        log.debug("Pulled data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-
-        with data_obj.open('r') as data_obj_fp, open(self._get_cache_path(rel_path), "wb") as cache_fp:
-            for chunk in iter(partial(data_obj_fp.read, CHUNK_SIZE), b''):
-                cache_fp.write(chunk)
-        log.debug("irods_pt _download: %s", ipt_timer)
-        return True
 
     def _push_to_irods(self, rel_path, source_file=None, from_string=None):
         """
@@ -406,10 +395,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             # Create sub-collection first
             self.session.collections.create(collection_path, recurse=True)
 
-            # Create data object
-            data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
-
             if from_string:
+                # Create data object
+                data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
+
                 # Save 'from_string' as a file
                 with data_obj.open('w') as data_obj_fp:
                     data_obj_fp.write(from_string)
