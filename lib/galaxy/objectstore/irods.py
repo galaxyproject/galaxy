@@ -4,6 +4,7 @@ Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 import logging
 import os
 import shutil
+import subprocess
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -25,6 +26,16 @@ from ..objectstore import DiskObjectStore
 IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this feature, please install it')
 # 1 MB
 CHUNK_SIZE = 2**20
+# 100 MB. Default file size (configurable) after which icommands are used instead of client code for performance reasons
+ICOMMANDS_PUT_CUTOFF = 100 * 1024 * 1024
+# Default number of threads (configurable) used in icommands for performance reasons
+ICOMMANDS_NUM_THREADS = 1
+
+# irods connection defaults
+CONNECTION_PORT = 1247
+CONNECTION_TIMEOUT = 30
+CONNECTION_REFRESH_TIME = 300
+
 log = logging.getLogger(__name__)
 
 
@@ -60,9 +71,9 @@ def parse_config_xml(config_xml):
         if not c_xml:
             _config_xml_error('connection')
         host = c_xml[0].get('host', None)
-        port = int(c_xml[0].get('port', 0))
-        timeout = int(c_xml[0].get('timeout', 30))
-        refresh_time = int(c_xml[0].get('refresh_time', 300))
+        port = int(c_xml[0].get('port', CONNECTION_PORT))
+        timeout = int(c_xml[0].get('timeout', CONNECTION_TIMEOUT))
+        refresh_time = int(c_xml[0].get('refresh_time', CONNECTION_REFRESH_TIME))
 
         c_xml = config_xml.findall('cache')
         if not c_xml:
@@ -75,6 +86,12 @@ def parse_config_xml(config_xml):
         if not e_xml:
             _config_xml_error('extra_dir')
         extra_dirs = [{k: e.get(k) for k in attrs} for e in e_xml]
+
+        a_xml = config_xml.findall('icommands')
+        if not a_xml:
+            _config_xml_error('icommands')
+        put_cutoff = int(a_xml[0].get('put_cutoff', ICOMMANDS_PUT_CUTOFF))
+        num_threads = int(a_xml[0].get('num_threads', ICOMMANDS_NUM_THREADS))
 
         return {
             'auth': {
@@ -98,6 +115,10 @@ def parse_config_xml(config_xml):
                 'path': staging_path,
             },
             'extra_dirs': extra_dirs,
+            'icommands': {
+                'put_cutoff': put_cutoff,
+                'num_threads': num_threads,
+            },
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
@@ -128,6 +149,10 @@ class CloudConfigMixin:
             'cache': {
                 'size': self.cache_size,
                 'path': self.staging_path,
+            },
+            'icommands': {
+                'put_cutoff': self.icommands_put_cutoff,
+                'num_threads': self.icommands_num_threads,
             }
         }
 
@@ -199,6 +224,17 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if not extra_dirs:
             _config_dict_error('extra_dirs')
         self.extra_dirs.update(extra_dirs)
+
+        icommands_dict = config_dict.get('icommands')
+        if icommands_dict is None:
+            _config_dict_error('icommands')
+
+        self.icommands_put_cutoff = icommands_dict.get('put_cutoff', ICOMMANDS_PUT_CUTOFF)
+        if self.icommands_put_cutoff is None:
+            _config_dict_error('icommands->put_cutoff')
+        self.icommands_num_threads = icommands_dict.get('num_threads', ICOMMANDS_NUM_THREADS)
+        if self.icommands_num_threads is None:
+            _config_dict_error('icommands->num_threads')
 
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
@@ -312,11 +348,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_object_path = f"{collection_path}/{str(data_object_name)}"
 
         try:
-            self.session.data_objects.get(data_object_path)
-            return True
-        except (DataObjectDoesNotExist, CollectionDoesNotExist):
-            log.debug("Collection or data object (%s) does not exist", data_object_path)
-            return False
+            return self.session.data_objects.exists(data_object_path)
         finally:
             log.debug("irods_pt _data_object_exists: %s", ipt_timer)
 
@@ -350,26 +382,15 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_obj = None
 
         try:
-            data_obj = self.session.data_objects.get(data_object_path)
+            cache_path = self._get_cache_path(rel_path)
+            self.session.data_objects.get(data_object_path, cache_path)
+            log.debug("Pulled data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+            return True
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.warning("Collection or data object (%s) does not exist", data_object_path)
             return False
         finally:
             log.debug("irods_pt _download: %s", ipt_timer)
-
-        if self.cache_size > 0 and data_obj.__sizeof__() > self.cache_size:
-            log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
-                        rel_path, data_obj.__sizeof__(), self.cache_size)
-            log.debug("irods_pt _download: %s", ipt_timer)
-            return False
-
-        log.debug("Pulled data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-
-        with data_obj.open('r') as data_obj_fp, open(self._get_cache_path(rel_path), "wb") as cache_fp:
-            for chunk in iter(partial(data_obj_fp.read, CHUNK_SIZE), b''):
-                cache_fp.write(chunk)
-        log.debug("irods_pt _download: %s", ipt_timer)
-        return True
 
     def _push_to_irods(self, rel_path, source_file=None, from_string=None):
         """
@@ -406,10 +427,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             # Create sub-collection first
             self.session.collections.create(collection_path, recurse=True)
 
-            # Create data object
-            data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
-
             if from_string:
+                # Create data object
+                data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
+
                 # Save 'from_string' as a file
                 with data_obj.open('w') as data_obj_fp:
                     data_obj_fp.write(from_string)
@@ -424,7 +445,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 log.debug("Pushing cache file '%s' of size %s bytes to collection '%s'", source_file, os.path.getsize(source_file), rel_path)
 
                 # Add the source file to the irods collection
-                self.session.data_objects.put(source_file, f"{collection_path}/", **options)
+                self.put_data_object(source_file, collection_path)
 
                 end_time = datetime.now()
                 log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
@@ -581,14 +602,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 collection_path = f"{self.home}/{str(subcollection_name)}"
                 data_object_path = f"{collection_path}/{str(data_object_name)}"
 
-                try:
-                    data_obj = self.session.data_objects.get(data_object_path)
-                    # remove object
-                    data_obj.unlink(force=True)
-                    return True
-                except (DataObjectDoesNotExist, CollectionDoesNotExist):
-                    log.info("Collection or data object (%s) does not exist", data_object_path)
-                    return True
+                self.session.data_objects.unlink(data_object_path, force=True)
+                return True
         except OSError:
             log.exception('%s delete error', self._get_filename(obj, **kwargs))
         finally:
@@ -696,3 +711,25 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def _get_store_usage_percent(self):
         return 0.0
+
+    def put_data_object(self, source_file, collection_path):
+        options = {kw.FORCE_FLAG_KW: ''}
+        source_file_size = os.path.getsize(source_file)
+
+        log.debug("source_file: {}".format(source_file))
+        log.debug("source_file_size: {}".format(source_file_size))
+        log.debug("collection_path: {}".format(collection_path))
+        log.debug("icommand_put_cutoff: {}".format(self.icommands_put_cutoff))
+        log.debug("icommand_num_threads: {}".format(self.icommands_num_threads))
+
+        if source_file_size < self.icommands_put_cutoff:
+            log.debug("Adding file to irods via client")
+            self.session.data_objects.put(source_file, collection_path + "/", **options)
+        else:
+            log.debug("Adding file to irods via icommands")
+            # ret_val = subprocess.call(["/Applications/icommands/iput", "-f", "-N", str(self.icommands_num_threads) , source_file, collection_path])
+            ret_val = subprocess.call(["iput", "-f", "-N", str(self.icommands_num_threads) , source_file, collection_path])
+            log.debug("iput ret_val: {}".format(ret_val))
+            if ret_val != 0:
+                log.error("iput command failed with return value {}. Number of threads: {}, source file: {}. collection path: {}".format(ret_val, self.icommand_num_threads , source_file, collection_path))
+                raise Exception("iput command failed with return value {}. Number of threads: {}, source file: {}. collection path: {}".format(ret_val, self.icommand_num_threads , source_file, collection_path))
