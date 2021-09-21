@@ -268,14 +268,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         .. tip:: When executing a workflow externally (e.g. from a script) it is
             recommended to use the :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.invoke` method below instead.
 
-        If installed_repository_file or from_history_id is specified a new
-        workflow will be created for this user. Otherwise, workflow_id must be
-        specified and this API method will cause a workflow to execute.
+        If from_history_id is specified a new workflow will be created for this user. Otherwise,
+        workflow_id must be specified and this API method will cause a workflow to execute.
 
-        :param  installed_repository_file    The path of a workflow to import. Either workflow_id, installed_repository_file or from_history_id must be specified
-        :type   installed_repository_file    str
-
-        :param  workflow_id:                 An existing workflow id. Either workflow_id, installed_repository_file or from_history_id must be specified
+        :param  workflow_id:                 An existing workflow id. Either workflow_id or from_history_id must be specified
         :type   workflow_id:                 str
 
         :param  parameters:                  If workflow_id is set - see _step_parameters() in lib/galaxy/workflow/run_request.py
@@ -293,7 +289,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :param  replacement_params:          If workflow_id is set - an optional dictionary used when renaming datasets
         :type   replacement_params:          dict
 
-        :param  from_history_id:             Id of history to extract a workflow from. Either workflow_id, installed_repository_file or from_history_id must be specified
+        :param  from_history_id:             Id of history to extract a workflow from. Either workflow_id or from_history_id must be specified
         :type   from_history_id:             str
 
         :param  job_ids:                     If from_history_id is set - optional list of jobs to include when extracting a workflow from history
@@ -318,7 +314,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         ways_to_create = {
             'archive_source',
             'workflow_id',
-            'installed_repository_file',
             'from_history_id',
             'from_path',
             'shared_workflow_id',
@@ -332,19 +327,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         if len(ways_to_create.intersection(payload)) > 1:
             message = f"Only one parameter among - {', '.join(ways_to_create)} - must be specified"
             raise exceptions.RequestParameterInvalidException(message)
-
-        if 'installed_repository_file' in payload:
-            if not trans.user_is_admin:
-                raise exceptions.AdminRequiredException()
-            installed_repository_file = payload.get('installed_repository_file', '')
-            if not os.path.exists(installed_repository_file):
-                raise exceptions.RequestParameterInvalidException(f"Workflow file '{installed_repository_file}' not found")
-            elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
-                with open(installed_repository_file, encoding='utf-8') as f:
-                    workflow_data = f.read()
-                return self.__api_import_from_archive(trans, workflow_data, payload=payload)
-            else:
-                raise exceptions.MessageException("You attempted to open an empty file.")
 
         if 'archive_source' in payload:
             archive_source = payload['archive_source']
