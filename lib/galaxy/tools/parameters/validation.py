@@ -193,11 +193,9 @@ class ExpressionValidator(Validator):
         self.expression = compile(expression, '<string>', 'eval')
 
     def validate(self, value, trans=None):
-        log.error(f"ExpressionValidator.validate value {value} expression {self.expression}")
         try:
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
-            log.debug(f"Validator '{self.expression}' could not be evaluated on '{str(value)}'", exc_info=True)
             super().validate(False, value, f"Validator '{self.expression}' could not be evaluated on '%s'")
         super().validate(evalresult, value_to_show=value)
 
