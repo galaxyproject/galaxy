@@ -65,7 +65,7 @@ class EdamToolPanelView(ToolPanelView):
 
         for tool_id, key, val, val_name in walk_loaded_tools(base_tool_panel, toolbox_registry):
             for term in self._get_edam_sec(val):
-                if term == 'uncategorized':
+                if term == 'uncategorized' or term not in self.edam:
                     uncategorized.append((tool_id, key, val, val_name))
                 else:
                     for path in self.edam[term]['path']:
