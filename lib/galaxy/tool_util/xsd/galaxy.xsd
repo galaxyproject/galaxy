@@ -2054,7 +2054,7 @@ module.
       </xs:element>
       <xs:element name="has_n_columns" type="xs:anyType">
         <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts tabular output contains the specified number (``n``) of columns (e.g. ``<has_n_columns n="3" />``).]]>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts tabular output contains the specified number (``n``) of columns separated by a given separator (``sep``) (e.g. ``<has_n_columns n="3" sep=","/>``). ``sep`` defaults to ``"\t"``.]]>
           </xs:documentation>
         </xs:annotation>
       </xs:element>
