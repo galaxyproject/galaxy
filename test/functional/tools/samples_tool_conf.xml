@@ -41,6 +41,7 @@
   <tool file="tool_provided_metadata_11.xml" />
   <tool file="tool_provided_metadata_12.xml" />
   <tool file="empty_datasets.xml" />
+  <tool file="is_of_type.xml" />
   <tool file="inputs_as_json.xml" />
   <tool file="inputs_as_json_profile.xml" />
   <tool file="inputs_as_json_with_paths.xml" />
@@ -135,6 +136,9 @@
   <tool file="validation_sanitizer.xml" />
   <tool file="validation_repeat.xml" />
   <tool file="validation_metadata_in_range.xml"/>
+  <tool file="validation_metadata_in_datatable.xml"/>
+  <tool file="validation_metadata_in_file.xml"/>
+  <tool file="validation_value_in_datatable.xml"/>
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
@@ -266,6 +270,7 @@
   <tool file="${model_tools_path}/tag_collection_from_file.xml" />
   <tool file="${model_tools_path}/apply_rules.xml" />
   <tool file="${model_tools_path}/build_list.xml" />
+  <tool file="${model_tools_path}/build_list_1.2.0.xml" />
   <tool file="${model_tools_path}/extract_dataset.xml" />
 
 </toolbox>

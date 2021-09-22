@@ -309,7 +309,7 @@ class JobHandlerQueue(Monitors):
                 # With sqlite backends we can run into locked databases occasionally
                 # To avoid that the monitor step locks again we backoff a little longer.
                 self._monitor_sleep(5)
-            self._monitor_sleep(1)
+            self._monitor_sleep(self.app.config.job_handler_monitor_sleep)
 
     def __monitor_step(self):
         """

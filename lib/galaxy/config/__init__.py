@@ -972,14 +972,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def reload_sanitize_allowlist(self, explicit=True):
         self.sanitize_allowlist = []
-        try:
-            with open(self.sanitize_allowlist_file) as f:
-                for line in f.readlines():
-                    if not line.startswith("#"):
-                        self.sanitize_allowlist.append(line.strip())
-        except OSError:
+        if not os.path.exists(self.sanitize_allowlist_file):
             if explicit:
                 log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools allowlisted.", self.sanitize_allowlist_file)
+        else:
+            with open(self.sanitize_allowlist_file) as f:
+                self.sanitize_allowlist = sorted([line.strip() for line in f.readlines() if not line.startswith('#')])
 
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)
@@ -1168,12 +1166,14 @@ class ConfiguresGalaxyMixin:
 
     def _configure_toolbox(self):
         from galaxy import tools
+        from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
         from galaxy.managers.citations import CitationsManager
         from galaxy.tool_util.deps import containers
         from galaxy.tool_util.deps.dependencies import AppInfo
         import galaxy.tools.search
 
         self.citations_manager = CitationsManager(self)
+        self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
 
         from galaxy.managers.tools import DynamicToolManager
         self.dynamic_tools_manager = DynamicToolManager(self)

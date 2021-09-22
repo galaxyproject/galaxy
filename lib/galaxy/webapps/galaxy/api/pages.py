@@ -8,6 +8,7 @@ from fastapi import (
     Body,
     Path,
     Query,
+    Response,
     status,
 )
 from starlette.responses import StreamingResponse
@@ -20,7 +21,12 @@ from galaxy.managers.pages import (
     PageSummary,
     PageSummaryList,
 )
-from galaxy.managers.sharable import SharingPayload, SharingStatus
+from galaxy.managers.sharable import (
+    SetSlugPayload,
+    ShareWithPayload,
+    ShareWithStatus,
+    SharingStatus,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
@@ -47,7 +53,7 @@ DeletedQueryParam: bool = Query(
 PageIdPathParam: EncodedDatabaseIdField = Path(
     ...,  # Required
     title="Page ID",
-    description="The encoded indentifier of the Page."
+    description="The encoded database identifier of the Page."
 )
 
 
@@ -93,6 +99,7 @@ class FastAPIPages:
     ):
         """Marks the Page with the given ID as deleted."""
         self.service.delete(trans, id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
         '/api/pages/{id}',
@@ -135,28 +142,91 @@ class FastAPIPages:
 
     @router.get(
         '/api/pages/{id}/sharing',
-        summary="Get sharing the status of the given Page.",
+        summary="Get the current sharing status of the given Page.",
     )
-    def get_sharing(
+    def sharing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = PageIdPathParam,
     ) -> SharingStatus:
-        """Return the sharing status of the Page."""
-        return self.service.sharing(trans, id)
+        """Return the sharing status of the item."""
+        return self.service.shareable_service.sharing(trans, id)
 
-    @router.post(
-        '/api/pages/{id}/sharing',
-        summary="Set sharing options for the given Page.",
+    @router.put(
+        '/api/pages/{id}/enable_link_access',
+        summary="Makes this item accessible by a URL link.",
     )
-    def post_sharing(
+    def enable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = PageIdPathParam,
-        payload: SharingPayload = Body(...),
     ) -> SharingStatus:
-        """Return the sharing status of the Page after the changes."""
-        return self.service.sharing(trans, id, payload)
+        """Makes this item accessible by a URL link and return the current sharing status."""
+        return self.service.shareable_service.enable_link_access(trans, id)
+
+    @router.put(
+        '/api/pages/{id}/disable_link_access',
+        summary="Makes this item inaccessible by a URL link.",
+    )
+    def disable_link_access(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+    ) -> SharingStatus:
+        """Makes this item inaccessible by a URL link and return the current sharing status."""
+        return self.service.shareable_service.disable_link_access(trans, id)
+
+    @router.put(
+        '/api/pages/{id}/publish',
+        summary="Makes this item public and accessible by a URL link.",
+    )
+    def publish(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+    ) -> SharingStatus:
+        """Makes this item publicly available by a URL link and return the current sharing status."""
+        return self.service.shareable_service.publish(trans, id)
+
+    @router.put(
+        '/api/pages/{id}/unpublish',
+        summary="Removes this item from the published list.",
+    )
+    def unpublish(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+    ) -> SharingStatus:
+        """Removes this item from the published list and return the current sharing status."""
+        return self.service.shareable_service.unpublish(trans, id)
+
+    @router.put(
+        '/api/pages/{id}/share_with_users',
+        summary="Share this item with specific users.",
+    )
+    def share_with_users(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+        payload: ShareWithPayload = Body(...)
+    ) -> ShareWithStatus:
+        """Shares this item with specific users and return the current sharing status."""
+        return self.service.shareable_service.share_with_users(trans, id, payload)
+
+    @router.put(
+        '/api/pages/{id}/slug',
+        summary="Set a new slug for this shared item.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def set_slug(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+        payload: SetSlugPayload = Body(...),
+    ):
+        """Sets a new slug to access this item by URL. The new slug must be unique."""
+        self.service.shareable_service.set_slug(trans, id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 class PagesController(BaseGalaxyAPIController):
@@ -242,11 +312,52 @@ class PagesController(BaseGalaxyAPIController):
         return self.service.show_pdf(trans, id)
 
     @expose_api
-    def sharing(self, trans, id, payload=None, **kwd):
+    def sharing(self, trans, id, **kwd):
         """
-        * GET/POST /api/pages/{id}/sharing
-            View/modify sharing options for the page with the given id.
+        * GET /api/pages/{id}/sharing
         """
-        if payload:
-            payload = SharingPayload(**payload)
-        return self.service.sharing(trans, id, payload)
+        return self.service.shareable_service.sharing(trans, id)
+
+    @expose_api
+    def enable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/pages/{id}/enable_link_access
+        """
+        return self.service.shareable_service.enable_link_access(trans, id)
+
+    @expose_api
+    def disable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/pages/{id}/disable_link_access
+        """
+        return self.service.shareable_service.disable_link_access(trans, id)
+
+    @expose_api
+    def publish(self, trans, id, **kwd):
+        """
+        * PUT /api/pages/{id}/publish
+        """
+        return self.service.shareable_service.publish(trans, id)
+
+    @expose_api
+    def unpublish(self, trans, id, **kwd):
+        """
+        * PUT /api/pages/{id}/unpublish
+        """
+        return self.service.shareable_service.unpublish(trans, id)
+
+    @expose_api
+    def share_with_users(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/pages/{id}/share_with_users
+        """
+        payload = ShareWithPayload(**payload)
+        return self.service.shareable_service.share_with_users(trans, id, payload)
+
+    @expose_api
+    def set_slug(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/pages/{id}/slug
+        """
+        payload = SetSlugPayload(**payload)
+        self.service.shareable_service.set_slug(trans, id, payload)

@@ -1,8 +1,8 @@
 <tool id="__FILTER_FROM_FILE__"
-      name="Filter List"
+      name="Filter collection"
       version="1.0.0"
       tool_type="filter_from_file">
-    <description>from contents of a file</description>
+    <description></description>
     <type class="FilterFromFileTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
@@ -10,11 +10,11 @@
         <edam_operation>operation_3695</edam_operation>
     </edam_operations>
     <inputs>
-        <param type="data_collection" name="input" label="Input Collection" help="A list whose elements will be filtered."/>
+        <param type="data_collection" name="input" label="Input Collection" help="A collection whose elements will be filtered."/>
         <conditional name="how">
             <param type="select" name="how_filter" label="How should the elements to remove be determined?">
-                <option value="remove_if_absent" selected="true">Remove if identifiers are absent from supplied text file.</option>
-                <option value="remove_if_present">Remove if identifiers are present in supplied text file.</option>
+                <option value="remove_if_absent" selected="true">Remove if identifiers are ABSENT from file</option>
+                <option value="remove_if_present">Remove if identifiers are PRESENT in file</option>
             </param>
             <when value="remove_if_absent">
                 <param type="data" name="filter_source" format="txt" label="Filter out identifiers absent from" />
@@ -82,15 +82,69 @@
     </tests>
     <help><![CDATA[
 
+========
+Synopsis
+========
+
+Filters elements from a collection using a list supplied in a file.
+
+===========
+Description
+===========
+
+This tools allow filtering elements from a data collection.  It takes an input collection and a text file with names (i.e. identifiers). The tool behavious is controlled by **How should the elements to remove be determined?** drop-down. It has the following options:
+
+**Remove if identifiers are ABSENT from file**
+
+Given a collection::
+
+ Collection: [Dataset A] 
+             [Dataset B] 
+             [Dataset X]
+
+and a text file::
+
+             A
+             B
+             Z
+
+the tool will return two collections::
+
+ (filtered):  [Dataset A]
+              [Dataset B]
+
+ (discarded): [Dataset X]
+
+------
+
+**Remove if identifiers are PRESENT in file**
+
+Given a collection::
+
+ Collection: [Dataset A] 
+             [Dataset B] 
+             [Dataset X]
+
+and a text file::
+
+             A
+             B
+             Z
+
+the tool will return two collections::
+
+ (filtered):  [Dataset X]
+
+ (discarded): [Dataset A]
+              [Dataset B]
+
+.. class:: warningmark
+
+**Note** how the tool deals with the ``Z`` entry.
+
 .. class:: infomark
 
-        This tool will take an input list and a text file with
-        names (i.e. identifiers). It will split the input list into
-        two new lists - one filtered to contain only the list members
-        whose names are listed in the text file, and one containing
-        all the other elements.
 
-        This tool will create new history datasets from your collection
-        but your quota usage will not increase.
+This tool will create new history datasets from your collection but your quota usage will not increase.
     ]]></help>
 </tool>

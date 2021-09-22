@@ -16,7 +16,7 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
 
         self.home()
 
-        self.components.history_panel.multi_view_button.wait_for_and_click()
+        self.open_history_multi_view()
         hdca_selector = self.history_panel_wait_for_hid_state(input_hid, "ok", multi_history_panel=True)
         self.wait_for_visible(hdca_selector)
         self.components.multi_history_view.create_new_button.wait_for_and_click()
@@ -106,7 +106,7 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         self.home()
         original_history_id = self.current_history_id()
         # Load the multi-view
-        self.components.history_panel.multi_view_button.wait_for_and_click()
+        self.open_history_multi_view()
         # There should be only one
         self.assert_history(original_history_id, histories_number=1)
         # Creating a new history should automatically switch to it
@@ -141,7 +141,7 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         collection_hid = collection["hid"]
 
         self.home()
-        self.components.history_panel.multi_view_button.wait_for_and_click()
+        self.open_history_multi_view()
 
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
         self.click(selector)

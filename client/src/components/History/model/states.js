@@ -33,6 +33,8 @@ export const STATES = {
     // found in job-state summary model?
     // this an actual state value or something derived from deleted prop?
     DELETED: "deleted",
+
+    LOADING: "loading",
 };
 
 export const NOT_READY_STATES = [STATES.UPLOAD, STATES.QUEUED, STATES.RUNNING, STATES.SETTING_METADATA, STATES.NEW];

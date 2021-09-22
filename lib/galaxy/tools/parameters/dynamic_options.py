@@ -586,6 +586,9 @@ class DynamicOptions:
     @property
     def tool_data_table(self):
         if self.tool_data_table_name:
+            # this is needed for the validator unit tests and should not happen in real life
+            if self.tool_param.tool is None:
+                return None
             tool_data_table = self.tool_param.tool.app.tool_data_tables.get(self.tool_data_table_name, None)
             if tool_data_table:
                 # Column definitions are optional, but if provided override those from the table

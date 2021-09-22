@@ -10,7 +10,6 @@ cache first to see if we already have the data -->
         :dataset="dataset"
         :writable="false"
         :selectable="false"
-        :row-key="rowKey"
         @update:expanded="onExpand"
     />
 </template>

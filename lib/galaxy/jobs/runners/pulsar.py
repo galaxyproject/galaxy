@@ -6,6 +6,7 @@ More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 import errno
 import logging
 import os
+import re
 import subprocess
 from time import sleep
 
@@ -759,6 +760,10 @@ class PulsarJobRunner(AsynchronousJobRunner):
         output_files = self.get_output_files(job_wrapper)
         metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
         metadata_strategy = job_wrapper.get_destination_configuration('metadata_strategy', None)
+        tool = job_wrapper.tool
+        tool_provided_metadata_file_path = tool.provided_metadata_file
+        tool_provided_metadata_style = tool.provided_metadata_style
+
         dynamic_outputs = None  # use default
         if metadata_strategy == "extended" and PulsarJobRunner.__remote_metadata(client):
             # if Pulsar is doing remote metadata and the remote metadata is extended,
@@ -767,10 +772,10 @@ class PulsarJobRunner(AsynchronousJobRunner):
         else:
             # otherwise collect everything we might need
             dynamic_outputs = DEFAULT_DYNAMIC_COLLECTION_PATTERN[:]
+            # grab discovered outputs...
             dynamic_outputs.extend(job_wrapper.tool.output_discover_patterns)
-        tool = job_wrapper.tool
-        tool_provided_metadata_file_path = tool.provided_metadata_file
-        tool_provided_metadata_style = tool.provided_metadata_style
+            # grab tool provided metadata (galaxy.json) also...
+            dynamic_outputs.append(re.escape(tool_provided_metadata_file_path))
         dynamic_file_sources = [
             {"path": tool_provided_metadata_file_path, "type": "galaxy" if tool_provided_metadata_style == "default" else "legacy_galaxy"}
         ]

@@ -14,7 +14,7 @@
                             id="workflow-search"
                             class="m-1"
                             name="query"
-                            placeholder="Search Workflows"
+                            :placeholder="titleSearchWorkflows"
                             autocomplete="off"
                             type="text"
                             v-model="filter"
@@ -24,11 +24,11 @@
                         <span class="float-right">
                             <b-button id="workflow-create" class="m-1" @click="createWorkflow">
                                 <font-awesome-icon icon="plus" />
-                                Create
+                                {{ titleCreate }}
                             </b-button>
                             <b-button id="workflow-import" class="m-1" @click="importWorkflow">
                                 <font-awesome-icon icon="upload" />
-                                Import
+                                {{ titleImport }}
                             </b-button>
                         </span>
                     </b-col>
@@ -70,7 +70,7 @@
                     <template v-slot:cell(execute)="row">
                         <b-button
                             v-b-tooltip.hover.bottom
-                            title="Run Workflow"
+                            :title="titleRunWorkflow"
                             class="workflow-run btn-sm btn-primary fa fa-play"
                             @click.stop="executeWorkflow(row.item)"
                         />
@@ -86,6 +86,7 @@
     </div>
 </template>
 <script>
+import _l from "utils/localization";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
@@ -118,24 +119,26 @@ export default {
             fields: [
                 {
                     key: "name",
+                    label: _l("Name"),
                     sortable: true,
                 },
                 {
                     key: "tags",
+                    label: _l("Tags"),
                     sortable: true,
                 },
                 {
-                    label: "Updated",
+                    label: _l("Updated"),
                     key: "update_time",
                     sortable: true,
                 },
                 {
-                    label: "Sharing",
+                    label: _l("Sharing"),
                     key: "published",
                     sortable: true,
                 },
                 {
-                    label: "Bookmarked",
+                    label: _l("Bookmarked"),
                     key: "show_in_tool_panel",
                     sortable: true,
                 },
@@ -150,6 +153,10 @@ export default {
             messageVariant: null,
             nWorkflows: 0,
             workflows: [],
+            titleSearchWorkflows: _l("Search Workflows"),
+            titleCreate: _l("Create"),
+            titleImport: _l("Import"),
+            titleRunWorkflow: _l("Run workflow"),
         };
     },
     computed: {

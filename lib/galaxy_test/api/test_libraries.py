@@ -110,8 +110,8 @@ class LibrariesApiTestCase(ApiTestCase):
         library_id = library["id"]
         role_id = self.library_populator.user_private_role_id()
         # As we can manage this library our role will be available
-        current = self.library_populator.get_permissions(library_id, scope="available")
-        available_role_ids = [role["id"] for role in current["roles"]]
+        available = self.library_populator.get_permissions(library_id, scope="available")
+        available_role_ids = [role["id"] for role in available["roles"]]
         assert role_id in available_role_ids
 
     def test_get_library_available_permissions_with_query(self):
@@ -122,14 +122,14 @@ class LibrariesApiTestCase(ApiTestCase):
             email = self.library_populator.user_email()
 
         # test at least 2 user roles should be available now
-        current = self.library_populator.get_permissions(library_id, scope="available")
-        available_role_ids = [role["id"] for role in current["roles"]]
+        available = self.library_populator.get_permissions(library_id, scope="available")
+        available_role_ids = [role["id"] for role in available["roles"]]
         assert len(available_role_ids) > 1
 
         # test query for specific role/email
-        current = self.library_populator.get_permissions(library_id, scope="available", q=email)
-        available_role_emails = [role["name"] for role in current["roles"]]
-        assert current["total"] == 1
+        available = self.library_populator.get_permissions(library_id, scope="available", q=email)
+        available_role_emails = [role["name"] for role in available["roles"]]
+        assert available["total"] == 1
         assert available_role_emails[0] == email
 
     def test_create_dataset_denied(self):

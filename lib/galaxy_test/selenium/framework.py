@@ -307,6 +307,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
 
     def reset_driver_and_session(self):
         self.tear_down_driver()
+        self.target_url_from_selenium = self._target_url_from_selenium()
         self.setup_driver_and_session()
         self._try_setup_with_driver()
 

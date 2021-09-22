@@ -1232,7 +1232,7 @@ class LibraryPopulator:
         scope: Optional[str] = "current",
         is_library_access: Optional[bool] = False,
         page: Optional[int] = 1,
-        page_limit: Optional[int] = 10,
+        page_limit: Optional[int] = 1000,
         q: Optional[str] = None,
         admin: Optional[bool] = True
     ):

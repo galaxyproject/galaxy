@@ -15,6 +15,7 @@ _:  # global stuff
     left_panel_collapse: '#left > .unified-panel-footer > .panel-collapse'
     right_panel_drag: '#right > .unified-panel-footer > .drag'
     right_panel_collapse: '#right > .unified-panel-footer > .panel-collapse'
+    by_attribute: '${scope} [${name}="${value}"]'
 
   messages:
     selectors:
@@ -116,7 +117,6 @@ history_panel:
       # These now appear other places :_( - e.g. in the invocation view so we'll try
       # prefixing ids with #current-history-panel but obviously we need to switch to classes or data
       _: '#current-history-panel #${history_content_type}-${id}'
-      by_state_and_hid: '.beta.history .listing [data-hid="${hid}"][data-state="${state}"]'
 
       title: '${_} .content-title'
       hid: '${_} .hid'
@@ -144,6 +144,58 @@ history_panel:
       rerun_button: '${_} .icon-btn.rerun-btn'
       nametags: '${_} .nametags .badge-tags'
 
+  # beta content item
+  content_item:
+    selectors:
+      # specific rows selectable with attributes via suffix
+      _: '.beta.history .content-item${suffix}'
+      title: '${_} .content-title'
+      details: '${_} .details'
+      summary: '${_} .summary'
+
+      hid: '${_} .hid'
+      name: '${_} .name'
+      title_button_area: '${_} .primary-actions'
+      primary_action_buttons: '${_} .actions .left'
+      secondary_action_buttons: '${_} .actions .right'
+      blurb: '${_} .blurb .value'
+      dbkey: '${_} .dbkey .value'
+      info: '${_} .info .value'
+      peek: '${_} .dataset-peek'
+      toolhelp_title: '${_} .toolhelp strong'
+
+      # Title buttons...
+      display_button: '${_} .icon-btn.display-btn'
+      edit_button: '${_} .icon-btn.edit-btn'
+      delete_button: '${_} .icon-btn.delete-btn'
+
+      # Action buttons...
+      download_button: '${_} .icon-btn.download-btn'
+      info_button: '${_} .icon-btn.params-btn'
+      dbkey_button: '${_} .fa.fa-question'
+      rerun_button: '${_} .icon-btn.rerun-btn'
+      nametags: '${_} .nametags .badge-tags'
+
+  # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
+  editor:
+    selectors:
+      _: '${scope} [data-description="edit details"]'
+      toggle: '${_} [data-description="editor toggle"]'
+      form: '${_} [data-description="edit form"]'
+      name_input: '${_} [data-description="name input"]'
+      annotation_input: '${_} [data-description="annotation input"]'
+      tags_input: '${_} .tags input'
+      save_button: '${_} [data-description="editor save button"]'
+
+  # beta history tags
+  tag_editor:
+    selectors:
+      _: '${scope} .history-details .tags'
+      toggle: '${_} .toggle-link'
+      display: '${_} .tag-area .tag-name'
+      input: '${_} input'
+      tag_close_btn: '${_} .ti-icon-close'
+
   multi_operations:
     selectors:
       show_button: '.show-history-content-selectors-btn'
@@ -159,6 +211,8 @@ history_panel:
   collection_view:
     selectors:
       _: '.dataset-collection-panel'
+      nav_menu: '[data-description="collection breadcrumbs menu"]'
+      back_button: '[data-description="collection breadcrumbs menu"] :last'
       back: '.navigation .back'
       title: '.dataset-collection-panel .controls .title .editable-text'
       title_input: '.dataset-collection-panel .controls .title input'
@@ -166,17 +220,18 @@ history_panel:
       elements_warning: '.dataset-collection-panel .controls .elements-warning'
       tag_area_input: '.controls .tags-display .tags-input input'
       list_items: '.dataset-collection-panel .list-items .list-item'
+      list_items_beta: '.dataset-collection-panel .listing .content-item'
 
   selectors:
-    beta: 'section.history'
-    by_attribute: '.beta.history [${name}="${value}"]'
+    beta: '.beta.history'
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
     refresh_button: '.history-refresh-button'
     name: '.title .name'
     name_beta: '.history-title span:last-child'
-    name_edit_input: '.name input'
-    name_edit_input_beta: '.history-title input'
+    name_edit_input: 
+      selector: 'name input'
+      type: data-description
     contents: '#current-history-panel .history-content'
 
     empty_message: '.empty-message'
@@ -186,12 +241,16 @@ history_panel:
     tag_area_input: '.history-details .tags-display .tags-input input'
     tag_close_btn: '.tags-display .ti-icon-close'
     tags: 'li.ti-tag.ti-valid .tag-name'
+
     annotation_icon: '.actions .history-annotate-btn'
     annotation_area: '.history-details .history-annotation'
-    annotation_editable_text: '.history-details .history-annotation .annotation.editable-text'
-    annotation_editable_text_beta: '.history-details .history-annotation.clickToEdit'
-    annotation_edit: '.history-details .history-annotation .annotation textarea'
-    annotation_edit_beta: '.history-details .history-annotation textarea'
+    annotation_editable_text:
+      selector: 'history annotation'
+      type: data-description
+    annotation_edit:
+      selector: 'annotation input'
+      type: data-description
+
     annotation_done: '.history-details .history-annotation .annotation button'
 
     options_button: '#history-options-button'
@@ -210,8 +269,18 @@ history_panel:
     options_use_beta_history:
       type: xpath
       selector: '//a[text()="Use Beta History Panel"]'
+    options_use_legacy_history:
+      type: xpath
+      selector: '//button[contains(span, "Return to legacy history panel")]'
+    
+    collection_menu_button: '.collection-menu'
+    collection_menu_edit_attributes: 
+      type: xpath
+      selector: '//button[@title="Edit attributes"]'
     new_history_button: '.history-new-button'
     multi_view_button: '.history-view-multi-button'
+    histories_operation_menu: '.histories-operation-menu'
+    multi_view_button_beta: '[data-description="switch to multi history view"]'
 
     pagination_pages: '.list-pagination .pages'
     pagination_pages_options: '.list-pagination .pages option'
@@ -245,6 +314,16 @@ edit_dataset_attributes:
         type: xpath
         selector: '//li[normalize-space() = "${dbkey_text}"]'
 
+edit_collection_attributes:
+  selectors:
+    database_genome_tab: 
+      type: xpath
+      selector: '//a[contains(text(), "Database/Build")]'
+    database_value: 
+      type: xpath
+      selector: '//span[contains(text(), "${dbkey}")]'
+    save_btn: '.save-collection-edit'
+
 
 
 tool_panel:
@@ -254,6 +333,9 @@ tool_panel:
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
     search: '.search-query'
     workflow_names: '#internal-workflows .toolTitle'
+    views_button: '.tool-panel-dropdown'
+    views_menu_item: '[data-panel-id="${panel_id}"]'
+    panel_labels: '.tool-panel-label'
 
 multi_history_view:
 
@@ -312,8 +394,12 @@ histories:
 
   sharing:
     selectors:
-      unshare_user_button: '.unshare_user'
-      share_with_a_user_button: '#share_with_a_user'
+      unshare_user_button: '.share_with_view .multiselect__tag-icon'
+      user_email_input: '.user-email-input-form'
+      submit_sharing_with: '.submit-sharing-with'
+      share_with_collapse: '.share-with-collapse'
+      share_with_multiselect: '.share_with_view > .multiselect'
+      share_with_input: '.share_with_view input'
       make_accessible: '.make-accessible label'
       make_publishable: '.make-publishable label'
     labels:

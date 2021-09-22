@@ -230,6 +230,7 @@ var HistoryViewEdit = _super.extend(
                 .attr("title", _l("Rename history..."))
                 .tooltip({ placement: "bottom" })
                 .make_text_editable({
+                    data_description: "name input",
                     on_finish: function (newName) {
                         var previousName = panel.model.get("name");
                         if (newName && newName !== previousName) {

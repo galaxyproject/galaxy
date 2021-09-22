@@ -623,7 +623,7 @@ class FileToolParameter(ToolParameter):
             except KeyError:
                 return None
         elif isinstance(value, cgi_FieldStorage):
-            return value.filename
+            return value.file.name
         raise Exception("FileToolParameter cannot be persisted")
 
     def to_python(self, value, app):
@@ -800,7 +800,7 @@ class BaseURLToolParameter(HiddenToolParameter):
         try:
             if not self.value.startswith("/"):
                 raise Exception("baseurl value must start with a /")
-            return trans.qualified_url_builder(self.value)
+            return trans.url_builder(self.value, qualified=True)
         except Exception as e:
             log.debug('Url creation failed for "%s": %s', self.name, unicodify(e))
             return self.value
@@ -1108,6 +1108,7 @@ class SelectTagParameter(SelectToolParameter):
     """
     Select set that is composed of a set of tags available for an input.
     """
+
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)

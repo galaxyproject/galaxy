@@ -36,6 +36,7 @@ from galaxy.schema.fields import (
 from galaxy.schema.types import RelativeUrl
 
 USER_MODEL_CLASS_NAME = "User"
+GROUP_MODEL_CLASS_NAME = "Group"
 HDA_MODEL_CLASS_NAME = "HistoryDatasetAssociation"
 DC_MODEL_CLASS_NAME = "DatasetCollection"
 DCE_MODEL_CLASS_NAME = "DatasetCollectionElement"
@@ -178,6 +179,21 @@ class UserModel(Model):
     deleted: bool = Field(title='Deleted', description='User is deleted')
     last_password_change: datetime = Field(title='Last password change', description='')
     model_class: str = ModelClassField(USER_MODEL_CLASS_NAME)
+
+
+class GroupModel(BaseModel):
+    """User group model"""
+    model_class: str = ModelClassField(GROUP_MODEL_CLASS_NAME)
+    id: EncodedDatabaseIdField = Field(
+        ...,  # Required
+        title='ID',
+        description='Encoded group ID',
+    )
+    name: str = Field(
+        ...,  # Required
+        title="Name",
+        description="The name of the group.",
+    )
 
 
 class JobSourceType(str, Enum):
@@ -618,7 +634,12 @@ class UpdateHDCAPayload(HDCADetailed):
     pass
 
 
-class UpdateHistoryContentsBatchPayload(Model):
+class UpdateHistoryContentsBatchPayload(BaseModel):
+    class Config:
+        use_enum_values = True  # when using .dict()
+        allow_population_by_field_name = True
+        extra = Extra.allow  # Allow any additional field
+
     items: List[Union[UpdateHDAPayload, UpdateHDCAPayload]] = Field(
         ...,
         title="Items",
@@ -1889,9 +1910,9 @@ class BasicRoleModel(BaseModel):
 
 
 class RoleModel(BasicRoleModel):
-    description: str = RoleDescriptionField
+    description: Optional[str] = RoleDescriptionField
     url: str = Field(title="URL", description="URL for the role")
-    model_class: str = Field(title="Model class", description="Database model class (Role)")
+    model_class: str = ModelClassField("Role")
 
 
 class RoleDefinitionModel(BaseModel):

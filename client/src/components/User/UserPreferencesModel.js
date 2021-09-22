@@ -9,7 +9,7 @@ export const getUserPreferencesModel = (user_id) => {
         information: {
             title: _l("Manage Information"),
             id: "edit-preferences-information",
-            description: "Edit your email, addresses and custom parameters or change your public name.",
+            description: _l("Edit your email, addresses and custom parameters or change your public name."),
             url: `api/users/${user_id}/information/inputs`,
             icon: "fa-user",
             redirect: "user",
@@ -37,8 +37,9 @@ export const getUserPreferencesModel = (user_id) => {
         permissions: {
             title: _l("Set Dataset Permissions for New Histories"),
             id: "edit-preferences-permissions",
-            description:
-                "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.",
+            description: _l(
+                "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
+            ),
             url: `api/users/${user_id}/permissions/inputs`,
             icon: "fa-users",
             submitTitle: "Save Permissions",
@@ -86,7 +87,7 @@ export const getUserPreferencesModel = (user_id) => {
             icon: "fa-cubes",
         },
         logout: {
-            title: _l("Sign Out"),
+            title: _l("Sign out"),
             id: "edit-preferences-sign-out",
             description: _l("Click here to sign out of all sessions."),
             icon: "fa-sign-out",

@@ -331,12 +331,37 @@ class GenericAsn1Binary(Binary):
     edam_data = "data_0849"
 
 
-class BamNative(CompressedArchive):
+class _BamOrSam:
+    """
+    Helper class to set the metadata common to sam and bam files
+    """
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        try:
+            bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb')
+            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
+            dataset.metadata.reference_names = list(bam_file.references)
+            dataset.metadata.reference_lengths = list(bam_file.lengths)
+            dataset.metadata.bam_header = dict(bam_file.header.items())
+            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
+            dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
+            dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
+        except Exception:
+            # Per Dan, don't log here because doing so will cause datasets that
+            # fail metadata to end in the error state
+            pass
+
+
+class BamNative(CompressedArchive, _BamOrSam):
     """Class describing a BAM binary file that is not necessarily sorted"""
     edam_format = "format_2572"
     edam_data = "data_0863"
     file_ext = "unsorted.bam"
     sort_flag: Optional[str] = None
+
+    MetadataElement(name="columns", default=12, desc="Number of columns", readonly=True, visible=False, no_value=0)
+    MetadataElement(name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
+    MetadataElement(name="column_names", default=['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'], desc="Column names", readonly=True, visible=False, optional=True, no_value=[])
 
     MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
     MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
@@ -344,9 +369,9 @@ class BamNative(CompressedArchive):
     MetadataElement(name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
     MetadataElement(name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
     MetadataElement(name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={})
-    MetadataElement(name="columns", default=12, desc="Number of columns", readonly=True, visible=False, no_value=0)
-    MetadataElement(name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
-    MetadataElement(name="column_names", default=['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'], desc="Column names", readonly=True, visible=False, optional=True, no_value=[])
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        _BamOrSam().set_meta(dataset)
 
     @staticmethod
     def merge(split_files, output_file):
@@ -375,21 +400,6 @@ class BamNative(CompressedArchive):
             return False
         except Exception:
             return False
-
-    def set_meta(self, dataset, overwrite=True, **kwd):
-        try:
-            bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb')
-            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
-            dataset.metadata.reference_names = list(bam_file.references)
-            dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = dict(bam_file.header.items())
-            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
-            dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
-            dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
-        except Exception:
-            # Per Dan, don't log here because doing so will cause datasets that
-            # fail metadata to end in the error state
-            pass
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -963,7 +973,12 @@ class Loom(H5):
                 dataset.metadata.description = loom_file.attrs.get('description')
                 dataset.metadata.url = loom_file.attrs.get('url')
                 dataset.metadata.doi = loom_file.attrs.get('doi')
-                dataset.metadata.loom_spec_version = loom_file.attrs.get('LOOM_SPEC_VERSION')
+                loom_spec_version = loom_file.attrs.get('LOOM_SPEC_VERSION')
+                if isinstance(loom_spec_version, np.ndarray):
+                    loom_spec_version = loom_spec_version[0]
+                    if isinstance(loom_spec_version, bytes):
+                        loom_spec_version = loom_spec_version.decode()
+                dataset.metadata.loom_spec_version = loom_spec_version
                 dataset.creation_date = loom_file.attrs.get('creation_date')
                 dataset.metadata.shape = tuple(loom_file['matrix'].shape)
 
@@ -1494,6 +1509,9 @@ class H5MLM(H5):
     file_ext = "h5mlm"
     URL = "https://github.com/goeckslab/Galaxy-ML"
 
+    max_peek_size = 1000         # 1 KB
+    max_preview_size = 1000000   # 1 MB
+
     MetadataElement(name="hyper_params", desc="Hyperparameter File", param=FileParameter, file_ext="tabular", readonly=True, no_value=None, visible=False, optional=True)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
@@ -1544,7 +1562,8 @@ class H5MLM(H5):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = self.get_repr(dataset.file_name)
+            repr_ = self.get_repr(dataset.file_name)
+            dataset.peek = repr_[:self.max_peek_size]
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
@@ -1555,6 +1574,32 @@ class H5MLM(H5):
             return dataset.peek
         except Exception:
             return "HDF5 Model (%s)" % (nice_size(dataset.get_size()))
+
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        preview = util.string_as_bool(preview)
+
+        if to_ext or not preview:
+            to_ext = to_ext or dataset.extension
+            return self._serve_raw(trans, dataset, to_ext, **kwd)
+
+        rval = {}
+        try:
+            with h5py.File(dataset.file_name, "r") as handle:
+                rval['Attributes'] = {}
+                attributes = handle.attrs
+                for k in (set(attributes.keys()) - {'-URL-', '-repr-'}):
+                    rval['Attributes'][k] = util.unicodify(attributes.get(k))
+        except Exception as e:
+            log.warning(e)
+
+        config = self.get_config_string(dataset.file_name)
+        rval['Config'] = json.loads(config) if config else ''
+        rval = json.dumps(rval, sort_keys=True, indent=2)
+        rval = rval[:self.max_preview_size]
+
+        repr_ = self.get_repr(dataset.file_name)
+
+        return "<pre>{}</pre><pre>{}</pre>".format(repr_, rval)
 
 
 class HexrdMaterials(H5):

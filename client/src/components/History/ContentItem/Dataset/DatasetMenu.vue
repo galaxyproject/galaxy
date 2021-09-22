@@ -11,7 +11,7 @@
                 class="px-1"
             />
             <IconButton
-                v-if="notIn(STATES.DISCARDED)"
+                v-if="writable && notIn(STATES.DISCARDED)"
                 icon="pen"
                 :title="editButtonTitle"
                 :disabled="dataset.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
@@ -20,7 +20,7 @@
                 class="px-1"
             />
             <IconButton
-                v-if="dataset.accessible"
+                v-if="writable && dataset.accessible"
                 :icon="dataset.deleted ? 'trash-restore' : 'trash'"
                 :title="deleteButtonTitle"
                 :disabled="dataset.purged"
@@ -31,6 +31,7 @@
             />
 
             <b-dropdown
+                right
                 size="sm"
                 variant="link"
                 :text="'Dataset Operations' | l"
@@ -96,7 +97,7 @@
                     v-if="dataset.rerunnable && dataset.creating_job && notIn(STATES.UPLOAD, STATES.NOT_VIEWABLE)"
                     title="Run job again"
                     :href="prependPath(dataset.getUrl('rerun'))"
-                    @click.stop="
+                    @click.stop.prevent="
                         backboneRoute('/', {
                             job_id: dataset.creating_job,
                         })
@@ -128,12 +129,7 @@
                     v-if="notIn(STATES.NOT_VIEWABLE)"
                     key="dataset-details"
                     title="View Dataset Details"
-                    @click.stop.prevent="
-                        iframeAdd({
-                            path: dataset.getUrl('show_params'),
-                            title: 'View Dataset Details',
-                        })
-                    "
+                    @click.stop.prevent="backboneRoute(dataset.getUrl('show_params'))"
                 >
                     <Icon icon="info-circle" class="mr-1" />
                     <span v-localize>View Dataset Details</span>
@@ -165,6 +161,7 @@ export default {
     props: {
         dataset: { type: Dataset, required: true },
         expanded: { type: Boolean, required: true },
+        writable: { type: Boolean, default: true },
     },
 
     data() {

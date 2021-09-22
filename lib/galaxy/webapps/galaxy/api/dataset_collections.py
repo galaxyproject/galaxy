@@ -3,14 +3,16 @@ from logging import getLogger
 import routes
 
 from galaxy import exceptions
+from galaxy.datatypes.registry import Registry
 from galaxy.managers.base import decode_id
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
-    dictify_element_reference
+    dictify_element_reference,
 )
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.hdcas import HDCAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import UsesLibraryMixinItems
@@ -24,6 +26,9 @@ class DatasetCollectionsController(
     UsesLibraryMixinItems,
 ):
     history_manager: HistoryManager = depends(HistoryManager)
+    hdca_manager: HDCAManager = depends(HDCAManager)
+    collection_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
+    datatypes_registry: Registry = depends(Registry)
 
     @expose_api
     def index(self, trans, **kwd):
@@ -63,6 +68,48 @@ class DatasetCollectionsController(
         dataset_collection_instance = self.__service.create(trans=trans, **create_params)
         return dictify_dataset_collection_instance(dataset_collection_instance,
                                                    security=trans.security, parent=create_params["parent"])
+
+    @expose_api
+    def update(self, trans: ProvidesHistoryContext, payload: dict, id):
+        """
+        Iterate over all datasets of a collection and copy datasets with new attributes to a new collection.
+        e.g attributes = {'dbkey': 'dm3'}
+
+        * PUT /api/dataset_collections/{hdca_id}:
+            create a new dataset collection instance.
+        """
+
+        if len(payload) != 1:
+            raise exceptions.RequestParameterInvalidException("Update one attribute at a time.")
+        if 'dbkey' not in payload:
+            raise exceptions.RequestParameterInvalidException("This attribute cannot be modified.")
+
+        self.collection_manager.copy(trans, trans.history, "hdca", id, copy_elements=True, dataset_instance_attributes=payload)
+        trans.sa_session.flush()
+
+    @expose_api
+    def attributes(self, trans: ProvidesHistoryContext, id, instance_type='history'):
+        """
+        GET /api/dataset_collections/{hdca_id}/attributes
+
+        Returns dbkey/extension for collection elements
+        """
+        dataset_collection_instance = self.__service.get_dataset_collection_instance(
+            trans,
+            id=id,
+            instance_type=instance_type,
+            check_ownership=True
+        )
+        return dataset_collection_instance.to_dict(view="dbkeysandextensions")
+
+    @expose_api
+    def suitable_converters(self, trans: ProvidesHistoryContext, id, instance_type='history', **kwds):
+        """
+        GET /api/dataset_collections/{hdca_id}/suitable_converters
+
+        Returns suitable converters for all datatypes in collection
+        """
+        return self.collection_manager.get_converters_for_collection(trans, id, self.datatypes_registry, instance_type)
 
     @expose_api
     def show(self, trans: ProvidesHistoryContext, id, instance_type='history', **kwds):

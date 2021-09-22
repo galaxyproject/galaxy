@@ -831,6 +831,46 @@ mapping:
           This results in faster startup times but uses more memory when using forked Galaxy
           processes.
 
+      biotools_content_directory:
+        type: str
+        required: false
+        desc: |
+          Point Galaxy at a repository consisting of a copy of the bio.tools database (e.g.
+          https://github.com/bio-tools/content/) to resolve bio.tools data for tool metadata.
+
+      biotools_use_api:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Set this to true to attempt to resolve bio.tools metadata for tools for tool not
+          resovled via biotools_content_directory.
+
+      biotools_service_cache_type:
+        type: str
+        default: file
+        required: false
+        desc: |
+          bio.tools web service request related caching. The type of beaker cache used.
+
+      biotools_service_cache_data_dir:
+        type: str
+        default: biotools/data
+        path_resolves_to: cache_dir
+        required: false
+        desc: |
+          bio.tools web service request related caching. The data directory to point
+          beaker cache at.
+
+      biotools_service_cache_lock_dir:
+        type: str
+        default: biotools/locks
+        path_resolves_to: cache_dir
+        required: false
+        desc: |
+          bio.tools web service request related caching. The lock directory to point
+          beaker cache at.
+
       citation_cache_type:
         type: str
         default: file
@@ -945,7 +985,23 @@ mapping:
           is the address used to subscribe to the list. Uncomment and leave empty if you
           want to remove this option from the user registration form.
 
-          Example value 'galaxy-announce-join@bx.psu.edu'
+          Example value 'galaxy-announce-join@lists.galaxyproject.org'
+
+      mailing_join_subject:
+        type: str
+        default: Join Mailing List
+        required: false
+        desc: |
+          The subject of the email sent to the mailing list join address. See the
+          `mailing_join_addr` option for more information.
+
+      mailing_join_body:
+        type: str
+        default: Join Mailing List
+        required: false
+        desc: |
+          The body of the email sent to the mailing list join address. See the
+          `mailing_join_addr` option for more information.
 
       error_email_to:
         type: str
@@ -2958,14 +3014,27 @@ mapping:
           config.
           This is a new feature and not recommended for production servers yet.
 
-      enable_job_recovery:
-        type: bool
-        default: true
+      job_handler_monitor_sleep:
+        type: float
+        default: 1.0
         required: false
         desc: |
-          Enable job recovery (if Galaxy is restarted while cluster jobs are running,
-          it can "recover" them when it starts).  This is not safe to use if you are
-          running more than one Galaxy server using the same database.
+          Each Galaxy job handler process runs one thread responsible for discovering jobs and
+          dispatching them to runners. This thread operates in a loop and sleeps for the given
+          number of seconds at the end of each iteration. This can be decreased if extremely high
+          job throughput is necessary, but doing so can increase CPU usage of handler processes.
+          Float values are allowed.
+
+      job_runner_monitor_sleep:
+        type: float
+        default: 1.0
+        required: false
+        desc: |
+          Each Galaxy job handler process runs one thread per job runner plugin responsible for
+          checking the state of queued and running jobs.  This thread operates in a loop and
+          sleeps for the given number of seconds at the end of each iteration. This can be
+          decreased if extremely high job throughput is necessary, but doing so can increase CPU
+          usage of handler processes. Float values are allowed.
 
       metadata_strategy:
         type: str
@@ -3425,3 +3494,12 @@ mapping:
         required: false
         desc: |
           Path to dynamic tool destinations configuration file.
+
+      welcome_directory:
+        type: str
+        default: plugins/welcome_page/new_user/static/topics/
+        required: false
+        desc: |
+          Location of New User Welcome data, a single directory containing the
+          images and JSON of Topics/Subtopics/Slides as export. This location
+          is relative to galaxy/static

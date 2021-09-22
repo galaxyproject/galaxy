@@ -25,7 +25,7 @@ export default {
     },
     computed: {
         stateIcon() {
-            if (this.inState(this.STATES.QUEUED, this.STATES.NEW)) {
+            if (this.inState(this.STATES.QUEUED, this.STATES.NEW, this.STATES.RUNNING)) {
                 return "clock";
             }
             if (this.inState(this.STATES.PAUSED)) {

@@ -1,7 +1,13 @@
 <template>
     <b-input-group v-if="params">
         <DebouncedInput v-model.trim="filterText" v-slot="{ value, input }">
-            <b-form-input size="sm" :value="value" @input="input" :placeholder="'Search Filter' | localize" />
+            <b-form-input
+                size="sm"
+                :value="value"
+                @input="input"
+                :placeholder="'Search Filter' | localize"
+                data-description="filter text input"
+            />
         </DebouncedInput>
 
         <b-input-group-append>
@@ -10,6 +16,7 @@
                 :pressed="showDeleted"
                 :variant="showDeleted ? 'info' : 'secondary'"
                 @click="showDeleted = !showDeleted"
+                data-description="show deleted filter toggle"
             >
                 {{ "Deleted" | localize }}
             </b-button>
@@ -18,6 +25,7 @@
                 :pressed="showHidden"
                 :variant="showHidden ? 'info' : 'secondary'"
                 @click="showHidden = !showHidden"
+                data-description="show hidden filter toggle"
             >
                 {{ "Hidden" | localize }}
             </b-button>

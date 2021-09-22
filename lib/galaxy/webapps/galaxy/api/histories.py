@@ -6,6 +6,13 @@ API operations on a history.
 import logging
 from typing import Optional
 
+from fastapi import (
+    Body,
+    Path,
+    Response,
+    status,
+)
+
 from galaxy import (
     util
 )
@@ -13,8 +20,12 @@ from galaxy.managers import (
     histories,
     sharable,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema import FilterQueryParams
-from galaxy.schema.fields import OrderParamField
+from galaxy.schema.fields import (
+    EncodedDatabaseIdField,
+    OrderParamField,
+)
 from galaxy.schema.schema import (
     CreateHistoryPayload,
     ExportHistoryArchivePayload,
@@ -29,9 +40,115 @@ from galaxy.web import (
     expose_api_raw,
 )
 from galaxy.webapps.galaxy.api.configuration import parse_serialization_params
-from . import BaseGalaxyAPIController, depends
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
+
+router = Router(tags=['histories'])
+
+HistoryIdPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    title="History ID",
+    description="The encoded database identifier of the History."
+)
+
+
+@router.cbv
+class FastAPIHistories:
+    service: histories.HistoriesService = depends(histories.HistoriesService)
+
+    @router.get(
+        '/api/histories/{id}/sharing',
+        summary="Get the current sharing status of the given item.",
+    )
+    def sharing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+    ) -> sharable.SharingStatus:
+        """Return the sharing status of the item."""
+        return self.service.shareable_service.sharing(trans, id)
+
+    @router.put(
+        '/api/histories/{id}/enable_link_access',
+        summary="Makes this item accessible by a URL link.",
+    )
+    def enable_link_access(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+    ) -> sharable.SharingStatus:
+        """Makes this item accessible by a URL link and return the current sharing status."""
+        return self.service.shareable_service.enable_link_access(trans, id)
+
+    @router.put(
+        '/api/histories/{id}/disable_link_access',
+        summary="Makes this item inaccessible by a URL link.",
+    )
+    def disable_link_access(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+    ) -> sharable.SharingStatus:
+        """Makes this item inaccessible by a URL link and return the current sharing status."""
+        return self.service.shareable_service.disable_link_access(trans, id)
+
+    @router.put(
+        '/api/histories/{id}/publish',
+        summary="Makes this item public and accessible by a URL link.",
+    )
+    def publish(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+    ) -> sharable.SharingStatus:
+        """Makes this item publicly available by a URL link and return the current sharing status."""
+        return self.service.shareable_service.publish(trans, id)
+
+    @router.put(
+        '/api/histories/{id}/unpublish',
+        summary="Removes this item from the published list.",
+    )
+    def unpublish(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+    ) -> sharable.SharingStatus:
+        """Removes this item from the published list and return the current sharing status."""
+        return self.service.shareable_service.unpublish(trans, id)
+
+    @router.put(
+        '/api/histories/{id}/share_with_users',
+        summary="Share this item with specific users.",
+    )
+    def share_with_users(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+        payload: sharable.ShareWithPayload = Body(...)
+    ) -> sharable.ShareWithStatus:
+        """Shares this item with specific users and return the current sharing status."""
+        return self.service.shareable_service.share_with_users(trans, id, payload)
+
+    @router.put(
+        '/api/histories/{id}/slug',
+        summary="Set a new slug for this shared item.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def set_slug(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+        payload: sharable.SetSlugPayload = Body(...),
+    ):
+        """Sets a new slug to access this item by URL. The new slug must be unique."""
+        self.service.shareable_service.set_slug(trans, id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 class HistoryFilterQueryParams(FilterQueryParams):
@@ -367,11 +484,52 @@ class HistoriesController(BaseGalaxyAPIController):
         return self.service.get_custom_builds_metadata(trans, id)
 
     @expose_api
-    def sharing(self, trans, id, payload=None, **kwd):
+    def sharing(self, trans, id, **kwd):
         """
-        * GET/POST /api/pages/{id}/sharing
-            View/modify sharing options for the page with the given id.
+        * GET /api/histories/{id}/sharing
         """
-        if payload:
-            payload = sharable.SharingPayload(**payload)
-        return self.service.sharing(trans, id, payload)
+        return self.service.shareable_service.sharing(trans, id)
+
+    @expose_api
+    def enable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/histories/{id}/enable_link_access
+        """
+        return self.service.shareable_service.enable_link_access(trans, id)
+
+    @expose_api
+    def disable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/histories/{id}/disable_link_access
+        """
+        return self.service.shareable_service.disable_link_access(trans, id)
+
+    @expose_api
+    def publish(self, trans, id, **kwd):
+        """
+        * PUT /api/histories/{id}/publish
+        """
+        return self.service.shareable_service.publish(trans, id)
+
+    @expose_api
+    def unpublish(self, trans, id, **kwd):
+        """
+        * PUT /api/histories/{id}/unpublish
+        """
+        return self.service.shareable_service.unpublish(trans, id)
+
+    @expose_api
+    def share_with_users(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/histories/{id}/share_with_users
+        """
+        payload = sharable.ShareWithPayload(**payload)
+        return self.service.shareable_service.share_with_users(trans, id, payload)
+
+    @expose_api
+    def set_slug(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/histories/{id}/slug
+        """
+        payload = sharable.SetSlugPayload(**payload)
+        self.service.shareable_service.set_slug(trans, id, payload)

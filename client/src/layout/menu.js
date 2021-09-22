@@ -226,6 +226,10 @@ export function fetchMenu(options = {}) {
                 url: "tours",
             },
             {
+                title: _l("Introduction to Galaxy"),
+                url: "welcome/new",
+            },
+            {
                 title: _l("Galaxy Version: " + Galaxy.config.version_major),
                 url: versionUserDocumentationUrl,
                 target: "_blank",

@@ -6,12 +6,12 @@ from functools import total_ordering
 
 from galaxy import exceptions
 from galaxy.model.none_like import NoneDataset
+from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.tools.parameters.wrapped_json import (
     data_collection_input_to_staging_path_and_source_path,
     data_input_to_staging_path_and_source_path,
 )
 from galaxy.util import filesystem_safe_string
-from galaxy.util.object_wrapper import wrap_with_safe_string
 
 log = logging.getLogger(__name__)
 
@@ -462,12 +462,13 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
 
 class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
-    def __init__(self, job_working_directory, has_collection, datatypes_registry=None, **kwargs):
+    def __init__(self, job_working_directory, has_collection, datatypes_registry, **kwargs):
         super().__init__()
         self.job_working_directory = job_working_directory
         self._dataset_elements_cache = {}
         self._element_identifiers_extensions_paths_and_metadata_files = None
         self.datatypes_registry = datatypes_registry
+        kwargs['datatypes_registry'] = datatypes_registry
         self.kwargs = kwargs
 
         if has_collection is None:

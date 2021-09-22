@@ -1,12 +1,17 @@
 import logging
 import re
+from typing import Optional
 
 from .definitions import (
     ExcludeTool,
     ExcludeToolRegex,
     ExcludeTypes,
+    ExpandedRootContent,
+    Label,
     Section,
+    SectionAlias,
     StaticToolBoxView,
+    Tool,
     Workflow,
 )
 from .interface import (
@@ -16,6 +21,7 @@ from .interface import (
     ToolPanelViewModelType,
 )
 from ..panel import (
+    panel_item_types,
     ToolPanelElements,
     ToolSection,
     ToolSectionLabel,
@@ -65,12 +71,15 @@ class StaticToolPanelView(ToolPanelView):
     def apply_view(self, base_tool_panel: ToolPanelElements, toolbox_registry: ToolBoxRegistry) -> ToolPanelElements:
 
         def apply_filter(definition, elems):
-            if definition.excludes:
-                elems.apply_filter(build_filter(definition.excludes))
+            excludes = self._all_excludes(definition)
+            if excludes:
+                elems.apply_filter(build_filter(excludes))
 
-        def definition_with_items_to_panel(definition, allow_sections: bool = True):
+        def definition_with_items_to_panel(definition, allow_sections: bool = True, items=None):
             new_panel = ToolPanelElements()
-            for element in definition.items_expanded:
+            if items is None:
+                items = definition.items_expanded
+            for element in items:
                 if element.content_type == "section":
                     assert allow_sections
                     section_def: Section = element
@@ -145,12 +154,47 @@ class StaticToolPanelView(ToolPanelView):
                 else:
                     raise AssertionError("Unknown static toolbox configuration element encountered.")
 
-            if definition.excludes:
-                new_panel.apply_filter(build_filter(definition.excludes))
+            excludes = self._all_excludes(definition)
+            if excludes:
+                new_panel.apply_filter(build_filter(excludes))
 
             return new_panel
 
-        return definition_with_items_to_panel(self._definition)
+        root_defintion = self._definition
+        root_items = root_defintion.items_expanded
+        if root_items is None:
+            root_items = []
+            # No items found, use base tool panel and apply filters to that...
+            for (_, panel_type, panel_value) in base_tool_panel.panel_items_iter():
+                item: Optional[ExpandedRootContent] = None
+                if panel_type == panel_item_types.TOOL:
+                    item = Tool(
+                        id=panel_value.id,
+                    )
+                elif panel_type == panel_item_types.SECTION:
+                    item = SectionAlias(
+                        section=panel_value.id,
+                    )
+                elif panel_type == panel_item_types.LABEL:
+                    item = Label(
+                        id=panel_value.id,
+                        text=panel_value.text,
+                    )
+                elif panel_type == panel_item_types.WORKFLOW:
+                    item = Workflow(
+                        id=panel_value.id,
+                    )
+                if item is None:
+                    raise Exception("Unknown panel item type encountered.")
+                root_items.append(item)
+
+        return definition_with_items_to_panel(root_defintion, items=root_items)
+
+    def _all_excludes(self, has_excludes):
+        excludes = has_excludes.excludes or []
+        if has_excludes != self._definition and self._definition.excludes:
+            excludes.extend(self._definition.excludes)
+        return excludes
 
     def to_model(self) -> ToolPanelViewModel:
         model_id = self._definition.id

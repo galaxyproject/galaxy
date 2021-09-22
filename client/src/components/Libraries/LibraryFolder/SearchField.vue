@@ -5,13 +5,15 @@
             class="mr-1"
             type="search"
             id="filterInput"
-            placeholder="Search"
+            :placeholder="titleSearch"
             @keyup.enter="startSearch()"
         />
     </b-input-group>
 </template>
 
 <script>
+import _l from "utils/localization";
+
 export default {
     name: "SearchField",
     props: {
@@ -25,6 +27,7 @@ export default {
         return {
             search: "",
             awaitingSearch: false,
+            titleSearch: _l("Search"),
         };
     },
     methods: {

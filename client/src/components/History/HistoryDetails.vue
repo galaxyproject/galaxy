@@ -4,26 +4,29 @@ Emit new History model object when done via .sync syntax
 -->
 
 <template>
-    <section class="history-details d-flex">
+    <section class="history-details d-flex" data-description="edit details">
         <div class="flex-grow-1 overflow-hidden">
             <h3 data-description="history name display">{{ historyName || "(History Name)" }}</h3>
-            <h5 class="history-size">{{ history.size | niceFileSize }}</h5>
+            <h5 class="history-size">
+                <span v-if="history.size">{{ history.size | niceFileSize }}</span>
+                <span v-else v-localize>(empty)</span>
+            </h5>
 
             <!-- display title, annotation, tags -->
             <div v-if="!editing">
-                <p v-if="annotation" class="mt-1">{{ annotation }}</p>
-                <HistoryTags class="mt-2" :history="history" :disabled="true" />
+                <p data-description="history annotation" v-if="annotation" class="mt-1">{{ annotation }}</p>
+                <StatelessTags class="mt-2 tags" :value="tags" :disabled="true" />
             </div>
 
             <!-- edit form, change title, annotation, or tags -->
-            <div v-else class="mt-3">
+            <div v-else class="mt-3" @keydown.esc="revertAndCancel" data-description="edit form">
                 <b-textarea
                     class="mb-2"
                     v-model="historyName"
                     placeholder="History Name"
                     trim
                     max-rows="4"
-                    data-description="history name input"
+                    data-description="name input"
                 ></b-textarea>
 
                 <b-textarea
@@ -32,10 +35,10 @@ Emit new History model object when done via .sync syntax
                     placeholder="Annotation (optional)"
                     trim
                     max-rows="4"
-                    data-description="history annotation input"
+                    data-description="annotation input"
                 ></b-textarea>
 
-                <HistoryTags class="mt-3" :history="history" />
+                <StatelessTags class="mt-3 tags" v-model="tags" />
             </div>
         </div>
 
@@ -56,13 +59,13 @@ Emit new History model object when done via .sync syntax
 <script>
 import prettyBytes from "pretty-bytes";
 import { History } from "./model";
-import HistoryTags from "./HistoryTags";
 import EditorMenu from "./EditorMenu";
+import { StatelessTags } from "components/Tags";
 
 export default {
     components: {
-        HistoryTags,
         EditorMenu,
+        StatelessTags,
     },
     filters: {
         niceFileSize(rawSize = 0) {
@@ -141,6 +144,10 @@ export default {
             if (this.dirty) {
                 this.reset();
             }
+        },
+        revertAndCancel() {
+            this.revert();
+            this.editing = false;
         },
     },
 };

@@ -216,7 +216,7 @@ class safe_update(NamedTuple):
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
 WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1")),
-    '__BUILD_LIST__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
+    '__BUILD_LIST__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
     '__APPLY_RULES__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
     '__EXTRACT_DATASET__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
     'Grep1': safe_update(packaging.version.parse("1.0.1"), packaging.version.parse("1.0.3")),
@@ -833,9 +833,6 @@ class Tool(Dictifiable):
             else:
                 raise Exception(f"Missing tool 'version' for tool with id '{self.id}' at '{tool_source}'")
 
-        self.edam_operations = tool_source.parse_edam_operations()
-        self.edam_topics = tool_source.parse_edam_topics()
-
         # Support multi-byte tools
         self.is_multi_byte = tool_source.parse_is_multi_byte()
         # Legacy feature, ignored by UI.
@@ -1000,6 +997,23 @@ class Tool(Dictifiable):
             if legacy_biotools_ref is not None:
                 xrefs.append({"value": legacy_biotools_ref, "reftype": "bio.tools"})
         self.xrefs = xrefs
+
+        edam_operations = tool_source.parse_edam_operations()
+        edam_topics = tool_source.parse_edam_topics()
+        has_missing_data = len(edam_operations) == 0 or len(edam_topics) == 0
+        if has_missing_data:
+            biotools_reference = self.biotools_reference
+            if biotools_reference:
+                biotools_entry = self.app.biotools_metadata_source.get_biotools_metadata(biotools_reference)
+                if biotools_entry:
+                    edam_info = biotools_entry.edam_info
+                    if len(edam_operations) == 0:
+                        edam_operations = edam_info.edam_operations
+                    if len(edam_topics) == 0:
+                        edam_topics = edam_info.edam_topics
+
+        self.edam_operations = edam_operations
+        self.edam_topics = edam_topics
 
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
@@ -1808,7 +1822,7 @@ class Tool(Dictifiable):
             elif isinstance(param, HiddenToolParameter):
                 args[key] = model.User.expand_user_properties(trans.user, param.value)
             else:
-                raise Exception("Unexpected parameter type")
+                args[key] = param.get_initial_value(trans, None)
         return args
 
     def execute(self, trans, incoming=None, set_output_hid=True, history=None, **kwargs):
@@ -2942,7 +2956,18 @@ class BuildListCollectionTool(DatabaseOperationTool):
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
             if incoming_repeat["input"]:
-                new_elements["%d" % i] = incoming_repeat["input"].copy(copy_tags=incoming_repeat["input"].tags)
+                try:
+                    id_select = incoming_repeat["id_cond"]["id_select"]
+                except KeyError:
+                    # Prior to tool version 1.2.0
+                    id_select = 'idx'
+                if id_select == 'idx':
+                    identifier = str(i)
+                elif id_select == 'identifier':
+                    identifier = getattr(incoming_repeat["input"], 'element_identifier', incoming_repeat["input"].name)
+                elif id_select == 'manual':
+                    identifier = incoming_repeat["id_cond"]["identifier"]
+                new_elements[identifier] = incoming_repeat["input"].copy(copy_tags=incoming_repeat["input"].tags)
 
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(

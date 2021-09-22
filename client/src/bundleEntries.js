@@ -93,15 +93,9 @@ export const chartUtilities = {
 export { initMasthead } from "components/Masthead/initMasthead";
 export { panelManagement } from "onload/globalInits/panelManagement";
 export { mountMakoTags } from "components/Tags";
-export { mountJobMetrics } from "components/JobMetrics";
-export { mountJobParameters } from "components/JobParameters";
 export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
 export { mountPageEditor } from "components/PageEditor/mount";
 export { mountPageDisplay } from "components/PageDisplay";
-export { mountDestinationParams } from "components/JobDestinationParams";
-export { mountDatasetInformation } from "components/DatasetInformation";
-export { mountDatasetStorage } from "components/Dataset/DatasetStorage";
-export { mountJobInformation } from "components/JobInformation";
 
 // Used in common.mako
 export { default as store } from "storemodern";

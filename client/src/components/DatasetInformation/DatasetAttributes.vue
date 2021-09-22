@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h4>Edit Dataset Attributes</h4>
+        <h4 v-localize>Edit Dataset Attributes</h4>
         <b-alert v-if="messageText" :variant="messageVariant" show>
             {{ messageText | l }}
         </b-alert>

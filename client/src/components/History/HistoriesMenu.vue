@@ -14,7 +14,7 @@
         >
             <template v-slot:button-content>
                 <Icon class="mr-1" icon="folder" />
-                <span id="click-me-fool" class="text-nowrap">{{ title | l }}</span>
+                <span class="text-nowrap">{{ title | l }}</span>
             </template>
 
             <b-dropdown-text>
@@ -38,14 +38,17 @@
                 <span v-localize>View Saved Histories</span>
             </b-dropdown-item>
 
-            <b-dropdown-item @click="redirect('/history/view_multiple')">
+            <b-dropdown-item
+                data-description="switch to multi history view"
+                @click="redirect('/history/view_multiple')"
+            >
                 <Icon class="mr-1" icon="columns" />
                 <span v-localize>Show Histories Side-by-Side</span>
             </b-dropdown-item>
 
             <b-dropdown-divider></b-dropdown-divider>
 
-            <b-dropdown-item @click="switchToLegacyHistoryPanel">
+            <b-dropdown-item data-description="switch to legacy history view" @click="switchToLegacyHistoryPanel">
                 <Icon class="mr-1" icon="arrow-up" />
                 <span v-localize>Return to legacy panel</span>
             </b-dropdown-item>

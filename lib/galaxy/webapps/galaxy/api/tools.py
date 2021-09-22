@@ -4,6 +4,8 @@ from json import dumps, loads
 from typing import Any, cast, Dict, Optional
 
 from galaxy import exceptions, util, web
+from galaxy.datatypes.data import get_params_and_input_name
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
@@ -36,6 +38,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     """
     history_manager: HistoryManager = depends(HistoryManager)
     hda_manager: HDAManager = depends(HDAManager)
+    hdca_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans: GalaxyWebTransaction, **kwds):
@@ -93,6 +96,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         # Return everything.
         try:
             return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help, view=view)
+        except exceptions.MessageException:
+            raise
         except Exception:
             raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
 
@@ -426,6 +431,51 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             rval.append(citation.to_dict('bibtex'))
         return rval
 
+    @expose_api
+    def conversion(self, trans: GalaxyWebTransaction, tool_id, payload, **kwd):
+        converter = self._get_tool(tool_id, user=trans.user)
+        target_type = payload.get("target_type")
+        source_type = payload.get("source_type")
+        input_src = payload.get("src")
+        input_id = payload.get("id")
+        # List of string of dependencies
+        try:
+            deps = trans.app.datatypes_registry.converter_deps[source_type][target_type]
+        except KeyError:
+            deps = {}
+        # Generate parameter dictionary
+        params, input_name = get_params_and_input_name(converter, deps)
+        params = {}
+        # determine input parameter name and add to params
+
+        params[input_name] = {
+            "values": [
+                {
+                    "id": input_id,
+                    "src": input_src,
+                }
+            ],
+            "batch": input_src == "hdca",
+        }
+        history_id = payload.get('history_id')
+        if history_id:
+            decoded_id = self.decode_id(history_id)
+            target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
+        else:
+            if input_src == "hdca":
+                target_history = self.hdca_manager.get_dataset_collection_instance(trans, instance_type='history', id=input_id).history
+            elif input_src == "hda":
+                decoded_id = trans.app.security.decode_id(input_id)
+                target_history = self.hda_manager.get_accessible(decoded_id, trans.user).history
+                self.history_manager.error_unless_owner(target_history, trans.user, current_history=trans.history)
+            else:
+                raise exceptions.RequestParameterInvalidException("Must run conversion on either hdca or hda.")
+
+        # Make the target datatype available to the converter
+        params['__target_datatype__'] = target_type
+        vars = converter.handle_input(trans, params, history=target_history)
+        return self._handle_inputs_output_to_api_response(trans, converter, target_history, vars)
+
     @expose_api_anonymous_and_sessionless
     def xrefs(self, trans: GalaxyWebTransaction, id, **kwds):
         tool = self._get_tool(id, user=trans.user)
@@ -568,6 +618,24 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format)
 
+        new_pja_flush = False
+        for job in vars.get('jobs', []):
+            if inputs.get('send_email_notification', False):
+                # Unless an anonymous user is invoking this via the API it
+                # should never be an option, but check and enforce that here
+                if trans.user is None:
+                    raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
+                else:
+                    job_email_action = PostJobAction('EmailAction')
+                    job.add_post_job_action(job_email_action)
+                    new_pja_flush = True
+
+        if new_pja_flush:
+            trans.sa_session.flush()
+
+        return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
+
+    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars):
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])
         rval: Dict[str, Any] = {'outputs': [], 'output_collections': [], 'jobs': [], 'implicit_collections': []}
@@ -587,21 +655,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             output_dict['output_name'] = output_name
             outputs.append(trans.security.encode_dict_ids(output_dict, skip_startswith="metadata_"))
 
-        new_pja_flush = False
         for job in vars.get('jobs', []):
             rval['jobs'].append(self.encode_all_ids(trans, job.to_dict(view='collection'), recursive=True))
-            if inputs.get('send_email_notification', False):
-                # Unless an anonymous user is invoking this via the API it
-                # should never be an option, but check and enforce that here
-                if trans.user is None:
-                    raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
-                else:
-                    job_email_action = PostJobAction('EmailAction')
-                    job.add_post_job_action(job_email_action)
-                    new_pja_flush = True
-
-        if new_pja_flush:
-            trans.sa_session.flush()
 
         for output_name, collection_instance in vars.get('output_collections', []):
             history = target_history or trans.history
@@ -619,7 +674,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
     def _patch_library_inputs(self, trans: GalaxyWebTransaction, inputs, target_history):
         """
-        Transform inputs from the data libaray to history items.
+        Transform inputs from the data library to history items.
         """
         for k, v in inputs.items():
             new_value = self._patch_library_dataset(trans, v, target_history)
