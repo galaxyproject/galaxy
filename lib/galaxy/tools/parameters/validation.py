@@ -179,6 +179,16 @@ class ExpressionValidator(Validator):
         ...
     ValueError: Not gonna happen
     >>> t = p.validate("Fop")
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="text" value="10">
+    ...     <validator type="expression" message="Not gonna happen">value</validator>
+    ... </param>
+    ... '''))
+    >>> p.validate("Foo")
+    >>> p.validate("")
+    Traceback (most recent call last):
+        ...
+    ValueError: Not gonna happen
     """
 
     @classmethod
@@ -197,7 +207,7 @@ class ExpressionValidator(Validator):
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
             super().validate(False, value, f"Validator '{self.expression}' could not be evaluated on '%s'")
-        super().validate(evalresult, value_to_show=value)
+        super().validate(bool(evalresult), value_to_show=value)
 
 
 class InRangeValidator(ExpressionValidator):
