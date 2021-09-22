@@ -2451,7 +2451,6 @@ class TestJob(BaseTest):
         job_state_history,
         job_metric_text,
         job_metric_numeric,
-        genome_index_tool_data,
         interactive_tool_entry_point,
         implicit_collection_jobs_job_association,
         job_container_association,
@@ -2479,7 +2478,6 @@ class TestJob(BaseTest):
         obj.state_history.append(job_state_history)
         obj.text_metrics.append(job_metric_text)
         obj.numeric_metrics.append(job_metric_numeric)
-        obj.job.append(genome_index_tool_data)
         obj.interactivetool_entry_points.append(interactive_tool_entry_point)
         obj.implicit_collection_jobs_association = implicit_collection_jobs_job_association
         obj.container = job_container_association
@@ -2511,7 +2509,6 @@ class TestJob(BaseTest):
             assert job_state_history in stored_obj.state_history  # sufficient for test
             assert stored_obj.text_metrics == [job_metric_text]
             assert stored_obj.numeric_metrics == [job_metric_numeric]
-            assert stored_obj.job == [genome_index_tool_data]
             assert stored_obj.interactivetool_entry_points == [interactive_tool_entry_point]
             assert (stored_obj.implicit_collection_jobs_association
                 == implicit_collection_jobs_job_association)
@@ -6549,12 +6546,6 @@ def galaxy_session(model, session):
 @pytest.fixture
 def galaxy_session_history_association(model, session, galaxy_session, history):
     instance = model.GalaxySessionToHistoryAssociation(galaxy_session, history)
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
-def genome_index_tool_data(model, session):
-    instance = model.GenomeIndexToolData()
     yield from dbcleanup_wrapper(session, instance)
 
 

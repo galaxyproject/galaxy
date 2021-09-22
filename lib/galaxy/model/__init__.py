@@ -919,7 +919,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     state_history = relationship('JobStateHistory')
     text_metrics = relationship('JobMetricText')
     numeric_metrics = relationship('JobMetricNumeric')
-    job = relationship('GenomeIndexToolData', back_populates='job')
     interactivetool_entry_points = relationship('InteractiveToolEntryPoint',
         back_populates='job', uselist=True)
     implicit_collection_jobs_association = relationship('ImplicitCollectionJobsJobAssociation',
@@ -2200,7 +2199,7 @@ class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
     modified_time = Column(DateTime, default=now, onupdate=now)
     indexer = Column(String(64))
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    job = relationship('Job', back_populates='job')
+    job = relationship('Job')
     dataset = relationship('Dataset')
     user = relationship('User')
 
