@@ -2052,11 +2052,7 @@ module.
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="has_n_columns" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts tabular output (actually only the first non-comment line) contains the specified number (``n``) of columns separated by a given separator (``sep``) (e.g. ``<has_n_columns n="3" sep=","/>``). ``sep`` defaults to ``"\t"``. The comment character(s) can be specified with the ``comment`` (default: empty string).]]>
-          </xs:documentation>
-        </xs:annotation>
+      <xs:element name="has_n_columns" type="AssertHasNColumns">
       </xs:element>
       <xs:element name="is_valid_xml" type="xs:anyType">
         <xs:annotation>
@@ -2114,6 +2110,27 @@ module.
       </xs:element>
     </xs:choice>
   </xs:group>
+
+  <xs:complexType name="AssertHasNColumns">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts tabular output (actually only the first line) contains the specified number (``n``) of columns (e.g. ``<has_n_columns n="3"/>``). Optionally a column separator (``sep``, default is ``\t``) `and comment character(s) can be specified (``comment``, default is empty string).]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="n" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Desired number of columns</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="sep" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Column separator</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="comment" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comment character(s)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="AssertHasSize">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Asserts the output has specific size (in bytes), e.g. ``<has_size value="10000" delta="100" />``.]]></xs:documentation>
