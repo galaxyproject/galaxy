@@ -15,12 +15,14 @@ import pwd
 import random
 import string
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from enum import Enum
 from string import Template
 from typing import (
     Iterable,
     List,
+    NamedTuple,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -5069,6 +5071,13 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
+class InnerCollectionFilter(NamedTuple):
+    column: str
+    operator_function: Callable
+    expected_value: Union[str, int, float, bool]
+
+    def produce_filter(self, table):
+        return self.operator_function(getattr(table, self.column), self.expected_value)
 
 
 class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
@@ -5118,6 +5127,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
         dataset_attributes: Optional[Iterable[str]] = None,
         dataset_permission_attributes: Optional[Iterable[str]] = None,
         return_entities: Optional[Iterable[Union[HistoryDatasetAssociation, Dataset, DatasetPermissions, 'DatasetCollectionElement']]] = None,
+        inner_filter: Optional[InnerCollectionFilter] = None
     ):
         collection_attributes = collection_attributes or ()
         element_attributes = element_attributes or ()
@@ -5153,7 +5163,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
             order_by_columns.append(inner_dce.c.element_index)
             q = q.join(
                 inner_dc, inner_dc.c.id == dce.c.child_collection_id
-            ).join(
+            ).outerjoin(
                 inner_dce, inner_dce.c.dataset_collection_id == inner_dc.c.id
             )
             q = q.add_columns(
@@ -5163,6 +5173,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
             dce = inner_dce
             dc = inner_dc
             depth_collection_type = depth_collection_type.split(":", 1)[1]
+        if inner_filter:
+            q = q.filter(inner_filter.produce_filter(dc.c))
 
         if hda_attributes or dataset_attributes or dataset_permission_attributes or return_entities and not return_entities == (DatasetCollectionElement,):
             q = q.join(HistoryDatasetAssociation).join(Dataset)
@@ -5207,8 +5219,9 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
             else:
                 q = self._get_nested_collection_attributes(
                     collection_attributes=('populated_state',),
+                    inner_filter=InnerCollectionFilter('populated_state', operator.__ne__, DatasetCollection.populated_states.OK)
                 )
-                _populated_optimized = any(state != DatasetCollection.populated_states.OK for state in q)
+                _populated_optimized = q.session.query(~exists(q.subquery())).scalar()
 
             self._populated_optimized = _populated_optimized
 
