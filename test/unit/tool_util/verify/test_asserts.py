@@ -1,8 +1,8 @@
 import pytest
 
-from galaxy.util import etree
-from galaxy.tool_util.verify import asserts
 from galaxy.tool_util.parser.xml import __parse_assert_list_from_elem
+from galaxy.tool_util.verify import asserts
+from galaxy.util import etree
 
 # def test_foo()
 
@@ -18,12 +18,12 @@ TABULAR_CSV_ASSERTION = """
 """
 
 TABULAR_DATA_POS = """
-# comment line 
+# comment line
 1\t2\t3
 """
 
 TABULAR_DATA_NEG = """
-# comment line 
+# comment line
 1\t2\t3\t4
 """
 
@@ -34,17 +34,17 @@ TABULAR_CSV_DATA = """
 TESTS = [
     # test successful assertion
     (
-        TABULAR_ASSERTION, TABULAR_DATA_POS, 
+        TABULAR_ASSERTION, TABULAR_DATA_POS,
         lambda x: len(x) == 0
     ),
     # test wrong number of columns
     (
-        TABULAR_ASSERTION, TABULAR_DATA_NEG, 
+        TABULAR_ASSERTION, TABULAR_DATA_NEG,
         lambda x: 'Expected 3 columns in output, found 4 columns' in x
     ),
     # test wrong number of columns for csv data
     (
-        TABULAR_CSV_ASSERTION, TABULAR_CSV_DATA, 
+        TABULAR_CSV_ASSERTION, TABULAR_CSV_DATA,
         lambda x: 'Expected 3 columns in output, found 2 columns' in x
     ),
 ]
@@ -54,6 +54,7 @@ TEST_IDS = [
     'tabular assertion failure',
     'tabular csv assertion',
 ]
+
 
 @pytest.mark.parametrize('assertion_xml,data,assert_func', TESTS, ids=TEST_IDS)
 def test_assertions(assertion_xml, data, assert_func):
