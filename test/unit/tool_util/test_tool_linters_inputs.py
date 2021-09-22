@@ -1,9 +1,4 @@
-import pytest
-
-from galaxy.tool_util.lint import LintContext
 from galaxy.tool_util.linters import inputs
-from galaxy.util import etree
-
 
 NO_SECTIONS_XML = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
@@ -168,7 +163,7 @@ TESTS = [
 ]
 
 TEST_IDS = [
-    'Lint no sections',
+    'lint no sections',
     'lint no when',
     'radio select incompatibilities',
     'select duplicated options',
@@ -176,14 +171,3 @@ TEST_IDS = [
     'select option definitions',
     'validator imcompatibilities',
 ]
-
-
-@pytest.mark.parametrize('tool_xml,lint_func,assert_func', TESTS, ids=TEST_IDS)
-def test_tool_xml(tool_xml, lint_func, assert_func):
-    lint_ctx = LintContext('all')
-    tree = etree.ElementTree(element=etree.fromstring(tool_xml))
-    lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=tree)
-    assert assert_func(lint_ctx), (
-        f"Warnings: {lint_ctx.warn_messages}\n"
-        f"Errors: {lint_ctx.error_messages}"
-    )

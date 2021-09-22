@@ -1,9 +1,4 @@
-import pytest
-
-from galaxy.tool_util.lint import LintContext
 from galaxy.tool_util.linters import outputs
-from galaxy.util import etree
-
 
 # check that linter accepts format source for collection elements as means to specify format
 # and that the linter warns if format and format_source are used
@@ -50,14 +45,3 @@ TEST_IDS = [
     'outputs collection static elements with format_source',
     'outputs discover datatsets with tool provided metadata'
 ]
-
-
-@pytest.mark.parametrize('tool_xml,lint_func,assert_func', TESTS, ids=TEST_IDS)
-def test_tool_xml(tool_xml, lint_func, assert_func):
-    lint_ctx = LintContext('all')
-    tree = etree.ElementTree(element=etree.fromstring(tool_xml))
-    lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=tree)
-    assert assert_func(lint_ctx), (
-        f"Warnings: {lint_ctx.warn_messages}\n"
-        f"Errors: {lint_ctx.error_messages}"
-    )
