@@ -42,7 +42,7 @@ TESTS = [
             "Tool version contains whitespace, this may cause errors: [ 1.0.1 ]." in x.warn_messages
             and "Tool name contains whitespace, this may cause errors: [ BWA Mapper ]." in x.warn_messages
             and "Requirement version contains whitespace, this may cause errors: [ 1.2.5 ]." in x.warn_messages
-            and "Tool ID contains whitespace - this is discouraged: [bwa tool]."
+            and "Tool ID contains whitespace - this is discouraged: [bwa tool]." in x.warn_messages
             and len(x.warn_messages) == 4 and len(x.error_messages) == 0
     ),
     (
