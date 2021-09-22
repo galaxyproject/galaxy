@@ -2016,41 +2016,17 @@ module.
   </xs:complexType>
   <xs:group name="TestAssertion">
     <xs:choice>
-      <xs:element name="has_text" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the specified ``text`` appears in the output (e.g. ``<has_text text="chr7">``). If the ``text`` is expected to occur a particular number of times, this value can be specified using ``n``.]]>
-          </xs:documentation>
-        </xs:annotation>
+      <xs:element name="has_text" type="AssertHasText">
       </xs:element>
-      <xs:element name="not_has_text" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the specified ``text`` does not appear in the output (e.g. ``<not_has_text text="chr8" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
+      <xs:element name="not_has_text" type="AssertNotHasText">
       </xs:element>
-      <xs:element name="has_text_matching" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts text matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_text_matching expression="1274\d+53" />`` ).]]>
-          </xs:documentation>
-        </xs:annotation>
+      <xs:element name="has_text_matching" type="AssertHasTextMatching">
       </xs:element>
-      <xs:element name="has_line" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts a line matching the specified string (``line``) appears in the output (e.g. ``<has_line line="A full example line." />``). If the ``line`` is expected to occur a particular number of times, this value can be specified using ``n``.]]>
-          </xs:documentation>
-        </xs:annotation>
+      <xs:element name="has_line" type="AssertHasLine">
       </xs:element>
-      <xs:element name="has_n_lines" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts that an output contains ``n`` lines, e.g. ``<has_n_lines n="3" />``.]]>
-          </xs:documentation>
-        </xs:annotation>
+      <xs:element name="has_n_lines" type="AssertHasNLines">
       </xs:element>
-      <xs:element name="has_line_matching" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts a line matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_line_matching expression=".*\s+127489808\s+127494553" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
+      <xs:element name="has_line_matching" type="AssertHasLineMatching">
       </xs:element>
       <xs:element name="has_n_columns" type="AssertHasNColumns">
       </xs:element>
@@ -2111,6 +2087,76 @@ module.
     </xs:choice>
   </xs:group>
 
+  <xs:complexType name="AssertHasText">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts the specified ``text`` appears in the output (e.g. ``<has_text text="chr7">``). If the ``text`` is expected to occur a particular number of times, this value can be specified using ``n``.]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="text" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Text to check for</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="n" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Desired number of occurences of the text</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertNotHasText">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts the specified ``text`` does not appear in the output (e.g. ``<not_has_text text="chr8" />``).]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="text" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Text to check for</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasTextMatching">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts text matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_text_matching expression="1274\d+53" />`` ).]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="expression" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Regular expression to check for</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasLine">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts a line matching the specified string (``line``) appears in the output (e.g. ``<has_line line="A full example line." />``). If the ``line`` is expected to occur a particular number of times, this value can be specified using ``n``.]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="line" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The line to check for</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="n" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Desired number of occurences of the line</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasNLines">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts that an output contains ``n`` lines, e.g. ``<has_n_lines n="3" />``.]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="n" type="xs:integer" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Desired number of lines</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasLineMatching">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts a line matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_line_matching expression=".*\s+127489808\s+127494553" />``).]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="expression" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Regular expression to check for</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="AssertHasNColumns">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Asserts tabular output (actually only the first line) contains the specified number (``n``) of columns (e.g. ``<has_n_columns n="3"/>``). Optionally a column separator (``sep``, default is ``\t``) `and comment character(s) can be specified (``comment``, default is empty string).]]></xs:documentation>

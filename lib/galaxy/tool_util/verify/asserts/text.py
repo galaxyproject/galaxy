@@ -27,7 +27,7 @@ def assert_has_line(output, line, n=None):
     assert output is not None, "Checking has_line assertion on empty output (None)"
     if n is None:
         match = re.search(f"^{re.escape(line)}$", output, flags=re.MULTILINE)
-        assert match is not None, f"No line of output file was '{line}' (output was '{output}') "
+        assert match is not None, f"No line of output file was '{line}' (output was '{output}')"
     else:
         matches = re.findall(f"^{re.escape(line)}$", output, flags=re.MULTILINE)
         assert len(matches) == int(n), f"Expected {n} lines matching '{line}' in output file (output was '{output}'); found {len(matches)}"

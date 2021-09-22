@@ -18,7 +18,8 @@ def get_first_line(output, comment):
 def assert_has_n_columns(output, n, sep='\t', comment=""):
     """ Asserts the tabular output contains n columns. The optional
     sep argument specifies the column seperator used to determine the
-    number of columns."""
+    number of columns. The optional comment argument specifies
+    comment characters."""
     n = int(n)
     first_line = get_first_line(output, comment)
     assert first_line is not None, "Was expecting output with %d columns, but output was empty." % n
