@@ -19,4 +19,4 @@ def assert_has_n_columns(output, n, sep='\t'):
     n = int(n)
     first_line = get_first_line(output)
     assert first_line is not None, "Was expecting output with %d columns, but output was empty." % n
-    assert len(first_line.split(sep)) == n, f"Expected {n} columns in output, found {first_line.split(sep)} lines"
+    assert len(first_line.split(sep)) == n, f"Expected {n} columns in output, found {len(first_line.split(sep))} columns"
