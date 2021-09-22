@@ -48,7 +48,10 @@ from galaxy.model import (
     LibraryDataset,
 )
 from galaxy.model.security import GalaxyRBACAgent
-from galaxy.schema import FilterQueryParams
+from galaxy.schema import (
+    FilterQueryParams,
+    SerializationParams,
+)
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     Field,
@@ -75,7 +78,6 @@ from galaxy.schema.schema import (
     UpdateHistoryContentsBatchPayload,
     WorkflowInvocationStateSummary,
 )
-from galaxy.schema.types import SerializationParams
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.json import safe_dumps
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -578,9 +580,9 @@ class HistoriesContentsService(ServiceBase):
         rval = []
         for hda in hdas:
             self.__deserialize_dataset(trans, hda, payload_dict)
-            serialization_params["default_view"] = "summary"
+            serialization_params.default_view = "summary"
             rval.append(self.hda_serializer.serialize_to_view(
-                hda, user=trans.user, trans=trans, **serialization_params
+                hda, user=trans.user, trans=trans, **serialization_params.dict()
             ))
         for hdca_id in hdca_ids:
             self.__update_dataset_collection(trans, hdca_id, payload.dict(exclude_defaults=True))
@@ -795,9 +797,6 @@ class HistoriesContentsService(ServiceBase):
                 trans.response.status = 204
                 return
 
-        # parse content params
-        view = serialization_params.pop('view')
-
         # SEEK UP, contents > hid
         up_params = filter_params + self._hid_greater_than(hid)
         up_order = 'hid-asc'
@@ -812,9 +811,9 @@ class HistoriesContentsService(ServiceBase):
         min_hid, max_hid = self._get_filtered_extrema(history, filter_params)
 
         # results
-        up = self._expand_contents(trans, contents_up, serialization_params, view)
+        up = self._expand_contents(trans, contents_up, serialization_params)
         up.reverse()
-        down = self._expand_contents(trans, contents_down, serialization_params, view)
+        down = self._expand_contents(trans, contents_down, serialization_params)
         contents = up + down
 
         # Put stats in http headers
@@ -857,16 +856,16 @@ class HistoriesContentsService(ServiceBase):
 
     # Adds subquery details to initial contents results, perhaps better realized
     # as a proc or view.
-    def _expand_contents(self, trans, contents, serialization_params, view):
+    def _expand_contents(self, trans, contents, serialization_params: SerializationParams):
         rval = []
         for content in contents:
             if isinstance(content, HistoryDatasetAssociation):
                 dataset = self.hda_serializer.serialize_to_view(content,
-                    user=trans.user, trans=trans, view=view, **serialization_params)
+                    user=trans.user, trans=trans, **serialization_params.dict())
                 rval.append(dataset)
             elif isinstance(content, HistoryDatasetCollectionAssociation):
                 collection = self.hdca_serializer.serialize_to_view(content,
-                    user=trans.user, trans=trans, view=view, **serialization_params)
+                    user=trans.user, trans=trans, **serialization_params.dict())
                 rval.append(collection)
         return rval
 
@@ -910,9 +909,9 @@ class HistoriesContentsService(ServiceBase):
             self.hda_manager.purge(hda)
         else:
             self.hda_manager.delete(hda)
-        serialization_params["default_view"] = 'detailed'
+        serialization_params.default_view = 'detailed'
         return self.hda_serializer.serialize_to_view(
-            hda, user=trans.user, trans=trans, **serialization_params
+            hda, user=trans.user, trans=trans, **serialization_params.dict()
         )
 
     def __update_dataset_collection(self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]):
@@ -934,9 +933,9 @@ class HistoriesContentsService(ServiceBase):
         hda = self.__datasets_for_update(trans, history, [decoded_id], payload)[0]
         if hda:
             self.__deserialize_dataset(trans, hda, payload)
-            serialization_params["default_view"] = 'detailed'
+            serialization_params.default_view = 'detailed'
             return self.hda_serializer.serialize_to_view(
-                hda, user=trans.user, trans=trans, **serialization_params
+                hda, user=trans.user, trans=trans, **serialization_params.dict()
             )
         return {}
 
@@ -1004,7 +1003,6 @@ class HistoriesContentsService(ServiceBase):
         # TODO: > 16.04: remove these
         # TODO: remove 'dataset_details' and the following section when the UI doesn't need it
         parsed_legacy_params = self._parse_legacy_contents_params(legacy_params)
-
         contents = self.history_contents_manager.contents(
             history,
             filters=filters,
@@ -1049,7 +1047,8 @@ class HistoriesContentsService(ServiceBase):
         Returns a dictionary with the appropriate values depending on the
         serialization parameters provided.
         """
-        view = serialization_params.pop("view", default_view) or default_view
+        serialization_params_dict = serialization_params.dict()
+        view = serialization_params_dict.pop("view", default_view) or default_view
 
         serializer: Optional[ModelSerializer] = None
         if isinstance(content, HistoryDatasetAssociation):
@@ -1063,7 +1062,7 @@ class HistoriesContentsService(ServiceBase):
             raise exceptions.UnknownContentsType(f'Unknown contents type: {content.content_type}')
 
         return serializer.serialize_to_view(
-            content, user=trans.user, trans=trans, view=view, **serialization_params
+            content, user=trans.user, trans=trans, view=view, **serialization_params_dict
         )
 
     def _parse_legacy_contents_params(self, params: HistoryContentsIndexLegacyParams):
@@ -1104,10 +1103,10 @@ class HistoriesContentsService(ServiceBase):
         id: EncodedDatabaseIdField,
         serialization_params: SerializationParams,
     ):
-        serialization_params["default_view"] = "detailed"
+        serialization_params.default_view = "detailed"
         hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
         return self.hda_serializer.serialize_to_view(
-            hda, user=trans.user, trans=trans, **serialization_params
+            hda, user=trans.user, trans=trans, **serialization_params.dict()
         )
 
     def __show_dataset_collection(
@@ -1117,7 +1116,7 @@ class HistoriesContentsService(ServiceBase):
         fuzzy_count: Optional[int] = None,
     ):
         dataset_collection_instance = self.__get_accessible_collection(trans, id)
-        view = serialization_params.get("view") or "element"
+        view = serialization_params.view or "element"
         return self.__collection_dict(trans, dataset_collection_instance, view=view, fuzzy_count=fuzzy_count)
 
     def __get_accessible_collection(self, trans, id: EncodedDatabaseIdField):
@@ -1165,7 +1164,7 @@ class HistoriesContentsService(ServiceBase):
             for ld in traverse(folder):
                 hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
                 hda_dict = self.hda_serializer.serialize_to_view(
-                    hda, user=trans.user, trans=trans, default_view='detailed', **serialization_params
+                    hda, user=trans.user, trans=trans, default_view='detailed', **serialization_params.dict()
                 )
                 rval.append(hda_dict)
         else:
@@ -1199,9 +1198,9 @@ class HistoriesContentsService(ServiceBase):
             return None
 
         trans.sa_session.flush()
-        serialization_params["default_view"] = 'detailed'
+        serialization_params.default_view = 'detailed'
         return self.hda_serializer.serialize_to_view(
-            hda, user=trans.user, trans=trans, **serialization_params
+            hda, user=trans.user, trans=trans, **serialization_params.dict()
         )
 
     def __create_hda_from_ldda(self, trans, history: History, ldda_id: EncodedDatabaseIdField):
@@ -1298,10 +1297,10 @@ class HistoriesContentsService(ServiceBase):
             raise exceptions.RequestParameterInvalidException(message)
 
         # if the consumer specified keys or view, use the secondary serializer
-        if serialization_params.get('view') or serialization_params.get('keys'):
-            serialization_params["default_view"] = 'detailed'
+        if serialization_params.view or serialization_params.keys:
+            serialization_params.default_view = 'detailed'
             return self.hdca_serializer.serialize_to_view(
-                dataset_collection_instance, user=trans.user, trans=trans, **serialization_params
+                dataset_collection_instance, user=trans.user, trans=trans, **serialization_params.dict()
             )
 
         return self.__collection_dict(trans, dataset_collection_instance, view="element")

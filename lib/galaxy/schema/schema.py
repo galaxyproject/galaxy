@@ -811,6 +811,14 @@ class HistoryBeta(HistoryDetailed):
     )
 
 
+AnyHistoryView = Union[
+    HistoryBeta, HistoryDetailed, HistorySummary,
+    # Any will cover those cases in which only specific `keys` are requested
+    # otherwise the validation will fail because the required fields are not returned
+    Any,
+]
+
+
 class ExportHistoryArchivePayload(Model):
     gzip: Optional[bool] = Field(
         default=True,
@@ -875,8 +883,6 @@ class CreateHistoryPayload(Model):
         title="Archive Source",
         description=(
             "The URL that will generate the archive to import when `archive_type='url'`. "
-            # This seems a bit odd but the create history action expects `archive_source` to be != None
-            "When importing from a file using `archive_file`, please set `archive_source=''`."
         ),
     )
     archive_type: Optional[HistoryImportArchiveSourceType] = Field(
@@ -887,11 +893,11 @@ class CreateHistoryPayload(Model):
     archive_file: Optional[Any] = Field(
         default=None,
         title="Archive File",
-        description="Detailed file information when importing the history from a file.",
+        description="Uploaded file information when importing the history from a file.",
     )
 
 
-class JobExportHistoryArchive(Model):
+class JobExportHistoryArchiveModel(Model):
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -932,6 +938,10 @@ class JobExportHistoryArchive(Model):
         title="External Download Permanent URL",
         description="Fully qualified URL to download this particular version of the exported history archive.",
     )
+
+
+class JobExportHistoryArchiveCollection(Model):
+    __root__: List[JobExportHistoryArchiveModel]
 
 
 class LabelValuePair(BaseModel):

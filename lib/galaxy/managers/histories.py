@@ -7,6 +7,12 @@ created (or copied) by users over the course of an analysis.
 import glob
 import logging
 import os
+import shutil
+from pathlib import Path
+from tempfile import (
+    NamedTemporaryFile,
+    SpooledTemporaryFile,
+)
 from typing import (
     cast,
     List,
@@ -43,28 +49,32 @@ from galaxy.managers.base import (
     SortableManager,
 )
 from galaxy.managers.citations import CitationsManager
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.users import UserManager
-from galaxy.schema import FilterQueryParams
+from galaxy.schema import (
+    FilterQueryParams,
+    SerializationParams,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyHistoryView,
     CreateHistoryPayload,
     CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
-    HistoryBeta,
-    HistoryDetailed,
     HistoryImportArchiveSourceType,
-    HistorySummary,
-    JobExportHistoryArchive,
+    JobExportHistoryArchiveModel,
     JobIdResponse,
     JobImportHistoryResponse,
     LabelValuePair,
 )
-from galaxy.schema.types import SerializationParams
+from galaxy.schema.types import LatestLiteral
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import restore_text
 
 log = logging.getLogger(__name__)
+
+HistoryArchiveExportResult = Union[JobExportHistoryArchiveModel, JobIdResponse]
 
 
 class HDABasicInfo(BaseModel):
@@ -248,7 +258,8 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         job, _ = history_imp_tool.execute(trans, incoming=incoming)
         return job
 
-    def serve_ready_history_export(self, trans, jeha):
+    # TODO: remove this function when the legacy endpoint using it is removed
+    def legacy_serve_ready_history_export(self, trans, jeha):
         assert jeha.ready
         if jeha.compressed:
             trans.response.set_content_type('application/x-gzip')
@@ -258,6 +269,14 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         trans.response.headers["Content-Disposition"] = disposition
         archive = trans.app.object_store.get_filename(jeha.dataset)
         return open(archive, mode='rb')
+
+    def get_ready_history_export_file_path(self, trans, jeha) -> str:
+        """
+        Serves the history export archive for use as a streaming response so the file
+        doesn't need to be loaded into memory.
+        """
+        assert jeha.ready
+        return trans.app.object_store.get_filename(jeha.dataset)
 
     def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None):
         # Convert options to booleans.
@@ -363,11 +382,9 @@ class HistoryExportView:
     def serialize(self, trans, history_id, jeha):
         rval = jeha.to_dict()
         encoded_jeha_id = trans.security.encode_id(jeha.id)
-        api_url = self.app.url_for("history_archive_download", id=history_id, jeha_id=encoded_jeha_id)
-        # this URL is less likely to be blocked by a proxy and require an API key, so export
-        # older-style controller version for use with within the GUI and such.
-        external_url = self.app.url_for(controller='history', action="export_archive", id=history_id, qualified=True)
-        external_permanent_url = self.app.url_for(controller='history', action="export_archive", id=history_id, jeha_id=encoded_jeha_id, qualified=True)
+        api_url = trans.url_builder("history_archive_download", id=history_id, jeha_id=encoded_jeha_id)
+        external_url = trans.url_builder("history_archive_download", id=history_id, jeha_id="latest", qualified=True)
+        external_permanent_url = trans.url_builder("history_archive_download", id=history_id, jeha_id=encoded_jeha_id, qualified=True)
         rval["download_url"] = api_url
         rval["external_download_latest_url"] = external_url
         rval["external_download_permanent_url"] = external_permanent_url
@@ -684,11 +701,11 @@ class HistoriesService(ServiceBase):
 
     def index(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
         deleted_only: Optional[bool] = False,
-        all_histories: bool = False,
+        all_histories: Optional[bool] = False,
     ):
         """
         Return a collection of histories for the current user. Additional filters can be applied.
@@ -757,13 +774,15 @@ class HistoriesService(ServiceBase):
 
     def create(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         payload: CreateHistoryPayload,
         serialization_params: SerializationParams,
     ):
         """Create a new history from scratch, by copying an existing one or by importing
         from URL or File depending on the provided parameters in the payload.
         """
+        if trans.anonymous:
+            raise glx_exceptions.AuthenticationRequired("You need to be logged in to create histories.")
         if trans.user and trans.user.bootstrap_admin_user:
             raise glx_exceptions.RealUserRequiredException("Only real users can create histories.")
         hist_name = None
@@ -772,7 +791,7 @@ class HistoriesService(ServiceBase):
         copy_this_history_id = payload.history_id
         all_datasets = payload.all_datasets
 
-        if payload.archive_source is not None:
+        if payload.archive_source is not None or hasattr(payload.archive_file, "file"):
             archive_source = payload.archive_source
             archive_file = payload.archive_file
             if archive_source:
@@ -780,6 +799,8 @@ class HistoriesService(ServiceBase):
             elif archive_file is not None and hasattr(archive_file, "file"):
                 archive_source = archive_file.file.name
                 archive_type = HistoryImportArchiveSourceType.file
+                if isinstance(archive_file.file, SpooledTemporaryFile):
+                    archive_source = self._save_upload_file_tmp(archive_file)
             else:
                 raise glx_exceptions.MessageException("Please provide a url or file.")
             job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
@@ -810,9 +831,19 @@ class HistoriesService(ServiceBase):
 
         return self._serialize_history(trans, new_history, serialization_params)
 
+    def _save_upload_file_tmp(self, upload_file) -> str:
+        try:
+            suffix = Path(upload_file.filename).suffix
+            with NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                shutil.copyfileobj(upload_file.file, tmp)
+                tmp_path = Path(tmp.name)
+        finally:
+            upload_file.file.close()
+        return str(tmp_path)
+
     def show(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
         history_id: Optional[EncodedDatabaseIdField] = None,
     ):
@@ -845,7 +876,7 @@ class HistoriesService(ServiceBase):
 
     def update(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         id: EncodedDatabaseIdField,
         payload,
         serialization_params: SerializationParams,
@@ -874,7 +905,7 @@ class HistoriesService(ServiceBase):
 
     def delete(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         history_id: EncodedDatabaseIdField,
         serialization_params: SerializationParams,
         purge: bool = False,
@@ -901,7 +932,7 @@ class HistoriesService(ServiceBase):
 
     def undelete(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         history_id: EncodedDatabaseIdField,
         serialization_params: SerializationParams,
     ):
@@ -922,7 +953,7 @@ class HistoriesService(ServiceBase):
 
     def shared_with_me(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
     ):
@@ -940,7 +971,7 @@ class HistoriesService(ServiceBase):
 
     def published(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
     ):
@@ -956,7 +987,7 @@ class HistoriesService(ServiceBase):
         rval = [self._serialize_history(trans, history, serialization_params, default_view="summary") for history in histories]
         return rval
 
-    def citations(self, trans, history_id):
+    def citations(self, trans: ProvidesHistoryContext, history_id: EncodedDatabaseIdField):
         """
         Return all the citations for the tools used to produce the datasets in
         the history.
@@ -973,14 +1004,19 @@ class HistoriesService(ServiceBase):
             tool_ids.add(tool_id)
         return [citation.to_dict("bibtex") for citation in self.citations_manager.citations_for_tool_ids(tool_ids)]
 
-    def index_exports(self, trans, id):
+    def index_exports(self, trans: ProvidesHistoryContext, id: EncodedDatabaseIdField):
         """
         Get previous history exports (to links). Effectively returns serialized
         JEHA objects.
         """
         return self.history_export_view.get_exports(trans, id)
 
-    def archive_export(self, trans, id: EncodedDatabaseIdField, payload: ExportHistoryArchivePayload) -> Union[JobExportHistoryArchive, JobIdResponse]:
+    def archive_export(
+        self,
+        trans,
+        id: EncodedDatabaseIdField,
+        payload: Optional[ExportHistoryArchivePayload] = None,
+    ) -> Tuple[HistoryArchiveExportResult, bool]:
         """
         start job (if needed) to create history export for corresponding
         history.
@@ -991,6 +1027,8 @@ class HistoriesService(ServiceBase):
         :rtype:     dict
         :returns:   object containing url to fetch export from.
         """
+        if payload is None:
+            payload = ExportHistoryArchivePayload()
         history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
         jeha = history.latest_export
         exporting_to_uri = payload.directory_uri
@@ -1011,37 +1049,76 @@ class HistoriesService(ServiceBase):
         else:
             job = jeha.job
 
+        ready = bool((up_to_date and jeha.ready) or exporting_to_uri)
+
         if exporting_to_uri:
             # we don't have a jeha, there will never be a download_url. Just let
             # the client poll on the created job_id to determine when the file has been
             # written.
             job_id = trans.security.encode_id(job.id)
-            return JobIdResponse(job_id=job_id)
+            return (JobIdResponse(job_id=job_id), ready)
 
         if up_to_date and jeha.ready:
             serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
-            return JobExportHistoryArchive.parse_obj(serialized_jeha)
+            return (JobExportHistoryArchiveModel.parse_obj(serialized_jeha), ready)
         else:
             # Valid request, just resource is not ready yet.
-            trans.response.status = "202 Accepted"
             if jeha:
                 serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
-                return JobExportHistoryArchive.parse_obj(serialized_jeha)
+                return (JobExportHistoryArchiveModel.parse_obj(serialized_jeha), ready)
             else:
                 assert job is not None, "logic error, don't have a jeha or a job"
                 job_id = trans.security.encode_id(job.id)
-                return JobIdResponse(job_id=job_id)
+                return (JobIdResponse(job_id=job_id), ready)
 
-    def archive_download(self, trans, id, jeha_id):
+    def get_ready_history_export(
+        self,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+        jeha_id: Union[EncodedDatabaseIdField, LatestLiteral],
+    ) -> model.JobExportHistoryArchive:
+        """Returns the exported history archive information if it's ready
+        or raises an exception if not."""
+        return self.history_export_view.get_ready_jeha(trans, id, jeha_id)
+
+    def get_archive_download_path(
+        self,
+        trans: ProvidesHistoryContext,
+        jeha: model.JobExportHistoryArchive,
+    ) -> str:
+        """
+        If ready and available, return raw contents of exported history
+        using a generator function.
+        """
+        return self.manager.get_ready_history_export_file_path(trans, jeha)
+
+    def get_archive_media_type(self, jeha: model.JobExportHistoryArchive):
+        media_type = 'application/x-tar'
+        if jeha.compressed:
+            media_type = 'application/x-gzip'
+        return media_type
+
+    # TODO: remove this function and HistoryManager.legacy_serve_ready_history_export when
+    # removing the legacy HistoriesController
+    def legacy_archive_download(
+        self,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+        jeha_id: EncodedDatabaseIdField,
+    ):
         """
         If ready and available, return raw contents of exported history.
         """
         jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
-        return self.manager.serve_ready_history_export(trans, jeha)
+        return self.manager.legacy_serve_ready_history_export(trans, jeha)
 
-    def get_custom_builds_metadata(self, trans, id: EncodedDatabaseIdField) -> CustomBuildsMetadataResponse:
+    def get_custom_builds_metadata(
+        self,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+    ) -> CustomBuildsMetadataResponse:
         """
-        Returns meta data for custom builds.
+        Returns metadata for custom builds.
         """
         history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
         installed_builds = []
@@ -1057,20 +1134,20 @@ class HistoriesService(ServiceBase):
 
     def _serialize_history(
             self,
-            trans,
+            trans: ProvidesHistoryContext,
             history: model.History,
             serialization_params: SerializationParams,
             default_view: str = "detailed",
-    ) -> Union[HistoryBeta, HistoryDetailed, HistorySummary]:
+    ) -> AnyHistoryView:
         """
         Returns a dictionary with the corresponding values depending on the
         serialization parameters provided.
         """
-        serialization_params["default_view"] = default_view
+        serialization_params.default_view = default_view
         serialized_history = self.serializer.serialize_to_view(
             history,
             user=trans.user,
             trans=trans,
-            **serialization_params
+            **serialization_params.dict()
         )
         return serialized_history
