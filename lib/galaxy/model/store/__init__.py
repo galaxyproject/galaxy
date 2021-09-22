@@ -10,6 +10,7 @@ from json import (
     dumps,
     load,
 )
+from typing import Any, Dict, List
 from uuid import uuid4
 
 from bdbag import bdbag_api as bdb
@@ -88,38 +89,38 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.dataset_state_serialized = True
 
     @abc.abstractmethod
-    def defines_new_history(self):
+    def defines_new_history(self) -> bool:
         """Does this store define a new history to create."""
 
     @abc.abstractmethod
-    def new_history_properties(self):
+    def new_history_properties(self) -> Dict[str, Any]:
         """Dict of history properties if defines_new_history() is truthy."""
 
     @abc.abstractmethod
-    def datasets_properties(self):
+    def datasets_properties(self) -> List[Dict[str, Any]]:
         """Return a list of HDA properties."""
 
-    def library_properties(self):
+    def library_properties(self) -> List[Dict[str, Any]]:
         """Return a list of library properties."""
         return []
 
     @abc.abstractmethod
-    def collections_properties(self):
+    def collections_properties(self) -> List[Dict[str, Any]]:
         """Return a list of HDCA properties."""
 
     @abc.abstractmethod
-    def jobs_properties(self):
+    def jobs_properties(self) -> List[Dict[str, Any]]:
         """Return a list of jobs properties."""
 
     @abc.abstractproperty
-    def object_key(self):
+    def object_key(self) -> str:
         """Key used to connect objects in metadata.
 
         Legacy exports used 'hid' but associated objects may not be from the same history
         and a history may contain multiple objects with the same 'hid'.
         """
 
-    def trust_hid(self, obj_attrs):
+    def trust_hid(self, obj_attrs) -> bool:
         """Trust HID when importing objects into a new History."""
 
     @contextlib.contextmanager
