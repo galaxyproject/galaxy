@@ -48,12 +48,6 @@ log = logging.getLogger(__name__)
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
-    hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
-    history_manager: histories.HistoryManager = depends(histories.HistoryManager)
-    history_contents_manager: history_contents.HistoryContentsManager = depends(history_contents.HistoryContentsManager)
-    hda_serializer: hdas.HDASerializer = depends(hdas.HDASerializer)
-    hdca_serializer: hdcas.HDCASerializer = depends(hdcas.HDCASerializer)
-    history_contents_filters: history_contents.HistoryContentsFilters = depends(history_contents.HistoryContentsFilters)
 
     service: HistoriesContentsService = depends(HistoriesContentsService)
 
