@@ -1074,6 +1074,8 @@ class DirectoryModelExportStore(ModelExportStore):
                     shutil.copytree(src, dest)
                 else:
                     shutil.copyfile(src, dest)
+        else:
+            raise Exception(f"Unknown export_files parameter type encountered {self.export_files}")
 
         export_directory = self.export_directory
 
