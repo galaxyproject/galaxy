@@ -64,9 +64,9 @@ def lint_general(tool_source, lint_ctx):
     requirements, containers = tool_source.parse_requirements_and_containers()
     for r in requirements:
         if r.type == "package":
-            if r.name == '':
+            if not r.name:
                 lint_ctx.error("Requirement without name found")
-            if r.version is None or r.version == '':
+            if not r.version:
                 lint_ctx.warn(f"Requirement {r.name} defines no version")
             # Warn requirement attributes with leading/trailing whitespace:
             elif r.version != r.version.strip():
