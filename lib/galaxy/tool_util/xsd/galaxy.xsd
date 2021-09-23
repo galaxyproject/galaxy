@@ -2193,7 +2193,7 @@ module.
     </xs:attribute>
     <xs:attribute name="delta" type="xs:integer" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum allowed size difference (default is 0). See also, the documentation of ``delta`` for the test ``<output>`` tag, but note the different default value.</xs:documentation>
+        <xs:documentation xml:lang="en">Maximum allowed size difference (default is 0). See also, the documentation of ``delta`` for the test ``output`` tag, but note the different default value.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="delta_frac" type="xs:float" use="optional">
