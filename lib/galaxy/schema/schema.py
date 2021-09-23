@@ -2522,3 +2522,125 @@ class ShareHistoryExtra(ShareWithExtra):
             "The number of datasets in the history that are public or accessible by all the target users."
         ),
     )
+
+# Pages -------------------------------------------------------
+
+
+class PageContentFormat(str, Enum):
+    markdown = "markdown"
+    html = "html"
+
+
+ContentFormatField: PageContentFormat = Field(
+    default=PageContentFormat.html,
+    title="Content format",
+    description="Either `markdown` or `html`.",
+)
+
+ContentField: Optional[str] = Field(
+    default="",
+    title="Content",
+    description="Raw text contents of the first page revision (type dependent on content_format).",
+)
+
+
+class PageSummaryBase(BaseModel):
+    title: str = Field(
+        ...,  # Required
+        title="Title",
+        description="The name of the page",
+    )
+    slug: str = Field(
+        ...,  # Required
+        title="Identifier",
+        description="The title slug for the page URL, must be unique.",
+        regex=r"^[a-z0-9\-]+$",
+    )
+
+
+class CreatePagePayload(PageSummaryBase):
+    content_format: PageContentFormat = ContentFormatField
+    content: Optional[str] = ContentField
+    annotation: Optional[str] = Field(
+        default=None,
+        title="Annotation",
+        description="Annotation that will be attached to the page.",
+    )
+    invocation_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Workflow invocation ID",
+        description="Encoded ID used by workflow generated reports.",
+    )
+
+    class Config:
+        use_enum_values = True  # When using .dict()
+        extra = Extra.allow  # Allow any other extra fields
+
+
+class PageSummary(PageSummaryBase):
+    id: EncodedDatabaseIdField = Field(
+        ...,  # Required
+        title="ID",
+        description="Encoded ID of the Page.",
+    )
+    model_class: str = Field(
+        ...,  # Required
+        title="Model class",
+        description="The class of the model associated with the ID.",
+        example="Page",
+    )
+    username: str = Field(
+        ...,  # Required
+        title="Username",
+        description="The name of the user owning this Page.",
+    )
+    published: bool = Field(
+        ...,  # Required
+        title="Published",
+        description="Whether this Page has been published.",
+    )
+    importable: bool = Field(
+        ...,  # Required
+        title="Importable",
+        description="Whether this Page can be imported.",
+    )
+    deleted: bool = Field(
+        ...,  # Required
+        title="Deleted",
+        description="Whether this Page has been deleted.",
+    )
+    latest_revision_id: EncodedDatabaseIdField = Field(
+        ...,  # Required
+        title="Latest revision ID",
+        description="The encoded ID of the last revision of this Page.",
+    )
+    revision_ids: List[EncodedDatabaseIdField] = Field(
+        ...,  # Required
+        title="List of revisions",
+        description="The history with the encoded ID of each revision of the Page.",
+    )
+
+
+class PageDetails(PageSummary):
+    content_format: PageContentFormat = ContentFormatField
+    content: Optional[str] = ContentField
+    generate_version: Optional[str] = Field(
+        None,
+        title="Galaxy Version",
+        description="The version of Galaxy this page was generated with.",
+    )
+    generate_time: Optional[str] = Field(
+        None,
+        title="Generate Date",
+        description="The date this page was generated.",
+    )
+
+    class Config:
+        extra = Extra.allow  # Allow any other extra fields
+
+
+class PageSummaryList(BaseModel):
+    __root__: List[PageSummary] = Field(
+        default=[],
+        title='List with summary information of Pages.',
+    )
