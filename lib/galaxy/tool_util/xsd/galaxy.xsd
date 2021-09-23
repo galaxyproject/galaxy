@@ -2148,7 +2148,12 @@ module.
     </xs:attribute>
     <xs:attribute name="delta" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Allowed difference in the number of lines</xs:documentation>
+        <xs:documentation xml:lang="en">Allowed difference in the number of lines. The observed number of lines has to be in the range ``n +- delta``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta_frac" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum allowed relative difference of the number of lines (default is to not check). The observed number of lines must be in the range ``n +- n*delta_frac``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2193,12 +2198,12 @@ module.
     </xs:attribute>
     <xs:attribute name="delta" type="xs:integer" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum allowed size difference (default is 0). See also, the documentation of ``delta`` for the test ``output`` tag, but note the different default value.</xs:documentation>
+        <xs:documentation xml:lang="en">Maximum allowed size difference (default is 0). The observed size has to be in the range ``value +- delta``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="delta_frac" type="xs:float" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum allowed size relative size difference (default is to not check). See also, the documentation of ``delta_frac`` for the test ``<output>`` tag.</xs:documentation>
+        <xs:documentation xml:lang="en">Maximum allowed size relative size difference (default is to not check). The observed size must be in the range ``value +- value*delta_frac``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>

@@ -77,6 +77,11 @@ TEXT_HAS_N_LINES_ASSERTION_DELTA = """
         <has_n_lines n="3" delta="1"/>
     </assert_contents>
 """
+TEXT_HAS_N_LINES_ASSERTION_DELTA_FRAC = """
+    <assert_contents>
+        <has_n_lines n="3" delta="100" delta_frac="0.334"/>
+    </assert_contents>
+"""
 TEXT_HAS_LINE_MATCHING_ASSERTION = """
     <assert_contents>
         <has_line_matching expression="te[sx]t te[sx]t"/>
@@ -193,7 +198,7 @@ TESTS = [
     # test has_text_matching .. negative test
     (
         TEXT_HAS_TEXT_MATCHING_ASSERTION, TEXT_DATA_HAS_TEXT_NEG,
-        lambda x: "No text matching expression 'te[sx]t' was found in output file." in x
+        lambda x: "No text matching expression 'te[sx]t' was found in output file" in x
     ),
     # test has_line
     (
@@ -225,10 +230,15 @@ TESTS = [
         TEXT_HAS_N_LINES_ASSERTION, TEXT_DATA_HAS_TEXT,
         lambda x: "Expected 2 lines in output, found 1 lines" in x
     ),
-    # test has_n_lines .. lines_diff
+    # test has_n_lines ..delta
     (
         TEXT_HAS_N_LINES_ASSERTION_DELTA, TEXT_DATA_HAS_TEXT,
-        lambda x: "Expected difference of the number of lines is at most 1, found 2." in x
+        lambda x: "Expected 3+-1 lines in the output, found 1 lines" in x
+    ),
+    # test has_n_lines ..delta_frac
+    (
+        TEXT_HAS_N_LINES_ASSERTION_DELTA_FRAC, TEXT_DATA_HAS_TEXT,
+        lambda x: "Expected 3+-1.002 lines in the output, found 1 lines" in x
     ),
     # test has_line_matching
     (
@@ -238,7 +248,7 @@ TESTS = [
     # test has_line_matching .. negative test
     (
         TEXT_HAS_LINE_MATCHING_ASSERTION, TEXT_DATA_HAS_TEXT_NEG,
-        lambda x: "No line matching expression 'te[sx]t te[sx]t' was found in output file." in x
+        lambda x: "No line matching expression 'te[sx]t te[sx]t' was found in output file" in x
     ),
     # test has_size
     (
@@ -248,7 +258,7 @@ TESTS = [
     # test has_size .. negative test
     (
         SIZE_HAS_SIZE_ASSERTION, TEXT_DATA_HAS_TEXT_TWO,
-        lambda x: "Expected file size of 10, actual file size is 20 (difference of 0 accepted)" in x
+        lambda x: "Expected file size of 10+-0, actual file size is 20" in x
     ),
     # test has_size .. delta
     (
@@ -258,7 +268,7 @@ TESTS = [
     # test has_size .. delta
     (
         SIZE_HAS_SIZE_ASSERTION_DELTA_FRAC, TEXT_DATA_HAS_TEXT_TWO,
-        lambda x: "Expected file size of 10, actual file size is 20 (relative difference of 0.2 accepted, i.e. size in 8.0:12.0)" in x
+        lambda x: "Expected file size of 10+-2.0, actual file size is 20" in x
     ),
 ]
 
@@ -285,7 +295,8 @@ TEST_IDS = [
     'has_line n failure',
     'has_n_lines success',
     'has_n_lines failure',
-    'has_n_lines lines_diff',
+    'has_n_lines delta',
+    'has_n_lines delta_frac',
     'has_line_matching success',
     'has_line_matching failure',
     'has_size success',
