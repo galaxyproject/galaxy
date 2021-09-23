@@ -363,6 +363,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dataset_instance.dataset.deleted = True
                     file_metadata = dataset_attrs.get("file_metadata") or {}
                     self._attach_dataset_hashes(file_metadata, dataset_instance)
+                    if "created_from_basename" in file_metadata:
+                        dataset_instance.dataset.created_from_basename = file_metadata["created_from_basename"]
 
                 if model_class == "HistoryDatasetAssociation" and self.user:
                     add_item_annotation(self.sa_session, self.user, dataset_instance, dataset_attrs['annotation'])

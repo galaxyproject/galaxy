@@ -117,6 +117,8 @@ def test_export_dataset():
     d1_hash.hash_function = "MD5"
     d1_hash.hash_value = "foobar"
     d1.dataset.hashes.append(d1_hash)
+    d1.dataset.created_from_basename = "my_cool_name.txt"
+
     d1.state = d2.state = 'ok'
 
     j = model.Job()
@@ -154,6 +156,7 @@ def test_export_dataset():
     dataset_hash = datasets[0].dataset.hashes[0]
     assert dataset_hash.hash_function == "MD5"
     assert dataset_hash.hash_value == "foobar"
+    assert datasets[0].dataset.created_from_basename == "my_cool_name.txt"
 
     with open(datasets[0].file_name) as f:
         assert f.read().startswith("chr1    4225    19670")

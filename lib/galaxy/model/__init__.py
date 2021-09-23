@@ -3975,9 +3975,12 @@ class DatasetInstance:
         else:
             serialization_options.serialize_files(self, rval)
             file_metadata = {}
-            hashes = self.dataset.hashes
+            dataset = self.dataset
+            hashes = dataset.hashes
             if hashes:
                 file_metadata["hashes"] = [h.serialize(id_encoder, serialization_options) for h in hashes]
+            if dataset.created_from_basename is not None:
+                file_metadata["created_from_basename"] = dataset.created_from_basename
             rval["file_metadata"] = file_metadata
 
 
