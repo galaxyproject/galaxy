@@ -33,11 +33,18 @@ def assert_has_line(output, line, n=None):
         assert len(matches) == int(n), f"Expected {n} lines matching '{line}' in output file (output was '{output}'); found {len(matches)}"
 
 
-def assert_has_n_lines(output, n):
-    """Asserts the specified output contains ``n`` lines."""
+def assert_has_n_lines(output, n, delta=0):
+    """Asserts the specified output contains ``n`` lines allowing
+    for a difference in the number of lines (delta)"""
     assert output is not None, "Checking has_n_lines assertion on empty output (None)"
     n_lines_found = len(output.splitlines())
-    assert n_lines_found == int(n), f"Expected {n} lines in output, found {n_lines_found} lines"
+    delta = int(delta)
+    if delta == 0:
+        assert n_lines_found == int(n), f"Expected {n} lines in output, found {n_lines_found} lines"
+    else:
+        diff_lines_found = abs(n_lines_found - int(n))
+        print(f"{diff_lines_found} {delta}")
+        assert diff_lines_found <= delta, f"Expected difference of the number of lines is at most {delta}, found {diff_lines_found}."
 
 
 def assert_has_text_matching(output, expression):
