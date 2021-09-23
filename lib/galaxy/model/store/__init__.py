@@ -307,6 +307,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         object_import_tracker.requires_hid.append(dataset_instance)
 
                 self._flush()
+
+                # If dataset is in the dictionary - we will assert this dataset is tied to the Galaxy instance
+                # and the import options are configured for allowing editing the dataset (e.g. for metadata setting).
+                # Otherwise, we will check for "file" information instead of dataset information - currently this includes
+                # "file_name", "extra_files_path".
                 if 'dataset' in dataset_attrs:
                     handle_dataset_object_edit(dataset_instance)
                 else:
