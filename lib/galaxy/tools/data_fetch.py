@@ -10,6 +10,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
     Tuple,
 )
 
@@ -214,7 +215,13 @@ def _fetch_target(upload_config, target):
         error_message = None
         converted_path = None
 
-        name, path = _has_src_to_path(upload_config, item, is_dataset=True)
+        deferred = upload_config.get_option(item, "deferred")
+        name: str
+        path: Optional[str]
+        if not deferred:
+            name, path = _has_src_to_path(upload_config, item, is_dataset=True)
+        else:
+            name, path = _has_src_to_name(item) or "Deferred Dataset", None
         sources = []
 
         url = item.get("url")
@@ -239,17 +246,20 @@ def _fetch_target(upload_config, target):
 
         ext = "data"
         staged_extra_files = None
-        if not error_message:
-            requested_ext = item.get("ext", "auto")
-            to_posix_lines = upload_config.get_option(item, "to_posix_lines")
-            space_to_tab = upload_config.get_option(item, "space_to_tab")
-            auto_decompress = upload_config.get_option(item, "auto_decompress")
+
+        requested_ext = item.get("ext", "auto")
+        to_posix_lines = upload_config.get_option(item, "to_posix_lines")
+        space_to_tab = upload_config.get_option(item, "space_to_tab")
+        auto_decompress = upload_config.get_option(item, "auto_decompress")
+
+        effective_state = "ok"
+        if not deferred and not error_message:
             in_place = item.get("in_place", False)
             purge_source = item.get("purge_source", True)
 
             registry = upload_config.registry
             check_content = upload_config.check_content
-
+            assert path  # if deferred won't be in this branch.
             stdout, ext, datatype, is_binary, converted_path, converted_newlines, converted_spaces = handle_upload(
                 registry=registry,
                 path=path,
@@ -329,17 +339,27 @@ def _fetch_target(upload_config, target):
 
             if len(transform) > 0:
                 source_dict["transform"] = transform
-
+        elif not error_message:
+            transform = []
+            if to_posix_lines:
+                transform.append({"action": "to_posix_lines"})
+            if space_to_tab:
+                transform.append({"action": "spaces_to_tabs"})
+            effective_state = "deferred"
+            registry = upload_config.registry
+            ext = sniff.guess_ext_from_file_name(name, registry=registry, requested_ext=requested_ext)
         rval = {
             "name": name,
-            "filename": path,
             "dbkey": dbkey,
             "ext": ext,
             "link_data_only": link_data_only,
             "sources": sources,
             "hashes": hashes,
             "info": f"uploaded {ext} file",
+            "state": effective_state,
         }
+        if path:
+            rval["filename"] = path
         if staged_extra_files:
             rval["extra_files"] = os.path.abspath(staged_extra_files)
         return _copy_and_validate_simple_attributes(item, rval)
@@ -417,6 +437,22 @@ def _directory_to_items(directory):
             target.append({"src": "path", "path": os.path.join(root, file)})
 
     return items
+
+
+def _has_src_to_name(item) -> Optional[str]:
+    # Logic should broadly match logic of _has_src_to_path but not resolve the item
+    # into a path.
+    name = item.get("name")
+    src = item.get("src")
+    if src == "url":
+        url = item.get("url")
+        if name is None:
+            name = url.split("/")[-1]
+    elif src == "path":
+        path = item["path"]
+        if name is None:
+            name = os.path.basename(path)
+    return name
 
 
 def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
@@ -502,6 +538,7 @@ class UploadConfig:
         self.space_to_tab = request.get("space_to_tab", False)
         self.auto_decompress = request.get("auto_decompress", False)
         self.validate_hashes = request.get("validate_hashes", False)
+        self.deferred = request.get("deferred", False)
         self.link_data_only = _link_data_only(request)
 
         self.__workdir = os.path.abspath(".")

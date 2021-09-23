@@ -34,6 +34,9 @@ from galaxy.schema import (
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHistoryView,
+    AsyncFile,
+    AsyncTaskResultSummary,
+    CreateHistoryFromStore,
     CreateHistoryPayload,
     CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
@@ -44,6 +47,8 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    StoreExportPayload,
+    WriteStoreToPayload,
 )
 from galaxy.schema.types import LatestLiteral
 from galaxy.webapps.galaxy.api.common import (
@@ -185,6 +190,38 @@ class FastAPIHistories:
     ) -> AnyHistoryView:
         return self.service.show(trans, serialization_params, id)
 
+    @router.post(
+        "/api/histories/{id}/prepare_store_download",
+        summary="Return a short term storage token to monitor download of the history.",
+    )
+    def prepare_store_download(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        payload: StoreExportPayload = Body(...),
+    ) -> AsyncFile:
+        return self.service.prepare_download(
+            trans,
+            id,
+            payload=payload,
+        )
+
+    @router.post(
+        "/api/histories/{id}/write_store",
+        summary="Prepare history for export-style download and write to supplied URI.",
+    )
+    def write_store(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        payload: WriteStoreToPayload = Body(...),
+    ) -> AsyncTaskResultSummary:
+        return self.service.write_store(
+            trans,
+            id,
+            payload=payload,
+        )
+
     @router.get(
         "/api/histories/{id}/citations",
         summary="Return all the citations for the tools used to produce the datasets in the history.",
@@ -261,6 +298,29 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
         return self.service.update(trans, id, payload, serialization_params)
+
+    @router.post(
+        "/api/histories/from_store",
+        summary="Create histories from a model store.",
+    )
+    def create_from_store(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: CreateHistoryFromStore = Body(...),
+    ) -> AnyHistoryView:
+        return self.service.create_from_store(trans, payload, serialization_params)
+
+    @router.post(
+        "/api/histories/from_store_async",
+        summary="Launch a task to create histories from a model store.",
+    )
+    def create_from_store_async(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: CreateHistoryFromStore = Body(...),
+    ) -> AnyHistoryView:
+        return self.service.create_from_store_async(trans, payload)
 
     @router.get(
         "/api/histories/{id}/exports",

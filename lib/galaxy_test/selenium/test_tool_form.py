@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from galaxy.model.unittest_utils.store_fixtures import one_hda_model_store_dict
 from galaxy.selenium.navigates_galaxy import retry_call_during_transitions
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
@@ -177,6 +178,33 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 class LoggedInToolFormTestCase(SeleniumTestCase):
 
     ensure_registered = True
+
+    @selenium_test
+    def test_dataset_state_filtering(self):
+        # upload an ok (HID 1) and a discarded (HID 2) dataset and run a tool
+        # normally HID 2 would be selected but since it is discarded - it won't
+        # be an option so verify the result was run with HID 1.
+        test_path = self.get_filename("1.fasta")
+        self.perform_upload(test_path)
+        self.history_panel_wait_for_hid_ok(1)
+
+        history_id = self.current_history_id()
+        self.dataset_populator.create_contents_from_store(
+            history_id,
+            store_dict=one_hda_model_store_dict(include_source=False),
+        )
+
+        self.home()
+        self.tool_open("head")
+        self.components.tool_form.execute.wait_for_visible()
+        self.screenshot("tool_form_with_filtered_discarded_input")
+        self.tool_form_execute()
+
+        self.history_panel_wait_for_hid_ok(3)
+
+        latest_hda = self.latest_history_item()
+        assert latest_hda["hid"] == 3
+        assert latest_hda["name"] == "Select first on data 1"
 
     @selenium_test
     def test_run_apply_rules_1(self):

@@ -35,6 +35,31 @@ def test_simple_path_get():
         assert output
 
 
+def test_deferred_uri_get():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+                            "deferred": True,
+                        }
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        hda_result = output["elements"][0]
+        assert hda_result["state"] == "deferred"
+        assert hda_result["ext"] == "bed"
+
+
 def test_simple_list_path_get():
     with _execute_context() as execute_context:
         job_directory = execute_context.job_directory

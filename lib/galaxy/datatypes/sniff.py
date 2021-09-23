@@ -539,6 +539,12 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     return "txt"  # default text data type file extension
 
 
+def guess_ext_from_file_name(fname, registry, requested_ext="auto"):
+    if requested_ext != "auto":
+        return requested_ext
+    return registry.get_datatype_from_filename(fname).file_ext
+
+
 class FilePrefix:
     def __init__(self, filename, auto_decompress=True):
         non_utf8_error = None

@@ -23,7 +23,12 @@ from typing_extensions import (
 )
 
 from galaxy import exceptions
-from galaxy.celery.tasks import prepare_dataset_collection_download
+from galaxy.celery.tasks import materialize as materialize_task
+from galaxy.celery.tasks import (
+    prepare_dataset_collection_download,
+    prepare_history_content_download,
+    write_history_content_to,
+)
 from galaxy.managers import (
     folders,
     hdas,
@@ -63,7 +68,9 @@ from galaxy.schema.schema import (
     AnyHistoryContentItem,
     AnyJobStateSummary,
     AsyncFile,
+    AsyncTaskResultSummary,
     BulkOperationItemError,
+    ColletionSourceType,
     ContentsNearResult,
     ContentsNearStats,
     CreateNewCollectionPayload,
@@ -81,18 +88,30 @@ from galaxy.schema.schema import (
     HistoryContentsWithStatsResult,
     HistoryContentType,
     JobSourceType,
+    MaterializeDatasetInstanceRequest,
     Model,
+    StoreContentSource,
+    StoreExportPayload,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
+    WriteStoreToPayload,
 )
-from galaxy.schema.tasks import PrepareDatasetCollectionDownload
+from galaxy.schema.tasks import (
+    GenerateHistoryContentDownload,
+    MaterializeDatasetInstanceTaskRequest,
+    PrepareDatasetCollectionDownload,
+    WriteHistoryContentTo,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.api.common import parse_serialization_params
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
+    ConsumesModelStores,
     ensure_celery_tasks_enabled,
+    model_store_storage_target,
+    ServesExportStores,
     ServiceBase,
 )
 
@@ -164,6 +183,48 @@ class CreateHistoryContentPayloadFromCopy(CreateHistoryContentPayloadBase):
     )
 
 
+class CollectionElementIdentifier(Model):
+    name: Optional[str] = Field(
+        None,
+        title="Name",
+        description="The name of the element.",
+    )
+    src: ColletionSourceType = Field(
+        ...,
+        title="Source",
+        description="The source of the element.",
+    )
+    id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="ID",
+        description="The encoded ID of the element.",
+    )
+    tags: List[str] = Field(
+        default=[],
+        title="Tags",
+        description="The list of tags associated with the element.",
+    )
+    element_identifiers: Optional[List["CollectionElementIdentifier"]] = Field(
+        default=None,
+        title="Element Identifiers",
+        description="List of elements that should be in the new nested collection.",
+    )
+    collection_type: Optional[str] = Field(
+        default=None,
+        title="Collection Type",
+        description="The type of the nested collection. For example, `list`, `paired`, `list:paired`.",
+    )
+
+
+# Required for self-referencing models
+# See https://pydantic-docs.helpmanual.io/usage/postponed_annotations/#self-referencing-models
+CollectionElementIdentifier.update_forward_refs()
+
+
+class CreateHistoryContentFromStore(StoreContentSource):
+    pass
+
+
 class CreateHistoryContentPayloadFromCollection(CreateHistoryContentPayloadFromCopy):
     dbkey: Optional[str] = Field(
         default=None,
@@ -186,7 +247,7 @@ class CreateHistoryContentPayload(CreateHistoryContentPayloadFromCollection, Cre
         extra = Extra.allow
 
 
-class HistoriesContentsService(ServiceBase):
+class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelStores):
     """Common interface/service logic for interactions with histories contents in the context of the API.
 
     Provides the logic of the actions invoked by API controllers and uses type definitions
@@ -286,6 +347,61 @@ class HistoriesContentsService(ServiceBase):
         elif contents_type == HistoryContentType.dataset_collection:
             return self.__show_dataset_collection(trans, id, serialization_params, fuzzy_count)
         raise exceptions.UnknownContentsType(f"Unknown contents type: {contents_type}")
+
+    def prepare_store_download(
+        self,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+        payload: StoreExportPayload,
+        contents_type: HistoryContentType = HistoryContentType.dataset,
+    ) -> AsyncFile:
+        model_store_format = payload.model_store_format
+        if contents_type == HistoryContentType.dataset:
+            hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
+            content_id = hda.id
+            content_name = hda.name
+        elif contents_type == HistoryContentType.dataset_collection:
+            dataset_collection_instance = self.__get_accessible_collection(trans, id)
+            content_id = dataset_collection_instance.id
+            content_name = dataset_collection_instance.name
+        else:
+            raise exceptions.UnknownContentsType(f"Unknown contents type: {contents_type}")
+        short_term_storage_target = model_store_storage_target(
+            self.short_term_storage_allocator,
+            content_name,
+            model_store_format,
+        )
+        request = GenerateHistoryContentDownload(
+            short_term_storage_request_id=short_term_storage_target.request_id,
+            user=trans.async_request_user,
+            content_type=contents_type,
+            content_id=content_id,
+            **payload.dict(),
+        )
+        result = prepare_history_content_download.delay(request=request)
+        return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
+
+    def write_store(
+        self,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+        payload: WriteStoreToPayload,
+        contents_type: HistoryContentType = HistoryContentType.dataset,
+    ):
+        ensure_celery_tasks_enabled(trans.app.config)
+        if contents_type == HistoryContentType.dataset:
+            hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
+            content_id = hda.id
+        elif contents_type == HistoryContentType.dataset_collection:
+            dataset_collection_instance = self.__get_accessible_collection(trans, id)
+            content_id = dataset_collection_instance.id
+        else:
+            raise exceptions.UnknownContentsType(f"Unknown contents type: {contents_type}")
+        request = WriteHistoryContentTo(
+            user=trans.async_request_user, content_id=content_id, contents_type=contents_type, **payload.dict()
+        )
+        result = write_history_content_to.delay(request=request)
+        return async_task_summary(result)
 
     def index_jobs_summary(
         self,
@@ -405,6 +521,52 @@ class HistoriesContentsService(ServiceBase):
         elif history_content_type == HistoryContentType.dataset_collection:
             return self.__create_dataset_collection(trans, history, payload, serialization_params)
         raise exceptions.UnknownContentsType(f"Unknown contents type: {payload.type}")
+
+    def create_from_store(
+        self,
+        trans,
+        history_id: EncodedDatabaseIdField,
+        payload: CreateHistoryContentFromStore,
+        serialization_params: SerializationParams,
+    ) -> List[AnyHistoryContentItem]:
+        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+        object_tracker = self.create_objects_from_store(
+            trans,
+            payload,
+            history=history,
+        )
+        rval: List[AnyHistoryContentItem] = []
+        serialization_params.default_view = "detailed"
+        for hda in object_tracker.hdas_by_key.values():
+            if hda.visible:
+                hda_dict = self.hda_serializer.serialize_to_view(
+                    hda, user=trans.user, trans=trans, **serialization_params.dict()
+                )
+                rval.append(hda_dict)
+        for hdca in object_tracker.hdcas_by_key.values():
+            hdca_dict = self.hdca_serializer.serialize_to_view(
+                hdca, user=trans.user, trans=trans, **serialization_params.dict()
+            )
+            rval.append(hdca_dict)
+        return rval
+
+    def materialize(
+        self,
+        trans,
+        request: MaterializeDatasetInstanceRequest,
+    ) -> AsyncTaskResultSummary:
+        history_id = self.decode_id(request.history_id)
+        # DO THIS JUST TO MAKE SURE IT IS OWNED...
+        self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
+        assert trans.app.config.enable_celery_tasks
+        task_request = MaterializeDatasetInstanceTaskRequest(
+            history_id=history_id,
+            source=request.source,
+            content=self.decode_id(request.content),
+            user=trans.async_request_user,
+        )
+        results = materialize_task.delay(request=task_request)
+        return async_task_summary(results)
 
     def update_permissions(
         self,

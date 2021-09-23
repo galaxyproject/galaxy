@@ -3,11 +3,16 @@ import unittest
 import pytest
 import requests
 
+from galaxy.model.unittest_utils.store_fixtures import (
+    one_ld_library_model_store_dict,
+    TEST_LIBRARY_NAME,
+)
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
     skip_if_github_down,
+    skip_without_asgi,
 )
 from ._framework import ApiTestCase
 
@@ -29,6 +34,17 @@ class LibrariesApiTestCase(ApiTestCase):
         library = create_response.json()
         self._assert_has_keys(library, "name")
         assert library["name"] == "CreateTestLibrary"
+
+    @skip_without_asgi
+    def test_create_from_store(self):
+        response = self.library_populator.create_from_store(store_dict=one_ld_library_model_store_dict())
+        assert isinstance(response, list)
+        assert len(response) == 1
+        library_summary = response[0]
+        assert library_summary["name"] == TEST_LIBRARY_NAME
+        assert "id" in library_summary
+        ld = self.library_populator.get_library_contents_with_path(library_summary["id"], "/my cool name")
+        assert ld
 
     def test_delete(self):
         library = self.library_populator.new_library("DeleteTestLibrary")

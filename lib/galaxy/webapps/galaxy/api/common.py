@@ -69,7 +69,7 @@ def query_serialization_params(
     keys: Optional[str] = SerializationKeysQueryParam,
     default_view: Optional[str] = SerializationDefaultViewQueryParam,
 ) -> SerializationParams:
-    return parse_serialization_params(view=view, keys=keys, default_view=default_view)
+    return parse_serialization_params(view=view, keys=keys, default_view=default_view, format=format)
 
 
 def get_value_filter_query_params(

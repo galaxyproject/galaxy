@@ -323,7 +323,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             sources = discovered_file.match.sources
             hashes = discovered_file.match.hashes
             created_from_basename = discovered_file.match.created_from_basename
-
+            effective_state = fields_match.effective_state
+            if final_job_state == "ok" and effective_state != "ok":
+                final_job_state = effective_state
             dataset = self.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -743,7 +745,8 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
             sources = fields_match.sources
             hashes = fields_match.hashes
             created_from_basename = fields_match.created_from_basename
-            info, state = discovered_file.discovered_state(element)
+            effective_state = fields_match.effective_state
+            info, state = discovered_file.discovered_state(element, final_job_state=effective_state)
             model_persistence_context.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -895,7 +898,21 @@ class DiscoveredResultState(NamedTuple):
     state: str
 
 
-DiscoveredResult = Union[DiscoveredFile, "DiscoveredFileError"]
+class DiscoveredDeferredFile(NamedTuple):
+    collector: Optional[CollectorT]
+    match: "JsonCollectedDatasetMatch"
+
+    def discovered_state(self, element: Dict[str, Any], final_job_state="ok") -> DiscoveredResultState:
+        info = element.get("info", None)
+        state = "deferred" if final_job_state == "ok" else final_job_state
+        return DiscoveredResultState(info, state)
+
+    @property
+    def path(self):
+        return None
+
+
+DiscoveredResult = Union[DiscoveredFile, DiscoveredDeferredFile, "DiscoveredFileError"]
 
 
 def discovered_file_for_element(
@@ -912,6 +929,11 @@ def discovered_file_for_element(
     filename = dataset.get("filename")
     error_message = dataset.get("error_message")
     if error_message is None:
+        if dataset.get("state") == "deferred":
+            return DiscoveredDeferredFile(
+                collector, JsonCollectedDatasetMatch(dataset, collector, None, parent_identifiers=parent_identifiers)
+            )
+
         # handle link_data_only here, verify filename is in directory if not linking...
         if not dataset.get("link_data_only"):
             path = os.path.join(target_directory, filename)
@@ -1035,6 +1057,10 @@ class JsonCollectedDatasetMatch:
     @property
     def extra_files(self):
         return self.as_dict.get("extra_files")
+
+    @property
+    def effective_state(self):
+        return self.as_dict.get("state") or "ok"
 
 
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):

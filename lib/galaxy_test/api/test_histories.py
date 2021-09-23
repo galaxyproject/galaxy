@@ -1,9 +1,16 @@
 import time
+from typing import ClassVar
+from unittest import SkipTest
 from uuid import uuid4
 
 from requests import put
 
+from galaxy.model.unittest_utils.store_fixtures import (
+    history_model_store_dict,
+    TEST_HISTORY_NAME,
+)
 from galaxy_test.api.sharable import SharingApiTests
+from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -27,6 +34,12 @@ class BaseHistories:
         self._assert_has_keys(create_response, "name", "id")
         self.assertEqual(create_response["name"], name)
         return create_response
+
+    def _assert_history_length(self, history_id, n):
+        contents_response = self._get(f"histories/{history_id}/contents")
+        self._assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        assert len(contents) == n, contents
 
 
 class HistoriesApiTestCase(ApiTestCase, BaseHistories):
@@ -267,8 +280,17 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         assert source_hda["history_id"] != copied_hda["history_id"]
         assert source_hda["hid"] == copied_hda["hid"] == 2
 
+    # TODO: (CE) test_create_from_copy
+    def test_import_from_model_store_dict(self):
+        response = self.dataset_populator.create_from_store(store_dict=history_model_store_dict())
+        assert_has_keys(response, "name", "id")
+        assert response["name"] == TEST_HISTORY_NAME
+        self._assert_history_length(response["id"], 1)
+
 
 class ImportExportTests(BaseHistories):
+    task_based: ClassVar[bool]
+
     def _set_up_populators(self):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
@@ -314,7 +336,7 @@ class ImportExportTests(BaseHistories):
         self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
 
         imported_history_id = self._reimport_history(
-            history_id, history_name, wait_on_history_length=2, export_kwds={"include_deleted": "True"}
+            history_id, history_name, wait_on_history_length=2, export_kwds={"include_deleted": True}
         )
         self._assert_history_length(imported_history_id, 2)
 
@@ -345,7 +367,7 @@ class ImportExportTests(BaseHistories):
         self.dataset_populator.wait_for_history(history_id, assert_ok=False)
 
         imported_history_id = self._reimport_history(
-            history_id, history_name, assert_ok=False, wait_on_history_length=4, export_kwds={"include_deleted": "True"}
+            history_id, history_name, assert_ok=False, wait_on_history_length=4, export_kwds={"include_deleted": True}
         )
         self._assert_history_length(imported_history_id, 4)
 
@@ -360,6 +382,8 @@ class ImportExportTests(BaseHistories):
         )
 
     def test_import_metadata_regeneration(self):
+        if self.task_based:
+            raise SkipTest("skipping test_import_metadata_regeneration for task based...")
         history_name = f"for_import_metadata_regeneration_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(
@@ -452,6 +476,7 @@ class ImportExportTests(BaseHistories):
             history_name,
             wait_on_history_length=wait_on_history_length,
             export_kwds=export_kwds,
+            task_based=self.task_based,
         )
 
     def _import_history_and_wait(self, import_data, history_name, wait_on_history_length=None):
@@ -462,12 +487,6 @@ class ImportExportTests(BaseHistories):
             self.dataset_populator.wait_on_history_length(imported_history_id, wait_on_history_length)
 
         return imported_history_id
-
-    def _assert_history_length(self, history_id, n):
-        contents_response = self._get(f"histories/{history_id}/contents")
-        self._assert_status_code_is(contents_response, 200)
-        contents = contents_response.json()
-        assert len(contents) == n, contents
 
     def _check_imported_dataset(
         self, history_id, hid, assert_ok=True, has_job=True, hda_checker=None, job_checker=None
@@ -514,6 +533,8 @@ class ImportExportTests(BaseHistories):
 
 
 class ImportExportHistoryTestCase(ApiTestCase, ImportExportTests):
+    task_based = False
+
     def setUp(self):
         super().setUp()
         self._set_up_populators()

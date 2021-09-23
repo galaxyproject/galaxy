@@ -34,6 +34,7 @@ from galaxy_test.base.populators import (
     WorkflowPopulator,
 )
 from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_INPUTS_AS_OUTPUTS,
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -47,9 +48,12 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED,
     WORKFLOW_RENAME_ON_INPUT,
     WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
+    WORKFLOW_WITH_BAD_COLUMN_PARAMETER,
+    WORKFLOW_WITH_BAD_COLUMN_PARAMETER_GOOD_TEST_DATA,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
+    WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
     WORKFLOW_WITH_RULES_1,
@@ -111,7 +115,53 @@ steps:
 """
 
 
-class BaseWorkflowsApiTestCase(ApiTestCase):
+class RunsWorkflowFixtures:
+    workflow_populator: WorkflowPopulator
+
+    def _run_workflow_with_inputs_as_outputs(self, history_id: str) -> RunJobsSummary:
+        summary = self.workflow_populator.run_workflow(
+            WORKFLOW_INPUTS_AS_OUTPUTS,
+            test_data={"input1": "hello world", "text_input": {"value": "A text variable", "type": "raw"}},
+            history_id=history_id,
+        )
+        return summary
+
+    def _run_workflow_with_output_collections(self, history_id: str) -> RunJobsSummary:
+        summary = self.workflow_populator.run_workflow(
+            WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
+            test_data="""
+input1:
+  collection_type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
+""",
+            history_id=history_id,
+            round_trip_format_conversion=True,
+        )
+        return summary
+
+    def _run_workflow_with_runtime_data_column_parameter(self, history_id: str) -> RunJobsSummary:
+        return self.workflow_populator.run_workflow(
+            WORKFLOW_WITH_BAD_COLUMN_PARAMETER,
+            test_data=WORKFLOW_WITH_BAD_COLUMN_PARAMETER_GOOD_TEST_DATA,
+            history_id=history_id,
+        )
+
+    def _run_workflow_once_get_invocation(self, name: str):
+        workflow = self.workflow_populator.load_workflow(name=name)
+        workflow_request, history_id, workflow_id = self.workflow_populator.setup_workflow_run(workflow)
+        usages = self.workflow_populator.workflow_invocations(workflow_id)
+        assert len(usages) == 0
+        self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request, assert_ok=True)
+        usages = self.workflow_populator.workflow_invocations(workflow_id)
+        assert len(usages) == 1
+        return workflow_id, usages[0]
+
+
+class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
     # TODO: Find a new file for this class.
 
     def setUp(self):
@@ -1744,34 +1794,7 @@ steps:
     @skip_without_tool("column_param")
     def test_runtime_data_column_parameter(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs(
-                """class: GalaxyWorkflow
-inputs:
-    bed_input: data
-steps:
-  cat1:
-    tool_id: cat1
-    in:
-      input1: bed_input
-  column_param_list:
-    tool_id: column_param
-    in:
-      input1: cat1/out_file1
-    state:
-      col: 9
-      col_names: notacolumn
-test_data:
-  step_parameters:
-    '2':
-      'col': 1
-      'col_names': 'c1: chr1'
-  bed_input:
-    value: 1.bed
-    file_type: bed
-    type: File
-""",
-                history_id=history_id,
-            )
+            self._run_workflow_with_runtime_data_column_parameter(history_id)
 
     @skip_without_tool("mapper")
     @skip_without_tool("pileup")
@@ -2282,56 +2305,6 @@ input_c:
             assert len(elements) == 1
             elements0 = elements[0]
             assert elements0["element_identifier"] == "el1"
-
-    def _run_workflow_with_output_collections(self, history_id) -> RunJobsSummary:
-        summary = self._run_workflow(
-            """
-class: GalaxyWorkflow
-inputs:
-  input1:
-    type: data_collection_input
-    collection_type: list
-outputs:
-  wf_output_1:
-    outputSource: first_cat/out_file1
-steps:
-  first_cat:
-    tool_id: cat
-    in:
-      input1: input1
-""",
-            test_data="""
-input1:
-  collection_type: list
-  name: the_dataset_list
-  elements:
-    - identifier: el1
-      value: 1.fastq
-      type: File
-""",
-            history_id=history_id,
-            round_trip_format_conversion=True,
-        )
-        return summary
-
-    def _run_workflow_with_inputs_as_outputs(self, history_id) -> RunJobsSummary:
-        summary = self._run_workflow(
-            """
-class: GalaxyWorkflow
-inputs:
-  input1: data
-  text_input: text
-outputs:
-  wf_output_1:
-    outputSource: input1
-  wf_output_param:
-    outputSource: text_input
-steps: []
-""",
-            test_data={"input1": "hello world", "text_input": {"value": "A text variable", "type": "raw"}},
-            history_id=history_id,
-        )
-        return summary
 
     def test_workflow_input_as_output(self):
         with self.dataset_populator.test_history() as history_id:
@@ -5457,21 +5430,6 @@ input_c:
         self._assert_status_code_is(action_response, 200)
         invocation_step_details = action_response.json()
         return invocation_step_details
-
-    def _run_workflow_once_get_invocation(self, name: str):
-        workflow = self.workflow_populator.load_workflow(name=name)
-        workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow)
-        response = self._get(f"workflows/{workflow_id}/usage")
-        self._assert_status_code_is(response, 200)
-        assert len(response.json()) == 0
-        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
-        self._assert_status_code_is(run_workflow_response, 200)
-
-        response = self._get(f"workflows/{workflow_id}/usage")
-        self._assert_status_code_is(response, 200)
-        usages = response.json()
-        assert len(usages) == 1
-        return workflow_id, usages[0]
 
     def _setup_random_x2_workflow_steps(self, name: str):
         workflow_request, history_id, workflow_id = self._setup_random_x2_workflow(name)

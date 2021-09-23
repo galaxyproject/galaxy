@@ -6,7 +6,12 @@ export const STATES = {
     /** deleted while uploading */
     discarded: {
         status: "danger",
-        text: "The job creating this dataset was cancelled before completion.",
+        text: "This dataset is discarded - the job creating it may have been cancelled or it may have been imported without file data.",
+        icon: "exclamation-triangle",
+    },
+    deferred: {
+        status: "danger",
+        text: "This dataset is remote, has not be ingested by Galaxy, and full metadata may not be available.",
         icon: "exclamation-triangle",
     },
     /** has no data */

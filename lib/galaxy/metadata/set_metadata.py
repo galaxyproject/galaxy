@@ -106,7 +106,8 @@ def set_meta_with_tool_provided(
 
     for metadata_name, metadata_value in file_dict.get("metadata", {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
-    dataset_instance.datatype.set_meta(dataset_instance, **set_meta_kwds)
+    if not dataset_instance.metadata_deferred:
+        dataset_instance.datatype.set_meta(dataset_instance, **set_meta_kwds)
     for metadata_name, metadata_value in file_dict.get("metadata", {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
 
@@ -307,14 +308,18 @@ def set_metadata_portable():
                 export_store.export_job(job, include_job_data=False)
 
     unnamed_id_to_path = {}
+    unnamed_is_deferred = {}
     for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
         destination = unnamed_output_dict["destination"]
         elements = unnamed_output_dict["elements"]
         destination_type = destination["type"]
         if destination_type == "hdas":
             for element in elements:
-                filename = element.get("filename")
                 object_id = element.get("object_id")
+                if element.get("state") == "deferred":
+                    unnamed_is_deferred[object_id] = True
+                    continue
+                filename = element.get("filename")
                 if filename and object_id:
                     unnamed_id_to_path[object_id] = os.path.join(job_context.job_working_directory, filename)
 
@@ -337,36 +342,38 @@ def set_metadata_portable():
         filename_results_code = os.path.join(f"metadata/metadata_results_{output_name}")
         override_metadata = os.path.join(f"metadata/metadata_override_{output_name}")
         dataset_filename_override = output_dict["filename_override"]
-        # pre-20.05 this was a per job parameter and not a per dataset parameter, drop in 21.XX
-        legacy_object_store_store_by = metadata_params.get("object_store_store_by", "id")
-
         # Same block as below...
         set_meta_kwds = stringify_dictionary_keys(
             json.load(open(filename_kwds))
         )  # load kwds; need to ensure our keywords are not unicode
         try:
-            external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
-            if not os.path.exists(external_filename):
-                matches = glob.glob(external_filename)
-                assert len(matches) == 1, f"More than one file matched by output glob '{external_filename}'"
-                external_filename = matches[0]
-                assert safe_contains(
-                    tool_job_working_directory, external_filename
-                ), f"Cannot collect output '{external_filename}' from outside of working directory"
-                created_from_basename = os.path.relpath(
-                    external_filename, os.path.join(tool_job_working_directory, "working")
-                )
-                dataset.dataset.created_from_basename = created_from_basename
-            # override filename if we're dealing with outputs to working directory and dataset is not linked to
-            link_data_only = metadata_params.get("link_data_only")
-            if not link_data_only:
-                # Only set external filename if we're dealing with files in job working directory.
-                # Fixes link_data_only uploads
-                dataset.dataset.external_filename = external_filename
-                store_by = output_dict.get("object_store_store_by", legacy_object_store_store_by)
-                extra_files_dir_name = f"dataset_{getattr(dataset.dataset, store_by)}_files"
-                files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
-                dataset.dataset.external_extra_files_path = files_path
+            is_deferred = bool(unnamed_is_deferred.get(dataset_instance_id))
+            dataset.metadata_deferred = is_deferred
+            if not is_deferred:
+                external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
+                if not os.path.exists(external_filename):
+                    matches = glob.glob(external_filename)
+                    assert len(matches) == 1, f"More than one file matched by output glob '{external_filename}'"
+                    external_filename = matches[0]
+                    assert safe_contains(
+                        tool_job_working_directory, external_filename
+                    ), f"Cannot collect output '{external_filename}' from outside of working directory"
+                    created_from_basename = os.path.relpath(
+                        external_filename, os.path.join(tool_job_working_directory, "working")
+                    )
+                    dataset.dataset.created_from_basename = created_from_basename
+                # override filename if we're dealing with outputs to working directory and dataset is not linked to
+                link_data_only = metadata_params.get("link_data_only")
+                if not link_data_only:
+                    # Only set external filename if we're dealing with files in job working directory.
+                    # Fixes link_data_only uploads
+                    dataset.dataset.external_filename = external_filename
+                    store_by = output_dict.get("object_store_store_by", "id")
+                    extra_files_dir_name = f"dataset_{getattr(dataset.dataset, store_by)}_files"
+                    files_path = os.path.abspath(
+                        os.path.join(tool_job_working_directory, "working", extra_files_dir_name)
+                    )
+                    dataset.dataset.external_extra_files_path = files_path
             file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
             if "ext" in file_dict:
                 dataset.extension = file_dict["ext"]
@@ -384,7 +391,8 @@ def set_metadata_portable():
                 set_meta(dataset, file_dict)
                 if extended_metadata_collection:
                     collect_extra_files(object_store, dataset, ".")
-                    dataset.state = dataset.dataset.state = final_job_state
+                    dataset_state = "deferred" if (is_deferred and final_job_state == "ok") else final_job_state
+                    dataset.state = dataset.dataset.state = dataset_state
 
             if extended_metadata_collection:
                 if not link_data_only and os.path.getsize(external_filename):

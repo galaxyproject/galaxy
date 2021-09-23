@@ -1,3 +1,4 @@
+import logging
 from enum import Enum
 from typing import (
     Any,
@@ -12,12 +13,38 @@ from pydantic import (
     Field,
 )
 
-from galaxy.exceptions import AdminRequiredException
+from galaxy.celery.tasks import (
+    prepare_invocation_download,
+    write_invocation_to,
+)
+from galaxy.exceptions import (
+    AdminRequiredException,
+    ObjectNotFound,
+)
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.workflows import WorkflowsManager
-from galaxy.schema.schema import InvocationIndexQueryPayload
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import (
+    AsyncFile,
+    AsyncTaskResultSummary,
+    InvocationIndexQueryPayload,
+    StoreExportPayload,
+    WriteStoreToPayload,
+)
+from galaxy.schema.tasks import (
+    GenerateInvocationDownload,
+    WriteInvocationTo,
+)
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.web.short_term_storage import ShortTermStorageAllocator
+from galaxy.webapps.galaxy.services.base import (
+    async_task_summary,
+    ensure_celery_tasks_enabled,
+    model_store_storage_target,
+    ServiceBase,
+)
+
+log = logging.getLogger(__name__)
 
 
 class InvocationSerializationView(str, Enum):
@@ -50,13 +77,22 @@ class InvocationIndexPayload(InvocationIndexQueryPayload):
     instance: bool = Field(default=False, description="Is provided workflow id for Workflow instead of StoredWorkflow?")
 
 
+class PrepareStoreDownloadPayload(StoreExportPayload):
+    pass
+
+
 class InvocationsService(ServiceBase):
     def __init__(
-        self, security: IdEncodingHelper, histories_manager: HistoryManager, workflows_manager: WorkflowsManager
+        self,
+        security: IdEncodingHelper,
+        histories_manager: HistoryManager,
+        workflows_manager: WorkflowsManager,
+        short_term_storage_allocator: ShortTermStorageAllocator,
     ):
         super().__init__(security=security)
         self._histories_manager = histories_manager
         self._workflows_manager = workflows_manager
+        self.short_term_storage_allocator = short_term_storage_allocator
 
     def index(
         self, trans, invocation_payload: InvocationIndexPayload, serialization_params: InvocationSerializationParams
@@ -95,8 +131,50 @@ class InvocationsService(ServiceBase):
             sort_by=invocation_payload.sort_by,
             sort_desc=invocation_payload.sort_desc,
         )
-        invocation_dict = self._serialize_workflow_invocations(invocations, serialization_params)
+        invocation_dict = self.serialize_workflow_invocations(invocations, serialization_params)
         return invocation_dict, total_matches
+
+    def prepare_store_download(
+        self, trans, invocation_id: EncodedDatabaseIdField, payload: PrepareStoreDownloadPayload
+    ) -> AsyncFile:
+        ensure_celery_tasks_enabled(trans.app.config)
+        model_store_format = payload.model_store_format
+        decoded_workflow_invocation_id = self.decode_id(invocation_id)
+        workflow_invocation = self._workflows_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
+        if not workflow_invocation:
+            raise ObjectNotFound()
+        try:
+            invocation_name = f"Invocation of {workflow_invocation.workflow.stored_workflow.name} at {workflow_invocation.create_time.isoformat()}"
+        except AttributeError:
+            invocation_name = f"Invocation of workflow at {workflow_invocation.create_time.isoformat()}"
+        short_term_storage_target = model_store_storage_target(
+            self.short_term_storage_allocator,
+            invocation_name,
+            model_store_format,
+        )
+        request = GenerateInvocationDownload(
+            short_term_storage_request_id=short_term_storage_target.request_id,
+            user=trans.async_request_user,
+            invocation_id=workflow_invocation.id,
+            **payload.dict(),
+        )
+        result = prepare_invocation_download.delay(request=request)
+        return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
+
+    def write_store(
+        self, trans, invocation_id: EncodedDatabaseIdField, payload: WriteStoreToPayload
+    ) -> AsyncTaskResultSummary:
+        ensure_celery_tasks_enabled(trans.app.config)
+        decoded_workflow_invocation_id = self.decode_id(invocation_id)
+        workflow_invocation = self._workflows_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
+        if not workflow_invocation:
+            raise ObjectNotFound()
+        request = WriteInvocationTo(
+            user=trans.async_request_user, invocation_id=workflow_invocation.id, **payload.dict()
+        )
+        result = write_invocation_to.delay(request=request)
+        rval = async_task_summary(result)
+        return rval
 
     def serialize_workflow_invocation(
         self,
@@ -110,7 +188,7 @@ class InvocationsService(ServiceBase):
         as_dict = invocation.to_dict(view, step_details=step_details, legacy_job_state=legacy_job_state)
         return self.security.encode_all_ids(as_dict, recursive=True)
 
-    def _serialize_workflow_invocations(
+    def serialize_workflow_invocations(
         self,
         invocations,
         params: InvocationSerializationParams,

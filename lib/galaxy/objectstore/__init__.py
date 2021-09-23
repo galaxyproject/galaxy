@@ -1229,18 +1229,25 @@ class ObjectStorePopulator:
     datasets from a job end up with the same object_store_id.
     """
 
-    def __init__(self, app, user):
-        self.object_store = app.object_store
+    def __init__(self, has_object_store, user):
+        if hasattr(has_object_store, "object_store"):
+            object_store = has_object_store.object_store
+        else:
+            object_store = has_object_store
+        self.object_store = object_store
         self.object_store_id = None
         self.user = user
 
     def set_object_store_id(self, data):
+        self.set_dataset_object_store_id(data.dataset)
+
+    def set_dataset_object_store_id(self, dataset):
         # Create an empty file immediately.  The first dataset will be
         # created in the "default" store, all others will be created in
         # the same store as the first.
-        data.dataset.object_store_id = self.object_store_id
+        dataset.object_store_id = self.object_store_id
         try:
-            self.object_store.create(data.dataset)
+            self.object_store.create(dataset)
         except ObjectInvalid:
             raise Exception("Unable to create output dataset: object store is full")
-        self.object_store_id = data.dataset.object_store_id  # these will be the same thing after the first output
+        self.object_store_id = dataset.object_store_id  # these will be the same thing after the first output

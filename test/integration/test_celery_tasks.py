@@ -1,3 +1,5 @@
+import tarfile
+
 from celery import shared_task
 
 from galaxy.celery import galaxy_task
@@ -84,6 +86,26 @@ class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
         contents.raise_for_status()
         assert "application/pdf" in contents.headers["content-type"]
         assert contents.content[0:4] == b"%PDF"
+
+    def test_import_export_history_contents(self):
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset(history_id, wait=True)
+
+        contents = hda1
+        temp_tar = self.dataset_populator.download_contents_to_store(history_id, contents, "tgz")
+        with tarfile.open(name=temp_tar) as tf:
+            assert "datasets_attrs.txt" in tf.getnames()
+
+        second_history_id = self.dataset_populator.new_history()
+        as_list = self.dataset_populator.create_contents_from_store(
+            second_history_id,
+            store_path=temp_tar,
+        )
+        assert len(as_list) == 1
+        new_hda = as_list[0]
+        assert new_hda["model_class"] == "HistoryDatasetAssociation"
+        assert new_hda["state"] == "discarded"
+        assert not new_hda["deleted"]
 
     @property
     def _latest_hda(self):

@@ -3,6 +3,7 @@ API operations on a data library.
 """
 import logging
 from typing import (
+    List,
     Optional,
     Union,
 )
@@ -16,6 +17,7 @@ from fastapi import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    CreateLibrariesFromStore,
     CreateLibraryPayload,
     DeleteLibraryPayload,
     LegacyLibraryPermissionsPayload,
@@ -104,6 +106,18 @@ class FastAPILibraries:
     ) -> LibrarySummary:
         """Creates a new library and returns its summary information. Currently, only admin users can create libraries."""
         return self.service.create(trans, payload)
+
+    @router.post(
+        "/api/libraries/from_store",
+        summary="Create libraries from a model store.",
+        require_admin=True,
+    )
+    def create_from_store(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: CreateLibrariesFromStore = Body(...),
+    ) -> List[LibrarySummary]:
+        return self.service.create_from_store(trans, payload)
 
     @router.patch(
         "/api/libraries/{id}",

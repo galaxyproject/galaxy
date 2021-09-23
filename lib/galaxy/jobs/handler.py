@@ -19,6 +19,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql.expression import (
     and_,
     func,
+    not_,
     null,
     or_,
     select,
@@ -596,7 +597,12 @@ class JobHandlerQueue(Monitors):
                 .filter(
                     or_(
                         model.Dataset.deleted == true(),
-                        model.Dataset.state != model.Dataset.states.OK,
+                        not_(
+                            or_(
+                                model.Dataset.state == model.Dataset.states.OK,
+                                model.Dataset.state == model.Dataset.states.DEFERRED,
+                            )
+                        ),
                         input_association.deleted == true(),
                         input_association._state == input_association.states.FAILED_METADATA,
                     )

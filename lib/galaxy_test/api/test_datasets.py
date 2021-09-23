@@ -6,6 +6,12 @@ from typing import (
     List,
 )
 
+from galaxy.model.unittest_utils.store_fixtures import (
+    deferred_hda_model_store_dict,
+    one_hda_model_store_dict,
+    TEST_SOURCE_URI,
+)
+from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -385,3 +391,40 @@ class DatasetsApiTestCase(ApiTestCase):
         archive = zipfile.ZipFile(BytesIO(response.content))
         namelist = archive.namelist()
         assert len(namelist) == 4, f"Expected 3 elements in [{namelist}]"
+
+    def test_storage_show(self):
+        hda = self.dataset_populator.new_dataset(self.history_id, wait=True)
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=hda)
+        dataset_id = hda_details["dataset_id"]
+        storage_info_dict = self.dataset_populator.dataset_storage_info(dataset_id)
+        assert_has_keys(storage_info_dict, "object_store_id", "name", "description")
+
+    def test_storage_show_on_discarded(self):
+        as_list = self.dataset_populator.create_contents_from_store(
+            self.history_id,
+            store_dict=one_hda_model_store_dict(),
+        )
+        assert len(as_list) == 1
+        hda_id = as_list[0]["id"]
+        storage_info_dict = self.dataset_populator.dataset_storage_info(hda_id)
+        assert_has_keys(storage_info_dict, "object_store_id", "name", "description", "sources", "hashes")
+
+        assert storage_info_dict["object_store_id"] is None
+        sources = storage_info_dict["sources"]
+        assert len(sources) == 1
+        assert sources[0]["source_uri"] == TEST_SOURCE_URI
+
+    def test_storage_show_on_deferred(self):
+        as_list = self.dataset_populator.create_contents_from_store(
+            self.history_id,
+            store_dict=deferred_hda_model_store_dict(),
+        )
+        assert len(as_list) == 1
+        hda_id = as_list[0]["id"]
+        storage_info_dict = self.dataset_populator.dataset_storage_info(hda_id)
+        assert_has_keys(storage_info_dict, "object_store_id", "name", "description", "sources", "hashes")
+
+        assert storage_info_dict["object_store_id"] is None
+        sources = storage_info_dict["sources"]
+        assert len(sources) == 1
+        assert sources[0]["source_uri"] == TEST_SOURCE_URI

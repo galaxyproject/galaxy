@@ -2711,6 +2711,241 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual(output_content, "3")
 
+    @skip_without_tool("cat1")
+    @uses_test_history(require_new=False)
+    def test_run_deferred_dataset(self, history_id):
+        details = self.dataset_populator.create_deferred_hda(
+            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed", ext="bed"
+        )
+        inputs = {
+            "input1": dataset_to_param(details),
+        }
+        outputs = self._cat1_outputs(history_id, inputs=inputs)
+        output = outputs[0]
+        details = self.dataset_populator.get_history_dataset_details(
+            history_id, dataset=output, wait=True, assert_ok=True
+        )
+        assert details["state"] == "ok"
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+        assert output_content.startswith("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
+
+    @skip_without_tool("cat1")
+    @uses_test_history(require_new=False)
+    def test_run_deferred_mapping(self, history_id: str):
+        elements = [
+            {
+                "src": "url",
+                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                "info": "my cool bed",
+                "deferred": True,
+                "ext": "bed",
+            }
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list",
+                "name": "here is a name",
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        hdca_id = dataset_collection["id"]
+        inputs = {
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
+        }
+        run_response = self._run_cat1(history_id, inputs).json()
+        hdca_id = run_response["implicit_collections"][0]["id"]
+        dataset_collection = self.dataset_populator.get_history_collection_details(history_id, id=hdca_id)
+        elements = dataset_collection["elements"]
+        assert len(elements) == 1
+        object_0 = elements[0]["object"]
+        assert isinstance(object_0, dict)
+        assert object_0["state"] == "ok"
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=object_0)
+        assert output_content.startswith("chr22	30128507	31828507	uc003bnx.1_cds_2_0_chr22_29227_f	0	+")
+
+    @skip_without_tool("cat_list")
+    @uses_test_history(require_new=False)
+    def test_run_deferred_list_multi_data_reduction(self, history_id: str):
+        elements = [
+            {
+                "src": "url",
+                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                "info": "my cool bed",
+                "deferred": True,
+                "ext": "bed",
+            }
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list",
+                "name": "here is a name",
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        hdca_id = dataset_collection["id"]
+        inputs = {
+            "input1": {"src": "hdca", "id": hdca_id},
+        }
+        run_response = self._run("cat_list", history_id, inputs, assert_ok=True)
+        output_dataset = run_response["outputs"][0]
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output_dataset)
+        assert output_content.startswith("chr22	30128507	31828507	uc003bnx.1_cds_2_0_chr22_29227_f	0	+")
+
+    @skip_without_tool("cat_list")
+    @uses_test_history(require_new=False)
+    def test_run_deferred_nested_list_input(self, history_id: str):
+        elements = [
+            {
+                "name": "outer",
+                "elements": [
+                    {
+                        "src": "url",
+                        "name": "forward",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "info": "my cool bed 4",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                    {
+                        "src": "url",
+                        "name": "reverse",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "info": "my cool bed 1",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                ],
+            },
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list:paired",
+                "name": "here is a name",
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        assert dataset_collection["collection_type"] == "list:paired"
+        result_elements = dataset_collection["elements"]
+        assert len(result_elements) == 1
+        outer_element = result_elements[0]
+        assert isinstance(outer_element, dict)
+        inner_dataset_coll = outer_element["object"]
+        assert isinstance(inner_dataset_coll, dict)
+        inner_elements = inner_dataset_coll["elements"]
+        assert isinstance(inner_elements, list)
+        assert len(inner_elements) == 2
+        hdca_id = dataset_collection["id"]
+        inputs = {
+            "input1": {"src": "hdca", "id": hdca_id},
+        }
+        run_response = self._run("collection_nested_test", history_id, inputs, assert_ok=True, wait_for_job=True)
+        output_dataset = run_response["outputs"][1]
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output_dataset)
+        assert output_content.startswith("chr22	30128507	31828507	uc003bnx.1_cds_2_0_chr22_29227_f	0	+")
+
+    @skip_without_tool("collection_paired_structured_like")
+    @uses_test_history(require_new=False)
+    def test_deferred_map_over_nested_collections(self, history_id):
+        elements = [
+            {
+                "name": "outer1",
+                "elements": [
+                    {
+                        "src": "url",
+                        "name": "forward",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "info": "my cool bed 4",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                    {
+                        "src": "url",
+                        "name": "reverse",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "info": "my cool bed 1",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                ],
+            },
+            {
+                "name": "outer2",
+                "elements": [
+                    {
+                        "src": "url",
+                        "name": "forward",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "info": "my cool bed 4",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                    {
+                        "src": "url",
+                        "name": "reverse",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "info": "my cool bed 1",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                ],
+            },
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list:paired",
+                "name": "here is a name",
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        hdca_id = dataset_collection["id"]
+        inputs = {
+            "input1": {"batch": True, "values": [dict(map_over_type="paired", src="hdca", id=hdca_id)]},
+        }
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        create = self._run("collection_paired_structured_like", history_id, inputs, assert_ok=True)
+        jobs = create["jobs"]
+        implicit_collections = create["implicit_collections"]
+        self.assertEqual(len(jobs), 2)
+        self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
+        self.assertEqual(len(implicit_collections), 1)
+        implicit_collection = implicit_collections[0]
+        assert implicit_collection["collection_type"] == "list:paired", implicit_collection["collection_type"]
+        outer_elements = implicit_collection["elements"]
+        assert len(outer_elements) == 2
+        element0 = outer_elements[0]
+        pair1 = element0["object"]
+        hda = pair1["elements"][0]["object"]
+        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=hda, wait=False)
+        assert output1_content.startswith("chr22\t30128507\t31828507\tuc003bnx.1_cds_2_0_chr22_29227_f\t0\t+")
+
     def __build_group_list(self, history_id):
         response = self.dataset_collection_populator.upload_collection(
             history_id,

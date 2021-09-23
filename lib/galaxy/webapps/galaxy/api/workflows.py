@@ -22,6 +22,7 @@ from fastapi import (
 )
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
+from pydantic import Extra
 
 from galaxy import (
     exceptions,
@@ -47,11 +48,15 @@ from galaxy.managers.workflows import (
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    AsyncFile,
+    AsyncTaskResultSummary,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    StoreContentSource,
     WorkflowSortByEnum,
+    WriteStoreToPayload,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -62,6 +67,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
+    expose_api_anonymous,
     expose_api_anonymous_and_sessionless,
     expose_api_raw,
     expose_api_raw_anonymous_and_sessionless,
@@ -73,10 +79,15 @@ from galaxy.webapps.base.controller import (
     UsesStoredWorkflowMixin,
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.services.base import (
+    ConsumesModelStores,
+    ServesExportStores,
+)
 from galaxy.webapps.galaxy.services.invocations import (
     InvocationIndexPayload,
     InvocationSerializationParams,
     InvocationsService,
+    PrepareStoreDownloadPayload,
 )
 from galaxy.webapps.galaxy.services.workflows import (
     WorkflowIndexPayload,
@@ -100,7 +111,21 @@ log = logging.getLogger(__name__)
 router = Router(tags=["workflows"])
 
 
-class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
+class CreateInvocationFromStore(StoreContentSource):
+    history_id: Optional[str]
+
+    class Config:
+        extra = Extra.allow
+
+
+class WorkflowsAPIController(
+    BaseGalaxyAPIController,
+    UsesStoredWorkflowMixin,
+    UsesAnnotations,
+    SharableMixin,
+    ServesExportStores,
+    ConsumesModelStores,
+):
     service: WorkflowsService = depends(WorkflowsService)
     invocations_service: InvocationsService = depends(InvocationsService)
 
@@ -870,6 +895,37 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         trans.response.headers["total_matches"] = total_matches
         return invocations
 
+    @expose_api_anonymous
+    def create_invocations_from_store(self, trans, payload, **kwd):
+        """
+        POST /api/invocations/from_store
+
+        Create invocation(s) from a supplied model store.
+
+        Input can be an archive describing a Galaxy model store containing an
+        workflow invocation - for instance one created with with write_store
+        or prepare_store_download endpoint.
+        """
+        create_payload = CreateInvocationFromStore(**payload)
+        serialization_params = InvocationSerializationParams(**payload)
+        # refactor into a service...
+        return self._create_from_store(trans, create_payload, serialization_params)
+
+    def _create_from_store(
+        self, trans, payload: CreateInvocationFromStore, serialization_params: InvocationSerializationParams
+    ):
+        history = self.history_manager.get_owned(
+            self.decode_id(payload.history_id), trans.user, current_history=trans.history
+        )
+        object_tracker = self.create_objects_from_store(
+            trans,
+            payload,
+            history=history,
+        )
+        return self.invocations_service.serialize_workflow_invocations(
+            object_tracker.invocations_by_key.values(), serialization_params
+        )
+
     @expose_api
     def show_invocation(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
         """
@@ -901,9 +957,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
-        if workflow_invocation:
-            return self.__encode_invocation(workflow_invocation, **kwd)
-        return None
+        if not workflow_invocation:
+            raise exceptions.ObjectNotFound()
+
+        return self.__encode_invocation(workflow_invocation, **kwd)
 
     @expose_api
     def cancel_invocation(self, trans: ProvidesUserContext, invocation_id, **kwd):
@@ -1413,6 +1470,10 @@ StoredWorkflowIDPathParam: EncodedDatabaseIdField = Path(
     ..., title="Stored Workflow ID", description="The encoded database identifier of the Stored Workflow."
 )
 
+InvocationIDPathParam: EncodedDatabaseIdField = Path(
+    ..., title="Invocation ID", description="The encoded database identifier of the Invocation."
+)
+
 DeletedQueryParam: bool = Query(
     default=False, title="Display deleted", description="Whether to restrict result to deleted workflows."
 )
@@ -1486,6 +1547,7 @@ SkipStepCountsQueryParam: bool = Query(
 @router.cbv
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
+    invocations_service: InvocationsService = depends(InvocationsService)
 
     @router.get(
         "/api/workflows",
@@ -1613,3 +1675,36 @@ class FastAPIWorkflows:
         """Sets a new slug to access this item by URL. The new slug must be unique."""
         self.service.shareable_service.set_slug(trans, id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api/invocations/{invocation_id}/prepare_store_download",
+        summary="Prepare a worklfow invocation export-style download.",
+    )
+    def prepare_store_download(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: EncodedDatabaseIdField = InvocationIDPathParam,
+        payload: PrepareStoreDownloadPayload = Body(...),
+    ) -> AsyncFile:
+        return self.invocations_service.prepare_store_download(
+            trans,
+            invocation_id,
+            payload,
+        )
+
+    @router.post(
+        "/api/invocations/{invocation_id}/write_store",
+        summary="Prepare a worklfow invocation export-style download and write to supplied URI.",
+    )
+    def write_store(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: EncodedDatabaseIdField = InvocationIDPathParam,
+        payload: WriteStoreToPayload = Body(...),
+    ) -> AsyncTaskResultSummary:
+        rval = self.invocations_service.write_store(
+            trans,
+            invocation_id,
+            payload,
+        )
+        return rval

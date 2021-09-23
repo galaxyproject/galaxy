@@ -24,11 +24,18 @@ from galaxy.managers import (
     annotatable,
     base,
     datasets,
+    lddas,
     secured,
     taggable,
     users,
 )
+from galaxy.model.deferred import materializer_factory
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.schema.schema import DatasetSourceType
+from galaxy.schema.tasks import (
+    MaterializeDatasetInstanceTaskRequest,
+    RequestUser,
+)
 from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
@@ -61,13 +68,20 @@ class HDAManager(
     # TODO: move what makes sense into DatasetManager
     # TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?
 
-    def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager, tag_handler: GalaxyTagHandler):
+    def __init__(
+        self,
+        app: MinimalManagerApp,
+        user_manager: users.UserManager,
+        ldda_manager: lddas.LDDAManager,
+        tag_handler: GalaxyTagHandler,
+    ):
         """
         Set up and initialize other managers needed by hdas.
         """
         super().__init__(app)
         self.user_manager = user_manager
         self.tag_handler = tag_handler
+        self.ldda_manager = ldda_manager
 
     def get_owned_ids(self, object_ids, history=None):
         """Get owned IDs."""
@@ -126,6 +140,24 @@ class HDAManager(
         if flush:
             self.session().flush()
         return hda
+
+    def materialize(self, request: MaterializeDatasetInstanceTaskRequest):
+        request_user: RequestUser = request.user
+        materializer = materializer_factory(
+            True,  # attached...
+            object_store=self.app.object_store,
+            file_sources=self.app.file_sources,
+            sa_session=self.app.model.context,
+        )
+        user = self.user_manager.by_id(request_user.user_id)
+        if request.source == DatasetSourceType.hda:
+            dataset_instance = self.get_accessible(request.content, user)
+        else:
+            dataset_instance = self.ldda_manager.get_accessible(request.content, user)
+        history = self.app.history_manager.by_id(request.history_id)
+        new_hda = materializer.ensure_materialized(dataset_instance, target_history=history)
+        history.add_dataset(new_hda, set_hid=True)
+        self.session().flush()
 
     def copy(self, hda, history=None, hide_copy=False, flush=True, **kwargs):
         """

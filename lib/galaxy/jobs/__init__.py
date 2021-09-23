@@ -1871,6 +1871,7 @@ class JobWrapper(HasResourceParameters):
                 if (
                     not final_job_state == job.states.ERROR
                     and not dataset_assoc.dataset.dataset.state == job.states.ERROR
+                    and not dataset_assoc.dataset.dataset.state == model.Dataset.states.DEFERRED
                 ):
                     # We don't set datsets in error state to OK because discover_outputs may have already set the state to error
                     dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
