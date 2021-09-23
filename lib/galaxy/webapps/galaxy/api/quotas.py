@@ -11,7 +11,6 @@ from galaxy import (
     web,
 )
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.quotas import QuotasService
 from galaxy.quota._schema import (
     CreateQuotaParams,
     CreateQuotaResult,
@@ -21,6 +20,7 @@ from galaxy.quota._schema import (
     UpdateQuotaParams,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.webapps.galaxy.services.quotas import QuotasService
 from . import (
     BaseGalaxyAPIController,
     depends,
