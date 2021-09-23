@@ -1,4 +1,5 @@
 import json
+import os
 import time
 from json import dumps
 from uuid import uuid4
@@ -4352,6 +4353,22 @@ input_c:
         assert published_worklow['published']
         unpublished_worklow = self._put(f'workflows/{workflow_id}', data={'published': False}, json=True).json()
         assert not unpublished_worklow['published']
+
+    def test_workflow_from_path_requires_admin(self):
+        # There are two ways to import workflows from paths, just verify both require an admin.
+        workflow_directory = self._test_driver.mkdtemp()
+        workflow_path = os.path.join(workflow_directory, "workflow.yml")
+        with open(workflow_path, "w") as f:
+            f.write(WORKFLOW_NESTED_REPLACEMENT_PARAMETER)
+        import_response = self.workflow_populator.import_workflow_from_path_raw(workflow_path)
+        self._assert_status_code_is(import_response, 403)
+        self._assert_error_code_is(import_response, error_codes.ADMIN_REQUIRED)
+
+        path_as_uri = f"file://{workflow_path}"
+        import_data = dict(archive_source=path_as_uri)
+        import_response = self._post("workflows", data=import_data)
+        self._assert_status_code_is(import_response, 403)
+        self._assert_error_code_is(import_response, error_codes.ADMIN_REQUIRED)
 
     def _invoke_paused_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
