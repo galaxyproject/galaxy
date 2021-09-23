@@ -11,7 +11,7 @@
     <tests>
         <test>
             <param name="intest" value="1" />
-            <output name="out_file1">
+            <output name="out_file1" file="multiple_versions_0.1.txt">
                 <assert_contents>
                     <has_line line="Version 0.1" />
                 </assert_contents>
