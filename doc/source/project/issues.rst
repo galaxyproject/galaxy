@@ -127,7 +127,7 @@ particular domain, as well as more organized release notes.
 - ``area/compliance``
 - ``area/configuration`` - Galaxy's configuration system
 - ``area/cwl`` - changes related to supporting the common workflow language in Galaxy
-- ``area/database`` - Change requires a modification to Galaxy's database
+- ``area/database`` - Change to Galaxy's database or data access layer
 - ``area/dataset-collections``
 - ``area/datatypes`` - Changes to Galaxy's datatypes
 - ``area/datatype-framework`` - Changes to Galaxy's datatype and metadata framework
