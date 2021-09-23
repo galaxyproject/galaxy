@@ -118,6 +118,9 @@ def test_export_dataset():
     d1_hash.hash_value = "foobar"
     d1.dataset.hashes.append(d1_hash)
     d1.dataset.created_from_basename = "my_cool_name.txt"
+    d1_source = model.DatasetSource()
+    d1_source.source_uri = "http://google.com/mycooldata.txt"
+    d1.dataset.sources.append(d1_source)
 
     d1.state = d2.state = 'ok'
 
@@ -157,6 +160,10 @@ def test_export_dataset():
     assert dataset_hash.hash_function == "MD5"
     assert dataset_hash.hash_value == "foobar"
     assert datasets[0].dataset.created_from_basename == "my_cool_name.txt"
+
+    assert len(datasets[0].dataset.sources) == 1
+    dataset_source = datasets[0].dataset.sources[0]
+    assert dataset_source.source_uri == "http://google.com/mycooldata.txt"
 
     with open(datasets[0].file_name) as f:
         assert f.read().startswith("chr1    4225    19670")

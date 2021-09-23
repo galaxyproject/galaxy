@@ -192,6 +192,21 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 hash_obj.extra_files_path = hash_attrs["extra_files_path"]
                 dataset_instance.dataset.hashes.append(hash_obj)
 
+    def _attach_dataset_sources(self, dataset_or_file_attrs, dataset_instance):
+        if "sources" in dataset_or_file_attrs:
+            for source_attrs in dataset_or_file_attrs["sources"]:
+                source_obj = model.DatasetSource()
+                source_obj.source_uri = source_attrs["source_uri"]
+                source_obj.transform = source_attrs["transform"]
+                source_obj.extra_files_path = source_attrs["extra_files_path"]
+                for hash_attrs in source_attrs["hashes"]:
+                    hash_obj = model.DatasetSourceHash()
+                    hash_obj.hash_value = hash_attrs["hash_value"]
+                    hash_obj.hash_function = hash_attrs["hash_function"]
+                    source_obj.hashes.append(hash_obj)
+
+                dataset_instance.dataset.sources.append(source_obj)
+
     def _import_datasets(self, object_import_tracker, datasets_attrs, history, new_history, job):
         object_key = self.object_key
 
@@ -220,6 +235,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         if attribute in dataset_attrs["dataset"]:
                             setattr(dataset_instance.dataset, attribute, dataset_attrs["dataset"][attribute])
                     self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
+                    # TODO: Once we have a test...
+                    #    self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                     if 'id' in dataset_attrs["dataset"] and self.import_options.allow_edit:
                         dataset_instance.dataset.id = dataset_attrs["dataset"]['id']
 
@@ -363,6 +380,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dataset_instance.dataset.deleted = True
                     file_metadata = dataset_attrs.get("file_metadata") or {}
                     self._attach_dataset_hashes(file_metadata, dataset_instance)
+                    self._attach_dataset_sources(file_metadata, dataset_instance)
                     if "created_from_basename" in file_metadata:
                         dataset_instance.dataset.created_from_basename = file_metadata["created_from_basename"]
 
