@@ -44,7 +44,10 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.decorators import require_admin_message
 from galaxy.webapps.base.controller import BaseAPIController
-from galaxy.work.context import SessionRequestContext
+from galaxy.work.context import (
+    GalaxyAbstractRequest,
+    SessionRequestContext,
+)
 
 
 def get_app() -> StructuredApp:
@@ -147,6 +150,24 @@ class UrlBuilder:
         return self.request.app.url_path_for(name, **path_params)
 
 
+class GalaxyASGIRequest(GalaxyAbstractRequest):
+    """Wrapper around Starlette/FastAPI Request object.
+
+    Implements the GalaxyAbstractRequest interface to provide access to some properties
+    of the request commonly used."""
+
+    def __init__(self, request: Request):
+        self.__request = request
+
+    @property
+    def base(self) -> str:
+        return str(self.__request.base_url)
+
+    @property
+    def host(self) -> str:
+        return str(self.__request.client.host)
+
+
 DependsOnUser = Depends(get_user)
 
 
@@ -160,10 +181,12 @@ def get_trans(request: Request, app: StructuredApp = DependsOnApp, user: Optiona
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
     url_builder = UrlBuilder(request)
+    galaxy_request = GalaxyASGIRequest(request)
     return SessionRequestContext(
         app=app, user=user,
         galaxy_session=galaxy_session,
-        url_builder=url_builder, host=request.client.host,
+        url_builder=url_builder,
+        request=galaxy_request,
         history=get_current_history_from_session(galaxy_session),
     )
 
