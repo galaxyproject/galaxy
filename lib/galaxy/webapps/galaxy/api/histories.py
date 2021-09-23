@@ -27,7 +27,6 @@ from galaxy import (
     util
 )
 from galaxy.managers import (
-    histories,
     sharable,
 )
 from galaxy.managers.context import (
@@ -47,6 +46,7 @@ from galaxy.schema.schema import (
     CreateHistoryPayload,
     CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
+    HistoryArchiveExportResult,
     JobExportHistoryArchiveCollection,
     JobImportHistoryResponse,
 )
@@ -64,6 +64,7 @@ from galaxy.webapps.galaxy.api.common import (
     parse_serialization_params,
     query_serialization_params,
 )
+from galaxy.webapps.galaxy.services.histories import HistoriesService
 from . import (
     as_form,
     BaseGalaxyAPIController,
@@ -117,7 +118,7 @@ class CreateHistoryFormData(CreateHistoryPayload):
 
 @router.cbv
 class FastAPIHistories:
-    service: histories.HistoriesService = depends(histories.HistoriesService)
+    service: HistoriesService = depends(HistoriesService)
 
     @router.get(
         '/api/histories',
@@ -307,7 +308,7 @@ class FastAPIHistories:
         trans=DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
         payload: Optional[ExportHistoryArchivePayload] = Body(None),
-    ) -> histories.HistoryArchiveExportResult:
+    ) -> HistoryArchiveExportResult:
         """This will start a job to create a history export archive.
 
         Calling this endpoint multiple times will return the 202 status code until the archive
@@ -457,7 +458,7 @@ class FastAPIHistories:
 
 
 class HistoriesController(BaseGalaxyAPIController):
-    service: histories.HistoriesService = depends(histories.HistoriesService)
+    service: HistoriesService = depends(HistoriesService)
 
     @expose_api_anonymous
     def index(self, trans, deleted='False', **kwd):
