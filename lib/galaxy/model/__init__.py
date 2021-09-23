@@ -3974,6 +3974,11 @@ class DatasetInstance:
             rval["dataset"] = self.dataset.serialize(id_encoder, serialization_options)
         else:
             serialization_options.serialize_files(self, rval)
+            file_metadata = {}
+            hashes = self.dataset.hashes
+            if hashes:
+                file_metadata["hashes"] = [h.serialize(id_encoder, serialization_options) for h in hashes]
+            rval["file_metadata"] = file_metadata
 
 
 class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnotations,

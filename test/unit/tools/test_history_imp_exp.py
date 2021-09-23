@@ -113,6 +113,10 @@ def test_export_dataset():
     app, sa_session, h = _setup_history_for_export("Datasets History")
 
     d1, d2 = _create_datasets(sa_session, h, 2)
+    d1_hash = model.DatasetHash()
+    d1_hash.hash_function = "MD5"
+    d1_hash.hash_value = "foobar"
+    d1.dataset.hashes.append(d1_hash)
     d1.state = d2.state = 'ok'
 
     j = model.Job()
@@ -146,6 +150,10 @@ def test_export_dataset():
 
     assert datasets[0].state == 'ok'
     assert datasets[1].state == 'ok'
+    assert len(datasets[0].dataset.hashes) == 1
+    dataset_hash = datasets[0].dataset.hashes[0]
+    assert dataset_hash.hash_function == "MD5"
+    assert dataset_hash.hash_value == "foobar"
 
     with open(datasets[0].file_name) as f:
         assert f.read().startswith("chr1    4225    19670")

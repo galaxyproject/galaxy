@@ -183,6 +183,15 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self._import_implicit_collection_jobs(object_import_tracker)
         self._flush()
 
+    def _attach_dataset_hashes(self, dataset_or_file_attrs, dataset_instance):
+        if "hashes" in dataset_or_file_attrs:
+            for hash_attrs in dataset_or_file_attrs["hashes"]:
+                hash_obj = model.DatasetHash()
+                hash_obj.hash_value = hash_attrs["hash_value"]
+                hash_obj.hash_function = hash_attrs["hash_function"]
+                hash_obj.extra_files_path = hash_attrs["extra_files_path"]
+                dataset_instance.dataset.hashes.append(hash_obj)
+
     def _import_datasets(self, object_import_tracker, datasets_attrs, history, new_history, job):
         object_key = self.object_key
 
@@ -210,14 +219,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     for attribute in dataset_attributes:
                         if attribute in dataset_attrs["dataset"]:
                             setattr(dataset_instance.dataset, attribute, dataset_attrs["dataset"][attribute])
-                    if "hashes" in dataset_attrs["dataset"]:
-                        for hash_attrs in dataset_attrs["dataset"]["hashes"]:
-                            hash_obj = model.DatasetHash()
-                            hash_obj.hash_value = hash_attrs["hash_value"]
-                            hash_obj.hash_function = hash_attrs["hash_function"]
-                            hash_obj.extra_files_path = hash_attrs["extra_files_path"]
-                            dataset_instance.dataset.hashes.append(hash_obj)
-
+                    self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
                     if 'id' in dataset_attrs["dataset"] and self.import_options.allow_edit:
                         dataset_instance.dataset.id = dataset_attrs["dataset"]['id']
 
@@ -359,6 +361,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
                     if dataset_instance.deleted:
                         dataset_instance.dataset.deleted = True
+                    file_metadata = dataset_attrs.get("file_metadata") or {}
+                    self._attach_dataset_hashes(file_metadata, dataset_instance)
 
                 if model_class == "HistoryDatasetAssociation" and self.user:
                     add_item_annotation(self.sa_session, self.user, dataset_instance, dataset_attrs['annotation'])
