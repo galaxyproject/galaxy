@@ -1,6 +1,9 @@
 import pytest
+from sqlalchemy import inspect
+from sqlalchemy.orm import InstanceState
 
-from galaxy.util.object_wrapper import (
+from galaxy import model
+from galaxy.security.object_wrapper import (
     __DONT_SANITIZE_TYPES__,
     get_no_wrap_classes,
     SafeStringWrapper,
@@ -19,6 +22,20 @@ class Bar:
 @pytest.fixture(scope='module')
 def default_no_wrap_types():
     return list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
+
+
+def test_do_not_set_attrs_of_type_instancestate():
+    wrapper = SafeStringWrapper(Foo())
+
+    wrapper.foo = 42
+    assert wrapper.foo == 42  # attr set normally
+
+    state = inspect(model.Tag())  # any declaratively maped class will do
+    assert type(state) == InstanceState
+
+    wrapper.bad_foo = state
+    with pytest.raises(AttributeError):
+        wrapper.bad_foo  # attr of type sqlalchemy.orm.state.InstanceState not set
 
 
 def test_do_not_wrap_no_wrap_classes():

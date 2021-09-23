@@ -23,7 +23,7 @@ from types import (
     TracebackType,
 )
 
-import sqlalchemy
+from sqlalchemy.orm import InstanceState
 
 NoneType = type(None)
 NotImplementedType = type(NotImplemented)
@@ -166,7 +166,7 @@ def get_no_wrap_classes(no_wrap_classes=None):
         if not isinstance(no_wrap_classes, (tuple, list)):
             no_wrap_classes = [no_wrap_classes]
         return list(no_wrap_classes) + _default
-    return  _default
+    return _default
 
 
 # N.B. refer to e.g. https://docs.python.org/reference/datamodel.html for information on Python's Data Model.
@@ -266,10 +266,10 @@ class SafeStringWrapper:
     def __setattr__(self, name, value):
         # A class mapped declaratively is a subclass of DeclarativeMeta. It will check at creation time
         # if self has _sa_instance_state set, and if not, it'll try to set it. This happens BEFORE self.__init__
-        # has been called, so self.unsanitized does not exists, which raises an AttributeError.
+        # has been called, so self.unsanitized does not exist, which raises an AttributeError.
         # To avoid this, as well as to avoid SQLAlchemy state to be set on SafeStringWrapper,
         # we simply ignore this call.
-        if isinstance(value, sqlalchemy.orm.state.InstanceState):
+        if isinstance(value, InstanceState):
             return
 
         if name in SafeStringWrapper.__NO_WRAP_NAMES__:
