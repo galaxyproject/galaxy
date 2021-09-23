@@ -184,9 +184,9 @@ def integration_module_instance(clazz):
     return pytest.fixture(scope='module')(_instance)
 
 
-def integration_tool_runner(tool_ids, tool_version=None):
+def integration_tool_runner(tool_ids):
 
     def test_tools(instance, tool_id):
-        instance._run_tool_test(tool_id, tool_version=tool_version)
+        instance._run_tool_test(tool_id)
 
     return pytest.mark.parametrize("tool_id", tool_ids)(test_tools)
