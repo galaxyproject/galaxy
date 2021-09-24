@@ -71,19 +71,3 @@ class VisualizationDeserializer(sharable.SharableModelDeserializer):
         self.deserializers.update({
         })
         self.deserializable_keyset.update(self.deserializers.keys())
-
-
-class VisualizationsService:
-    """Common interface/service logic for interactions with visualizations in the context of the API.
-
-    Provides the logic of the actions invoked by API controllers and uses type definitions
-    and pydantic models to declare its parameters and return types.
-    """
-
-    def __init__(self, app: MinimalManagerApp, manager: VisualizationManager, serializer: VisualizationSerializer):
-        self.app = app
-        self.manager = manager
-        self.serializer = serializer
-        self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
-
-    # TODO: add the rest of the API actions here and call them directly from the API controller

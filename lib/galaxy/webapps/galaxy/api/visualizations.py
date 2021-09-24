@@ -26,7 +26,6 @@ from galaxy.managers.sharable import (
     ShareWithStatus,
     SharingStatus,
 )
-from galaxy.managers.visualizations import VisualizationsService
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import expose_api
@@ -34,6 +33,7 @@ from galaxy.webapps.base.controller import (
     UsesVisualizationMixin
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.services.visualizations import VisualizationsService
 from . import (
     BaseGalaxyAPIController,
     depends,
