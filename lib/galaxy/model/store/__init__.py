@@ -10,6 +10,7 @@ from json import (
     dumps,
     load,
 )
+from typing import Any, Dict, List
 from uuid import uuid4
 
 from bdbag import bdbag_api as bdb
@@ -88,38 +89,38 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.dataset_state_serialized = True
 
     @abc.abstractmethod
-    def defines_new_history(self):
+    def defines_new_history(self) -> bool:
         """Does this store define a new history to create."""
 
     @abc.abstractmethod
-    def new_history_properties(self):
+    def new_history_properties(self) -> Dict[str, Any]:
         """Dict of history properties if defines_new_history() is truthy."""
 
     @abc.abstractmethod
-    def datasets_properties(self):
+    def datasets_properties(self) -> List[Dict[str, Any]]:
         """Return a list of HDA properties."""
 
-    def library_properties(self):
+    def library_properties(self) -> List[Dict[str, Any]]:
         """Return a list of library properties."""
         return []
 
     @abc.abstractmethod
-    def collections_properties(self):
+    def collections_properties(self) -> List[Dict[str, Any]]:
         """Return a list of HDCA properties."""
 
     @abc.abstractmethod
-    def jobs_properties(self):
+    def jobs_properties(self) -> List[Dict[str, Any]]:
         """Return a list of jobs properties."""
 
     @abc.abstractproperty
-    def object_key(self):
+    def object_key(self) -> str:
         """Key used to connect objects in metadata.
 
         Legacy exports used 'hid' but associated objects may not be from the same history
         and a history may contain multiple objects with the same 'hid'.
         """
 
-    def trust_hid(self, obj_attrs):
+    def trust_hid(self, obj_attrs) -> bool:
         """Trust HID when importing objects into a new History."""
 
     @contextlib.contextmanager
@@ -182,6 +183,30 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self._import_implicit_collection_jobs(object_import_tracker)
         self._flush()
 
+    def _attach_dataset_hashes(self, dataset_or_file_attrs, dataset_instance):
+        if "hashes" in dataset_or_file_attrs:
+            for hash_attrs in dataset_or_file_attrs["hashes"]:
+                hash_obj = model.DatasetHash()
+                hash_obj.hash_value = hash_attrs["hash_value"]
+                hash_obj.hash_function = hash_attrs["hash_function"]
+                hash_obj.extra_files_path = hash_attrs["extra_files_path"]
+                dataset_instance.dataset.hashes.append(hash_obj)
+
+    def _attach_dataset_sources(self, dataset_or_file_attrs, dataset_instance):
+        if "sources" in dataset_or_file_attrs:
+            for source_attrs in dataset_or_file_attrs["sources"]:
+                source_obj = model.DatasetSource()
+                source_obj.source_uri = source_attrs["source_uri"]
+                source_obj.transform = source_attrs["transform"]
+                source_obj.extra_files_path = source_attrs["extra_files_path"]
+                for hash_attrs in source_attrs["hashes"]:
+                    hash_obj = model.DatasetSourceHash()
+                    hash_obj.hash_value = hash_attrs["hash_value"]
+                    hash_obj.hash_function = hash_attrs["hash_function"]
+                    source_obj.hashes.append(hash_obj)
+
+                dataset_instance.dataset.sources.append(source_obj)
+
     def _import_datasets(self, object_import_tracker, datasets_attrs, history, new_history, job):
         object_key = self.object_key
 
@@ -209,14 +234,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     for attribute in dataset_attributes:
                         if attribute in dataset_attrs["dataset"]:
                             setattr(dataset_instance.dataset, attribute, dataset_attrs["dataset"][attribute])
-                    if "hashes" in dataset_attrs["dataset"]:
-                        for hash_attrs in dataset_attrs["dataset"]["hashes"]:
-                            hash_obj = model.DatasetHash()
-                            hash_obj.hash_value = hash_attrs["hash_value"]
-                            hash_obj.hash_function = hash_attrs["hash_function"]
-                            hash_obj.extra_files_path = hash_attrs["extra_files_path"]
-                            dataset_instance.dataset.hashes.append(hash_obj)
-
+                    self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
+                    # TODO: Once we have a test...
+                    #    self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                     if 'id' in dataset_attrs["dataset"] and self.import_options.allow_edit:
                         dataset_instance.dataset.id = dataset_attrs["dataset"]['id']
 
@@ -307,6 +327,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         object_import_tracker.requires_hid.append(dataset_instance)
 
                 self._flush()
+
+                # If dataset is in the dictionary - we will assert this dataset is tied to the Galaxy instance
+                # and the import options are configured for allowing editing the dataset (e.g. for metadata setting).
+                # Otherwise, we will check for "file" information instead of dataset information - currently this includes
+                # "file_name", "extra_files_path".
                 if 'dataset' in dataset_attrs:
                     handle_dataset_object_edit(dataset_instance)
                 else:
@@ -353,6 +378,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
                     if dataset_instance.deleted:
                         dataset_instance.dataset.deleted = True
+                    file_metadata = dataset_attrs.get("file_metadata") or {}
+                    self._attach_dataset_hashes(file_metadata, dataset_instance)
+                    self._attach_dataset_sources(file_metadata, dataset_instance)
+                    if "created_from_basename" in file_metadata:
+                        dataset_instance.dataset.created_from_basename = file_metadata["created_from_basename"]
 
                 if model_class == "HistoryDatasetAssociation" and self.user:
                     add_item_annotation(self.sa_session, self.user, dataset_instance, dataset_attrs['annotation'])
@@ -1069,6 +1099,8 @@ class DirectoryModelExportStore(ModelExportStore):
                     shutil.copytree(src, dest)
                 else:
                     shutil.copyfile(src, dest)
+        else:
+            raise Exception(f"Unknown export_files parameter type encountered {self.export_files}")
 
         export_directory = self.export_directory
 

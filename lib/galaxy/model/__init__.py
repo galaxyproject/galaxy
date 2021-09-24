@@ -3400,6 +3400,17 @@ class DatasetSource(Base, RepresentById):
     dataset = relationship('Dataset', back_populates='sources')
     hashes = relationship('DatasetSourceHash', back_populates='source')
 
+    def serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            source_uri=self.source_uri,
+            extra_files_path=self.extra_files_path,
+            transform=self.transform,
+            hashes=[h.serialize(id_encoder, serialization_options) for h in self.hashes],
+        )
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
+
 
 class DatasetSourceHash(Base, RepresentById):
     __tablename__ = 'dataset_source_hash'
@@ -3409,6 +3420,15 @@ class DatasetSourceHash(Base, RepresentById):
     hash_function = Column(TEXT)
     hash_value = Column(TEXT)
     source = relationship('DatasetSource', back_populates='hashes')
+
+    def serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            hash_function=self.hash_function,
+            hash_value=self.hash_value,
+        )
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
 
 
 class DatasetHash(Base, RepresentById):
@@ -3422,7 +3442,6 @@ class DatasetHash(Base, RepresentById):
     dataset = relationship('Dataset', back_populates='hashes')
 
     def serialize(self, id_encoder, serialization_options):
-        # serialize Dataset objects only for jobs that can actually modify these models.
         rval = dict_for(
             self,
             hash_function=self.hash_function,
@@ -3974,6 +3993,18 @@ class DatasetInstance:
             rval["dataset"] = self.dataset.serialize(id_encoder, serialization_options)
         else:
             serialization_options.serialize_files(self, rval)
+            file_metadata = {}
+            dataset = self.dataset
+            hashes = dataset.hashes
+            if hashes:
+                file_metadata["hashes"] = [h.serialize(id_encoder, serialization_options) for h in hashes]
+            if dataset.created_from_basename is not None:
+                file_metadata["created_from_basename"] = dataset.created_from_basename
+            sources = dataset.sources
+            if sources:
+                file_metadata["sources"] = [s.serialize(id_encoder, serialization_options) for s in sources]
+
+            rval["file_metadata"] = file_metadata
 
 
 class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnotations,
