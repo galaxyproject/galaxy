@@ -5,7 +5,6 @@ Classes for wrapping Objects and Sanitizing string output.
 import copyreg
 import inspect
 import logging
-import string
 from collections import UserDict
 from collections.abc import Callable
 from numbers import Number
@@ -25,6 +24,8 @@ from types import (
 
 from sqlalchemy.orm import InstanceState
 
+from galaxy.util import sanitize_lists_to_string
+
 NoneType = type(None)
 NotImplementedType = type(NotImplemented)
 EllipsisType = type(Ellipsis)
@@ -38,7 +39,6 @@ SliceType = slice
 BufferType = SliceType
 DictProxyType = SliceType
 
-from galaxy.util import sanitize_lists_to_string as _sanitize_lists_to_string
 
 log = logging.getLogger(__name__)
 
@@ -59,25 +59,6 @@ __WRAP_SEQUENCES__ = (tuple, list, )
 __WRAP_SETS__ = (set, frozenset, )
 __WRAP_MAPPINGS__ = (dict, UserDict, )
 
-
-# Define the set of characters that are not sanitized, and define a set of mappings for those that are.
-# characters that are valid
-VALID_CHARACTERS = set(f"{string.ascii_letters + string.digits} -=_.()/+*^,:?!@")
-
-# characters that are allowed but need to be escaped
-CHARACTER_MAP = {'>': '__gt__',
-                 '<': '__lt__',
-                 "'": '__sq__',
-                 '"': '__dq__',
-                 '[': '__ob__',
-                 ']': '__cb__',
-                 '{': '__oc__',
-                 '}': '__cc__',
-                 '\n': '__cn__',
-                 '\r': '__cr__',
-                 '\t': '__tc__',
-                 '#': '__pd__'}
-
 INVALID_CHARACTER = "X"
 
 
@@ -89,10 +70,6 @@ def coerce(x, y):
 def cmp(x, y):
     # Builtin in Python 2, but not Python 3.
     return (x > y) - (x < y)
-
-
-def sanitize_lists_to_string(values, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP, invalid_character=INVALID_CHARACTER):
-    return _sanitize_lists_to_string(values, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)
 
 
 def wrap_with_safe_string(value, no_wrap_classes=None):
@@ -194,7 +171,7 @@ class SafeStringWrapper:
         # We need to define a __new__ since, we are subclassing from e.g. immutable str, which internally sets data
         # that will be used when other + this (this + other is handled by __add__)
         try:
-            sanitized_value = sanitize_lists_to_string(arg[0], valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)
+            sanitized_value = sanitize_lists_to_string(arg[0])
             return super().__new__(cls, sanitized_value)
         except TypeError:
             # Class to be wrapped takes no parameters.
@@ -206,10 +183,10 @@ class SafeStringWrapper:
         self.__safe_string_wrapper_function__ = safe_string_wrapper_function
 
     def __str__(self):
-        return sanitize_lists_to_string(self.unsanitized, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)
+        return sanitize_lists_to_string(self.unsanitized)
 
     def __repr__(self):
-        return f"{sanitize_lists_to_string(self.__class__.__name__, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)} object at {id(self):x} on: {sanitize_lists_to_string(repr(self.unsanitized), valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)}"
+        return f"{sanitize_lists_to_string(self.__class__.__name__)} object at {id(self):x} on: {sanitize_lists_to_string(repr(self.unsanitized))}"
 
     def __lt__(self, other):
         while isinstance(other, SafeStringWrapper):
