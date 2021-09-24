@@ -59,8 +59,6 @@ __WRAP_SEQUENCES__ = (tuple, list, )
 __WRAP_SETS__ = (set, frozenset, )
 __WRAP_MAPPINGS__ = (dict, UserDict, )
 
-INVALID_CHARACTER = "X"
-
 
 def coerce(x, y):
     # __coerce__ doesn't do anything under Python anyway.

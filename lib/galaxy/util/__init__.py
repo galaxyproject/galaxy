@@ -93,6 +93,8 @@ MAPPED_CHARACTERS = {
     '#': '__pd__'
 }
 
+INVALID_CHARACTER = 'X'
+
 inflector = Inflector()
 
 log = get_logger(__name__)
@@ -569,7 +571,7 @@ def restore_text(text, character_map=MAPPED_CHARACTERS):
     return text
 
 
-def sanitize_text(text, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character='X'):
+def sanitize_text(text, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character=INVALID_CHARACTER):
     """
     Restricts the characters that are allowed in text; accepts both strings
     and lists of strings; non-string entities will be cast to strings.
@@ -581,7 +583,7 @@ def sanitize_text(text, valid_characters=VALID_CHARACTERS, character_map=MAPPED_
     return _sanitize_text_helper(text, valid_characters=valid_characters, character_map=character_map)
 
 
-def _sanitize_text_helper(text, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character='X'):
+def _sanitize_text_helper(text, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character=INVALID_CHARACTER):
     """Restricts the characters that are allowed in a string"""
 
     out = []
@@ -595,7 +597,7 @@ def _sanitize_text_helper(text, valid_characters=VALID_CHARACTERS, character_map
     return ''.join(out)
 
 
-def sanitize_lists_to_string(values, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character='X'):
+def sanitize_lists_to_string(values, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character=INVALID_CHARACTER):
     if isinstance(values, list):
         rval = []
         for value in values:
@@ -609,7 +611,7 @@ def sanitize_lists_to_string(values, valid_characters=VALID_CHARACTERS, characte
     return values
 
 
-def sanitize_param(value, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character='X'):
+def sanitize_param(value, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character=INVALID_CHARACTER):
     """Clean incoming parameters (strings or lists)"""
     if isinstance(value, str):
         return sanitize_text(value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)

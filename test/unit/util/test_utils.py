@@ -21,7 +21,7 @@ SECTION_XML = """<?xml version="1.0" ?>
 def test_valid_characters():
     """Set of characters that don't need to be sanitized."""
     expected = set(f"{string.ascii_letters}{string.digits} -=_.()/+*^,:?!")
-    assert expected == util.VALID_CHARACTERS
+    assert util.VALID_CHARACTERS == expected
 
 
 def test_mapped_characters():
@@ -41,7 +41,11 @@ def test_mapped_characters():
         '\t': '__tc__',
         '#': '__pd__'
     }
-    assert expected == util.MAPPED_CHARACTERS
+    assert util.MAPPED_CHARACTERS == expected
+
+
+def test_invalid_characger():
+    assert util.INVALID_CHARACTER == 'X'
 
 
 def test_strip_control_characters():
