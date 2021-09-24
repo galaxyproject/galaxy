@@ -1,13 +1,15 @@
 """Unit tests for importing and exporting data from model stores."""
 import json
 import os
+import shutil
 from tempfile import mkdtemp, NamedTemporaryFile
 
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.tools.imp_exp import unpack_tar_gz_archive
-from .tools.test_history_imp_exp import _mock_app
+from galaxy.model.unittest_utils import GalaxyDataTestApp
+from galaxy.objectstore.unittest_utils import Config as TestConfig
+from galaxy.util.compression_utils import CompressedFile
 
 
 def test_import_export_history():
@@ -483,6 +485,14 @@ def _create_datasets(sa_session, history, n, extension="txt"):
     return [model.HistoryDatasetAssociation(extension=extension, history=history, create_dataset=True, sa_session=sa_session, hid=i + 1) for i in range(n)]
 
 
+def _mock_app(store_by="id"):
+    app = GalaxyDataTestApp()
+    test_object_store_config = TestConfig(store_by=store_by)
+    app.object_store = test_object_store_config.object_store
+    app.model.Dataset.object_store = app.object_store
+    return app
+
+
 class Options:
     is_url = False
     is_file = True
@@ -491,14 +501,13 @@ class Options:
 
 def import_archive(archive_path, app, user):
     dest_parent = mkdtemp()
-    dest_dir = os.path.join(dest_parent, 'dest')
-
-    args = (archive_path, dest_dir)
-    unpack_tar_gz_archive.main(Options(), args)
+    dest_dir = CompressedFile(archive_path).extract(dest_parent)
 
     new_history = None
     model_store = store.get_import_model_store_for_directory(dest_dir, app=app, user=user)
     with model_store.target_history(default_history=None) as new_history:
         model_store.perform_import(new_history)
+
+    shutil.rmtree(dest_parent)
 
     return new_history
