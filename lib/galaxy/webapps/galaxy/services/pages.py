@@ -7,7 +7,6 @@ from galaxy import (
 )
 from galaxy.managers import (
     base,
-    sharable,
 )
 from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,
@@ -26,6 +25,7 @@ from galaxy.schema.schema import (
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.webapps.galaxy.services.sharable import ShareableService
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class PagesService(ServiceBase):
         super().__init__(security)
         self.manager = manager
         self.serializer = serializer
-        self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
+        self.shareable_service = ShareableService(self.manager, self.serializer)
 
     def index(self, trans, deleted: bool = False) -> PageSummaryList:
         """Return a list of Pages viewable by the user

@@ -1,13 +1,13 @@
 
 import logging
 
-from galaxy.managers import sharable
 from galaxy.managers.visualizations import (
     VisualizationManager,
     VisualizationSerializer,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.webapps.galaxy.services.sharable import ShareableService
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +28,6 @@ class VisualizationsService(ServiceBase):
         super().__init__(security)
         self.manager = manager
         self.serializer = serializer
-        self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
+        self.shareable_service = ShareableService(self.manager, self.serializer)
 
     # TODO: add the rest of the API actions here and call them directly from the API controller

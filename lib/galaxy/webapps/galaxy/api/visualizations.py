@@ -20,14 +20,9 @@ from galaxy import (
     web
 )
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.sharable import (
-    SetSlugPayload,
-    ShareWithPayload,
-    ShareWithStatus,
-    SharingStatus,
-)
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import SetSlugPayload, ShareWithPayload, ShareWithStatus, SharingStatus
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
     UsesVisualizationMixin

@@ -26,9 +26,6 @@ from starlette.responses import FileResponse
 from galaxy import (
     util
 )
-from galaxy.managers import (
-    sharable,
-)
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
@@ -49,6 +46,10 @@ from galaxy.schema.schema import (
     HistoryArchiveExportResult,
     JobExportHistoryArchiveCollection,
     JobImportHistoryResponse,
+    SetSlugPayload,
+    ShareWithPayload,
+    ShareWithStatus,
+    SharingStatus,
 )
 from galaxy.schema.types import LatestLiteral
 from galaxy.util import (
@@ -376,7 +377,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> sharable.SharingStatus:
+    ) -> SharingStatus:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, id)
 
@@ -388,7 +389,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> sharable.SharingStatus:
+    ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.enable_link_access(trans, id)
 
@@ -400,7 +401,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> sharable.SharingStatus:
+    ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, id)
 
@@ -412,7 +413,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> sharable.SharingStatus:
+    ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
         return self.service.shareable_service.publish(trans, id)
 
@@ -424,7 +425,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> sharable.SharingStatus:
+    ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, id)
 
@@ -436,8 +437,8 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-        payload: sharable.ShareWithPayload = Body(...)
-    ) -> sharable.ShareWithStatus:
+        payload: ShareWithPayload = Body(...)
+    ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
         return self.service.shareable_service.share_with_users(trans, id, payload)
 
@@ -450,7 +451,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-        payload: sharable.SetSlugPayload = Body(...),
+        payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
         self.service.shareable_service.set_slug(trans, id, payload)
@@ -830,7 +831,7 @@ class HistoriesController(BaseGalaxyAPIController):
         """
         * PUT /api/histories/{id}/share_with_users
         """
-        payload = sharable.ShareWithPayload(**payload)
+        payload = ShareWithPayload(**payload)
         return self.service.shareable_service.share_with_users(trans, id, payload)
 
     @expose_api
@@ -838,5 +839,5 @@ class HistoriesController(BaseGalaxyAPIController):
         """
         * PUT /api/histories/{id}/slug
         """
-        payload = sharable.SetSlugPayload(**payload)
+        payload = SetSlugPayload(**payload)
         self.service.shareable_service.set_slug(trans, id, payload)
