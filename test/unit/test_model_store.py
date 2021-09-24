@@ -7,7 +7,7 @@ from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.tools.imp_exp import unpack_tar_gz_archive
-from .tools.test_history_imp_exp import _create_datasets, _mock_app, Dummy
+from .tools.test_history_imp_exp import _create_datasets, _mock_app
 
 
 def test_import_export_history():
@@ -479,17 +479,18 @@ def _perform_import_from_directory(directory, app, user, import_history, import_
         import_model_store.perform_import(import_history)
 
 
+class Options:
+    is_url = False
+    is_file = True
+    is_b64encoded = False
+
+
 def import_archive(archive_path, app, user):
     dest_parent = mkdtemp()
     dest_dir = os.path.join(dest_parent, 'dest')
 
-    options = Dummy()
-    options.is_url = False
-    options.is_file = True
-    options.is_b64encoded = False
-
     args = (archive_path, dest_dir)
-    unpack_tar_gz_archive.main(options, args)
+    unpack_tar_gz_archive.main(Options(), args)
 
     new_history = None
     model_store = store.get_import_model_store_for_directory(dest_dir, app=app, user=user)
