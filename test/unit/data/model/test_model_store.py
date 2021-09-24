@@ -1,6 +1,7 @@
 """Unit tests for importing and exporting data from model stores."""
 import json
 import os
+import pathlib
 import shutil
 from tempfile import mkdtemp, NamedTemporaryFile
 
@@ -10,6 +11,10 @@ from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.objectstore.unittest_utils import Config as TestConfig
 from galaxy.util.compression_utils import CompressedFile
+
+TESTCASE_DIRECTORY = pathlib.Path(__file__).parent
+TEST_PATH_1 = TESTCASE_DIRECTORY / '1.txt'
+TEST_PATH_2 = TESTCASE_DIRECTORY / '2.bed'
 
 
 def test_import_export_history():
@@ -456,8 +461,8 @@ def _setup_simple_cat_job(app, state='ok'):
     sa_session.add_all((d1, d2, h, j))
     sa_session.flush()
 
-    app.object_store.update_from_file(d1, file_name="test-data/1.txt", create=True)
-    app.object_store.update_from_file(d2, file_name="test-data/2.bed", create=True)
+    app.object_store.update_from_file(d1, file_name=TEST_PATH_1, create=True)
+    app.object_store.update_from_file(d2, file_name=TEST_PATH_2, create=True)
 
     return u, h, d1, d2, j
 
