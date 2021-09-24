@@ -45,7 +45,6 @@ class ToolParameterSanitizer:
 
     VALID_PRESET = {'default': (f"{string.ascii_letters + string.digits} -=_.()/+*^,:?!"), 'none': ''}
     MAPPING_PRESET = {'default': galaxy.util.MAPPED_CHARACTERS, 'none': {}}
-    DEFAULT_INVALID_CHAR = 'X'
 
     # class methods
     @classmethod
@@ -53,7 +52,7 @@ class ToolParameterSanitizer:
         """Loads the proper filter by the type attribute of elem"""
         # TODO: Add ability to generically specify a method to use for sanitizing input via specification in tool XML
         rval = ToolParameterSanitizer()
-        rval._invalid_char = elem.get('invalid_char', cls.DEFAULT_INVALID_CHAR)
+        rval._invalid_char = elem.get('invalid_char', galaxy.util.INVALID_CHARACTER)
         rval.sanitize = galaxy.util.string_as_bool(elem.get('sanitize', 'True'))
         for valid_elem in elem.findall('valid'):
             rval._valid_chars = rval.get_valid_by_name(valid_elem.get('initial', 'default'))
@@ -128,7 +127,7 @@ class ToolParameterSanitizer:
     def __init__(self):
         self._valid_chars = []  # List of valid characters
         self._mapped_chars = {}  # Replace a char with a any number of characters
-        self._invalid_char = self.DEFAULT_INVALID_CHAR  # Replace invalid characters with this character
+        self._invalid_char = galaxy.util.INVALID_CHARACTER  # Replace invalid characters with this character
         self.sanitize = True  # Simply pass back the passed in value
 
     def restore_text(self, text):
