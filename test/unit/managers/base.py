@@ -6,8 +6,8 @@ import unittest
 
 import sqlalchemy
 
+from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.users import UserManager
-from ..unittest_utils import galaxy_mock
 
 # =============================================================================
 admin_email = 'admin@admin.admin'

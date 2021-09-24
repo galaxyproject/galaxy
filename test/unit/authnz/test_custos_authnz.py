@@ -13,10 +13,10 @@ from urllib.parse import (
 import jwt
 import requests
 
+from galaxy.app_unittest_utils.galaxy_mock import MockTrans
 from galaxy.authnz import custos_authnz
 from galaxy.model import CustosAuthnzToken, User
 from galaxy.util import unicodify
-from ..unittest_utils.galaxy_mock import MockTrans
 
 
 class CustosAuthnzTestCase(unittest.TestCase):

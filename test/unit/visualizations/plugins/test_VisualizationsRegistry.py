@@ -6,11 +6,11 @@ import re
 import unittest
 
 from galaxy import model
+from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.util import clean_multiline_string, galaxy_directory
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from . import VisualizationsBase_TestCase
-from ...unittest_utils import galaxy_mock
 
 glx_dir = galaxy_directory()
 template_cache_dir = os.path.join(glx_dir, 'database', 'compiled_templates')

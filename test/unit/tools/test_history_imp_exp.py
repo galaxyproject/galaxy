@@ -5,13 +5,13 @@ import tempfile
 from shutil import rmtree
 
 from galaxy import model
+from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.exceptions import MalformedContents
 from galaxy.objectstore.unittest_utils import (
     Config as TestConfig,
 )
 from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper, JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
 from galaxy.tools.imp_exp.export_history import create_archive
-from ..unittest_utils.galaxy_mock import MockApp
 
 
 # good enough for the very specific tests we're writing as of now...

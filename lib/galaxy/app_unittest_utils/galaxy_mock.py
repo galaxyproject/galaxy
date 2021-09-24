@@ -25,7 +25,7 @@ from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import ApplicationStack
-from galaxy_test.base.celery_helper import rebind_container_to_task
+from .celery_helper import rebind_container_to_task
 
 
 # =============================================================================
