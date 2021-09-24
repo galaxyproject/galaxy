@@ -24,6 +24,26 @@ def test_valid_characters():
     assert expected == util.VALID_CHARACTERS
 
 
+def test_mapped_characters():
+    """A mapping of non-safe characters to their safe forms."""
+    expected = {
+        '>': '__gt__',
+        '<': '__lt__',
+        "'": '__sq__',
+        '"': '__dq__',
+        '[': '__ob__',
+        ']': '__cb__',
+        '{': '__oc__',
+        '}': '__cc__',
+        '@': '__at__',
+        '\n': '__cn__',
+        '\r': '__cr__',
+        '\t': '__tc__',
+        '#': '__pd__'
+    }
+    assert expected == util.MAPPED_CHARACTERS
+
+
 def test_strip_control_characters():
     s = '\x00bla'
     assert util.strip_control_characters(s) == 'bla'

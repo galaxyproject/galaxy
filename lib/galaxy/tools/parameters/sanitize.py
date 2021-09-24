@@ -44,7 +44,7 @@ class ToolParameterSanitizer:
     """
 
     VALID_PRESET = {'default': (f"{string.ascii_letters + string.digits} -=_.()/+*^,:?!"), 'none': ''}
-    MAPPING_PRESET = {'default': galaxy.util.mapped_chars, 'none': {}}
+    MAPPING_PRESET = {'default': galaxy.util.MAPPED_CHARACTERS, 'none': {}}
     DEFAULT_INVALID_CHAR = 'X'
 
     # class methods
