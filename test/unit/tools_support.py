@@ -11,10 +11,10 @@ from collections import defaultdict
 
 import galaxy.datatypes.registry
 import galaxy.model
+from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tools import create_tool_from_source
 from galaxy.util.bunch import Bunch
-from .unittest_utils import galaxy_mock
 
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -26,7 +26,7 @@ class UsesApp:
 
     def setup_app(self):
         self.test_directory = tempfile.mkdtemp()
-        self.app = galaxy_mock.MockApp()
+        self.app = MockApp()
         self.app.config.new_file_path = os.path.join(self.test_directory, "new_files")
         self.app.config.admin_users = "mary@example.com"
         self.app.job_search = None

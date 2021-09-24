@@ -10,6 +10,7 @@ from galaxy import (
     exceptions,
     model
 )
+from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers import (
     base,
     hdas
@@ -21,7 +22,6 @@ from galaxy.managers.histories import (
     HistorySerializer
 )
 from .base import BaseTestCase
-from ..unittest_utils import galaxy_mock
 
 default_password = '123456'
 user2_data = dict(email='user2@user2.user2', username='user2', password=default_password)
