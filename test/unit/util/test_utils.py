@@ -1,4 +1,5 @@
 import errno
+import string
 import tempfile
 
 import pytest
@@ -15,6 +16,12 @@ SECTION_XML = """<?xml version="1.0" ?>
     </tool>
 </section>
 """
+
+
+def test_valid_characters():
+    """Set of characters that don't need to be sanitized."""
+    expected = set(f"{string.ascii_letters}{string.digits} -=_.()/+*^,:?!")
+    assert expected == util.VALID_CHARACTERS
 
 
 def test_strip_control_characters():
