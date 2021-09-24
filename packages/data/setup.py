@@ -47,6 +47,7 @@ PACKAGES = [
     'galaxy.model.tool_shed_install',
     'galaxy.model.tool_shed_install.migrate',
     'galaxy.model.tool_shed_install.migrate.versions',
+    'galaxy.model.unittest_utils',
     'galaxy.model.view',
     'galaxy.quota',
     'galaxy.security',
