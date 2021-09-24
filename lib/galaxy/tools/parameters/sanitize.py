@@ -2,8 +2,6 @@
 Tool Parameter specific sanitizing.
 """
 import logging
-import string
-
 
 import galaxy.util
 
@@ -43,7 +41,7 @@ class ToolParameterSanitizer:
     True
     """
 
-    VALID_PRESET = {'default': (f"{string.ascii_letters + string.digits} -=_.()/+*^,:?!"), 'none': ''}
+    VALID_PRESET = {'default': galaxy.util.VALID_CHARACTERS, 'none': ''}
     MAPPING_PRESET = {'default': galaxy.util.MAPPED_CHARACTERS, 'none': {}}
 
     # class methods
