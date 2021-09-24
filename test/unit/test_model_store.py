@@ -7,7 +7,7 @@ from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.tools.imp_exp import unpack_tar_gz_archive
-from .tools.test_history_imp_exp import _create_datasets, _mock_app
+from .tools.test_history_imp_exp import _mock_app
 
 
 def test_import_export_history():
@@ -477,6 +477,10 @@ def _perform_import_from_directory(directory, app, user, import_history, import_
     import_model_store = store.get_import_model_store_for_directory(directory, app=app, user=user, import_options=import_options)
     with import_model_store.target_history(default_history=import_history):
         import_model_store.perform_import(import_history)
+
+
+def _create_datasets(sa_session, history, n, extension="txt"):
+    return [model.HistoryDatasetAssociation(extension=extension, history=history, create_dataset=True, sa_session=sa_session, hid=i + 1) for i in range(n)]
 
 
 class Options:
