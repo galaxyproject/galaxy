@@ -108,14 +108,13 @@ class HistorySharingTestCase(SeleniumTestCase):
         """
         self.navigate_to_history_share_page()
         self.components.histories.sharing.share_with_collapse.wait_for_and_click()
-        self.components.histories.sharing.share_with_multiselect.wait_for_and_click()
+        multiselect = self.components.histories.sharing.share_with_multiselect.wait_for_and_click()
         self.components.histories.sharing.share_with_input.wait_for_and_send_keys(user_id or user_email)
+        self.send_enter(multiselect)
 
         if screenshot:
             self.screenshot("history_sharing_user")
-        # first click to add the item
-        self.components.histories.sharing.submit_sharing_with.wait_for_and_click()
-        # second click to save the sharing preferences
+
         self.components.histories.sharing.submit_sharing_with.wait_for_and_click()
 
         if assert_valid:
