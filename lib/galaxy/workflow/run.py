@@ -248,21 +248,15 @@ class WorkflowInvoker:
             delayed_why = f"depends on step [{output_id}] job has not finished scheduling yet"
             raise modules.DelayedWorkflowEvaluation(delayed_why)
 
-        for job_assoc in step_invocation.jobs:
-            job = job_assoc.job
-            if job:
-                # At least one job in incomplete.
-                if not job.finished:
-                    delayed_why = f"depends on step [{output_id}] but one or more jobs created from that step have not finished yet"
-                    raise modules.DelayedWorkflowEvaluation(why=delayed_why)
+        # TODO: Handle implicit dependency on stuff like pause steps.
+        for job in step_invocation.jobs:
+            # At least one job in incomplete.
+            if not job.finished:
+                delayed_why = f"depends on step [{output_id}] but one or more jobs created from that step have not finished yet"
+                raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
-                if job.state != job.states.OK:
-                    raise modules.CancelWorkflowEvaluation()
-
-            else:
-                # TODO: Handle implicit dependency on stuff like
-                # pause steps.
-                pass
+            if job.state != job.states.OK:
+                raise modules.CancelWorkflowEvaluation()
 
     def _invoke_step(self, invocation_step):
         incomplete_or_none = invocation_step.workflow_step.module.execute(self.trans,

@@ -477,7 +477,6 @@ class User(Base, Dictifiable, RepresentById):
     galaxy_sessions = relationship('GalaxySession',
         back_populates='user',
         order_by=lambda: desc(GalaxySession.update_time))  # type: ignore
-    pages_shared_by_others = relationship('PageUserShareAssociation', back_populates='user')
     quotas = relationship('UserQuotaAssociation', back_populates='user')
     social_auth = relationship('UserAuthnzToken', back_populates='user')
     stored_workflow_menu_entries = relationship('StoredWorkflowMenuEntry',
@@ -489,25 +488,25 @@ class User(Base, Dictifiable, RepresentById):
         back_populates='user',
         cascade='all, delete-orphan',
         collection_class=ordering_list('order_index'))
-    _preferences = relationship('UserPreference',
-        back_populates='user',
-        collection_class=attribute_mapped_collection('name'))
+    _preferences = relationship('UserPreference', collection_class=attribute_mapped_collection('name'))
     values = relationship('FormValues',
         primaryjoin=(lambda: User.form_values_id == FormValues.id))  # type: ignore
     # Add type hint (will this work w/SA?)
     api_keys: 'List[APIKeys]' = relationship('APIKeys',
         back_populates='user',
         order_by=lambda: desc(APIKeys.create_time))  # type: ignore
-    pages = relationship('Page', back_populates='user')
-    reset_tokens = relationship('PasswordResetToken', back_populates='user')
-    histories_shared_by_others = relationship('HistoryUserShareAssociation', back_populates='user')
     data_manager_histories = relationship('DataManagerHistoryAssociation', back_populates='user')
-    workflows_shared_by_others = relationship('StoredWorkflowUserShareAssociation', back_populates='user')
     roles = relationship('UserRoleAssociation', back_populates='user')
     stored_workflows = relationship('StoredWorkflow', back_populates='user',
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id))  # type: ignore
-    visualizations_shared_by_others = relationship('VisualizationUserShareAssociation',
-        back_populates='user')
+    non_private_roles = relationship(
+        'UserRoleAssociation',
+        viewonly=True,
+        primaryjoin=(lambda:
+            (User.id == UserRoleAssociation.user_id)  # type: ignore
+            & (UserRoleAssociation.role_id == Role.id)  # type: ignore
+            & not_(Role.name == User.email))  # type: ignore
+    )
 
     preferences: association_proxy  # defined at the end of this module
 
@@ -767,7 +766,7 @@ class PasswordResetToken(Base, _HasTable):
     token = Column(String(32), primary_key=True, unique=True, index=True)
     expiration_time = Column(DateTime)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    user = relationship('User', back_populates='reset_tokens')
+    user = relationship('User')
 
     def __init__(self, user, token=None):
         if token:
@@ -793,7 +792,6 @@ class DynamicTool(Base, Dictifiable, RepresentById):
     hidden = Column(Boolean, default=True)
     active = Column(Boolean, default=True)
     value = Column(MutableJSONType)
-    workflow_steps = relationship('WorkflowStep', back_populates='dynamic_tool')
 
     dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
     dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
@@ -824,7 +822,6 @@ class JobMetricText(BaseJobMetric, RepresentById):
     plugin = Column(Unicode(255))
     metric_name = Column(Unicode(255))
     metric_value = Column(Unicode(JOB_METRIC_MAX_LENGTH))
-    job = relationship('Job', back_populates='text_metrics')
 
 
 class JobMetricNumeric(BaseJobMetric, RepresentById):
@@ -835,7 +832,6 @@ class JobMetricNumeric(BaseJobMetric, RepresentById):
     plugin = Column(Unicode(255))
     metric_name = Column(Unicode(255))
     metric_value = Column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
-    job = relationship('Job', back_populates='numeric_metrics')
 
 
 class TaskMetricText(BaseJobMetric, RepresentById):
@@ -846,7 +842,6 @@ class TaskMetricText(BaseJobMetric, RepresentById):
     plugin = Column(Unicode(255))
     metric_name = Column(Unicode(255))
     metric_value = Column(Unicode(JOB_METRIC_MAX_LENGTH))
-    task = relationship('Task', back_populates='text_metrics')
 
 
 class TaskMetricNumeric(BaseJobMetric, RepresentById):
@@ -857,7 +852,6 @@ class TaskMetricNumeric(BaseJobMetric, RepresentById):
     plugin = Column(Unicode(255))
     metric_name = Column(Unicode(255))
     metric_value = Column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
-    task = relationship('Task', back_populates='numeric_metrics')
 
 
 class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
@@ -924,10 +918,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         lazy=True, back_populates='job')
     tasks = relationship('Task', back_populates='job')
     output_datasets = relationship('JobToOutputDatasetAssociation', back_populates='job')
-    state_history = relationship('JobStateHistory', back_populates='job')
-    text_metrics = relationship('JobMetricText', back_populates='job')
-    numeric_metrics = relationship('JobMetricNumeric', back_populates='job')
-    job = relationship('GenomeIndexToolData', back_populates='job')
+    state_history = relationship('JobStateHistory')
+    text_metrics = relationship('JobMetricText')
+    numeric_metrics = relationship('JobMetricNumeric')
     interactivetool_entry_points = relationship('InteractiveToolEntryPoint',
         back_populates='job', uselist=True)
     implicit_collection_jobs_association = relationship('ImplicitCollectionJobsJobAssociation',
@@ -1579,8 +1572,8 @@ class Task(Base, JobLike, RepresentById):
     task_runner_external_id = Column(String(255))
     prepare_input_files_cmd = Column(TEXT)
     job = relationship('Job', back_populates='tasks')
-    text_metrics = relationship('TaskMetricText', back_populates='task')
-    numeric_metrics = relationship('TaskMetricNumeric', back_populates='task')
+    text_metrics = relationship('TaskMetricText')
+    numeric_metrics = relationship('TaskMetricNumeric')
 
     _numeric_metric = TaskMetricNumeric
     _text_metric = TaskMetricText
@@ -1816,10 +1809,7 @@ class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
     dataset_collection_id = Column(Integer,
         ForeignKey('history_dataset_collection_association.id'), index=True)
     name = Column(Unicode(255))
-    dataset_collection_instance = relationship(
-        'HistoryDatasetCollectionAssociation',
-        lazy=False,
-        back_populates="output_dataset_collection_instances")
+    dataset_collection_instance = relationship('HistoryDatasetCollectionAssociation', lazy=False)
     job = relationship('Job', back_populates='output_dataset_collection_instances')
 
     def __init__(self, name, dataset_collection_instance):
@@ -1837,8 +1827,7 @@ class JobToImplicitOutputDatasetCollectionAssociation(Base, RepresentById):
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
     dataset_collection_id = Column(Integer, ForeignKey('dataset_collection.id'), index=True)
     name = Column(Unicode(255))
-    dataset_collection = relationship(
-        'DatasetCollection', back_populates="output_dataset_collections")
+    dataset_collection = relationship('DatasetCollection')
     job = relationship('Job', back_populates='output_dataset_collections')
 
     def __init__(self, name, dataset_collection):
@@ -1887,10 +1876,9 @@ class JobStateHistory(Base, RepresentById):
     job_id = Column(Integer, ForeignKey('job.id'), index=True)
     state = Column(String(64), index=True)
     info = Column(TrimmedString(255))
-    job = relationship('Job', back_populates='state_history')
 
     def __init__(self, job):
-        self.job = job
+        self.job_id = job.id
         self.state = job.state
         self.info = job.info
 
@@ -1909,10 +1897,6 @@ class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
         primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
             == ImplicitlyCreatedDatasetCollectionInput.input_dataset_collection_id)  # type: ignore
     )
-    dataset_collection = relationship('HistoryDatasetCollectionAssociation',
-        primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
-            == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id),  # type: ignore
-        back_populates='implicit_input_collections')
 
     def __init__(self, name, input_dataset_collection):
         self.name = name
@@ -1926,10 +1910,6 @@ class ImplicitCollectionJobs(Base, RepresentById):
     populated_state = Column(TrimmedString(64), default='new', nullable=False)
     jobs = relationship('ImplicitCollectionJobsJobAssociation',
         back_populates='implicit_collection_jobs')
-    history_dataset_collection_associations = relationship('HistoryDatasetCollectionAssociation',
-        back_populates='implicit_collection_jobs')
-    workflow_invocation_step = relationship('WorkflowInvocationStep',
-        back_populates='implicit_collection_jobs', uselist=False)
 
     class populated_states(str, Enum):
         NEW = 'new'  # New implicit jobs object, unpopulated job associations
@@ -2065,7 +2045,7 @@ class JobExportHistoryArchive(Base, RepresentById):
     compressed = Column(Boolean, index=True, default=False)
     history_attrs_filename = Column(TEXT)
     job = relationship('Job')
-    dataset = relationship('Dataset', back_populates='job_export_history_archive')
+    dataset = relationship('Dataset')
     history = relationship('History', back_populates='exports')
 
     ATTRS_FILENAME_HISTORY = 'history_attrs.txt'
@@ -2221,8 +2201,8 @@ class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
     modified_time = Column(DateTime, default=now, onupdate=now)
     indexer = Column(String(64))
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    job = relationship('Job', back_populates='job')
-    dataset = relationship('Dataset', back_populates='genome_index_tool_data')
+    job = relationship('Job')
+    dataset = relationship('Dataset')
     user = relationship('User')
 
 
@@ -2274,26 +2254,24 @@ class HistoryAudit(Base, RepresentById):
 
     history_id = Column(Integer, ForeignKey('history.id'), primary_key=True, nullable=False)
     update_time = Column(DateTime, default=now, primary_key=True, nullable=False)
-    history = relationship('History')
 
-    def __init__(self, history, update_time):
-        self.history = history
-        self.update_time = update_time
+    # This class should never be instantiated.
+    # See https://github.com/galaxyproject/galaxy/pull/11914 for details.
+    __init__ = None  # type: ignore
 
     @classmethod
     def prune(cls, sa_session):
-        history_audit_table = cls.table
         latest_subq = sa_session.query(
-            history_audit_table.c.history_id,
-            func.max(history_audit_table.c.update_time).label('max_update_time')).group_by(history_audit_table.c.history_id).subquery()
+            cls.history_id,
+            func.max(cls.update_time).label('max_update_time')).group_by(cls.history_id).subquery()
         not_latest_query = sa_session.query(
-            history_audit_table.c.history_id, history_audit_table.c.update_time
+            cls.history_id, cls.update_time
         ).select_from(latest_subq).join(
-            history_audit_table, and_(
-                history_audit_table.c.update_time < latest_subq.columns.max_update_time,
-                history_audit_table.c.history_id == latest_subq.columns.history_id))
-        d = history_audit_table.delete()
-        sa_session.execute(d.where(tuple_(history_audit_table.c.history_id, history_audit_table.c.update_time).in_(not_latest_query)))
+            cls, and_(
+                cls.update_time < latest_subq.columns.max_update_time,
+                cls.history_id == latest_subq.columns.history_id))
+        q = cls.__table__.delete().where(tuple_(cls.history_id, cls.update_time).in_(not_latest_query))
+        sa_session.execute(q)
 
 
 class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
@@ -2780,7 +2758,7 @@ class HistoryUserShareAssociation(Base, UserShareAssociation):
     id = Column(Integer, primary_key=True)
     history_id = Column(Integer, ForeignKey('history.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    user = relationship('User', back_populates='histories_shared_by_others')
+    user = relationship('User')
     history = relationship('History', back_populates='users_shared_with')
 
 
@@ -2795,17 +2773,6 @@ class UserRoleAssociation(Base, RepresentById):
 
     user = relationship('User', back_populates="roles")
     role = relationship('Role', back_populates="users")
-
-    # TODO: should be defined on the User model only?
-    non_private_roles = relationship(
-        'User',
-        backref="non_private_roles",
-        viewonly=True,
-        primaryjoin=(lambda:
-            (User.id == UserRoleAssociation.user_id)  # type: ignore
-            & (UserRoleAssociation.role_id == Role.id)  # type: ignore
-            & not_(Role.name == User.email))  # type: ignore
-    )
 
     def __init__(self, user, role):
         self.user = user
@@ -2840,11 +2807,6 @@ class Role(Base, Dictifiable, RepresentById):
     deleted = Column(Boolean, index=True, default=False)
     dataset_actions = relationship('DatasetPermissions', back_populates='role')
     groups = relationship('GroupRoleAssociation', back_populates='role')
-    library_actions = relationship('LibraryPermissions', back_populates='role')
-    library_folder_actions = relationship('LibraryFolderPermissions', back_populates='role')
-    library_dataset_actions = relationship('LibraryDatasetPermissions', back_populates='role')
-    library_dataset_dataset_actions = relationship(
-        'LibraryDatasetDatasetAssociationPermissions', back_populates='role')
     users = relationship('UserRoleAssociation', back_populates='role')
 
     dict_collection_visible_keys = ['id', 'name']
@@ -3002,7 +2964,7 @@ class LibraryPermissions(Base, RepresentById):
     library_id = Column(Integer, ForeignKey('library.id'), nullable=True, index=True)
     role_id = Column(Integer, ForeignKey('role.id'), index=True)
     library = relationship('Library', back_populates='actions')
-    role = relationship('Role', back_populates='library_actions')
+    role = relationship('Role')
 
     def __init__(self, action, library_item, role):
         self.action = action
@@ -3023,7 +2985,7 @@ class LibraryFolderPermissions(Base, RepresentById):
     library_folder_id = Column(Integer, ForeignKey('library_folder.id'), nullable=True, index=True)
     role_id = Column(Integer, ForeignKey('role.id'), index=True)
     folder = relationship('LibraryFolder', back_populates='actions')
-    role = relationship('Role', back_populates='library_folder_actions')
+    role = relationship('Role')
 
     def __init__(self, action, library_item, role):
         self.action = action
@@ -3044,7 +3006,7 @@ class LibraryDatasetPermissions(Base, RepresentById):
     library_dataset_id = Column(Integer, ForeignKey('library_dataset.id'), nullable=True, index=True)
     role_id = Column(Integer, ForeignKey('role.id'), index=True)
     library_dataset = relationship('LibraryDataset', back_populates='actions')
-    role = relationship('Role', back_populates='library_dataset_actions')
+    role = relationship('Role')
 
     def __init__(self, action, library_item, role):
         self.action = action
@@ -3067,7 +3029,7 @@ class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
     role_id = Column(Integer, ForeignKey('role.id'), index=True)
     library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation',
         back_populates='actions')
-    role = relationship('Role', back_populates='library_dataset_dataset_actions')
+    role = relationship('Role')
 
     def __init__(self, action, library_item, role):
         self.action = action
@@ -4435,7 +4397,6 @@ class Library(Base, Dictifiable, HasName, RepresentById):
     synopsis = Column(TEXT)
     root_folder = relationship('LibraryFolder', back_populates='library_root')
     actions = relationship('LibraryPermissions', back_populates='library')
-    info_association = relationship('LibraryInfoAssociation', back_populates='library')
 
     permitted_actions = get_permitted_actions(filter='LIBRARY')
     dict_collection_visible_keys = ['id', 'name']
@@ -4548,10 +4509,8 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
         lazy=True,
         viewonly=True)
 
-    dataset_collections = relationship('LibraryDatasetCollectionAssociation', back_populates='folder')
     library_root = relationship('Library', back_populates='root_folder')
     actions = relationship('LibraryFolderPermissions', back_populates='folder')
-    info_association = relationship('LibraryFolderInfoAssociation', back_populates='folder')
 
     dict_element_visible_keys = ['id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted']
 
@@ -4958,8 +4917,7 @@ class LibraryInfoAssociation(Base, RepresentById):
             lambda: and_(
                 LibraryInfoAssociation.library_id == Library.id,  # type: ignore
                 not_(LibraryInfoAssociation.deleted))  # type: ignore
-        ),
-        back_populates='info_association')
+        ))
     template = relationship('FormDefinition',
         primaryjoin=lambda: LibraryInfoAssociation.form_definition_id == FormDefinition.id)  # type: ignore
     info = relationship('FormValues',
@@ -4985,8 +4943,7 @@ class LibraryFolderInfoAssociation(Base, RepresentById):
     folder = relationship('LibraryFolder',
         primaryjoin=(lambda:
             (LibraryFolderInfoAssociation.library_folder_id == LibraryFolder.id)  # type: ignore
-            & (not_(LibraryFolderInfoAssociation.deleted))),  # type: ignore
-        back_populates="info_association")
+            & (not_(LibraryFolderInfoAssociation.deleted))))  # type: ignore
     template = relationship('FormDefinition',
         primaryjoin=(lambda: LibraryFolderInfoAssociation.form_definition_id == FormDefinition.id))  # type: ignore
     info = relationship('FormValues',
@@ -5014,9 +4971,7 @@ class LibraryDatasetDatasetInfoAssociation(Base, RepresentById):
             (LibraryDatasetDatasetInfoAssociation.library_dataset_dataset_association_id
              == LibraryDatasetDatasetAssociation.id)
             & (not_(LibraryDatasetDatasetInfoAssociation.deleted))
-        ),
-        back_populates="info_association")
-
+        ))
     template = relationship('FormDefinition',
         primaryjoin=(lambda:
             LibraryDatasetDatasetInfoAssociation.form_definition_id == FormDefinition.id))  # type: ignore
@@ -5128,8 +5083,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
         primaryjoin=(lambda: DatasetCollection.id == DatasetCollectionElement.dataset_collection_id),  # type: ignore
         back_populates='collection',
         order_by=lambda: DatasetCollectionElement.element_index)  # type: ignore
-    output_dataset_collections = relationship(
-        'JobToImplicitOutputDatasetCollectionAssociation', back_populates='dataset_collection')
 
     dict_collection_visible_keys = ['id', 'collection_type']
     dict_element_visible_keys = ['id', 'collection_type']
@@ -5533,14 +5486,9 @@ class HistoryDatasetCollectionAssociation(
     )
     implicit_input_collections = relationship('ImplicitlyCreatedDatasetCollectionInput',
         primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id  # type: ignore
-                == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id),  # type: ignore
-        back_populates='dataset_collection',
+                == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id)  # type: ignore
     )
-    implicit_collection_jobs = relationship(
-        'ImplicitCollectionJobs',
-        back_populates='history_dataset_collection_associations',
-        uselist=False
-    )
+    implicit_collection_jobs = relationship('ImplicitCollectionJobs', uselist=False)
     job = relationship(
         'Job',
         back_populates='history_dataset_collection_associations',
@@ -5567,14 +5515,6 @@ class HistoryDatasetCollectionAssociation(
         order_by=lambda: HistoryDatasetCollectionRatingAssociation.id,  # type: ignore
         back_populates='dataset_collection',
     )
-    output_dataset_collection_instances = relationship(
-        'JobToOutputDatasetCollectionAssociation',
-        back_populates='dataset_collection_instance',
-    )
-    hidden_dataset_instances = relationship('HistoryDatasetAssociation',
-        primaryjoin=(lambda: HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id  # type: ignore
-            == HistoryDatasetCollectionAssociation.id),  # type: ignore
-        back_populates='hidden_beneath_collection_instance')
 
     dict_dbkeysandextensions_visible_keys = ['dbkeys', 'extensions']
     editable_keys = ('name', 'deleted', 'visible')
@@ -5801,7 +5741,7 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
     deleted = Column(Boolean, default=False)
 
     collection = relationship('DatasetCollection')
-    folder = relationship('LibraryFolder', back_populates='dataset_collections')
+    folder = relationship('LibraryFolder')
 
     tags = relationship('LibraryDatasetCollectionTagAssociation',
         order_by=lambda: LibraryDatasetCollectionTagAssociation.id,  # type: ignore
@@ -6369,8 +6309,7 @@ class WorkflowStep(Base, RepresentById):
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),  # type: ignore
         back_populates='parent_workflow_steps')
     dynamic_tool = relationship('DynamicTool',
-        primaryjoin=(lambda: DynamicTool.id == WorkflowStep.dynamic_tool_id),  # type: ignore
-        back_populates='workflow_steps')
+        primaryjoin=(lambda: DynamicTool.id == WorkflowStep.dynamic_tool_id))  # type: ignore
     tags = relationship('WorkflowStepTagAssociation',
         order_by=lambda: WorkflowStepTagAssociation.id,  # type: ignore
         back_populates='workflow_step')
@@ -6380,9 +6319,6 @@ class WorkflowStep(Base, RepresentById):
     post_job_actions = relationship('PostJobAction', back_populates='workflow_step')
     inputs = relationship('WorkflowStepInput', back_populates='workflow_step')
     workflow_outputs = relationship('WorkflowOutput', back_populates='workflow_step')
-    parent_workflow_input_connections = relationship('WorkflowStepConnection',
-        primaryjoin=(lambda: WorkflowStepConnection.input_subworkflow_step_id == WorkflowStep.id)  # type: ignore
-    )
     output_connections = relationship('WorkflowStepConnection',
         primaryjoin=(lambda: WorkflowStepConnection.output_step_id == WorkflowStep.id)  # type: ignore
     )
@@ -6628,7 +6564,6 @@ class WorkflowStepConnection(Base, RepresentById):
         cascade='all',
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id))  # type: ignore
     input_subworkflow_step = relationship('WorkflowStep',
-        back_populates='parent_workflow_input_connections',
         primaryjoin=(lambda: WorkflowStepConnection.input_subworkflow_step_id == WorkflowStep.id))  # type: ignore
     output_step = relationship('WorkflowStep',
         back_populates='output_connections',
@@ -6697,7 +6632,7 @@ class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
     id = Column(Integer, primary_key=True)
     stored_workflow_id = Column(Integer, ForeignKey('stored_workflow.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    user = relationship('User', back_populates='workflows_shared_by_others')
+    user = relationship('User')
     stored_workflow = relationship('StoredWorkflow', back_populates='users_shared_with')
 
 
@@ -6754,12 +6689,6 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
         back_populates='workflow_invocation')
     output_datasets = relationship('WorkflowInvocationOutputDatasetAssociation',
         back_populates='workflow_invocation')
-    parent_workflow_invocation_association = relationship(
-        'WorkflowInvocationToSubworkflowInvocationAssociation',
-        primaryjoin=(lambda:
-            WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id  # type: ignore
-                == WorkflowInvocation.id),  # type: ignore
-        back_populates='subworkflow_invocation')
     output_values = relationship('WorkflowInvocationOutputValue', back_populates='workflow_invocation')
 
     dict_collection_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
@@ -7123,7 +7052,6 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, Re
         primaryjoin=(lambda:
             WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id  # type: ignore
                 == WorkflowInvocation.id),  # type: ignore
-        back_populates='parent_workflow_invocation_association',
         uselist=False,
     )
     workflow_step = relationship('WorkflowStep')
@@ -7156,8 +7084,7 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
 
     workflow_step = relationship('WorkflowStep')
     job = relationship('Job', back_populates='workflow_invocation_step', uselist=False)
-    implicit_collection_jobs = relationship('ImplicitCollectionJobs',
-        back_populates='workflow_invocation_step', uselist=False)
+    implicit_collection_jobs = relationship('ImplicitCollectionJobs', uselist=False)
     output_dataset_collections = relationship(
         'WorkflowInvocationStepOutputDatasetCollectionAssociation',
         back_populates='workflow_invocation_step')
@@ -7784,7 +7711,6 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     extra_data = Column(MutableJSONType, nullable=True)
     lifetime = Column(Integer)
     assoc_type = Column(VARCHAR(64))
-    cloudauthz = relationship('CloudAuthz', back_populates='authn')
     user = relationship('User', back_populates='social_auth')
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
@@ -7923,7 +7849,7 @@ class CloudAuthz(Base, _HasTable):
     description = Column(TEXT)
     create_time = Column(DateTime, default=now)
     user = relationship('User', back_populates='cloudauthz')
-    authn = relationship('UserAuthnzToken', back_populates='cloudauthz')
+    authn = relationship('UserAuthnzToken')
 
     def __init__(self, user_id, provider, config, authn_id, description=None):
         self.user_id = user_id
@@ -7960,7 +7886,7 @@ class Page(Base, Dictifiable, RepresentById):
     importable = Column(Boolean, index=True, default=False)
     slug = Column(TEXT)
     published = Column(Boolean, index=True, default=False)
-    user = relationship('User', back_populates='pages')
+    user = relationship('User')
     revisions = relationship(
         'PageRevision',
         cascade="all, delete-orphan",
@@ -8041,7 +7967,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     id = Column(Integer, primary_key=True)
     page_id = Column(Integer, ForeignKey("page.id"), index=True)
     user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
-    user = relationship('User', back_populates='pages_shared_by_others')
+    user = relationship('User')
     page = relationship('Page', back_populates='users_shared_with')
 
 
@@ -8159,7 +8085,7 @@ class VisualizationUserShareAssociation(Base, UserShareAssociation):
     id = Column(Integer, primary_key=True)
     visualization_id = Column(Integer, ForeignKey('visualization.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    user = relationship('User', back_populates='visualizations_shared_by_others')
+    user = relationship('User')
     visualization = relationship('Visualization', back_populates='users_shared_with')
 
 
@@ -8175,20 +8101,6 @@ class Tag(Base, RepresentById):
     name = Column(TrimmedString(255))
     children = relationship('Tag', back_populates='parent')
     parent = relationship('Tag', back_populates='children', remote_side=[id])
-    tagged_histories = relationship('HistoryTagAssociation', back_populates='tag')
-    tagged_history_dataset_associations = relationship(
-        'HistoryDatasetAssociationTagAssociation', back_populates='tag')
-    tagged_library_dataset_dataset_associations = relationship(
-        'LibraryDatasetDatasetAssociationTagAssociation', back_populates='tag')
-    tagged_pages = relationship('PageTagAssociation', back_populates='tag')
-    tagged_workflow_steps = relationship('WorkflowStepTagAssociation', back_populates='tag')
-    tagged_stored_workflows = relationship('StoredWorkflowTagAssociation', back_populates='tag')
-    tagged_visualizations = relationship('VisualizationTagAssociation', back_populates='tag')
-    tagged_history_dataset_collections = relationship(
-        'HistoryDatasetCollectionTagAssociation', back_populates='tag')
-    tagged_library_dataset_collections = relationship(
-        'LibraryDatasetCollectionTagAssociation', back_populates='tag')
-    tagged_tools = relationship('ToolTagAssociation', back_populates='tag')
 
     def __str__(self):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type or -1, self.parent_id, self.name)
@@ -8226,7 +8138,7 @@ class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
     history = relationship('History', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_histories')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
@@ -8242,7 +8154,7 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
     history_dataset_association = relationship('HistoryDatasetAssociation', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_history_dataset_associations')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
@@ -8259,7 +8171,7 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
     user_value = Column(TrimmedString(255), index=True)
     library_dataset_dataset_association = relationship(
         'LibraryDatasetDatasetAssociation', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_library_dataset_dataset_associations')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
@@ -8274,7 +8186,7 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
     page = relationship('Page', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_pages')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
@@ -8289,7 +8201,7 @@ class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
     workflow_step = relationship('WorkflowStep', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_workflow_steps')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
@@ -8304,7 +8216,7 @@ class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
     stored_workflow = relationship('StoredWorkflow', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_stored_workflows')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
@@ -8319,7 +8231,7 @@ class VisualizationTagAssociation(Base, ItemTagAssociation, RepresentById):
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
     visualization = relationship('Visualization', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_visualizations')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
@@ -8335,7 +8247,7 @@ class HistoryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
     dataset_collection = relationship('HistoryDatasetCollectionAssociation', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_history_dataset_collections')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
@@ -8351,7 +8263,7 @@ class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
     dataset_collection = relationship('LibraryDatasetCollectionAssociation', back_populates='tags')
-    tag = relationship('Tag', back_populates='tagged_library_dataset_collections')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
@@ -8365,7 +8277,7 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
     user_value = Column(TrimmedString(255), index=True)
-    tag = relationship('Tag', back_populates='tagged_tools')
+    tag = relationship('Tag')
     user = relationship('User')
 
 
@@ -8630,7 +8542,6 @@ class UserPreference(Base, RepresentById):
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     name = Column(Unicode(255), index=True)
     value = Column(Text)
-    user = relationship('User', back_populates='_preferences')
 
     def __init__(self, name=None, value=None):
         # Do not remove this constructor: it is set as the creator for the User.preferences
@@ -8890,8 +8801,6 @@ mapper_registry.map_imperatively(
             viewonly=True),
         hashes=relationship(DatasetHash, back_populates='dataset'),
         sources=relationship(DatasetSource, back_populates='dataset'),
-        job_export_history_archive=relationship(JobExportHistoryArchive, back_populates='dataset'),
-        genome_index_tool_data=relationship(GenomeIndexToolData, back_populates='dataset'),
         history_associations=relationship(HistoryDatasetAssociation, back_populates='dataset'),
         library_associations=relationship(LibraryDatasetDatasetAssociation,
             primaryjoin=(LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.table.c.id),
@@ -8940,8 +8849,7 @@ mapper_registry.map_imperatively(
         hidden_beneath_collection_instance=relationship(HistoryDatasetCollectionAssociation,
             primaryjoin=(HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id
                 == HistoryDatasetCollectionAssociation.id),
-            uselist=False,
-            back_populates="hidden_dataset_instances"),
+            uselist=False),
         _metadata=deferred(HistoryDatasetAssociation.table.c._metadata),
         dependent_jobs=relationship(JobToInputDatasetAssociation, back_populates='dataset'),
         creating_job_associations=relationship(
@@ -9011,13 +8919,6 @@ mapper_registry.map_imperatively(
             primaryjoin=(HistoryDatasetAssociation.table.c.id
                 == LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id),
             back_populates='copied_to_library_dataset_dataset_associations'),
-        info_association=relationship(LibraryDatasetDatasetInfoAssociation,
-            primaryjoin=(lambda:
-                (LibraryDatasetDatasetInfoAssociation.library_dataset_dataset_association_id
-                 == LibraryDatasetDatasetAssociation.id)
-                & (not_(LibraryDatasetDatasetInfoAssociation.deleted))
-            ),
-            back_populates='library_dataset_dataset_association'),
     )
 )
 

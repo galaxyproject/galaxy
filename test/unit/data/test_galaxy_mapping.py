@@ -6,7 +6,7 @@ import uuid
 from tempfile import NamedTemporaryFile
 
 import pytest
-from sqlalchemy import inspect
+from sqlalchemy import inspect, select
 
 import galaxy.datatypes.registry
 import galaxy.model
@@ -236,45 +236,44 @@ class MappingTests(BaseModelTestCase):
 
     def test_tags(self):
         model = self.model
-
-        my_tag = model.Tag(name="Test Tag")
+        TAG_NAME = 'Test Tag'
+        my_tag = model.Tag(name=TAG_NAME)
         u = model.User(email="tagger@example.com", password="password")
         self.persist(my_tag, u)
 
-        def tag_and_test(taggable_object, tag_association_class, backref_name):
-            assert len(getattr(self.query(model.Tag).filter(model.Tag.name == "Test Tag").all()[0], backref_name)) == 0
+        def tag_and_test(taggable_object, tag_association_class):
+            q = select(tag_association_class).join(model.Tag).where(model.Tag.name == TAG_NAME)
+
+            assert len(model.session.execute(q).all()) == 0
 
             tag_association = tag_association_class()
             tag_association.tag = my_tag
             taggable_object.tags = [tag_association]
             self.persist(tag_association, taggable_object)
 
-            assert len(getattr(self.query(model.Tag).filter(model.Tag.name == "Test Tag").all()[0], backref_name)) == 1
+            assert len(model.session.execute(q).all()) == 1
 
-        sw = model.StoredWorkflow()
-        sw.user = u
-        tag_and_test(sw, model.StoredWorkflowTagAssociation, "tagged_stored_workflows")
+        sw = model.StoredWorkflow(user=u)
+        tag_and_test(sw, model.StoredWorkflowTagAssociation)
 
         h = model.History(name="History for Tagging", user=u)
-        tag_and_test(h, model.HistoryTagAssociation, "tagged_histories")
+        tag_and_test(h, model.HistoryTagAssociation)
 
         d1 = model.HistoryDatasetAssociation(extension="txt", history=h, create_dataset=True, sa_session=model.session)
-        tag_and_test(d1, model.HistoryDatasetAssociationTagAssociation, "tagged_history_dataset_associations")
+        tag_and_test(d1, model.HistoryDatasetAssociationTagAssociation)
 
-        page = model.Page()
-        page.user = u
-        tag_and_test(page, model.PageTagAssociation, "tagged_pages")
+        page = model.Page(user=u)
+        tag_and_test(page, model.PageTagAssociation)
 
-        visualization = model.Visualization()
-        visualization.user = u
-        tag_and_test(visualization, model.VisualizationTagAssociation, "tagged_visualizations")
+        visualization = model.Visualization(user=u)
+        tag_and_test(visualization, model.VisualizationTagAssociation)
 
         dataset_collection = model.DatasetCollection(collection_type="paired")
         history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=dataset_collection)
-        tag_and_test(history_dataset_collection, model.HistoryDatasetCollectionTagAssociation, "tagged_history_dataset_collections")
+        tag_and_test(history_dataset_collection, model.HistoryDatasetCollectionTagAssociation)
 
         library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
-        tag_and_test(library_dataset_collection, model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections")
+        tag_and_test(library_dataset_collection, model.LibraryDatasetCollectionTagAssociation)
 
     def test_collection_get_interface(self):
         model = self.model
