@@ -1,3 +1,5 @@
+from numbers import Number
+
 import pytest
 from sqlalchemy import inspect
 from sqlalchemy.orm import InstanceState
@@ -22,6 +24,12 @@ class Bar:
 @pytest.fixture(scope='module')
 def default_no_wrap_types():
     return list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
+
+
+def test_dont_sanitize_types():
+    """Verify const values."""
+    assert __DONT_SANITIZE_TYPES__ == (
+        Number, bool, type(None), type(NotImplemented), type(Ellipsis), bytearray)
 
 
 def test_do_not_set_attrs_of_type_instancestate():
