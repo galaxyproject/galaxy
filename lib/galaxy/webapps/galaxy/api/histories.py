@@ -26,10 +26,6 @@ from starlette.responses import FileResponse
 from galaxy import (
     util
 )
-from galaxy.managers import (
-    histories,
-    sharable,
-)
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
@@ -47,8 +43,13 @@ from galaxy.schema.schema import (
     CreateHistoryPayload,
     CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
+    HistoryArchiveExportResult,
     JobExportHistoryArchiveCollection,
     JobImportHistoryResponse,
+    SetSlugPayload,
+    ShareWithPayload,
+    ShareWithStatus,
+    SharingStatus,
 )
 from galaxy.schema.types import LatestLiteral
 from galaxy.util import (
@@ -64,6 +65,7 @@ from galaxy.webapps.galaxy.api.common import (
     parse_serialization_params,
     query_serialization_params,
 )
+from galaxy.webapps.galaxy.services.histories import HistoriesService
 from . import (
     as_form,
     BaseGalaxyAPIController,
@@ -117,7 +119,7 @@ class CreateHistoryFormData(CreateHistoryPayload):
 
 @router.cbv
 class FastAPIHistories:
-    service: histories.HistoriesService = depends(histories.HistoriesService)
+    service: HistoriesService = depends(HistoriesService)
 
     @router.get(
         '/api/histories',
@@ -307,7 +309,7 @@ class FastAPIHistories:
         trans=DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
         payload: Optional[ExportHistoryArchivePayload] = Body(None),
-    ) -> histories.HistoryArchiveExportResult:
+    ) -> HistoryArchiveExportResult:
         """This will start a job to create a history export archive.
 
         Calling this endpoint multiple times will return the 202 status code until the archive
@@ -375,7 +377,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> sharable.SharingStatus:
+    ) -> SharingStatus:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, id)
 
@@ -387,7 +389,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> sharable.SharingStatus:
+    ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.enable_link_access(trans, id)
 
@@ -399,7 +401,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> sharable.SharingStatus:
+    ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, id)
 
@@ -411,7 +413,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> sharable.SharingStatus:
+    ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
         return self.service.shareable_service.publish(trans, id)
 
@@ -423,7 +425,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> sharable.SharingStatus:
+    ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, id)
 
@@ -435,8 +437,8 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-        payload: sharable.ShareWithPayload = Body(...)
-    ) -> sharable.ShareWithStatus:
+        payload: ShareWithPayload = Body(...)
+    ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
         return self.service.shareable_service.share_with_users(trans, id, payload)
 
@@ -449,7 +451,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-        payload: sharable.SetSlugPayload = Body(...),
+        payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
         self.service.shareable_service.set_slug(trans, id, payload)
@@ -457,7 +459,7 @@ class FastAPIHistories:
 
 
 class HistoriesController(BaseGalaxyAPIController):
-    service: histories.HistoriesService = depends(histories.HistoriesService)
+    service: HistoriesService = depends(HistoriesService)
 
     @expose_api_anonymous
     def index(self, trans, deleted='False', **kwd):
@@ -829,7 +831,7 @@ class HistoriesController(BaseGalaxyAPIController):
         """
         * PUT /api/histories/{id}/share_with_users
         """
-        payload = sharable.ShareWithPayload(**payload)
+        payload = ShareWithPayload(**payload)
         return self.service.shareable_service.share_with_users(trans, id, payload)
 
     @expose_api
@@ -837,5 +839,5 @@ class HistoriesController(BaseGalaxyAPIController):
         """
         * PUT /api/histories/{id}/slug
         """
-        payload = sharable.SetSlugPayload(**payload)
+        payload = SetSlugPayload(**payload)
         self.service.shareable_service.set_slug(trans, id, payload)

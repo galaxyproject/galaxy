@@ -46,7 +46,6 @@ from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.schema import FilterQueryParams
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import BasicApp, MinimalManagerApp
 from galaxy.util import namedtuple
@@ -1204,41 +1203,3 @@ class SortableManager:
         """Return an ORM compatible order_by clause using the given string (i.e.: 'name-dsc,create_time').
         This must be implemented by the manager."""
         raise NotImplementedError
-
-
-class ServiceBase:
-    """Base class with common logic and utils reused by other Services."""
-
-    def __init__(self, security: IdEncodingHelper):
-        self.security = security
-
-    def decode_id(self, id: EncodedDatabaseIdField) -> int:
-        """Decodes a previously encoded database ID."""
-        return decode_with_security(self.security, id)
-
-    def encode_id(self, id: int) -> EncodedDatabaseIdField:
-        """Encodes a raw database ID."""
-        return encode_with_security(self.security, id)
-
-    def decode_ids(self, ids: List[EncodedDatabaseIdField]) -> List[int]:
-        """
-        Decodes all encoded IDs in the given list.
-        """
-        return [self.decode_id(id) for id in ids]
-
-    def encode_all_ids(self, rval, recursive: bool = False):
-        """
-        Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
-
-        It might be useful to turn this in to a decorator
-        """
-        return self.security.encode_all_ids(rval, recursive=recursive)
-
-    def build_order_by(self, manager: SortableManager, order_by_query: Optional[str] = None):
-        """Returns an ORM compatible order_by clause using the order attribute and the given manager.
-
-        The manager has to implement the `parse_order_by` function to support all the sortable model attributes."""
-        ORDER_BY_SEP_CHAR = ','
-        if order_by_query and ORDER_BY_SEP_CHAR in order_by_query:
-            return [manager.parse_order_by(o) for o in order_by_query.split(ORDER_BY_SEP_CHAR)]
-        return manager.parse_order_by(order_by_query)

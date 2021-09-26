@@ -14,25 +14,23 @@ from fastapi import (
 from starlette.responses import StreamingResponse
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.pages import (
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import (
     CreatePagePayload,
     PageDetails,
-    PagesService,
     PageSummary,
     PageSummaryList,
-)
-from galaxy.managers.sharable import (
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless
 )
+from galaxy.webapps.galaxy.services.pages import PagesService
 from . import (
     BaseGalaxyAPIController,
     depends,
