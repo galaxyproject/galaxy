@@ -3,11 +3,11 @@ import subprocess
 import unittest
 
 from galaxy import model
+from galaxy.app_unittest_utils import tools_support
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.util import safe_makedirs
-from .. import tools_support
 
 
 class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools):

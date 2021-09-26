@@ -7,12 +7,12 @@ import psutil
 
 from galaxy import job_metrics
 from galaxy import model
+from galaxy.app_unittest_utils.tools_support import (
+    UsesApp,
+    UsesTools,
+)
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
-from ..tools_support import (
-    UsesApp,
-    UsesTools
-)
 
 
 class TestLocalJobRunner(TestCase, UsesApp, UsesTools):

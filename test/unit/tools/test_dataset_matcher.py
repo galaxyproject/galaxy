@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from galaxy import model
+from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.tools.parameters import (
     basic,
     dataset_matcher
@@ -10,7 +11,6 @@ from galaxy.util import (
     XML,
 )
 from .test_data_parameters import MockHistoryDatasetAssociation
-from ..tools_support import UsesApp
 
 
 class DatasetMatcherTestCase(TestCase, UsesApp):

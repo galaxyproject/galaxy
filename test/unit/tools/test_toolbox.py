@@ -10,6 +10,7 @@ import pytest
 import routes
 
 from galaxy import model
+from galaxy.app_unittest_utils.tools_support import UsesApp, UsesTools
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
@@ -17,7 +18,6 @@ from galaxy.tool_util.unittest_utils import mock_trans
 from galaxy.tool_util.unittest_utils.sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
-from ..tools_support import UsesApp, UsesTools
 
 log = logging.getLogger(__name__)
 

@@ -2,9 +2,9 @@
 test_select_parameters.py.
 """
 from galaxy import model
+from galaxy.app_unittest_utils.tools_support import datatypes_registry
 from galaxy.util import bunch
 from .util import BaseParameterTestCase
-from ..tools_support import datatypes_registry
 
 
 class DataColumnParameterTestCase(BaseParameterTestCase):
