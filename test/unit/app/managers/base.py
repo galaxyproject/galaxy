@@ -26,9 +26,6 @@ class BaseTestCase(unittest.TestCase):
     def tearDownClass(cls):
         print('\n', '-' * 20, 'end class', cls)
 
-    def __init__(self, *args):
-        unittest.TestCase.__init__(self, *args)
-
     def setUp(self):
         self.log('.' * 20, 'begin test', self)
         self.set_up_mocks()
