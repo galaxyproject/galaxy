@@ -54,6 +54,10 @@
                         <td>Full Path</td>
                         <td id="file_name">{{ dataset.file_name }}</td>
                     </tr>
+                    <tr v-if="dataset.created_from_basename">
+                        <td>Originally Created From a File Named</td>
+                        <td id="created_from_basename">{{ dataset.created_from_basename }}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
