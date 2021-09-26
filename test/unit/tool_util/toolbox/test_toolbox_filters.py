@@ -1,4 +1,5 @@
 from galaxy.tool_util.toolbox.filters import FilterFactory
+from galaxy.tool_util.unittest_utils import mock_trans
 from galaxy.util.bunch import Bunch
 
 
@@ -74,12 +75,3 @@ def mock_tool(require_login=False, hidden=False, trackster_conf=False, allow_acc
         allow_user_access=allow_user_access,
     )
     return tool
-
-
-def mock_trans(has_user=True, is_admin=False):
-    trans = Bunch(user_is_admin=is_admin)
-    if has_user:
-        trans.user = Bunch(preferences={})
-    else:
-        trans.user = None
-    return trans
