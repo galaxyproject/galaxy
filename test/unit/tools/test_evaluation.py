@@ -1,6 +1,7 @@
 import os
 from unittest import TestCase
 
+from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.jobs import SimpleComputeEnvironment
 from galaxy.model import (
@@ -28,8 +29,6 @@ from galaxy.tools.parameters.grouping import (
 )
 from galaxy.util import XML
 from galaxy.util.bunch import Bunch
-# Test fixtures for Galaxy infrastructure.
-from ..tools_support import UsesApp
 
 # To Test:
 # - param_file handling.

@@ -2,6 +2,7 @@ import os
 from contextlib import contextmanager
 from unittest import TestCase
 
+from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.jobs import (
     JobWrapper,
     TaskWrapper
@@ -13,7 +14,6 @@ from galaxy.model import (
 )
 from galaxy.tools import evaluation
 from galaxy.util.bunch import Bunch
-from ..tools_support import UsesApp
 
 TEST_TOOL_ID = "cufftest"
 TEST_VERSION_COMMAND = "bwa --version"

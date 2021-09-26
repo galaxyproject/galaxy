@@ -6,9 +6,9 @@ from galaxy import (
     model,
     util
 )
+from galaxy.app_unittest_utils import tools_support
 from galaxy.tool_util.parser import output_collection_def
 from galaxy.tool_util.provided_metadata import LegacyToolProvidedMetadata, NullToolProvidedMetadata
-from .. import tools_support
 
 DEFAULT_TOOL_OUTPUT = "out1"
 DEFAULT_EXTRA_NAME = "test1"

@@ -2,6 +2,7 @@ import string
 import unittest
 
 from galaxy import model
+from galaxy.app_unittest_utils import tools_support
 from galaxy.exceptions import UserActivationRequiredException
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.actions import (
@@ -10,7 +11,6 @@ from galaxy.tools.actions import (
     on_text_for_names
 )
 from galaxy.util import XML
-from .. import tools_support
 
 
 # I cannot think of a saner way to test if data is being wrapped than use a

@@ -6,9 +6,9 @@ from unittest import TestCase
 import webob.exc
 
 import galaxy.model
+from galaxy.app_unittest_utils import tools_support
 from galaxy.tools.parameters import params_to_incoming
 from galaxy.util.bunch import Bunch
-from .. import tools_support
 
 BASE_REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
     <command>echo "$param1" #for $r in $repeat# "$r.param2" #end for# &lt; $out1</command>

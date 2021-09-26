@@ -1,12 +1,12 @@
 from unittest import TestCase
 
 from galaxy import model
+from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.tools.parameters import basic
 from galaxy.util import (
     bunch,
     XML,
 )
-from ..tools_support import UsesApp
 
 
 class BaseParameterTestCase(TestCase, UsesApp):
