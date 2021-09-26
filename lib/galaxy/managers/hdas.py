@@ -326,6 +326,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
             'api_type',
             'created_from_basename',
+            'hashes',
+            'sources',
         ], include_keys_from='summary')
 
         self.add_view('extended', [
@@ -384,6 +386,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'uuid',
             'validated_state',
             'validated_state_message',
+            'hashes',
+            'sources',
         ])
 
     def serialize_copied_from_ldda_id(self, item, key, **context):
@@ -436,6 +440,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'api_type': lambda item, key, **context: 'file',
             'type': lambda item, key, **context: 'file',
             'created_from_basename': lambda item, key, **context: item.created_from_basename,
+            'hashes': lambda item, key, **context: [h.to_dict() for h in item.hashes],
+            'sources': lambda item, key, **context: [s.to_dict() for s in item.sources],
         }
         self.serializers.update(serializers)
 
