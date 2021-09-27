@@ -9,6 +9,7 @@ import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import { mountNametags } from "components/Nametags";
 import { Toast } from "ui/toast";
+import { getAppRoot } from "onload/loadConfig";
 
 var logNamespace = "dataset";
 /*==============================================================================
@@ -272,7 +273,8 @@ export var DatasetListItemView = _super.extend(
          *  @returns {jQuery} rendered DOM
          */
         _renderShowParamsButton: function () {
-            // gen. safe to show in all cases
+            const url = `datasets/${this.model.get("id")}/details`;
+
             return faIconButton({
                 title: _l("View details"),
                 classes: "params-btn",
@@ -281,9 +283,13 @@ export var DatasetListItemView = _super.extend(
                 faIcon: "fa-info-circle",
                 onclick: (ev) => {
                     const Galaxy = getGalaxyInstance();
-                    if (Galaxy.router) {
+                    if (Galaxy.frame && Galaxy.frame.active) {
                         ev.preventDefault();
-                        Galaxy.router.push(`/datasets/${this.model.get("id")}/details`);
+                        Galaxy.frame.add({ url: `${getAppRoot()}${url}`, title: "Dataset Details" });
+                    } else if (Galaxy.router) {
+                        ev.preventDefault();
+                        Galaxy.router.push(url);
+                        Galaxy.trigger("activate-hda", this.model.get("id"));
                     }
                 },
             });
