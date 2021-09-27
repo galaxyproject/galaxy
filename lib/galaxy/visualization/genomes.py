@@ -396,6 +396,7 @@ class Genomes:
 
         return self._get_reference_data(twobit_file_name, chrom, low, high)
 
+    @staticmethod
     def _get_reference_data(twobit_file_name, chrom, low, high):
         # Read and return reference data.
         try:
