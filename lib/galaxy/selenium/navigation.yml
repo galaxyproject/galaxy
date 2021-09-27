@@ -649,9 +649,9 @@ admin:
       sanitized:
         type: xpath
         selector: '//a[contains(text(), "HTML Sanitized")]'
-      rendered:
+      rendered_active:
         type: xpath
-        selector: '//li[@class="nav-item"]/a[contains(text(), "HTML Rendered")]'
+        selector: '//div[contains(@class, "active")]//a[contains(text(), "HTML Rendered")]'
 
   manage_dependencies:
     selectors:
