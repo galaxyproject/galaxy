@@ -93,6 +93,10 @@ PACKAGES = [
     'galaxy.workflow.reports',
     'galaxy.workflow.resources',
     'galaxy.workflow.schedulers',
+    'galaxy_ext',
+    'galaxy_ext.container_monitor',
+    'galaxy_ext.expressions',
+    'galaxy_ext.metadata',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
