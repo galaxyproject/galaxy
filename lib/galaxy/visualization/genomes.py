@@ -399,11 +399,8 @@ class Genomes:
     @staticmethod
     def _get_reference_data(twobit_file_name, chrom, low, high):
         # Read and return reference data.
-        try:
-            with open(twobit_file_name, 'rb') as f:
-                twobit = TwoBitFile(f)
-                if chrom in twobit:
-                    seq_data = twobit[chrom].get(int(low), int(high))
-                    return GenomeRegion(chrom=chrom, start=low, end=high, sequence=seq_data)
-        except OSError as e:
-            raise e()
+        with open(twobit_file_name, 'rb') as f:
+            twobit = TwoBitFile(f)
+            if chrom in twobit:
+                seq_data = twobit[chrom].get(int(low), int(high))
+                return GenomeRegion(chrom=chrom, start=low, end=high, sequence=seq_data)
