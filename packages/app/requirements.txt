@@ -6,6 +6,7 @@ galaxy-web-framework
 galaxy-web-stack
 
 celery
+cloudauthz==0.6.0
 kombu
 Beaker
 pykwalify
