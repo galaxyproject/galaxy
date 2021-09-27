@@ -8,7 +8,7 @@
                 :disabled="dataset.purged || isIn(STATES.UPLOAD, STATES.NEW)"
                 @click.stop="viewData"
                 variant="link"
-                class="px-1"
+                class="px-1 display-btn"
             />
             <IconButton
                 v-if="writable && notIn(STATES.DISCARDED)"
@@ -17,7 +17,7 @@
                 :disabled="dataset.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
                 @click.stop="backboneRoute('datasets/edit', { dataset_id: dataset.id })"
                 variant="link"
-                class="px-1"
+                class="px-1 edit-btn"
             />
             <IconButton
                 v-if="writable && dataset.accessible"
@@ -26,7 +26,7 @@
                 :disabled="dataset.purged"
                 v-b-modal="bsId('delete-modal')"
                 variant="link"
-                class="px-1"
+                class="px-1 delete-btn"
                 @click.stop
             />
 
@@ -36,7 +36,7 @@
                 variant="link"
                 :text="'Dataset Operations' | l"
                 toggle-class="p-1 pl-2"
-                class="flex-grow-0"
+                class="flex-grow-0 dataset-operations-dropdown"
                 v-if="expanded"
                 boundary="window"
             >
@@ -87,6 +87,7 @@
                     title="Download"
                     :href="prependPath(dataset.getUrl('download'))"
                     target="_blank"
+                    class="download-btn"
                     download
                 >
                     <Icon icon="download" class="mr-1" />
@@ -129,6 +130,7 @@
                     v-if="notIn(STATES.NOT_VIEWABLE)"
                     key="dataset-details"
                     title="View Dataset Details"
+                    class="params-btn"
                     @click.stop.prevent="showDetails"
                 >
                     <Icon icon="info-circle" class="mr-1" />
