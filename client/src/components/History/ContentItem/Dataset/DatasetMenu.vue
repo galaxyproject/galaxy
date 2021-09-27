@@ -129,7 +129,7 @@
                     v-if="notIn(STATES.NOT_VIEWABLE)"
                     key="dataset-details"
                     title="View Dataset Details"
-                    @click.stop.prevent="backboneRoute(dataset.getUrl('show_params'))"
+                    @click.stop.prevent="showDetails"
                 >
                     <Icon icon="info-circle" class="mr-1" />
                     <span v-localize>View Dataset Details</span>
@@ -270,6 +270,17 @@ export default {
                 this.backboneRoute("visualizations", {
                     dataset_id: this.dataset.id,
                 });
+            }
+        },
+
+        showDetails() {
+            const redirectParams = {
+                path: this.dataset.getUrl("show_params"),
+                title: "Dataset details",
+                tryIframe: false,
+            };
+            if (!this.iframeAdd(redirectParams)) {
+                this.backboneRoute(this.dataset.getUrl("show_params"));
             }
         },
 
