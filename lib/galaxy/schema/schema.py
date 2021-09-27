@@ -18,7 +18,6 @@ from pydantic import (
     ConstrainedStr,
     Extra,
     Field,
-    FilePath,
     Json,
     UUID4,
 )
@@ -418,13 +417,13 @@ class HDADetailed(HDASummary):
     hda_ldda: DatasetSourceType = HdaLddaField
     accessible: bool = AccessibleField
     genome_build: Optional[str] = GenomeBuildField
-    misc_info: str = Field(
-        ...,
+    misc_info: Optional[str] = Field(
+        default=None,
         title="Miscellaneous Information",
         description="TODO",
     )
-    misc_blurb: str = Field(
-        ...,
+    misc_blurb: Optional[str] = Field(
+        default=None,
         title="Miscellaneous Blurb",
         description="TODO",
     )
@@ -443,13 +442,23 @@ class HDADetailed(HDASummary):
         title="Resubmitted",
         description="Whether the job creating this dataset has been resubmitted.",
     )
-    metadata: Any = Field(  # TODO: create pydantic model for metadata?
-        ...,
+    metadata: Optional[Any] = Field(  # TODO: create pydantic model for metadata?
+        default=None,
         title="Metadata",
         description="The metadata associated with this dataset.",
     )
+    metadata_dbkey: Optional[str] = Field(
+        "?",
+        title="Metadata DBKey",
+        description="TODO",
+    )
+    metadata_data_lines: int = Field(
+        0,
+        title="Metadata Data Lines",
+        description="TODO",
+    )
     meta_files: List[MetadataFile] = Field(
-        [],
+        ...,
         title="Metadata Files",
         description="Collection of metadata files associated with this dataset.",
     )
@@ -459,8 +468,8 @@ class HDADetailed(HDASummary):
         description="The fully qualified name of the class implementing the data type of this dataset.",
         example="galaxy.datatypes.data.Text"
     )
-    peek: str = Field(
-        ...,
+    peek: Optional[str] = Field(
+        default=None,
         title="Peek",
         description="A few lines of contents from the start of the file.",
     )
@@ -480,24 +489,24 @@ class HDADetailed(HDASummary):
         title="Permissions",
         description="Role-based access and manage control permissions for the dataset.",
     )
-    file_name: FilePath = Field(
-        ...,
+    file_name: Optional[str] = Field(
+        default=None,
         title="File Name",
         description="The full path to the dataset file.",
     )
     display_apps: List[DisplayApp] = Field(
-        [],
+        ...,
         title="Display Applications",
         description="Contains new-style display app urls.",
     )
     display_types: List[DisplayApp] = Field(
-        [],
+        ...,
         title="Legacy Display Applications",
         description="Contains old-style display app urls.",
         deprecated=False,  # TODO: Should this field be deprecated in favor of display_apps?
     )
     visualizations: List[Visualization] = Field(
-        [],
+        ...,
         title="Visualizations",
         description="The collection of visualizations that can be applied to this dataset.",
     )
@@ -2470,9 +2479,18 @@ class DeleteHDCAResult(Model):
     )
 
 
-AnyHDA = Union[HDASummary, HDADetailed, HDABeta]
+AnyHDA = Union[HDABeta, HDADetailed, HDASummary]
 AnyHDCA = Union[HDCABeta, HDCADetailed, HDCASummary]
-AnyHistoryContentItem = Union[AnyHDA, HDCASummary, HDCADetailed, HDCABeta]
+AnyHistoryContentItem = Union[
+    AnyHDA,
+    AnyHDCA,
+    Any,  # Allows custom keys to be specified in the serialization parameters
+]
+
+
+class HistoryContentItemList(BaseModel):
+    __root__: List[AnyHistoryContentItem]
+
 
 AnyJobStateSummary = Union[
     JobStateSummary,
