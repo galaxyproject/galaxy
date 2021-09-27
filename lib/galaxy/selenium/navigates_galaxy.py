@@ -1461,6 +1461,17 @@ class NavigatesGalaxy(HasDriver):
         dataset_selector = next_level_element_selector.descendant(".dataset")
         self.wait_for_and_click(dataset_selector)
 
+    def history_panel_item_view_dataset_details(self, hid):
+        if not self.is_beta_history():
+            self.history_panel_ensure_showing_item_details(hid)
+            self.hda_click_details(hid)
+            self.components.dataset_details._.wait_for_visible()
+        else:
+            item = self.history_panel_item_component(hid=hid)
+            item.dataset_operations_dropdown.wait_for_and_click()
+            item.info_button.wait_for_and_click()
+            self.components.dataset_details._.wait_for_visible()
+
     def history_panel_item_click_visualization_menu(self, hid):
         viz_button_selector = f"{self.history_panel_item_selector(hid)} .visualizations-dropdown"
         self.wait_for_and_click_selector(viz_button_selector)

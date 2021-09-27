@@ -11,8 +11,8 @@
             <label class="prompt" v-localize>database</label>
             <span class="value">{{ props.dataset.metadata_dbkey }}</span>
         </div>
-        <div v-if="props.dataset.misc_info">
-            <span>{{ props.dataset.misc_info }}</span>
+        <div v-if="props.dataset.misc_info" class="info">
+            <span class="value">{{ props.dataset.misc_info }}</span>
         </div>
     </div>
 </template>
