@@ -273,14 +273,14 @@ export default {
             }
         },
 
-      showDetails() {
+        showDetails() {
             const redirectParams = {
                 path: this.dataset.getUrl("show_params"),
                 title: "Dataset details",
                 tryIframe: false,
             };
             if (!this.iframeAdd(redirectParams)) {
-                this.backboneRoute(this.dataset.getUrl('show_params'))
+                this.backboneRoute(this.dataset.getUrl("show_params"));
             }
         },
 
