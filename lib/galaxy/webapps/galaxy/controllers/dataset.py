@@ -15,6 +15,7 @@ from galaxy import (
     web
 )
 from galaxy.datatypes import sniff
+from galaxy.datatypes.data import DatatypeConverterNotFoundException
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.hdas import HDADeserializer, HDAManager
@@ -390,7 +391,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         elif operation == 'conversion':
             target_type = payload.get('target_type')
             if target_type:
-                message = data.datatype.convert_dataset(trans, data, target_type)
+                try:
+                    message = data.datatype.convert_dataset(trans, data, target_type)
+                except DatatypeConverterNotFoundException as e:
+                    return self.message_exception(trans, str(e))
         elif operation == 'permission':
             # Adapt form request to API - style.
             payload_permissions = {}
