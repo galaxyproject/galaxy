@@ -56,7 +56,6 @@ from galaxy.schema import (
 )
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
-    OrderParamField,
 )
 from galaxy.schema.schema import (
     AnyHDA,
@@ -89,80 +88,21 @@ class DirectionOptions(str, Enum):
     after = "after"
 
 
-class HistoryContentsFilterQueryParams(FilterQueryParams):
-    order: Optional[str] = OrderParamField(default_order="hid-asc")
-
-
 HistoryContentFilter = List[Any]  # Lists with [attribute:str, operator:str, value:Any]
 HistoryContentsFilterList = List[HistoryContentFilter]
 
 
-class HistoryContentsIndexLegacyParamsBase(Model):
-    deleted: Optional[bool] = Field(
-        default=None,
-        title="Deleted",
-        description="Whether to return deleted or undeleted datasets only. Leave unset for both.",
-    )
-    visible: Optional[bool] = Field(
-        default=None,
-        title="Visible",
-        description="Whether to return visible or hidden datasets only. Leave unset for both.",
-    )
+class HistoryContentsIndexParams(Model):
+    v: Optional[str]
+    dataset_details: Optional[DatasetDetailsType]
 
 
-class HistoryContentsIndexLegacyParams(HistoryContentsIndexLegacyParamsBase):
-    v: Optional[str] = Field(  # Should this be deprecated at some point and directly use the latest version by default?
-        default=None,
-        title="Version",
-        description="Only `dev` value is allowed. Set it to use the latest version of this endpoint.",
-    )
-    ids: Optional[str] = Field(
-        default=None,
-        title="IDs",
-        description=(
-            "A comma separated list of encoded `HDA` IDs. If this list is provided, only information about the "
-            "specific datasets will be provided. Also, setting this value will set `dataset_details` to `all`."
-        ),
-    )
-    types: Optional[Union[List[HistoryContentType], str]] = Field(
-        default=None,
-        alias="type",  # Legacy alias
-        title="Types",
-        description=(
-            "A list or comma separated list of kinds of contents to return "
-            "(currently just `dataset` and `dataset_collection` are available)."
-        ),
-    )
-    dataset_details: Optional[str] = Field(
-        default=None,
-        alias="details",  # Legacy alias
-        title="Dataset Details",
-        description=(
-            "A comma separated list of encoded dataset IDs that will return additional (full) details "
-            "instead of the *summary* default information."
-        ),
-    )
-
-
-class ParsedHistoryContentsLegacyParams(HistoryContentsIndexLegacyParamsBase):
-    ids: Optional[List[int]] = Field(
-        default=None,
-        title="IDs",
-        description="A list of (decoded) `HDA` IDs to return detailed information. Only these items will be returned.",
-    )
-    types: List[HistoryContentType] = Field(
-        default=[],
-        title="Types",
-        description="A list with the types of contents to return.",
-    )
-    dataset_details: Optional[DatasetDetailsType] = Field(
-        default=None,
-        title="Dataset Details",
-        description=(
-            "A set of encoded IDs for the datasets that will be returned with detailed "
-            "information or the value `all` to return (full) details for all datasets."
-        ),
-    )
+class LegacyHistoryContentsIndexParams(Model):
+    ids: Optional[List[EncodedDatabaseIdField]]
+    types: List[HistoryContentType]
+    dataset_details: Optional[DatasetDetailsType]
+    deleted: Optional[bool]
+    visible: Optional[bool]
 
 
 class CreateHistoryContentPayloadBase(Model):
@@ -251,18 +191,19 @@ class HistoriesContentsService(ServiceBase):
         self,
         trans,
         history_id: EncodedDatabaseIdField,
-        legacy_params: HistoryContentsIndexLegacyParams,
+        params: HistoryContentsIndexParams,
+        legacy_params: LegacyHistoryContentsIndexParams,
         serialization_params: SerializationParams,
-        filter_query_params: HistoryContentsFilterQueryParams,
+        filter_query_params: FilterQueryParams,
     ) -> List[AnyHistoryContentItem]:
         """
-        Return a list of contents (HDAs and HDCAs) for the history with the given ``id``
+        Return a list of contents (HDAs and HDCAs) for the history with the given ``ID``.
 
-        .. note:: Anonymous users are allowed to get their current history contents
+        .. note:: Anonymous users are allowed to get their current history contents.
         """
-        if legacy_params.v == 'dev':
+        if params.v == 'dev':
             return self.__index_v2(
-                trans, history_id, legacy_params, serialization_params, filter_query_params
+                trans, history_id, params, serialization_params, filter_query_params
             )
         return self.__index_legacy(trans, history_id, legacy_params)
 
@@ -271,7 +212,7 @@ class HistoriesContentsService(ServiceBase):
         trans,
         id: EncodedDatabaseIdField,
         serialization_params: SerializationParams,
-        contents_type: HistoryContentType = HistoryContentType.dataset,
+        contents_type: Optional[HistoryContentType],
         fuzzy_count: Optional[int] = None,
     ) -> AnyHistoryContentItem:
         """
@@ -304,6 +245,7 @@ class HistoriesContentsService(ServiceBase):
 
         :returns:   dictionary containing detailed HDA or HDCA information
         """
+        contents_type = contents_type or HistoryContentType.dataset
         if contents_type == HistoryContentType.dataset:
             return self.__show_dataset(trans, id, serialization_params)
         elif contents_type == HistoryContentType.dataset_collection:
@@ -586,7 +528,7 @@ class HistoriesContentsService(ServiceBase):
     def archive(
         self, trans,
         history_id: EncodedDatabaseIdField,
-        filter_query_params: HistoryContentsFilterQueryParams,
+        filter_query_params: FilterQueryParams,
         filename: str = '',
         dry_run: bool = True,
     ):
@@ -944,14 +886,17 @@ class HistoriesContentsService(ServiceBase):
     def __index_legacy(
         self, trans,
         history_id: EncodedDatabaseIdField,
-        legacy_params: HistoryContentsIndexLegacyParams,
+        legacy_params: LegacyHistoryContentsIndexParams,
     ) -> List[AnyHistoryContentItem]:
         """Legacy implementation of the `index` action."""
         history = self._get_history(trans, history_id)
-        parsed_legacy_params = self._parse_legacy_contents_params(legacy_params)
-        contents = history.contents_iter(**parsed_legacy_params)
+        legacy_params_dict = legacy_params.dict(exclude_defaults=True)
+        ids = legacy_params_dict.get("ids")
+        if ids:
+            legacy_params_dict["ids"] = self.decode_ids(ids)
+        contents = history.contents_iter(**legacy_params_dict)
         return [
-            self._serialize_legacy_content_item(trans, content, parsed_legacy_params.get("dataset_details"))
+            self._serialize_legacy_content_item(trans, content, legacy_params_dict.get("dataset_details"))
             for content in contents
         ]
 
@@ -959,9 +904,9 @@ class HistoriesContentsService(ServiceBase):
         self,
         trans,
         history_id: EncodedDatabaseIdField,
-        legacy_params: HistoryContentsIndexLegacyParams,
+        params: HistoryContentsIndexParams,
         serialization_params: SerializationParams,
-        filter_query_params: HistoryContentsFilterQueryParams,
+        filter_query_params: FilterQueryParams,
     ) -> List[AnyHistoryContentItem]:
         """
         Latests implementation of the `index` action.
@@ -969,11 +914,9 @@ class HistoriesContentsService(ServiceBase):
         """
         history = self._get_history(trans, history_id)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
+        filter_query_params.order = filter_query_params.order or "hid-asc"
         order_by = self.build_order_by(self.history_contents_manager, filter_query_params.order)
 
-        # TODO: > 16.04: remove these
-        # TODO: remove 'dataset_details' and the following section when the UI doesn't need it
-        parsed_legacy_params = self._parse_legacy_contents_params(legacy_params)
         contents = self.history_contents_manager.contents(
             history,
             filters=filters,
@@ -985,7 +928,7 @@ class HistoriesContentsService(ServiceBase):
         return [
             self._serialize_content_item(
                 trans, content,
-                dataset_details=parsed_legacy_params.get("dataset_details"),
+                dataset_details=params.dataset_details,
                 serialization_params=serialization_params,
             )
             for content in contents
@@ -1035,30 +978,6 @@ class HistoriesContentsService(ServiceBase):
         return serializer.serialize_to_view(
             content, user=trans.user, trans=trans, view=view, **serialization_params_dict
         )
-
-    def _parse_legacy_contents_params(self, params: HistoryContentsIndexLegacyParams):
-        if params.types:
-            types = util.listify(params.types)
-        else:
-            types = [e.value for e in HistoryContentType]
-
-        details: Any = params.dataset_details
-        ids = None
-        if params.ids:
-            ids = [self.decode_id(EncodedDatabaseIdField(id)) for id in params.ids.split(',')]
-            # If explicit ids given, always used detailed result.
-            details = 'all'
-        else:
-            if details and details != 'all':
-                details = set(util.listify(details))
-
-        return ParsedHistoryContentsLegacyParams(
-            types=types,
-            ids=ids,
-            deleted=params.deleted,
-            visible=params.visible,
-            dataset_details=details,
-        ).dict(exclude_defaults=True)
 
     def __collection_dict(self, trans, dataset_collection_instance, **kwds):
         return dictify_dataset_collection_instance(dataset_collection_instance,

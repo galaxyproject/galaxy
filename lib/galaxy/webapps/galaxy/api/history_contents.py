@@ -5,19 +5,14 @@ import logging
 from typing import (
     Any,
     Dict,
+    Optional,
 )
 
 import dateutil.parser
+from fastapi import Query
 
-from galaxy import (
-    util
-)
-from galaxy.managers import (
-    hdas,
-    hdcas,
-    histories,
-    history_contents
-)
+from galaxy import util
+from galaxy.schema import FilterQueryParams
 from galaxy.schema.schema import (
     DatasetPermissionAction,
     HistoryContentType,
@@ -28,23 +23,142 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous,
     expose_api_raw,
-    expose_api_raw_anonymous
+    expose_api_raw_anonymous,
 )
 from galaxy.webapps.base.controller import (
     UsesLibraryMixinItems,
-    UsesTagsMixin
+    UsesTagsMixin,
 )
 from galaxy.webapps.galaxy.api.common import parse_serialization_params
 from galaxy.webapps.galaxy.services.history_contents import (
     CreateHistoryContentPayload,
+    DatasetDetailsType,
     HistoriesContentsService,
     HistoryContentsFilterList,
-    HistoryContentsFilterQueryParams,
-    HistoryContentsIndexLegacyParams
+    HistoryContentsIndexParams,
+    LegacyHistoryContentsIndexParams,
 )
-from . import BaseGalaxyAPIController, depends
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
+
+
+def get_index_query_params(
+    v: Optional[str] = Query(  # Should this be deprecated at some point and directly use the latest version by default?
+        default=None,
+        title="Version",
+        description="Only `dev` value is allowed. Set it to use the latest version of this endpoint.",
+        example="dev",
+    ),
+    dataset_details: Optional[str] = Query(
+        default=None,
+        title="Dataset Details",
+        description=(
+            "A comma separated list of encoded dataset IDs that will return additional (full) details "
+            "instead of the *summary* default information."
+        ),
+        deprecated=True,  # TODO: remove 'dataset_details' when the UI doesn't need it
+    ),
+) -> HistoryContentsIndexParams:
+    return HistoryContentsIndexParams(
+        v=v,
+        dataset_details=dataset_details,
+    )
+
+
+def get_legacy_index_query_params(
+    ids: Optional[str] = Query(
+        default=None,
+        title="IDs",
+        description=(
+            "A comma separated list of encoded `HDA/HDCA` IDs. If this list is provided, only information about the "
+            "specific datasets will be returned. Also, setting this value will return `all` details of the content item."
+        ),
+        deprecated=True,
+    ),
+    types: Optional[str] = Query(
+        default=None,
+        title="Types",
+        description=(
+            "A list or comma separated list of kinds of contents to return "
+            "(currently just `dataset` and `dataset_collection` are available). "
+            "If unset, all types will be returned."
+        ),
+        deprecated=True,
+    ),
+    type: Optional[str] = Query(
+        default=None,
+        title="Type",
+        description="Legacy name for the `types` parameter.",
+        deprecated=True,
+    ),
+    details: Optional[str] = Query(
+        default=None,
+        title="Details",
+        description=(
+            "Legacy name for the `dataset_details` parameter."
+        ),
+        deprecated=True,
+    ),
+    deleted: Optional[bool] = Query(
+        default=None,
+        title="Deleted",
+        description="Whether to return deleted or undeleted datasets only. Leave unset for both.",
+        deprecated=True,
+    ),
+    visible: Optional[bool] = Query(
+        default=None,
+        title="Visible",
+        description="Whether to return visible or hidden datasets only. Leave unset for both.",
+        deprecated=True,
+    ),
+) -> LegacyHistoryContentsIndexParams:
+    return parse_legacy_index_query_params(
+        ids=ids,
+        types=types,
+        type=type,
+        details=details,
+        deleted=deleted,
+        visible=visible,
+    )
+
+
+def parse_legacy_index_query_params(
+    ids: Optional[str] = None,
+    types: Optional[str] = None,
+    type: Optional[str] = None,
+    details: Optional[str] = None,
+    deleted: Optional[bool] = None,
+    visible: Optional[bool] = None,
+    **_,  # Additional params are ignored
+) -> LegacyHistoryContentsIndexParams:
+    types = types or type
+    if types:
+        content_types = util.listify(types)
+    else:
+        content_types = [e.value for e in HistoryContentType]
+
+    dataset_details: Optional[DatasetDetailsType] = None
+    if ids:
+        ids = util.listify(ids)
+        # If explicit ids given, always used detailed result.
+        dataset_details = 'all'
+    else:
+        if details and details != 'all':
+            dataset_details = set(util.listify(details))
+        else:  # either None or 'all'
+            dataset_details = details  # type: ignore
+
+    return LegacyHistoryContentsIndexParams(
+        types=content_types,
+        ids=ids,
+        deleted=deleted,
+        visible=visible,
+        dataset_details=dataset_details,
+    )
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
@@ -77,11 +191,13 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :rtype:     list
         :returns:   dictionaries containing summary or detailed HDA information
         """
-        legacy_params = HistoryContentsIndexLegacyParams(**kwd)
+        index_params = HistoryContentsIndexParams(**kwd)
+        legacy_params = parse_legacy_index_query_params(**kwd)
         serialization_params = parse_serialization_params(**kwd)
-        filter_parameters = HistoryContentsFilterQueryParams(**kwd)
+        filter_parameters = FilterQueryParams(**kwd)
         return self.service.index(
             trans, history_id,
+            index_params,
             legacy_params,
             serialization_params, filter_parameters
         )
@@ -482,7 +598,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         .. note:: this is a volatile endpoint and settings and behavior may change.
         """
         dry_run = util.string_as_bool(dry_run)
-        filter_parameters = HistoryContentsFilterQueryParams(**kwd)
+        filter_parameters = FilterQueryParams(**kwd)
         return self.service.archive(trans, history_id, filter_parameters, filename, dry_run)
 
     @expose_api_raw_anonymous
