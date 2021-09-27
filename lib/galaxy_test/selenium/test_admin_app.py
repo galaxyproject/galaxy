@@ -9,6 +9,32 @@ class AdminAppTestCase(SeleniumTestCase):
 
     requires_admin = True
 
+    # Marked as flakey because the render_tab selector doesn't work yet.
+    @selenium_test
+    @flakey
+    def test_html_allowlist(self):
+        admin_component = self.components.admin
+        self.admin_login()
+        self.admin_open()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_landing')
+        admin_component.index.allowlist.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_allowlist_landing')
+        admin_component.allowlist.local.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_allowlist_local_landing')
+        # This should be updated if the list of built-in converters is changed.
+        render_button = self.driver.find_element_by_xpath("//td[.='CONVERTER_bam_to_bigwig_0']/following::td/button")
+        render_button.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_allowlist_tool_rendered')
+        render_tab = self.driver.find_element_by_xpath("//a[contains(., 'HTML Rendered')]")
+        self.action_chains().move_to_element(render_tab).click().perform()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot('admin_allowlist_render_landing')
+        self.sleep_for(self.wait_types.UX_RENDER)
+
     @selenium_test
     @flakey
     def test_admin_toolshed(self):
