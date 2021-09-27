@@ -157,9 +157,9 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.screenshot("tool_form_citations_formatted")
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
-        self.hda_click_primary_action_button(hid, "info")
-        self.wait_for_selector_visible("table#dataset-details")
-        tool_parameters_table = self.wait_for_selector_visible("table#tool-parameters")
+        self.hda_click_details(hid)
+        self.components.dataset_details._.wait_for_visible()
+        tool_parameters_table = self.components.dataset_details.tool_parameters.wait_for_visible()
         tbody_element = tool_parameters_table.find_element_by_css_selector("tbody")
         tds = tbody_element.find_elements_by_css_selector("td")
         assert tds
