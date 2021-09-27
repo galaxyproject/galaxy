@@ -6,6 +6,7 @@ import os
 import traceback
 import unittest
 from functools import partial, wraps
+from typing import Any, Dict
 
 import requests
 from gxformat2 import (
@@ -580,7 +581,8 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.post(full_url, data=data, cookies=cookies, files=files, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
+        request_kwd = self._prepare_request_data(dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT, files=files), data, as_json=json)
+        response = requests.post(full_url, **request_kwd)
         return response
 
     def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
@@ -591,7 +593,8 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.delete(full_url, data=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
+        request_kwd = self._prepare_request_data(dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json)
+        response = requests.delete(full_url, **request_kwd)
         return response
 
     def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
@@ -602,8 +605,16 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.put(full_url, data=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
+        request_kwd = self._prepare_request_data(dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json)
+        response = requests.put(full_url, **request_kwd)
         return response
+
+    def _prepare_request_data(self, request_kwd: Dict[str, Any], data: Dict[str, Any], as_json: bool = False):
+        if as_json:
+            request_kwd['json'] = data
+        else:
+            request_kwd['data'] = data
+        return request_kwd
 
 
 class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetPopulator):
