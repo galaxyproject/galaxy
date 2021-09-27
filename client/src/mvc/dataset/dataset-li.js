@@ -285,7 +285,10 @@ export var DatasetListItemView = _super.extend(
                     const Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
                         ev.preventDefault();
-                        Galaxy.frame.add({ url: `${getAppRoot()}${url}`, title: "Dataset Details" });
+                        Galaxy.frame.add({
+                            url: `${getAppRoot()}${url}`,
+                            title: `Dataset Details of ${this.model.get("name")}`,
+                        });
                     } else if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push(url);
