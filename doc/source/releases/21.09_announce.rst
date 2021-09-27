@@ -1,0 +1,45 @@
+
+===========================================================
+September 2021 Galaxy Release (v 21.09)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+Also check out the `21.09 user release notes <21.09_announce_user.html>`__
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_21.09 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_21.09 && git pull --ff-only origin release_21.09
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+Release Notes
+===========================================================
+
+.. include:: 21.09.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst
