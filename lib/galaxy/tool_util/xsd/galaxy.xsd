@@ -6359,8 +6359,8 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en">Type of comparison to use when comparing
 test generated output files to expected output files. Currently valid value are
-``diff`` (the default), ``re_match``, ``sim_size``, ``re_match_multiline``,
-and ``contains``.</xs:documentation>
+``diff`` (the default), ``re_match``, ``re_match_multiline``,
+and ``contains``. In addtion there is ``sim_size`` which is discouraged in fafour of a ``has_size`` assertion.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="diff"/>
