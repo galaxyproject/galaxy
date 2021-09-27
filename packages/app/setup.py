@@ -105,6 +105,7 @@ PACKAGE_DATA = {
         'config_schema.yml',
         'job_config_schema.yml',
         'uwsgi_schema.yml',
+        'config/sample/*',
     ],
     'tool_shed': [
         'scripts/bootstrap_tool_shed/user_info.xml',

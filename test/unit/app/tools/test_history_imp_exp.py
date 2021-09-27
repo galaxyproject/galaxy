@@ -12,6 +12,7 @@ from galaxy.objectstore.unittest_utils import (
 )
 from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper, JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
 from galaxy.tools.imp_exp.export_history import create_archive
+from galaxy.util import galaxy_directory
 
 
 # good enough for the very specific tests we're writing as of now...
@@ -20,6 +21,10 @@ DATASETS_ATTRS_EXPORT = '''[{{"info": "\\nuploaded txt file", "peek": "foo\\n\\n
 DATASETS_ATTRS_PROVENANCE = '''[]'''
 HISTORY_ATTRS = '''{"hid_counter": 2, "update_time": "2016-02-08 18:38:38.705058", "create_time": "2016-02-08 18:38:20.790057", "name": "paste", "tags": {}, "genome_build": "?", "annotation": null}'''
 JOBS_ATTRS = '''[{"info": null, "tool_id": "upload1", "update_time": "2016-02-08T18:39:23.356482", "stdout": "", "input_mapping": {}, "tool_version": "1.1.4", "traceback": null, "command_line": "python /galaxy/tools/data_source/upload.py /galaxy /scratch/tmppwU9rD /scratch/tmpP4_45Y 1:/scratch/jobs/000/dataset_1_files:/data/000/dataset_1.dat", "exit_code": 0, "output_datasets": [1], "state": "ok", "create_time": "2016-02-08T18:38:39.153873", "params": {"files": [{"to_posix_lines": "Yes", "NAME": "None", "file_data": null, "space_to_tab": null, "url_paste": "/scratch/strio_url_paste_o6nrv8", "__index__": 0, "ftp_files": "", "uuid": "None"}], "paramfile": "/scratch/tmpP4_45Y", "file_type": "auto", "files_metadata": {"file_type": "auto", "__current_case__": 41}, "async_datasets": "None", "dbkey": "?"}, "stderr": ""}]'''
+
+
+def t_data_path(name):
+    return os.path.join(galaxy_directory(), "test-data", name)
 
 
 def _run_jihaw_cleanup(archive_dir, app=None):
@@ -133,8 +138,8 @@ def test_export_dataset():
     sa_session.add(j)
     sa_session.flush()
 
-    app.object_store.update_from_file(d1, file_name="test-data/1.txt", create=True)
-    app.object_store.update_from_file(d2, file_name="test-data/2.bed", create=True)
+    app.object_store.update_from_file(d1, file_name=t_data_path("1.txt"), create=True)
+    app.object_store.update_from_file(d2, file_name=t_data_path("2.bed"), create=True)
 
     imported_history = _import_export(app, h)
 
@@ -201,8 +206,8 @@ def test_export_dataset_with_deleted_and_purged():
 
     assert d1.deleted
 
-    app.object_store.update_from_file(d1, file_name="test-data/1.txt", create=True)
-    app.object_store.update_from_file(d2, file_name="test-data/2.bed", create=True)
+    app.object_store.update_from_file(d1, file_name=t_data_path("1.txt"), create=True)
+    app.object_store.update_from_file(d2, file_name=t_data_path("2.bed"), create=True)
 
     imported_history = _import_export(app, h)
 
@@ -237,9 +242,9 @@ def test_multi_inputs():
     sa_session.add(j)
     sa_session.flush()
 
-    app.object_store.update_from_file(d1, file_name="test-data/1.txt", create=True)
-    app.object_store.update_from_file(d2, file_name="test-data/2.bed", create=True)
-    app.object_store.update_from_file(d3, file_name="test-data/4.bed", create=True)
+    app.object_store.update_from_file(d1, file_name=t_data_path("1.txt"), create=True)
+    app.object_store.update_from_file(d2, file_name=t_data_path("2.bed"), create=True)
+    app.object_store.update_from_file(d3, file_name=t_data_path("4.bed"), create=True)
 
     imported_history = _import_export(app, h)
 
@@ -444,8 +449,8 @@ def test_export_collection_with_copied_datasets_and_overlapping_hids():
     sa_session.add(dataset_history)
     sa_session.flush()
 
-    app.object_store.update_from_file(d1, file_name="test-data/1.txt", create=True)
-    app.object_store.update_from_file(d2, file_name="test-data/2.bed", create=True)
+    app.object_store.update_from_file(d1, file_name=t_data_path("1.txt"), create=True)
+    app.object_store.update_from_file(d2, file_name=t_data_path("2.bed"), create=True)
 
     d1_copy = d1.copy()
     d2_copy = d2.copy()
@@ -653,7 +658,7 @@ def _import_export(app, h, dest_export=None):
 
 
 def test_import_1901_default():
-    app, new_history = import_archive('test-data/exports/1901_two_datasets.tgz')
+    app, new_history = import_archive(t_data_path('exports/1901_two_datasets.tgz'))
     assert new_history
 
     datasets = new_history.datasets

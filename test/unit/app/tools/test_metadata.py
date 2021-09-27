@@ -7,7 +7,7 @@ from galaxy.app_unittest_utils import tools_support
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
-from galaxy.util import safe_makedirs
+from galaxy.util import safe_makedirs, galaxy_directory
 
 
 class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools):
@@ -42,7 +42,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         self._test_simple_output()
 
     def _test_simple_output(self):
-        source_file_name = os.path.join(os.getcwd(), "test/functional/tools/for_workflows/cat.xml")
+        source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
         output_dataset = self._create_output_dataset(
             extension="fasta",
@@ -67,7 +67,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         self._test_primary_dataset_output_extension()
 
     def _test_primary_dataset_output_extension(self):
-        source_file_name = os.path.join(os.getcwd(), "test/functional/tools/for_workflows/cat.xml")
+        source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
         # setting extension to 'auto' here, results in the extension specified in
         # galaxy.json (below) being respected.
@@ -100,7 +100,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         self._test_primary_dataset_output_metadata_override()
 
     def _test_primary_dataset_output_metadata_override(self):
-        source_file_name = os.path.join(os.getcwd(), "test/functional/tools/for_workflows/cat.xml")
+        source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
         output_dataset = self._create_output_dataset(
             extension="auto",
@@ -124,7 +124,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
 
     def test_list_discovery_extended(self):
         self.app.config.metadata_strategy = "extended"
-        source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_split_on_column.xml")
+        source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_split_on_column.xml")
         self._init_tool_for_path(source_file_name)
         collection = model.DatasetCollection(populated=False)
         collection.collection_type = "list"
