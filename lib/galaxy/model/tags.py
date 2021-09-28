@@ -7,6 +7,7 @@ from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
 import galaxy.model
+from galaxy.exceptions import MessageException
 from galaxy.util import (
     strip_control_characters,
     unicodify,
@@ -156,6 +157,8 @@ class TagHandler:
 
     def apply_item_tag(self, user, item, name, value=None, flush=True):
         # Use lowercase name for searching/creating tag.
+        if name is None:
+            raise MessageException("The tag name is empty or contains invalid characters.")
         lc_name = name.lower()
         # Get or create item-tag association.
         item_tag_assoc = self._get_item_tag_assoc(user, item, lc_name)
