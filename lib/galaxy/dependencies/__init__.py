@@ -191,7 +191,7 @@ class ConditionalDependencies:
     def check_fluent_logger(self):
         return asbool(self.config["fluent_log"])
 
-    def check_raven(self):
+    def check_sentry_sdk(self):
         return self.config.get("sentry_dsn", None) is not None
 
     def check_statsd(self):

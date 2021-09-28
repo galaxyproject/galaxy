@@ -45,10 +45,7 @@ from galaxy.util.properties import (
     running_from_source,
 )
 from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web_stack import (
-    get_stack_facts,
-    register_postfork_function
-)
+from galaxy.web_stack import get_stack_facts
 from ..version import VERSION_MAJOR, VERSION_MINOR
 
 log = logging.getLogger(__name__)
@@ -1106,7 +1103,6 @@ def configure_logging(config):
     """
     # Get root logger
     logging.addLevelName(LOGLV_TRACE, "TRACE")
-    root = logging.getLogger()
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
     # some simple setup using the 'log_*' values from the config.
@@ -1129,11 +1125,6 @@ def configure_logging(config):
                 conf['filename'] = conf.pop('filename_template').format(**get_stack_facts(config=config))
                 logging_conf['handlers'][name] = conf
         logging.config.dictConfig(logging_conf)
-    if getattr(config, "sentry_dsn", None):
-        from raven.handlers.logging import SentryHandler
-        sentry_handler = SentryHandler(config.sentry_dsn)
-        sentry_handler.setLevel(logging.WARN)
-        register_postfork_function(root.addHandler, sentry_handler)
 
 
 class ConfiguresGalaxyMixin:
