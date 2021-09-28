@@ -505,7 +505,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                                 dataset_id=encoded_id, to_ext=hda.extension),
             'report_error': url_for(controller='dataset', action='errors', id=encoded_id),
             'rerun': url_for(controller='tool_runner', action='rerun', id=encoded_id),
-            'show_params': url_for(controller='dataset', action='show_params', dataset_id=encoded_id),
+            'show_params': url_for(controller='dataset', action='details', dataset_id=encoded_id),
             'visualization': url_for(controller='visualization', action='index',
                                      id=encoded_id, model='HistoryDatasetAssociation'),
             'meta_download': url_for(controller='dataset', action='get_metadata_file',

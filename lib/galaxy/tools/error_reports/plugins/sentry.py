@@ -83,7 +83,7 @@ class SentryPlugin(ErrorPlugin):
             # anything is missing from this report.
             try:
                 url = web.url_for(controller="dataset",
-                                  action="show_params",
+                                  action="details",
                                   dataset_id=self.app.security.encode_id(dataset.id),
                                   qualified=True)
             except AttributeError:
