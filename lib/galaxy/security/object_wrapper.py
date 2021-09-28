@@ -83,10 +83,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
     def __do_wrap(value):
         if isinstance(value, no_wrap_classes):
             return value
-        if isinstance(value, Callable):
-            safe_class = CallableSafeStringWrapper
-        else:
-            safe_class = SafeStringWrapper
+        safe_class = CallableSafeStringWrapper if isinstance(value, Callable) else SafeStringWrapper
         if isinstance(value, __WRAP_NO_SUBCLASS__):
             return safe_class(value, safe_string_wrapper_function=__do_wrap)
         for this_type in __WRAP_SEQUENCES__ + __WRAP_SETS__:
@@ -94,8 +91,8 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
                 return this_type(list(map(__do_wrap, value)))
         for this_type in __WRAP_MAPPINGS__:
             if isinstance(value, this_type):
-                # Wrap both key and value
-                return this_type((__do_wrap(x[0]), __do_wrap(x[1])) for x in value.items())
+                return this_type((__do_wrap(key), __do_wrap(value)) for key, value in value.items())
+
         # Create a dynamic class that joins SafeStringWrapper with the object being wrapped.
         # This allows e.g. isinstance to continue to work.
         try:

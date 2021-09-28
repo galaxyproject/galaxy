@@ -1,3 +1,4 @@
+from collections import UserDict
 from numbers import Number
 from types import (
     BuiltinFunctionType,
@@ -22,7 +23,10 @@ from galaxy import util
 from galaxy.security import object_wrapper
 from galaxy.security.object_wrapper import (
     __DONT_SANITIZE_TYPES__,
+    __WRAP_MAPPINGS__,
     __WRAP_NO_SUBCLASS__,
+    __WRAP_SEQUENCES__,
+    __WRAP_SETS__,
     CallableSafeStringWrapper,
     get_no_wrap_classes,
     MAPPED_CHARACTERS,
@@ -57,17 +61,46 @@ def test_mapped_characters():
     assert MAPPED_CHARACTERS == expected
 
 
-def test_dont_sanitize_types():
+def test_type_groups():
     """Verify const values."""
+    # don't wrap or sanitize types
     assert __DONT_SANITIZE_TYPES__ == (
         Number, bool, type(None), type(NotImplemented), type(Ellipsis), bytearray)
-
-
-def test_wrap_dont_subclass_types():
-    """Verify const values."""
+    # wrap but don't subclass types
     assert __WRAP_NO_SUBCLASS__ == (
         ModuleType, range, slice, TracebackType, FrameType, GetSetDescriptorType, MemberDescriptorType,
         FunctionType, MethodType, GeneratorType, CodeType, BuiltinFunctionType, BuiltinMethodType)
+    # wrap contents but not the containser: sequence types
+    assert __WRAP_SEQUENCES__ == (tuple, list,)
+    assert __WRAP_SETS__ == (set, frozenset,)
+    # wrap contents but not the containser: mapping types
+    assert __WRAP_MAPPINGS__ == (dict, UserDict,)
+
+
+def test_wrap_sequence():
+    sequences = [Foo(), Bar(), (Foo(),), {Bar()}]  # Foo, Bar, tuple w/Foo, set w/Bar
+
+    result = wrap_with_safe_string(sequences)
+    assert isinstance(result, list)  # container was not wrapped
+    assert len(result) == 4
+    # items were recursively wrapped
+    assert isinstance(result[0], SafeStringWrapper)
+    assert isinstance(result[1], SafeStringWrapper)
+    assert isinstance(result[2], tuple)  # container was not wrapped
+    assert isinstance(result[2][0], SafeStringWrapper)
+    assert isinstance(result[3], set)  # container was not wrapped
+    assert isinstance(result[3].pop(), SafeStringWrapper)
+
+
+def test_wrap_mapping():
+    mapping = {Foo(): Bar()}
+
+    result = wrap_with_safe_string(mapping)
+    assert isinstance(result, dict)  # container was not wrapped
+    assert len(result) == 1
+    key, value = result.popitem()
+    assert isinstance(key, SafeStringWrapper)  # key was wrapped
+    assert isinstance(value, SafeStringWrapper)  # value was wrapped
 
 
 def test_do_not_set_attrs_of_type_instancestate():
