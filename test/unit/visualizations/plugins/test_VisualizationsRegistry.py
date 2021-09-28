@@ -6,13 +6,13 @@ import re
 import unittest
 
 from galaxy import model
-from galaxy.util import clean_multiline_string
+from galaxy.util import clean_multiline_string, galaxy_directory
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from . import VisualizationsBase_TestCase
 from ...unittest_utils import galaxy_mock
 
-glx_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir))
+glx_dir = galaxy_directory()
 template_cache_dir = os.path.join(glx_dir, 'database', 'compiled_templates')
 addtional_templates_dir = os.path.join(glx_dir, 'config', 'plugins', 'visualizations', 'common', 'templates')
 vis_reg_path = 'config/plugins/visualizations'
