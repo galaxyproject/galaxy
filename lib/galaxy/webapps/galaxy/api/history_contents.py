@@ -71,6 +71,12 @@ HistoryIDPathParam: EncodedDatabaseIdField = Path(
     description='The ID of the History.'
 )
 
+HistoryItemIDPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    title='History Item ID',
+    description='The ID of the item (`HDA`/`HDCA`) contained in the history.'
+)
+
 
 def get_index_query_params(
     v: Optional[str] = Query(  # Should this be deprecated at some point and directly use the latest version by default?
@@ -225,6 +231,60 @@ class FastAPIHistoryContents:
             filter_query_params,
         )
         return items
+
+    @router.get(
+        '/api/histories/{history_id}/contents/{id}',
+        summary='Return detailed information about an HDA within a history.',
+        deprecated=True,
+    )
+    @router.get(
+        '/api/histories/{history_id}/contents/{type}s/{id}',
+        summary='Return detailed information about a specific HDA or HDCA with the given `ID` within a history.',
+    )
+    def show(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        type: Optional[HistoryContentType] = Query(
+            default=None,
+            title="Content Type",
+            description="The type of the history element to show.",
+            example=HistoryContentType.dataset,
+        ),
+        fuzzy_count: Optional[int] = Query(
+            default=None,
+            title="Fuzzy Count",
+            description=(
+                'This value can be used to broadly restrict the magnitude '
+                'of the number of elements returned via the API for large '
+                'collections. The number of actual elements returned may '
+                'be "a bit" more than this number or "a lot" less - varying '
+                'on the depth of nesting, balance of nesting at each level, '
+                'and size of target collection. The consumer of this API should '
+                'not expect a stable number or pre-calculable number of '
+                'elements to be produced given this parameter - the only '
+                'promise is that this API will not respond with an order '
+                'of magnitude more elements estimated with this value. '
+                'The UI uses this parameter to fetch a "balanced" concept of '
+                'the "start" of large collections at every depth of the '
+                'collection.'
+            )
+        ),
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ) -> AnyHistoryContentItem:
+        """
+        Return detailed information about an `HDA` or `HDCA` within a history.
+
+        .. note:: Anonymous users are allowed to get their current history contents.
+        """
+        return self.service.show(
+            trans,
+            id=id,
+            serialization_params=serialization_params,
+            contents_type=type,
+            fuzzy_count=fuzzy_count,
+        )
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
