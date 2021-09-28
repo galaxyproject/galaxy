@@ -3550,7 +3550,7 @@ class DatasetInstance:
     def set_metadata(self, bunch):
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = self.metadata.make_dict_copy(bunch)
-    metadata = property(get_metadata, set_metadata)
+    metadata_ = property(get_metadata, set_metadata)
 
     @property
     def metadata_file_types(self):
