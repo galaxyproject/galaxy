@@ -207,6 +207,12 @@ module.exports = (env = {}, argv = {}) => {
             new DuplicatePackageCheckerPlugin(),
         ],
         devServer: {
+            client: {
+                overlay: {
+                    errors: true,
+                    warnings: false,
+                },
+            },
             hot: true,
             // proxy *everything* to the galaxy server
             // someday, this can be a more limited set -- e.g. `/api`, `/auth`
