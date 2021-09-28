@@ -1511,11 +1511,14 @@ class NavigatesGalaxy(HasDriver):
             details_component.wait_for_visible()
         return details_component
 
-    def hda_click_primary_action_button(self, hid, button_key):
+    def hda_click_primary_action_button(self, hid: int, button_key: str):
         item_component = self.history_panel_click_item_title(hid=hid, wait=True)
         item_component.primary_action_buttons.wait_for_visible()
         button_component = item_component[f"{button_key}_button"]
         button_component.wait_for_and_click()
+
+    def hda_click_details(self, hid: int):
+        self.hda_click_primary_action_button(hid, "info")
 
     def history_panel_click_item_title(self, hid, **kwds):
         item_component = self.history_panel_item_component(hid=hid)

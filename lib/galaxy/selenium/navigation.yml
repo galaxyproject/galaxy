@@ -107,6 +107,11 @@ sign_out:
     cancel_button: '.modal-footer .buttons #button-0'
     sign_out_button: '.modal-footer .buttons #button-1'
 
+dataset_details:
+  selectors:
+    _: 'table#dataset-details'
+    tool_parameters: 'table#tool-parameters'
+
 history_panel:
   menu:
     labels:
