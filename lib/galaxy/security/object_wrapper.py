@@ -37,26 +37,18 @@ MAPPED_CHARACTERS = {key: value for key, value in _mapped_characters.items() if 
 NoneType = type(None)
 NotImplementedType = type(NotImplemented)
 EllipsisType = type(Ellipsis)
-XRangeType = range
+RangeType = range
 SliceType = slice
-
-# Python 2 version was:
-# from types import BufferType, DictProxyType
-# Py3 doesn't have these concepts, just treat them like SliceType that
-# so they are __WRAP_NO_SUBCLASS__.
-BufferType = SliceType
-DictProxyType = SliceType
-
 
 log = logging.getLogger(__name__)
 
-# Define different behaviors for different types, see also: https://docs.python.org/2/library/types.html
+# Define different behaviors for different types, see also: https://docs.python.org/3/library/types.html
 
 # Known Callable types
 __CALLABLE_TYPES__ = (FunctionType, MethodType, GeneratorType, CodeType, BuiltinFunctionType, BuiltinMethodType, )
 
 # Always wrap these types without attempting to subclass
-__WRAP_NO_SUBCLASS__ = (ModuleType, XRangeType, SliceType, BufferType, TracebackType, FrameType, DictProxyType,
+__WRAP_NO_SUBCLASS__ = (ModuleType, RangeType, SliceType, TracebackType, FrameType,
                         GetSetDescriptorType, MemberDescriptorType) + __CALLABLE_TYPES__
 
 # Don't wrap or sanitize.
