@@ -6,6 +6,12 @@
 
 .. announce_start
 
+Please note that the release is still being tested and finalized, and that these
+are pre-release notes.
+
+Check back here for the official and comprehensive notes soon!
+
+
 Enhancements
 -------------------------------
 
