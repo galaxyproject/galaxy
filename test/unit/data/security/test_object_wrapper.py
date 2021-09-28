@@ -19,9 +19,11 @@ from sqlalchemy.orm import InstanceState
 
 from galaxy import model
 from galaxy import util
+from galaxy.security import object_wrapper
 from galaxy.security.object_wrapper import (
     __DONT_SANITIZE_TYPES__,
     __WRAP_NO_SUBCLASS__,
+    CallableSafeStringWrapper,
     get_no_wrap_classes,
     MAPPED_CHARACTERS,
     SafeStringWrapper,
@@ -102,6 +104,30 @@ def test_do_not_wrap_safestringwrapper():
     obj = SafeStringWrapper(None)
     result = wrap_with_safe_string(obj)
     assert result is obj
+
+
+def test_safe_class():
+    my_function = lambda: None  # noqa: E731
+    result = wrap_with_safe_string(my_function)
+    # my_function is of type FunctionType, so expect CallableSafeStringWrapper
+    assert isinstance(result, CallableSafeStringWrapper)
+
+    # Foo is not in __CALLABLE_TYPES__, so it's just SafeStringWrapper
+    result = wrap_with_safe_string(Foo)
+    assert isinstance(result, SafeStringWrapper) and not isinstance(result, CallableSafeStringWrapper)
+
+
+def test_wrap_dont_subclass(monkeypatch):
+    patched = __WRAP_NO_SUBCLASS__ + (Foo,)  # Add Foo to wrap-no-subclass types
+    monkeypatch.setattr(object_wrapper, '__WRAP_NO_SUBCLASS__', patched)
+
+    result = wrap_with_safe_string(Foo())
+    # Foo is in __WRAP_NO_SUBCLASS__, so result is wrapped, but not subclass of Foo
+    assert isinstance(result, SafeStringWrapper) and not isinstance(result, Foo)
+
+    result = wrap_with_safe_string(Bar())
+    # Bar is not in __WRAP_NO_SUBCLASS__, so result is wrapped, and is subclass of Bar
+    assert isinstance(result, SafeStringWrapper) and isinstance(result, Bar)
 
 
 class TestGetNoWrapClasses:
