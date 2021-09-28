@@ -643,6 +643,21 @@ tour:
 
 admin:
 
+  allowlist:
+    selectors:
+      toolshed:
+        type: xpath
+        selector: '//a[contains(text(), "Toolshed Tools")]'
+      local:
+        type: xpath
+        selector: '//a[contains(text(), "Local Tools")]'
+      sanitized:
+        type: xpath
+        selector: '//a[contains(text(), "HTML Sanitized")]'
+      rendered_active:
+        type: xpath
+        selector: '//div[contains(@class, "active")]//a[contains(text(), "HTML Rendered")]'
+
   manage_dependencies:
     selectors:
       dependencies: 'a[contains(text(), "Dependencies")]'
