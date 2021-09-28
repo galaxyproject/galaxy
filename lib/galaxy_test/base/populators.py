@@ -938,19 +938,24 @@ class BaseWorkflowPopulator(BasePopulator):
             api_asserts.assert_has_keys(p, "param", "value", "step")
         api_asserts.assert_has_keys(bco['io_domain'], "input_subdomain", "output_subdomain")
 
-    def invoke_workflow_raw(self, workflow_id, request: dict) -> Response:
+    def invoke_workflow_raw(self, workflow_id: str, request: dict, assert_ok: bool = False) -> Response:
         url = f"workflows/{workflow_id}/usage"
         invocation_response = self._post(url, data=request)
+        if assert_ok:
+            invocation_response.raise_for_status()
         return invocation_response
 
-    def invoke_workflow(self, history_id: str, workflow_id: str, inputs: Optional[dict] = None, request: Optional[dict] = None, assert_ok: bool = True):
+    def invoke_workflow(self, workflow_id: str, history_id: Optional[str] = None, inputs: Optional[dict] = None, request: Optional[dict] = None, assert_ok: bool = True):
         if inputs is None:
             inputs = {}
 
         if request is None:
             request = {}
 
-        request["history"] = f"hist_id={history_id}",
+        if history_id:
+            request["history"] = f"hist_id={history_id}"
+        # else history may be in request...
+
         if inputs:
             request["inputs"] = json.dumps(inputs)
             request["inputs_by"] = 'step_index'
@@ -961,6 +966,22 @@ class BaseWorkflowPopulator(BasePopulator):
             return invocation_id
         else:
             return invocation_response
+
+    def invoke_workflow_and_wait(self, workflow_id: str, history_id: Optional[str] = None, inputs: Optional[dict] = None, request: Optional[dict] = None, assert_ok: bool = True):
+        invoke_return = self.invoke_workflow(workflow_id, history_id=history_id, inputs=inputs, request=request, assert_ok=assert_ok)
+        if assert_ok:
+            invocation_id = invoke_return
+        else:
+            invocation_id = invoke_return.json()["id"]
+
+        if history_id is None and request:
+            history_id = request.get("history_id")
+        if history_id is None and request:
+            history_id = request["history"]
+            if history_id.startswith("hist_id="):
+                history_id = history_id[len("hist_id="):]
+        self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
+        return invoke_return
 
     def workflow_report_json(self, workflow_id: str, invocation_id: str) -> dict:
         response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}/report")

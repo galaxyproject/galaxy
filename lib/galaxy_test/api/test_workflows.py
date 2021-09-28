@@ -129,7 +129,6 @@ class BaseWorkflowsApiTestCase(ApiTestCase):
         hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6")
         workflow_request = dict(
             history=f"hist_id={history_id}",
-            workflow_id=workflow_id,
         )
         label_map = {
             'WorkflowInput1': self._ds_entry(hda1),
@@ -157,7 +156,7 @@ class BaseWorkflowsApiTestCase(ApiTestCase):
             if inputs_by == "step_uuid":
                 workflow_request["inputs_by"] = "step_uuid"
 
-        return workflow_request, history_id
+        return workflow_request, history_id, workflow_id
 
     def _build_ds_map(self, workflow_id, label_map):
         workflow_inputs = self._workflow_inputs(workflow_id)
@@ -897,8 +896,7 @@ steps:
     state:
       inttest: 0
 """)
-            self.__invoke_workflow(history_01_id, workflow_version_01)
-            self.dataset_populator.wait_for_history(history_01_id, assert_ok=True)
+            self.workflow_populator.invoke_workflow_and_wait(workflow_version_01, history_id=history_01_id)
 
         with self.dataset_populator.test_history() as history_02_id:
             workflow_version_02 = self._upload_yaml_workflow("""
@@ -910,24 +908,16 @@ steps:
     state:
       inttest: 1
 """)
-            self.__invoke_workflow(history_02_id, workflow_version_02)
-            self.dataset_populator.wait_for_history(history_02_id, assert_ok=True)
+            self.workflow_populator.invoke_workflow_and_wait(workflow_version_02, history_id=history_02_id)
 
     def __run_cat_workflow(self, inputs_by):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
         workflow["steps"]["0"]["uuid"] = str(uuid4())
         workflow["steps"]["1"]["uuid"] = str(uuid4())
-        workflow_request, history_id = self._setup_workflow_run(workflow, inputs_by=inputs_by)
-        # TODO: This should really be a post to workflows/<workflow_id>/run or
-        # something like that.
-        run_workflow_response = self._post("workflows", data=workflow_request)
-        self._assert_status_code_is(run_workflow_response, 200)
-        invocation_id = run_workflow_response.json()["id"]
-        invocation = self._invocation_details(workflow_request["workflow_id"], invocation_id)
+        workflow_request, _, workflow_id = self._setup_workflow_run(workflow, inputs_by=inputs_by)
+        invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request, assert_ok=True)
+        invocation = self._invocation_details(workflow_id, invocation_id)
         assert invocation["state"] == "scheduled", invocation
-
-        self._assert_status_code_is(run_workflow_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     def test_run_workflow_with_missing_tool(self):
         with self.dataset_populator.test_history() as history_id:
@@ -938,7 +928,7 @@ steps:
     tool_id: nonexistent_tool
     tool_version: "0.1"
 """)
-            invocation_response = self.__invoke_workflow(history_id, workflow_id, assert_ok=False)
+            invocation_response = self.__invoke_workflow(workflow_id, history_id=history_id, assert_ok=False)
             self._assert_status_code_is(invocation_response, 400)
             self.assertEqual(invocation_response.json().get('err_msg'), "Workflow was not invoked; some required tools are not installed.")
 
@@ -975,8 +965,7 @@ steps:
       queries_0|input2: identifier/output1
 """)
         with self.dataset_populator.test_history() as history_id:
-            invocation_id = self.__invoke_workflow(history_id, workflow_id)
-            self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id, assert_ok=False)
+            self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, assert_ok=False)
             failed_dataset_one = self.dataset_populator.get_history_dataset_details(history_id, hid=1, wait=True, assert_ok=False)
             assert failed_dataset_one['state'] == 'error', failed_dataset_one
             paused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=5, wait=True, assert_ok=False)
@@ -1015,7 +1004,7 @@ steps:
       input1: list_in_list_out/list_output
 """)
         with self.dataset_populator.test_history() as history_id:
-            invocation_id = self.__invoke_workflow(history_id, workflow_id)
+            invocation_id = self.__invoke_workflow(workflow_id, history_id=history_id)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id, assert_ok=False)
             failed_dataset_one = self.dataset_populator.get_history_dataset_details(history_id, hid=1, wait=True, assert_ok=False)
             assert failed_dataset_one['state'] == 'error', failed_dataset_one
@@ -1115,7 +1104,7 @@ steps:
                 inputs = {
                     '0': self._ds_entry(hdca_id),
                 }
-                invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
+                invocation_id = self.__invoke_workflow(workflow_id, inputs=inputs, history_id=history_id)
                 self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
                 output_collection = self.dataset_populator.get_history_collection_details(history_id, hid=6)
                 assert output_collection['collection_type'] == 'list'
@@ -1131,7 +1120,7 @@ steps:
             inputs = {
                 '0': self._ds_entry(hdca1),
             }
-            invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
+            invocation_id = self.__invoke_workflow(workflow_id, inputs=inputs, history_id=history_id)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
             self.assertEqual("a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0))
 
@@ -1178,7 +1167,7 @@ steps:
                 '1': self._ds_entry(hda2),
                 '2': self._ds_entry(hda3),
             }
-            invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
+            invocation_id = self.__invoke_workflow(workflow_id, inputs=inputs, history_id=history_id)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
             collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=7)
             assert collection_details["populated_state"] == "ok"
@@ -1221,7 +1210,7 @@ steps:
                 '0': self._ds_entry(hda1),
                 '1': self._ds_entry(hda2),
             }
-            invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
+            invocation_id = self.__invoke_workflow(workflow_id, inputs=inputs, history_id=history_id)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
 
     @skip_without_tool('column_param')
@@ -1515,7 +1504,7 @@ steps:
                 '0': self._ds_entry(hda1),
                 '1': self._ds_entry(hda2),
             }
-            invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
+            invocation_id = self.__invoke_workflow(workflow_id, inputs=inputs, history_id=history_id)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual(content.strip(), "samp1\t10.0\nsamp2\t20.0\nsamp1\t20.0\nsamp2\t40.0")
@@ -1699,15 +1688,10 @@ input_c:
 
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")
-        workflow_request, history_id = self._setup_workflow_run(workflow)
-        url = f"workflows/{workflow_request['workflow_id']}/usage"
-        del workflow_request["workflow_id"]
-        run_workflow_response = self._post(url, data=workflow_request)
-
-        self._assert_status_code_is(run_workflow_response, 200)
-        # Give some time for workflow to get scheduled before scanning the history.
-        time.sleep(5)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow)
+        run_workflow_response = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request, assert_ok=True)
+        invocation_id = run_workflow_response.json()["id"]
+        self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
 
     def test_workflow_output_dataset(self):
         with self.dataset_populator.test_history() as history_id:
@@ -2357,7 +2341,7 @@ input1:
                 '0': self._ds_entry(hda1),
                 '1': self._ds_entry(hdca1),
             }
-            invocation_id = self.__invoke_workflow(history_id, uploaded_workflow_id, index_map)
+            invocation_id = self.__invoke_workflow(uploaded_workflow_id, inputs=index_map, history_id=history_id)
 
             # Wait for at least one scheduling step.
             self._wait_for_invocation_non_new(uploaded_workflow_id, invocation_id)
@@ -2436,14 +2420,17 @@ steps:
             label_map = {"input1": self._ds_entry(hdca1)}
             workflow_request = dict(
                 history=f"hist_id={history_id}",
-                workflow_id=workflow_id,
                 ds_map=self._build_ds_map(workflow_id, label_map),
             )
-            r = self._post("workflows", data=workflow_request)
+            r = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
             self._assert_status_code_is(r, 200)
+            invocation_id = r.json()["id"]
             # If this starts failing we may have prevented running workflows on collections with deleted members,
             # in which case we can disable this test.
-            self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=False)
+            self.wait_for_invocation_and_jobs(workflow_id, history_id, invocation_id, assert_ok=False)
+            # Why is this sleep needed? -John
+            if not purge:
+                time.sleep(5)
             contents = self.__history_contents(history_id)
             assert contents[DELETED]['deleted']
             state = 'error' if purge else 'paused'
@@ -2617,16 +2604,13 @@ data_input:
             hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
             workflow_request = {
                 'history_id': history_id,
-                'workflow_id': workflow_id,
                 'inputs_by': 'name',
                 'inputs': json.dumps({
                     'input_dataset': {'src': 'hda', 'id': hda['id']},
                     'int_parameter': 1,
                 })
             }
-            invocation_response = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
-            assert invocation_response.status_code == 200, invocation_response.text
-            self.workflow_populator.wait_for_invocation(workflow_id, invocation_response.json()['id'])
+            self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request, assert_ok=True)
 
     def test_run_with_validated_parameter_connection_default_values(self):
         with self.dataset_populator.test_history() as history_id:
@@ -2809,12 +2793,13 @@ steps:
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
         # We launch a workflow
         with self.dataset_populator.test_history() as history_id_one, self.dataset_populator.test_history() as history_id_two:
-            workflow_request, _ = self._setup_workflow_run(workflow, history_id=history_id_one)
-            run_workflow_response = self._post("workflows", data=workflow_request).json()
+            workflow_request, _, workflow_id = self._setup_workflow_run(workflow, history_id=history_id_one)
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request, assert_ok=True)
+            invocation_1 = self.workflow_populator.get_invocation(invocation_id)
             # We copy the workflow inputs to a new history
             new_workflow_request = workflow_request.copy()
             new_ds_map = json.loads(new_workflow_request['ds_map'])
-            for key, input_values in run_workflow_response['inputs'].items():
+            for key, input_values in invocation_1['inputs'].items():
                 copy_payload = {"content": input_values['id'], "source": "hda", "type": "dataset"}
                 copy_response = self._post(f"histories/{history_id_two}/contents", data=copy_payload).json()
                 new_ds_map[key]['id'] = copy_response['id']
@@ -2822,9 +2807,18 @@ steps:
             new_workflow_request['history'] = f"hist_id={history_id_two}"
             new_workflow_request['use_cached_job'] = True
             # We run the workflow again, it should not produce any new outputs
-            new_workflow_response = self._post("workflows", data=new_workflow_request).json()
-            first_wf_output = self._get(f"datasets/{run_workflow_response['outputs'][0]}").json()
-            second_wf_output = self._get(f"datasets/{new_workflow_response['outputs'][0]}").json()
+            new_workflow_response = self.workflow_populator.invoke_workflow_raw(workflow_id, new_workflow_request, assert_ok=True).json()
+            invocation_id = new_workflow_response["id"]
+            self.wait_for_invocation_and_jobs(history_id_two, workflow_id, invocation_id)
+
+            # get_history_dataset_details defaults to last item in history, so since we've done
+            # wait_for_invocation_and_jobs - this will be the output of the cat1 job for both histories
+            # (the only job in the loaded workflow).
+            first_wf_output_hda = self.dataset_populator.get_history_dataset_details(history_id=history_id_one)
+            second_wf_output_hda = self.dataset_populator.get_history_dataset_details(history_id=history_id_two)
+
+            first_wf_output = self._get(f"datasets/{first_wf_output_hda['id']}").json()
+            second_wf_output = self._get(f"datasets/{second_wf_output_hda['id']}").json()
             assert first_wf_output['file_name'] == second_wf_output['file_name'], \
                 f"first output:\n{first_wf_output}\nsecond output:\n{second_wf_output}"
 
@@ -2837,6 +2831,7 @@ outer_input:
   type: File
 """
             run_jobs_summary = self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data=test_data, history_id=history_id_one)
+            workflow_id = run_jobs_summary.workflow_id
             workflow_request = run_jobs_summary.workflow_request
             # We copy the inputs to a new history and re-run the workflow
             inputs = json.loads(workflow_request['inputs'])
@@ -2850,11 +2845,7 @@ outer_input:
             workflow_request['use_cached_job'] = True
             workflow_request['history'] = f"hist_id={history_id_two}"
             workflow_request['inputs'] = json.dumps(inputs)
-            run_workflow_response = self._post("workflows", data=run_jobs_summary.workflow_request).json()
-            self.workflow_populator.wait_for_workflow(workflow_request['workflow_id'],
-                                                      run_workflow_response['id'],
-                                                      history_id_two,
-                                                      assert_ok=True)
+            self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=run_jobs_summary.workflow_request, assert_ok=True)
             # Now make sure that the HDAs in each history point to the same dataset instances
             history_one_contents = self.__history_contents(history_id_one)
             history_two_contents = self.__history_contents(history_id_two)
@@ -2867,25 +2858,24 @@ outer_input:
 
     def test_cannot_run_inaccessible_workflow(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run_cannot_access")
-        workflow_request, history_id = self._setup_workflow_run(workflow)
+        workflow_request, _, workflow_id = self._setup_workflow_run(workflow)
         with self._different_user():
-            run_workflow_response = self._post("workflows", data=workflow_request)
+            run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
             self._assert_status_code_is(run_workflow_response, 403)
 
     def test_400_on_invalid_workflow_id(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run_does_not_exist")
-        workflow_request, history_id = self._setup_workflow_run(workflow)
-        workflow_request["workflow_id"] = self._random_key()
-        run_workflow_response = self._post("workflows", data=workflow_request)
+        workflow_request, _, _ = self._setup_workflow_run(workflow)
+        run_workflow_response = self._post(f"workflows/{self._random_key()}/invocations", data=workflow_request)
         self._assert_status_code_is(run_workflow_response, 400)
 
     def test_cannot_run_against_other_users_history(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run_does_not_exist")
-        workflow_request, history_id = self._setup_workflow_run(workflow)
+        workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow)
         with self._different_user():
             other_history_id = self.dataset_populator.new_history()
         workflow_request["history"] = f"hist_id={other_history_id}"
-        run_workflow_response = self._post("workflows", data=workflow_request)
+        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
         self._assert_status_code_is(run_workflow_response, 403)
 
     @skip_without_tool("cat")
@@ -2899,13 +2889,9 @@ outer_input:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             label_map = {"list1": self._ds_entry(hdca1), "list2": self._ds_entry(hdca2)}
             workflow_request = dict(
-                history=f"hist_id={history_id}",
-                workflow_id=workflow_id,
                 ds_map=self._build_ds_map(workflow_id, label_map),
             )
-            run_workflow_response = self._post("workflows", data=workflow_request)
-            self._assert_status_code_is(run_workflow_response, 200)
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, request=workflow_request, assert_ok=True)
             self.assertEqual("1 2 3\n4 5 6\n7 8 9\n0 a b\n", self.dataset_populator.get_history_dataset_content(history_id))
 
     def test_workflow_stability(self):
@@ -2947,10 +2933,11 @@ outer_input:
     @skip_without_tool("cat1")
     def test_run_with_pja(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_pja_run", add_pja=True)
-        workflow_request, history_id = self._setup_workflow_run(workflow, inputs_by='step_index')
+        workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow, inputs_by='step_index')
         workflow_request["replacement_params"] = dumps(dict(replaceme="was replaced"))
-        run_workflow_response = self._post("workflows", data=workflow_request)
-        self._assert_status_code_is(run_workflow_response, 200)
+        run_workflow_response = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request, assert_ok=True)
+        invocation_id = run_workflow_response.json()["id"]
+        self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id, assert_ok=True)
         content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
         assert content["name"] == "foo was replaced"
 
@@ -3687,9 +3674,8 @@ input1:
         workflow["steps"]["0"]["uuid"] = uuid0
         workflow["steps"]["1"]["uuid"] = uuid1
         workflow["steps"]["2"]["uuid"] = uuid2
-        workflow_request, history_id = self._setup_workflow_run(workflow, inputs_by='step_index')
+        workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow, inputs_by='step_index')
         workflow_request["replacement_params"] = dumps(dict(replaceme="was replaced"))
-
         pja_map = {
             "RenameDatasetActionout_file1": dict(
                 action_type="RenameDatasetAction",
@@ -3701,14 +3687,12 @@ input1:
             uuid2: {"__POST_JOB_ACTIONS__": pja_map}
         })
 
-        run_workflow_response = self._post("workflows", data=workflow_request)
-        self._assert_status_code_is(run_workflow_response, 200)
+        self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request, assert_ok=True)
         content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
         assert content["name"] == "foo was replaced", content["name"]
 
         # Test for regression of previous behavior where runtime post job actions
         # would be added to the original workflow post job actions.
-        workflow_id = workflow_request["workflow_id"]
         downloaded_workflow = self._download_workflow(workflow_id)
         pjas = list(downloaded_workflow["steps"]["2"]["post_job_actions"].values())
         assert len(pjas) == 0, len(pjas)
@@ -3754,7 +3738,7 @@ steps:
             workflow_request["parameters"] = dumps({
                 uuid2: {"__POST_JOB_ACTIONS__": pja_map}
             })
-            invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs=inputs, request=workflow_request)
+            invocation_id = self.__invoke_workflow(workflow_id, inputs=inputs, request=workflow_request, history_id=history_id)
 
             time.sleep(2)
             self.dataset_populator.wait_for_history(history_id)
@@ -3880,25 +3864,21 @@ steps:
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):
-        workflow_request, history_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
+        workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
         workflow_request["parameters"] = dumps(dict(random_lines1=dict(num_lines=5)))
-        run_workflow_response = self._post("workflows", data=workflow_request)
-        self._assert_status_code_is(run_workflow_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request, assert_ok=True)
         # Would be 8 and 6 without modification
         self.__assert_lines_hid_line_count_is(history_id, 2, 5)
         self.__assert_lines_hid_line_count_is(history_id, 3, 5)
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_uuid(self):
-        workflow_request, history_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
+        workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_replace_")
         workflow_request["parameters"] = dumps({
             "58dffcc9-bcb7-4117-a0e1-61513524b3b1": dict(num_lines=4),
             "58dffcc9-bcb7-4117-a0e1-61513524b3b2": dict(num_lines=3),
         })
-        run_workflow_response = self._post("workflows", data=workflow_request)
-        self._assert_status_code_is(run_workflow_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request, assert_ok=True)
         # Would be 8 and 6 without modification
         self.__assert_lines_hid_line_count_is(history_id, 2, 4)
         self.__assert_lines_hid_line_count_is(history_id, 3, 3)
@@ -4044,24 +4024,22 @@ steps:
             workflow_id=uploaded_workflow_id,
             parameters=dumps(dict(validation_default=substitions))
         )
-        run_workflow_response = self._post("workflows", data=workflow_request)
+        run_workflow_response = self.workflow_populator.invoke_workflow_raw(uploaded_workflow_id, workflow_request)
         return run_workflow_response, history_id
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_steps(self):
-        workflow_request, history_id, steps = self._setup_random_x2_workflow_steps("test_for_replace_step_params")
+        workflow_request, history_id, workflow_id, steps = self._setup_random_x2_workflow_steps("test_for_replace_step_params")
         params = dumps({str(steps[1]["id"]): dict(num_lines=5)})
         workflow_request["parameters"] = params
-        run_workflow_response = self._post("workflows", data=workflow_request)
-        self._assert_status_code_is(run_workflow_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request, assert_ok=True)
         # Would be 8 and 6 without modification
         self.__assert_lines_hid_line_count_is(history_id, 2, 8)
         self.__assert_lines_hid_line_count_is(history_id, 3, 5)
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_nested(self):
-        workflow_request, history_id, steps = self._setup_random_x2_workflow_steps("test_for_replace_step_params_nested")
+        workflow_request, history_id, workflow_id, steps = self._setup_random_x2_workflow_steps("test_for_replace_step_params_nested")
         seed_source = dict(
             seed_source_selector="set_seed",
             seed="moo",
@@ -4069,14 +4047,12 @@ steps:
         params = dumps({str(steps[0]["id"]): dict(num_lines=1, seed_source=seed_source),
                         str(steps[1]["id"]): dict(num_lines=1, seed_source=seed_source)})
         workflow_request["parameters"] = params
-        run_workflow_response = self._post("workflows", data=workflow_request)
-        self._assert_status_code_is(run_workflow_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request, assert_ok=True)
         self.assertEqual("2\n", self.dataset_populator.get_history_dataset_content(history_id))
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_nested_normalized(self):
-        workflow_request, history_id, steps = self._setup_random_x2_workflow_steps("test_for_replace_step_normalized_params_nested")
+        workflow_request, history_id, workflow_id, steps = self._setup_random_x2_workflow_steps("test_for_replace_step_normalized_params_nested")
         parameters = {
             "num_lines": 1,
             "seed_source|seed_source_selector": "set_seed",
@@ -4086,9 +4062,7 @@ steps:
                         str(steps[1]["id"]): parameters})
         workflow_request["parameters"] = params
         workflow_request["parameters_normalized"] = False
-        run_workflow_response = self._post("workflows", data=workflow_request)
-        self._assert_status_code_is(run_workflow_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request, assert_ok=True)
         self.assertEqual("2\n", self.dataset_populator.get_history_dataset_content(history_id))
 
     @skip_without_tool("random_lines1")
@@ -4166,7 +4140,7 @@ input:
 
     @skip_without_tool("cat1")
     def test_only_own_invocations_indexed_and_accessible(self):
-        workflow_id, usage = self._run_workflow_once_get_invocation("test_usage")
+        workflow_id, usage = self._run_workflow_once_get_invocation("test_usage_accessiblity")
         with self._different_user():
             usage_details_response = self._get(f"workflows/{workflow_id}/usage/{usage['id']}")
             self._assert_status_code_is(usage_details_response, 403)
@@ -4302,12 +4276,11 @@ input_c:
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 200)
             other_id = other_import_response.json()["id"]
-            workflow_request, history_id = self._setup_workflow_run(workflow_id=other_id)
+            workflow_request, history_id, _ = self._setup_workflow_run(workflow_id=other_id)
             response = self._get(f"workflows/{other_id}/usage")
             self._assert_status_code_is(response, 200)
             assert len(response.json()) == 0
-            run_workflow_response = self._post("workflows", data=workflow_request)
-            self._assert_status_code_is(run_workflow_response, 200)
+            run_workflow_response = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request, assert_ok=True)
             run_workflow_response = run_workflow_response.json()
             invocation_id = run_workflow_response['id']
             usage_details_response = self._get(f"workflows/{other_id}/usage/{invocation_id}")
@@ -4317,13 +4290,11 @@ input_c:
     def test_invocations_accessible_published_workflow(self):
         workflow_id = self.workflow_populator.simple_workflow("test_usage", publish=True)
         with self._different_user():
-            workflow_request, history_id = self._setup_workflow_run(workflow_id=workflow_id)
-            workflow_request['workflow_id'] = workflow_request.pop('workflow_id')
+            workflow_request, history_id, _ = self._setup_workflow_run(workflow_id=workflow_id)
             response = self._get(f"workflows/{workflow_id}/usage")
             self._assert_status_code_is(response, 200)
             assert len(response.json()) == 0
-            run_workflow_response = self._post("workflows", data=workflow_request)
-            self._assert_status_code_is(run_workflow_response, 200)
+            run_workflow_response = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request, assert_ok=True)
             run_workflow_response = run_workflow_response.json()
             invocation_id = run_workflow_response['id']
             usage_details_response = self._get(f"workflows/{workflow_id}/usage/{invocation_id}")
@@ -4332,13 +4303,11 @@ input_c:
     @skip_without_tool("cat1")
     def test_invocations_not_accessible_by_different_user_for_published_workflow(self):
         workflow_id = self.workflow_populator.simple_workflow("test_usage", publish=True)
-        workflow_request, history_id = self._setup_workflow_run(workflow_id=workflow_id)
-        workflow_request['workflow_id'] = workflow_request.pop('workflow_id')
+        workflow_request, history_id, _ = self._setup_workflow_run(workflow_id=workflow_id)
         response = self._get(f"workflows/{workflow_id}/usage")
         self._assert_status_code_is(response, 200)
         assert len(response.json()) == 0
-        run_workflow_response = self._post("workflows", data=workflow_request)
-        self._assert_status_code_is(run_workflow_response, 200)
+        run_workflow_response = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request, assert_ok=True)
         run_workflow_response = run_workflow_response.json()
         invocation_id = run_workflow_response['id']
         with self._different_user():
@@ -4378,9 +4347,9 @@ input_c:
             '0': self._ds_entry(hda1),
         }
         invocation_id = self.__invoke_workflow(
-            history_id,
             workflow_id,
-            index_map,
+            history_id=history_id,
+            inputs=index_map,
         )
         return workflow_id, invocation_id
 
@@ -4430,14 +4399,13 @@ input_c:
         invocation_step_details = action_response.json()
         return invocation_step_details
 
-    def _run_workflow_once_get_invocation(self, name):
+    def _run_workflow_once_get_invocation(self, name: str):
         workflow = self.workflow_populator.load_workflow(name=name)
-        workflow_request, history_id = self._setup_workflow_run(workflow)
-        workflow_id = workflow_request["workflow_id"]
+        workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow)
         response = self._get(f"workflows/{workflow_id}/usage")
         self._assert_status_code_is(response, 200)
         assert len(response.json()) == 0
-        run_workflow_response = self._post("workflows", data=workflow_request)
+        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
         self._assert_status_code_is(run_workflow_response, 200)
 
         response = self._get(f"workflows/{workflow_id}/usage")
@@ -4446,18 +4414,18 @@ input_c:
         assert len(usages) == 1
         return workflow_id, usages[0]
 
-    def _setup_random_x2_workflow_steps(self, name):
-        workflow_request, history_id = self._setup_random_x2_workflow("test_for_replace_step_params")
-        random_line_steps = self._random_lines_steps(workflow_request)
-        return workflow_request, history_id, random_line_steps
+    def _setup_random_x2_workflow_steps(self, name: str):
+        workflow_request, history_id, workflow_id = self._setup_random_x2_workflow(name)
+        random_line_steps = self._random_lines_steps(workflow_request, workflow_id)
+        return workflow_request, history_id, workflow_id, random_line_steps
 
-    def _random_lines_steps(self, workflow_request):
-        workflow_summary_response = self._get(f"workflows/{workflow_request['workflow_id']}")
+    def _random_lines_steps(self, workflow_request: dict, workflow_id: str):
+        workflow_summary_response = self._get(f"workflows/{workflow_id}")
         self._assert_status_code_is(workflow_summary_response, 200)
         steps = workflow_summary_response.json()["steps"]
         return sorted((step for step in steps.values() if step["tool_id"] == "random_lines1"), key=lambda step: step["id"])
 
-    def _setup_random_x2_workflow(self, name):
+    def _setup_random_x2_workflow(self, name: str):
         workflow = self.workflow_populator.load_random_x2_workflow(name)
         uploaded_workflow_id = self.workflow_populator.create_workflow(workflow)
         workflow_inputs = self._workflow_inputs(uploaded_workflow_id)
@@ -4467,12 +4435,11 @@ input_c:
         hda1 = self.dataset_populator.new_dataset(history_id, content=ten_lines)
         workflow_request = dict(
             history=f"hist_id={history_id}",
-            workflow_id=uploaded_workflow_id,
             ds_map=dumps({
                 key: self._ds_entry(hda1),
             }),
         )
-        return workflow_request, history_id
+        return workflow_request, history_id, uploaded_workflow_id
 
     def __review_paused_steps(self, uploaded_workflow_id, invocation_id, order_index, action=True):
         invocation = self._invocation_details(uploaded_workflow_id, invocation_id)
@@ -4587,6 +4554,6 @@ test_data:
             inputs_by="name",
             inputs=json.dumps({'input1': self._ds_entry(hda1)}),
         )
-        invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, request=workflow_request, assert_ok=True)
+        invocation_id = self.workflow_populator.invoke_workflow(workflow_id, history_id=history_id, request=workflow_request, assert_ok=True)
         self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
         self.assertEqual("Hello World Second!\nhello world 2\n", self.dataset_populator.get_history_dataset_content(history_id, hid=4))
