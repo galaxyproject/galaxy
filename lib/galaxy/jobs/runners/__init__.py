@@ -93,7 +93,7 @@ class BaseJobRunner:
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
             worker.daemon = True
-            self.app.application_stack.register_postfork_function(worker.start)
+            worker.start()
             self.work_threads.append(worker)
 
     def _alive_worker_threads(self, cycle=False):
