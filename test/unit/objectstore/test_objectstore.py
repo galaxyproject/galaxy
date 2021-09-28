@@ -7,12 +7,12 @@ from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
-from galaxy.util import directory_hash_id
-from ..unittest_utils.objectstore_helpers import (
+from galaxy.objectstore.unittest_utils import (
     Config as TestConfig,
     DISK_TEST_CONFIG,
     DISK_TEST_CONFIG_YAML,
 )
+from galaxy.util import directory_hash_id
 
 
 def test_disk_store():

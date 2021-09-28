@@ -4,7 +4,7 @@ from tempfile import mkdtemp
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.store.discover import persist_target_to_export_store
-from .tools.test_history_imp_exp import _mock_app
+from galaxy.model.unittest_utils import GalaxyDataTestApp
 
 
 def test_model_create_context_persist_hdas():
@@ -23,7 +23,7 @@ def test_model_create_context_persist_hdas():
             "md5": "e5d21b1ea57fc9a31f8ea0110531bf3d",
         }],
     }
-    app = _mock_app(store_by="uuid")
+    app = _mock_app()
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, serialize_dataset_objects=True) as export_store:
         persist_target_to_export_store(target, export_store, app.object_store, work_directory)
@@ -54,7 +54,7 @@ def test_model_create_context_persist_error_hda():
             "error_message": "Failed to download some URL I guess",
         }],
     }
-    app = _mock_app(store_by="uuid")
+    app = _mock_app()
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, serialize_dataset_objects=True) as export_store:
         persist_target_to_export_store(target, export_store, app.object_store, work_directory)
@@ -171,7 +171,7 @@ def test_persist_target_hdca():
         }]
     }
 
-    app = _mock_app(store_by="uuid")
+    app = _mock_app()
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, serialize_dataset_objects=True) as export_store:
         persist_target_to_export_store(target, export_store, app.object_store, work_directory)
@@ -200,7 +200,7 @@ def _assert_one_library_created(sa_session):
 
 
 def _import_library_target(target, work_directory):
-    app = _mock_app(store_by="uuid")
+    app = _mock_app()
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, serialize_dataset_objects=True) as export_store:
         persist_target_to_export_store(target, export_store, app.object_store, work_directory)
@@ -233,3 +233,7 @@ def _import_directory_to_history(app, target, work_directory):
         import_model_store.perform_import(import_history)
 
     return import_history
+
+
+def _mock_app():
+    return GalaxyDataTestApp()
