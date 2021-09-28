@@ -24,7 +24,15 @@ from types import (
 
 from sqlalchemy.orm import InstanceState
 
-from galaxy.util import sanitize_lists_to_string
+from galaxy.util import (
+    MAPPED_CHARACTERS as _mapped_characters,
+    sanitize_lists_to_string as _sanitize_lists_to_string,
+    VALID_CHARACTERS as _valid_characters,
+)
+
+# Handle difference between valid/mapped chars defined in galaxy.utils and this module:
+VALID_CHARACTERS = _valid_characters.copy() | set('@')  # Add '@' to valid chars
+MAPPED_CHARACTERS = {key: value for key, value in _mapped_characters.items() if key != '@'}  # Remove mapping for '@'
 
 NoneType = type(None)
 NotImplementedType = type(NotImplemented)
@@ -68,6 +76,11 @@ def coerce(x, y):
 def cmp(x, y):
     # Builtin in Python 2, but not Python 3.
     return (x > y) - (x < y)
+
+
+def sanitize_lists_to_string(value):
+    return _sanitize_lists_to_string(
+        value, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS)
 
 
 def wrap_with_safe_string(value, no_wrap_classes=None):

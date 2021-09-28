@@ -5,10 +5,13 @@ from sqlalchemy import inspect
 from sqlalchemy.orm import InstanceState
 
 from galaxy import model
+from galaxy import util
 from galaxy.security.object_wrapper import (
     __DONT_SANITIZE_TYPES__,
     get_no_wrap_classes,
+    MAPPED_CHARACTERS,
     SafeStringWrapper,
+    VALID_CHARACTERS,
     wrap_with_safe_string,
 )
 
@@ -24,6 +27,18 @@ class Bar:
 @pytest.fixture(scope='module')
 def default_no_wrap_types():
     return list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
+
+
+def test_valid_characters():
+    expected = util.VALID_CHARACTERS.copy()
+    expected.add('@')
+    assert VALID_CHARACTERS == expected
+
+
+def test_mapped_characters():
+    expected = util.MAPPED_CHARACTERS.copy()
+    del expected['@']
+    assert MAPPED_CHARACTERS == expected
 
 
 def test_dont_sanitize_types():
