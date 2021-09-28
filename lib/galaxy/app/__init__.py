@@ -71,8 +71,8 @@ from galaxy.web.proxy import ProxyManager
 from galaxy.web_stack import application_stack_instance, ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
-from .di import Container
-from .structured_app import BasicApp, MinimalManagerApp, StructuredApp
+from ..di import Container
+from ..structured_app import BasicApp, MinimalManagerApp, StructuredApp
 
 log = logging.getLogger(__name__)
 app = None
