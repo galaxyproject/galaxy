@@ -1,4 +1,17 @@
 from numbers import Number
+from types import (
+    BuiltinFunctionType,
+    BuiltinMethodType,
+    CodeType,
+    FrameType,
+    FunctionType,
+    GeneratorType,
+    GetSetDescriptorType,
+    MemberDescriptorType,
+    MethodType,
+    ModuleType,
+    TracebackType,
+)
 
 import pytest
 from sqlalchemy import inspect
@@ -8,6 +21,7 @@ from galaxy import model
 from galaxy import util
 from galaxy.security.object_wrapper import (
     __DONT_SANITIZE_TYPES__,
+    __WRAP_NO_SUBCLASS__,
     get_no_wrap_classes,
     MAPPED_CHARACTERS,
     SafeStringWrapper,
@@ -45,6 +59,13 @@ def test_dont_sanitize_types():
     """Verify const values."""
     assert __DONT_SANITIZE_TYPES__ == (
         Number, bool, type(None), type(NotImplemented), type(Ellipsis), bytearray)
+
+
+def test_wrap_dont_subclass_types():
+    """Verify const values."""
+    assert __WRAP_NO_SUBCLASS__ == (
+        ModuleType, range, slice, TracebackType, FrameType, GetSetDescriptorType, MemberDescriptorType,
+        FunctionType, MethodType, GeneratorType, CodeType, BuiltinFunctionType, BuiltinMethodType)
 
 
 def test_do_not_set_attrs_of_type_instancestate():
