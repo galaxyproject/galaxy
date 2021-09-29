@@ -110,9 +110,6 @@ export default {
                         input.hiddenInWorkflow = true;
                         input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
                         input.value = { __class__: "RuntimeValue" };
-                    } else if (input.type == "conditional") {
-                        input.connectable = false;
-                        input.test_param.collapsible_value = undefined;
                     } else if (!input.fixed) {
                         input.connectable = true;
                         input.collapsible_value = {
@@ -122,6 +119,12 @@ export default {
                             (input.options && input.options.length === 0) ||
                             ["integer", "float"].indexOf(input.type) != -1;
                     }
+                }
+            });
+            Utils.deepeach(inputs, (input) => {
+                if (input.type === "conditional") {
+                    input.connectable = false;
+                    input.test_param.collapsible_value = undefined;
                 }
             });
             return inputs;
