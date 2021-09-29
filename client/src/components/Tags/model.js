@@ -47,15 +47,12 @@ function TagModel(props = {}) {
 
     // VALID TAG REGEX
     // TODO: Not quite right
-    const VALID_TAG_RE = /([a-zA-Z0-9.])+(:[a-zA-Z0-9]+)?/
-    
+    const VALID_TAG_RE = /([a-zA-Z0-9.])+(:[a-zA-Z0-9]+)?/;
+
     // valid flag
     Object.defineProperty(this, "valid", {
         enumerable: false,
         get: function () {
-            if (!this.text.length) {
-                return false;
-            }
             return VALID_TAG_RE.test(this.text);
         },
     });
