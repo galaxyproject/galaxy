@@ -90,25 +90,16 @@ export function fetchMenu(options = {}) {
     // Visualization tab.
     //
     if (Galaxy.config.visualizations_visible) {
-        menu.push({
-            id: "visualization",
-            title: _l("Visualize"),
-            url: "javascript:void(0)",
-            tooltip: _l("Visualize datasets"),
-            disabled: !Galaxy.user.id,
-            menu: [
-                {
-                    title: _l("Create Visualization"),
-                    url: "visualizations",
-                    target: "__use_router__",
-                },
-                {
-                    title: _l("Interactive Environments"),
-                    url: "visualization/gie_list",
-                    target: "galaxy_main",
-                },
-            ],
-        });
+        if (Galaxy.config.visualizations_visible) {
+            menu.push({
+                id: "visualization",
+                title: _l("Visualize"),
+                tooltip: _l("Visualize datasets"),
+                disabled: !Galaxy.user.id,
+                url: "visualizations",
+                target: "__use_router__",
+            });
+        }
     }
 
     //
