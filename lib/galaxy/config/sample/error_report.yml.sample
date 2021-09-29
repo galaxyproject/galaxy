@@ -30,8 +30,8 @@
 
 # Submit error reports to sentry. If a sentry_dsn is configured in your
 # galaxy.yml, then Galaxy will submit the job error to Sentry.
-- type: sentry
-  user_submission: false
+# - type: sentry
+#   user_submission: false
 
 # InfluxDB error reporting backend. You will need to `pip install
 # influxdb` in the galaxy virtualenv yourself. This sends well tagged
