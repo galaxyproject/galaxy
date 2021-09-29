@@ -169,6 +169,7 @@ class Terminal extends EventEmitter {
     }
     resetMapping() {
         this.mapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
+        this.node.mapOver = undefined;
         this.emit("change");
     }
     resetCollectionTypeSource() {
