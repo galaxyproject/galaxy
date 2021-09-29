@@ -203,9 +203,9 @@ class DataMetaFilter(Filter):
         # is considered
         meta_value = set()
         for r in ref:
-            if not r.metadata.element_is_set(self.key):
+            if not r.metadata_.element_is_set(self.key):
                 continue
-            _add_meta(meta_value, r.metadata.get(self.key))
+            _add_meta(meta_value, r.metadata_.get(self.key))
 
         # if no meta data value could be determined just return a copy
         # of the original options
@@ -473,7 +473,7 @@ class RemoveValueFilter(Filter):
                     data_ref = data_ref.to_hda_representative()
                 if not isinstance(data_ref, HistoryDatasetAssociation) and not isinstance(data_ref, DatasetFilenameWrapper):
                     return options  # cannot modify options
-                value = data_ref.metadata.get(self.metadata_key, None)
+                value = data_ref.metadata_.get(self.metadata_key, None)
         # Default to the second column (i.e. 1) since this used to work only on options produced by the data_meta filter
         value_col = self.dynamic_option.columns.get('value', 1)
         return [option for option in options if not compare_value(option[value_col], value)]
@@ -676,7 +676,7 @@ class DynamicOptions:
             meta_file_key = self.meta_file_key
             for dataset in datasets:
                 if meta_file_key:
-                    dataset = getattr(dataset.metadata, meta_file_key, None)
+                    dataset = getattr(dataset.metadata_, meta_file_key, None)
                     if not isinstance(dataset, MetadataFile):
                         log.warning(f"The meta_file_key `{meta_file_key}` was invalid or the referred object was not a valid file type metadata!")
                         continue

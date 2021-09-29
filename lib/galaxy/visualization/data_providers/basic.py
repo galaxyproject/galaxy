@@ -96,17 +96,17 @@ class ColumnDataProvider(BaseDataProvider):
         # skip comment lines (if any/avail)
         # pre: should have original_dataset and
         if(skip_comments
-                and self.original_dataset.metadata.comment_lines
-                and start_val < self.original_dataset.metadata.comment_lines):
-            start_val = int(self.original_dataset.metadata.comment_lines)
+                and self.original_dataset.metadata_.comment_lines
+                and start_val < self.original_dataset.metadata_.comment_lines):
+            start_val = int(self.original_dataset.metadata_.comment_lines)
 
         # columns is an array of ints for now (should handle column names later)
         columns = loads(columns)
         for column in columns:
-            assert((column < self.original_dataset.metadata.columns)
+            assert((column < self.original_dataset.metadata_.columns)
                    and (column >= 0)), (
                 "column index (%d) must be positive and less" % (column)
-                + " than the number of columns: %d" % (self.original_dataset.metadata.columns))
+                + " than the number of columns: %d" % (self.original_dataset.metadata_.columns))
 
         # set up the response, column lists
         response = {}
@@ -118,7 +118,7 @@ class ColumnDataProvider(BaseDataProvider):
             'sum': 0
         } for column in columns]
 
-        column_types = [self.original_dataset.metadata.column_types[column] for column in columns]
+        column_types = [self.original_dataset.metadata_.column_types[column] for column in columns]
 
         # function for casting by column_types
         def cast_val(val, type):

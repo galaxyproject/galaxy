@@ -215,7 +215,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
         def __init__(self, dataset, compute_environment=None):
             self.dataset = dataset
-            self.metadata = dataset.metadata
+            self.metadata = dataset.metadata_
             self.compute_environment = compute_environment
 
         def __getattr__(self, name):

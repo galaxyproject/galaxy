@@ -380,8 +380,7 @@ class HDASerializerTestCase(HDATestCase):
 
         # skip metadata for this test
         def is_metadata(key):
-            return (key == 'metadata'
-                or key.startswith('metadata_'))
+            return key.startswith('metadata_')
 
         self.log('should have a serializer for all serializable keys')
         for key in self.hda_serializer.serializable_keyset:

@@ -566,7 +566,7 @@ class UploadDataset(Group):
             dataset.dbkey = dbkey
             dataset.datatype = d_type
             dataset.warnings = []
-            dataset.metadata = {}
+            dataset.metadata_ = {}
             dataset.composite_files = {}
             dataset.uuid = None
             dataset.tag_using_filenames = None
@@ -580,7 +580,7 @@ class UploadDataset(Group):
                         meta_value = files_metadata[meta_name]
                         if meta_name in metadata_name_substition_default_dict:
                             meta_value = sanitize_for_filename(meta_value, default=metadata_name_substition_default_dict[meta_name])
-                        dataset.metadata[meta_name] = meta_value
+                        dataset.metadata_[meta_name] = meta_value
             dataset.name = self.get_composite_dataset_name(context)
             if dataset.datatype.composite_type == 'auto_primary_file':
                 # replace sniff here with just creating an empty file

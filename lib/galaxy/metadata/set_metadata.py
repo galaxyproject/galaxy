@@ -69,8 +69,8 @@ def set_validated_state(dataset_instance):
     dataset_instance.validated_state_message = datatype_validation.message
 
     # Set special metadata property that will reload this on server side.
-    dataset_instance.metadata.__validated_state__ = datatype_validation.state
-    dataset_instance.metadata.__validated_state_message__ = datatype_validation.message
+    dataset_instance.metadata_.__validated_state__ = datatype_validation.state
+    dataset_instance.metadata_.__validated_state_message__ = datatype_validation.message
 
 
 def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size):
@@ -88,21 +88,21 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
             # side and the model updated (see MetadataCollection.{from,to}_JSON_dict)
             dataset_instance.extension = extension
             # Set special metadata property that will reload this on server side.
-            dataset_instance.metadata.__extension__ = extension
+            dataset_instance.metadata_.__extension__ = extension
         except Exception:
             log.exception("Problem sniffing datatype.")
 
     for metadata_name, metadata_value in file_dict.get('metadata', {}).items():
-        setattr(dataset_instance.metadata, metadata_name, metadata_value)
+        setattr(dataset_instance.metadata_, metadata_name, metadata_value)
     dataset_instance.datatype.set_meta(dataset_instance, **set_meta_kwds)
     for metadata_name, metadata_value in file_dict.get('metadata', {}).items():
-        setattr(dataset_instance.metadata, metadata_name, metadata_value)
+        setattr(dataset_instance.metadata_, metadata_name, metadata_value)
 
     if max_metadata_value_size:
-        for k, v in list(dataset_instance.metadata.items()):
+        for k, v in list(dataset_instance.metadata_.items()):
             if total_size(v) > max_metadata_value_size:
                 log.info(f"Key {k} too large for metadata, discarding")
-                dataset_instance.metadata.remove_key(k)
+                dataset_instance.metadata_.remove_key(k)
 
 
 def set_metadata():
@@ -267,7 +267,7 @@ def set_metadata_portable():
             for metadata_name, metadata_file_override in override_metadata:
                 if MetadataTempFile.is_JSONified_value(metadata_file_override):
                     metadata_file_override = MetadataTempFile.from_JSON(metadata_file_override)
-                setattr(dataset.metadata, metadata_name, metadata_file_override)
+                setattr(dataset.metadata_, metadata_name, metadata_file_override)
             if output_dict.get("validate", False):
                 set_validated_state(dataset)
             if dataset_instance_id not in unnamed_id_to_path:
@@ -331,7 +331,7 @@ def set_metadata_portable():
                 dataset.dataset.external_filename = None
                 export_store.add_dataset(dataset)
             else:
-                dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
+                dataset.metadata_.to_JSON_dict(filename_out)  # write out results of set_meta
 
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
         except Exception:
@@ -391,6 +391,6 @@ def write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_
         new_dataset.state = new_dataset.states.OK
         new_dataset_instance = HistoryDatasetAssociation(id=-i, dataset=new_dataset, extension=file_dict.get('ext', 'data'))
         set_meta(new_dataset_instance, file_dict)
-        file_dict['metadata'] = json.loads(new_dataset_instance.metadata.to_JSON_dict())  # storing metadata in external form, need to turn back into dict, then later jsonify
+        file_dict['metadata'] = json.loads(new_dataset_instance.metadata_.to_JSON_dict())  # storing metadata in external form, need to turn back into dict, then later jsonify
 
     tool_provided_metadata.rewrite()

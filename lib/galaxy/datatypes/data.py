@@ -201,7 +201,7 @@ class Data(metaclass=DataMeta):
         # Dataset.set_metadata.  It always copies the rhs in order to
         # flag the object as modified for SQLAlchemy.
         if copy_from:
-            dataset.metadata = copy_from.metadata
+            dataset.metadata_ = copy_from.metadata_
 
     def set_meta(self, dataset: Any, overwrite=True, **kwd):
         """Unimplemented method, allows guessing of metadata from contents of file"""
@@ -216,11 +216,11 @@ class Data(metaclass=DataMeta):
         if skip is None:
             skip = []
         if check:
-            to_check = ((to_check, dataset.metadata.get(to_check)) for to_check in check)
+            to_check = ((to_check, dataset.metadata_.get(to_check)) for to_check in check)
         else:
-            to_check = dataset.metadata.items()
+            to_check = dataset.metadata_.items()
         for key, value in to_check:
-            if key in skip or (not check and dataset.metadata.spec[key].get("optional")):
+            if key in skip or (not check and dataset.metadata_.spec[key].get("optional")):
                 continue  # we skip check for optional and nonrequested values here
             if not value:
                 return True
@@ -689,7 +689,7 @@ class Data(metaclass=DataMeta):
     def __substitute_composite_key(self, key, composite_file, dataset=None):
         if composite_file.substitute_name_with_metadata:
             if dataset:
-                meta_value = str(dataset.metadata.get(composite_file.substitute_name_with_metadata))
+                meta_value = str(dataset.metadata_.get(composite_file.substitute_name_with_metadata))
             else:
                 meta_value = self.spec[composite_file.substitute_name_with_metadata].default
             return key % meta_value
@@ -708,7 +708,7 @@ class Data(metaclass=DataMeta):
         def substitute_composite_key(key, composite_file):
             if composite_file.substitute_name_with_metadata:
                 if dataset:
-                    meta_value = str(dataset.metadata.get(composite_file.substitute_name_with_metadata))
+                    meta_value = str(dataset.metadata_.get(composite_file.substitute_name_with_metadata))
                 else:
                     meta_value = self.metadata_spec[composite_file.substitute_name_with_metadata].default
                 return key % meta_value
@@ -817,7 +817,7 @@ class Text(Data):
         """
         Set the number of lines of data in dataset.
         """
-        dataset.metadata.data_lines = self.count_data_lines(dataset)
+        dataset.metadata_.data_lines = self.count_data_lines(dataset)
 
     def estimate_file_lines(self, dataset):
         """
@@ -867,8 +867,8 @@ class Text(Data):
             dataset.peek = get_file_peek(dataset.file_name, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
             if line_count is None:
                 # See if line_count is stored in the metadata
-                if dataset.metadata.data_lines:
-                    dataset.blurb = f"{util.commaify(str(dataset.metadata.data_lines))} {inflector.cond_plural(dataset.metadata.data_lines, self.line_class)}"
+                if dataset.metadata_.data_lines:
+                    dataset.blurb = f"{util.commaify(str(dataset.metadata_.data_lines))} {inflector.cond_plural(dataset.metadata_.data_lines, self.line_class)}"
                 else:
                     # Number of lines is not known ( this should not happen ), and auto-detect is
                     # needed to set metadata
@@ -877,7 +877,7 @@ class Text(Data):
                         # Small dataset, recount all lines and reset peek afterward.
                         lc = self.count_data_lines(dataset)
                         if lc is not None:
-                            dataset.metadata.data_lines = lc
+                            dataset.metadata_.data_lines = lc
                             dataset.blurb = f"{util.commaify(str(lc))} {inflector.cond_plural(lc, self.line_class)}"
                         else:
                             dataset.blurb = "Error: Cannot count lines in dataset"

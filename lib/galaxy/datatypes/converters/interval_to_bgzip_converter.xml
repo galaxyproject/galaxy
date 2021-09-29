@@ -9,9 +9,9 @@
         #if $input1.ext in ['bed', 'gff', 'vcf']
             -P $input1.ext
         #else
-            -c ${input1.metadata.chromCol}
-            -s ${input1.metadata.startCol}
-            -e ${input1.metadata.endCol}
+            -c ${input1.metadata_.chromCol}
+            -s ${input1.metadata_.startCol}
+            -e ${input1.metadata_.endCol}
         #end if
         '$input1' '$output1'
     ]]></command>

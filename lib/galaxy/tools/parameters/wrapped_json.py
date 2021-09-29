@@ -159,14 +159,14 @@ def _hda_to_object(hda):
     metadata_dict = {}
 
     for key, value in hda_dict.items():
-        if key.startswith("metadata_"):
+        if key.startswith("metadata_") and key != 'metadata_':  # metatata_ is also the name of the metadata attribute
             metadata_dict[key[len("metadata_"):]] = value
 
     return {
         'file_ext': hda_dict['file_ext'],
         'file_size': hda_dict['file_size'],
         'name': hda_dict['name'],
-        'metadata': metadata_dict,
+        'metadata_': metadata_dict,
         'src': {'src': 'hda', 'id': hda.id},
     }
 

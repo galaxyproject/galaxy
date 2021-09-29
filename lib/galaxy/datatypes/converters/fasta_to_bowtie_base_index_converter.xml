@@ -9,7 +9,7 @@
         mkdir '${output.files_path}'
         && bowtie-build --quiet
         -f
-        '$input' '${output.files_path}/${output.metadata.base_name}'
+        '$input' '${output.files_path}/${output.metadata_.base_name}'
 ]]>
     </command>
     <inputs>

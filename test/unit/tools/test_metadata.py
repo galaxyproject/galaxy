@@ -59,8 +59,8 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
         assert metadata_set_successfully
         self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
-        assert output_dataset.metadata.data_lines == 2
-        assert output_dataset.metadata.sequences == 1
+        assert output_dataset.metadata_.data_lines == 2
+        assert output_dataset.metadata_.sequences == 1
 
     def test_primary_dataset_output_extension_directory(self):
         self.app.config.metadata_strategy = "directory"
@@ -88,8 +88,8 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         assert metadata_set_successfully
         output_dataset.extension = "fasta"  # gets done in job finish...
         self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
-        assert output_dataset.metadata.data_lines == 2
-        assert output_dataset.metadata.sequences == 1
+        assert output_dataset.metadata_.data_lines == 2
+        assert output_dataset.metadata_.sequences == 1
 
     def test_primary_dataset_output_metadata_override_directory(self):
         self.app.config.metadata_strategy = "directory"
@@ -111,7 +111,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
             "out_file1": output_dataset,
         }
         command = self.metadata_command(output_datasets)
-        self._write_galaxy_json("""{"type": "dataset", "dataset_id": "%s", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info", "metadata": {"sequences": 42}}""" % output_dataset.dataset.id)
+        self._write_galaxy_json("""{"type": "dataset", "dataset_id": "%s", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info", "metadata_": {"sequences": 42}}""" % output_dataset.dataset.id)
         self._write_output_dataset_contents(output_dataset, ">seq1\nGCTGCATG\n")
         self._write_job_files()
         self.exec_metadata_command(command)
@@ -119,8 +119,8 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         assert metadata_set_successfully
         output_dataset.extension = "fasta"  # get done in job finish...
         self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
-        assert output_dataset.metadata.data_lines == 2
-        assert output_dataset.metadata.sequences == 42
+        assert output_dataset.metadata_.data_lines == 2
+        assert output_dataset.metadata_.sequences == 42
 
     def test_list_discovery_extended(self):
         self.app.config.metadata_strategy = "extended"

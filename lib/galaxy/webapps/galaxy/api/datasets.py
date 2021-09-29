@@ -503,11 +503,11 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         rval = ''
         try:
             hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
-            file_ext = hda.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
+            file_ext = hda.metadata_.spec.get(metadata_file).get("file_ext", metadata_file)
             fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in hda.name)[0:150]
             trans.response.headers["Content-Type"] = "application/octet-stream"
             trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'
-            return open(hda.metadata.get(metadata_file).file_name, 'rb')
+            return open(hda.metadata_.get(metadata_file).file_name, 'rb')
         except Exception as e:
             log.exception("Error getting metadata_file (%s) for dataset (%s) from history (%s)",
                           metadata_file, history_content_id, history_id)

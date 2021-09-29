@@ -3203,7 +3203,7 @@ class SortTool(DatabaseOperationTool):
             sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
         if sorttype == 'file':
             hda = incoming["sort_type"]["sort_file"]
-            data_lines = hda.metadata.get('data_lines', 0)
+            data_lines = hda.metadata_.get('data_lines', 0)
             if data_lines == len(elements):
                 old_elements_dict = {}
                 for element in elements:

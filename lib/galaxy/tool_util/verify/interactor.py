@@ -216,7 +216,7 @@ class GalaxyInteractorApi:
         `dbkey` and `tags` all map to the API description directly. Other metadata attributes
         are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
         """
-        metadata = attributes.get('metadata', {}).copy()
+        metadata = attributes.get('metadata_', {}).copy()
         for key in metadata.copy().keys():
             if key not in ['name', 'info', 'tags', 'created_from_basename']:
                 new_key = f"metadata_{key}"

@@ -109,11 +109,11 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         self.other_values = {"data1": data1_val}
 
         hda1 = MockHistoryDatasetAssociation()
-        hda1.metadata = MockMetadata()
-        hda1.metadata.foo = "bar"
+        hda1.metadata_ = MockMetadata()
+        hda1.metadata_.foo = "bar"
         hda2 = MockHistoryDatasetAssociation()
-        hda2.metadata = MockMetadata()
-        hda2.metadata.foo = "baz"
+        hda2.metadata_ = MockMetadata()
+        hda2.metadata_.foo = "baz"
 
         assert self.test_context.filter_values == {"baz", "bar"}
 
@@ -129,8 +129,8 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         self.other_values = {"data1": data1_val}
 
         hda = MockHistoryDatasetAssociation()
-        hda.metadata = MockMetadata()
-        hda.metadata.foo = "no-match"
+        hda.metadata_ = MockMetadata()
+        hda.metadata_.foo = "no-match"
 
         assert self.test_context.filter_values == {"baz", "bar"}
 
@@ -162,7 +162,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
                 option_xml = '''<options><filter type="data_meta" ref="data1" key="dbkey" /></options>'''
             if self.metadata_filtered_param:
                 option_xml = '''
-                    <options options_filter_attribute="metadata.foo">
+                    <options options_filter_attribute="metadata_.foo">
                       <filter type="add_value" value="bar" />
                       <filter type="add_value" value="baz" />
                     </options>'''

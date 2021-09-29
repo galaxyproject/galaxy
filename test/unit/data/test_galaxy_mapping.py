@@ -378,11 +378,11 @@ class MappingTests(BaseModelTestCase):
         index2 = NamedTemporaryFile("w")
         index2.write("cool bam index 2")
         metadata_dict = {"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name}), "bam_csi_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index2.name})}
-        d1.metadata.from_JSON_dict(json_dict=metadata_dict)
-        assert d1.metadata.bam_index
-        assert d1.metadata.bam_csi_index
-        assert isinstance(d1.metadata.bam_index, model.MetadataFile)
-        assert isinstance(d1.metadata.bam_csi_index, model.MetadataFile)
+        d1.metadata_.from_JSON_dict(json_dict=metadata_dict)
+        assert d1.metadata_.bam_index
+        assert d1.metadata_.bam_csi_index
+        assert isinstance(d1.metadata_.bam_index, model.MetadataFile)
+        assert isinstance(d1.metadata_.bam_csi_index, model.MetadataFile)
         d2 = model.HistoryDatasetAssociation(extension="txt", history=h1, create_dataset=True, sa_session=model.session)
         c1 = model.DatasetCollection(collection_type='paired')
         dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="forward", element_index=0)
@@ -496,7 +496,7 @@ class MappingTests(BaseModelTestCase):
         self.persist(u, h1, h2)
         # q1 = model.Query( "h2->q1" )
         metadata = dict(chromCol=1, startCol=2, endCol=3)
-        d1 = model.HistoryDatasetAssociation(extension="interval", metadata=metadata, history=h2, create_dataset=True, sa_session=model.session)
+        d1 = model.HistoryDatasetAssociation(extension="interval", metadata_=metadata, history=h2, create_dataset=True, sa_session=model.session)
         # h2.queries.append( q1 )
         # h2.queries.append( model.Query( "h2->q2" ) )
         self.persist(d1)
@@ -516,7 +516,7 @@ class MappingTests(BaseModelTestCase):
         assert hist1.name == ("H" * 255)
         assert hist0.user == user
         assert hist1.user is None
-        assert hist1.datasets[0].metadata.chromCol == 1
+        assert hist1.datasets[0].metadata_.chromCol == 1
         # The filename test has moved to objectstore
         # id = hist1.datasets[0].id
         # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + ( "/dataset_%d.dat" % id )
@@ -532,10 +532,10 @@ class MappingTests(BaseModelTestCase):
 
     def test_metadata_spec(self):
         metadata = dict(chromCol=1, startCol=2, endCol=3)
-        d = self.model.HistoryDatasetAssociation(extension="interval", metadata=metadata, sa_session=self.model.session)
-        assert d.metadata.chromCol == 1
-        assert d.metadata.anyAttribute is None
-        assert 'items' not in d.metadata
+        d = self.model.HistoryDatasetAssociation(extension="interval", metadata_=metadata, sa_session=self.model.session)
+        assert d.metadata_.chromCol == 1
+        assert d.metadata_.anyAttribute is None
+        assert 'items' not in d.metadata_
 
     def test_dataset_job_relationship(self):
         model = self.model

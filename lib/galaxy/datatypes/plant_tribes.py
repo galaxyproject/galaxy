@@ -90,7 +90,7 @@ class Smat(Text):
 #        try:
 #            efp = dataset.extra_files_path
 #            if os.path.exists(efp):
-#                dataset.metadata.num_files = len(os.listdir(efp))
+#                dataset.metadata_.num_files = len(os.listdir(efp))
 #        except Exception as e:
 #            log.warning("set_meta fname: %s %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
 
@@ -125,15 +125,15 @@ class PlantTribesKsComponents(Tabular):
                 except Exception:
                     continue
         if len(significant_components) > 0:
-            dataset.metadata.number_comp = max(significant_components)
+            dataset.metadata_.number_comp = max(significant_components)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
-            if (dataset.metadata.number_comp == 1):
+            if (dataset.metadata_.number_comp == 1):
                 dataset.blurb = "1 significant component"
             else:
-                dataset.blurb = f"{dataset.metadata.number_comp} significant components"
+                dataset.blurb = f"{dataset.metadata_.number_comp} significant components"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -163,7 +163,7 @@ class PlantTribesKsComponents(Tabular):
 #
 #    def set_peek(self, dataset, is_multi_byte=False):
 #        super(PlantTribesOrtho, self).set_peek(dataset)
-#        dataset.blurb = "Proteins orthogroup fasta files: %d items" % dataset.metadata.num_files
+#        dataset.blurb = "Proteins orthogroup fasta files: %d items" % dataset.metadata_.num_files
 #
 #
 # class PlantTribesOrthoCodingSequence(PlantTribes):
@@ -175,7 +175,7 @@ class PlantTribesKsComponents(Tabular):
 #
 #    def set_peek(self, dataset, is_multi_byte=False):
 #        super(PlantTribesOrthoCodingSequence, self).set_peek(dataset)
-#        dataset.blurb = "Protein and coding sequences orthogroup fasta files: %d items" % dataset.metadata.num_files
+#        dataset.blurb = "Protein and coding sequences orthogroup fasta files: %d items" % dataset.metadata_.num_files
 #
 #
 # class PlantTribesTargetedGeneFamilies(PlantTribes):
@@ -198,7 +198,7 @@ class PlantTribesKsComponents(Tabular):
 #
 #    def set_peek(self, dataset, is_multi_byte=False):
 #        super(PlantTribesPhylogeneticTree, self).set_peek(dataset)
-#        dataset.blurb = "Phylogenetic trees: %d items" % dataset.metadata.num_files
+#        dataset.blurb = "Phylogenetic trees: %d items" % dataset.metadata_.num_files
 #
 #
 # class PlantTribesPhylip(PlantTribes):
@@ -209,7 +209,7 @@ class PlantTribesKsComponents(Tabular):
 #
 #    def set_peek(self, dataset, is_multi_byte=False):
 #        super(PlantTribesPhylip, self).set_peek(dataset)
-#        dataset.blurb = "Orthogroup phylip multiple sequence alignments: %d items" % dataset.metadata.num_files
+#        dataset.blurb = "Orthogroup phylip multiple sequence alignments: %d items" % dataset.metadata_.num_files
 #
 #
 # class PlantTribesMultipleSequenceAlignment(PlantTribes):
@@ -220,7 +220,7 @@ class PlantTribesKsComponents(Tabular):
 #
 #    def set_peek(self, dataset, is_multi_byte=False):
 #        super(PlantTribesMultipleSequenceAlignment, self).set_peek(dataset)
-#        dataset.blurb = "Proteins orthogroup alignments: %d items" % dataset.metadata.num_files
+#        dataset.blurb = "Proteins orthogroup alignments: %d items" % dataset.metadata_.num_files
 #
 #
 # class PlantTribesMultipleSequenceAlignmentCodonAlignment(PlantTribes):
@@ -231,7 +231,7 @@ class PlantTribesKsComponents(Tabular):
 #
 #    def set_peek(self, dataset, is_multi_byte=False):
 #        super(PlantTribesMultipleSequenceAlignmentCodonAlignment, self).set_peek(dataset)
-#        dataset.blurb = "Protein and coding sequences orthogroup alignments: %d items" % dataset.metadata.num_files
+#        dataset.blurb = "Protein and coding sequences orthogroup alignments: %d items" % dataset.metadata_.num_files
 #
 #
 # class PlantTribesMultipleSequenceAlignmentTrimmed(PlantTribes):
@@ -242,7 +242,7 @@ class PlantTribesKsComponents(Tabular):
 #
 #    def set_peek(self, dataset, is_multi_byte=False):
 #        super(PlantTribesMultipleSequenceAlignmentTrimmed, self).set_peek(dataset)
-#        dataset.blurb = "Trimmed proteins orthogroup alignments: %d items" % dataset.metadata.num_files
+#        dataset.blurb = "Trimmed proteins orthogroup alignments: %d items" % dataset.metadata_.num_files
 #
 #
 # class PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment(PlantTribes):
@@ -253,7 +253,7 @@ class PlantTribesKsComponents(Tabular):
 #
 #    def set_peek(self, dataset, is_multi_byte=False):
 #        super(PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment, self).set_peek(dataset)
-#        dataset.blurb = "Trimmed protein and coding sequences orthogroup alignments: %d items" % dataset.metadata.num_files
+#        dataset.blurb = "Trimmed protein and coding sequences orthogroup alignments: %d items" % dataset.metadata_.num_files
 #
 #
 # class PlantTribesMultipleSequenceAlignmentFiltered(PlantTribes):
@@ -264,7 +264,7 @@ class PlantTribesKsComponents(Tabular):
 #
 #    def set_peek(self, dataset, is_multi_byte=False):
 #        super(PlantTribesMultipleSequenceAlignmentFiltered, self).set_peek(dataset)
-#        dataset.blurb = "Filtered proteins orthogroup alignments: %d items" % dataset.metadata.num_files
+#        dataset.blurb = "Filtered proteins orthogroup alignments: %d items" % dataset.metadata_.num_files
 #
 #
 # class PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment(PlantTribes):
@@ -275,4 +275,4 @@ class PlantTribesKsComponents(Tabular):
 #
 #    def set_peek(self, dataset, is_multi_byte=False):
 #        super(PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment, self).set_peek(dataset)
-#        dataset.blurb = "Filtered protein and coding sequences orthogroup alignments: %d items" % dataset.metadata.num_files
+#        dataset.blurb = "Filtered protein and coding sequences orthogroup alignments: %d items" % dataset.metadata_.num_files

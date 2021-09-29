@@ -5,7 +5,7 @@
         <requirement type="package" version="3.7">python</requirement>
     </requirements>
     <command>
-        python '$__tool_directory__/lped_to_fped_converter.py' '$input1.extra_files_path/$input1.metadata.base_name' '$output1' '$output1.files_path'
+        python '$__tool_directory__/lped_to_fped_converter.py' '$input1.extra_files_path/$input1.metadata_.base_name' '$output1' '$output1.files_path'
     </command>
     <inputs>
         <param format="lped" name="input1" type="data" label="Choose linkage pedigree file"/>

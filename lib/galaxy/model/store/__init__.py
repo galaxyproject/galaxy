@@ -250,13 +250,13 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     "peek",
                     "designation",
                     "visible",
-                    "metadata",
+                    "metadata_",
                     "tool_version",
                 ]
                 for attribute in attributes:
                     if attribute in dataset_attrs:
                         value = dataset_attrs.get(attribute)
-                        if attribute == "metadata":
+                        if attribute == "metadata_":
                             def remap_objects(p, k, obj):
                                 if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
                                     return (k, model.MetadataFile(dataset=hda, uuid=obj["uuid"]))
@@ -269,7 +269,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 handle_dataset_object_edit(hda)
                 self._flush()
             else:
-                metadata = dataset_attrs['metadata']
+                metadata = dataset_attrs['metadata_']
 
                 model_class = dataset_attrs.get("model_class", "HistoryDatasetAssociation")
                 if model_class == "HistoryDatasetAssociation":
@@ -284,7 +284,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                        deleted=dataset_attrs.get('deleted', False),
                                                                        dbkey=metadata['dbkey'],
                                                                        tool_version=metadata.get('tool_version'),
-                                                                       metadata=metadata,
+                                                                       metadata_=metadata,
                                                                        history=history,
                                                                        create_dataset=True,
                                                                        flush=False,
@@ -301,7 +301,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                               deleted=dataset_attrs.get('deleted', False),
                                                                               dbkey=metadata['dbkey'],
                                                                               tool_version=metadata.get('tool_version'),
-                                                                              metadata=metadata,
+                                                                              metadata_=metadata,
                                                                               create_dataset=True,
                                                                               sa_session=self.sa_session)
                 else:

@@ -90,24 +90,24 @@ class Ply:
                         continue
                     if line.startswith('format'):
                         items = line.split()
-                        dataset.metadata.file_format = items[1]
+                        dataset.metadata_.file_format = items[1]
                     elif line == 'end_header':
                         # Metadata is complete.
                         break
                     elif line.startswith('element'):
                         items = line.split()
                         if items[1] == 'face':
-                            dataset.metadata.face = int(items[2])
+                            dataset.metadata_.face = int(items[2])
                         elif items[1] == 'vertex':
-                            dataset.metadata.vertex = int(items[2])
+                            dataset.metadata_.vertex = int(items[2])
                         else:
                             element_tuple = (items[1], int(items[2]))
-                            dataset.metadata.other_elements.append(element_tuple)
+                            dataset.metadata_.other_elements.append(element_tuple)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = f"Faces: {str(dataset.metadata.face)}, Vertices: {str(dataset.metadata.vertex)}"
+            dataset.blurb = f"Faces: {str(dataset.metadata_.face)}, Vertices: {str(dataset.metadata_.vertex)}"
         else:
             dataset.peek = 'File does not exist'
             dataset.blurb = 'File purged from disc'
@@ -254,8 +254,8 @@ class Vtk:
 
     def set_meta(self, dataset, **kwd):
         if dataset.has_data():
-            dataset.metadata.field_names = []
-            dataset.metadata.field_components = {}
+            dataset.metadata_.field_names = []
+            dataset.metadata_.field_components = {}
             dataset_type = None
             field_components = {}
             dataset_structure_complete = False
@@ -267,7 +267,7 @@ class Vtk:
                         continue
                     if i < 3:
                         dataset = self.set_initial_metadata(i, line, dataset)
-                    elif dataset.metadata.file_format == 'ASCII' or not util.is_binary(line):
+                    elif dataset.metadata_.file_format == 'ASCII' or not util.is_binary(line):
                         if dataset_structure_complete:
                             """
                             The final part of legacy VTK files describes the dataset attributes.
@@ -298,7 +298,7 @@ class Vtk:
                                 # numComp must range between (1,4) inclusive; in versions of VTK
                                 # prior to vtk2.3 this parameter was not supported.
                                 field_name = items[1]
-                                dataset.metadata.field_names.append(field_name)
+                                dataset.metadata_.field_names.append(field_name)
                                 try:
                                     num_components = int(items[-1])
                                 except Exception:
@@ -323,7 +323,7 @@ class Vtk:
                                         # Line consists of arrayName numComponents numTuples dataType.
                                         # Example: surface_field1 1 12 double
                                         field_name = items[0]
-                                        dataset.metadata.field_names.append(field_name)
+                                        dataset.metadata_.field_names.append(field_name)
                                         num_components = int(items[1])
                                         field_component_indexes = [str(i) for i in range(num_components)]
                                         field_components[field_name] = field_component_indexes
@@ -331,22 +331,22 @@ class Vtk:
                         elif line.startswith('CELL_DATA'):
                             # CELL_DATA 3188
                             dataset_structure_complete = True
-                            dataset.metadata.cells = int(line.split()[1])
+                            dataset.metadata_.cells = int(line.split()[1])
                         elif line.startswith('POINT_DATA'):
                             # POINT_DATA 1876
                             dataset_structure_complete = True
-                            dataset.metadata.points = int(line.split()[1])
+                            dataset.metadata_.points = int(line.split()[1])
                         else:
                             dataset, dataset_type = self.set_structure_metadata(line, dataset, dataset_type)
             if len(field_components) > 0:
-                dataset.metadata.field_components = field_components
+                dataset.metadata_.field_components = field_components
 
     def set_initial_metadata(self, i, line, dataset):
         if i == 0:
             # The first part of legacy VTK files is the file version and
             # identifier. This part contains the single line:
             # # vtk DataFile Version X.Y
-            dataset.metadata.vtk_version = line.lower().split('version')[1]
+            dataset.metadata_.vtk_version = line.lower().split('version')[1]
             # The second part of legacy VTK files is the header. The header
             # consists of a character string terminated by end-of-line
             # character \n. The header is 256 characters maximum. The header
@@ -356,7 +356,7 @@ class Vtk:
             # The third part of legacy VTK files is the file format.  The file
             # format describes the type of file, either ASCII or binary. On
             # this line the single word ASCII or BINARY must appear.
-            dataset.metadata.file_format = line
+            dataset.metadata_.file_format = line
         return dataset
 
     def set_structure_metadata(self, line, dataset, dataset_type):
@@ -370,7 +370,7 @@ class Vtk:
         """
         if dataset_type is None and line.startswith('DATASET'):
             dataset_type = line.split()[1]
-            dataset.metadata.dataset_type = dataset_type
+            dataset.metadata_.dataset_type = dataset_type
         if dataset_type == 'STRUCTURED_GRID':
             # The STRUCTURED_GRID format supports 1D, 2D, and 3D structured
             # grid datasets.  The dimensions nx, ny, nz must be greater
@@ -379,13 +379,13 @@ class Vtk:
             # for each point.
             if line.startswith('DIMENSIONS'):
                 # DIMENSIONS 10 5 1
-                dataset.metadata.dimensions = [line.split()[1:]]
+                dataset.metadata_.dimensions = [line.split()[1:]]
             elif line.startswith('ORIGIN'):
                 # ORIGIN 0 0 0
-                dataset.metadata.origin = [line.split()[1:]]
+                dataset.metadata_.origin = [line.split()[1:]]
             elif line.startswith('SPACING'):
                 # SPACING 1 1 1
-                dataset.metadata.spacing = [line.split()[1:]]
+                dataset.metadata_.spacing = [line.split()[1:]]
         elif dataset_type == 'POLYDATA':
             # The polygonal dataset consists of arbitrary combinations
             # of surface graphics primitives vertices, lines, polygons
@@ -393,38 +393,38 @@ class Vtk:
             # VERTICES, LINES, POLYGONS, or TRIANGLE_STRIPS sections.
             if line.startswith('POINTS'):
                 # POINTS 18 float
-                dataset.metadata.points = int(line.split()[1])
+                dataset.metadata_.points = int(line.split()[1])
             elif line.startswith('VERTICES'):
-                dataset.metadata.vertices = int(line.split()[1])
+                dataset.metadata_.vertices = int(line.split()[1])
             elif line.startswith('LINES'):
                 # LINES 5 17
-                dataset.metadata.lines = int(line.split()[1])
+                dataset.metadata_.lines = int(line.split()[1])
             elif line.startswith('POLYGONS'):
                 # POLYGONS 6 30
-                dataset.metadata.polygons = int(line.split()[1])
+                dataset.metadata_.polygons = int(line.split()[1])
             elif line.startswith('TRIANGLE_STRIPS'):
                 # TRIANGLE_STRIPS 2212 16158
-                dataset.metadata.triangle_strips = int(line.split()[1])
+                dataset.metadata_.triangle_strips = int(line.split()[1])
         elif dataset_type == 'UNSTRUCTURED_GRID':
             # The unstructured grid dataset consists of arbitrary combinations
             # of any possible cell type. Unstructured grids are defined by points,
             # cells, and cell types.
             if line.startswith('POINTS'):
                 # POINTS 18 float
-                dataset.metadata.points = int(line.split()[1])
+                dataset.metadata_.points = int(line.split()[1])
             if line.startswith('CELLS'):
                 # CELLS 756 3024
-                dataset.metadata.cells = int(line.split()[1])
+                dataset.metadata_.cells = int(line.split()[1])
         return dataset, dataset_type
 
     def get_blurb(self, dataset):
         blurb = ""
-        if dataset.metadata.vtk_version is not None:
-            blurb += f'VTK Version {str(dataset.metadata.vtk_version)}'
-        if dataset.metadata.dataset_type is not None:
+        if dataset.metadata_.vtk_version is not None:
+            blurb += f'VTK Version {str(dataset.metadata_.vtk_version)}'
+        if dataset.metadata_.dataset_type is not None:
             if blurb:
                 blurb += ' '
-            blurb += str(dataset.metadata.dataset_type)
+            blurb += str(dataset.metadata_.dataset_type)
         return blurb or 'VTK data'
 
     def set_peek(self, dataset, is_multi_byte=False):

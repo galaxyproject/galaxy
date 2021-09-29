@@ -28,5 +28,5 @@ def test_vcf_bgzip_set_meta():
     vcf_bgzip_datatype = VcfGz()
     with get_input_files('1.vcf_bgzip') as input_files, get_dataset(input_files[0], index_attr='tabix_index') as dataset:
         vcf_bgzip_datatype.set_meta(dataset)
-        f = pysam.VariantFile(dataset.file_name, index_filename=dataset.metadata.tabix_index.file_name)
+        f = pysam.VariantFile(dataset.file_name, index_filename=dataset.metadata_.tabix_index.file_name)
         assert isinstance(f.index, pysam.libcbcf.TabixIndex) is True

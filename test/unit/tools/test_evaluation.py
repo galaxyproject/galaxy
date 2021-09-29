@@ -210,9 +210,9 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
     def _setup_test_bwa_job(self):
 
         def hda(id, name, path):
-            hda = HistoryDatasetAssociation(name=name, metadata=dict())
+            hda = HistoryDatasetAssociation(name=name, metadata_=dict())
             hda.dataset = Dataset(id=id, external_filename=path)
-            hda.dataset.metadata = dict()
+            hda.dataset.metadata_ = dict()
             hda.children = []
             return hda
 

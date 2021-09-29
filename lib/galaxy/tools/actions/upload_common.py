@@ -325,15 +325,15 @@ def create_paramfile(trans, uploaded_datasets):
         if uploaded_dataset.type == 'composite':
             # we need to init metadata before the job is dispatched
             data.init_meta()
-            for meta_name, meta_value in uploaded_dataset.metadata.items():
-                setattr(data.metadata, meta_name, meta_value)
+            for meta_name, meta_value in uploaded_dataset.metadata_.items():
+                setattr(data.metadata_, meta_name, meta_value)
             trans.sa_session.add(data)
             trans.sa_session.flush()
             params = dict(file_type=uploaded_dataset.file_type,
                           dataset_id=data.dataset.id,
                           dbkey=uploaded_dataset.dbkey,
                           type=uploaded_dataset.type,
-                          metadata=uploaded_dataset.metadata,
+                          metadata_=uploaded_dataset.metadata_,
                           primary_file=uploaded_dataset.primary_file,
                           composite_file_paths=uploaded_dataset.composite_files,
                           composite_files={k: v.__dict__ for k, v in data.datatype.get_composite_files(data).items()})

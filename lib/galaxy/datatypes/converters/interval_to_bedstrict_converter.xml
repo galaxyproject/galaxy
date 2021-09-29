@@ -3,7 +3,7 @@
     <requirements>
         <requirement type="package" version="0.8.8">bx-python</requirement>
     </requirements>
-    <command>python '$__tool_directory__/interval_to_bedstrict_converter.py' '$output1' '$input1' ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} ${input1.metadata.strandCol} ${input1.metadata.nameCol} ${input1.extension}</command>
+    <command>python '$__tool_directory__/interval_to_bedstrict_converter.py' '$output1' '$input1' ${input1.metadata_.chromCol} ${input1.metadata_.startCol} ${input1.metadata_.endCol} ${input1.metadata_.strandCol} ${input1.metadata_.nameCol} ${input1.extension}</command>
     <inputs>
         <param format="interval" name="input1" type="data" label="Choose intervals"/>
     </inputs>

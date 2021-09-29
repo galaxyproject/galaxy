@@ -73,7 +73,7 @@ def main():
     .. raw:: xml
 
         <command>
-            python '$__tool_directory__/pbed_ldreduced_converter.py' '$input1.extra_files_path/$input1.metadata.base_name' '$winsize' '$winmove' '$r2thresh'
+            python '$__tool_directory__/pbed_ldreduced_converter.py' '$input1.extra_files_path/$input1.metadata_.base_name' '$winsize' '$winmove' '$r2thresh'
             '$output1' '$output1.files_path' 'plink'
         </command>
     """

@@ -597,7 +597,7 @@ class UnspecifiedBuildValidator(Validator):
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> has_dbkey_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> has_dbkey_hda.set_dataset_state(model.Dataset.states.OK)
-    >>> has_dbkey_hda.metadata.dbkey = 'hg19'
+    >>> has_dbkey_hda.metadata_.dbkey = 'hg19'
     >>> has_no_dbkey_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> has_no_dbkey_hda.set_dataset_state(model.Dataset.states.OK)
     >>>
@@ -636,7 +636,7 @@ class UnspecifiedBuildValidator(Validator):
     def validate(self, value, trans=None):
         # if value is None, we cannot validate
         if value:
-            dbkey = value.metadata.dbkey
+            dbkey = value.metadata_.dbkey
             # TODO can dbkey really be a list?
             if isinstance(dbkey, list):
                 dbkey = dbkey[0]
@@ -767,7 +767,7 @@ class MetadataInFileColumnValidator(Validator):
     def validate(self, value, trans=None):
         if not value:
             return
-        super().validate(value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values)
+        super().validate(value.metadata_.spec[self.metadata_name].param.to_string(value.metadata_.get(self.metadata_name)) in self.valid_values)
 
 
 class ValueInDataTableColumnValidator(Validator):
@@ -868,7 +868,7 @@ class MetadataInDataTableColumnValidator(ValueInDataTableColumnValidator):
         self.metadata_name = metadata_name
 
     def validate(self, value, trans=None):
-        super().validate(value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)), trans)
+        super().validate(value.metadata_.spec[self.metadata_name].param.to_string(value.metadata_.get(self.metadata_name)), trans)
 
 
 class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
@@ -921,7 +921,7 @@ class MetadataInRangeValidator(InRangeValidator):
             if not isinstance(value, model.DatasetInstance):
                 raise ValueError('A non-dataset value was provided.')
             try:
-                value_to_check = float(value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)))
+                value_to_check = float(value.metadata_.spec[self.metadata_name].param.to_string(value.metadata_.get(self.metadata_name)))
             except KeyError:
                 raise ValueError(f'{self.metadata_name} Metadata missing')
             except ValueError:

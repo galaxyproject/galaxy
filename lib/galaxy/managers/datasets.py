@@ -368,11 +368,11 @@ class DatasetAssociationManager(base.ModelManager,
             raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot edit metadata until the jobs have completed or you have canceled them.')
         else:
             if overwrite:
-                for name, spec in data.metadata.spec.items():
+                for name, spec in data.metadata_.spec.items():
                     # We need to be careful about the attributes we are resetting
                     if name not in ['name', 'info', 'dbkey', 'base_name']:
                         if spec.get('default'):
-                            setattr(data.metadata, name, spec.unwrap(spec.get('default')))
+                            setattr(data.metadata_, name, spec.unwrap(spec.get('default')))
 
             self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
                 self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data, 'validate': validate},
@@ -474,7 +474,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
             'peek': lambda i, k, **c: i.display_peek() if i.peek and i.peek != 'no peek' else None,
 
             'meta_files': self.serialize_meta_files,
-            'metadata': self.serialize_metadata,
+            'metadata_': self.serialize_metadata,
 
             'creating_job': self.serialize_creating_job,
             'rerunnable': self.serialize_rerunnable,
@@ -514,7 +514,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         """
         meta_files = []
         for meta_type in dataset_assoc.metadata_file_types:
-            if getattr(dataset_assoc.metadata, meta_type, None):
+            if getattr(dataset_assoc.metadata_, meta_type, None):
                 meta_files.append(
                     dict(file_type=meta_type,
                          download_url=self.url_for('history_contents_metadata_file',
@@ -532,10 +532,10 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         excluded = [] if excluded is None else excluded
 
         metadata = {}
-        for name, spec in dataset_assoc.metadata.spec.items():
+        for name, spec in dataset_assoc.metadata_.spec.items():
             if name in excluded:
                 continue
-            val = dataset_assoc.metadata.get(name)
+            val = dataset_assoc.metadata_.get(name)
             # NOTE: no files
             if isinstance(val, model.MetadataFile):
                 # only when explicitly set: fetching filepaths can be expensive
@@ -593,20 +593,20 @@ class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSeriali
     def add_serializers(self):
         super().add_serializers()
         # remove the single nesting key here
-        del self.serializers['metadata']
+        del self.serializers['metadata_']
 
     def serialize(self, dataset_assoc, keys, **context):
         """
         Override to add metadata as flattened keys on the serialized DatasetInstance.
         """
-        # if 'metadata' isn't removed from keys here serialize will retrieve the un-serializable MetadataCollection
+        # if 'metadata_' isn't removed from keys here serialize will retrieve the un-serializable MetadataCollection
         # TODO: remove these when metadata is sub-object
-        KEYS_HANDLED_SEPARATELY = ('metadata', )
+        KEYS_HANDLED_SEPARATELY = ('metadata_', )
         left_to_handle = self._pluck_from_list(keys, KEYS_HANDLED_SEPARATELY)
         serialized = super().serialize(dataset_assoc, keys, **context)
 
         # add metadata directly to the dict instead of as a sub-object
-        if 'metadata' in left_to_handle:
+        if 'metadata_' in left_to_handle:
             metadata = self._prefixed_metadata(dataset_assoc)
             serialized.update(metadata)
         return serialized
@@ -629,9 +629,10 @@ class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSeriali
         """
         Adds (a prefixed version of) the DatasetInstance metadata to the dict,
         prefixing each key with 'metadata_'.
+        (Note: the prefix 'metadata_' is also the name of the metadata attribute.)
         """
         # build the original, nested dictionary
-        metadata = self.serialize_metadata(dataset_assoc, 'metadata')
+        metadata = self.serialize_metadata(dataset_assoc, 'metadata_')
 
         # prefix each key within and return
         prefixed = {}
@@ -673,7 +674,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         if metadata_specification.get('readonly'):
             return
         unwrapped_val = metadata_specification.unwrap(val)
-        setattr(dataset_assoc.metadata, key, unwrapped_val)
+        setattr(dataset_assoc.metadata_, key, unwrapped_val)
         # ...?
         return unwrapped_val
 

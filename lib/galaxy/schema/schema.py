@@ -427,7 +427,7 @@ class HDADetailed(HDASummary):
         title="Resubmitted",
         description="Whether the job creating this dataset has been resubmitted.",
     )
-    metadata: Any = Field(  # TODO: create pydantic model for metadata?
+    metadata_: Any = Field(  # TODO: create pydantic model for metadata?
         ...,
         title="Metadata",
         description="The metadata associated with this dataset.",

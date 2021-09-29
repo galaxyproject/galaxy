@@ -290,7 +290,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'file_ext', 'file_size',
 
             'resubmitted',
-            'metadata', 'meta_files', 'data_type',
+            'metadata_', 'meta_files', 'data_type',
             'peek',
 
             'creating_job',

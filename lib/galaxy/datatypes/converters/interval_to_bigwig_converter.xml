@@ -8,10 +8,10 @@
     <command>
 <![CDATA[
         ## Remove comments and sort by chromosome.
-        grep -v '^#' '$input1' | sort -k${input1.metadata.chromCol},${input1.metadata.chromCol} |
+        grep -v '^#' '$input1' | sort -k${input1.metadata_.chromCol},${input1.metadata_.chromCol} |
 
         ## Create simple BED by cutting chrom, start, and end columns.
-        awk -v OFS='	' '{print $${input1.metadata.chromCol},$${input1.metadata.startCol},$${input1.metadata.endCol} }' |
+        awk -v OFS='	' '{print $${input1.metadata_.chromCol},$${input1.metadata_.startCol},$${input1.metadata_.endCol} }' |
 
         ## Generate coverage bedgraph.
         bedtools genomecov -bg -split -i stdin -g '$chromInfo'

@@ -227,7 +227,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
             'float': float,
             'bool': bool,
 
-            # unfortunately, 'list' is used in dataset metadata both for
+            # unfortunately, 'list' is used in dataset.metadata_ both for
             #   query style maps (9th col gff) AND comma-sep strings.
             #   (disabled for now)
             # 'list'  : lambda v: v.split( ',' ),

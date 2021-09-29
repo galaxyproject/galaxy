@@ -5,9 +5,9 @@
     </requirements>
     <command>
         python '$__tool_directory__/interval_to_interval_index_converter.py'
-        -c ${input1.metadata.chromCol}
-        -s ${input1.metadata.startCol}
-        -e ${input1.metadata.endCol}
+        -c ${input1.metadata_.chromCol}
+        -s ${input1.metadata_.startCol}
+        -e ${input1.metadata_.endCol}
         '$input1' '$output1'
     </command>
     <inputs>
