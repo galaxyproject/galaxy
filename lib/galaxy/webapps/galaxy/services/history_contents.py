@@ -93,11 +93,13 @@ HistoryContentsFilterList = List[HistoryContentFilter]
 
 
 class HistoryContentsIndexParams(Model):
-    v: Optional[str]
+    """Query parameters exclusively used by the *new version* of `index` operation."""
+    v: Optional[Literal['dev']]
     dataset_details: Optional[DatasetDetailsType]
 
 
 class LegacyHistoryContentsIndexParams(Model):
+    """Query parameters exclusively used by the *legacy version* of `index` operation."""
     ids: Optional[List[EncodedDatabaseIdField]]
     types: List[HistoryContentType]
     dataset_details: Optional[DatasetDetailsType]

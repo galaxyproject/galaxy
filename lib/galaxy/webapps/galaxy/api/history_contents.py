@@ -95,9 +95,24 @@ def get_index_query_params(
         deprecated=True,  # TODO: remove 'dataset_details' when the UI doesn't need it
     ),
 ) -> HistoryContentsIndexParams:
-    return HistoryContentsIndexParams(
+    """This function is meant to be used as a dependency to render the OpenAPI documentation
+    correctly when multiple model are used in the same route."""
+    return parse_index_query_params(
         v=v,
         dataset_details=dataset_details,
+    )
+
+
+def parse_index_query_params(
+    v: Optional[str] = None,
+    dataset_details: Optional[str] = None,
+    **_,  # Additional params are ignored
+) -> HistoryContentsIndexParams:
+    """Parses query parameters for the history contents `index` operation
+    and returns a model containing the values in the correct type."""
+    return HistoryContentsIndexParams(
+        v=v,
+        dataset_details=parse_dataset_details(dataset_details),
     )
 
 
@@ -148,6 +163,8 @@ def get_legacy_index_query_params(
         deprecated=True,
     ),
 ) -> LegacyHistoryContentsIndexParams:
+    """This function is meant to be used as a dependency to render the OpenAPI documentation
+    correctly when multiple model are used in the same route."""
     return parse_legacy_index_query_params(
         ids=ids,
         types=types,
@@ -167,22 +184,20 @@ def parse_legacy_index_query_params(
     visible: Optional[bool] = None,
     **_,  # Additional params are ignored
 ) -> LegacyHistoryContentsIndexParams:
+    """Parses (legacy) query parameters for the history contents `index` operation
+    and returns a model containing the values in the correct type."""
     types = types or type
     if types:
         content_types = util.listify(types)
     else:
         content_types = [e.value for e in HistoryContentType]
 
-    dataset_details: Optional[DatasetDetailsType] = None
     if ids:
         ids = util.listify(ids)
         # If explicit ids given, always used detailed result.
         dataset_details = 'all'
     else:
-        if details and details != 'all':
-            dataset_details = set(util.listify(details))
-        else:  # either None or 'all'
-            dataset_details = details  # type: ignore
+        dataset_details = parse_dataset_details(details)
 
     return LegacyHistoryContentsIndexParams(
         types=content_types,
@@ -191,6 +206,17 @@ def parse_legacy_index_query_params(
         visible=visible,
         dataset_details=dataset_details,
     )
+
+
+def parse_dataset_details(details: Optional[str]):
+    """Parses the different values that the `dataset_details` parameter
+    can have from a string."""
+    dataset_details: Optional[DatasetDetailsType] = None
+    if details and details != 'all':
+        dataset_details = set(util.listify(details))
+    else:  # either None or 'all'
+        dataset_details = details  # type: ignore
+    return dataset_details
 
 
 @router.cbv
@@ -317,7 +343,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :rtype:     list
         :returns:   dictionaries containing summary or detailed HDA information
         """
-        index_params = HistoryContentsIndexParams(**kwd)
+        index_params = parse_index_query_params(**kwd)
         legacy_params = parse_legacy_index_query_params(**kwd)
         serialization_params = parse_serialization_params(**kwd)
         filter_parameters = FilterQueryParams(**kwd)
