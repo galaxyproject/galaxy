@@ -22,6 +22,7 @@ upstream component or environment that is accessed through props and events -->
             :disabled="disabled"
             placeholder="Add Tags"
             :add-on-key="triggerKeys"
+            :validation="validation"
             @before-adding-tag="beforeAddingTag"
             @before-deleting-tag="beforeDeletingTag"
             @tags-changed="tagsChanged"
@@ -35,7 +36,7 @@ upstream component or environment that is accessed through props and events -->
 
 <script>
 import VueTagsInput from "@johmun/vue-tags-input";
-import { createTag } from "./model";
+import { createTag, VALID_TAG_RE } from "./model";
 
 export default {
     components: {
@@ -56,6 +57,12 @@ export default {
             tagText: "",
             tagToggle: !isClosed,
             triggerKeys: [13, " "],
+            validation: [
+                {
+                    classes: "error",
+                    rule: VALID_TAG_RE,
+                },
+            ],
         };
     },
     computed: {
