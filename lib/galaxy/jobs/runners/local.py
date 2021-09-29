@@ -52,7 +52,6 @@ class LocalJobRunner(BaseJobRunner):
             self._environ['TEMP'] = os.path.abspath(tempfile.gettempdir())
 
         super().__init__(app, nworkers)
-        self._init_worker_threads()
 
     def __command_line(self, job_wrapper):
         """

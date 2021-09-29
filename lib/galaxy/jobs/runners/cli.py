@@ -33,8 +33,6 @@ class ShellJobRunner(AsynchronousJobRunner):
         super().__init__(app, nworkers)
 
         self.cli_interface = CliInterface()
-        self._init_monitor_thread()
-        self._init_worker_threads()
 
     def get_cli_plugins(self, shell_params, job_params):
         return self.cli_interface.get_plugins(shell_params, job_params)

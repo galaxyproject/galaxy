@@ -138,16 +138,6 @@ class GodockerJobRunner(AsynchronousJobRunner):
         # godocker API login call
         self.auth = self.login(self.runner_params["key"], self.runner_params["user"], self.runner_params["godocker_master"])
 
-        if not self.auth:
-            log.error("Authentication failure, GoDocker runner cannot be started")
-        else:
-            """ Following methods starts threads.
-                These methods invoke threading.Thread(name,target)
-                      which in turn invokes methods monitor() and run_next().
-            """
-            self._init_monitor_thread()
-            self._init_worker_threads()
-
     def queue_job(self, job_wrapper):
         """ Create job script and submit it to godocker """
         if not self.prepare_job(job_wrapper, include_metadata=False, include_work_dir_outputs=True, modify_command_for_container=False):
@@ -324,7 +314,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         g_auth = Godocker(server, login, apikey, noCert)
         auth = g_auth.http_post_request("/api/1.0/authenticate", data, {'Content-type': 'application/json', 'Accept': 'application/json'})
         if not auth:
-            log.error("GoDocker authentication Error.")
+            raise Exception("Authentication failure, GoDocker runner cannot be started")
         else:
             log.debug("GoDocker authentication successful.")
             token = auth.json()['token']

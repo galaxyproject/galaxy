@@ -67,6 +67,8 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner:
+
+    start_methods = ['_init_monitor_thread', '_init_worker_threads']
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
@@ -83,6 +85,10 @@ class BaseJobRunner:
             log.debug('Loading %s with params: %s', self.runner_name, kwargs)
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
         self.runner_state_handlers = build_state_handlers()
+
+    def start(self):
+        for start_method in self.start_methods:
+            getattr(self, start_method, lambda: None)()
 
     def _init_worker_threads(self):
         """Start ``nworkers`` worker threads.
