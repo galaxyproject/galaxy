@@ -5,6 +5,8 @@
 
 import { keyedColorScheme } from "utils/color";
 
+// VALID TAG REGEX
+const VALID_TAG_RE = /([a-zA-Z0-9])+(.[a-zA-Z0-9]+)?(:[a-zA-Z0-9]+)?/;
 function TagModel(props = {}) {
     this.text = "";
 
@@ -44,10 +46,6 @@ function TagModel(props = {}) {
             return this.text.startsWith("name:") ? this.text.replace("name:", "#") : this.text;
         },
     });
-
-    // VALID TAG REGEX
-    // TODO: Not quite right
-    const VALID_TAG_RE = /([a-zA-Z0-9.])+(:[a-zA-Z0-9]+)?/;
 
     // valid flag
     Object.defineProperty(this, "valid", {
