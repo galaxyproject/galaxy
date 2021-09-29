@@ -25,6 +25,7 @@ from galaxy.schema import (
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHistoryContentItem,
+    AnyJobStateSummary,
     DatasetPermissionAction,
     HistoryContentType,
     UpdateDatasetPermissionsPayload,
@@ -50,6 +51,7 @@ from galaxy.webapps.galaxy.services.history_contents import (
     DatasetDetailsType,
     HistoriesContentsService,
     HistoryContentsFilterList,
+    HistoryContentsIndexJobsSummaryParams,
     HistoryContentsIndexParams,
     LegacyHistoryContentsIndexParams,
 )
@@ -89,14 +91,14 @@ def get_index_query_params(
         default=None,
         title="Dataset Details",
         description=(
-            "A comma separated list of encoded dataset IDs that will return additional (full) details "
+            "A comma-separated list of encoded dataset IDs that will return additional (full) details "
             "instead of the *summary* default information."
         ),
         deprecated=True,  # TODO: remove 'dataset_details' when the UI doesn't need it
     ),
 ) -> HistoryContentsIndexParams:
     """This function is meant to be used as a dependency to render the OpenAPI documentation
-    correctly when multiple model are used in the same route."""
+    correctly"""
     return parse_index_query_params(
         v=v,
         dataset_details=dataset_details,
@@ -121,7 +123,7 @@ def get_legacy_index_query_params(
         default=None,
         title="IDs",
         description=(
-            "A comma separated list of encoded `HDA/HDCA` IDs. If this list is provided, only information about the "
+            "A comma-separated list of encoded `HDA/HDCA` IDs. If this list is provided, only information about the "
             "specific datasets will be returned. Also, setting this value will return `all` details of the content item."
         ),
         deprecated=True,
@@ -130,7 +132,7 @@ def get_legacy_index_query_params(
         default=None,
         title="Types",
         description=(
-            "A list or comma separated list of kinds of contents to return "
+            "A list or comma-separated list of kinds of contents to return "
             "(currently just `dataset` and `dataset_collection` are available). "
             "If unset, all types will be returned."
         ),
@@ -164,7 +166,7 @@ def get_legacy_index_query_params(
     ),
 ) -> LegacyHistoryContentsIndexParams:
     """This function is meant to be used as a dependency to render the OpenAPI documentation
-    correctly when multiple model are used in the same route."""
+    correctly"""
     return parse_legacy_index_query_params(
         ids=ids,
         types=types,
@@ -217,6 +219,45 @@ def parse_dataset_details(details: Optional[str]):
     else:  # either None or 'all'
         dataset_details = details  # type: ignore
     return dataset_details
+
+
+def get_index_jobs_summary_params(
+    ids: Optional[str] = Query(
+        default=None,
+        title="IDs",
+        description=(
+            "A comma-separated list of encoded ids of job summary objects to return - if `ids` "
+            "is specified types must also be specified and have same length."
+        ),
+    ),
+    types: Optional[str] = Query(
+        default=None,
+        title="Types",
+        description=(
+            "A comma-separated list of type of object represented by elements in the ids array - any of "
+            "`Job`, `ImplicitCollectionJob`, or `WorkflowInvocation`."
+        ),
+    ),
+) -> HistoryContentsIndexJobsSummaryParams:
+    """This function is meant to be used as a dependency to render the OpenAPI documentation
+    correctly"""
+    return parse_index_jobs_summary_params(
+        ids=ids,
+        types=types,
+    )
+
+
+def parse_index_jobs_summary_params(
+    ids: Optional[str] = None,
+    types: Optional[str] = None,
+    **_,  # Additional params are ignored
+) -> HistoryContentsIndexJobsSummaryParams:
+    """Parses query parameters for the history contents `index_jobs_summary` operation
+    and returns a model containing the values in the correct type."""
+    return HistoryContentsIndexJobsSummaryParams(
+        ids=util.listify(ids),
+        types=util.listify(types)
+    )
 
 
 @router.cbv
@@ -311,6 +352,24 @@ class FastAPIHistoryContents:
             contents_type=type,
             fuzzy_count=fuzzy_count,
         )
+
+    @router.get(
+        '/api/histories/{history_id}/jobs_summary',
+        summary='Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.',
+    )
+    def index_jobs_summary(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        params: HistoryContentsIndexJobsSummaryParams = Depends(get_index_jobs_summary_params),
+    ) -> List[AnyJobStateSummary]:
+        """Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
+
+        **Warning**: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+        """
+        return self.service.index_jobs_summary(trans, params)
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
@@ -426,9 +485,8 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :rtype:     dict[]
         :returns:   an array of job summary object dictionaries.
         """
-        ids = util.listify(kwd.get("ids", None))
-        types = util.listify(kwd.get("types", None))
-        return self.service.index_jobs_summary(trans, ids, types)
+        params = parse_index_jobs_summary_params(**kwd)
+        return self.service.index_jobs_summary(trans, params)
 
     @expose_api_anonymous
     def show_jobs_summary(self, trans, id, history_id, **kwd):

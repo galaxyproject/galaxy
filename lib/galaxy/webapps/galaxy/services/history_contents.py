@@ -107,6 +107,12 @@ class LegacyHistoryContentsIndexParams(Model):
     visible: Optional[bool]
 
 
+class HistoryContentsIndexJobsSummaryParams(Model):
+    """Query parameters exclusively used by the `index_jobs_summary` operation."""
+    ids: List[EncodedDatabaseIdField] = []
+    types: List[JobSourceType] = []
+
+
 class CreateHistoryContentPayloadBase(Model):
     type: Optional[HistoryContentType] = Field(
         HistoryContentType.dataset,
@@ -256,8 +262,7 @@ class HistoriesContentsService(ServiceBase):
 
     def index_jobs_summary(
         self, trans,
-        ids: List[EncodedDatabaseIdField],
-        types: List[JobSourceType],
+        params: HistoryContentsIndexJobsSummaryParams,
     ) -> List[AnyJobStateSummary]:
         """
         Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations
@@ -266,14 +271,9 @@ class HistoriesContentsService(ServiceBase):
         can guess an encoded ID for - it isn't considered protected data. This keeps
         polling IDs as part of state calculation for large histories and collections as
         efficient as possible.
-
-        :param  ids:    the encoded ids of job summary objects to return - if ids
-                        is specified types must also be specified and have same length.
-        :param  types:  type of object represented by elements in the ids array - any of
-                        Job, ImplicitCollectionJob, or WorkflowInvocation.
-
-        :returns:   an array of job summary object dictionaries.
         """
+        ids = params.ids
+        types = params.types
         if len(ids) != len(types):
             raise exceptions.RequestParameterInvalidException(
                 f"The number of ids ({len(ids)}) and types ({len(types)}) must match."
