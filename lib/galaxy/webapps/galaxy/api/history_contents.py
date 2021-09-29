@@ -234,7 +234,7 @@ def get_index_jobs_summary_params(
         default=None,
         title="Types",
         description=(
-            "A comma-separated list of type of object represented by elements in the ids array - any of "
+            "A comma-separated list of type of object represented by elements in the `ids` array - any of "
             "`Job`, `ImplicitCollectionJob`, or `WorkflowInvocation`."
         ),
     ),
@@ -370,6 +370,30 @@ class FastAPIHistoryContents:
         efficient as possible.
         """
         return self.service.index_jobs_summary(trans, params)
+
+    @router.get(
+        '/api/histories/{history_id}/contents/{type}s/{id}/jobs_summary',
+        summary='Return detailed information about an `HDA` or `HDCAs` jobs.',
+    )
+    def show_jobs_summary(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        type: HistoryContentType = Path(
+            default=None,
+            title="Content Type",
+            description="The type of the history element to show.",
+            example=HistoryContentType.dataset,
+        ),
+    ) -> AnyJobStateSummary:
+        """Return detailed information about an `HDA` or `HDCAs` jobs.
+
+        **Warning**: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+        """
+        return self.service.show_jobs_summary(trans, id, contents_type=type)
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
