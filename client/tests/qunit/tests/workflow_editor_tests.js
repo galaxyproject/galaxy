@@ -22,7 +22,7 @@ const createApp = function () {
 
 const nodeData = {
     inputs: [],
-    outputs: [],
+    outputs: [{ name: "out1", extensions: ["data"] }],
     config_form: "{}",
     tool_state: "ok",
     tool_errors: false,
