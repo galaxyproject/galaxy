@@ -194,6 +194,7 @@ module.exports = (env = {}, argv = {}) => {
             new webpack.ProvidePlugin({
                 $: `${libsBase}/jquery.custom.js`,
                 jQuery: `${libsBase}/jquery.custom.js`,
+                'window.jQuery': `${libsBase}/jquery.custom.js`,
                 _: "underscore",
                 Backbone: "backbone",
                 Galaxy: ["app", "monitor"],
