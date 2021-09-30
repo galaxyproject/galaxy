@@ -21,7 +21,6 @@ from typing_extensions import Literal
 
 from galaxy import (
     exceptions,
-    util
 )
 from galaxy.managers import (
     folders,
@@ -319,7 +318,7 @@ class HistoriesContentsService(ServiceBase):
         assert job is None or implicit_collection_jobs is None
         return self.encode_all_ids(summarize_jobs_to_dict(trans.sa_session, job or implicit_collection_jobs))
 
-    def download_dataset_collection(self, trans, id: EncodedDatabaseIdField):
+    def get_dataset_collection_archive_for_download(self, trans, id: EncodedDatabaseIdField):
         """
         Download the content of a HistoryDatasetCollection as a tgz archive
         while maintaining approximate collection structure.
@@ -329,15 +328,14 @@ class HistoriesContentsService(ServiceBase):
         try:
             dataset_collection_instance = self.__get_accessible_collection(trans, id)
             return self.__stream_dataset_collection(trans, dataset_collection_instance)
-        except Exception as e:
-            log.exception("Error in API while creating dataset collection archive")
-            trans.response.status = 500
-            return {'error': util.unicodify(e)}
+        except Exception:
+            error_message = "Error in API while creating dataset collection archive"
+            log.exception(error_message)
+            raise exceptions.InternalServerError(error_message)
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
         archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_mod_zip=trans.app.config.upstream_mod_zip)
-        trans.response.headers.update(archive.get_headers())
-        return archive.response()
+        return archive
 
     def create(
         self, trans,
