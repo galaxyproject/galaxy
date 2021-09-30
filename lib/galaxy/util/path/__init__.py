@@ -147,7 +147,7 @@ def safe_walk(path, allowlist=None):
     """
     for i, elems in enumerate(walk(path, followlinks=bool(allowlist)), start=1):
         dirpath, dirnames, filenames = elems
-        _check = _SafeContainsDirectoryChecker(dirpath, path, allowlist=None).check
+        _check = _SafeContainsDirectoryChecker(dirpath, path, allowlist=allowlist).check
 
         if allowlist and i % WALK_MAX_DIRS == 0:
             raise RuntimeError(
