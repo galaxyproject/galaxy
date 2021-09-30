@@ -54,9 +54,6 @@ export default {
             const activeLabel = this.output.activeLabel || this.output.label || this.output.name;
             return `${activeLabel} (${extensions})`;
         },
-        node() {
-            return this.getNode();
-        },
         activeClass() {
             return this.output.activeOutput && "mark-terminal-active";
         },
@@ -136,9 +133,7 @@ export default {
                 terminal: this.terminal,
             });
             this.terminal.on("change", this.onChange.bind(this));
-            if (this.node.mapOver) {
-                this.terminal.setMapOver(this.node.mapOver);
-            }
+            this.terminal.emit("change");
             this.$emit("onAdd", this.output, this.terminal);
         },
         onChange() {

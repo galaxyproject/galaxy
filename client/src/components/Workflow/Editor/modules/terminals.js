@@ -591,6 +591,9 @@ class BaseOutputTerminal extends Terminal {
         super(attr);
         this.datatypes = attr.datatypes;
         this.optional = attr.optional;
+        if (this.node.mapOver) {
+            this.setMapOver(this.node.mapOver);
+        }
     }
     get force_datatype() {
         const changeOutputDatatype = this.node.postJobActions["ChangeDatatypeAction" + this.name];
