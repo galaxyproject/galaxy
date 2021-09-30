@@ -1,0 +1,152 @@
+
+===========================================================
+September 2021 Galaxy Release (v 21.09)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+Please note that the release is still being tested and finalized, and that these
+are pre-release notes.
+
+Check back here for the official and comprehensive notes soon!
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+
+New Visualizations
+===========================================================
+
+.. visualizations
+
+New Datatypes
+===========================================================
+
+.. datatypes
+* Convert/standardize to fstrings across `lib`
+  `Pull Request 11338`_
+* Added documentation for FASTQ datatypes and implemented quality check
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11931`_
+* Make dataset preview for h5mlm datatype
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 11935`_
+* Add datatypes for Structural Materials Hexrd application
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 11957`_
+* Adding new subclass types
+  (thanks to `@maikenp <https://github.com/maikenp>`__).
+  `Pull Request 12097`_
+* Converters: use target datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12185`_
+* Add bref3 datatype
+  (thanks to `@gallardoalba <https://github.com/gallardoalba>`__).
+  `Pull Request 12199`_
+* Converters: add missing tests and add linting to converter tests
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12202`_
+* Converters: Unify converters to tabix and bgzip
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12213`_
+* Converters: Unify molecules converters
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12214`_
+* Converters: Unify dcd, trr, xtc
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12224`_
+* converters: Unify bcf converters
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12225`_
+* Fix edta metadata setting
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12273`_
+* mothur datatype: PairwiseDistanceMatrix sniffer may be too unspecific
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12280`_
+* Add "ExpressionSet RData object" Datatype
+  (thanks to `@mtekman <https://github.com/mtekman>`__).
+  `Pull Request 12336`_
+* Small fix in binary.py
+  (thanks to `@melibleq <https://github.com/melibleq>`__).
+  `Pull Request 12384`_
+* also parse sam metadata from sam files
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12392`_
+* Add ONNX datatype
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 12429`_
+* Drop bcftools requirement from set_metadata tool
+  `Pull Request 12472`_
+* Fix cmap sniffer
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 12509`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Changes to Collection Operation Help sections and parameter names
+  `Pull Request 11068`_
+* GPU enabled jupyter notebook for machine learning powered by Jupyter lab and Tensorflow
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 11484`_
+* Update bam.iobio interactive tool wrapper
+  (thanks to `@luke-c-sargent <https://github.com/luke-c-sargent>`__).
+  `Pull Request 11537`_
+* Add tool for exporting individual files to galaxy file source plugins.
+  `Pull Request 11613`_
+* NCBI Datasets data source tool
+  `Pull Request 11738`_
+* Fix typo in `interactivetool_jupyter_notebook.xml` help section
+  (thanks to `@maximskorik <https://github.com/maximskorik>`__).
+  `Pull Request 12077`_
+* Update interactivetool_pyiron.xml
+  (thanks to `@gmauro <https://github.com/gmauro>`__).
+  `Pull Request 12127`_
+* Update AskOmics interactive tool to 4.3.1
+  (thanks to `@abretaud <https://github.com/abretaud>`__).
+  `Pull Request 12159`_
+* Fix patterns in Grep1 tool
+  `Pull Request 12166`_
+* Remove unused legacy controller things
+  `Pull Request 12172`_
+* add <creator> to the tool schema template, use live links in xsd
+  `Pull Request 12242`_
+* Systematic handling of remotely required tool files.
+  `Pull Request 12250`_
+* Restore Grep1 version 1.0.1
+  `Pull Request 12252`_
+* Vuefy and improve granularity for tool HTML sanitization
+  `Pull Request 12283`_
+* Allow bio.tools mappings for legacy tools.
+  `Pull Request 12289`_
+* Allow skipping sanitization of / char in export_remote tool
+  `Pull Request 12372`_
+* Lock location file before adding values
+  `Pull Request 12446`_
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+<team members go here>
+
+Release Notes
+===========================================================
+
+Please see the `full release notes <21.09_announce.html>`_ for more details.
+
+.. include:: 21.09_prs.rst
+
+.. include:: _thanks.rst

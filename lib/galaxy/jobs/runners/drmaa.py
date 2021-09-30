@@ -95,8 +95,6 @@ class DRMAAJobRunner(AsynchronousJobRunner):
 
         self.userid = None
 
-        self._init_monitor_thread()
-        self._init_worker_threads()
         self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
 
     def url_to_destination(self, url):

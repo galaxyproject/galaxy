@@ -6,6 +6,7 @@
                     v-if="!isDatasetLoading"
                     :jobid="dataset.creating_job"
                     v-slot="{ result: job, loading: isJobLoading }"
+                    :use-cache="false"
                 >
                     <div v-if="!isJobLoading">
                         <dataset-information class="detail" :hda_id="datasetId" />

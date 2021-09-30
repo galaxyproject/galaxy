@@ -127,6 +127,7 @@ export class ActiveOutputs {
         this.outputs &&
             this.outputs.forEach((o) => {
                 this.outputsIndex[o.name] = o;
+                this._updateOutput(o.name);
             });
     }
 }

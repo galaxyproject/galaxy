@@ -103,8 +103,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self._fs_group = self.__get_fs_group()
         self._default_pull_policy = self.__get_pull_policy()
 
-        self._init_monitor_thread()
-        self._init_worker_threads()
         self.setup_volumes()
 
     def setup_volumes(self):

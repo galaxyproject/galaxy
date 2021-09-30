@@ -93,11 +93,13 @@ class TestLocalJobRunner(TestCase, UsesApp, UsesTools):
     def test_shutdown_no_jobs(self):
         self.app.config.monitor_thread_join_timeout = 5
         runner = local.LocalJobRunner(self.app, 1)
+        runner.start()
         runner.shutdown()
 
     def test_stopping_job_at_shutdown(self):
         self.job_wrapper.command_line = '''python -c "import time; time.sleep(15)"'''
         runner = local.LocalJobRunner(self.app, 1)
+        runner.start()
         self.app.config.monitor_thread_join_timeout = 15
 
         def queue():
