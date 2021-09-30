@@ -163,6 +163,12 @@ export default {
         .ti-input {
             padding: 0;
             border: none;
+            .error {
+                background: url("../../assets/images/error_icon.svg");
+                background-repeat: no-repeat;
+                background-size: contain;
+                background-position: right;
+            }
         }
         .ti-tag {
             border-radius: 4px;
