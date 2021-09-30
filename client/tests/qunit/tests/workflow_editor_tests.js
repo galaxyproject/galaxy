@@ -326,6 +326,7 @@ QUnit.test("Collection output can connect to same collection input type", functi
     const outputTerminal = new Terminals.OutputCollectionTerminal({
         datatypes: "txt",
         collection_type: "list",
+        node: {},
     });
     outputTerminal.node = {postJobActions: {}};
     assert.ok(
@@ -340,6 +341,7 @@ QUnit.test("Optional collection output can not connect to required collection in
         datatypes: "txt",
         collection_type: "list",
         optional: true,
+        node: {},
     });
     outputTerminal.node = {};
     assert.ok(!inputTerminal.canAccept(outputTerminal).canAccept);
@@ -350,6 +352,7 @@ QUnit.test("Collection output cannot connect to different collection input type"
     const outputTerminal = new Terminals.OutputCollectionTerminal({
         datatypes: "txt",
         collection_type: "paired",
+        node: {},
     });
     outputTerminal.node = {};
     assert.ok(!inputTerminal.canAccept(outputTerminal).canAccept);
@@ -542,6 +545,7 @@ QUnit.module("Node view", {
                 datatypes: [outputType],
                 mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION,
                 element: inputEl,
+                node: {},
             });
             outputTerminal.node = {
                 markChanged: function () {},
@@ -572,6 +576,7 @@ QUnit.module("Node view", {
                 datatypes: ["txt"],
                 mapOver: new Terminals.CollectionTypeDescription("list"),
                 element: inputEl,
+                node: {},
             });
             outputTerminal.node = {
                 markChanged: function () {},
@@ -598,6 +603,7 @@ QUnit.module("Node view", {
                 datatypes: ["txt"],
                 mapOver: new Terminals.CollectionTypeDescription("list"),
                 element: inputEl,
+                node: {},
             });
             outputTerminal.node = {
                 markChanged: function () {},
@@ -832,7 +838,10 @@ QUnit.test("equal", function (assert) {
 });
 
 QUnit.test("default constructor", function (assert) {
-    const terminal = new Terminals.InputTerminal({ input: {} });
+    const terminal = new Terminals.InputTerminal({
+        input: {},
+        node: {},
+    });
     assert.ok(terminal.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION);
 });
 
@@ -902,7 +911,11 @@ QUnit.module("terminal mapping logic", {
             output["extensions"] = ["data"];
         }
         const outputEl = $("<div>")[0];
-        const outputTerminal = new Terminals.OutputTerminal({ element: outputEl, datatypes: output.extensions });
+        const outputTerminal = new Terminals.OutputTerminal({
+            element: outputEl,
+            datatypes: output.extensions,
+            node: {},
+        });
         outputTerminal.node = node;
         if (mapOver) {
             outputTerminal.setMapOver(new Terminals.CollectionTypeDescription(mapOver));
@@ -921,6 +934,7 @@ QUnit.module("terminal mapping logic", {
             element: outputEl,
             datatypes: output.extensions,
             collection_type: collectionType,
+            node: {},
         });
         outputTerminal.node = node;
         if (mapOver) {
