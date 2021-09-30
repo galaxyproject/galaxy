@@ -1279,3 +1279,15 @@ QUnit.test("simple mapping over collection outputs works correctly", function (a
     const testTerminal1 = this.newInputTerminal("list:list:list");
     this.verifyNotAttachable(assert, testTerminal1, connectedOutput);
 });
+
+
+QUnit.test("node mapping state over collection outputs works correctly", function (assert) {
+    const inputTerminal1 = this.newInputTerminal();
+    const outputCollectionTerminal1 = this.newOutputCollectionTerminal("list");
+    assert.ok(!inputTerminal1.node.mapOver);
+    const connector = new Connector({}, outputCollectionTerminal1, inputTerminal1);
+    outputCollectionTerminal1.connect(connector);
+    assert.ok(inputTerminal1.node.mapOver);
+    inputTerminal1.disconnect(connector);
+    assert.ok(!inputTerminal1.node.mapOver);
+});
