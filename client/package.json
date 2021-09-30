@@ -39,7 +39,7 @@
     "elkjs": "^0.6.2",
     "flush-promises": "^1.0.2",
     "glob": "^7.1.6",
-    "handsontable": "^2.0.0",
+    "handsontable": "^10.0.0",
     "imask": "^6.0.5",
     "in-viewport": "^3.6.0",
     "is-promise": "^4.0.0",
