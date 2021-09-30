@@ -1,5 +1,8 @@
-<tool id="Paste1" name="Paste" version="1.0.0">
+<tool id="Paste1" name="Paste" version="1.0.1">
   <description>two files side by side</description>
+  <requirements>
+    <requirement type="package" version="5.32.1">perl</requirement>
+  </requirements>
   <command>perl '$__tool_directory__/pasteWrapper.pl' '$input1' '$input2' $delimiter '$out_file1'</command>
   <inputs>
 <!--    <display>paste $input1 and $input2 using $delimiter as delimiter</display> -->
