@@ -67,6 +67,8 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner:
+
+    start_methods = ['_init_monitor_thread', '_init_worker_threads']
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
@@ -84,6 +86,10 @@ class BaseJobRunner:
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
         self.runner_state_handlers = build_state_handlers()
 
+    def start(self):
+        for start_method in self.start_methods:
+            getattr(self, start_method, lambda: None)()
+
     def _init_worker_threads(self):
         """Start ``nworkers`` worker threads.
         """
@@ -93,7 +99,7 @@ class BaseJobRunner:
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
             worker.daemon = True
-            self.app.application_stack.register_postfork_function(worker.start)
+            worker.start()
             self.work_threads.append(worker)
 
     def _alive_worker_threads(self, cycle=False):
