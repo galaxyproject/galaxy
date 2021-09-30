@@ -1280,7 +1280,6 @@ QUnit.test("simple mapping over collection outputs works correctly", function (a
     this.verifyNotAttachable(assert, testTerminal1, connectedOutput);
 });
 
-
 QUnit.test("node mapping state over collection outputs works correctly", function (assert) {
     const inputTerminal1 = this.newInputTerminal();
     const outputCollectionTerminal1 = this.newOutputCollectionTerminal("list");
