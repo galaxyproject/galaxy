@@ -188,6 +188,7 @@ PARAMETER_SPECIFICATION_IGNORED = object()
 class PulsarJobRunner(AsynchronousJobRunner):
     """Base class for pulsar job runners."""
 
+    start_methods = ['_init_worker_threads', '_init_client_manager', '_monitor']
     runner_name = "PulsarJobRunner"
     default_build_pulsar_app = False
     use_mq = False
@@ -196,15 +197,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def __init__(self, app, nworkers, **kwds):
         """Start the job runner."""
         super().__init__(app, nworkers, runner_param_specs=PULSAR_PARAM_SPECS, **kwds)
-        self._init_worker_threads()
         galaxy_url = self.runner_params.galaxy_url
         if not galaxy_url:
             galaxy_url = app.config.galaxy_infrastructure_url
         if galaxy_url:
             galaxy_url = galaxy_url.rstrip("/")
         self.galaxy_url = galaxy_url
-        self.__init_client_manager()
-        self._monitor()
 
     def _monitor(self):
         if self.use_mq:
@@ -218,7 +216,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         else:
             self._init_noop_monitor()
 
-    def __init_client_manager(self):
+    def _init_client_manager(self):
         pulsar_conf = self.runner_params.get('pulsar_app_config', None)
         pulsar_conf_file = None
         if pulsar_conf is None:
