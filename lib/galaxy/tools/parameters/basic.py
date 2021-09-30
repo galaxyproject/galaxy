@@ -2421,7 +2421,7 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
         user_context = ProvidesUserFileSourcesUserContext(trans)
         user_has_access = file_source.user_has_access(user_context)
         if not user_has_access:
-            raise ValueError(f"The user cannot access {value}.")
+            raise ParameterValueError(f"The user cannot access {value}.")
 
 
 class RulesListToolParameter(BaseJsonToolParameter):
