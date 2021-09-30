@@ -13,6 +13,7 @@ from webob.compat import cgi_FieldStorage
 
 import galaxy.model
 from galaxy import util
+from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     dbkeys,
@@ -1108,6 +1109,7 @@ class SelectTagParameter(SelectToolParameter):
     """
     Select set that is composed of a set of tags available for an input.
     """
+
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
@@ -2412,6 +2414,14 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
         SimpleTextToolParameter.__init__(self, tool, input_source)
+
+    def validate(self, value, trans=None):
+        super().validate(value, trans=trans)
+        file_source = trans.app.file_sources.get_file_source_path(value).file_source
+        user_context = ProvidesUserFileSourcesUserContext(trans)
+        user_has_access = file_source.user_has_access(user_context)
+        if not user_has_access:
+            raise ValueError(f"The user cannot access {value}.")
 
 
 class RulesListToolParameter(BaseJsonToolParameter):

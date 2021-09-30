@@ -264,9 +264,6 @@ def test_posix_user_access_requires_role():
     }
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
 
-    user_context = None  # user_context is required when there are restrictions
-    _assert_user_access_prohibited(file_sources, user_context)
-
     user_context = user_context_fixture()
     _assert_user_access_prohibited(file_sources, user_context)
 
@@ -280,9 +277,6 @@ def test_posix_user_access_requires_group():
         "requires_groups": allowed_group_name,
     }
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
-
-    user_context = None  # user_context is required when there are restrictions
-    _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture()
     _assert_user_access_prohibited(file_sources, user_context)

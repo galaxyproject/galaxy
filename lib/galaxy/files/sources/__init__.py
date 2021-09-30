@@ -170,9 +170,11 @@ class BaseFilesSource(FilesSource):
         pass
 
     def _check_user_access(self, user_context):
-        """Raises an exception if the given user doesn't have the rights to access this file source."""
-        if self.user_context_required and user_context is None:
-            raise ItemAccessibilityException("This action is restricted and requires a user context.")
+        """Raises an exception if the given user doesn't have the rights to access this file source.
+
+        Warning: if the user_context is None, then the check is skipped. This is due to tool executions context
+        not having access to the user_context. The validation will be done when checking the tool parameters.
+        """
         if user_context is not None and not self.user_has_access(user_context):
             raise ItemAccessibilityException(f"User {user_context.username} has no access to file source.")
 
