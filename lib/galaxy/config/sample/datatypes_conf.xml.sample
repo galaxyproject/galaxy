@@ -432,6 +432,7 @@
     </datatype>
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="true"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true" description="The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Wig">
+    <datatype extension="agp" type="galaxy.datatypes.interval:AGP" description="The AGP format describes the assembly of a larger sequence object from smaller objects. The large object can be a contig, a scaffold (supercontig), or a chromosome. Each line (row) of the AGP file describes a different piece of the object, and has the column entries defined below." display_in_upload="true"/>
       <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
       <!-- <display file="gbrowse/gbrowse_wig.xml" /> -->
@@ -1026,6 +1027,7 @@
     <sniffer type="galaxy.datatypes.interval:Gtf"/>
     <sniffer type="galaxy.datatypes.interval:Gff"/>
     <sniffer type="galaxy.datatypes.interval:Gff3"/>
+    <sniffer type="galaxy.datatypes.interval:AGP"/>
     <sniffer type="galaxy.datatypes.tabular:Pileup"/>
     <sniffer type="galaxy.datatypes.text:Paf"/>
     <sniffer type="galaxy.datatypes.interval:Interval"/>
