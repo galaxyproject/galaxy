@@ -97,17 +97,10 @@ module.exports = (env = {}, argv = {}) => {
                 },
                 {
                     test: `${libsBase}/jquery.custom.js`,
-                    use: [
-                        {
-                            loader: "expose-loader",
-                            options: {
-                                exposes: {
-                                    globalName: ["jQuery", "$"],
-                                    moduleLocalName: "jQuery",
-                                },
-                            },
-                        },
-                    ],
+                    loader: "expose-loader",
+                    options: {
+                        exposes: ["$", "jQuery"],
+                    },
                 },
                 {
                     test: require.resolve("underscore"),
@@ -194,7 +187,7 @@ module.exports = (env = {}, argv = {}) => {
             new webpack.ProvidePlugin({
                 $: `${libsBase}/jquery.custom.js`,
                 jQuery: `${libsBase}/jquery.custom.js`,
-                'window.jQuery': `${libsBase}/jquery.custom.js`,
+                "window.jQuery": `${libsBase}/jquery.custom.js`,
                 _: "underscore",
                 Backbone: "backbone",
                 Galaxy: ["app", "monitor"],
