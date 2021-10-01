@@ -478,18 +478,19 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .ui-dragover {
     @extend .p-1;
     border-radius: $border-radius-base;
-    border: 2px solid $state-warning-bg;
-    background: lighten($state-warning-bg, 10%);
+    border: $border-default;
+    border-color: $state-warning-border;
+    background: $state-warning-bg;
 }
 
 .ui-dragover-danger {
     @extend .ui-dragover;
-    border: 2px solid $state-danger-bg;
-    background: lighten($state-danger-bg, 10%);
+    border-color: $state-danger-border;
+    background: $state-danger-bg;
 }
 
 .ui-dragover-success {
     @extend .ui-dragover;
-    border: 2px solid $state-success-bg;
-    background: lighten($state-success-bg, 10%);
+    border-color: $state-success-border;
+    background: $state-success-bg;
 }
