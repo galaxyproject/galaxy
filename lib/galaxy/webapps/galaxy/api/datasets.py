@@ -158,7 +158,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                                                              view=kwd.get('view', 'detailed'), user=trans.user, trans=trans)
             else:
                 dataset_dict = dataset.to_dict()
-                rval = trans.security.encode_all_ids(dataset_dict)
+                rval = self.encode_all_ids(dataset_dict)
         return rval
 
     @web.expose_api_anonymous
