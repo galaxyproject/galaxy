@@ -10,7 +10,7 @@ from json import (
     dumps,
     load,
 )
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
 from bdbag import bdbag_api as bdb
@@ -27,6 +27,9 @@ from galaxy.util.path import safe_walk
 from ..custom_types import json_encoder
 from ..item_attrs import add_item_annotation, get_item_annotation_str
 from ... import model
+
+
+ObjectKeyType = Union[str, int]
 
 ATTRS_FILENAME_HISTORY = 'history_attrs.txt'
 ATTRS_FILENAME_DATASETS = 'datasets_attrs.txt'
@@ -653,27 +656,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
     def _import_jobs(self, object_import_tracker, history):
         object_key = self.object_key
 
-        def _find_hda(input_key):
-            hda = None
-            if input_key in object_import_tracker.hdas_by_key:
-                hda = object_import_tracker.hdas_by_key[input_key]
-            if input_key in object_import_tracker.hda_copied_from_sinks:
-                hda = object_import_tracker.hdas_by_key[object_import_tracker.hda_copied_from_sinks[input_key]]
-            return hda
-
-        def _find_hdca(input_key):
-            hdca = None
-            if input_key in object_import_tracker.hdcas_by_key:
-                hdca = object_import_tracker.hdcas_by_key[input_key]
-            if input_key in object_import_tracker.hdca_copied_from_sinks:
-                hdca = object_import_tracker.hdcas_by_key[object_import_tracker.hdca_copied_from_sinks[input_key]]
-            return hdca
-
-        def _find_dce(input_key):
-            dce = None
-            if input_key in object_import_tracker.dces_by_key:
-                dce = object_import_tracker.dces_by_key[input_key]
-            return dce
+        _find_hda = object_import_tracker.find_hda
+        _find_hdca = object_import_tracker.find_hdca
+        _find_dce = object_import_tracker.find_dce
 
         #
         # Create jobs.
@@ -788,6 +773,18 @@ class ObjectImportTracker:
 
     Needed to re-establish connections and such in multiple passes.
     """
+    libraries_by_key: Dict[ObjectKeyType, model.Library]
+    hdas_by_key: Dict[ObjectKeyType, model.HistoryDatasetAssociation]
+    hdas_by_id: Dict[int, model.HistoryDatasetAssociation]
+    hdcas_by_key: Dict[ObjectKeyType, model.HistoryDatasetCollectionAssociation]
+    hdcas_by_id: Dict[int, model.HistoryDatasetCollectionAssociation]
+    dces_by_key: Dict[ObjectKeyType, model.DatasetCollectionElement]
+    dces_by_id: Dict[int, model.DatasetCollectionElement]
+    lddas_by_key: Dict[ObjectKeyType, model.LibraryDatasetDatasetAssociation]
+    hda_copied_from_sinks: Dict[ObjectKeyType, ObjectKeyType]
+    hdca_copied_from_sinks: Dict[ObjectKeyType, ObjectKeyType]
+    jobs_by_key: Dict[ObjectKeyType, model.Job]
+    requires_hid: List[Union[model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation]]
 
     def __init__(self):
         self.libraries_by_key = {}
@@ -802,6 +799,28 @@ class ObjectImportTracker:
         self.hdca_copied_from_sinks = {}
         self.jobs_by_key = {}
         self.requires_hid = []
+
+    def find_hda(self, input_key: ObjectKeyType) -> Optional[model.HistoryDatasetAssociation]:
+        hda = None
+        if input_key in self.hdas_by_key:
+            hda = self.hdas_by_key[input_key]
+        if input_key in self.hda_copied_from_sinks:
+            hda = self.hdas_by_key[self.hda_copied_from_sinks[input_key]]
+        return hda
+
+    def find_hdca(self, input_key: ObjectKeyType) -> Optional[model.HistoryDatasetCollectionAssociation]:
+        hdca = None
+        if input_key in self.hdcas_by_key:
+            hdca = self.hdcas_by_key[input_key]
+        if input_key in self.hdca_copied_from_sinks:
+            hdca = self.hdcas_by_key[self.hdca_copied_from_sinks[input_key]]
+        return hdca
+
+    def find_dce(self, input_key: ObjectKeyType) -> Optional[model.DatasetCollectionElement]:
+        dce = None
+        if input_key in self.dces_by_key:
+            dce = self.dces_by_key[input_key]
+        return dce
 
 
 def get_import_model_store_for_directory(archive_dir, **kwd):
