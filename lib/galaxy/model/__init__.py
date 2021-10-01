@@ -5381,12 +5381,12 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
         return new_collection
 
     def replace_failed_elements(self, replacements):
-        for element in self.elements:
-            if element.element_object in replacements:
-                if element.element_type == 'hda':
-                    element.hda = replacements[element.element_object]
-                    element.hda.visible = False
-                # TODO: handle the case where elements are collections
+        hda_id_to_element = dict(self._get_nested_collection_attributes(return_entities=[DatasetCollectionElement], hda_attributes=['id']))
+        for failed, replacement in replacements.items():
+            element = hda_id_to_element.get(failed.id)
+            if element:
+                element.hda = replacement
+                element.hda.visible = False
 
     def set_from_dict(self, new_data):
         # Nothing currently editable in this class.
