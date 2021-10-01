@@ -57,7 +57,7 @@ $theme-colors: map-merge(
 $theme-color-interval: 5% !default;
 
 // Alerts and states
-$alert-bg-level: -12 !default;
+$alert-bg-level: -16 !default;
 $alert-border-level: -6 !default;
 $alert-color-level: 16 !default;
 
@@ -145,8 +145,8 @@ $table-border-color: transparent;
 // Additional state colors
 $state-default-bg: $gray-200;
 $state-default-border: $border-color;
-$state-paused-bg: lighten($brand-info, 50%);
-$state-running-bg: lighten($brand-warning, 40%);
+$state-paused-bg: $state-info-bg;
+$state-running-bg: $state-warning-bg;
 $state-running-border: $border-color;
 
 // Workflow editor
