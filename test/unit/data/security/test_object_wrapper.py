@@ -77,6 +77,44 @@ def test_type_groups():
     assert __WRAP_MAPPINGS__ == (dict, UserDict,)
 
 
+def test_do_not_wrap_safestringwrapper():
+    """ Do not wrap SafeStringWrapper: only wrap one layer."""
+    obj = SafeStringWrapper(None)
+    result = wrap_with_safe_string(obj)
+    assert result is obj
+
+
+def test_do_not_wrap_no_wrap_classes():
+    """ Do not wrap instances of classes passed in no_wrap_classes."""
+    obj = Foo()
+    result = wrap_with_safe_string(obj)
+    # obj is wrapped
+    assert result is not obj
+    assert isinstance(result, SafeStringWrapper)
+
+    result = wrap_with_safe_string(obj, no_wrap_classes=Foo)
+    # obj is not wrapped because it is in no_wrap_classes
+    assert result is obj
+
+    result = wrap_with_safe_string(obj, no_wrap_classes=Bar)
+    # obj is wrapped, because it is not in no_wrap_classes
+    assert result is not obj
+    assert isinstance(result, SafeStringWrapper)
+
+
+def test_wrap_dont_subclass(monkeypatch):
+    patched = __WRAP_NO_SUBCLASS__ + (Foo,)  # Add Foo to wrap-no-subclass types
+    monkeypatch.setattr(object_wrapper, '__WRAP_NO_SUBCLASS__', patched)
+
+    result = wrap_with_safe_string(Foo())
+    # Foo is in __WRAP_NO_SUBCLASS__, so result is wrapped, but not subclass of Foo
+    assert isinstance(result, SafeStringWrapper) and not isinstance(result, Foo)
+
+    result = wrap_with_safe_string(Bar())
+    # Bar is not in __WRAP_NO_SUBCLASS__, so result is wrapped, and is subclass of Bar
+    assert isinstance(result, SafeStringWrapper) and isinstance(result, Bar)
+
+
 def test_wrap_sequence():
     sequences = [Foo(), Bar(), (Foo(),), {Bar()}]  # Foo, Bar, tuple w/Foo, set w/Bar
 
@@ -103,42 +141,6 @@ def test_wrap_mapping():
     assert isinstance(value, SafeStringWrapper)  # value was wrapped
 
 
-def test_do_not_set_attrs_of_type_instancestate():
-    wrapper = SafeStringWrapper(Foo())
-
-    wrapper.foo = 42
-    assert wrapper.foo == 42  # attr set normally
-
-    state = inspect(model.Tag())  # any declaratively maped class will do
-    assert type(state) == InstanceState
-
-    wrapper.bad_foo = state
-    with pytest.raises(AttributeError):
-        wrapper.bad_foo  # attr of type sqlalchemy.orm.state.InstanceState not set
-
-
-def test_do_not_wrap_no_wrap_classes():
-    """ Do not wrap instances of classes passed in no_wrap_classes."""
-    obj = Foo()
-    result = wrap_with_safe_string(obj)
-    assert result is not obj
-    assert isinstance(result, SafeStringWrapper)
-
-    result = wrap_with_safe_string(obj, no_wrap_classes=Foo)
-    assert result is obj
-
-    result = wrap_with_safe_string(obj, no_wrap_classes=Bar)
-    assert result is not obj
-    assert isinstance(result, SafeStringWrapper)
-
-
-def test_do_not_wrap_safestringwrapper():
-    """ Do not wrap SafeStringWrapper: only wrap one layer."""
-    obj = SafeStringWrapper(None)
-    result = wrap_with_safe_string(obj)
-    assert result is obj
-
-
 def test_safe_class():
     my_function = lambda: None  # noqa: E731
     result = wrap_with_safe_string(my_function)
@@ -148,19 +150,6 @@ def test_safe_class():
     # Foo is not in __CALLABLE_TYPES__, so it's just SafeStringWrapper
     result = wrap_with_safe_string(Foo)
     assert isinstance(result, SafeStringWrapper) and not isinstance(result, CallableSafeStringWrapper)
-
-
-def test_wrap_dont_subclass(monkeypatch):
-    patched = __WRAP_NO_SUBCLASS__ + (Foo,)  # Add Foo to wrap-no-subclass types
-    monkeypatch.setattr(object_wrapper, '__WRAP_NO_SUBCLASS__', patched)
-
-    result = wrap_with_safe_string(Foo())
-    # Foo is in __WRAP_NO_SUBCLASS__, so result is wrapped, but not subclass of Foo
-    assert isinstance(result, SafeStringWrapper) and not isinstance(result, Foo)
-
-    result = wrap_with_safe_string(Bar())
-    # Bar is not in __WRAP_NO_SUBCLASS__, so result is wrapped, and is subclass of Bar
-    assert isinstance(result, SafeStringWrapper) and isinstance(result, Bar)
 
 
 class TestGetNoWrapClasses:
@@ -189,3 +178,19 @@ class TestGetNoWrapClasses:
         expected = default_no_wrap_types + [Foo, Bar]
         classes = get_no_wrap_classes(no_wrap_classes=(Foo, Bar))
         assert set(classes) == set(expected)
+
+
+class TestSafeStringWrapper:
+
+    def test_do_not_set_attrs_of_type_instancestate(self):
+        wrapper = SafeStringWrapper(Foo())
+
+        wrapper.foo = 42
+        assert wrapper.foo == 42  # attr set normally
+
+        state = inspect(model.Tag())  # any declaratively maped class will do
+        assert type(state) == InstanceState
+
+        wrapper.bad_foo = state
+        with pytest.raises(AttributeError):
+            wrapper.bad_foo  # attr of type sqlalchemy.orm.state.InstanceState not set
