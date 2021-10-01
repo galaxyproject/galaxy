@@ -15,6 +15,7 @@ from fastapi import (
     Path,
     Query,
 )
+from starlette.responses import StreamingResponse
 
 from galaxy import util
 from galaxy.managers.context import ProvidesHistoryContext
@@ -77,6 +78,12 @@ HistoryItemIDPathParam: EncodedDatabaseIdField = Path(
     ...,
     title='History Item ID',
     description='The ID of the item (`HDA`/`HDCA`) contained in the history.'
+)
+
+HistoryHDCAIDPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    title='History Dataset Collection ID',
+    description='The ID of the `HDCA` contained in the history.'
 )
 
 
@@ -360,6 +367,7 @@ class FastAPIHistoryContents:
     def index_jobs_summary(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
         params: HistoryContentsIndexJobsSummaryParams = Depends(get_index_jobs_summary_params),
     ) -> List[AnyJobStateSummary]:
         """Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
@@ -378,6 +386,7 @@ class FastAPIHistoryContents:
     def show_jobs_summary(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
         id: EncodedDatabaseIdField = HistoryItemIDPathParam,
         type: HistoryContentType = Path(
             default=None,
@@ -394,6 +403,29 @@ class FastAPIHistoryContents:
         efficient as possible.
         """
         return self.service.show_jobs_summary(trans, id, contents_type=type)
+
+    @router.get(
+        '/api/histories/{history_id}/contents/dataset_collections/{id}/download',
+        summary='Download the content of a dataset collection as a `zip` archive.',
+        response_class=StreamingResponse,
+    )
+    @router.get(  # TODO: Move to dataset_collections API?
+        '/api/dataset_collection/{id}/download',
+        summary='Download the content of a dataset collection as a `zip` archive.',
+        response_class=StreamingResponse,
+        tags=["dataset_collections"],
+    )
+    def download_dataset_collection(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryHDCAIDPathParam,
+    ):
+        """Download the content of a history dataset collection as a `zip` archive
+        while maintaining approximate collection structure.
+        """
+        archive = self.service.get_dataset_collection_archive_for_download(trans, id)
+        return StreamingResponse(archive.get_iterator(), headers=archive.get_headers())
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
