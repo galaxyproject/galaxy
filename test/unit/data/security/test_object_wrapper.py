@@ -142,9 +142,13 @@ def test_wrap_mapping():
 
 
 def test_safe_class():
-    my_function = lambda: None  # noqa: E731
-    result = wrap_with_safe_string(my_function)
-    # my_function is of type FunctionType, so expect CallableSafeStringWrapper
+
+    class IAmCallable:
+        def __call__(self):  # this makes it a Callable
+            pass
+
+    # An instance of IAmCallable is a Callable, so expect CallableSafeStringWrapper
+    result = wrap_with_safe_string(IAmCallable())
     assert isinstance(result, CallableSafeStringWrapper)
 
     # Foo is not in __CALLABLE_TYPES__, so it's just SafeStringWrapper
