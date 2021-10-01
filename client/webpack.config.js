@@ -110,7 +110,6 @@ module.exports = (env = {}, argv = {}) => {
                             options: {
                                 exposes: {
                                     globalName: ["underscore", "_"],
-                                    moduleLocalName: "_",
                                 },
                             },
                         },
