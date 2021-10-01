@@ -95,16 +95,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
 
         # Create a dynamic class that joins SafeStringWrapper with the object being wrapped.
         # This allows e.g. isinstance to continue to work.
-        try:
-            wrapped_class_name = value.__name__
-            wrapped_class = value
-        except Exception:
-            wrapped_class_name = value.__class__.__name__
-            wrapped_class = value.__class__
-        value_mod = inspect.getmodule(value)
-        if value_mod:
-            wrapped_class_name = f"{value_mod.__name__}.{wrapped_class_name}"
-        wrapped_class_name = f"{safe_class.__name__}({wrapped_class_name}:{','.join(sorted(map(str, no_wrap_classes)))})"
+        class_to_wrap, wrapped_class_name = get_class_and_name_for_wrapping(value, safe_class)
         do_wrap_func_name = f"__do_wrap_{wrapped_class_name}"
         do_wrap_func = __do_wrap
         global_dict = globals()
@@ -114,7 +105,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
             do_wrap_func = global_dict.get(do_wrap_func_name, __do_wrap)
         else:
             try:
-                wrapped_class = type(wrapped_class_name, (safe_class, wrapped_class, ), {})
+                wrapped_class = type(wrapped_class_name, (safe_class, class_to_wrap, ), {})
             except TypeError as e:
                 # Fail-safe for when a class cannot be dynamically subclassed.
                 log.warning(f"Unable to create dynamic subclass {wrapped_class_name} for {type(value)}, {value}: {e}")
@@ -144,6 +135,21 @@ def get_no_wrap_classes(no_wrap_classes=None):
             no_wrap_classes = [no_wrap_classes]
         return list(no_wrap_classes) + _default
     return _default
+
+
+def get_class_and_name_for_wrapping(value, safe_class):
+    """Return class to be wrapped + a name for the wrapped class."""
+    try:
+        class_name = value.__name__
+        class_ = value
+    except Exception:
+        class_name = value.__class__.__name__
+        class_ = value.__class__
+    value_mod = inspect.getmodule(value)
+    if value_mod:
+        class_name = f"{value_mod.__name__}.{class_name}"
+    class_name = f"{safe_class.__name__}({class_name})"
+    return (class_, class_name)
 
 
 # N.B. refer to e.g. https://docs.python.org/reference/datamodel.html for information on Python's Data Model.

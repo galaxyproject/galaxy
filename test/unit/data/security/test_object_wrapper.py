@@ -15,7 +15,7 @@ from types import (
 )
 
 import pytest
-from sqlalchemy import inspect
+import sqlalchemy
 from sqlalchemy.orm import InstanceState
 
 from galaxy import model
@@ -28,6 +28,7 @@ from galaxy.security.object_wrapper import (
     __WRAP_SEQUENCES__,
     __WRAP_SETS__,
     CallableSafeStringWrapper,
+    get_class_and_name_for_wrapping,
     get_no_wrap_classes,
     MAPPED_CHARACTERS,
     SafeStringWrapper,
@@ -151,8 +152,8 @@ def test_safe_class():
     result = wrap_with_safe_string(IAmCallable())
     assert isinstance(result, CallableSafeStringWrapper)
 
-    # Foo is not in __CALLABLE_TYPES__, so it's just SafeStringWrapper
-    result = wrap_with_safe_string(Foo)
+    # An instance of Foo is not in __CALLABLE_TYPES__, so it's just SafeStringWrapper
+    result = wrap_with_safe_string(Foo())
     assert isinstance(result, SafeStringWrapper) and not isinstance(result, CallableSafeStringWrapper)
 
 
@@ -184,6 +185,15 @@ class TestGetNoWrapClasses:
         assert set(classes) == set(expected)
 
 
+def test_wrapped_class_name():
+    obj = Foo()
+    # If this module is renamed, edit its name ('test_object_wrapper') in the expected string
+    expected = 'SafeStringWrapper(test_object_wrapper.Foo)'
+    class_, class_name = get_class_and_name_for_wrapping(obj, SafeStringWrapper)
+    assert class_ is Foo
+    assert class_name == expected
+
+
 class TestSafeStringWrapper:
 
     def test_do_not_set_attrs_of_type_instancestate(self):
@@ -192,7 +202,7 @@ class TestSafeStringWrapper:
         wrapper.foo = 42
         assert wrapper.foo == 42  # attr set normally
 
-        state = inspect(model.Tag())  # any declaratively maped class will do
+        state = sqlalchemy.inspect(model.Tag())  # any declaratively maped class will do
         assert type(state) == InstanceState
 
         wrapper.bad_foo = state
