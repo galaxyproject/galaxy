@@ -33,7 +33,7 @@ function addNewsIframe() {
         currentGalaxyVersion = "21.09";
     }
 
-    const releaseNotes = `https://docs.galaxyproject.org/en/master/releases/${currentGalaxyVersion}_announce_user.html`;
+    const releaseNotes = `https://docs.galaxyproject.org/en/latest/releases/${currentGalaxyVersion}_announce_user.html`;
     const lastSeenVersion = window.localStorage.getItem("galaxy-news-seen-release");
     // Check that they've seen the current version's release notes.
     if (lastSeenVersion != currentGalaxyVersion) {
