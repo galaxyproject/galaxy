@@ -263,21 +263,23 @@ export default {
             console.debug("toolForm::onExecute()", jobDef);
             submitJob(jobDef).then(
                 (jobResponse) => {
+                    this.showExecuting = false;
                     if (Galaxy.currHistoryPanel) {
                         Galaxy.currHistoryPanel.refreshContents();
                     }
-                    this.showForm = false;
                     if (jobResponse.produces_entry_points) {
                         this.showEntryPoints = true;
                         this.entryPoints = jobResponse.jobs;
                     }
                     const nJobs = jobResponse && jobResponse.jobs ? jobResponse.jobs.length : 0;
                     if (nJobs > 0) {
+                        this.showForm = false;
                         this.showSuccess = true;
                         this.jobDef = jobDef;
                         this.jobResponse = jobResponse;
                     } else {
                         this.showError = true;
+                        this.showForm = true;
                         this.errorTitle = "Invalid success response. No jobs found.";
                         this.errorContent = jobResponse;
                     }
@@ -299,7 +301,6 @@ export default {
                     }
                     if (genericError) {
                         this.showError = true;
-                        this.showForm = false;
                         this.errorTitle = "Job submission failed";
                         this.errorContent = this.jobDef;
                     }
