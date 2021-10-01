@@ -14,14 +14,16 @@
                         :tool-name="toolName"
                     />
                     <Webhook v-if="showSuccess" type="tool" :tool-id="jobDef.tool_id" />
-                    <b-alert v-if="showError" show variant="danger">
-                        <h4>{{ errorTitle | l }}</h4>
-                        <p>
-                            The server could not complete the request. Please contact the Galaxy Team if this error
-                            persists.
-                        </p>
-                        <pre>{{ errorContentPretty }}</pre>
-                    </b-alert>
+                    <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
+                        <b-alert show variant="danger">
+                            The server could not complete this request. Please verify your parameter settings, retry
+                            submission and contact the Galaxy Team if this error persists. A transcript of the submitted
+                            data is shown below.
+                        </b-alert>
+                        <small class="text-muted">
+                            <pre>{{ errorContentPretty }}</pre>
+                        </small>
+                    </b-modal>
                     <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
                     <ToolCard
                         v-if="showForm"
@@ -280,7 +282,7 @@ export default {
                     } else {
                         this.showError = true;
                         this.showForm = true;
-                        this.errorTitle = "Invalid success response. No jobs found.";
+                        this.errorTitle = "Job submission rejected.";
                         this.errorContent = jobResponse;
                     }
                     if ([true, "true"].includes(config.enable_tool_recommendations)) {
@@ -301,7 +303,7 @@ export default {
                     }
                     if (genericError) {
                         this.showError = true;
-                        this.errorTitle = "Job submission failed";
+                        this.errorTitle = "Job submission failed.";
                         this.errorContent = this.jobDef;
                     }
                 }
