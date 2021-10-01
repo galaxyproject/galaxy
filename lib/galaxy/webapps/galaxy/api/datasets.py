@@ -157,7 +157,8 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 return self.hda_serializer.serialize_to_view(dataset,
                                                              view=kwd.get('view', 'detailed'), user=trans.user, trans=trans)
             else:
-                rval = dataset.to_dict()
+                dataset_dict = dataset.to_dict()
+                rval = trans.security.encode_all_ids(dataset_dict)
         return rval
 
     @web.expose_api_anonymous
