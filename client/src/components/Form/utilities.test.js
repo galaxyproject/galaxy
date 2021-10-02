@@ -83,5 +83,6 @@ describe("form component utilities", () => {
         input.test_param.type = "select";
         expect(matchCase(input, "")).toEqual(0);
         expect(matchCase(input, "unavailable")).toEqual(-1);
+        expect(matchCase(input, "falsevalue")).toEqual(1);
     });
 });
