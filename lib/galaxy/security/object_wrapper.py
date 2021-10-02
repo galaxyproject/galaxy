@@ -306,9 +306,7 @@ class SafeStringWrapper:
         del self.unsanitized[i:j]
 
     def __add__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized + other)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__add__(unwrap(other)))
 
     def __sub__(self, other):
         while isinstance(other, SafeStringWrapper):

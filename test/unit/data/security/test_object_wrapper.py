@@ -38,14 +38,6 @@ from galaxy.security.object_wrapper import (
 )
 
 
-class Foo:
-    pass
-
-
-class Bar:
-    pass
-
-
 @pytest.fixture(scope='module')
 def default_no_wrap_types():
     return list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
@@ -293,6 +285,25 @@ class TestSafeStringWrapper:
         wrapped_foo = wrap_with_safe_string(foo)
         assert len(foo) == len(wrapped_foo)
 
+    def test_numerical_methods(self):
+        foo, n = IntWrapper(42), 2
+        wrapped_foo = wrap_with_safe_string(foo)
+        assert foo + n == wrapped_foo + n
+        assert foo - n == wrapped_foo - n
+        assert foo * n == wrapped_foo * n
+        assert foo // n == wrapped_foo // n
+        assert foo % n == wrapped_foo % n
+        assert divmod(foo, n) == divmod(wrapped_foo, n)
+        assert foo ** n == wrapped_foo ** n
+        assert foo << n == wrapped_foo << n
+        assert foo >> n == wrapped_foo >> n
+        assert foo / n == wrapped_foo / n
+        assert -foo == -wrapped_foo
+        assert +foo == +wrapped_foo
+        assert abs(foo) == abs(wrapped_foo)
+        assert ~foo == ~wrapped_foo
+        assert complex(foo) == complex(wrapped_foo)
+
     def test__int__(self):
         foo = '1'
         wrapped_foo = wrap_with_safe_string(foo)
@@ -312,3 +323,65 @@ class TestSafeStringWrapper:
         foo = 1
         wrapped_foo = wrap_with_safe_string(foo)
         assert hex(foo) == hex(wrapped_foo)
+
+
+class Foo:
+    pass
+
+
+class Bar:
+    pass
+
+
+class IntWrapper:
+    # Wraps an integer value. This class is needed to test special methods that require an
+    # integer or numeric value: a plain numeric value would not be wrapped by SafeStringWrapper.
+    # The set of methods is limited to those handled by SafeStringWrapper.
+    # NOTE: __add__ can use string values which would be wrapped; it's included here for consistency.
+    def __init__(self, number):
+        self.number = number
+
+    def __add__(self, other):
+        return self.number + other
+
+    def __sub__(self, other):
+        return self.number - other
+
+    def __mul__(self, other):
+        return self.number * other
+
+    def __floordiv__(self, other):
+        return self.number // other
+
+    def __mod__(self, other):
+        return self.number % other
+
+    def __divmod__(self, other):
+        return divmod(self.number, other)
+
+    def __pow__(self, *other):
+        return pow(self.number, *other)
+
+    def __lshift__(self, other):
+        return self.number << other
+
+    def __rshift__(self, other):
+        return self.number >> other
+
+    def __truediv__(self, other):
+        return self.number / other
+
+    def __neg__(self):
+        return -self.number
+
+    def __pos__(self):
+        return +self.number
+
+    def __abs__(self):
+        return abs(self.number)
+
+    def __invert__(self):
+        return ~self.number
+
+    def __complex__(self):
+        return complex(self.number)
