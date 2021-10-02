@@ -194,6 +194,17 @@ def test_wrapped_class_name():
     assert class_name == expected
 
 
+def test_wrapper_class_is_reused():
+    foo1 = Foo()
+    foo2 = Foo()
+    bar1 = Bar()
+    result1 = wrap_with_safe_string(foo1)
+    result2 = wrap_with_safe_string(foo2)
+    result3 = wrap_with_safe_string(bar1)
+    assert result1.__class__ is result2.__class__  # both are wrappers for instances of the same class: reused
+    assert result1.__class__ is not result3.__class__  # wrappers for instances of different classes: not reused
+
+
 class TestSafeStringWrapper:
 
     def test_do_not_set_attrs_of_type_instancestate(self):
