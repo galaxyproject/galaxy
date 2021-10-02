@@ -218,13 +218,6 @@ class SafeStringWrapper:
     def __ge__(self, other):
         return self.unsanitized.__ge__(unwrap(other))
 
-    def __cmp__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return cmp(self.unsanitized, other)
-
-    # Do not implement __rcmp__, python 2.2 < 2.6
-
     def __hash__(self):
         return hash(self.unsanitized)
 
