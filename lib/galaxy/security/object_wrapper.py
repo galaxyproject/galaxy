@@ -363,11 +363,6 @@ class SafeStringWrapper:
             other = other.unsanitized
         return self.__safe_string_wrapper_function__(self.unsanitized | other)
 
-    def __div__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized / other)
-
     def __truediv__(self, other):
         while isinstance(other, SafeStringWrapper):
             other = other.unsanitized
