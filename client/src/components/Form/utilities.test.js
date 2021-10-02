@@ -22,24 +22,22 @@ describe("form component utilities", () => {
             },
             cases: [
                 {
-                    name: "c",
                     value: "true",
+                    inputs: [
+                        {
+                            name: "c",
+                            type: "text",
+                            value: "cvalue",
+                        },
+                    ],
+                },
+                {
+                    value: "false",
                     inputs: [
                         {
                             name: "d",
                             type: "text",
                             value: "dvalue",
-                        },
-                    ],
-                },
-                {
-                    name: "e",
-                    value: "false",
-                    inputs: [
-                        {
-                            name: "f",
-                            type: "text",
-                            value: "fvalue",
                         },
                     ],
                 },
@@ -75,9 +73,9 @@ describe("form component utilities", () => {
         expect(matchCase(input, "true")).toEqual(0);
 
         // test visit inputs
-        expect(visitInputsString([input])).toEqual("a|b=true;a|d=dvalue;");
+        expect(visitInputsString([input])).toEqual("a|b=true;a|c=cvalue;");
         input.test_param.value = "false";
-        expect(visitInputsString([input])).toEqual("a|b=false;a|f=fvalue;");
+        expect(visitInputsString([input])).toEqual("a|b=false;a|d=dvalue;");
 
         // switch test parameter to other type than boolean e.g. select
         input.test_param.type = "select";
