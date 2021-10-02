@@ -270,10 +270,7 @@ class SafeStringWrapper:
     # We address __call__ as needed based upon unsanitized, through the use of a CallableSafeStringWrapper class
 
     def __len__(self):
-        original_value = self.unsanitized
-        while isinstance(original_value, SafeStringWrapper):
-            original_value = self.unsanitized
-        return len(self.unsanitized)
+        return len(unwrap(self.unsanitized))  # can we just do len(self.unsanitized)?
 
     def __getitem__(self, key):
         return self.__safe_string_wrapper_function__(self.unsanitized[key])

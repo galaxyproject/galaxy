@@ -288,6 +288,11 @@ class TestSafeStringWrapper:
         wrapped_foo = wrap_with_safe_string(foo)
         assert bool(foo) == bool(wrapped_foo)
 
+    def test__len__(self):
+        foo = 'abc'
+        wrapped_foo = wrap_with_safe_string(foo)
+        assert len(foo) == len(wrapped_foo)
+
     def test__int__(self):
         foo = '1'
         wrapped_foo = wrap_with_safe_string(foo)
