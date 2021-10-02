@@ -277,3 +277,33 @@ class TestSafeStringWrapper:
         wrapped_foo = wrap_with_safe_string(foo)
         wrapped_bar = wrap_with_safe_string(bar)
         assert foo >= bar and wrapped_foo >= wrapped_bar
+
+    def test__hash__(self):
+        foo = 'a'
+        wrapped_foo = wrap_with_safe_string(foo)
+        assert hash(foo) == hash(wrapped_foo)
+
+    def test__bool__(self):
+        foo = 'a'
+        wrapped_foo = wrap_with_safe_string(foo)
+        assert bool(foo) == bool(wrapped_foo)
+
+    def test__int__(self):
+        foo = '1'
+        wrapped_foo = wrap_with_safe_string(foo)
+        assert int(foo) == int(wrapped_foo)
+
+    def test__float__(self):
+        foo = '1.5'
+        wrapped_foo = wrap_with_safe_string(foo)
+        assert float(foo) == float(wrapped_foo)
+
+    def test__oct__(self):
+        foo = 1
+        wrapped_foo = wrap_with_safe_string(foo)
+        assert oct(foo) == oct(wrapped_foo)
+
+    def test__hex__(self):
+        foo = 1
+        wrapped_foo = wrap_with_safe_string(foo)
+        assert hex(foo) == hex(wrapped_foo)
