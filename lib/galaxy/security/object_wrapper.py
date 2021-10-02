@@ -309,44 +309,28 @@ class SafeStringWrapper:
         return self.__safe_string_wrapper_function__(self.unsanitized.__add__(unwrap(other)))
 
     def __sub__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized - other)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__sub__(unwrap(other)))
 
     def __mul__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized * other)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__mul__(unwrap(other)))
 
     def __floordiv__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized // other)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__floordiv__(unwrap(other)))
 
     def __mod__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized % other)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__mod__(unwrap(other)))
 
     def __divmod__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(divmod(self.unsanitized, other))
+        return self.__safe_string_wrapper_function__(self.unsanitized.__divmod__(unwrap(other)))
 
     def __pow__(self, *other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(pow(self.unsanitized, *other))
+        return self.__safe_string_wrapper_function__(self.unsanitized.__pow__(*unwrap(other)))
 
     def __lshift__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized << other)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__lshift__(unwrap(other)))
 
     def __rshift__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized >> other)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rshift__(unwrap(other)))
 
     def __and__(self, other):
         while isinstance(other, SafeStringWrapper):
@@ -364,9 +348,7 @@ class SafeStringWrapper:
         return self.__safe_string_wrapper_function__(self.unsanitized | other)
 
     def __truediv__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized / other)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__truediv__(unwrap(other)))
 
     # The only reflected operand that we will define is __rpow__, due to coercion rules complications as per docs
     def __rpow__(self, other):
