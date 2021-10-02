@@ -3,7 +3,7 @@ import { matchCase, visitInputs } from "./utilities";
 function visitInputsString(inputs) {
     let results = "";
     visitInputs(inputs, (input, identifier) => {
-        results += `${identifier}-${input.name}&`;
+        results += `${identifier}=${input.value};`;
     });
     return results;
 }
@@ -28,7 +28,7 @@ describe("form component utilities", () => {
                         {
                             name: "d",
                             type: "text",
-                            value: "d",
+                            value: "dvalue",
                         },
                     ],
                 },
@@ -39,7 +39,7 @@ describe("form component utilities", () => {
                         {
                             name: "f",
                             type: "text",
-                            value: "f",
+                            value: "fvalue",
                         },
                     ],
                 },
@@ -75,9 +75,9 @@ describe("form component utilities", () => {
         expect(matchCase(input, "true")).toEqual(0);
 
         // test visit inputs
-        expect(visitInputsString([input])).toEqual("a|b-b&a|d-d&");
+        expect(visitInputsString([input])).toEqual("a|b=true;a|d=dvalue;");
         input.test_param.value = "false";
-        expect(visitInputsString([input])).toEqual("a|b-b&a|f-f&");
+        expect(visitInputsString([input])).toEqual("a|b=false;a|f=fvalue;");
 
         // switch test parameter to other type than boolean e.g. select
         input.test_param.type = "select";
