@@ -32,6 +32,7 @@ from galaxy.security.object_wrapper import (
     get_no_wrap_classes,
     MAPPED_CHARACTERS,
     SafeStringWrapper,
+    unwrap,
     VALID_CHARACTERS,
     wrap_with_safe_string,
 )
@@ -203,6 +204,17 @@ def test_wrapper_class_is_reused():
     result3 = wrap_with_safe_string(bar1)
     assert result1.__class__ is result2.__class__  # both are wrappers for instances of the same class: reused
     assert result1.__class__ is not result3.__class__  # wrappers for instances of different classes: not reused
+
+
+def test_unwrap():
+    foo, bar = Foo(), Bar()
+    foo.b = bar
+    wrapped_foo = wrap_with_safe_string(foo)
+
+    assert foo is not wrapped_foo
+    assert bar is not wrapped_foo.b
+    assert foo is unwrap(wrapped_foo)
+    assert bar is unwrap(wrapped_foo.b)
 
 
 class TestSafeStringWrapper:

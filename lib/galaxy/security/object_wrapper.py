@@ -152,6 +152,12 @@ def get_class_and_name_for_wrapping(value, safe_class):
     return (class_, class_name)
 
 
+def unwrap(value):
+    while isinstance(value, SafeStringWrapper):
+        value = value.unsanitized
+    return value
+
+
 # N.B. refer to e.g. https://docs.python.org/reference/datamodel.html for information on Python's Data Model.
 
 
