@@ -165,12 +165,22 @@ export default {
         };
     },
     created() {
-        this.requestTool();
+        this.requestTool().then(() => {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel) {
+                console.debug("ToolForm::created - Listening to history changes.");
+                Galaxy.currHistoryPanel.collection.on("change", () => {
+                    this.onUpdate();
+                    console.debug("ToolForm::created - Loading history changes.");
+                });
+            }
+        });
+    },
+    beforeDestroy() {
         const Galaxy = getGalaxyInstance();
         if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.collection.on("change", () => {
-                this.onUpdate();
-            });
+            Galaxy.currHistoryPanel.collection.off("change");
+            console.debug("ToolForm::beforeDestroy - Stopped listening to history changes.");
         }
     },
     computed: {
@@ -227,7 +237,7 @@ export default {
         },
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
-            getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
+            return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
                 this.formConfig = data;
                 this.remapAllowed = this.job_id && data.job_remap;
                 this.showLoading = false;
