@@ -231,3 +231,49 @@ class TestSafeStringWrapper:
         wrapper.bad_foo = state
         with pytest.raises(AttributeError):
             wrapper.bad_foo  # attr of type sqlalchemy.orm.state.InstanceState not set
+
+    def test__lt__(self):
+        foo, bar = 'a', 'b'
+        wrapped_foo = wrap_with_safe_string(foo)
+        wrapped_bar = wrap_with_safe_string(bar)
+        assert foo < bar and wrapped_foo < wrapped_bar
+
+    def test__le__(self):
+        foo, bar = 'a', 'b'
+        wrapped_foo = wrap_with_safe_string(foo)
+        wrapped_bar = wrap_with_safe_string(bar)
+        assert foo <= bar and wrapped_foo <= wrapped_bar
+
+        foo, bar = 'a', 'a'
+        wrapped_foo = wrap_with_safe_string(foo)
+        wrapped_bar = wrap_with_safe_string(bar)
+        assert foo <= bar and wrapped_foo <= wrapped_bar
+
+    def test__eq__(self):
+        foo, bar = 'a', 'a'
+        wrapped_foo = wrap_with_safe_string(foo)
+        wrapped_bar = wrap_with_safe_string(bar)
+        assert foo == bar and wrapped_foo == wrapped_bar
+
+    def test__ne__(self):
+        foo, bar = 'a', 'b'
+        wrapped_foo = wrap_with_safe_string(foo)
+        wrapped_bar = wrap_with_safe_string(bar)
+        assert foo != bar and wrapped_foo != wrapped_bar
+
+    def test__gt__(self):
+        foo, bar = 'b', 'a'
+        wrapped_foo = wrap_with_safe_string(foo)
+        wrapped_bar = wrap_with_safe_string(bar)
+        assert foo > bar and wrapped_foo > wrapped_bar
+
+    def test__ge__(self):
+        foo, bar = 'b', 'a'
+        wrapped_foo = wrap_with_safe_string(foo)
+        wrapped_bar = wrap_with_safe_string(bar)
+        assert foo >= bar and wrapped_foo >= wrapped_bar
+
+        foo, bar = 'a', 'a'
+        wrapped_foo = wrap_with_safe_string(foo)
+        wrapped_bar = wrap_with_safe_string(bar)
+        assert foo >= bar and wrapped_foo >= wrapped_bar

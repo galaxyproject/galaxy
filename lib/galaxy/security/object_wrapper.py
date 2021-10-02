@@ -201,34 +201,22 @@ class SafeStringWrapper:
         return f"{sanitize_lists_to_string(self.__class__.__name__)} object at {id(self):x} on: {sanitize_lists_to_string(repr(self.unsanitized))}"
 
     def __lt__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.unsanitized < other
+        return self.unsanitized.__lt__(unwrap(other))
 
     def __le__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.unsanitized <= other
+        return self.unsanitized.__le__(unwrap(other))
 
     def __eq__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.unsanitized == other
+        return self.unsanitized.__eq__(unwrap(other))
 
     def __ne__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.unsanitized != other
+        return self.unsanitized.__ne__(unwrap(other))
 
     def __gt__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.unsanitized > other
+        return self.unsanitized.__gt__(unwrap(other))
 
     def __ge__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.unsanitized >= other
+        return self.unsanitized.__ge__(unwrap(other))
 
     def __cmp__(self, other):
         while isinstance(other, SafeStringWrapper):
