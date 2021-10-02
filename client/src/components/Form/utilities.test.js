@@ -66,6 +66,9 @@ describe("form component utilities", () => {
         expect(matchCase(input, "false")).toEqual(1);
 
         // test (empty) truevalue
+        input.test_param.truevalue = undefined;
+        input.cases[0].value = "true";
+        expect(matchCase(input, "true")).toEqual(0);
         input.test_param.truevalue = "";
         expect(matchCase(input, "true")).toEqual(-1);
         input.cases[0].value = "";
