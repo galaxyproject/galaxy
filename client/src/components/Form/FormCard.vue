@@ -17,12 +17,16 @@
                     <font-awesome-icon v-else icon="eye" class="fa-fw" />
                 </b-button>
             </div>
-            <a class="portlet-title" @click="onCollapse" :href="href">
-                <i :class="['portlet-title-icon fa mr-1', icon]" style="display: inline"></i>
-                <span class="portlet-title-text">
-                    <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span>
-                </span>
-            </a>
+            <b-link class="portlet-title" v-if="collapsible" @click="onCollapse" href="#">
+                <span :class="['portlet-title-icon fa mr-1', icon]" />
+                <b itemprop="name">{{ title }}</b>
+                <span itemprop="description">{{ description }}</span>
+            </b-link>
+            <span class="portlet-title" v-else>
+                <span :class="['portlet-title-icon fa mr-1', icon]" />
+                <b itemprop="name">{{ title }}</b>
+                <span itemprop="description">{{ description }}</span>
+            </span>
         </div>
         <div v-show="expanded" class="portlet-content">
             <slot name="body" />
@@ -65,11 +69,6 @@ export default {
     },
     data() {
         return {};
-    },
-    computed: {
-        href() {
-            return this.collapsible ? "#" : null;
-        },
     },
     methods: {
         onCollapse() {
