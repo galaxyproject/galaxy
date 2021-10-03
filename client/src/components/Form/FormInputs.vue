@@ -10,7 +10,7 @@
                     :help="input.test_param.help"
                     :attributes="input.test_param"
                     :backbonejs="true"
-                    @changed="onChange"
+                    @input="onChange"
                 />
                 <FormNode
                     v-for="(caseDetails, caseId) in input.cases"
@@ -76,6 +76,7 @@
                 :help="input.help"
                 :attributes="input"
                 :backbonejs="true"
+                @input="onChange"
             />
         </div>
     </div>

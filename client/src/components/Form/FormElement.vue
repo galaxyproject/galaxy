@@ -64,7 +64,6 @@ export default {
             },
             set(val) {
                 this.$emit("input", val);
-                this.$emit("changed");
             },
         },
         hasError() {

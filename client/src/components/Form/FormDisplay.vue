@@ -160,11 +160,12 @@ export default {
             this.formInputs = JSON.parse(JSON.stringify(this.formInputs));
         },
         onChange(requiresRequest = true) {
-            /*const params = {};
-            visitInputs(this.inputs, (input, name) => {
+            const params = {};
+            visitInputs(this.formInputs, (input, name) => {
                 params[name] = input.value;
             });
-            if (JSON.stringify(params) != JSON.stringify(this.formData) && this.limit > 0) {
+            console.log(params);
+            /*if (JSON.stringify(params) != JSON.stringify(this.formData) && this.limit > 0) {
                 this.limit--;
                 this.$emit("onChange", params, requiresRequest);
                 //console.log(JSON.stringify(params), JSON.stringify(this.formData), JSON.stringify(params), requiresRequest);

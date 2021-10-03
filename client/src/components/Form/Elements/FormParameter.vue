@@ -43,6 +43,7 @@ export default {
             this.parameter = new ParameterFactory();
             this.parameter.create({
                 ...this.attributes,
+                id: this.id,
                 type: this.type,
                 value: this.value,
                 el: this.$refs["parameter"],
