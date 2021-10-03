@@ -1649,9 +1649,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
 
     for key, value in test_data.items():
         is_dict = isinstance(value, dict)
-        # TODO: make this collection_type
-        collection_type = value.get("type", "")
-        if is_dict and ("elements" in value or 'list' in collection_type or 'paired' in collection_type):
+        if is_dict and ("elements" in value or value.get('collection_type')):
             elements_data = value.get("elements", [])
             elements = []
             for element_data in elements_data:
@@ -1672,6 +1670,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
             new_collection_kwds = {}
             if "name" in value:
                 new_collection_kwds["name"] = value["name"]
+            collection_type = value.get('collection_type', '')
             if collection_type == "list:paired":
                 fetch_response = dataset_collection_populator.create_list_of_pairs_in_history(history_id, contents=elements, **new_collection_kwds).json()
             elif collection_type and ':' in collection_type:

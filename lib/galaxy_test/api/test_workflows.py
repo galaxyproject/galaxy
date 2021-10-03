@@ -1060,7 +1060,7 @@ steps:
       input1: fail_identifier_1/out_file1
 test_data:
   input_datasets:
-    type: list
+    collection_type: list
     elements:
       - identifier: fail
         value: 1.fastq
@@ -1116,7 +1116,7 @@ steps:
       source: 1/list_output
 test_data:
   input_collection:
-    type: 'list:list:paired'
+    collection_type: "list:list:paired"
 """, history_id=history_id, assert_ok=False, wait=True)
             invocation = self.workflow_populator.get_invocation(job_summary.invocation_id, step_details=True)
             # TODO: return steps sorted by order_index ? Why don't we do that ??
@@ -1370,7 +1370,7 @@ steps:
       reference: reference
 test_data:
   input_fastqs:
-    type: list
+    collection_type: list
     elements:
       - identifier: samp1
         value: 1.fastq
@@ -1617,7 +1617,7 @@ steps:
     join_identifier: '-'
 test_data:
   input_fastqs:
-    type: list
+    collection_type: list
     elements:
       - identifier: samp1
         content: "0\n1"
@@ -1732,7 +1732,7 @@ steps:
         $link: filtered_collection
 """, test_data="""
 input_c:
-  type: list
+  collection_type: list
   elements:
     - identifier: i1
       content: "0"
@@ -1795,7 +1795,7 @@ steps:
       input1: input1
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -1896,7 +1896,7 @@ steps:
       input1: input1
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -1938,7 +1938,7 @@ steps:
       input1: text_input
 """, test_data="""
 text_input:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -1992,7 +1992,7 @@ text_input:
         with self.dataset_populator.test_history() as history_id:
             test_data = """
 outer_input:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -2246,7 +2246,7 @@ steps:
           change_datatype: csv
 """, test_data="""
 text_input1:
-  type: "list:paired"
+  collection_type: "list:paired"
 """, history_id=history_id)
             hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=4)
             assert hdca['collection_type'] == 'list:paired'
@@ -2269,7 +2269,7 @@ steps:
       input_collect: text_input1
 """, test_data="""
 text_input1:
-  type: "list:paired"
+  collection_type: "list:paired"
 """, history_id=history_id)
             hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=1)
             assert hdca['collection_type'] == 'list:paired'
@@ -2575,7 +2575,7 @@ input1:
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, test_data="""
 input1:
-  type: paired
+  collection_type: paired
   name: the_dataset_pair
   elements:
     - identifier: forward
@@ -2790,7 +2790,7 @@ steps:
       rename: "replaced_param_collection"
 test_data:
   text_input1:
-    type: list
+    collection_type: list
     elements:
       - identifier: A
         content: A
@@ -3052,7 +3052,7 @@ steps:
         with self.dataset_populator.test_history() as history_id:
             test_data = """
 input1:
-  type: list
+  collection_type: list
   elements:
     - identifier: A
       content: A
@@ -3101,7 +3101,7 @@ steps:
         rename: "my new name"
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -3136,7 +3136,7 @@ steps:
         rename: "#{input1} suffix"
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -3515,7 +3515,7 @@ fasta_input:
   name: fasta1
   file_type: fasta
 fastq_inputs:
-  type: list
+  collection_type: list
   name: the_dataset_pair
   elements:
     - identifier: forward
@@ -3575,7 +3575,7 @@ steps:
         hide: true
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -3681,7 +3681,7 @@ steps:
             - "name:foo"
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -4337,7 +4337,7 @@ steps:
        input1: input_c
 """, test_data="""
 input_c:
-  type: list
+  collection_type: list
   elements:
     - identifier: i1
       content: "0"

@@ -271,7 +271,7 @@ steps:
         seed: asdf
 test_data:
   input_c:
-    type: list
+    collection_type: list
     elements:
       - identifier: i1
         content: "0"
@@ -942,7 +942,7 @@ image_input:
   file_type: png
   name: my input image
 input_list:
-  type: list
+  collection_type: list
   elements:
     - identifier: i1
       content: "0"
