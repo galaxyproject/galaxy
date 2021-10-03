@@ -1532,6 +1532,51 @@ class ScIdx(Tabular):
         return False
 
 
+class AGP(Interval):
+    '''
+    Describes the assembly of a larger sequence object from smaller objects. The large object can be a
+    contig, a scaffold (supercontig), or a chromosome. Each line (row) of the AGP file describes a
+    different piece of the object.
+
+    One feature of the AGP file is that column definitions change depending on whether the line is a
+    component line or a gap line. There is a single column definition up to column 5, then each column
+    will have two definitions, depending on the value in column 5.
+    '''
+    file_ext = "agp"
+    edam_format = "format_3693"
+    data_sources = {"data": "tabix", "index": "bigwig"}
+    column_names = ['Object', 'ObjectBeg', 'ObjectEnd', 'PartNumber', 'CompType', 'CompId_gapLength', 
+        'CompBeg_gapType', 'CompEnd_linkage', 'Orientation_linkEvidence']
+
+    """Add metadata elements"""
+    MetadataElement(name="object", default=1, 
+        desc="This is the identifier for the object being assembled. This can be a chromosome, scaffold or contig", param=metadata.ColumnParameter)
+    MetadataElement(name="objectBeg", default=2, 
+        desc="The starting coordinates of the component/gap on the object in column 1", param=metadata.ColumnParameter)
+    MetadataElement(name="objectEnd", default=3, 
+        desc="The ending coordinates of the component/gap on the object in column 1", param=metadata.ColumnParameter)
+    MetadataElement(name="partNumber", default=4, 
+        desc="The line count for the components/gaps that make up the object described in column 1", param=metadata.ColumnParameter)
+    MetadataElement(name="compType", default=9, desc="The sequencing status of the component", param=metadata.ColumnParameter)
+    MetadataElement(name="compId_gapLength", default=5, 
+        desc="If column 5 not equal to N or U, this is a unique identifier for the sequence component. Otherwise his column represents the length of the gap", 
+        param=metadata.ColumnParameter)
+    MetadataElement(name="compBeg_gapType", default=6, 
+        desc="If column 5 not equal to N or U, this column specifies the beginning of the part of the component sequence. Otherwise this column specifies the gap type.", 
+        param=metadata.ColumnParameter)
+    MetadataElement(name="compEnd_linkage", default=7, 
+        desc="If column 5 not equal to N or U, this column specifies the end of the part of the component. Otherwise his column indicates if there is evidence of linkage between the adjacent lines", 
+        param=metadata.ColumnParameter)
+    MetadataElement(name="orientation_linkEvidence", default=8, 
+        desc="If column 5 not equal to N or U, this column specifies the orientation of the component. Otherwise this specifies the type of evidence used to assert linkage", 
+        param=metadata.ColumnParameter)
+
+    MetadataElement(name="columns", default=9, desc="Number of columns", readonly=True, visible=False)
+
+    def sniff(self, filename):
+        return False
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod(sys.modules[__name__])
