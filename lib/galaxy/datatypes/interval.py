@@ -1557,17 +1557,17 @@ class AGP(Interval):
         desc="The ending coordinates of the component/gap on the object in column 1", param=metadata.ColumnParameter)
     MetadataElement(name="partNumber", default=4, 
         desc="The line count for the components/gaps that make up the object described in column 1", param=metadata.ColumnParameter)
-    MetadataElement(name="compType", default=9, desc="The sequencing status of the component", param=metadata.ColumnParameter)
-    MetadataElement(name="compId_gapLength", default=5, 
+    MetadataElement(name="compType", default=5, desc="The sequencing status of the component", param=metadata.ColumnParameter)
+    MetadataElement(name="compId_gapLength", default=6, 
         desc="If column 5 not equal to N or U, this is a unique identifier for the sequence component. Otherwise his column represents the length of the gap", 
         param=metadata.ColumnParameter)
-    MetadataElement(name="compBeg_gapType", default=6, 
+    MetadataElement(name="compBeg_gapType", default=7, 
         desc="If column 5 not equal to N or U, this column specifies the beginning of the part of the component sequence. Otherwise this column specifies the gap type.", 
         param=metadata.ColumnParameter)
-    MetadataElement(name="compEnd_linkage", default=7, 
+    MetadataElement(name="compEnd_linkage", default=8, 
         desc="If column 5 not equal to N or U, this column specifies the end of the part of the component. Otherwise his column indicates if there is evidence of linkage between the adjacent lines", 
         param=metadata.ColumnParameter)
-    MetadataElement(name="orientation_linkEvidence", default=8, 
+    MetadataElement(name="orientation_linkEvidence", default=9, 
         desc="If column 5 not equal to N or U, this column specifies the orientation of the component. Otherwise this specifies the type of evidence used to assert linkage", 
         param=metadata.ColumnParameter)
 
