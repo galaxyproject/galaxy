@@ -662,6 +662,7 @@ class DefaultToolAction:
                             job.job_id = current_job.id
             for jtoidca in old_job.output_dataset_collections:
                 jtoidca.dataset_collection.replace_failed_elements(remapped_hdas)
+            current_job.hide_outputs(flush=False)
         except Exception:
             log.exception('Cannot remap rerun dependencies.')
 
