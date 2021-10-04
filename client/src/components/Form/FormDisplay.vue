@@ -170,7 +170,7 @@ export default {
                     input.value = newValue;
                 }
             });
-            this.onChange();
+            this.onChangeForm();
         },
         onChangeForm(requiresRequest = true) {
             this.formInputs = JSON.parse(JSON.stringify(this.formInputs));
