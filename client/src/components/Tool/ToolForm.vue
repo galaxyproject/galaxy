@@ -168,19 +168,16 @@ export default {
         this.requestTool().then(() => {
             const Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel) {
-                console.debug("ToolForm::created - Listening to history changes.");
-                Galaxy.currHistoryPanel.collection.on("change", () => {
-                    this.onUpdate();
-                    console.debug("ToolForm::created - Loading history changes.");
-                });
+                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
+                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
             }
         });
     },
     beforeDestroy() {
         const Galaxy = getGalaxyInstance();
         if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.collection.off("change");
-            console.debug("ToolForm::beforeDestroy - Stopped listening to history changes.");
+            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
+            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
         }
     },
     computed: {
@@ -214,6 +211,10 @@ export default {
         },
         reuseAllowed(user) {
             return allowCachedJobs(user.preferences);
+        },
+        onHistoryChange() {
+            console.debug(`ToolForm::created - Loading history changes. [${this.id}]`);
+            this.onUpdate();
         },
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
