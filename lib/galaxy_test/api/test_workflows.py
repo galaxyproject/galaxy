@@ -1136,11 +1136,12 @@ test_data:
                                  },
                       "failbool": "false",
                       "rerun_remap_job_id": failed_step['jobs'][0]['id']}
-            self.dataset_populator.run_tool(
+            run_response = self.dataset_populator.run_tool(
                 tool_id='collection_creates_list_of_pairs',
                 inputs=inputs,
                 history_id=history_id,
                 assert_ok=True)
+            assert not run_response["output_collections"][0]["visible"]
             self.dataset_populator.wait_for_job(paused_step['jobs'][0]['id'])
             invocation = self.workflow_populator.get_invocation(job_summary.invocation_id, step_details=True)
             rerun_step = invocation['steps'][1]
