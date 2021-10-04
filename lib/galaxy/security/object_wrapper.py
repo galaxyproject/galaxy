@@ -60,16 +60,6 @@ __WRAP_SETS__ = (set, frozenset, )
 __WRAP_MAPPINGS__ = (dict, UserDict, )
 
 
-def coerce(x, y):
-    # __coerce__ doesn't do anything under Python anyway.
-    return x
-
-
-def cmp(x, y):
-    # Builtin in Python 2, but not Python 3.
-    return (x > y) - (x < y)
-
-
 def sanitize_lists_to_string(value):
     return _sanitize_lists_to_string(
         value, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS)
@@ -222,9 +212,6 @@ class SafeStringWrapper:
 
     def __bool__(self):
         return bool(self.unsanitized)
-    __nonzero__ = __bool__
-
-    # Do not implement __unicode__, we will rely on __str__
 
     def __getattr__(self, name):
         if name in SafeStringWrapper.__NO_WRAP_NAMES__:
@@ -386,11 +373,6 @@ class SafeStringWrapper:
 
     def __index__(self):
         return self.unsanitized.index()
-
-    def __coerce__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return coerce(self.unsanitized, other)
 
     def __enter__(self):
         return self.unsanitized.__enter__()
