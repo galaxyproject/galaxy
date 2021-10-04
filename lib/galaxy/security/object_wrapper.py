@@ -176,8 +176,7 @@ class SafeStringWrapper:
     is of a type found in __DONT_SANITIZE_TYPES__ + __DONT_WRAP_TYPES__, where e.g. ~(strings
     will still be sanitized, but not wrapped), and e.g. integers will have neither.
     """
-    __UNSANITIZED_ATTRIBUTE_NAME__ = 'unsanitized'
-    __NO_WRAP_NAMES__ = ['__safe_string_wrapper_function__', '__class__', __UNSANITIZED_ATTRIBUTE_NAME__]
+    __NO_WRAP_NAMES__ = ['__safe_string_wrapper_function__', '__class__', 'unsanitized']
 
     def __new__(cls, *arg, **kwd):
         # We need to define a __new__ since, we are subclassing from e.g. immutable str, which internally sets data

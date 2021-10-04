@@ -211,6 +211,10 @@ def test_unwrap():
 
 class TestSafeStringWrapper:
 
+    def test_constants(self):
+        assert SafeStringWrapper.__NO_WRAP_NAMES__ == [
+            '__safe_string_wrapper_function__', '__class__', 'unsanitized']
+
     def test_do_not_set_attrs_of_type_instancestate(self):
         wrapper = SafeStringWrapper(Foo())
 
