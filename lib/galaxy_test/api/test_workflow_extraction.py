@@ -190,7 +190,7 @@ steps:
         $link: text_input1
 test_data:
   text_input1:
-    type: paired
+    collection_type: paired
 """)
         job_id = self._job_id_for_tool(jobs_summary.jobs, "collection_paired_test")
         downloaded_workflow = self._extract_and_download_workflow(
@@ -229,7 +229,7 @@ steps:
         $link: noop/out_file1
 test_data:
   text_input1:
-    type: "list:paired"
+    collection_type: "list:paired"
         """)
         job1_id = self._job_id_for_tool(jobs_summary.jobs, "cat1")
         job2_id = self._job_id_for_tool(jobs_summary.jobs, "cat_collection")
@@ -349,7 +349,7 @@ steps:
         $link: cat_pairs/out_file1
 test_data:
   text_input1:
-    type: list
+    collection_type: list
     elements:
       - identifier: samp1
         content: "samp1\t10.0\nsamp2\t20.0\n"

@@ -1050,7 +1050,7 @@ steps:
       input1: fail_identifier_1/out_file1
 test_data:
   input_datasets:
-    type: list
+    collection_type: list
     elements:
       - identifier: fail
         value: 1.fastq
@@ -1083,6 +1083,61 @@ test_data:
             replaced_hda_id = run_dict['outputs'][0]['id']
             replaced_hda = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=replaced_hda_id, wait=True, assert_ok=False)
             assert not replaced_hda['visible'], replaced_hda
+
+    def test_workflow_resume_with_mapped_over_collection_input(self):
+        # Test that replacement and resume also works if the failed job re-run works on a input DCE
+        with self.dataset_populator.test_history() as history_id:
+            job_summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input_collection: collection
+steps:
+- tool_id: collection_creates_list_of_pairs
+  state:
+    failbool: true
+  in:
+    input1:
+      source: input_collection
+- tool_id: collection_creates_list_of_pairs
+  state:
+    failbool: false
+  in:
+    input1:
+      source: 1/list_output
+test_data:
+  input_collection:
+    collection_type: "list:list:paired"
+""", history_id=history_id, assert_ok=False, wait=True)
+            invocation = self.workflow_populator.get_invocation(job_summary.invocation_id, step_details=True)
+            # TODO: return steps sorted by order_index ? Why don't we do that ??
+            invocation['steps'].sort(key=lambda step: step['order_index'])
+            failed_step = invocation['steps'][1]
+            assert failed_step['jobs'][0]['state'] == 'error'
+            failed_hdca_id = failed_step['output_collections']['list_output']['id']
+            failed_hdca = self.dataset_populator.get_history_collection_details(history_id=history_id, content_id=failed_hdca_id, assert_ok=False)
+            assert failed_hdca['elements'][0]['object']['elements'][0]['object']['elements'][0]['object']['state'] == 'error'
+            paused_step = invocation['steps'][2]
+            # job not created, input in error state
+            assert paused_step['jobs'][0]['state'] == 'paused'
+            input_hdca = self.dataset_populator.get_history_collection_details(history_id=history_id, content_id=job_summary.inputs['input_collection']['id'], assert_ok=False)
+            # now re-run errored job
+            inputs = {"input1": {'values': [{'src': 'dce',
+                                             'id': input_hdca['elements'][0]['id']}]
+                                 },
+                      "failbool": "false",
+                      "rerun_remap_job_id": failed_step['jobs'][0]['id']}
+            run_response = self.dataset_populator.run_tool(
+                tool_id='collection_creates_list_of_pairs',
+                inputs=inputs,
+                history_id=history_id,
+                assert_ok=True)
+            assert not run_response["output_collections"][0]["visible"]
+            self.dataset_populator.wait_for_job(paused_step['jobs'][0]['id'])
+            invocation = self.workflow_populator.get_invocation(job_summary.invocation_id, step_details=True)
+            rerun_step = invocation['steps'][1]
+            assert rerun_step['jobs'][0]['state'] == 'ok'
+            replaced_hdca = self.dataset_populator.get_history_collection_details(history_id=history_id, content_id=failed_hdca_id, assert_ok=False)
+            assert replaced_hdca['elements'][0]['object']['elements'][0]['object']['elements'][0]['object']['state'] == 'ok'
 
     @skip_without_tool('multi_data_optional')
     def test_workflow_list_list_multi_data_map_over(self):
@@ -1306,7 +1361,7 @@ steps:
       reference: reference
 test_data:
   input_fastqs:
-    type: list
+    collection_type: list
     elements:
       - identifier: samp1
         value: 1.fastq
@@ -1553,7 +1608,7 @@ steps:
     join_identifier: '-'
 test_data:
   input_fastqs:
-    type: list
+    collection_type: list
     elements:
       - identifier: samp1
         content: "0\n1"
@@ -1668,7 +1723,7 @@ steps:
         $link: filtered_collection
 """, test_data="""
 input_c:
-  type: list
+  collection_type: list
   elements:
     - identifier: i1
       content: "0"
@@ -1726,7 +1781,7 @@ steps:
       input1: input1
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -1827,7 +1882,7 @@ steps:
       input1: input1
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -1869,7 +1924,7 @@ steps:
       input1: text_input
 """, test_data="""
 text_input:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -1923,7 +1978,7 @@ text_input:
         with self.dataset_populator.test_history() as history_id:
             test_data = """
 outer_input:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -2177,7 +2232,7 @@ steps:
           change_datatype: csv
 """, test_data="""
 text_input1:
-  type: "list:paired"
+  collection_type: "list:paired"
 """, history_id=history_id)
             hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=4)
             assert hdca['collection_type'] == 'list:paired'
@@ -2200,7 +2255,7 @@ steps:
       input_collect: text_input1
 """, test_data="""
 text_input1:
-  type: "list:paired"
+  collection_type: "list:paired"
 """, history_id=history_id)
             hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=1)
             assert hdca['collection_type'] == 'list:paired'
@@ -2509,7 +2564,7 @@ input1:
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, test_data="""
 input1:
-  type: paired
+  collection_type: paired
   name: the_dataset_pair
   elements:
     - identifier: forward
@@ -2721,7 +2776,7 @@ steps:
       rename: "replaced_param_collection"
 test_data:
   text_input1:
-    type: list
+    collection_type: list
     elements:
       - identifier: A
         content: A
@@ -2986,7 +3041,7 @@ steps:
         with self.dataset_populator.test_history() as history_id:
             test_data = """
 input1:
-  type: list
+  collection_type: list
   elements:
     - identifier: A
       content: A
@@ -3035,7 +3090,7 @@ steps:
         rename: "my new name"
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -3070,7 +3125,7 @@ steps:
         rename: "#{input1} suffix"
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -3449,7 +3504,7 @@ fasta_input:
   name: fasta1
   file_type: fasta
 fastq_inputs:
-  type: list
+  collection_type: list
   name: the_dataset_pair
   elements:
     - identifier: forward
@@ -3509,7 +3564,7 @@ steps:
         hide: true
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -3615,7 +3670,7 @@ steps:
             - "name:foo"
 """, test_data="""
 input1:
-  type: list
+  collection_type: list
   name: the_dataset_list
   elements:
     - identifier: el1
@@ -4258,7 +4313,7 @@ steps:
        input1: input_c
 """, test_data="""
 input_c:
-  type: list
+  collection_type: list
   elements:
     - identifier: i1
       content: "0"

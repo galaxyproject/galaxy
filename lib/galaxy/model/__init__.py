@@ -1543,6 +1543,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 log.exception(f"Error trying to determine if job {self.id} is remappable")
         return False
 
+    def hide_outputs(self, flush=True):
+        for output_association in self.output_datasets + self.output_dataset_collection_instances:
+            output_association.item.visible = False
+        if flush:
+            object_session(self).flush()
+
 
 class Task(Base, JobLike, RepresentById):
     """
@@ -1766,6 +1772,10 @@ class JobToOutputDatasetAssociation(Base, RepresentById):
         self.name = name
         self.dataset = dataset
 
+    @property
+    def item(self):
+        return self.dataset
+
 
 class JobToInputDatasetCollectionAssociation(Base, RepresentById):
     __tablename__ = 'job_to_input_dataset_collection'
@@ -1815,6 +1825,10 @@ class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
     def __init__(self, name, dataset_collection_instance):
         self.name = name
         self.dataset_collection_instance = dataset_collection_instance
+
+    @property
+    def item(self):
+        return self.dataset_collection_instance
 
 
 # A DatasetCollection will be mapped to at most one job per tool output
@@ -5365,12 +5379,11 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
         return new_collection
 
     def replace_failed_elements(self, replacements):
-        for element in self.elements:
-            if element.element_object in replacements:
-                if element.element_type == 'hda':
-                    element.hda = replacements[element.element_object]
-                    element.hda.visible = False
-                # TODO: handle the case where elements are collections
+        hda_id_to_element = dict(self._get_nested_collection_attributes(return_entities=[DatasetCollectionElement], hda_attributes=['id']))
+        for failed, replacement in replacements.items():
+            element = hda_id_to_element.get(failed.id)
+            if element:
+                element.hda = replacement
 
     def set_from_dict(self, new_data):
         # Nothing currently editable in this class.
