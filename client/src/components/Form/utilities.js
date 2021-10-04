@@ -69,4 +69,34 @@ export function matchCase(input, value) {
         }
     }
     return -1;
+};
+
+/** Match server validation response to highlight errors
+ * @param{dict}   response  - Nested dictionary with error messages
+ * @param{dict}   index     - Index of input elements
+ */
+export function matchErrors(response, index) {
+    var result = {};
+    function search(id, head) {
+        if (typeof head === "string") {
+            var input_id = index[id];
+            if (input_id) {
+                result[input_id] = head;
+            }
+        } else {
+            for (var i in head) {
+                var new_id = i;
+                if (id !== "") {
+                    var separator = "|";
+                    if (head instanceof Array) {
+                        separator = "_";
+                    }
+                    new_id = id + separator + new_id;
+                }
+                search(new_id, head[i]);
+            }
+        }
+    }
+    search("", response);
+    return result;
 }

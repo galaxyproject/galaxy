@@ -16,7 +16,7 @@
 
 <script>
 import FormInputs from "./FormInputs";
-import { visitInputs } from "./utilities";
+import { visitInputs, matchErrors } from "./utilities";
 export default {
     components: {
         FormInputs,
@@ -98,9 +98,13 @@ export default {
             this.$emit("onValidation", this.validation);
         },
         errors() {
-            /*this.$nextTick(() => {
-                this.form.errors(this.errors);
-            });*/
+            this.resetError();
+            if (this.errors) {
+                const errorMessages = matchErrors(this.errors, this.formIndex);
+                for (let inputId in errorMessages) {
+                    this.setError(inputId, errorMessages[inputId]);
+                }
+            }
         },
         replaceParams() {
             this.onReplaceParams();
@@ -211,7 +215,10 @@ export default {
             }
         },
         setError(inputId, message) {
-            this.formIndex[inputId].error = message;
+            const input = this.formIndex[inputId];
+            if (input) {
+                input.error = message;
+            }
         },
         resetError() {
             Object.values(this.formIndex).forEach((input) => {

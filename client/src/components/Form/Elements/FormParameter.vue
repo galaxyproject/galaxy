@@ -2,7 +2,7 @@
     <div ref="parameter" />
 </template>
 <script>
-import ParameterFactory from "mvc/form/form-parameters";
+import ParameterFactory from "./parameters";
 
 export default {
     props: {
