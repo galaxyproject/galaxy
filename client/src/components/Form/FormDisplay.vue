@@ -64,13 +64,19 @@ export default {
             default: null,
         },
     },
+    created() {
+        this.onCloneInputs();
+    },
     data() {
         return {
             formData: {},
-            formInputs: this.inputs.slice(),
+            formInputs: [],
         };
     },
     watch: {
+        id() {
+            this.onCloneInputs();
+        },
         inputs() {
             const newAttributes = {};
             visitInputs(this.inputs, (input, name) => {
@@ -170,6 +176,9 @@ export default {
         },
         onChangeForm(requiresRequest = true) {
             this.formInputs = JSON.parse(JSON.stringify(this.formInputs));
+        },
+        onCloneInputs() {
+            this.formInputs = JSON.parse(JSON.stringify(this.inputs));
         },
         onChange(requiresRequest = true) {
             const params = {};
