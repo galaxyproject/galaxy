@@ -73,6 +73,7 @@
                 :id="getPrefix(input.name)"
                 :title="input.label"
                 :type="input.type"
+                :error="input.error"
                 :help="input.help"
                 :attributes="input.attributes || input"
                 :backbonejs="true"

@@ -69,6 +69,7 @@ export default {
     data() {
         return {
             formData: {},
+            formIndex: {},
             formInputs: [],
         };
     },
@@ -107,7 +108,7 @@ export default {
     },
     computed: {
         validation() {
-            for(let key in this.formData) {
+            for (let key in this.formData) {
                 return [key, "message"];
             }
             return null;
@@ -169,24 +170,32 @@ export default {
     },
     methods: {
         onReplaceParams() {
-            visitInputs(this.formInputs, (input, name) => {
-                const newValue = this.replaceParams[name];
-                if (newValue != undefined) {
-                    input.value = newValue;
+            Object.entries(this.replaceParams).forEach(([key, value]) => {
+                const input = this.formIndex[key];
+                if (input) {
+                    input.value = value;
                 }
             });
-            this.onChangeForm();
+            this.onChange();
+        },
+        onCreateIndex() {
+            this.formIndex = {};
+            visitInputs(this.formInputs, (input, name) => {
+                this.formIndex[name] = input;
+            });
         },
         onChangeForm(requiresRequest = true) {
             this.formInputs = JSON.parse(JSON.stringify(this.formInputs));
+            this.onCreateIndex();
         },
         onCloneInputs() {
             this.formInputs = JSON.parse(JSON.stringify(this.inputs));
+            this.onCreateIndex();
         },
         onChange(requiresRequest = true) {
             const params = {};
-            visitInputs(this.formInputs, (input, name) => {
-                params[name] = input.value;
+            Object.entries(this.formIndex).forEach(([key, input]) => {
+                params[key] = input.value;
             });
             if (JSON.stringify(params) != JSON.stringify(this.formData)) {
                 this.formData = params;
