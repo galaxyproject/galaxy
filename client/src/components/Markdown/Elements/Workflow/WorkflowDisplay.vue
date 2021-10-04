@@ -109,5 +109,6 @@ export default {
 <style scoped>
 .content-height {
     max-height: 15rem;
+    overflow-y: auto;
 }
 </style>

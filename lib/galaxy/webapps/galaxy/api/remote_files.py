@@ -95,7 +95,7 @@ class FastAPIRemoteFiles:
         user_ctx: ProvidesUserContext = DependsOnTrans,
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
-        return self.manager.get_files_source_plugins()
+        return self.manager.get_files_source_plugins(user_ctx)
 
 
 class RemoteFilesAPIController(BaseGalaxyAPIController):
@@ -136,4 +136,4 @@ class RemoteFilesAPIController(BaseGalaxyAPIController):
         :returns:   list of configured plugins
         :rtype:     list
         """
-        return self.manager.get_files_source_plugins()
+        return self.manager.get_files_source_plugins(trans)

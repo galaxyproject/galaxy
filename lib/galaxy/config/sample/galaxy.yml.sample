@@ -1388,12 +1388,9 @@ galaxy:
   # <project_name> -> Settings -> API Keys.
   #sentry_dsn: null
 
-  # Sentry slow request logging.  Requests slower than the threshold
-  # indicated below will be sent as events to the configured Sentry
-  # server (above, sentry_dsn).  A value of '0' is disabled.  For
-  # example, you would set this to .005 to log all queries taking longer
-  # than 5 milliseconds.
-  #sentry_sloreq_threshold: 0.0
+  # Determines the minimum log level that will be sent as an event to
+  # Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
+  #sentry_event_level: ERROR
 
   # Log to statsd Statsd is an external statistics aggregator
   # (https://github.com/etsy/statsd) Enabling the following options will

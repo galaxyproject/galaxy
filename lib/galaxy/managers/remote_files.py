@@ -9,8 +9,6 @@ from typing import (
     Optional,
 )
 
-from pydantic.tools import parse_obj_as
-
 from galaxy import exceptions
 from galaxy.app import MinimalManagerApp
 from galaxy.files import (
@@ -115,10 +113,11 @@ class RemoteFilesManager:
 
         return index
 
-    def get_files_source_plugins(self) -> FilesSourcePluginList:
+    def get_files_source_plugins(self, user_context: ProvidesUserContext) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
-        plugins = self._file_sources.plugins_to_dict()
-        return parse_obj_as(FilesSourcePluginList, plugins)
+        user_file_source_context = ProvidesUserFileSourcesUserContext(user_context)
+        plugins = self._file_sources.plugins_to_dict(user_context=user_file_source_context)
+        return FilesSourcePluginList.parse_obj(plugins)
 
     @property
     def _file_sources(self) -> ConfiguredFileSources:

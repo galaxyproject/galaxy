@@ -1369,10 +1369,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # If sentry logging is enabled, log here before propogating up to
     # the error middleware
     sentry_dsn = conf.get('sentry_dsn', None)
-    sentry_sloreq = float(conf.get('sentry_sloreq_threshold', 0))
     if sentry_dsn:
-        from galaxy.web.framework.middleware.sentry import Sentry
-        app = wrap_if_allowed(app, stack, Sentry, args=(sentry_dsn, sentry_sloreq))
+        from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
+        app = wrap_if_allowed(app, stack, SentryWsgiMiddleware)
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance

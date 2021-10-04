@@ -193,10 +193,22 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
         self.sentry_client = None
         if self.config.sentry_dsn:
+            event_level = self.config.sentry_event_level.upper()
+            assert event_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], f"Invalid sentry event level '{self.config.sentry.event_level}'"
 
             def postfork_sentry_client():
-                import raven
-                self.sentry_client = raven.Client(self.config.sentry_dsn, transport=raven.transport.HTTPTransport)
+                import sentry_sdk
+                from sentry_sdk.integrations.logging import LoggingIntegration
+
+                sentry_logging = LoggingIntegration(
+                    level=logging.INFO,  # Capture info and above as breadcrumbs
+                    event_level=getattr(logging, event_level)  # Send errors as events
+                )
+                self.sentry_client = sentry_sdk.init(
+                    self.config.sentry_dsn,
+                    release=f"{self.config.version_major}.{self.config.version_minor}",
+                    integrations=[sentry_logging]
+                )
 
             self.application_stack.register_postfork_function(postfork_sentry_client)
 

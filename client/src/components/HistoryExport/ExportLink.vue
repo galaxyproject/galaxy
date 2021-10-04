@@ -55,7 +55,7 @@ export default {
             this.details = true;
         },
         copyUrl() {
-            copy(this.latestExportUrl, "Export URL copied to your clipboard");
+            copy(this.link, "Export URL copied to your clipboard");
         },
     },
 };

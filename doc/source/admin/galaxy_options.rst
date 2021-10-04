@@ -2788,18 +2788,16 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``sentry_sloreq_threshold``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+``sentry_event_level``
+~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Sentry slow request logging.  Requests slower than the threshold
-    indicated below will be sent as events to the configured Sentry
-    server (above, sentry_dsn).  A value of '0' is disabled.  For
-    example, you would set this to .005 to log all queries taking
-    longer than 5 milliseconds.
-:Default: ``0.0``
-:Type: float
+    Determines the minimum log level that will be sent as an event to
+    Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or
+    CRITICAL.
+:Default: ``ERROR``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~
