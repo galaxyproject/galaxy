@@ -25,9 +25,6 @@ def lint_help(tool_xml, lint_ctx):
     lint_ctx.valid("Tool contains help section.")
     invalid_rst = rst_invalid(help)
 
-    if "TODO" in help:
-        lint_ctx.warn("Help contains TODO text.")
-
     if invalid_rst:
         lint_ctx.warn(f"Invalid reStructuredText found in help - [{invalid_rst}].")
     else:

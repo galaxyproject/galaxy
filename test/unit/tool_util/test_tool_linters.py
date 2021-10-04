@@ -8,6 +8,7 @@ from galaxy.tool_util.linters import (
     inputs,
     outputs,
     tests,
+    todo
 )
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
@@ -46,6 +47,27 @@ REQUIREMENT_WO_VERSION = """
     </inputs>
 </tool>
 """
+
+TOOL_WITH_TODOS = """
+<tool name="mastodon" id="masTODOn" version="TODO">
+    <description>TODO</description>
+    <command><![CDATA[
+    ##TODO
+    ]]>
+    </command>
+    <inputs>
+        <param name="label_select" type="select" label="Points to label" help="TODO">
+            <option value="none" selected="True">todo</option>
+            <option value="none" selected="True">mastodon</option>
+        </param>
+    </inputs>
+    <help><![CDATA[
+    TODO
+    ]]>
+    </help>
+</tool>
+"""
+
 
 NO_SECTIONS_XML = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
@@ -282,6 +304,17 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
 
 TESTS = [
     (
+        TOOL_WITH_TODOS, todo.lint_todo,
+        lambda x:
+            'tool attribute "version" contains a "TODO"' in x.warn_messages
+            and 'description text contains a "TODO"' in x.warn_messages
+            and 'command text contains a "TODO"' in x.warn_messages
+            and 'param attribute "help" contains a "TODO"' in x.warn_messages
+            and 'option text contains a "TODO"' in x.warn_messages
+            and 'help text contains a "TODO"' in x.warn_messages
+            and len(x.warn_messages) == 6 and len(x.error_messages) == 0
+    ),
+    (
         WHITESPACE_IN_VERSIONS_AND_NAMES, general.lint_general,
         lambda x:
             "Tool version contains whitespace, this may cause errors: [ 1.0.1 ]." in x.warn_messages
@@ -400,6 +433,7 @@ TESTS = [
 ]
 
 TEST_IDS = [
+    'lint for todos',
     'hazardous whitespace',
     'requirement without version',
     'lint no sections',
