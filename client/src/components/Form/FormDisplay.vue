@@ -191,6 +191,7 @@ export default {
             this.onCreateIndex();
         },
         onChange(requiresRequest = true) {
+            this.onCreateIndex();
             const params = {};
             Object.entries(this.formIndex).forEach(([key, input]) => {
                 params[key] = input.value;

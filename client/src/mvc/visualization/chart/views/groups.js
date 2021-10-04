@@ -5,7 +5,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
-import Repeat from "mvc/form/form-repeat";
+import Repeat from "./repeat";
 import { visitInputs } from "components/Form/utilities";
 import FormDisplay from "components/Form/FormDisplay";
 import { appendVueComponent } from "utils/mountVueComponent";
@@ -71,9 +71,10 @@ var GroupView = Backbone.View.extend({
                             inputs: inputs,
                         });
                         instance.$on("onChange", (data) => {
+                            console.log(data);
                             self.group.set(data);
-                            self.chart.set("modified", true);
-                            self.chart.trigger("redraw");
+                            //self.chart.set("modified", true);
+                            //self.chart.trigger("redraw");
                         });
                         process.resolve();
                     },

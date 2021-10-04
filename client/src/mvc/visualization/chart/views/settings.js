@@ -31,7 +31,7 @@ export default Backbone.View.extend({
             this.chart.settings.set("__use_panels", panel_option == "yes" ? "true" : "false");
         }
         this.$el.empty();
-        if (_.size(inputs) > 0) {
+        if (inputs.length > 0) {
             visitInputs(inputs, function (input, name) {
                 var model_value = self.chart.settings.get(name);
                 if (model_value !== undefined && !input.hidden) {

@@ -105,7 +105,7 @@ export default {
     props: {
         inputs: {
             type: Array,
-            required: true,
+            default: null,
         },
         prefix: {
             type: String,
