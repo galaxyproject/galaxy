@@ -10,7 +10,7 @@ from json import (
     dumps,
     load,
 )
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, cast, Dict, List, Optional, Union
 from uuid import uuid4
 
 from bdbag import bdbag_api as bdb
@@ -122,6 +122,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         Legacy exports used 'hid' but associated objects may not be from the same history
         and a history may contain multiple objects with the same 'hid'.
         """
+
+    @property
+    def file_source_root(self) -> Optional[str]:
+        """Source of valid file data."""
+        return None
 
     def trust_hid(self, obj_attrs) -> bool:
         """Trust HID when importing objects into a new History."""
@@ -275,6 +280,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 metadata = dataset_attrs['metadata']
 
                 model_class = dataset_attrs.get("model_class", "HistoryDatasetAssociation")
+                dataset_instance: model.DatasetInstance
                 if model_class == "HistoryDatasetAssociation":
                     # Create dataset and HDA.
                     dataset_instance = model.HistoryDatasetAssociation(name=dataset_attrs['name'],
@@ -321,15 +327,17 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 self._flush()
 
                 if model_class == "HistoryDatasetAssociation":
+                    hda = cast(model.HistoryDatasetAssociation, dataset_instance)
                     # don't use add_history to manage HID handling across full import to try to preserve
                     # HID structure.
-                    dataset_instance.history = history
+                    hda.history = history
                     if new_history and self.trust_hid(dataset_attrs):
-                        dataset_instance.hid = dataset_attrs['hid']
+                        hda.hid = dataset_attrs['hid']
                     else:
-                        object_import_tracker.requires_hid.append(dataset_instance)
+                        object_import_tracker.requires_hid.append(hda)
 
                 self._flush()
+                file_source_root = self.file_source_root
 
                 # If dataset is in the dictionary - we will assert this dataset is tied to the Galaxy instance
                 # and the import options are configured for allowing editing the dataset (e.g. for metadata setting).
@@ -340,15 +348,16 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 else:
                     file_name = dataset_attrs.get('file_name')
                     if file_name:
+                        assert file_source_root
                         # Do security check and move/copy dataset data.
-                        archive_path = os.path.abspath(os.path.join(self.archive_dir, file_name))
+                        archive_path = os.path.abspath(os.path.join(file_source_root, file_name))
                         if os.path.islink(archive_path):
                             raise MalformedContents(f"Invalid dataset path: {archive_path}")
 
                         temp_dataset_file_name = \
                             os.path.realpath(archive_path)
 
-                        if not in_directory(temp_dataset_file_name, self.archive_dir):
+                        if not in_directory(temp_dataset_file_name, file_source_root):
                             raise MalformedContents(f"Invalid dataset path: {temp_dataset_file_name}")
 
                     if not file_name or not os.path.exists(temp_dataset_file_name):
@@ -364,14 +373,15 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         # Import additional files if present. Histories exported previously might not have this attribute set.
                         dataset_extra_files_path = dataset_attrs.get('extra_files_path', None)
                         if dataset_extra_files_path:
+                            assert file_source_root
                             dir_name = dataset_instance.dataset.extra_files_path_name
-                            dataset_extra_files_path = os.path.join(self.archive_dir, dataset_extra_files_path)
+                            dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
                             for root, _dirs, files in safe_walk(dataset_extra_files_path):
                                 extra_dir = os.path.join(dir_name, root.replace(dataset_extra_files_path, '', 1).lstrip(os.path.sep))
                                 extra_dir = os.path.normpath(extra_dir)
                                 for extra_file in files:
                                     source = os.path.join(root, extra_file)
-                                    if not in_directory(source, self.archive_dir):
+                                    if not in_directory(source, file_source_root):
                                         raise MalformedContents(f"Invalid dataset path: {source}")
                                     self.object_store.update_from_file(
                                         dataset_instance.dataset, extra_dir=extra_dir,
@@ -833,6 +843,10 @@ def get_import_model_store_for_directory(archive_dir, **kwd):
 
 
 class BaseDirectoryImportModelStore(ModelImportStore):
+
+    @property
+    def file_source_root(self):
+        return self.archive_dir
 
     def defines_new_history(self):
         new_history_attributes = os.path.join(self.archive_dir, ATTRS_FILENAME_HISTORY)
