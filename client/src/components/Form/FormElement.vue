@@ -1,7 +1,7 @@
 <template>
     <div :id="elementId" :class="['ui-form-element section-row', cls]" :tour_id="id">
         <div v-if="hasError" class="ui-form-error">
-            <span class="fa fa-arrow-down mr-1" />
+            <span class="fa fa-exclamation mr-1" />
             <span class="ui-form-error-text">{{ error }}</span>
         </div>
         <div class="ui-form-title">{{ title }}</div>
