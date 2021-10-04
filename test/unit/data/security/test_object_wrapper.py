@@ -228,6 +228,13 @@ class TestSafeStringWrapper:
         with pytest.raises(AttributeError):
             wrapper.bad_foo  # attr of type sqlalchemy.orm.state.InstanceState not set
 
+    def test__str__and__repr___(self):
+        foo = 'a<\va'  # valid char + mapped char + illegal char + valid char
+        wrapped_foo = wrap_with_safe_string(foo)
+        assert str(wrapped_foo) == 'a__lt__Xa'  # sanitized str(foo)
+        assert repr(wrapped_foo).startswith('SafeStringWrapper(str) object at')
+        assert repr(wrapped_foo).endswith('on: __sq__a__lt__Xx0ba__sq__')  # sanitized repr(foo)
+
     def test__lt__(self):
         foo, bar = 'a', 'b'
         wrapped_foo = wrap_with_safe_string(foo)
