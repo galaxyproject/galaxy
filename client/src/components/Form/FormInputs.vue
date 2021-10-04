@@ -127,10 +127,6 @@ export default {
             type: String,
             default: null,
         },
-        validation: {
-            type: Object,
-            default: null,
-        },
         errors: {
             type: Object,
             default: null,

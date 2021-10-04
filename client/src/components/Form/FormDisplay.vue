@@ -193,14 +193,19 @@ export default {
             });
             if (JSON.stringify(params) != JSON.stringify(this.formData)) {
                 this.formData = params;
+                Object.values(this.formIndex).forEach((input) => {
+                    input.error = null;
+                });
                 this.$emit("onChange", params, requiresRequest);
             }
         },
         onHighlight(validation, silent = false) {
             if (validation && validation.length == 2) {
-                console.log(validation);
+                const inputId = validation[0];
+                const message = validation[1];
+                this.formIndex[inputId].error = message;
                 if (!silent) {
-                    var element = document.querySelector(`#form-element-${validation[0]}`);
+                    var element = document.querySelector(`#form-element-${inputId}`);
                     if (element) {
                         document.querySelector(".center-panel").scrollTo(0, element.offsetTop);
                     }

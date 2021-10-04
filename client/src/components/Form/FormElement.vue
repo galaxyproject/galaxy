@@ -80,7 +80,7 @@ export default {
             return !!this.error;
         },
         cls() {
-            return this.hasError && "alert alert-danger";
+            return this.hasError && "alert alert-info";
         },
     },
 };
