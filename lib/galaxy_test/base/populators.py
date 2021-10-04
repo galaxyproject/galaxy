@@ -914,8 +914,8 @@ class BaseWorkflowPopulator(BasePopulator):
         self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout, assert_ok=assert_ok)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok, timeout=timeout)
 
-    def get_invocation(self, invocation_id):
-        r = self._get(f"invocations/{invocation_id}")
+    def get_invocation(self, invocation_id, step_details=False):
+        r = self._get(f"invocations/{invocation_id}", data={'step_details': step_details})
         r.raise_for_status()
         return r.json()
 
@@ -1649,7 +1649,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
 
     for key, value in test_data.items():
         is_dict = isinstance(value, dict)
-        if is_dict and ("elements" in value or value.get("type", None) in ["list:paired", "list", "paired"]):
+        if is_dict and ("elements" in value or value.get('collection_type')):
             elements_data = value.get("elements", [])
             elements = []
             for element_data in elements_data:
@@ -1667,13 +1667,14 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
                     element_data["src"] = "pasted"
                     element_data["paste_content"] = content
                 elements.append(element_data)
-            # TODO: make this collection_type
-            collection_type = value["type"]
             new_collection_kwds = {}
             if "name" in value:
                 new_collection_kwds["name"] = value["name"]
+            collection_type = value.get('collection_type', '')
             if collection_type == "list:paired":
                 fetch_response = dataset_collection_populator.create_list_of_pairs_in_history(history_id, contents=elements, **new_collection_kwds).json()
+            elif collection_type and ':' in collection_type:
+                fetch_response = {'outputs': [dataset_collection_populator.create_nested_collection(history_id, collection_type=collection_type, **new_collection_kwds).json()]}
             elif collection_type == "list":
                 fetch_response = dataset_collection_populator.create_list_in_history(history_id, contents=elements, direct_upload=True, **new_collection_kwds).json()
             else:
