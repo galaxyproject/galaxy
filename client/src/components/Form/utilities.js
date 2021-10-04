@@ -4,7 +4,7 @@ import _ from "underscore";
  * @param{dict}   inputs    - Nested dictionary of input elements
  * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
  */
-export var visitInputs = (inputs, callback, prefix, context) => {
+export function visitInputs(inputs, callback, prefix, context) {
     context = Object.assign({}, context);
     _.each(inputs, (input) => {
         if (input && input.type && input.name) {
@@ -41,24 +41,32 @@ export var visitInputs = (inputs, callback, prefix, context) => {
                 callback(node, name, context);
         }
     }
-};
+}
 
 /** Match conditional values to selected cases
  * @param{dict}   input     - Definition of conditional input parameter
  * @param{dict}   value     - Current value
  */
-export var matchCase = (input, value) => {
+export function matchCase(input, value) {
     if (input.test_param.type == "boolean") {
-        if (value == "true") {
-            value = input.test_param.truevalue || "true";
+        if (["true", true].includes(value)) {
+            if (input.test_param.truevalue !== undefined) {
+                value = input.test_param.truevalue;
+            } else {
+                value = "true";
+            }
         } else {
-            value = input.test_param.falsevalue || "false";
+            if (input.test_param.falsevalue !== undefined) {
+                value = input.test_param.falsevalue;
+            } else {
+                value = "false";
+            }
         }
     }
-    for (var i in input.cases) {
+    for (let i = 0; i < input.cases.length; i++) {
         if (input.cases[i].value == value) {
             return i;
         }
     }
     return -1;
-};
+}
