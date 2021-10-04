@@ -177,8 +177,8 @@ export default {
                 params[name] = input.value;
             });
             if (JSON.stringify(params) != JSON.stringify(this.formData)) {
-                this.$emit("onChange", params, requiresRequest);
                 this.formData = params;
+                this.$emit("onChange", params, requiresRequest);
             }
         },
         onHighlight(validation, silent = false) {

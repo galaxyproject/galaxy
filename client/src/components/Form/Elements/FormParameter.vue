@@ -24,7 +24,7 @@ export default {
     },
     watch: {
         attributes() {
-            if (this.parameter) {
+            if (this.parameter && this.parameter.field && this.parameter.field.update) {
                 this.parameter.field.update(this.attributes);
                 this.$emit("input", this.parameter.field.value());
             }
