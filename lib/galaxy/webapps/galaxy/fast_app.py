@@ -80,6 +80,11 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
 
     nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
     apache_xsendfile = gx_app.config.apache_xsendfile
+
+    if gx_app.config.sentry_dsn:
+        from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+        app.add_middleware(SentryAsgiMiddleware)
+
     if nginx_x_accel_redirect_base or apache_xsendfile:
 
         @app.middleware("http")
