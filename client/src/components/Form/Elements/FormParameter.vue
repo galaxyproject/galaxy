@@ -25,7 +25,10 @@ export default {
     watch: {
         value() {
             if (this.parameter && this.parameter.field) {
-                this.parameter.field.value(this.value);
+                const currentValue = this.parameter.field.value();
+                if (JSON.stringify(this.value) !== JSON.stringify(currentValue)) {
+                    this.parameter.field.value(this.value);
+                }
             }
         },
         attributes() {
