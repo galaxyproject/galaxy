@@ -76,8 +76,13 @@ export default {
             visitInputs(this.inputs, (input, name) => {
                 newAttributes[name] = input;
             });
-            console.log(newAttributes);
-            this.onReplaceAttributes(newAttributes);
+            visitInputs(this.formInputs, (input, name) => {
+                const newValue = newAttributes[name];
+                if (newValue != undefined) {
+                    input.attributes = newValue;
+                }
+            });
+            this.onChangeForm();
         },
         validationScrollTo() {
             //this.onHighlight(this.validationScrollTo);
@@ -154,15 +159,6 @@ export default {
         },
     },
     methods: {
-        onReplaceAttributes(newAttributes) {
-            visitInputs(this.formInputs, (input, name) => {
-                const newValue = newAttributes[name];
-                if (newValue != undefined) {
-                    input.attributes = newValue;
-                }
-            });
-            this.onChangeForm();
-        },
         onReplaceParams() {
             visitInputs(this.formInputs, (input, name) => {
                 const newValue = this.replaceParams[name];
