@@ -193,9 +193,7 @@ export default {
             });
             if (JSON.stringify(params) != JSON.stringify(this.formData)) {
                 this.formData = params;
-                Object.values(this.formIndex).forEach((input) => {
-                    input.error = null;
-                });
+                this.resetError();
                 this.$emit("onChange", params, requiresRequest);
             }
         },
@@ -203,7 +201,7 @@ export default {
             if (validation && validation.length == 2) {
                 const inputId = validation[0];
                 const message = validation[1];
-                this.formIndex[inputId].error = message;
+                this.setError(inputId, message);
                 if (!silent) {
                     var element = document.querySelector(`#form-element-${inputId}`);
                     if (element) {
@@ -211,6 +209,14 @@ export default {
                     }
                 }
             }
+        },
+        setError(inputId, message) {
+            this.formIndex[inputId].error = message;
+        },
+        resetError() {
+            Object.values(this.formIndex).forEach((input) => {
+                input.error = null;
+            });
         },
     },
 };

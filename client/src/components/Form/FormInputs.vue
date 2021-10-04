@@ -127,10 +127,6 @@ export default {
             type: String,
             default: null,
         },
-        errors: {
-            type: Object,
-            default: null,
-        },
         onChange: {
             type: Function,
             required: true,
@@ -138,20 +134,6 @@ export default {
         onChangeForm: {
             type: Function,
             required: true,
-        },
-    },
-    data() {
-        return {
-            formData: {},
-        };
-    },
-    watch: {
-        errors() {
-            /*this.$nextTick(() => {
-                if (this.initialErrors) {
-                    this.form.errors(this.errors);
-                }
-            });*/
         },
     },
     methods: {
