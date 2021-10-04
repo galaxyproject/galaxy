@@ -28,6 +28,10 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
       - name: Cache pip dir
         uses: actions/cache@v2
         with:
@@ -37,7 +41,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .venv
-          key: gxy-venv-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
       - name: Run tests
         run: ./run_tests.sh --skip_flakey_fails -api
         working-directory: 'galaxy root'

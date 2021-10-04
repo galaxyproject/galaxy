@@ -18,6 +18,10 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
       - name: Cache pip dir
         uses: actions/cache@v2
         with:
@@ -27,7 +31,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .tox
-          key: tox-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}-check-indexes
+          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-unit
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get -y install ffmpeg
       - name: Install tox
