@@ -1,5 +1,5 @@
 <template>
-    <div :class="['ui-form-element section-row', cls]" :tour_id="id">
+    <div :id="elementId" :class="['ui-form-element section-row', cls]" :tour_id="id">
         <div v-if="hasError" class="ui-form-error">
             <span class="fa fa-arrow-down mr-1" />
             <span class="ui-form-error-text">{{ error }}</span>
@@ -56,10 +56,6 @@ export default {
             type: Object,
             default: null,
         },
-        highlight: {
-            type: Object,
-            default: null,
-        },
     },
     computed: {
         currentValue: {
@@ -69,6 +65,9 @@ export default {
             set(val) {
                 this.$emit("input", val);
             },
+        },
+        elementId() {
+            return `form-element-${this.id}`;
         },
         hasError() {
             return !!this.error;

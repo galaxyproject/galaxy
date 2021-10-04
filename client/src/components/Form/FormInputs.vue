@@ -126,8 +126,8 @@ export default {
             type: String,
             default: null,
         },
-        validationScrollTo: {
-            type: Array,
+        validation: {
+            type: Object,
             default: null,
         },
         errors: {
@@ -149,13 +149,6 @@ export default {
         };
     },
     watch: {
-        validationScrollTo() {
-            //this.onHighlight(this.validationScrollTo);
-        },
-        validation() {
-            //this.onHighlight(this.validation, true);
-            //this.$emit("onValidation", this.validation);
-        },
         errors() {
             /*this.$nextTick(() => {
                 if (this.initialErrors) {
@@ -193,13 +186,6 @@ export default {
         repeatDelete(input, cacheId) {
             input.cache.splice(cacheId, 1);
             this.onChangeForm();
-        },
-        onHighlight(validation, silent = false) {
-            /*this.form.trigger("reset");
-            if (validation && validation.length == 2) {
-                const input_id = this.form.data.match(validation[0]);
-                this.form.highlight(input_id, validation[1], silent);
-            }*/
         },
     },
 };

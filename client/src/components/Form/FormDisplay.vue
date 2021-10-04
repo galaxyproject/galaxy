@@ -7,7 +7,6 @@
         :sustain-conditionals="sustainConditionals"
         :text-enable="textEnable"
         :text-disable="textDisable"
-        :validation-scroll-to="validationScrollTo"
         :replace-params="replaceParams"
         :errors="errors"
         :onChange="onChange"
@@ -108,7 +107,10 @@ export default {
     },
     computed: {
         validation() {
-            return ["input", "message"];
+            for(let key in this.formData) {
+                return [key, "message"];
+            }
+            return null;
             /*let batch_n = -1;
             let batch_src = null;
             for (const job_input_id in this.formData) {
@@ -192,7 +194,12 @@ export default {
             }
         },
         onHighlight(validation, silent = false) {
-            console.log(validation);
+            if (validation && validation.length == 2) {
+                var element = document.querySelector(`#form-element-${validation[0]}`);
+                if (element) {
+                    document.querySelector(".center-panel").scrollTo(0, element.offsetTop);
+                }
+            }
             /*this.form.trigger("reset");
             if (validation && validation.length == 2) {
                 const input_id = this.form.data.match(validation[0]);
