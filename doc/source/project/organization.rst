@@ -56,6 +56,7 @@ Members
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)
+- David López (@davelopez)
 - Anton Nekrutenko (@nekrut)
 - Helena Rasche (@hexylena)
 - Nicola Soranzo (@nsoranzo)
