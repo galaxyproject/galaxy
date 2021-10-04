@@ -56,6 +56,10 @@ export default {
             type: Object,
             default: null,
         },
+        highlight: {
+            type: Object,
+            default: null,
+        },
     },
     computed: {
         currentValue: {

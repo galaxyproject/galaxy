@@ -23,6 +23,11 @@ export default {
         },
     },
     watch: {
+        value() {
+            if (this.parameter && this.parameter.field) {
+                this.parameter.field.value(this.value);
+            }
+        },
         attributes() {
             if (this.parameter && this.parameter.field && this.parameter.field.update) {
                 this.parameter.field.update(this.attributes);

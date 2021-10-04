@@ -94,8 +94,8 @@ export default {
             //this.onHighlight(this.validationScrollTo);
         },
         validation() {
-            //this.onHighlight(this.validation, true);
-            //this.$emit("onValidation", this.validation);
+            this.onHighlight(this.validation, true);
+            this.$emit("onValidation", this.validation);
         },
         errors() {
             /*this.$nextTick(() => {
@@ -108,6 +108,7 @@ export default {
     },
     computed: {
         validation() {
+            return ["input", "message"];
             /*let batch_n = -1;
             let batch_src = null;
             for (const job_input_id in this.formData) {
@@ -191,6 +192,7 @@ export default {
             }
         },
         onHighlight(validation, silent = false) {
+            console.log(validation);
             /*this.form.trigger("reset");
             if (validation && validation.length == 2) {
                 const input_id = this.form.data.match(validation[0]);
