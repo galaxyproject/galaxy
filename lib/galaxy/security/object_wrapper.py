@@ -281,16 +281,6 @@ class SafeStringWrapper:
             item = item.unsanitized
         return item in self.unsanitized
 
-    # Not sure that we need these slice methods, but will provide anyway
-    def __getslice__(self, i, j):
-        return self.__safe_string_wrapper_function__(self.unsanitized[i:j])
-
-    def __setslice__(self, i, j, value):
-        self.unsanitized[i:j] = value
-
-    def __delslice__(self, i, j):
-        del self.unsanitized[i:j]
-
     def __add__(self, other):
         return self.__safe_string_wrapper_function__(self.unsanitized.__add__(unwrap(other)))
 
