@@ -91,7 +91,7 @@ export default {
             this.onChangeForm();
         },
         validationScrollTo() {
-            //this.onHighlight(this.validationScrollTo);
+            this.onHighlight(this.validationScrollTo);
         },
         validation() {
             this.onHighlight(this.validation, true);
@@ -108,63 +108,57 @@ export default {
     },
     computed: {
         validation() {
-            for (let key in this.formData) {
-                return [key, "message"];
-            }
-            return null;
-            /*let batch_n = -1;
-            let batch_src = null;
-            for (const job_input_id in this.formData) {
-                const input_value = this.formData[job_input_id];
-                const input_id = this.form.data.match(job_input_id);
-                const input_field = this.form.field_list[input_id];
-                const input_def = this.form.input_list[input_id];
-                if (!input_id || !input_def || !input_field || input_def.step_linked) {
+            let batchN = -1;
+            let batchSrc = null;
+            for (const inputId in this.formData) {
+                const inputValue = this.formData[inputId];
+                const inputDef = this.formIndex[inputId];
+                if (!inputDef || inputDef.step_linked) {
                     continue;
                 }
                 if (
-                    input_value &&
-                    Array.isArray(input_value.values) &&
-                    input_value.values.length == 0 &&
-                    !input_def.optional
+                    inputValue &&
+                    Array.isArray(inputValue.values) &&
+                    inputValue.values.length == 0 &&
+                    !inputDef.optional
                 ) {
-                    return [job_input_id, "Please provide data for this input."];
+                    return [inputId, "Please provide data for this input."];
                 }
-                if (input_value == null && !input_def.optional && input_def.type != "hidden") {
-                    return [job_input_id, "Please provide a value for this option."];
+                if (inputValue == null && !inputDef.optional && inputDef.type != "hidden") {
+                    return [inputId, "Please provide a value for this option."];
                 }
-                if (input_def.wp_linked && input_def.text_value == input_value) {
-                    return [job_input_id, "Please provide a value for this workflow parameter."];
+                if (inputDef.wp_linked && inputDef.text_value == inputValue) {
+                    return [inputId, "Please provide a value for this workflow parameter."];
                 }
-                if (input_field.validate) {
+                /*if (input_field.validate) {
                     const message = input_field.validate();
                     if (message) {
-                        return [job_input_id, message];
+                        return [inputId, message];
                     }
-                }
-                if (input_value && input_value.batch) {
-                    const n = input_value.values.length;
-                    const src = n > 0 && input_value.values[0] && input_value.values[0].src;
+                }*/
+                if (inputValue && inputValue.batch) {
+                    const n = inputValue.values.length;
+                    const src = n > 0 && inputValue.values[0] && inputValue.values[0].src;
                     if (src) {
-                        if (batch_src === null) {
-                            batch_src = src;
-                        } else if (batch_src !== src) {
+                        if (batchSrc === null) {
+                            batchSrc = src;
+                        } else if (batchSrc !== src) {
                             return [
-                                job_input_id,
+                                inputId,
                                 "Please select either dataset or dataset list fields for all batch mode fields.",
                             ];
                         }
                     }
-                    if (batch_n === -1) {
-                        batch_n = n;
-                    } else if (batch_n !== n) {
+                    if (batchN === -1) {
+                        batchN = n;
+                    } else if (batchN !== n) {
                         return [
-                            job_input_id,
-                            `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`,
+                            inputId,
+                            `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batchN}</b>.`,
                         ];
                     }
                 }
-            }*/
+            }
             return null;
         },
     },
@@ -204,16 +198,14 @@ export default {
         },
         onHighlight(validation, silent = false) {
             if (validation && validation.length == 2) {
-                var element = document.querySelector(`#form-element-${validation[0]}`);
-                if (element) {
-                    document.querySelector(".center-panel").scrollTo(0, element.offsetTop);
+                console.log(validation);
+                if (!silent) {
+                    var element = document.querySelector(`#form-element-${validation[0]}`);
+                    if (element) {
+                        document.querySelector(".center-panel").scrollTo(0, element.offsetTop);
+                    }
                 }
             }
-            /*this.form.trigger("reset");
-            if (validation && validation.length == 2) {
-                const input_id = this.form.data.match(validation[0]);
-                this.form.highlight(input_id, validation[1], silent);
-            }*/
         },
     },
 };
