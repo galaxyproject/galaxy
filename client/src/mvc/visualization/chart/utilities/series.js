@@ -54,7 +54,8 @@ function makeCategories(groups, column_keys) {
     var array = {};
     var data_columns = groups[0].__data_columns;
     _.each(column_keys, function (key) {
-        if (data_columns[key].is_label) {
+        const data_entry = data_columns && data_columns[key];
+        if (data_entry && data_entry.is_label) {
             array[key] = [];
         }
     });

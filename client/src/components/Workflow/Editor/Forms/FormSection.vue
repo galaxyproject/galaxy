@@ -32,6 +32,7 @@ export default {
                 node,
                 datatypes,
                 (node, outputName, newLabel) => {
+                    // TODO: Switch to revised data structure!
                     const formVue = this.$refs["form"];
                     if (formVue && formVue.form) {
                         const form = formVue.form;

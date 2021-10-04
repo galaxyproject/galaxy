@@ -54,6 +54,9 @@ var GroupView = Backbone.View.extend({
                                     }
                                 }
                                 input.data = columns;
+                                if (columns.length > 0) {
+                                    input.value = columns[0].value;
+                                }
                             }
                             var model_value = self.group.get(prefixed);
                             if (model_value !== undefined && !input.hidden) {
@@ -71,10 +74,9 @@ var GroupView = Backbone.View.extend({
                             inputs: inputs,
                         });
                         instance.$on("onChange", (data) => {
-                            console.log(data);
                             self.group.set(data);
-                            //self.chart.set("modified", true);
-                            //self.chart.trigger("redraw");
+                            self.chart.set("modified", true);
+                            self.chart.trigger("redraw");
                         });
                         process.resolve();
                     },
