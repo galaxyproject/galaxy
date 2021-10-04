@@ -36,6 +36,11 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Cache galaxy venv
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: gxy-venv-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}-selenium-beta
       - uses: nanasess/setup-chromedriver@master
       - name: Run tests
         run: ./run_tests.sh -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}

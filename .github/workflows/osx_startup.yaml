@@ -21,6 +21,11 @@ jobs:
         path: ~/Library/Caches/pip
         # scripts/common_startup.sh creates a conda env for Galaxy containing Python 3.6
         key: pip-cache-3.6-${{ hashFiles('galaxy root/requirements.txt') }}
+    - name: Cache tox env
+      uses: actions/cache@v2
+      with:
+        path: .tox
+        key: tox-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}-osx
     - name: Install and activate miniconda  # use this job to test using Python from a conda environment
       uses: conda-incubator/setup-miniconda@v2
       with:

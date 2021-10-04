@@ -35,6 +35,11 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Cache galaxy venv
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: gxy-venv-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}-toolshed
       - name: Run tests
         run: './run_tests.sh -toolshed'
         working-directory: 'galaxy root'

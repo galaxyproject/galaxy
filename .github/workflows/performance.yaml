@@ -33,6 +33,11 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Cache galaxy venv
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: gxy-venv-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}-performance
       - name: Run tests
         run: ./run_tests.sh --ci_test_metrics --structured_data_html --structured_data_report_file "test.json" --skip_flakey_fails -api lib/galaxy_test/performance
         working-directory: 'galaxy root'

@@ -20,6 +20,11 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('lib/galaxy/dependencies/pinned-lint-requirements.txt') }}
+      - name: Cache tox env
+        uses: actions/cache@v2
+        with:
+          path: .tox
+          key: tox-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}-lint
       - name: Install tox
         run: pip install tox
       - name: Run linting

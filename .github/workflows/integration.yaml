@@ -59,6 +59,11 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Cache galaxy venv
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: gxy-venv-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}-integration
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get -y install ffmpeg
         if: matrix.subset == 'upload_datatype'
