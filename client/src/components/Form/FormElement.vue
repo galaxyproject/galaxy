@@ -6,7 +6,13 @@
         </div>
         <div class="ui-form-title">{{ title }}</div>
         <div class="ui-form-field">
-            <FormParameter v-if="backbonejs" v-model="currentValue" :id="id" :type="type" :attributes="attributes" />
+            <FormParameter
+                v-if="backbonejs"
+                v-model="currentValue"
+                :id="id"
+                :type="type"
+                :attributes="attributes"
+            />
             <FormBoolean v-else-if="type == 'boolean'" :id="id" v-model="currentValue" />
             <FormInput v-else="type == 'text'" :id="id" :area="$attrs['area']" v-model="currentValue" />
             <span class="ui-form-info form-text text-muted mt-2">{{ help }}</span>

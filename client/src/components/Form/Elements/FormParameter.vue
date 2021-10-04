@@ -23,20 +23,12 @@ export default {
         },
     },
     watch: {
-        /*value() {
-            if (this.parameter && this.parameter.field) {
-                const currentValue = this.parameter.field.value();
-                if (this.value !== currentValue) {
-                    this.parameter.field.value(this.value);
-                }
-            }
-        },
         attributes() {
-            if (this.parameter && this.parameter.update) {
+            if (this.parameter) {
                 this.parameter.field.update(this.attributes);
                 this.$emit("input", this.parameter.field.value());
             }
-        },*/
+        },
     },
     mounted() {
         this.$nextTick(() => {

@@ -74,7 +74,7 @@
                 :title="input.label"
                 :type="input.type"
                 :help="input.help"
-                :attributes="input"
+                :attributes="input.attributes || input"
                 :backbonejs="true"
                 @input="onChange"
             />

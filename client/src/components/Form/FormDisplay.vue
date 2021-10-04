@@ -68,10 +68,17 @@ export default {
         return {
             formData: {},
             formInputs: this.inputs.slice(),
-            limit: 100,
         };
     },
     watch: {
+        inputs() {
+            const newAttributes = {};
+            visitInputs(this.inputs, (input, name) => {
+                newAttributes[name] = input;
+            });
+            console.log(newAttributes);
+            this.onReplaceAttributes(newAttributes);
+        },
         validationScrollTo() {
             //this.onHighlight(this.validationScrollTo);
         },
@@ -147,8 +154,17 @@ export default {
         },
     },
     methods: {
+        onReplaceAttributes(newAttributes) {
+            visitInputs(this.formInputs, (input, name) => {
+                const newValue = newAttributes[name];
+                if (newValue != undefined) {
+                    input.attributes = newValue;
+                }
+            });
+            this.onChangeForm();
+        },
         onReplaceParams() {
-            visitInputs(this.inputs, (input, name) => {
+            visitInputs(this.formInputs, (input, name) => {
                 const newValue = this.replaceParams[name];
                 if (newValue != undefined) {
                     input.value = newValue;
@@ -164,14 +180,10 @@ export default {
             visitInputs(this.formInputs, (input, name) => {
                 params[name] = input.value;
             });
-            console.log(params);
-            /*if (JSON.stringify(params) != JSON.stringify(this.formData) && this.limit > 0) {
-                this.limit--;
+            if (JSON.stringify(params) != JSON.stringify(this.formData)) {
                 this.$emit("onChange", params, requiresRequest);
-                //console.log(JSON.stringify(params), JSON.stringify(this.formData), JSON.stringify(params), requiresRequest);
-                console.log(params, requiresRequest);
                 this.formData = params;
-            }*/
+            }
         },
         onHighlight(validation, silent = false) {
             /*this.form.trigger("reset");
