@@ -46,7 +46,6 @@ class HistoryImportExportFtpSeleniumIntegrationTestCase(SeleniumIntegrationTestC
         files_dialog.back_btn.wait_for_and_click()
         files_dialog.ftp_details.wait_for_and_click()
 
-
         history_export.name_input.wait_for_and_send_keys("my_export.tar.gz")
         history_export.export_button.wait_for_and_click()
 
