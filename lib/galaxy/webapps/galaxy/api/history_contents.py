@@ -11,6 +11,7 @@ from typing import (
 
 import dateutil.parser
 from fastapi import (
+    Body,
     Depends,
     Path,
     Query,
@@ -426,6 +427,32 @@ class FastAPIHistoryContents:
         """
         archive = self.service.get_dataset_collection_archive_for_download(trans, id)
         return StreamingResponse(archive.get_iterator(), headers=archive.get_headers())
+
+    @router.post(
+        '/api/histories/{history_id}/contents/{type}s',
+        summary='Create a new `HDA` or `HDCA` in the given History.',
+    )
+    @router.post(
+        '/api/histories/{history_id}/contents',
+        summary='Create a new `HDA` or `HDCA` in the given History.',
+        deprecated=True,
+    )
+    def create(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        type: Optional[HistoryContentType] = Query(
+            default=None,
+            title="Content Type",
+            description="The type of the history element to create.",
+            example=HistoryContentType.dataset,
+        ),
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: CreateHistoryContentPayload = Body(...),
+    ) -> AnyHistoryContentItem:
+        """Create a new `HDA` or `HDCA` in the given History."""
+        payload.type = type or payload.type
+        return self.service.create(trans, history_id, payload, serialization_params)
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
