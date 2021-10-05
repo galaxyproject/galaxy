@@ -122,6 +122,8 @@ jobs:
       - run:
           name: Build client
           command: cd client && yarn run build
+          environment:
+              NODE_OPTIONS: --max_old_space_size=512
       - run: cd client && yarn run qunit
   js_lint:
     docker:
