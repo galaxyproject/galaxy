@@ -1279,11 +1279,11 @@ class LibraryPopulator:
         library = self.new_private_library(name)
         payload, files = self.create_dataset_request(library, **create_dataset_kwds)
         dataset = self.raw_library_contents_create(library["id"], payload, files=files).json()[0]
-        return self.wait_on_library_dataset(library, dataset)
+        return self.wait_on_library_dataset(library["id"], dataset["id"])
 
-    def wait_on_library_dataset(self, library, dataset):
+    def wait_on_library_dataset(self, library_id, dataset_id):
         def show():
-            return self.galaxy_interactor.get("libraries/{}/contents/{}".format(library["id"], dataset["id"]))
+            return self.galaxy_interactor.get(f"libraries/{library_id}/contents/{dataset_id}")
 
         wait_on_state(show, assert_ok=True, timeout=DEFAULT_TIMEOUT)
         return show().json()
@@ -1295,8 +1295,15 @@ class LibraryPopulator:
         url_rel = "libraries/%s/contents" % library_id
         return self.galaxy_interactor.post(url_rel, payload, files=files)
 
-    def show_ldda(self, library_id, library_dataset_id):
-        return self.galaxy_interactor.get(f"libraries/{library_id}/contents/{library_dataset_id}")
+    def show_ld(self, library_id, library_dataset_id):
+        response = self.galaxy_interactor.get(f"libraries/{library_id}/contents/{library_dataset_id}")
+        response.raise_for_status()
+        return response.json()
+
+    def show_ldda(self, ldda_id):
+        response = self.galaxy_interactor.get(f"datasets/{ldda_id}?hda_ldda=ldda")
+        response.raise_for_status()
+        return response.json()
 
     def new_library_dataset_in_private_library(self, library_name="private_dataset", wait=True):
         library = self.new_private_library(library_name)
@@ -1307,11 +1314,7 @@ class LibraryPopulator:
         assert len(library_datasets) == 1
         library_dataset = library_datasets[0]
         if wait:
-            def show():
-                return self.show_ldda(library["id"], library_dataset["id"])
-
-            wait_on_state(show, assert_ok=True)
-            library_dataset = show().json()
+            library_dataset = self.wait_on_library_dataset(library["id"], library_dataset["id"])
 
         return library, library_dataset
 
