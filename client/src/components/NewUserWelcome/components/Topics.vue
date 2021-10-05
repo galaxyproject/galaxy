@@ -1,7 +1,7 @@
 <template>
-    <div>
-        <header class="main-header text-center">
-            <h1>{{ "Welcome to Galaxy" | localize }}</h1>
+    <div class="user-welcome-topics">
+        <header class="main-header alert alert-info">
+            <h1 class="text-center my-3">{{ "Welcome to Galaxy" | localize }}</h1>
             <span>
                 {{
                     "Galaxy is web-based platform for reproducible computational analysis. Research in Galaxy \
@@ -11,30 +11,20 @@
                 }}
             </span>
         </header>
-        <b-card class="text-center">
-            <b-card-header>
-                <h1>{{ "Get to Know Galaxy" | localize }}</h1>
-            </b-card-header>
-            <b-row class="justify-content-md-center">
-                <b-card-group v-for="(subject, idx) in topics" :key="idx">
-                    <b-card class="text-center" body-class="d-flex flex-column" style="width: 18rem">
-                        <b-card-header class="text-center">
-                            <h3>
-                                {{ subject.title | localize }}
-                            </h3>
-                        </b-card-header>
-                        <b-card-img
-                            class="section-header"
-                            height="200vh"
-                            :src="imgUrl(subject.image)"
-                            :alt="subject.alt"
-                        ></b-card-img>
-                        <b-card-text>{{ subject.blurb | localize }}</b-card-text>
-                        <b-button class="mt-auto" variant="primary" @click="$emit('select', idx)">Learn more</b-button>
-                    </b-card>
-                </b-card-group>
-            </b-row>
-        </b-card>
+        <b-row class="justify-content-md-center">
+            <b-card-group v-for="(subject, idx) in topics" :key="idx">
+                <b-card class="text-center border-0" body-class="d-flex flex-column">
+                    <b-card-img
+                        class="section-header mb-3"
+                        height="50h"
+                        :src="imgUrl(subject.image)"
+                        :alt="subject.alt"
+                    ></b-card-img>
+                    <b-card-text>{{ subject.blurb | localize }}</b-card-text>
+                    <b-button class="mt-auto" variant="primary" @click="$emit('select', idx)">{{ subject.title | localize }}</b-button>
+                </b-card>
+            </b-card-group>
+        </b-row>
     </div>
 </template>
 <script>
