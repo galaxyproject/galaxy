@@ -64,13 +64,12 @@ describe("Tags/model.js", () => {
 
     describe("Tag matching regular expression tests", () => {
         it("Should match a simple tag", () => {
-            const validTags = ["abc", "def", "ghi"];
+            const validTags = ["abc", "def", "ghi", "tag1", "🌌", "name:🌌", "🌌.🌌"];
             const invalidTags = [".", "", " "];
             for (const tag of validTags) {
                 expect(VALID_TAG_RE.test(tag)).toBeTruthy();
             }
             for (const tag of invalidTags) {
-                console.log(`${tag}`);
                 expect(VALID_TAG_RE.test(tag)).toBeFalsy();
             }
         });
