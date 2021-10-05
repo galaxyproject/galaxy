@@ -165,12 +165,19 @@ export default {
         };
     },
     created() {
-        this.requestTool();
+        this.requestTool().then(() => {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel) {
+                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
+                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
+            }
+        });
+    },
+    beforeDestroy() {
         const Galaxy = getGalaxyInstance();
         if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.collection.on("change", () => {
-                this.onUpdate();
-            });
+            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
+            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
         }
     },
     computed: {
@@ -205,6 +212,10 @@ export default {
         reuseAllowed(user) {
             return allowCachedJobs(user.preferences);
         },
+        onHistoryChange() {
+            console.debug(`ToolForm::created - Loading history changes. [${this.id}]`);
+            this.onUpdate();
+        },
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
         },
@@ -227,7 +238,7 @@ export default {
         },
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
-            getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
+            return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
                 this.formConfig = data;
                 this.remapAllowed = this.job_id && data.job_remap;
                 this.showLoading = false;

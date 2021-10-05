@@ -1,6 +1,9 @@
 import json
 import unittest
 
+import pytest
+import requests
+
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -147,15 +150,26 @@ class LibrariesApiTestCase(ApiTestCase):
     def test_show_private_dataset_permissions(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library("ForCreateDatasets", wait=True)
         with self._different_user():
-            response = self.library_populator.show_ldda(library["id"], library_dataset["id"])
+            with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+                self.library_populator.show_ld(library["id"], library_dataset["id"])
             # TODO: this should really be 403 and a proper JSON exception.
-            self._assert_status_code_is(response, 400)
+            self._assert_status_code_is(exc_info.value.response, 400)
 
     def test_create_dataset(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library("ForCreateDatasets", wait=True)
         self._assert_has_keys(library_dataset, "peek", "data_type")
         assert library_dataset["peek"].find("create_test") >= 0
         assert library_dataset["file_ext"] == "txt", library_dataset["file_ext"]
+        # Get library dataset (same as library_dataset)
+        library_dataset_from_show = self.library_populator.show_ld(library["id"], library_dataset["id"])
+        assert library_dataset_from_show["id"] == library_dataset["id"]
+        assert library_dataset_from_show["parent_library_id"] == library["id"]
+        assert library_dataset_from_show["folder_id"] == library["root_folder_id"]
+        # Get library dataset dataset association
+        ldda = self.library_populator.show_ldda(library_dataset_from_show["ldda_id"])
+        assert ldda["library_dataset_id"] == library_dataset["id"]
+        assert ldda["parent_library_id"] == library["id"]
+        assert ldda["file_ext"] == "txt"
 
     def test_fetch_upload_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("flat_zip")
@@ -344,7 +358,7 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         ld = create_response.json()
         library_id = ld['parent_library_id']
-        return self.library_populator.wait_on_library_dataset(library={'id': library_id}, dataset=ld)
+        return self.library_populator.wait_on_library_dataset(library_id, ld["id"])
 
     def test_update_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForUpdateDataset", content=">seq\nATGC", wait=True).json()
