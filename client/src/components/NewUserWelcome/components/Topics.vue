@@ -1,17 +1,10 @@
 <template>
-    <div class="user-welcome-topics">
+    <div>
         <header class="main-header alert alert-info">
-            <h1 class="text-center my-3">{{ "Welcome to Galaxy" | localize }}</h1>
-            <span>
-                {{
-                    "Galaxy is web-based platform for reproducible computational analysis. Research in Galaxy \
-                is supported by 3 pillars: data, tools, and workflows. For an introduction to each, visit the \
-                below pages, or begin your analysis by selting a tool from the toolbar to the left."
-                        | localize
-                }}
-            </span>
+            <h1 class="text-center my-3">{{ title | localize }}</h1>
+            <span>{{ intro | localize }}</span>
         </header>
-        <b-row class="justify-content-md-center">
+        <b-row class="justify-content-md-center mb-3">
             <b-card-group v-for="(subject, idx) in topics" :key="idx">
                 <b-card class="text-center m-2" body-class="d-flex flex-column">
                     <b-card-img
@@ -33,8 +26,26 @@
 import { getAppRoot } from "onload/loadConfig";
 export default {
     props: {
-        topics: { type: Array, required: true },
-        imageLoc: { type: String, required: false, default: "plugins/welcome_page/new_user/dist/static/topics/" },
+        topics: {
+            type: Array,
+            required: true,
+        },
+        imageLoc: {
+            type: String,
+            required: false,
+            default: "plugins/welcome_page/new_user/dist/static/topics/",
+        },
+        title: {
+            type: String,
+            default: "Welcome to Galaxy",
+        },
+        intro: {
+            type: String,
+            default:
+                "Galaxy is web-based platform for reproducible computational analysis. Research in Galaxy \
+                is supported by 3 pillars: data, tools, and workflows. For an introduction to each, visit the \
+                below pages, or begin your analysis by selting a tool from the toolbar to the left.",
+        },
     },
     methods: {
         imgUrl(src) {
