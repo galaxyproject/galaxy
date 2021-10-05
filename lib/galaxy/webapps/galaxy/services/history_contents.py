@@ -60,6 +60,7 @@ from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
     AnyJobStateSummary,
+    ColletionSourceType,
     DatasetAssociationRoles,
     DeleteHDCAResult,
     HistoryContentSource,
@@ -139,6 +140,52 @@ class CreateHistoryContentPayloadFromCopy(CreateHistoryContentPayloadBase):
     )
 
 
+class CollectionElementIdentifier(Model):
+    name: Optional[str] = Field(
+        None,
+        title="Name",
+        description="The name of the element.",
+    )
+    src: ColletionSourceType = Field(
+        ...,
+        title="Source",
+        description="The source of the element.",
+    )
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="The encoded ID of the element.",
+    )
+    tags: List[str] = Field(
+        default=[],
+        title="Tags",
+        description="The list of tags associated with the element.",
+    )
+
+
+class CreateNewCollectionPayload(Model):
+    collection_type: Optional[str] = Field(
+        default=None,
+        title="Collection Type",
+        description="The type of the collection. For example, `list`, `paired`, `list:paired`.",
+    )
+    element_identifiers: Optional[List[CollectionElementIdentifier]] = Field(
+        default=None,
+        title="Element Identifiers",
+        description="List of elements that should be in the new collection.",
+    )
+    name: Optional[str] = Field(
+        default=None,
+        title="Name",
+        description="The name of the new collection.",
+    )
+    hide_source_items: Optional[bool] = Field(
+        default=False,
+        title="Hide Source Items",
+        description="Whether to mark the original HDAs as hidden.",
+    )
+
+
 class CreateHistoryContentPayloadFromCollection(CreateHistoryContentPayloadFromCopy):
     dbkey: Optional[str] = Field(
         default=None,
@@ -156,7 +203,7 @@ class CreateHistoryContentPayloadFromCollection(CreateHistoryContentPayloadFromC
     )
 
 
-class CreateHistoryContentPayload(CreateHistoryContentPayloadFromCollection):
+class CreateHistoryContentPayload(CreateHistoryContentPayloadFromCollection, CreateNewCollectionPayload):
     class Config:
         extra = Extra.allow
 
