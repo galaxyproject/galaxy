@@ -91,6 +91,7 @@
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormMessage :message="messageText" :variant="messageVariant" />
                 <slot name="body" />
+                <div v-if="disabled" class="portlet-backdrop" />
             </div>
         </div>
         <slot name="buttons" />
@@ -154,6 +155,10 @@ export default {
         messageVariant: {
             type: String,
             default: "info",
+        },
+        disabled: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {
@@ -273,3 +278,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.portlet-backdrop {
+    display: block;
+}
+</style>
