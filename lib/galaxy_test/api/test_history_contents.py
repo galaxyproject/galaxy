@@ -1,4 +1,3 @@
-import json
 import time
 import urllib
 from datetime import datetime
@@ -170,7 +169,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         )
         second_history_id = self.dataset_populator.new_history()
         assert self.__count_contents(second_history_id) == 0
-        create_response = self._post(f"histories/{second_history_id}/contents", create_data)
+        create_response = self._post(f"histories/{second_history_id}/contents", create_data, json=True)
         self._assert_status_code_is(create_response, 200)
         assert self.__count_contents(second_history_id) == 1
 
@@ -181,7 +180,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
             content=ld["id"],
         )
         assert self.__count_contents(self.history_id) == 0
-        create_response = self._post(f"histories/{self.history_id}/contents", create_data)
+        create_response = self._post(f"histories/{self.history_id}/contents", create_data, json=True)
         self._assert_status_code_is(create_response, 200)
         assert self.__count_contents(self.history_id) == 1
 
@@ -342,18 +341,18 @@ class HistoryContentsApiTestCase(ApiTestCase):
             assert update_response['tags'] == ['existing:tag']
             creation_payload = {'collection_type': 'list',
                                 'history_id': history_id,
-                                'element_identifiers': json.dumps([{'id': hda_id,
-                                                                    'src': 'hda',
-                                                                    'name': 'element_id1',
-                                                                    'tags': ['my_new_tag']},
-                                                                   {'id': hda2_id,
-                                                                    'src': 'hda',
-                                                                    'name': 'element_id2',
-                                                                    'tags': ['another_new_tag']}
-                                                                   ]),
+                                'element_identifiers': [{'id': hda_id,
+                                                         'src': 'hda',
+                                                         'name': 'element_id1',
+                                                         'tags': ['my_new_tag']},
+                                                        {'id': hda2_id,
+                                                         'src': 'hda',
+                                                         'name': 'element_id2',
+                                                         'tags': ['another_new_tag']}
+                                                        ],
                                 'type': 'dataset_collection',
                                 'copy_elements': True}
-            r = self._post(f"histories/{self.history_id}/contents", creation_payload).json()
+            r = self._post(f"histories/{self.history_id}/contents", creation_payload, json=True).json()
             assert r['elements'][0]['object']['id'] != hda_id, "HDA has not been copied"
             assert len(r['elements'][0]['object']['tags']) == 1
             assert r['elements'][0]['object']['tags'][0] == 'my_new_tag'
@@ -489,7 +488,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
             content=hdca_id,
         )
         assert len(self._get(f"histories/{second_history_id}/contents/dataset_collections").json()) == 0
-        create_response = self._post(f"histories/{second_history_id}/contents/dataset_collections", create_data)
+        create_response = self._post(f"histories/{second_history_id}/contents/dataset_collections", create_data, json=True)
         self.__check_create_collection_response(create_response)
         contents = self._get(f"histories/{second_history_id}/contents/dataset_collections").json()
         assert len(contents) == 1
@@ -503,7 +502,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert hdca["elements"][0]["object"]["metadata_dbkey"] == "?"
         assert hdca["elements"][0]["object"]["genome_build"] == "?"
         create_data = {'source': 'hdca', 'content': hdca_id, 'dbkey': 'hg19'}
-        create_response = self._post(f"histories/{self.history_id}/contents/dataset_collections", create_data)
+        create_response = self._post(f"histories/{self.history_id}/contents/dataset_collections", create_data, json=True)
         collection = self.__check_create_collection_response(create_response)
         new_forward = collection['elements'][0]['object']
         assert new_forward["metadata_dbkey"] == "hg19"
@@ -519,7 +518,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
             copy_elements=True,
         )
         assert len(self._get(f"histories/{second_history_id}/contents/dataset_collections").json()) == 0
-        create_response = self._post(f"histories/{second_history_id}/contents/dataset_collections", create_data)
+        create_response = self._post(f"histories/{second_history_id}/contents/dataset_collections", create_data, json=True)
         self.__check_create_collection_response(create_response)
 
         contents = self._get(f"histories/{second_history_id}/contents/dataset_collections").json()
