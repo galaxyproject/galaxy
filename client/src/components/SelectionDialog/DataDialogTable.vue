@@ -36,7 +36,9 @@
                         </div>
                         <div @click.stop="open(data.item)" v-else>
                             <font-awesome-icon icon="folder" />
-                            <b-link :title="`label-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</b-link>
+                            <b-link :title="`label-${data.item.labelTitle}`">{{
+                                data.value ? data.value : "-"
+                            }}</b-link>
                         </div>
                     </span>
                 </div>
@@ -68,19 +70,18 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { faCheckSquare, faSquare, faCaretSquareRight, faMinusSquare } from "@fortawesome/free-regular-svg-icons";
+import { faCheckSquare, faSquare, faMinusSquare } from "@fortawesome/free-regular-svg-icons";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 
 Vue.use(BootstrapVue);
-library.add(faCheckSquare, faSquare, faFolder, faCaretSquareRight, faMinusSquare);
+library.add(faCheckSquare, faSquare, faFolder, faMinusSquare);
 
 const LABEL_FIELD = { key: "label", sortable: true };
 const DETAILS_FIELD = { key: "details", sortable: true };
 const TIME_FIELD = { key: "time", sortable: true };
-const NAVIGATE_FIELD = { key: "navigate", label: "", sortable: false };
 const SELECT_ICON_FIELD = { key: "select_icon", label: "", sortable: false };
 
 export default {
