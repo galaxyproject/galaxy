@@ -407,8 +407,10 @@ histories:
 
 files_dialog:
   selectors:
-    ftp_row: 'span[title="gxftp://"]'
-    row: 'span[title="${uri}"]'
+    ftp_label: 'a[title="label-gxftp://"]'
+    ftp_details: 'span[title="details-gxftp://"]'
+    row: 'span[title="label-${uri}"]'
+    back_btn: '#back-btn'
 
 history_export:
   selectors:
