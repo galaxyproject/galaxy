@@ -60,23 +60,12 @@
                 </b-dropdown-item>
 
                 <b-dropdown-item
-                    v-if="!dataset.purged && dataset.getUrl('download')"
+                    v-if="showDownloads && dataset.getUrl('download')"
                     title="Copy Link"
                     @click.stop="$emit('copy-link')"
                 >
                     <Icon icon="link" class="mr-1" />
                     <span v-localize>Copy Link</span>
-                </b-dropdown-item>
-
-                <b-dropdown-item
-                    v-if="!(showDownloads && dataset.hasMetaData)"
-                    title="Download"
-                    :href="prependPath(dataset.getUrl('download'))"
-                    target="_blank"
-                    download
-                >
-                    <Icon icon="download" class="mr-1" />
-                    <span v-localize>Download</span>
                 </b-dropdown-item>
 
                 <b-dropdown-group v-if="showDownloads && dataset.hasMetaData">
@@ -92,6 +81,17 @@
                         <span v-localize>{{ "Download " + mf.file_type }}</span>
                     </b-dropdown-item>
                 </b-dropdown-group>
+
+                <b-dropdown-item
+                    v-else-if="showDownloads"
+                    title="Download"
+                    :href="prependPath(dataset.getUrl('download'))"
+                    target="_blank"
+                    download
+                >
+                    <Icon icon="download" class="mr-1" />
+                    <span v-localize>Download</span>
+                </b-dropdown-item>
 
                 <b-dropdown-item
                     v-if="dataset.rerunnable && dataset.creating_job && notIn(STATES.UPLOAD, STATES.NOT_VIEWABLE)"
