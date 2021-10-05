@@ -13,7 +13,7 @@
         </header>
         <b-row class="justify-content-md-center">
             <b-card-group v-for="(subject, idx) in topics" :key="idx">
-                <b-card class="text-center border-0" body-class="d-flex flex-column">
+                <b-card class="text-center m-2" body-class="d-flex flex-column">
                     <b-card-img
                         class="section-header mb-3"
                         height="50h"
@@ -43,3 +43,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+    .card {
+        width: 15rem;
+    }
+</style>
