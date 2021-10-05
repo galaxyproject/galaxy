@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict, List
 from unittest import SkipTest
 
 from galaxy_test.base.api import UsesApiTestCaseMixin
@@ -56,7 +56,7 @@ class SharingApiTests(UsesApiTestCaseMixin):
         sharing_response = self._get_resource_sharing_status(resource_id)
         assert not sharing_response["users_shared_with"]
 
-        payload = {"user_ids": []}
+        payload: Dict[str, List[str]] = {"user_ids": []}
         sharing_response = self._set_resource_sharing(resource_id, action="share_with_users", payload=payload)
         assert not sharing_response["users_shared_with"]
 

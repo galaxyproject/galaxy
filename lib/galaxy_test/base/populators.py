@@ -44,11 +44,16 @@ import random
 import string
 import unittest
 from abc import ABCMeta, abstractmethod
-from collections import namedtuple
 from functools import wraps
 from io import StringIO
 from operator import itemgetter
-from typing import Any, Callable, Dict, Optional
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    NamedTuple,
+    Optional,
+)
 
 import requests
 import yaml
@@ -236,7 +241,7 @@ class BaseDatasetPopulator(BasePopulator):
     Galaxy - implementations must implement _get, _post and _delete.
     """
 
-    def new_dataset(self, history_id: str, content=None, wait: bool = False, **kwds) -> str:
+    def new_dataset(self, history_id: str, content=None, wait: bool = False, **kwds) -> dict:
         """Create a new history dataset instance (HDA) and return its ID.
 
         :returns: the HDA id of the new object
@@ -1101,7 +1106,14 @@ class BaseWorkflowPopulator(BasePopulator):
             print(json.dumps(raw_workflow, sort_keys=True, indent=2))
 
 
-RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs', 'invocation', 'workflow_request'])
+class RunJobsSummary(NamedTuple):
+    history_id: str
+    workflow_id: str
+    invocation_id: str
+    inputs: dict
+    jobs: list
+    invocation: dict
+    workflow_request: dict
 
 
 class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, ImporterGalaxyInterface):
@@ -1113,7 +1125,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
 
     # Required for ImporterGalaxyInterface interface - so we can recursively import
     # nested workflows.
-    def import_workflow(self, workflow, **kwds):
+    def import_workflow(self, workflow, **kwds) -> Dict[str, Any]:
         workflow_str = json.dumps(workflow, indent=4)
         data = {
             'workflow': workflow_str,
@@ -1123,7 +1135,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         assert upload_response.status_code == 200, upload_response.content
         return upload_response.json()
 
-    def import_tool(self, tool):
+    def import_tool(self, tool) -> Dict[str, Any]:
         """ Import a workflow via POST /api/workflows or
         comparable interface into Galaxy.
         """
@@ -1131,7 +1143,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         assert upload_response.status_code == 200, upload_response
         return upload_response.json()
 
-    def _import_tool_response(self, tool):
+    def _import_tool_response(self, tool) -> Response:
         tool_str = json.dumps(tool, indent=4)
         data = {
             'representation': tool_str
@@ -1144,7 +1156,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         has_workflow = yaml.dump(workflow_dict)
         return has_workflow
 
-    def _scale_workflow_dict(self, workflow_type="simple", **kwd):
+    def _scale_workflow_dict(self, workflow_type="simple", **kwd) -> Dict[str, Any]:
         if workflow_type == "two_outputs":
             return self._scale_workflow_dict_two_outputs(**kwd)
         elif workflow_type == "wave_simple":
@@ -1152,7 +1164,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         else:
             return self._scale_workflow_dict_simple(**kwd)
 
-    def _scale_workflow_dict_simple(self, **kwd):
+    def _scale_workflow_dict_simple(self, **kwd) -> Dict[str, Any]:
         collection_size = kwd.get("collection_size", 2)
         workflow_depth = kwd.get("workflow_depth", 3)
 
@@ -1174,7 +1186,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         }
         return workflow_dict
 
-    def _scale_workflow_dict_two_outputs(self, **kwd):
+    def _scale_workflow_dict_two_outputs(self, **kwd) -> Dict[str, Any]:
         collection_size = kwd.get("collection_size", 10)
         workflow_depth = kwd.get("workflow_depth", 10)
 
@@ -1196,7 +1208,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         }
         return workflow_dict
 
-    def _scale_workflow_dict_wave(self, **kwd):
+    def _scale_workflow_dict_wave(self, **kwd) -> Dict[str, Any]:
         collection_size = kwd.get("collection_size", 10)
         workflow_depth = kwd.get("workflow_depth", 10)
 
@@ -1222,7 +1234,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         return workflow_dict
 
     @staticmethod
-    def _link(link, output_name=None):
+    def _link(link: str, output_name: Optional[str] = None) -> Dict[str, Any]:
         if output_name is not None:
             link = f"{str(link)}/{output_name}"
         return {"$link": link}
