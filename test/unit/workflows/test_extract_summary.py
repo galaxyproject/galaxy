@@ -109,6 +109,7 @@ class TestWorkflowExtractSummary(unittest.TestCase):
 
 
 class MockJobToOutputDatasetAssociation:
+    job = None
 
     def __init__(self, name, dataset):
         self.name = name

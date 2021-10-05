@@ -1,4 +1,5 @@
 from os import environ
+from typing import Dict
 
 import pytest
 
@@ -63,7 +64,7 @@ def test_modify_environ__update_and_restore(load_keyval):
 def test_modify_environ__remove_and_restore(load_keyval):
     key1, val1 = load_keyval()
     key2, val2 = load_keyval('key to remove', 'value to remove')
-    to_update = {}
+    to_update: Dict[str, str] = {}
     to_remove = [key2]
 
     with modify_environ(to_update, to_remove):
@@ -77,7 +78,7 @@ def test_modify_environ__remove_nonexistant_key(load_keyval):
     # Test that removing wrong key does not raise an error
     key1, val1 = load_keyval()
     key_nonexistant = 'no such key'
-    to_update = {}
+    to_update: Dict[str, str] = {}
     to_remove = [key_nonexistant]
 
     assert key_nonexistant not in environ  # ensure key to remove does not exist

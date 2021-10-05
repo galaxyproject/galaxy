@@ -1,4 +1,4 @@
-from collections import namedtuple
+from typing import NamedTuple
 
 
 # Job mock and helpers=======================================
@@ -70,20 +70,25 @@ class ToolDependency:
 
 # App mock=======================================================
 class App:
-    def __init__(self, tool_id, params):
+    def __init__(self, tool_id: str, params: str):
         self.job_config = JobConfig(tool_id, params)
+
+
+class Info(NamedTuple):
+    id: str
+    nativeSpec: str
+    runner: str
 
 
 class JobConfig:
     def __init__(self, tool_id, params):
-        self.info = namedtuple('info', ['id', 'nativeSpec', 'runner'])
         self.tool_id = tool_id
         self.nativeSpec = params
         self.default_id = "cluster_default"
         self.defNativeSpec = "-q test.q"
         self.defRunner = "drmaa"
-        self.keys = {tool_id: self.info(self.tool_id, self.nativeSpec, self.defRunner),
-                     "cluster_default": self.info(self.default_id, self.defNativeSpec, self.defRunner), }
+        self.keys = {tool_id: Info(self.tool_id, self.nativeSpec, self.defRunner),
+                     "cluster_default": Info(self.default_id, self.defNativeSpec, self.defRunner), }
 
     def get_destination(self, tool_id):
         invalid_destinations = ["cluster-kow", "destinationf", "thig",
@@ -103,7 +108,8 @@ class JobMappingException(Exception):
 
 
 class JobDestination:
-    def __init__(self, **kwd):
+    def __init__(self, params=None, **kwd):
+        params = params or {}
         self.id = kwd.get('id')
-        self.nativeSpec = kwd.get('params')['nativeSpecification']
+        self.nativeSpec = params['nativeSpecification']
         self.runner = kwd.get('runner')

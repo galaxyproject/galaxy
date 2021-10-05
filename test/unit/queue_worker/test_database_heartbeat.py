@@ -67,4 +67,5 @@ def wait_for_assertion(assert_f):
             assertion_error = e
         time.sleep(.2)
 
-    raise assertion_error
+    if assertion_error:
+        raise assertion_error

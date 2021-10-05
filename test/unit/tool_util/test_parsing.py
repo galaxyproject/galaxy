@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import unittest
 from math import isinf
+from typing import Optional
 
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.util import galaxy_directory
@@ -194,6 +195,8 @@ outputs:
 
 
 class BaseLoaderTestCase(unittest.TestCase):
+    source_file_name: Optional[str] = None
+    source_contents: Optional[str] = None
 
     def setUp(self):
         self.temp_directory = tempfile.mkdtemp()

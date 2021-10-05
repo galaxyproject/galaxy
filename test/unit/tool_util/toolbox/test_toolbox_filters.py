@@ -50,9 +50,9 @@ def filter_factory(config_dict=None):
             tool_section_filters=["filtermod:filter_section"],
             tool_label_filters=["filtermod:filter_label_1", "filtermod:filter_label_2"],
         )
-    config = Bunch(**config_dict)
     parent_module_name = '.'.join(__name__.split('.')[:-1])
-    config.toolbox_filter_base_modules = f"galaxy.tool_util.toolbox.filters,{parent_module_name}.filter_modules"
+    config_dict["toolbox_filter_base_modules"] = f"galaxy.tool_util.toolbox.filters,{parent_module_name}.filter_modules"
+    config = Bunch(**config_dict)
     app = Bunch(config=config)
     toolbox = Bunch(app=app)
     return FilterFactory(toolbox)

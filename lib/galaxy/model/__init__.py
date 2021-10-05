@@ -27,6 +27,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -144,6 +145,7 @@ AUTO_PROPAGATED_TAGS = ["name"]
 if TYPE_CHECKING:
     class _HasTable:
         table: Table
+        __table__: Table
 else:
     _HasTable = object
 
@@ -5126,7 +5128,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         hda_attributes: Optional[Iterable[str]] = None,
         dataset_attributes: Optional[Iterable[str]] = None,
         dataset_permission_attributes: Optional[Iterable[str]] = None,
-        return_entities: Optional[Iterable[Union[HistoryDatasetAssociation, Dataset, DatasetPermissions, 'DatasetCollectionElement']]] = None,
+        return_entities: Optional[Iterable[Union[Type[HistoryDatasetAssociation], Type[Dataset], Type[DatasetPermissions], Type['DatasetCollection'], Type['DatasetCollectionElement']]]] = None,
         inner_filter: Optional[InnerCollectionFilter] = None
     ):
         collection_attributes = collection_attributes or ()

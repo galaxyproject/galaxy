@@ -1,17 +1,18 @@
 import re
+from enum import Enum
 from logging import getLogger
 
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.util import unicodify
-from galaxy.util.bunch import Bunch
 
 log = getLogger(__name__)
 
-DETECTED_JOB_STATE = Bunch(
-    OK='ok',
-    OUT_OF_MEMORY_ERROR='oom_error',
-    GENERIC_ERROR='generic_error',
-)
+
+class DETECTED_JOB_STATE(str, Enum):
+    OK = 'ok'
+    OUT_OF_MEMORY_ERROR = 'oom_error'
+    GENERIC_ERROR = 'generic_error'
+
 
 ERROR_PEEK_SIZE = 2000
 
