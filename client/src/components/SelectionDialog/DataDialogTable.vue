@@ -47,11 +47,6 @@
             <template v-slot:cell(time)="data">
                 {{ data.value ? data.value : "-" }}
             </template>
-            <template v-slot:cell(navigate)="data">
-                <b-button variant="light" size="sm" v-if="!data.item.isLeaf" @click.stop="open(data.item)">
-                    <font-awesome-icon :icon="['far', 'caret-square-right']" />
-                </b-button>
-            </template>
         </b-table>
         <div v-if="nItems === 0">
             <div v-if="filter">
@@ -121,10 +116,6 @@ export default {
             type: Boolean,
             default: true,
         },
-        showNavigate: {
-            type: Boolean,
-            default: false,
-        },
         showSelectIcon: {
             type: Boolean,
             default: false,
@@ -165,9 +156,6 @@ export default {
             }
             if (this.showTime) {
                 fields.push(TIME_FIELD);
-            }
-            if (this.showNavigate) {
-                fields.push(NAVIGATE_FIELD);
             }
 
             return fields;

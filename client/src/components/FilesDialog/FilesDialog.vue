@@ -18,7 +18,6 @@
                 :show-select-icon="undoShow && multiple"
                 :show-details="showDetails"
                 :show-time="showTime"
-                :show-navigate="showNavigate"
                 :is-busy="isBusy"
                 @clicked="clicked"
                 @open="open"
@@ -90,7 +89,6 @@ export default {
             hasValue: false,
             showTime: true,
             showDetails: true,
-            showNavigate: true,
             isBusy: false,
             currentDirectory: undefined,
             selectAllIcon: selectionStates.unselected,
