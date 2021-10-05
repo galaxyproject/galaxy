@@ -14,7 +14,7 @@
                         :alt="subject.alt"
                     ></b-card-img>
                     <b-card-text class="font-weight-light">{{ subject.intro | localize }}</b-card-text>
-                    <b-button class="mt-auto" variant="primary" @click="$emit('select', idx)">{{
+                    <b-button class="mt-auto" variant="info" @click="$emit('select', idx)">{{
                         subject.title | localize
                     }}</b-button>
                 </b-card>
