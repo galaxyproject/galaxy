@@ -229,10 +229,13 @@ export default {
         },
         onUpdate() {
             this.disabled = true;
-            updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData).then((data) => {
-                this.formConfig = data;
-                this.disabled = false;
-            });
+            updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData)
+                .then((data) => {
+                    this.formConfig = data;
+                })
+                .finally(() => {
+                    this.disabled = false;
+                });
         },
         onChangeVersion(newVersion) {
             this.requestTool(newVersion);
@@ -243,17 +246,20 @@ export default {
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
             this.disabled = true;
-            return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
-                this.formConfig = data;
-                this.remapAllowed = this.job_id && data.job_remap;
-                this.showLoading = false;
-                this.showForm = true;
-                this.disabled = false;
-                if (newVersion) {
-                    this.messageVariant = "success";
-                    this.messageText = `Now you are using '${data.name}' version ${data.version}, id '${data.id}'.`;
-                }
-            });
+            return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
+                .then((data) => {
+                    this.formConfig = data;
+                    this.remapAllowed = this.job_id && data.job_remap;
+                    this.showLoading = false;
+                    this.showForm = true;
+                    if (newVersion) {
+                        this.messageVariant = "success";
+                        this.messageText = `Now you are using '${data.name}' version ${data.version}, id '${data.id}'.`;
+                    }
+                })
+                .finally(() => {
+                    this.disabled = false;
+                });
         },
         onExecute(config, historyId) {
             if (this.validationInternal) {
