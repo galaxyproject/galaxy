@@ -125,7 +125,11 @@ export const getAnalysisRouter = (Galaxy) => {
             }
             this.page.display(container, noPadding);
             const mountFn = mountVueComponent(component);
-            return mountFn(propsData, container);
+            if (this.currentComponent && this.currentComponent.$destroy) {
+                this.currentComponent.$destroy();
+            }
+            this.currentComponent = mountFn(propsData, container);
+            return this.currentComponent;
         },
 
         show_tours: function (tour_id) {

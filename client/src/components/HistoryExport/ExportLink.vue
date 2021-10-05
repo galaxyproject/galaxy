@@ -14,7 +14,7 @@
         <i
             title="Information about when the history export was generated is included in the job details. Additionally, if there are issues with export, the job details may help figure out the underlying problem or communicate issues to your Galaxy administrator."
         >
-            (<a class="show-job-link" href="#" @click="showDetails">view job details</a>)
+            (<b-link class="show-job-link" href="#" @click="showDetails">view job details</b-link>)
         </i>
         <b-modal v-model="details" modal-class="job-information-modal" scrollable ok-only hide-header>
             <job-information :job_id="historyExport.job_id" :include-times="true" />
