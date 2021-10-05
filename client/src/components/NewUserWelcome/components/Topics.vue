@@ -21,7 +21,9 @@
                         :alt="subject.alt"
                     ></b-card-img>
                     <b-card-text>{{ subject.blurb | localize }}</b-card-text>
-                    <b-button class="mt-auto" variant="primary" @click="$emit('select', idx)">{{ subject.title | localize }}</b-button>
+                    <b-button class="mt-auto" variant="primary" @click="$emit('select', idx)">{{
+                        subject.title | localize
+                    }}</b-button>
                 </b-card>
             </b-card-group>
         </b-row>
@@ -44,7 +46,7 @@ export default {
 };
 </script>
 <style scoped>
-    .card {
-        width: 15rem;
-    }
+.card {
+    width: 15rem;
+}
 </style>
