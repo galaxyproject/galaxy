@@ -13,7 +13,7 @@
                         :src="imgUrl(subject.image)"
                         :alt="subject.alt"
                     ></b-card-img>
-                    <b-card-text>{{ subject.blurb | localize }}</b-card-text>
+                    <b-card-text class="font-weight-light">{{ subject.blurb | localize }}</b-card-text>
                     <b-button class="mt-auto" variant="primary" @click="$emit('select', idx)">{{
                         subject.title | localize
                     }}</b-button>
