@@ -36,7 +36,7 @@
                 class="float-right ml-1 file-dialog-modal-ok"
                 variant="primary"
                 @click="finalize"
-                :disabled="!hasValue"
+                :disabled="!hasValue || isBusy"
             >
                 Ok
             </b-btn>
