@@ -380,7 +380,14 @@ def _assert_user_access_granted(file_sources, user_context):
     assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n", user_context=user_context)
 
 
-def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None, allow_subdir_creation=True):
+class TestConfiguredFileSources(ConfiguredFileSources):
+
+    def __init__(self, file_sources_config: ConfiguredFileSourcesConfig, conf_dict: dict, test_root: str):
+        super().__init__(file_sources_config, conf_dict=conf_dict)
+        self.test_root = test_root
+
+
+def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None, allow_subdir_creation=True) -> TestConfiguredFileSources:
     tmp, root = _setup_root()
     config_kwd = {}
     if include_allowlist:
@@ -400,8 +407,7 @@ def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, 
         plugin['root'] = root
     plugin.update(plugin_extra_config or {})
     _write_file_fixtures(tmp, root)
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict={"test1": plugin})
-    file_sources.test_root = root
+    file_sources = TestConfiguredFileSources(file_sources_config, conf_dict={"test1": plugin}, test_root=root)
     return file_sources
 
 

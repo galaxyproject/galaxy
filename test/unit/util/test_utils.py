@@ -1,5 +1,6 @@
 import errno
 import tempfile
+from typing import Dict
 
 import pytest
 
@@ -82,7 +83,7 @@ def test_clean_multiline_string():
 
 
 def test_safe_loads():
-    d = {}
+    d: Dict[str, str] = {}
     rval = safe_loads(d)
     assert rval == d
     assert rval is not d

@@ -1,6 +1,7 @@
 import collections
 import gzip
 import tempfile
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 import pytest
 
@@ -20,6 +21,8 @@ F4 = b"A\r\nB\nC"
 MULTILINE_MATCH = b".*"
 TestFile = collections.namedtuple('TestFile', 'value path')
 
+TestDef = Tuple[bytes, bytes, Optional[Dict[str, Any]], Optional[Type[AssertionError]]]
+
 
 def test_file_list():
     files = []
@@ -34,6 +37,7 @@ def test_file_list():
 
 def generate_tests(multiline=False):
     f1, f2, f3, f4, multiline_match, f5 = test_file_list()
+    tests: List[TestDef]
     if multiline:
         tests = [(multiline_match, f1, {'lines_diff': 0, 'sort': True}, None)]
     else:
@@ -50,9 +54,11 @@ def generate_tests(multiline=False):
 def generate_tests_sim_size():
     f1, f2, f3, f4, multiline_match, f5 = test_file_list()
     # tests for equal files
-    tests = [(f1, f1, None, None),  # pass default values
-             (f1, f1, {'delta': 0}, None),  # pass for values that should always pass
-             (f1, f1, {'delta_frac': 0.0}, None)]
+    tests: List[TestDef] = [
+        (f1, f1, None, None),  # pass default values
+        (f1, f1, {'delta': 0}, None),  # pass for values that should always pass
+        (f1, f1, {'delta_frac': 0.0}, None),
+    ]
     # tests for two different file (diff is 422 lines, 0.011709602)
     tests += [(f1, f2, None, None),  # pass default values
              (f1, f2, {'delta': 422}, None),  # test around the actual difference of two different
