@@ -57,7 +57,13 @@ either through the props, and make updates through the events -->
 
             <div class="d-flex">
                 <slot name="menu">
-                    <DatasetMenu :dataset="dataset" :expanded="expanded" :writable="writable" v-on="$listeners" />
+                    <DatasetMenu
+                        :dataset="dataset"
+                        :expanded="expanded"
+                        :writable="writable"
+                        @edit="edit"
+                        v-on="$listeners"
+                    />
                 </slot>
             </div>
         </nav>
@@ -114,7 +120,7 @@ either through the props, and make updates through the events -->
             </div>
 
             <div class="details">
-                <DatasetSummary :dataset="dataset" class="summary" />
+                <DatasetSummary :dataset="dataset" class="summary" @edit="edit" />
 
                 <div class="display-applications" v-if="dataset.displayLinks.length">
                     <div class="display-application" v-for="app in dataset.displayLinks" :key="app.label">
@@ -242,6 +248,9 @@ export default {
             if (this.dirty) {
                 this.reset();
             }
+        },
+        edit() {
+            this.backboneRoute("datasets/edit", { dataset_id: this.dataset.id });
         },
     },
 };

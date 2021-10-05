@@ -15,7 +15,7 @@
                 icon="pen"
                 :title="editButtonTitle"
                 :disabled="dataset.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
-                @click.stop="backboneRoute('datasets/edit', { dataset_id: dataset.id })"
+                @click.stop="$emit('edit')"
                 variant="link"
                 class="px-1 edit-btn"
             />
