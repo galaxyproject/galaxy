@@ -27,17 +27,22 @@
                 <div style="cursor: pointer">
                     <pre
                         v-if="isEncoded"
-                        :title="data.item.labelTitle"
+                        :title="`label-${data.item.labelTitle}`"
                     ><code>{{ data.value ? data.value : "-" }}</code></pre>
                     <span v-else>
-                        <i v-if="data.item.isLeaf" :class="leafIcon" />
-                        <font-awesome-icon v-else icon="folder" />
-                        <span :title="data.item.labelTitle">{{ data.value ? data.value : "-" }}</span>
+                        <div v-if="data.item.isLeaf">
+                            <i :class="leafIcon" />
+                            <span :title="`label-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
+                        </div>
+                        <div @click.stop="open(data.item)" v-else>
+                            <font-awesome-icon icon="folder" />
+                            <b-link :title="`label-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</b-link>
+                        </div>
                     </span>
                 </div>
             </template>
             <template v-slot:cell(details)="data">
-                {{ data.value ? data.value : "-" }}
+                <span :title="`details-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
             </template>
             <template v-slot:cell(time)="data">
                 {{ data.value ? data.value : "-" }}
@@ -55,7 +60,13 @@
             </div>
             <div v-else>No entries.</div>
         </div>
-        <b-pagination v-if="nItems > perPage" v-model="currentPage" :per-page="perPage" :total-rows="nItems" />
+        <b-pagination
+            class="justify-content-md-center"
+            v-if="nItems > perPage"
+            v-model="currentPage"
+            :per-page="perPage"
+            :total-rows="nItems"
+        />
     </div>
 </template>
 
