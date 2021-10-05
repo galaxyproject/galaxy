@@ -1,4 +1,4 @@
-import { createTag, diffTags } from "./model";
+import { createTag, diffTags, VALID_TAG_RE } from "./model";
 
 describe("Tags/model.js", () => {
     // Basic props
@@ -59,6 +59,20 @@ describe("Tags/model.js", () => {
             expect(model == expectedLabel).toBeTruthy();
             expect(model.text).toEqual(expectedLabel);
             expect(model.toString()).toEqual(expectedLabel);
+        });
+    });
+
+    describe("Tag matching regular expression tests", () => {
+        it("Should match a simple tag", () => {
+            const validTags = ["abc", "def", "ghi"];
+            const invalidTags = [".", "", " "];
+            for (const tag of validTags) {
+                expect(VALID_TAG_RE.test(tag)).toBeTruthy();
+            }
+            for (const tag of invalidTags) {
+                console.log(`${tag}`);
+                expect(VALID_TAG_RE.test(tag)).toBeFalsy();
+            }
         });
     });
 });
