@@ -80,8 +80,8 @@
                     </b-button>
                 </div>
                 <div class="portlet-title">
-                    <font-awesome-icon v-if="disabled" icon="spinner" class="fa-fw mr-1" spin />
-                    <font-awesome-icon v-else icon="wrench" class="fa-fw mr-1" />
+                    <font-awesome-icon v-if="disabled" icon="spinner" class="portlet-title-icon fa-fw mr-1" spin />
+                    <font-awesome-icon v-else icon="wrench" class="portlet-title-icon fa-fw mr-1" />
                     <span class="portlet-title-text">
                         <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span> (Galaxy
                         Version {{ version }})
