@@ -326,7 +326,6 @@ export default {
         onActivate(node) {
             if (this.activeNode != node) {
                 this.onDeactivate();
-                document.activeElement.blur();
                 node.makeActive();
                 this.activeNode = node;
                 this.canvasManager.drawOverview();
@@ -471,7 +470,9 @@ export default {
         },
         onSetData(nodeId, newData) {
             const node = this.nodes[nodeId];
-            node.setData(newData);
+            getModule(newData).then((data) => {
+                node.setData(data);
+            });
         },
         onChangeOutputDatatype(nodeId, outputName, newDatatype) {
             const node = this.nodes[nodeId];

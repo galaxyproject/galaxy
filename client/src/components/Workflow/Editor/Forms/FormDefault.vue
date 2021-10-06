@@ -27,7 +27,6 @@
             </b-button>
         </template>
         <template v-slot:body>
-            <FormMessage :message="errorText" variant="danger" :persistent="true" />
             <FormElement
                 id="__label"
                 :value="node.label"
@@ -54,7 +53,6 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 import FormMessage from "components/Form/FormMessage";
-import { getModule } from "components/Workflow/Editor/modules/services";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import WorkflowIcons from "components/Workflow/icons";
 
@@ -77,16 +75,6 @@ export default {
         getNode: {
             type: Function,
             required: true,
-        },
-    },
-    data() {
-        return {
-            errorText: null,
-        };
-    },
-    watch: {
-        id() {
-            this.errorText = null;
         },
     },
     computed: {
@@ -128,20 +116,12 @@ export default {
             ]);
         },
         onChange(values) {
-            getModule({
+            this.$emit("onSetData", this.node.id, {
                 id: this.node.id,
                 type: this.node.type,
                 content_id: this.node.content_id,
                 inputs: values,
-            }).then(
-                (data) => {
-                    this.errorText = null;
-                    this.$emit("onSetData", this.node.id, data);
-                },
-                () => {
-                    this.errorText = `Failed to handle node state.`;
-                }
-            );
+            });
         },
     },
 };
