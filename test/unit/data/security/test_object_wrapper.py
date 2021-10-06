@@ -326,16 +326,6 @@ class TestSafeStringWrapper:
         wrapped_foo = wrap_with_safe_string(foo)
         assert float(foo) == float(wrapped_foo)
 
-    def test__oct__(self):
-        foo = 1
-        wrapped_foo = wrap_with_safe_string(foo)
-        assert oct(foo) == oct(wrapped_foo)
-
-    def test__hex__(self):
-        foo = 1
-        wrapped_foo = wrap_with_safe_string(foo)
-        assert hex(foo) == hex(wrapped_foo)
-
 
 class Foo:
     pass

@@ -355,12 +355,6 @@ class SafeStringWrapper:
     def __float__(self):
         return float(self.unsanitized)
 
-    def __oct__(self):
-        return oct(self.unsanitized)
-
-    def __hex__(self):
-        return hex(self.unsanitized)
-
     def __index__(self):
         return self.unsanitized.index()
 
