@@ -77,11 +77,7 @@ OPTIONS = {
 
 
 DEFAULT = """
-# NB: This option is depricated - Looks like the new way is to set configs in
-#     the sce itself - which can happen outside iSEE.
-#     Should it be omitted?
 sce <- registerAppOptions(sce, color.maxlevels=40)
-
 
 categorical_color_fun <- function(n){
   if (n <= 37) {
