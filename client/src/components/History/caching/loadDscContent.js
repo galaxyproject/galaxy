@@ -8,7 +8,7 @@ import { nth } from "utils/observable";
 import { requestWithUpdateTime } from "./operators/requestWithUpdateTime";
 import { bulkCacheDscContent } from "./db";
 import { SearchParams } from "../model/SearchParams";
-import { prependPath } from "./workerConfig";
+import { prependPath } from "utils/redirect";
 import { summarizeCacheOperation, dateStore } from "./loadHistoryContents";
 import { show } from "utils/observable";
 

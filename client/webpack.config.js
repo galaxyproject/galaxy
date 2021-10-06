@@ -183,10 +183,6 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.(txt|tmpl)$/,
                     loader: "raw-loader",
                 },
-                {
-                    test: /\.worker\.js$/,
-                    use: { loader: "worker-loader" },
-                },
             ],
         },
         node: {
