@@ -113,12 +113,12 @@
             .input-terminal.multiple {
                 font-size: 1.2rem;
                 left: -0.8rem;
-                top: 2px;
+                top: 3px;
             }
             .output-terminal.multiple {
                 font-size: 1.2rem;
                 right: -0.8rem;
-                top: 2px;
+                bottom: 6px;
             }
             .input-terminal-active.can-accept > .icon {
                 color: $brand-success;

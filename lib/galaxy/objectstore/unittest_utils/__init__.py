@@ -1,3 +1,4 @@
+"""Utilities for configuring and using objectstores in unit tests."""
 import os
 from io import StringIO
 from shutil import rmtree
@@ -75,3 +76,11 @@ class MockConfig:
         self.new_file_path = temp_directory
         self.umask = 0000
         self.gid = 1000
+
+
+__all__ = [
+    'Config',
+    'MockConfig',
+    'DISK_TEST_CONFIG',
+    'DISK_TEST_CONFIG_YAML',
+]

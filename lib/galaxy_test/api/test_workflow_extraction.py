@@ -190,7 +190,7 @@ steps:
         $link: text_input1
 test_data:
   text_input1:
-    type: paired
+    collection_type: paired
 """)
         job_id = self._job_id_for_tool(jobs_summary.jobs, "collection_paired_test")
         downloaded_workflow = self._extract_and_download_workflow(
@@ -229,7 +229,7 @@ steps:
         $link: noop/out_file1
 test_data:
   text_input1:
-    type: "list:paired"
+    collection_type: "list:paired"
         """)
         job1_id = self._job_id_for_tool(jobs_summary.jobs, "cat1")
         job2_id = self._job_id_for_tool(jobs_summary.jobs, "cat_collection")
@@ -349,7 +349,7 @@ steps:
         $link: cat_pairs/out_file1
 test_data:
   text_input1:
-    type: list
+    collection_type: list
     elements:
       - identifier: samp1
         content: "samp1\t10.0\nsamp2\t20.0\n"
@@ -466,8 +466,8 @@ test_data:
 
     def __setup_and_run_cat1_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow(name="test_for_extract")
-        workflow_request, history_id = self._setup_workflow_run(workflow, history_id=history_id)
-        run_workflow_response = self._post("workflows", data=workflow_request)
+        workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow, history_id=history_id)
+        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
         self._assert_status_code_is(run_workflow_response, 200)
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)

@@ -18,8 +18,8 @@ from typing import (
 from galaxy.app import MinimalManagerApp
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.schema import SerializationParams
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.schema.types import SerializationParams
 from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class ConfigurationManager:
         host = getattr(trans, "host", None)
         serializer_class = AdminConfigSerializer if is_admin else ConfigSerializer
         serializer = serializer_class(self._app)
-        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params)
+        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params.dict())
 
     def version(self) -> Dict[str, Any]:
         version_info = {

@@ -51,12 +51,6 @@ class CondorJobRunner(AsynchronousJobRunner):
     """
     runner_name = "CondorRunner"
 
-    def __init__(self, app, nworkers):
-        """Initialize this job runner and start the monitor thread"""
-        super().__init__(app, nworkers)
-        self._init_monitor_thread()
-        self._init_worker_threads()
-
     def queue_job(self, job_wrapper):
         """Create job script and submit it to the DRM"""
 

@@ -125,10 +125,9 @@ export var Manager = Backbone.Model.extend({
     /** Matches a new tool model to the current input elements e.g. used to update dynamic options
      */
     matchModel: function (inputs, callback) {
-        var self = this;
         visitInputs(inputs, (input, name) => {
-            if (self.flat_dict[name]) {
-                callback(input, self.flat_dict[name]);
+            if (this.flat_dict[name]) {
+                callback(input, this.flat_dict[name]);
             }
         });
     },

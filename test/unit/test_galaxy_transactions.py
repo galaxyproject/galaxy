@@ -29,6 +29,10 @@ class Transaction(context.ProvidesAppContext):
     def app(self):
         return self._app
 
+    @property
+    def url_builder(self):
+        return None
+
 
 @pytest.fixture
 def transaction():

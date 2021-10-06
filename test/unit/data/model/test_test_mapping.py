@@ -16,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import registry, Session
 
+from galaxy.model import _HasTable
 from . test_mapping import (
     are_same_entity_collections,
     dbcleanup,
@@ -187,14 +188,14 @@ mapper_registry = registry()
 
 
 @mapper_registry.mapped
-class Foo:
+class Foo(_HasTable):
     __tablename__ = 'foo'
     id = Column(Integer, primary_key=True)
     field1 = Column(Integer)
 
 
 @mapper_registry.mapped
-class Bar:
+class Bar(_HasTable):
     __tablename__ = 'bar'
     id = Column(Integer, primary_key=True)
     field1 = Column(Integer)

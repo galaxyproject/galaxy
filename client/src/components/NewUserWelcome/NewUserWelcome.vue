@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="new-user-welcome">
         <ConfigProvider v-slot="config">
             <component
                 :is="viewElement"
@@ -85,93 +85,95 @@ export default {
 };
 </script>
 
-<style type="text/css">
-.card {
-    border: 0px;
-}
-.card-img {
-    height: 12rem;
-}
-.card-header,
-.card-footer {
-    border-bottom: 0px;
-    border-top: 0px;
-    background-color: #ffffff;
-}
-.carousel-fig {
-    padding-bottom: 10;
-}
-.carousel-caption {
-    position: relative;
-    left: 0;
-    top: 0;
-    color: black;
-    padding-bottom: 10;
-    padding-left: 1vw;
-    padding-right: 1vw;
-}
-.carousel-item {
-    float: none;
-    margin-right: auto;
-    margin-left: auto;
-}
-.carousel-indicators {
-    position: sticky;
-    bottom: 30px;
-}
-.button-housing {
-    position: sticky;
-    z-index: 21;
-    padding-right: 67.88px;
-}
-.carousel-button {
-    position: fixed;
-    z-index: 20;
-    bottom: 10px;
-}
-.carousel-control-next,
-.carousel-control-prev,
-.carousel-indicators {
-    filter: invert(100%);
-}
-.carousel-control-next,
-.carousel-control-prev {
-    border-left: 1px;
-    border-right: 1px;
-    z-index: 11;
-    align-items: center;
-    justify-content: center;
-    height: fit-content;
-    height: 85vh;
-    width: 2vw;
-}
-.carousel-control-next:hover,
-.carousel-control-prev:hover {
-    background-color: grey;
-}
-#logos img {
-    max-width: 100%;
-}
-.carousel-inner {
-    position: absolute;
-}
-.mini-img {
-    max-width: 100px;
-}
-.small-img {
-    max-width: 300px;
-}
-.med-img {
-    max-width: 500px;
-}
-.large-img {
-    max-width: 700px;
-}
-.slide-header {
-    text-align: center;
-    padding-bottom: 3;
-}
-.section-header {
-    filter: invert(16%) sepia(14%) saturate(1113%) hue-rotate(189deg) brightness(99%) contrast(91%);
+<style scoped type="scss">
+.new-user-welcome::v-deep {
+    .card {
+        border: 0px;
+    }
+    .card-img {
+        height: 12rem;
+    }
+    .card-header,
+    .card-footer {
+        border-bottom: 0px;
+        border-top: 0px;
+        background-color: #ffffff;
+    }
+    .carousel-fig {
+        padding-bottom: 10;
+    }
+    .carousel-caption {
+        position: relative;
+        left: 0;
+        top: 0;
+        color: black;
+        padding-bottom: 10;
+        padding-left: 1vw;
+        padding-right: 1vw;
+    }
+    .carousel-item {
+        float: none;
+        margin-right: auto;
+        margin-left: auto;
+    }
+    .carousel-indicators {
+        position: sticky;
+        bottom: 30px;
+    }
+    .button-housing {
+        position: sticky;
+        z-index: 21;
+        padding-right: 67.88px;
+    }
+    .carousel-button {
+        position: fixed;
+        z-index: 20;
+        bottom: 10px;
+    }
+    .carousel-control-next,
+    .carousel-control-prev,
+    .carousel-indicators {
+        filter: invert(100%);
+    }
+    .carousel-control-next,
+    .carousel-control-prev {
+        border-left: 1px;
+        border-right: 1px;
+        z-index: 11;
+        align-items: center;
+        justify-content: center;
+        height: fit-content;
+        height: 85vh;
+        width: 2vw;
+    }
+    .carousel-control-next:hover,
+    .carousel-control-prev:hover {
+        background-color: grey;
+    }
+    #logos img {
+        max-width: 100%;
+    }
+    .carousel-inner {
+        position: absolute;
+    }
+    .mini-img {
+        max-width: 100px;
+    }
+    .small-img {
+        max-width: 300px;
+    }
+    .med-img {
+        max-width: 500px;
+    }
+    .large-img {
+        max-width: 700px;
+    }
+    .slide-header {
+        text-align: center;
+        padding-bottom: 3;
+    }
+    .section-header {
+        filter: invert(16%) sepia(14%) saturate(1113%) hue-rotate(189deg) brightness(99%) contrast(91%);
+    }
 }
 </style>

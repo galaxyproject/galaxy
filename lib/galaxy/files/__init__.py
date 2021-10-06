@@ -146,6 +146,8 @@ class ConfiguredFileSources:
     def plugins_to_dict(self, for_serialization=False, user_context=None):
         rval = []
         for file_source in self._file_sources:
+            if not file_source.user_has_access(user_context):
+                continue
             el = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
             rval.append(el)
         return rval

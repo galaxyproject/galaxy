@@ -1,22 +1,22 @@
-# Test galaxy interactor
+"""Integration tests for GalaxyInteractor."""
 
 from packaging.version import Version
 
-from galaxy_test.base.populators import skip_without_tool
-from ._framework import ApiTestCase
+from galaxy_test.driver import integration_util
 
 
-class GalaxyInteractorBackwardCompatTestCase(ApiTestCase):
+class GalaxyInteractorTestCase(integration_util.IntegrationTestCase):
+
+    framework_tool_and_types = True
 
     def test_local_test_data_download(self):
         self.galaxy_interactor._target_galaxy_version = Version("18.09")
         assert self.galaxy_interactor.supports_test_data_download is False
         assert self.galaxy_interactor.test_data_download(tool_id='cat1', filename='1.bed').startswith(b'chr1\t147962192\t147962580')
 
+    def test_run_test_select_version(self):
+        self._run_tool_test(tool_id='multiple_versions', tool_version="0.1")
 
-class GalaxyInteractorTestCase(ApiTestCase):
-
-    @skip_without_tool("multiple_versions")
     def test_get_tool_tests(self):
         # test that get_tool_tests will return the right tests when the tool_version has a '+' in it
         test_data = self.galaxy_interactor.get_tool_tests(tool_id="multiple_versions", tool_version="0.1+galaxy6")

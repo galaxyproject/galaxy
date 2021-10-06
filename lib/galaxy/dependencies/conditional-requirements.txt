@@ -1,8 +1,8 @@
 # These dependencies are only required when certain config options are set
-psycopg2-binary==2.8.4
+psycopg2-binary==2.9.1
 mysqlclient
 fluent-logger
-raven
+sentry-sdk
 pbs_python
 drmaa
 statsd

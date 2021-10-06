@@ -152,6 +152,7 @@ pysam==0.16.0.1
 python-dateutil==2.8.1; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.3.0"
 python-jose==3.2.0
 python-keystoneclient==4.1.1; python_version >= "3.6"
+python-multipart==0.0.5
 python-neutronclient==7.2.1; python_version >= "3.6"
 python-novaclient==17.2.1; python_version >= "3.6"
 python-swiftclient==3.10.1
@@ -182,7 +183,7 @@ six==1.15.0; python_version >= "3.6" and python_full_version < "3.0.0" and pytho
 social-auth-core==3.3.0
 sortedcontainers==2.3.0
 sqlalchemy-migrate==0.13.0
-sqlalchemy==1.4.20
+sqlalchemy==1.4.25
 sqlitedict==1.7.0
 sqlparse==0.4.2; python_version >= "3.5"
 starlette-context==0.3.2; python_version >= "3.7"

@@ -105,6 +105,8 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)collection(/)edit(/)(:collection_id)": "show_collection_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
             "(/)datasets(/)(:dataset_id)/details": "show_dataset_details",
+            // legacy url for older links
+            "(/)datasets(/)(:dataset_id)/show_params": "show_dataset_details",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
             "(/)libraries*path": "show_library_folder",
         },
@@ -123,7 +125,11 @@ export const getAnalysisRouter = (Galaxy) => {
             }
             this.page.display(container, noPadding);
             const mountFn = mountVueComponent(component);
-            return mountFn(propsData, container);
+            if (this.currentComponent && this.currentComponent.$destroy) {
+                this.currentComponent.$destroy();
+            }
+            this.currentComponent = mountFn(propsData, container);
+            return this.currentComponent;
         },
 
         show_tours: function (tour_id) {

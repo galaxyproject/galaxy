@@ -782,15 +782,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         # TODO: used in display_base.mako
 
     @web.expose
-    def export_archive(self, trans, id=None, jeha_id="latest"):
-        """ Export a history to an archive. """
-        #
-        # Get history to export.
-        #
-        jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
-        return self.history_manager.serve_ready_history_export(trans, jeha)
-
-    @web.expose
     @web.json
     @web.require_login("get history name and link")
     def get_name_and_link_async(self, trans, id=None):

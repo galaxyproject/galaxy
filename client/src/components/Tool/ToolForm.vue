@@ -14,14 +14,16 @@
                         :tool-name="toolName"
                     />
                     <Webhook v-if="showSuccess" type="tool" :tool-id="jobDef.tool_id" />
-                    <b-alert v-if="showError" show variant="danger">
-                        <h4>{{ errorTitle | l }}</h4>
-                        <p>
-                            The server could not complete the request. Please contact the Galaxy Team if this error
-                            persists.
-                        </p>
-                        <pre>{{ errorContentPretty }}</pre>
-                    </b-alert>
+                    <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
+                        <b-alert show variant="danger">
+                            The server could not complete this request. Please verify your parameter settings, retry
+                            submission and contact the Galaxy Team if this error persists. A transcript of the submitted
+                            data is shown below.
+                        </b-alert>
+                        <small class="text-muted">
+                            <pre>{{ errorContentPretty }}</pre>
+                        </small>
+                    </b-modal>
                     <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
                     <ToolCard
                         v-if="showForm"
@@ -163,12 +165,19 @@ export default {
         };
     },
     created() {
-        this.requestTool();
+        this.requestTool().then(() => {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel) {
+                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
+                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
+            }
+        });
+    },
+    beforeDestroy() {
         const Galaxy = getGalaxyInstance();
         if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.collection.on("change", () => {
-                this.onUpdate();
-            });
+            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
+            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
         }
     },
     computed: {
@@ -203,6 +212,10 @@ export default {
         reuseAllowed(user) {
             return allowCachedJobs(user.preferences);
         },
+        onHistoryChange() {
+            console.debug(`ToolForm::created - Loading history changes. [${this.id}]`);
+            this.onUpdate();
+        },
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
         },
@@ -225,7 +238,7 @@ export default {
         },
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
-            getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
+            return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
                 this.formConfig = data;
                 this.remapAllowed = this.job_id && data.job_remap;
                 this.showLoading = false;
@@ -263,22 +276,24 @@ export default {
             console.debug("toolForm::onExecute()", jobDef);
             submitJob(jobDef).then(
                 (jobResponse) => {
+                    this.showExecuting = false;
                     if (Galaxy.currHistoryPanel) {
                         Galaxy.currHistoryPanel.refreshContents();
                     }
-                    this.showForm = false;
                     if (jobResponse.produces_entry_points) {
                         this.showEntryPoints = true;
                         this.entryPoints = jobResponse.jobs;
                     }
                     const nJobs = jobResponse && jobResponse.jobs ? jobResponse.jobs.length : 0;
                     if (nJobs > 0) {
+                        this.showForm = false;
                         this.showSuccess = true;
                         this.jobDef = jobDef;
                         this.jobResponse = jobResponse;
                     } else {
                         this.showError = true;
-                        this.errorTitle = "Invalid success response. No jobs found.";
+                        this.showForm = true;
+                        this.errorTitle = "Job submission rejected.";
                         this.errorContent = jobResponse;
                     }
                     if ([true, "true"].includes(config.enable_tool_recommendations)) {
@@ -299,8 +314,7 @@ export default {
                     }
                     if (genericError) {
                         this.showError = true;
-                        this.showForm = false;
-                        this.errorTitle = "Job submission failed";
+                        this.errorTitle = "Job submission failed.";
                         this.errorContent = this.jobDef;
                     }
                 }

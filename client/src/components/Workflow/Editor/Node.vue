@@ -251,9 +251,6 @@ export default {
             this.onRedraw();
         },
         onAddOutput(output, terminal) {
-            if (this.mapOver) {
-                terminal.setMapOver(this.mapOver);
-            }
             this.outputTerminals[output.name] = terminal;
             this.onRedraw();
         },
@@ -324,6 +321,7 @@ export default {
             this.inputs = data.inputs ? data.inputs.slice() : [];
             this.outputs = data.outputs ? data.outputs.slice() : [];
             const outputNames = this.outputs.map((output) => output.name);
+            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             this.activeOutputs.filterOutputs(outputNames);
         },
         initData(data) {
@@ -332,7 +330,6 @@ export default {
             this.annotation = data.annotation;
             this.label = data.label;
             this.setData(data);
-            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             this.showLoading = false;
         },
         labelOutput(outputName, label) {

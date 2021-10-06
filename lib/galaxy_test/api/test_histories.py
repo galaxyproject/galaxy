@@ -1,7 +1,6 @@
 import time
 
 from requests import (
-    post,
     put
 )
 
@@ -43,6 +42,14 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         index_response = self._get("histories").json()
         indexed_history = [h for h in index_response if h["id"] == created_id][0]
         self.assertEqual(indexed_history["name"], "TestHistory1")
+
+    def test_create_history_json(self):
+        name = "TestHistoryJson"
+        post_data = dict(name=name)
+        create_response = self._post("histories", data=post_data, json=True).json()
+        self._assert_has_keys(create_response, "name", "id")
+        self.assertEqual(create_response["name"], name)
+        return create_response
 
     def test_show_history(self):
         history_id = self._create_history("TestHistoryForShow")["id"]
@@ -103,7 +110,7 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
     def test_purge(self):
         history_id = self._create_history("TestHistoryForPurge")["id"]
         data = {'purge': True}
-        self._delete(f"histories/{history_id}", data=data)
+        self._delete(f"histories/{history_id}", data=data, json=True)
         show_response = self._show(history_id)
         assert show_response["deleted"]
         assert show_response["purged"]
@@ -186,23 +193,21 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
 
     def test_create_anonymous_fails(self):
         post_data = dict(name="CannotCreate")
-        # Using lower-level _api_url will cause key to not be injected.
-        histories_url = self._api_url("histories")
-        create_response = post(url=histories_url, data=post_data)
+        create_response = self._post("histories", data=post_data, anon=True, json=True)
         self._assert_status_code_is(create_response, 403)
 
     def test_create_without_session_fails(self):
         post_data = dict(name="SessionNeeded")
         # Using admin=True will boostrap an Admin user without session
-        create_response = self._post("histories", data=post_data, admin=True)
+        create_response = self._post("histories", data=post_data, admin=True, json=True)
         self._assert_status_code_is(create_response, 400)
 
     def test_create_tag(self):
         post_data = dict(name="TestHistoryForTag")
-        history_id = self._post("histories", data=post_data).json()["id"]
+        history_id = self._post("histories", data=post_data, json=True).json()["id"]
         tag_data = dict(value="awesometagvalue")
         tag_url = f"histories/{history_id}/tags/awesometagname"
-        tag_create_response = self._post(tag_url, data=tag_data)
+        tag_create_response = self._post(tag_url, data=tag_data, json=True)
         self._assert_status_code_is(tag_create_response, 200)
 
     # TODO: (CE) test_create_from_copy

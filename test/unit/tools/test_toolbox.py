@@ -13,11 +13,11 @@ from galaxy import model
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
+from galaxy.tool_util.unittest_utils import mock_trans
+from galaxy.tool_util.unittest_utils.sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
-from ..tool_util.toolbox.test_toolbox_filters import mock_trans
 from ..tools_support import UsesApp, UsesTools
-from ..unittest_utils.sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 
 log = logging.getLogger(__name__)
 

@@ -1,13 +1,20 @@
 """Unit tests for importing and exporting data from model stores."""
 import json
 import os
+import pathlib
+import shutil
 from tempfile import mkdtemp, NamedTemporaryFile
 
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.tools.imp_exp import unpack_tar_gz_archive
-from .tools.test_history_imp_exp import _create_datasets, _mock_app, Dummy
+from galaxy.model.unittest_utils import GalaxyDataTestApp
+from galaxy.objectstore.unittest_utils import Config as TestConfig
+from galaxy.util.compression_utils import CompressedFile
+
+TESTCASE_DIRECTORY = pathlib.Path(__file__).parent
+TEST_PATH_1 = TESTCASE_DIRECTORY / '1.txt'
+TEST_PATH_2 = TESTCASE_DIRECTORY / '2.bed'
 
 
 def test_import_export_history():
@@ -454,8 +461,8 @@ def _setup_simple_cat_job(app, state='ok'):
     sa_session.add_all((d1, d2, h, j))
     sa_session.flush()
 
-    app.object_store.update_from_file(d1, file_name="test-data/1.txt", create=True)
-    app.object_store.update_from_file(d2, file_name="test-data/2.bed", create=True)
+    app.object_store.update_from_file(d1, file_name=TEST_PATH_1, create=True)
+    app.object_store.update_from_file(d2, file_name=TEST_PATH_2, create=True)
 
     return u, h, d1, d2, j
 
@@ -479,21 +486,33 @@ def _perform_import_from_directory(directory, app, user, import_history, import_
         import_model_store.perform_import(import_history)
 
 
+def _create_datasets(sa_session, history, n, extension="txt"):
+    return [model.HistoryDatasetAssociation(extension=extension, history=history, create_dataset=True, sa_session=sa_session, hid=i + 1) for i in range(n)]
+
+
+def _mock_app(store_by="id"):
+    app = GalaxyDataTestApp()
+    test_object_store_config = TestConfig(store_by=store_by)
+    app.object_store = test_object_store_config.object_store
+    app.model.Dataset.object_store = app.object_store  # type: ignore
+    return app
+
+
+class Options:
+    is_url = False
+    is_file = True
+    is_b64encoded = False
+
+
 def import_archive(archive_path, app, user):
     dest_parent = mkdtemp()
-    dest_dir = os.path.join(dest_parent, 'dest')
-
-    options = Dummy()
-    options.is_url = False
-    options.is_file = True
-    options.is_b64encoded = False
-
-    args = (archive_path, dest_dir)
-    unpack_tar_gz_archive.main(options, args)
+    dest_dir = CompressedFile(archive_path).extract(dest_parent)
 
     new_history = None
     model_store = store.get_import_model_store_for_directory(dest_dir, app=app, user=user)
     with model_store.target_history(default_history=None) as new_history:
         model_store.perform_import(new_history)
+
+    shutil.rmtree(dest_parent)
 
     return new_history

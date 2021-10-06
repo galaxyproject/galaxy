@@ -36,8 +36,8 @@ def community_file_dir():
 
 @pytest.fixture()
 def community_file_structure(community_file_dir):
-    cf = namedtuple('community', 'file_path hgweb_config_dir dburi')
-    return cf(
+    community = namedtuple('community', 'file_path hgweb_config_dir dburi')
+    return community(
         file_path=os.path.join(community_file_dir, 'database', 'community_files'),
         hgweb_config_dir=community_file_dir,
         dburi="sqlite:///%s" % os.path.join(community_file_dir, 'database', 'community.sqlite')

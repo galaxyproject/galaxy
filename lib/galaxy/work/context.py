@@ -1,3 +1,4 @@
+import abc
 from typing import Optional
 
 from galaxy.managers.context import (
@@ -58,17 +59,33 @@ class WorkRequestContext(ProvidesHistoryContext):
     user = property(get_user, set_user)
 
 
+class GalaxyAbstractRequest:
+    """Abstract interface to provide access to some request properties."""
+
+    @abc.abstractproperty
+    def base(self) -> str:
+        """Base URL of the request."""
+
+    @abc.abstractproperty
+    def host(self) -> str:
+        """The host address."""
+
+
 class SessionRequestContext(WorkRequestContext):
-    """Like WorkRequestContext, but provides access to galaxy session and session."""
+    """Like WorkRequestContext, but provides access to galaxy session and request."""
 
     def __init__(self, **kwargs):
         self.galaxy_session = kwargs.pop('galaxy_session', None)
-        self._host = kwargs.pop("host")
+        self._request: GalaxyAbstractRequest = kwargs.pop("request")
         super().__init__(**kwargs)
 
     @property
     def host(self):
-        return self._host
+        return self._request.host
+
+    @property
+    def request(self) -> GalaxyAbstractRequest:
+        return self._request
 
     def get_galaxy_session(self):
         return self.galaxy_session

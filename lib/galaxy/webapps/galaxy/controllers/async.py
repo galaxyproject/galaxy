@@ -150,7 +150,7 @@ class ASync(BaseUIController):
             trans.sa_session.add(trans.history)
             trans.sa_session.flush()
             # Need to explicitly create the file
-            data.dataset.object_store.create(data)
+            data.dataset.object_store.create(data.dataset)
             trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id), tool_id=tool_id)
 
             try:

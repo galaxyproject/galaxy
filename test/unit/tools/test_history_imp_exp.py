@@ -6,10 +6,12 @@ from shutil import rmtree
 
 from galaxy import model
 from galaxy.exceptions import MalformedContents
+from galaxy.objectstore.unittest_utils import (
+    Config as TestConfig,
+)
 from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper, JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
 from galaxy.tools.imp_exp.export_history import create_archive
 from ..unittest_utils.galaxy_mock import MockApp
-from ..unittest_utils.objectstore_helpers import Config as TestConfig
 
 
 # good enough for the very specific tests we're writing as of now...
@@ -18,12 +20,6 @@ DATASETS_ATTRS_EXPORT = '''[{{"info": "\\nuploaded txt file", "peek": "foo\\n\\n
 DATASETS_ATTRS_PROVENANCE = '''[]'''
 HISTORY_ATTRS = '''{"hid_counter": 2, "update_time": "2016-02-08 18:38:38.705058", "create_time": "2016-02-08 18:38:20.790057", "name": "paste", "tags": {}, "genome_build": "?", "annotation": null}'''
 JOBS_ATTRS = '''[{"info": null, "tool_id": "upload1", "update_time": "2016-02-08T18:39:23.356482", "stdout": "", "input_mapping": {}, "tool_version": "1.1.4", "traceback": null, "command_line": "python /galaxy/tools/data_source/upload.py /galaxy /scratch/tmppwU9rD /scratch/tmpP4_45Y 1:/scratch/jobs/000/dataset_1_files:/data/000/dataset_1.dat", "exit_code": 0, "output_datasets": [1], "state": "ok", "create_time": "2016-02-08T18:38:39.153873", "params": {"files": [{"to_posix_lines": "Yes", "NAME": "None", "file_data": null, "space_to_tab": null, "url_paste": "/scratch/strio_url_paste_o6nrv8", "__index__": 0, "ftp_files": "", "uuid": "None"}], "paramfile": "/scratch/tmpP4_45Y", "file_type": "auto", "files_metadata": {"file_type": "auto", "__current_case__": 41}, "async_datasets": "None", "dbkey": "?"}, "stderr": ""}]'''
-
-
-class MockSetExternalTool:
-
-    def regenerate_imported_metadata_if_needed(self, *args, **kwds):
-        pass
 
 
 def _run_jihaw_cleanup(archive_dir, app=None):
@@ -43,7 +39,6 @@ def _mock_app(store_by="id"):
     test_object_store_config = TestConfig(store_by=store_by)
     app.object_store = test_object_store_config.object_store
     app.model.Dataset.object_store = app.object_store
-    app.datatypes_registry.set_external_metadata_tool = MockSetExternalTool()
     return app
 
 
@@ -113,6 +108,15 @@ def test_export_dataset():
     app, sa_session, h = _setup_history_for_export("Datasets History")
 
     d1, d2 = _create_datasets(sa_session, h, 2)
+    d1_hash = model.DatasetHash()
+    d1_hash.hash_function = "MD5"
+    d1_hash.hash_value = "foobar"
+    d1.dataset.hashes.append(d1_hash)
+    d1.dataset.created_from_basename = "my_cool_name.txt"
+    d1_source = model.DatasetSource()
+    d1_source.source_uri = "http://google.com/mycooldata.txt"
+    d1.dataset.sources.append(d1_source)
+
     d1.state = d2.state = 'ok'
 
     j = model.Job()
@@ -146,6 +150,15 @@ def test_export_dataset():
 
     assert datasets[0].state == 'ok'
     assert datasets[1].state == 'ok'
+    assert len(datasets[0].dataset.hashes) == 1
+    dataset_hash = datasets[0].dataset.hashes[0]
+    assert dataset_hash.hash_function == "MD5"
+    assert dataset_hash.hash_value == "foobar"
+    assert datasets[0].dataset.created_from_basename == "my_cool_name.txt"
+
+    assert len(datasets[0].dataset.sources) == 1
+    dataset_source = datasets[0].dataset.sources[0]
+    assert dataset_source.source_uri == "http://google.com/mycooldata.txt"
 
     with open(datasets[0].file_name) as f:
         assert f.read().startswith("chr1    4225    19670")

@@ -102,8 +102,6 @@ class PBSJobRunner(AsynchronousJobRunner):
 
         # Proceed with general initialization
         super().__init__(app, nworkers)
-        self._init_monitor_thread()
-        self._init_worker_threads()
 
     @property
     def default_pbs_server(self):

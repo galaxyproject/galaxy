@@ -64,6 +64,7 @@ class JobHandler(JobHandlerI):
         self.job_stop_queue = JobHandlerStopQueue(app, self.dispatcher)
 
     def start(self):
+        self.dispatcher.start()
         self.job_queue.start()
         self.job_stop_queue.start()
 
@@ -1024,6 +1025,10 @@ class DefaultJobDispatcher:
         # dict by the plugin.
         self.app.job_config.convert_legacy_destinations(self.job_runners)
         log.debug(f"Loaded job runners plugins: {':'.join(self.job_runners.keys())}")
+
+    def start(self):
+        for runner in self.job_runners.values():
+            runner.start()
 
     def __get_runner_name(self, job_wrapper):
         if job_wrapper.can_split():

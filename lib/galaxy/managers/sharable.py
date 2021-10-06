@@ -11,23 +11,13 @@ A sharable Galaxy object:
 """
 import logging
 import re
-from enum import Enum
 from typing import (
-    List,
     Optional,
     Set,
-    Tuple,
     Type,
-    Union,
 )
 
-from pydantic import (
-    BaseModel,
-    Extra,
-    Field,
-)
 from sqlalchemy import (
-    false,
     true,
 )
 
@@ -44,123 +34,14 @@ from galaxy.model import (
     User,
     UserShareAssociation,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import (
+    ShareWithExtra,
+    SharingOptions,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import ready_name_for_url
 
 log = logging.getLogger(__name__)
-
-UserIdentifier = Union[EncodedDatabaseIdField, str]
-
-
-class SharingOptions(str, Enum):
-    """Options for sharing resources that may have restricted access to all or part of their contents."""
-    make_public = "make_public"
-    make_accessible_to_shared = "make_accessible_to_shared"
-    no_changes = "no_changes"
-
-
-class ShareWithExtra(BaseModel):
-    can_share: bool = Field(
-        False,
-        title="Can Share",
-        description="Indicates whether the resource can be directly shared or requires further actions.",
-    )
-
-    class Config:
-        extra = Extra.allow
-
-
-class ShareWithPayload(BaseModel):
-    user_ids: List[UserIdentifier] = Field(
-        ...,
-        title="User Identifiers",
-        description=(
-            "A collection of encoded IDs (or email addresses) of users "
-            "that this resource will be shared with."
-        ),
-    )
-    share_option: Optional[SharingOptions] = Field(
-        None,
-        title="Share Option",
-        description=(
-            "User choice for sharing resources which its contents may be restricted:\n"
-            " - None: The user did not choose anything yet or no option is needed.\n"
-            f" - {SharingOptions.make_public}: The contents of the resource will be made publicly accessible.\n"
-            f" - {SharingOptions.make_accessible_to_shared}: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.\n"
-            f" - {SharingOptions.no_changes}: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.\n"
-        ),
-    )
-
-
-class SetSlugPayload(BaseModel):
-    new_slug: str = Field(
-        ...,
-        title="New Slug",
-        description="The slug that will be used to access this shared item.",
-    )
-
-
-class UserEmail(BaseModel):
-    id: EncodedDatabaseIdField = Field(
-        ...,
-        title="User ID",
-        description="The encoded ID of the user.",
-    )
-    email: str = Field(
-        ...,
-        title="Email",
-        description="The email of the user.",
-    )
-
-
-class SharingStatus(BaseModel):
-    id: EncodedDatabaseIdField = Field(
-        ...,
-        title="ID",
-        description="The encoded ID of the resource to be shared.",
-    )
-    title: str = Field(
-        ...,
-        title="Title",
-        description="The title or name of the resource.",
-    )
-    importable: bool = Field(
-        ...,
-        title="Importable",
-        description="Whether this resource can be published using a link.",
-    )
-    published: bool = Field(
-        ...,
-        title="Published",
-        description="Whether this resource is currently published.",
-    )
-    users_shared_with: List[UserEmail] = Field(
-        [],
-        title="Users shared with",
-        description="The list of encoded ids for users the resource has been shared.",
-    )
-    username_and_slug: Optional[str] = Field(
-        None,
-        title="Username and slug",
-        description="The relative URL in the form of /u/{username}/{resource_single_char}/{slug}",
-    )
-
-
-class ShareWithStatus(SharingStatus):
-    errors: List[str] = Field(
-        [],
-        title="Errors",
-        description="Collection of messages indicating that the resource was not shared with some (or all users) due to an error.",
-    )
-    extra: Optional[ShareWithExtra] = Field(
-        None,
-        title="Extra",
-        description=(
-            "Optional extra information about this shareable resource that may be of interest. "
-            "The contents of this field depend on the particular resource."
-        ),
-    )
 
 
 class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secured.AccessibleManagerMixin,
@@ -653,108 +534,3 @@ class SlugBuilder:
         # Set slug and return.
         item.slug = new_slug
         return item.slug == cur_slug
-
-
-class ShareableService:
-    """ Provides the logic used by the API to share resources with other users."""
-
-    def __init__(self, manager: SharableModelManager, serializer: SharableModelSerializer) -> None:
-        self.manager = manager
-        self.serializer = serializer
-
-    def set_slug(self, trans, id: EncodedDatabaseIdField, payload: SetSlugPayload):
-        item = self._get_item_by_id(trans, id)
-        self.manager.set_slug(item, payload.new_slug, trans.user)
-
-    def sharing(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
-        """Gets the current sharing status of the item with the given id."""
-        item = self._get_item_by_id(trans, id)
-        return self._get_sharing_status(trans, item)
-
-    def enable_link_access(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
-        item = self._get_item_by_id(trans, id)
-        self.manager.make_importable(item)
-        return self._get_sharing_status(trans, item)
-
-    def disable_link_access(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
-        item = self._get_item_by_id(trans, id)
-        self.manager.make_non_importable(item)
-        return self._get_sharing_status(trans, item)
-
-    def publish(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
-        item = self._get_item_by_id(trans, id)
-        self.manager.publish(item)
-        return self._get_sharing_status(trans, item)
-
-    def unpublish(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
-        item = self._get_item_by_id(trans, id)
-        self.manager.unpublish(item)
-        return self._get_sharing_status(trans, item)
-
-    def share_with_users(self, trans, id: EncodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
-        item = self._get_item_by_id(trans, id)
-        users, errors = self._get_users(trans, payload.user_ids)
-        extra = self._share_with_options(trans, item, users, errors, payload.share_option)
-        base_status = self._get_sharing_status(trans, item)
-        status = ShareWithStatus.parse_obj(base_status)
-        status.extra = extra
-        status.errors.extend(errors)
-        return status
-
-    def _share_with_options(
-        self,
-        trans,
-        item,
-        users: Set[User],
-        errors: Set[str],
-        share_option: Optional[SharingOptions] = None,
-    ):
-        extra = self.manager.get_sharing_extra_information(trans, item, users, errors, share_option)
-        if not extra or extra.can_share:
-            self.manager.update_current_sharing_with_users(item, users)
-            extra = None
-        return extra
-
-    def _get_item_by_id(self, trans, id: EncodedDatabaseIdField):
-        class_name = self.manager.model_class.__name__
-        item = base.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
-        return item
-
-    def _get_sharing_status(self, trans, item):
-        status = self.serializer.serialize_to_view(item,
-            user=trans.user, trans=trans, default_view="sharing")
-        status["users_shared_with"] = [{"id": self.manager.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
-        return SharingStatus.parse_obj(status)
-
-    def _get_users(self, trans, emails_or_ids: Optional[List] = None) -> Tuple[Set[User], Set[str]]:
-        if emails_or_ids is None:
-            raise exceptions.MessageException("Missing required user IDs or emails")
-        send_to_users: Set[User] = set()
-        send_to_err: Set[str] = set()
-        for email_or_id in set(emails_or_ids):
-            email_or_id = email_or_id.strip()
-            if not email_or_id:
-                continue
-
-            send_to_user = None
-            if '@' in email_or_id:
-                email_address = email_or_id
-                send_to_user = self.manager.user_manager.by_email(email_address,
-                    filters=[User.table.c.deleted == false()])
-            else:
-                try:
-                    decoded_user_id = trans.security.decode_id(email_or_id)
-                    send_to_user = self.manager.user_manager.by_id(decoded_user_id)
-                    if send_to_user.deleted:
-                        send_to_user = None
-                except exceptions.MalformedId:
-                    send_to_user = None
-
-            if not send_to_user:
-                send_to_err.add(f"{email_or_id} is not a valid Galaxy user.")
-            elif send_to_user == trans.user:
-                send_to_err.add("You cannot share resources with yourself.")
-            else:
-                send_to_users.add(send_to_user)
-
-        return send_to_users, send_to_err

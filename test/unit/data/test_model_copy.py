@@ -5,12 +5,17 @@ import threading
 import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
+from galaxy.model import (
+    History,
+    HistoryDatasetAssociation,
+    User,
+)
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.util import ExecutionTimer
-from ..unittest_utils.objectstore_helpers import (
+from galaxy.objectstore.unittest_utils import (
     Config as TestConfig,
     DISK_TEST_CONFIG,
 )
+from galaxy.util import ExecutionTimer
 
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -104,15 +109,15 @@ def _setup_mapping_and_user():
         # Start the database and connect the mapping
         model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=object_store, slow_query_log_threshold=SLOW_QUERY_LOG_THRESHOLD, thread_local_log=THREAD_LOCAL_LOG)
 
-        u = model.User(email="historycopy@example.com", password="password")
-        h1 = model.History(name="HistoryCopyHistory1", user=u)
+        u = User(email="historycopy@example.com", password="password")
+        h1 = History(name="HistoryCopyHistory1", user=u)
         model.context.add_all([u, h1])
         model.context.flush()
         yield test_config, object_store, model, h1
 
 
 def _create_hda(model, object_store, history, path, visible=True, include_metadata_file=False):
-    hda = model.HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=model.context)
+    hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=model.context)
     hda.visible = visible
     model.context.add(hda)
     model.context.flush([hda])

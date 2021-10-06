@@ -854,7 +854,13 @@ class RefgenieToolDataTable(TabularToolDataTable):
             self.columns['name'] = self.columns['value']
 
     def parse_file_fields(self, filename, errors=None, here="__HERE__"):
-        rgc = refgenconf.RefGenConf(filename)
+        try:
+            rgc = refgenconf.RefGenConf(filename, writable=False, skip_read_lock=True)
+        except refgenconf.exceptions.RefgenconfError as e:
+            log.error('Unable to load refgenie config file "%s": %s', filename, e)
+            if errors is not None:
+                errors.append(e)
+            return []
         rval = []
         for genome in rgc.list_genomes_by_asset(self.rg_asset):
             genome_attributes = rgc.get_genome_attributes(genome)

@@ -107,6 +107,11 @@ sign_out:
     cancel_button: '.modal-footer .buttons #button-0'
     sign_out_button: '.modal-footer .buttons #button-1'
 
+dataset_details:
+  selectors:
+    _: 'table#dataset-details'
+    tool_parameters: 'table#tool-parameters'
+
 history_panel:
   menu:
     labels:
@@ -637,6 +642,21 @@ tour:
       end: '${_} button[data-role="end"]'
 
 admin:
+
+  allowlist:
+    selectors:
+      toolshed:
+        type: xpath
+        selector: '//a[contains(text(), "Toolshed Tools")]'
+      local:
+        type: xpath
+        selector: '//a[contains(text(), "Local Tools")]'
+      sanitized:
+        type: xpath
+        selector: '//a[contains(text(), "HTML Sanitized")]'
+      rendered_active:
+        type: xpath
+        selector: '//div[contains(@class, "active")]//a[contains(text(), "HTML Rendered")]'
 
   manage_dependencies:
     selectors:

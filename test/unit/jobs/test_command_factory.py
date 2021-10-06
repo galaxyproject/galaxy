@@ -2,6 +2,7 @@ import os
 import shutil
 from os import getcwd
 from tempfile import mkdtemp
+from typing import List, Tuple
 from unittest import TestCase
 
 from galaxy.jobs.command_factory import (
@@ -21,7 +22,7 @@ class TestCommandFactory(TestCase):
     def setUp(self):
         self.job_dir = mkdtemp()
         self.job_wrapper = MockJobWrapper(self.job_dir)
-        self.workdir_outputs = []
+        self.workdir_outputs: List[Tuple[str, str]] = []
 
         def workdir_outputs(job_wrapper, **kwds):
             assert job_wrapper == self.job_wrapper
