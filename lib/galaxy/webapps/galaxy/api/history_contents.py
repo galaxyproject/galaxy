@@ -28,7 +28,7 @@ from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHistoryContentItem,
     AnyJobStateSummary,
-    DatasetPermissionAction,
+    DatasetAssociationRoles,
     HistoryContentType,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
@@ -268,6 +268,20 @@ def parse_index_jobs_summary_params(
     )
 
 
+def get_update_permission_payload(payload: Dict[str, Any]) -> UpdateDatasetPermissionsPayload:
+    """Coverts the generic payload dictionary into a UpdateDatasetPermissionsPayload model with custom parsing.
+
+    This is an attempt on supporting multiple aliases for the permissions params."""
+    # There are several allowed names for the same role list parameter, i.e.: `access`, `access_ids`, `access_ids[]`
+    # The `access_ids[]` name is not pydantic friendly, so this will be modelled as an alias but we can only set one alias
+    # TODO: Maybe we should choose only one way/naming and deprecate the others?
+    payload["access_ids"] = payload.get("access_ids[]") or payload.get("access")
+    payload["manage_ids"] = payload.get("manage_ids[]") or payload.get("manage")
+    payload["modify_ids"] = payload.get("modify_ids[]") or payload.get("modify")
+    update_payload = UpdateDatasetPermissionsPayload(**payload)
+    return update_payload
+
+
 @router.cbv
 class FastAPIHistoryContents:
     service: HistoriesContentsService = depends(HistoriesContentsService)
@@ -453,6 +467,25 @@ class FastAPIHistoryContents:
         """Create a new `HDA` or `HDCA` in the given History."""
         payload.type = type or payload.type
         return self.service.create(trans, history_id, payload, serialization_params)
+
+    @router.put(
+        '/api/histories/{history_id}/contents/{dataset_id}/permissions',
+        summary='Set permissions of the given history dataset to the given role ids.',
+    )
+    def update_permissions(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        dataset_id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
+        payload: Dict[str, Any] = Body(
+            default=...,
+            example=UpdateDatasetPermissionsPayload(),
+        ),
+    ) -> DatasetAssociationRoles:
+        """Set permissions of the given history dataset to the given role ids."""
+        update_payload = get_update_permission_payload(payload)
+        return self.service.update_permissions(trans, dataset_id, update_payload)
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
@@ -749,23 +782,8 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         """
         if payload:
             kwd.update(payload)
-        update_payload = self._get_update_permission_payload(kwd)
+        update_payload = get_update_permission_payload(kwd)
         return self.service.update_permissions(trans, history_content_id, update_payload)
-
-    def _get_update_permission_payload(self, payload: Dict[str, Any]) -> UpdateDatasetPermissionsPayload:
-        """Coverts the payload dictionary into a UpdateDatasetPermissionsPayload model with custom parsing.
-
-        This is an attempt on supporting multiple aliases for the permissions params."""
-        # There are several allowed names for the same role list parameter, i.e.: `access`, `access_ids`, `access_ids[]`
-        # The `access_ids[]` name is not pydantic friendly, so this will be modelled as an alias but we can only set one alias
-        # TODO: Maybe we should choose only one way and deprecate the others?
-        payload["access_ids[]"] = payload.get("access_ids[]") or payload.get("access")
-        payload["manage_ids[]"] = payload.get("manage_ids[]") or payload.get("manage")
-        payload["modify_ids[]"] = payload.get("modify_ids[]") or payload.get("modify")
-        # The action is required, so the default will be used if none is specified
-        payload["action"] = payload.get("action", DatasetPermissionAction.set_permissions)
-        update_payload = UpdateDatasetPermissionsPayload(**payload)
-        return update_payload
 
     @expose_api_anonymous
     def update_batch(self, trans, history_id, payload, **kwd):
