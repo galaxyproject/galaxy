@@ -346,7 +346,7 @@ class BaseDatasetPopulator(BasePopulator):
         delete_response = self._delete(f"histories/{history_id}/contents/{content_id}")
         return delete_response
 
-    def create_tool_from_path(self, tool_path: str) -> Response:
+    def create_tool_from_path(self, tool_path: str) -> Dict[str, Any]:
         tool_directory = os.path.dirname(os.path.abspath(tool_path))
         payload = dict(
             src="from_path",
@@ -355,7 +355,7 @@ class BaseDatasetPopulator(BasePopulator):
         )
         return self._create_tool_raw(payload)
 
-    def create_tool(self, representation, tool_directory: Optional[str] = None) -> Response:
+    def create_tool(self, representation, tool_directory: Optional[str] = None) -> Dict[str, Any]:
         if isinstance(representation, dict):
             representation = json.dumps(representation)
         payload = dict(
@@ -364,7 +364,7 @@ class BaseDatasetPopulator(BasePopulator):
         )
         return self._create_tool_raw(payload)
 
-    def _create_tool_raw(self, payload) -> Response:
+    def _create_tool_raw(self, payload) -> Dict[str, Any]:
         try:
             create_response = self._post("dynamic_tools", data=payload, admin=True)
         except TypeError:
