@@ -39,7 +39,7 @@ masthead:
     user_menu: '#user .dropdown-menu a'
     workflow: '#workflow .nav-link'
 
-    user_email:
+    username:
       type: xpath
       selector: '//a[contains(text(), "Logged in as")]'
 

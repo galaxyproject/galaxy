@@ -576,7 +576,7 @@ class NavigatesGalaxy(HasDriver):
             # Make sure the user menu was dropped down
             user_menu = self.components.masthead.user_menu.wait_for_visible()
             try:
-                username_element = self.components.masthead.user_email.wait_for_visible()
+                username_element = self.components.masthead.username.wait_for_visible()
             except self.TimeoutException as e:
                 menu_items = user_menu.find_elements_by_css_selector("li a")
                 menu_text = [mi.text for mi in menu_items]
