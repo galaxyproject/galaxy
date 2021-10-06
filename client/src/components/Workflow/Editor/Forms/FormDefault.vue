@@ -52,7 +52,6 @@
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
-import FormMessage from "components/Form/FormMessage";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import WorkflowIcons from "components/Workflow/icons";
 
@@ -61,7 +60,6 @@ export default {
         FormDisplay,
         FormCard,
         FormElement,
-        FormMessage,
     },
     props: {
         datatypes: {
