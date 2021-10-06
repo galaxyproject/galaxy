@@ -38,9 +38,8 @@
                     </b-table>
                     <ConfigProvider v-slot="{ config }">
                         <ToolPanelViewProvider
-                            v-if="config.default_panel_view"
                             v-slot="{ currentPanel }"
-                            :site-default-panel-view="config.default_panel_view"
+                            site-default-panel-view="default"
                             :set-default-panel-view="true"
                         >
                             <InstallationSettings
