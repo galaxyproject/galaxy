@@ -40,7 +40,7 @@ class IntervalTask:
     def run(self):
         if self.immediate_start:
             self._exec()
-        while not self.event.isSet():
+        while not self.event.is_set():
             self.event.wait(self.interval)
             if self.running:
                 self._exec()

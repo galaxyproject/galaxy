@@ -23,7 +23,7 @@ class Monitors:
             monitor_func = getattr(self, target_name)
         self.sleeper = Sleeper()
         self.monitor_thread = threading.Thread(name=name, target=monitor_func)
-        self.monitor_thread.setDaemon(True)
+        self.monitor_thread.daemon = True
         self._start = start
         self.start_monitoring()
 

@@ -792,7 +792,7 @@ class DistributedObjectStore(NestedObjectStore):
         if fsmon and (self.global_max_percent_full or [_ for _ in self.max_percent_full.values() if _ != 0.0]):
             self.sleeper = Sleeper()
             self.filesystem_monitor_thread = threading.Thread(target=self.__filesystem_monitor)
-            self.filesystem_monitor_thread.setDaemon(True)
+            self.filesystem_monitor_thread.daemon = True
             self.filesystem_monitor_thread.start()
             log.info("Filesystem space monitor started")
 
