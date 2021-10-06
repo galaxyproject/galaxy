@@ -14,6 +14,7 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
+    skip_if_github_down,
     skip_without_tool,
     stage_rules_example,
     uses_test_history,
@@ -229,6 +230,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert xref["value"] == "bwa"
 
     @skip_without_tool("test_data_source")
+    @skip_if_github_down
     def test_data_source_ok_request(self):
         with self.dataset_populator.test_history() as history_id:
             payload = self.dataset_populator.run_tool_payload(

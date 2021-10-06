@@ -8,6 +8,7 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
+    skip_if_github_down,
 )
 from ._framework import ApiTestCase
 
@@ -252,6 +253,7 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 400)
         assert create_response.json() == "Requested extension 'xxx' unknown, cannot upload dataset."
 
+    @skip_if_github_down
     def test_fetch_failed_validation(self):
         # Exception handling is really rough here - we should be creating a dataset in error instead
         # of just failing the job like this.
@@ -282,6 +284,7 @@ class LibrariesApiTestCase(ApiTestCase):
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["state"] == "error", dataset
 
+    @skip_if_github_down
     def test_fetch_url_archive_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
         targets = [{

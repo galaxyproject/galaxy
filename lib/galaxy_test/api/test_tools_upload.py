@@ -11,6 +11,7 @@ from galaxy_test.base.constants import (
 )
 from galaxy_test.base.populators import (
     DatasetPopulator,
+    skip_if_github_down,
     skip_if_site_down,
     skip_without_datatype,
     stage_inputs,
@@ -292,6 +293,7 @@ class ToolsUploadTestCase(ApiTestCase):
         assert details["genome_build"] == "hg19"
 
     @uses_test_history(require_new=False)
+    @skip_if_github_down
     def test_upload_multiple_mixed_success(self, history_id):
         destination = {"type": "hdas"}
         targets = [{
@@ -323,6 +325,7 @@ class ToolsUploadTestCase(ApiTestCase):
         assert output1["state"] == "error"
 
     @uses_test_history(require_new=False)
+    @skip_if_github_down
     def test_fetch_bam_file_from_url_with_extension_set(self, history_id):
         destination = {"type": "hdas"}
         targets = [{
@@ -345,6 +348,7 @@ class ToolsUploadTestCase(ApiTestCase):
         self.dataset_populator.get_history_dataset_details(history_id, dataset=outputs[0], assert_ok=True)
 
     @uses_test_history(require_new=False)
+    @skip_if_github_down
     def test_fetch_html_from_url(self, history_id):
         destination = {"type": "hdas"}
         targets = [{
