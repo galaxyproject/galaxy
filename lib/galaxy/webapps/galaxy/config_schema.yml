@@ -225,6 +225,13 @@ mapping:
           Where temporary files are stored. It must be accessible at the same path on any cluster
           nodes that will run Galaxy jobs, unless using Pulsar.
 
+      maximum_upload_file_size:
+        type: int
+        default: 100
+        required: false
+        desc: |
+          Maximum size of uploadable files in gigabytes.
+
       tool_config_file:
         type: any
         default: tool_conf.xml

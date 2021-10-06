@@ -242,6 +242,9 @@ galaxy:
   # <data_dir>.
   #new_file_path: tmp
 
+  # Maximum size of uploadable files in gigabytes.
+  #maximum_upload_file_size: 100
+
   # Tool config files, defines what tools are available in Galaxy. Tools
   # can be locally developed or installed from Galaxy tool sheds.
   # (config/tool_conf.xml.sample will be used if left unset and

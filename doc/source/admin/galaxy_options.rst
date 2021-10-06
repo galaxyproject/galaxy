@@ -287,6 +287,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``maximum_upload_file_size``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum size of uploadable files in gigabytes.
+:Default: ``100``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``tool_config_file``
 ~~~~~~~~~~~~~~~~~~~~
