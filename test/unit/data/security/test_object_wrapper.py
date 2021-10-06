@@ -359,6 +359,65 @@ class TestNumericTypesMethods:
         assert math.floor(foo) == math.floor(wrapped_foo) == math.floor(m)
         assert math.ceil(foo) == math.ceil(wrapped_foo) == math.ceil(m)
 
+    def test_numeric_method_return_values_are_sanitized(self):
+        # Test verifies that return values from numeric methods are wrapped.
+        foo = IllegalReturnValueSimulator()
+        wrapped_foo = wrap_with_safe_string(foo)
+
+        # Binary arithmetic operations
+
+        # __add__
+        assert not is_sanitized(foo + 1)
+        assert is_sanitized(wrapped_foo + 1)
+
+        # __sub__
+        assert not is_sanitized(foo - 1)
+        assert is_sanitized(wrapped_foo - 1)
+
+        # __mul__
+        assert not is_sanitized(foo * 1)
+        assert is_sanitized(wrapped_foo * 1)
+
+        # __truediv__
+        assert not is_sanitized(foo / 1)
+        assert is_sanitized(wrapped_foo / 1)
+
+        # __floordiv__
+        assert not is_sanitized(foo // 1)
+        assert is_sanitized(wrapped_foo // 1)
+
+        # __mod__
+        assert not is_sanitized(foo % 1)
+        assert is_sanitized(wrapped_foo % 1)
+
+        # __divmod__
+        assert not is_sanitized(divmod(foo, 1))
+        assert is_sanitized(divmod(wrapped_foo, 1))
+
+        # __pow__
+        assert not is_sanitized(foo ** 1)
+        assert is_sanitized(wrapped_foo ** 1)
+
+        # __lshift__
+        assert not is_sanitized(foo << 1)
+        assert is_sanitized(wrapped_foo << 1)
+
+        # __rshift__
+        assert not is_sanitized(foo >> 1)
+        assert is_sanitized(wrapped_foo >> 1)
+
+        # __and__
+        assert not is_sanitized(foo & 1)
+        assert is_sanitized(wrapped_foo & 1)
+
+        # __xor__
+        assert not is_sanitized(foo ^ 1)
+        assert is_sanitized(wrapped_foo ^ 1)
+
+        # __or__
+        assert not is_sanitized(foo | 1)
+        assert is_sanitized(wrapped_foo | 1)
+
 
 class Foo:
     pass
@@ -638,3 +697,10 @@ class IllegalReturnValueSimulator:
 
     def __ceil__(self):
         return 'a<\v'
+
+
+def is_sanitized(value):
+    """ Returns True if wrapping value doesn't change it."""
+    wrapped = wrap_with_safe_string(value)
+    # We must check type equality because __eq__ on wrapped value is overwritten.
+    return type(value) == type(wrapped) and value == wrapped
