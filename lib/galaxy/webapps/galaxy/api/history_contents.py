@@ -487,6 +487,24 @@ class FastAPIHistoryContents:
         update_payload = get_update_permission_payload(payload)
         return self.service.update_permissions(trans, dataset_id, update_payload)
 
+    @router.put(
+        '/api/histories/{history_id}/contents',
+        summary='Batch update specific properties of a set items contained in the given History.',
+    )
+    def update_batch(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: UpdateHistoryContentsBatchPayload = Body(...),
+    ) -> List[AnyHistoryContentItem]:
+        """Batch update specific properties of a set items contained in the given History.
+
+        If you provide an invalid/unknown property key the request will not fail, but no changes
+        will be made to the items.
+        """
+        return self.service.update_batch(trans, history_id, payload, serialization_params)
+
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
 

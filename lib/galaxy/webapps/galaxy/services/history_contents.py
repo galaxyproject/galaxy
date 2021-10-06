@@ -486,7 +486,7 @@ class HistoriesContentsService(ServiceBase):
         history_id: EncodedDatabaseIdField,
         payload: UpdateHistoryContentsBatchPayload,
         serialization_params: SerializationParams,
-    ):
+    ) -> List[AnyHistoryContentItem]:
         """
         PUT /api/histories/{history_id}/contents
 
