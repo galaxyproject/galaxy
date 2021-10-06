@@ -281,6 +281,8 @@ class SafeStringWrapper:
             item = item.unsanitized
         return item in self.unsanitized
 
+    # Binary arithmetic operations
+
     def __add__(self, other):
         return self.__safe_string_wrapper_function__(self.unsanitized.__add__(unwrap(other)))
 
@@ -289,6 +291,9 @@ class SafeStringWrapper:
 
     def __mul__(self, other):
         return self.__safe_string_wrapper_function__(self.unsanitized.__mul__(unwrap(other)))
+
+    def __truediv__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__truediv__(unwrap(other)))
 
     def __floordiv__(self, other):
         return self.__safe_string_wrapper_function__(self.unsanitized.__floordiv__(unwrap(other)))
@@ -309,28 +314,54 @@ class SafeStringWrapper:
         return self.__safe_string_wrapper_function__(self.unsanitized.__rshift__(unwrap(other)))
 
     def __and__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized & other)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__and__(unwrap(other)))
 
     def __xor__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized ^ other)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__xor__(unwrap(other)))
 
     def __or__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(self.unsanitized | other)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__or__(unwrap(other)))
 
-    def __truediv__(self, other):
-        return self.__safe_string_wrapper_function__(self.unsanitized.__truediv__(unwrap(other)))
+    # Binary arithmetic operations with reflected (swapped) operands
 
-    # The only reflected operand that we will define is __rpow__, due to coercion rules complications as per docs
-    def __rpow__(self, other):
-        while isinstance(other, SafeStringWrapper):
-            other = other.unsanitized
-        return self.__safe_string_wrapper_function__(pow(other, self.unsanitized))
+    def __radd__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__radd__(unwrap(other)))
+
+    def __rsub__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rsub__(unwrap(other)))
+
+    def __rmul__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rmul__(unwrap(other)))
+
+    def __rtruediv__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rtruediv__(unwrap(other)))
+
+    def __rfloordiv__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rfloordiv__(unwrap(other)))
+
+    def __rmod__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rmod__(unwrap(other)))
+
+    def __rdivmod__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rdivmod__(unwrap(other)))
+
+    def __rpow__(self, *other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rpow__(*unwrap(other)))
+
+    def __rlshift__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rlshift__(unwrap(other)))
+
+    def __rrshift__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rrshift__(unwrap(other)))
+
+    def __rand__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rand__(unwrap(other)))
+
+    def __rxor__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__rxor__(unwrap(other)))
+
+    def __ror__(self, other):
+        return self.__safe_string_wrapper_function__(self.unsanitized.__ror__(unwrap(other)))
 
     # Do not implement in-place operands
 
