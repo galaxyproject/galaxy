@@ -489,8 +489,7 @@ class GoldenPath(Tabular):
         False
         """
         found_non_comment_lines = False
-        # try:
-        if True:
+        try:
             for line in iter_headers(file_prefix, '\t', comment_designator='#'):
                 if line and not line[0].startswith('#'):
                     if len(line) != 9:
@@ -509,8 +508,8 @@ class GoldenPath(Tabular):
                         assert int(line[5]) == 100
                     assert all(map(lambda x: str(x).isnumeric() and int(x) > 0, ostensible_numbers))
                     found_non_comment_lines = True
-        # except Exception:
-        #     return False
+        except Exception:
+            return False
         return found_non_comment_lines
 
 
