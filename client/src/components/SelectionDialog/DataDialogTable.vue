@@ -50,6 +50,11 @@
                 {{ data.value ? data.value : "-" }}
             </template>
         </b-table>
+        <div class="text-center" v-if="isBusy">
+            <b-spinner small type="grow"></b-spinner>
+            <b-spinner small type="grow"></b-spinner>
+            <b-spinner small type="grow"></b-spinner>
+        </div>
         <div v-if="nItems === 0">
             <div v-if="filter">
                 No search results found for: <b>{{ this.filter }}</b
