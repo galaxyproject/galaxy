@@ -363,19 +363,19 @@ class SafeStringWrapper:
     def __ror__(self, other):
         return self.__safe_string_wrapper_function__(self.unsanitized.__ror__(unwrap(other)))
 
-    # Do not implement in-place operands
+    # Unary arithmetic operations
 
     def __neg__(self):
-        return self.__safe_string_wrapper_function__(-self.unsanitized)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__neg__())
 
     def __pos__(self):
-        return self.__safe_string_wrapper_function__(+self.unsanitized)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__pos__())
 
     def __abs__(self):
-        return self.__safe_string_wrapper_function__(abs(self.unsanitized))
+        return self.__safe_string_wrapper_function__(self.unsanitized.__abs__())
 
     def __invert__(self):
-        return self.__safe_string_wrapper_function__(~self.unsanitized)
+        return self.__safe_string_wrapper_function__(self.unsanitized.__invert__())
 
     def __complex__(self):
         return self.__safe_string_wrapper_function__(complex(self.unsanitized))

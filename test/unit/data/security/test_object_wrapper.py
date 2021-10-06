@@ -472,6 +472,24 @@ class TestNumericTypesMethods:
         assert not is_sanitized(1 | foo)
         assert is_sanitized(1 | wrapped_foo)
 
+        # Unary arithmetic operations
+
+        # __neg__
+        assert not is_sanitized(-foo)
+        assert is_sanitized(-wrapped_foo)
+
+        # __pos__
+        assert not is_sanitized(+foo)
+        assert is_sanitized(+wrapped_foo)
+
+        # __abs__
+        assert not is_sanitized(abs(foo))
+        assert is_sanitized(abs(wrapped_foo))
+
+        # __invert__
+        assert not is_sanitized(~foo)
+        assert is_sanitized(~wrapped_foo)
+
 
 class Foo:
     pass
