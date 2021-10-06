@@ -1958,7 +1958,7 @@ class DataToolParameter(BaseDataToolParameter):
                 elif hasattr(v, "dataset") and v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED]:
                     raise ParameterValueError("the previously selected dataset has entered an unusable state", self.name)
                 elif hasattr(v, "dataset"):
-                    match = dataset_matcher.hda_match(v)
+                    match = dataset_matcher.hda_match(v, ensure_visible=False)
                     if match:
                         if match.implicit_conversion:
                             v.implicit_conversion = True
