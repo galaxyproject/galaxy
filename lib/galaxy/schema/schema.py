@@ -31,7 +31,6 @@ from galaxy.model import (
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     ModelClassField,
-    optional,
 )
 from galaxy.schema.types import RelativeUrl
 
@@ -570,12 +569,6 @@ class HDABeta(HDADetailed):  # TODO: change HDABeta name to a more appropriate o
     pass
 
 
-@optional
-class UpdateHDAPayload(HDABeta):
-    """Used for updating a particular HDA. All fields are optional."""
-    pass
-
-
 class DCSummary(Model):
     """Dataset Collection summary information."""
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
@@ -678,45 +671,44 @@ class HDCADetailed(HDCASummary):
     elements: List[DCESummary] = ElementsField
 
 
-@optional
-class UpdateHDCAPayload(HDCADetailed):
-    """Used for updating a particular HDCA. All fields are optional."""
-    pass
-
-
-class UpdateHistoryContentsBatchPayload(BaseModel):
-    class Config:
-        use_enum_values = True  # when using .dict()
-        allow_population_by_field_name = True
-        extra = Extra.allow  # Allow any additional field
-
-    items: List[Union[UpdateHDAPayload, UpdateHDCAPayload]] = Field(
-        ...,
-        title="Items",
-        description="A list of content items to update with the changes.",
-    )
-    deleted: Optional[bool] = Field(
-        default=False,
-        title="Deleted",
-        description=(
-            "This will check the uploading state if not deleting (i.e: deleted=False), "
-            "otherwise cannot delete uploading files, so it will raise an error."
-        ),
-    )
-    visible: Optional[bool] = Field(
-        default=False,
-        title="Visible",
-        description=(
-            "Show or hide history contents"
-        ),
-    )
-
-
 class HistoryBase(BaseModel):
     """Provides basic configuration for all the History models."""
     class Config:
         use_enum_values = True  # When using .dict()
         extra = Extra.allow  # Allow any other extra fields
+
+
+class UpdateContentItem(HistoryBase):
+    """Used for updating a particular HDA. All fields are optional."""
+    history_content_type: HistoryContentType = Field(
+        ...,
+        title="Content Type",
+        description="The type of this item.",
+    )
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+
+
+class UpdateHistoryContentsBatchPayload(HistoryBase):
+    """Contains property values that will be updated for all the history`items` provided."""
+
+    items: List[UpdateContentItem] = Field(
+        ...,
+        title="Items",
+        description="A list of content items to update with the changes.",
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "items": [
+                    {
+                        "history_content_type": "dataset",
+                        "id": "string"
+                    }
+                ],
+                "visible": False,
+            }
+        }
 
 
 class HistorySummary(HistoryBase):
