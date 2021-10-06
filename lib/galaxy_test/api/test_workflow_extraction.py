@@ -8,6 +8,7 @@ from .test_workflows import BaseWorkflowsApiTestCase
 
 
 class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
+    history_id: str
 
     def setUp(self):
         super().setUp()
