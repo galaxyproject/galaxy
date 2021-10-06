@@ -24,11 +24,19 @@ export default new VueRouter({
             component: LibraryPermissions,
             props: true,
         },
+        // redirect to the 1st page
+        { path: "/folders/:folder_id", redirect: "/folders/:folder_id/page/1" },
         {
-            path: "/folders/:folder_id",
+            path: "/folders/:folder_id/page/:page",
             name: "LibraryFolder",
             component: LibraryFolder,
-            props: true,
+            props(route) {
+                const props = { ...route.params };
+                if (props.page) {
+                    props.page = +props.page;
+                }
+                return props;
+            },
         },
         {
             path: "/folders/:folder_id/permissions",

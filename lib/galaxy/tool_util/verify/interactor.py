@@ -142,13 +142,16 @@ class GalaxyInteractorApi:
 
         def verify_dataset(element, element_attrib, element_outfile):
             hda = element["object"]
-            self.verify_output_dataset(
-                history,
-                hda_id=hda["id"],
-                outfile=element_outfile,
-                attributes=element_attrib,
-                tool_id=tool_id
-            )
+            try:
+                self.verify_output_dataset(
+                    history,
+                    hda_id=hda["id"],
+                    outfile=element_outfile,
+                    attributes=element_attrib,
+                    tool_id=tool_id
+                )
+            except AssertionError as e:
+                raise AssertionError(f"Collection element {element.get('element_identifier', '')} of collection {output_collection_def.name}: {e}")
 
         verify_collection(output_collection_def, data_collection, verify_dataset)
 
@@ -178,9 +181,7 @@ class GalaxyInteractorApi:
                     break
 
             if not primary_output:
-                msg_template = "Failed to find primary dataset with designation [%s] for output with name [%s]"
-                msg_args = (designation, name)
-                raise Exception(msg_template % msg_args)
+                raise Exception(f"Failed to find primary dataset with designation [{designation}] for output with name [{name}]")
 
             primary_hda_id = primary_output["dataset"]["id"]
             try:
@@ -234,17 +235,13 @@ class GalaxyInteractorApi:
 
                     def compare(val, expected):
                         if str(val) != str(expected):
-                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
-                            msg_params = (key, value, dataset_value, dataset)
-                            msg = msg % msg_params
+                            msg = f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."
                             raise Exception(msg)
 
                     if isinstance(dataset_value, list):
                         value = str(value).split(",")
                         if len(value) != len(dataset_value):
-                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s], lists differ in length. Dataset API value was [%s]."
-                            msg_params = (key, value, dataset_value, dataset)
-                            msg = msg % msg_params
+                            msg = f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
                             raise Exception(msg)
                         for val, expected in zip(dataset_value, value):
                             compare(val, expected)
@@ -369,13 +366,13 @@ class GalaxyInteractorApi:
                 if force_path_paste:
                     file_path = self.test_data_path(tool_id, file_name)
                     tool_input.update({
-                        "files_%d|url_paste" % i: f"file://{file_path}"
+                        f"files_{i}|url_paste": f"file://{file_path}"
                     })
                 else:
                     file_content = self.test_data_download(tool_id, file_name, is_output=False)
                     files[f"files_{i}|file_data"] = file_content
                 tool_input.update({
-                    "files_%d|type" % i: "upload_dataset",
+                    f"files_{i}|type": "upload_dataset",
                 })
             name = test_data['name']
         else:
@@ -537,7 +534,7 @@ class GalaxyInteractorApi:
 
             print(ERROR_MESSAGE_DATASET_SEP)
             dataset_id = dataset.get('id', None)
-            print("| %d - %s (HID - NAME) " % (int(dataset['hid']), dataset['name']))
+            print(f"| {dataset['hid']} - {dataset['name']} (HID - NAME) ")
             if history_content['history_content_type'] == 'dataset_collection':
                 history_contents_json = self._get(f"histories/{history_id}/contents/dataset_collections/{history_content['id']}").json()
                 print(f"| Dataset Collection: {history_contents_json}")
@@ -787,8 +784,7 @@ def ensure_tool_run_response_okay(submit_response_object, request_desc, inputs=N
             # invalid JSON content.
             pass
         if message is None:
-            template = "Request to %s failed - invalid JSON content returned from Galaxy server [%s]"
-            message = template % (request_desc, submit_response_object.text)
+            message = f"Request to {request_desc} failed - invalid JSON content returned from Galaxy server [{submit_response_object.text}]"
         raise RunToolException(message, inputs, dynamic_param_error=dynamic_param_error)
     submit_response = submit_response_object.json()
     return submit_response
@@ -839,16 +835,14 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
     if expected_collection_type:
         collection_type = data_collection["collection_type"]
         if expected_collection_type != collection_type:
-            template = "Output collection '%s': expected to be of type [%s], was of type [%s]."
-            message = template % (name, expected_collection_type, collection_type)
+            message = f"Output collection '{name}': expected to be of type [{expected_collection_type}], was of type [{collection_type}]."
             raise AssertionError(message)
 
     expected_element_count = output_collection_def.count
     if expected_element_count:
         actual_element_count = len(data_collection["elements"])
         if expected_element_count != actual_element_count:
-            template = "Output collection '%s': expected to have %s elements, but it had %s."
-            message = template % (name, expected_element_count, actual_element_count)
+            message = f"Output collection '{name}': expected to have {expected_element_count} elements, but it had {actual_element_count}."
             raise AssertionError(message)
 
     def get_element(elements, id):
@@ -872,14 +866,13 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
             element = get_element(element_objects, element_identifier)
             if not element:
-                template = "Output collection '%s': failed to find identifier '%s' in the tool generated elements %s"
-                message = template % (element_identifier, eo_ids)
+                message = f"Output collection '{name}': failed to find identifier '{element_identifier}' in the tool generated elements {eo_ids}"
                 raise AssertionError(message)
 
             element_type = element["element_type"]
             if element_type != "dataset_collection":
                 verify_dataset(element, element_attrib, element_outfile)
-            if element_type == "dataset_collection":
+            else:
                 elements = element["object"]["elements"]
                 verify_elements(elements, element_attrib.get("elements", {}))
 
@@ -894,8 +887,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                         break
                     i += 1
                 if element is None:
-                    template = "Output collection '%s': identifier '%s' found out of order, expected order of %s for the tool generated collection elements %s"
-                    message = template % (name, element_identifier, expected_sort_order, eo_ids)
+                    message = f"Output collection '{name}': identifier '{element_identifier}' found out of order, expected order of {expected_sort_order} for the tool generated collection elements {eo_ids}"
                     raise AssertionError(message)
 
     verify_elements(data_collection["elements"], output_collection_def.element_tests)
@@ -1265,8 +1257,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
             name = output_collection_def.name
             # TODO: data_collection_list is clearly a bad name for dictionary.
             if name not in data_collection_list:
-                template = "Failed to find output [%s], tool outputs include [%s]"
-                message = template % (name, ",".join(data_collection_list.keys()))
+                message = f"Failed to find output [{name}], tool outputs include [{','.join(data_collection_list.keys())}]"
                 raise AssertionError(message)
 
             # Data collection returned from submission, elements may have been populated after
@@ -1312,7 +1303,7 @@ class ToolTestDescription:
     def __init__(self, processed_test_dict):
         assert "test_index" in processed_test_dict, "Invalid processed test description, must have a 'test_index' for naming, etc.."
         test_index = processed_test_dict["test_index"]
-        name = processed_test_dict.get('name', 'Test-%d' % (test_index + 1))
+        name = processed_test_dict.get('name', f'Test-{test_index + 1}')
         maxseconds = processed_test_dict.get('maxseconds', DEFAULT_TOOL_TEST_WAIT)
         if maxseconds is not None:
             maxseconds = int(maxseconds)

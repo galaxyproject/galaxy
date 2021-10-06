@@ -1,3 +1,4 @@
+import logging
 import os
 
 try:
@@ -10,6 +11,8 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.remote.webdriver import WebDriver
 
+logger = logging.getLogger('selenium.webdriver.remote.remote_connection')
+logger.setLevel(logging.WARNING)
 
 DEFAULT_BROWSER = "auto"
 DEFAULT_DOWNLOAD_PATH = '/tmp/'

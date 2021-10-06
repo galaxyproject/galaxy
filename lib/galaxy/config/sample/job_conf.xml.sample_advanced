@@ -322,6 +322,9 @@
             <!-- Whether to enabled HTTPS access in the k8s ingress spec generated for each interactive tools -->
             <!-- <param id="k8s_interactivetools_ingress_annotations">{'cert-manager.io/cluster-issuer': 'letsencrypt-prod'}</param> -->
             <!-- Annotations to add to the metadata section in the k8s ingress generated for each interactive tools -->
+            <!-- <param id="k8s_unschedulable_walltime_limit">172800</param> -->
+            <!-- The amount of time (in seconds) to let a job remain in an unschedulable state before being flagged
+                 as having failed. The default is None (unlimited time). -->
 
         </plugin>
         <plugin id="godocker" type="runner" load="galaxy.jobs.runners.godocker:GodockerJobRunner">

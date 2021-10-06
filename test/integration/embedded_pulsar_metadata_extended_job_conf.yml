@@ -20,5 +20,5 @@ execution:
             action: none
 
 tools:
-- id: upload1
+- class: local
   environment: local

@@ -121,7 +121,7 @@ export default Backbone.View.extend({
         // render error messages
         var error_text = this.model.get("error_text");
         this.$error[error_text ? "show" : "hide"]();
-        this.$el[error_text ? "addClass" : "removeClass"]("alert alert-danger");
+        this.$el[error_text ? "addClass" : "removeClass"]("alert alert-info");
         this.$error_text.html(error_text);
         // render backdrop
         this.$backdrop[this.model.get("backdrop") ? "show" : "hide"]();
@@ -186,7 +186,7 @@ export default Backbone.View.extend({
             .append(
                 $("<div/>")
                     .addClass("ui-form-error")
-                    .append($("<span/>").addClass("fa fa-arrow-down mr-1"))
+                    .append($("<span/>").addClass("fa fa-exclamation mr-1"))
                     .append($("<span/>").addClass("ui-form-error-text"))
             )
             .append(
@@ -201,12 +201,8 @@ export default Backbone.View.extend({
                     )
                     .append($("<span/>").addClass("ui-form-title-text"))
             )
-            .append(
-                $("<div/>")
-                    .addClass("ui-form-field")
-                    .append($("<span/>").addClass("ui-form-info form-text text-muted mt-2"))
-                    .append($("<div/>").addClass("ui-form-backdrop"))
-            )
-            .append($("<div/>").addClass("ui-form-preview"));
+            .append($("<div/>").addClass("ui-form-field").append($("<div/>").addClass("ui-form-backdrop")))
+            .append($("<div/>").addClass("ui-form-preview"))
+            .append($("<span/>").addClass("ui-form-info form-text text-muted mb-2"));
     },
 });

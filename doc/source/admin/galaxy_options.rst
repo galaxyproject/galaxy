@@ -679,17 +679,33 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``containers_resolvers_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``container_resolvers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Container resolvers configuration (beta). Set up a file describing
     container resolvers to use when discovering containers for Galaxy.
-    If this is set to None, the default containers loaded is
+    If this is set to None, the default container resolvers loaded is
     determined by enable_mulled_containers.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``container_resolvers``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying a container_resolvers_config_file, the
+    definition of the resolvers to enable can be embedded into
+    Galaxy's config with this option. This has no effect if a
+    container_resolvers_config_file is used.
+    The syntax, available resolvers, and documentation of their
+    options is explained in detail in the documentation:
+    https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~
@@ -4449,7 +4465,7 @@
     filtering
     (https://galaxyproject.org/user-defined-toolbox-filters/)
     functions.
-:Default: ``galaxy.tools.filters,galaxy.tools.toolbox.filters``
+:Default: ``galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters``
 :Type: str
 
 

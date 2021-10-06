@@ -252,5 +252,5 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
 
     @web.expose
     def welcome(self, trans):
-        welcome_url = trans.app.config.welcome_url
+        welcome_url = trans.app.config.config_value_for_host("welcome_url", trans.host)
         return trans.response.send_redirect(web.url_for(welcome_url))

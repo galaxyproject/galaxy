@@ -26,6 +26,7 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.libraries import LibraryManager
+from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.tools import DynamicToolManager
@@ -149,6 +150,7 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
 
 class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._register_singleton(MinimalManagerApp, self)
@@ -173,6 +175,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.workflow_contents_manager = self._register_singleton(WorkflowContentsManager)
         self.library_folder_manager = self._register_singleton(FolderManager)
         self.library_manager = self._register_singleton(LibraryManager)
+        self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)
         self.role_manager = self._register_singleton(RoleManager)
         from galaxy.jobs.manager import JobManager
         self.job_manager = self._register_singleton(JobManager)
@@ -213,6 +216,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             ("job manager", self._shutdown_job_manager),
             ("application heartbeat", self._shutdown_heartbeat),
             ("repository manager", self._shutdown_repo_manager),
+            ("database connection repository cache", self._shutdown_repo_cache),
             ("database connection", self._shutdown_model),
             ("application stack", self._shutdown_application_stack),
         ]
@@ -387,6 +391,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
 
     def _shutdown_repo_manager(self):
         self.update_repository_manager.shutdown()
+
+    def _shutdown_repo_cache(self):
+        self.tool_shed_repository_cache.shutdown()
 
     def _shutdown_application_stack(self):
         self.application_stack.shutdown()

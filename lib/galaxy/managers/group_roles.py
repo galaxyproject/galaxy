@@ -1,8 +1,6 @@
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -14,7 +12,6 @@ from galaxy.exceptions import (
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -25,18 +22,14 @@ class GroupRolesManager:
     def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
-    def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField) -> List[Dict[str, Any]]:
+    def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField):
         """
         Returns a collection roles associated with the given group.
         """
         group = self._get_group(trans, group_id)
-        rval = []
-        for gra in group.roles:
-            group_role = self._serialize_group_role(group_id, gra.role)
-            rval.append(group_role)
-        return rval
+        return group.roles
 
-    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField) -> Dict[str, Any]:
+    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
         """
         Returns information about a group role.
         """
@@ -44,10 +37,9 @@ class GroupRolesManager:
         group = self._get_group(trans, group_id)
         role = self._get_role(trans, role_id)
         group_role = self._get_group_role(trans, group, role)
-        if group_role is None:
+        if not group_role:
             raise ObjectNotFound(f"Role {role.name} not in group {group.name}")
-
-        return self._serialize_group_role(group_id, role)
+        return role
 
     def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
         """
@@ -57,10 +49,9 @@ class GroupRolesManager:
         group = self._get_group(trans, group_id)
         role = self._get_role(trans, role_id)
         group_role = self._get_group_role(trans, group, role)
-        if group_role is None:
+        if not group_role:
             self._add_role_to_group(trans, group, role)
-
-        return self._serialize_group_role(group_id, role)
+        return role
 
     def delete(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
         """
@@ -70,22 +61,22 @@ class GroupRolesManager:
         group = self._get_group(trans, group_id)
         role = self._get_role(trans, role_id)
         group_role = self._get_group_role(trans, group, role)
-        if group_role is None:
+        if not group_role:
             raise ObjectNotFound(f"Role {role.name} not in group {group.name}")
         self._remove_role_from_group(trans, group_role)
-        return self._serialize_group_role(group_id, role)
+        return role
 
     def _get_group(self, trans: ProvidesAppContext, encoded_group_id: EncodedDatabaseIdField) -> Any:
         decoded_group_id = decode_id(self._app, encoded_group_id)
         group = trans.sa_session.query(model.Group).get(decoded_group_id)
-        if group is None:
+        if not group:
             raise ObjectNotFound(f"Group with id {encoded_group_id} was not found.")
         return group
 
     def _get_role(self, trans: ProvidesAppContext, encoded_role_id: EncodedDatabaseIdField) -> model.Role:
         decoded_role_id = decode_id(self._app, encoded_role_id)
         role = trans.sa_session.query(model.Role).get(decoded_role_id)
-        if role is None:
+        if not role:
             raise ObjectNotFound(f"Role with id {encoded_role_id} was not found.")
         return role
 
@@ -103,11 +94,3 @@ class GroupRolesManager:
     def _remove_role_from_group(self, trans: ProvidesAppContext, group_role: model.GroupRoleAssociation):
         trans.sa_session.delete(group_role)
         trans.sa_session.flush()
-
-    def _serialize_group_role(self, encoded_group_id: EncodedDatabaseIdField, role: model.Role):
-        encoded_role_id = self._app.security.encode_id(role.id)
-        return {
-            "id": encoded_role_id,
-            "name": role.name,
-            "url": url_for('group_role', group_id=encoded_group_id, id=encoded_role_id)
-        }

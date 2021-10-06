@@ -8,7 +8,7 @@ export default {
             const { history_content_type } = this.item;
             switch (history_content_type) {
                 case "dataset":
-                    return "Dataset";
+                    return "Subdataset";
                 case "dataset_collection":
                     return "Subcollection";
                 default:

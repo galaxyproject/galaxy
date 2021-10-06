@@ -197,6 +197,11 @@ class MockAppConfig(Bunch):
         self.delay_tool_initialization = True
         self.external_chown_script = None
 
+        self.default_panel_view = "default"
+        self.panel_views_dir = ''
+        self.panel_views = {}
+        self.edam_panel_views = ''
+
         self.config_file = None
 
     @property
@@ -236,7 +241,7 @@ class MockTrans:
         self.anonymous = False
         self.debug = True
         self.user_is_admin = True
-        self.qualified_url_builder = None
+        self.url_builder = None
 
         self.galaxy_session = None
         self.__user = user

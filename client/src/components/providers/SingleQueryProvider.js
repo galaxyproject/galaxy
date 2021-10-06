@@ -1,29 +1,64 @@
-export const SingleQueryProvider = (cfg = {}) => {
-    const { resultName = "result", lookup } = cfg;
+import hash from "object-hash";
 
-    let cached_result;
+/**
+ * Builds a provider that gets its result from a single promise-based query function and
+ * caches the result of lookup for subsequent instantitations.
+ *
+ * @param   {Function}  lookup  async function that loads the result, paramters will be an object
+ *                              whose properties are the attributes assigned to the provider component
+ * @return  {VueComponentOptions} Vue component options definition
+ */
+export const SingleQueryProvider = (lookup) => {
+    const promiseCache = new Map();
 
     return {
+        props: {
+            useCache: {
+                type: Boolean,
+                default: true,
+            },
+        },
         data() {
             return {
                 result: undefined,
+                error: undefined,
             };
         },
         computed: {
             loading() {
                 return this.result === undefined;
             },
+            cacheKey() {
+                return hash(this.$attrs || {});
+            },
         },
-        async created() {
-            if (undefined === cached_result) {
-                cached_result = await lookup();
+        mounted() {
+            let lookupPromise;
+            if (this.useCache) {
+                lookupPromise = promiseCache.get(this.cacheKey);
+                if (!lookupPromise) {
+                    lookupPromise = lookup(this.$attrs);
+                    promiseCache.set(this.cacheKey, lookupPromise);
+                }
+            } else {
+                lookupPromise = lookup(this.$attrs);
             }
-            this.result = cached_result;
+            lookupPromise.then(
+                (result) => {
+                    this.result = result;
+                },
+                (err) => {
+                    this.result = {};
+                    this.error = err;
+                    this.$emit("error", err);
+                }
+            );
         },
         render() {
             return this.$scopedSlots.default({
                 loading: this.loading,
-                [resultName]: this.result,
+                result: this.result,
+                error: this.error,
             });
         },
     };

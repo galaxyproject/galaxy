@@ -232,6 +232,8 @@ module.exports = (env = {}, argv = {}) => {
             proxy: {
                 "/": {
                     target: process.env.GALAXY_URL || "http://localhost:8080",
+                    secure: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
+                    changeOrigin: !!process.env.CHANGE_ORIGIN,
                 },
             },
         },

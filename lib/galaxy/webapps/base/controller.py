@@ -307,7 +307,6 @@ class JSAppLauncher(BaseUIController):
         config = {
             'active_view': 'analysis',
             'enable_webhooks': True if trans.app.webhooks_registry.webhooks else False,
-            'toolbox': trans.app.toolbox.to_dict(trans),
             'message_box_visible': trans.app.config.message_box_visible,
             'show_inactivity_warning': trans.app.config.user_activation_on and trans.user and not trans.user.active,
             'tool_shed_urls': list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
@@ -336,7 +335,7 @@ class JSAppLauncher(BaseUIController):
             serializer = self.config_serializer
             if self.user_manager.is_admin(trans.user, trans=trans):
                 serializer = self.admin_config_serializer
-            return serializer.serialize_to_view(self.app.config, view='all')
+            return serializer.serialize_to_view(self.app.config, view='all', host=trans.host)
         except Exception as exc:
             log.exception(exc)
             return {}

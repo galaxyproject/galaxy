@@ -489,24 +489,27 @@ def walk_over_file_collectors(extra_file_collectors, job_working_directory, matc
             yield match, extra_file_collector
 
 
-def walk_over_extra_files(target_dir, extra_file_collector, job_working_directory, matchable):
+def walk_over_extra_files(target_dir, extra_file_collector, job_working_directory, matchable, parent_paths=None):
     """
     Walks through all files in a given directory, and returns all files that
     match the given collector's match criteria. If the collector has the
     recurse flag enabled, will also recursively descend into child folders.
     """
     matches = []
+    parent_paths = parent_paths or []
     directory = discover_target_directory(target_dir, job_working_directory)
     if os.path.isdir(directory):
         for filename in os.listdir(directory):
             path = os.path.join(directory, filename)
             if os.path.isdir(path):
                 if extra_file_collector.recurse:
+                    new_parent_paths = parent_paths[:]
+                    new_parent_paths.append(filename)
                     # The current directory is already validated, so use that as the next job_working_directory when recursing
-                    for match in walk_over_extra_files(filename, extra_file_collector, directory, matchable):
+                    for match in walk_over_extra_files(filename, extra_file_collector, directory, matchable, parent_paths=new_parent_paths):
                         yield match
             else:
-                match = extra_file_collector.match(matchable, filename, path=path)
+                match = extra_file_collector.match(matchable, filename, path=path, parent_paths=parent_paths)
                 if match:
                     matches.append(match)
 
@@ -553,6 +556,7 @@ class DatasetCollector:
         self.directory = dataset_collection_description.directory
         self.assign_primary_output = dataset_collection_description.assign_primary_output
         self.recurse = dataset_collection_description.recurse
+        self.match_relative_path = dataset_collection_description.match_relative_path
 
     def _pattern_for_dataset(self, dataset_instance=None):
         token_replacement = r'\d+'
@@ -560,8 +564,10 @@ class DatasetCollector:
             token_replacement = str(dataset_instance.id)
         return self.pattern.replace(DATASET_ID_TOKEN, token_replacement)
 
-    def match(self, dataset_instance, filename, path=None):
+    def match(self, dataset_instance, filename, path=None, parent_paths=None):
         pattern = self._pattern_for_dataset(dataset_instance)
+        if self.match_relative_path and parent_paths:
+            filename = os.path.join(*parent_paths, filename)
         re_match = re.match(pattern, filename)
         match_object = None
         if re_match:
@@ -646,3 +652,11 @@ def collect_extra_files(object_store, dataset, job_working_directory):
                 dataset.set_size()
         except Exception as e:
             log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, unicodify(e))
+
+
+def collect_shrinked_content_from_path(path):
+    try:
+        with open(path, 'rb') as fh:
+            return galaxy.util.shrink_and_unicodify(fh.read().strip())
+    except FileNotFoundError:
+        return None

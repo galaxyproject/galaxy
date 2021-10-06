@@ -491,13 +491,15 @@ class CommonConfigurationMixin:
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     deprecated_options = ('database_file', 'track_jobs_in_database', 'blacklist_file', 'whitelist_file',
-                          'sanitize_whitelist_file', 'user_library_import_symlink_whitelist', 'fetch_url_whitelist')
+                          'sanitize_whitelist_file', 'user_library_import_symlink_whitelist', 'fetch_url_whitelist',
+                          'containers_resolvers_config_file')
     renamed_options = {
         'blacklist_file': 'email_domain_blocklist_file',
         'whitelist_file': 'email_domain_allowlist_file',
         'sanitize_whitelist_file': 'sanitize_allowlist_file',
         'user_library_import_symlink_whitelist': 'user_library_import_symlink_allowlist',
         'fetch_url_whitelist': 'fetch_url_allowlist',
+        'containers_resolvers_config_file': 'container_resolvers_config_file',
     }
     default_config_file_name = 'galaxy.yml'
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
@@ -563,6 +565,19 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     def _override_tempdir(self, kwargs):
         if string_as_bool(kwargs.get("override_tempdir", "True")):
             tempfile.tempdir = self.new_file_path
+
+    def config_value_for_host(self, config_option, host):
+        val = getattr(self, config_option)
+        if config_option in self.schema.per_host_options:
+            per_host_option = f"{config_option}_by_host"
+            if per_host_option in self.config_dict:
+                per_host = self.config_dict[per_host_option] or {}
+                for host_key, host_val in per_host.items():
+                    if host_key in host:
+                        val = host_val
+                        break
+
+        return val
 
     def _process_config(self, kwargs):
         # Backwards compatibility for names used in too many places to fix
@@ -728,8 +743,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             # self, populate config_dict
             self.config_dict["conda_mapping_files"] = [self.local_conda_mapping_file, _default_mapping]
 
-        if self.containers_resolvers_config_file:
-            self.containers_resolvers_config_file = self._in_config_dir(self.containers_resolvers_config_file)
+        if self.container_resolvers_config_file:
+            self.container_resolvers_config_file = self._in_config_dir(self.container_resolvers_config_file)
 
         # tool_dependency_dir can be "none" (in old configs). If so, set it to None
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
@@ -1175,7 +1190,8 @@ class ConfiguresGalaxyMixin:
             container_image_cache_path=self.config.container_image_cache_path,
             library_import_dir=self.config.library_import_dir,
             enable_mulled_containers=self.config.enable_mulled_containers,
-            containers_resolvers_config_file=self.config.containers_resolvers_config_file,
+            container_resolvers_config_file=self.config.container_resolvers_config_file,
+            container_resolvers_config_dict=self.config.container_resolvers,
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,
             mulled_channels=self.config.mulled_channels,
@@ -1205,8 +1221,8 @@ class ConfiguresGalaxyMixin:
                 for enabled_container_type in self.container_finder._enabled_container_types(destination.params):
                     container_types_to_destinations[enabled_container_type].append(destination)
         self.toolbox.dependency_manager.set_enabled_container_types(container_types_to_destinations)
-        self.toolbox.dependency_manager.resolver_classes.update(self.container_finder.container_registry.resolver_classes)
-        self.toolbox.dependency_manager.dependency_resolvers.extend(self.container_finder.container_registry.container_resolvers)
+        self.toolbox.dependency_manager.resolver_classes.update(self.container_finder.default_container_registry.resolver_classes)
+        self.toolbox.dependency_manager.dependency_resolvers.extend(self.container_finder.default_container_registry.container_resolvers)
 
     def _configure_tool_data_tables(self, from_shed_config):
         from galaxy.tools.data import ToolDataTableManager

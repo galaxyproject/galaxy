@@ -957,7 +957,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     build_select_input('in_users', 'Users', all_users, []), {
                     'name': 'auto_create',
                     'label': 'Create a new group of the same name for this role:',
-                    'type': 'boolean'
+                    'type': 'boolean',
+                    'optional': True,
                 }]}
         else:
             name = util.restore_text(payload.get('name', ''))
@@ -1270,7 +1271,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     build_select_input('in_users', 'Users', all_users, []), {
                     'name': 'auto_create',
                     'label': 'Create a new role of the same name for this group:',
-                    'type': 'boolean'
+                    'type': 'boolean',
+                    'optional': True,
                 }]
             }
         else:
