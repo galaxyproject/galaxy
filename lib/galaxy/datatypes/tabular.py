@@ -466,7 +466,7 @@ class Taxonomy(Tabular):
 
 @build_sniff_from_prefix
 class GoldenPath(Tabular):
-    """Class describing UCSC's Golden Path assembly format"""
+    """Class describing NCBI's Golden Path assembly format"""
     edam_format = 'format_3693'
     file_ext = 'agp'
 
