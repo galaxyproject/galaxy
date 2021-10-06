@@ -418,6 +418,60 @@ class TestNumericTypesMethods:
         assert not is_sanitized(foo | 1)
         assert is_sanitized(wrapped_foo | 1)
 
+        # Binary arithmetic operations with reflected (swapped) operands
+
+        # __radd__
+        assert not is_sanitized(1 + foo)
+        assert is_sanitized(1 + wrapped_foo)
+
+        # __rsub__
+        assert not is_sanitized(1 - foo)
+        assert is_sanitized(1 - wrapped_foo)
+
+        # __rmul__
+        assert not is_sanitized(1 * foo)
+        assert is_sanitized(1 * wrapped_foo)
+
+        # __rtruediv__
+        assert not is_sanitized(1 / foo)
+        assert is_sanitized(1 / wrapped_foo)
+
+        # __rfloordiv__
+        assert not is_sanitized(1 // foo)
+        assert is_sanitized(1 // wrapped_foo)
+
+        # __rmod__
+        assert not is_sanitized(1 % foo)
+        assert is_sanitized(1 % wrapped_foo)
+
+        # __rdivmod__
+        assert not is_sanitized(divmod(1, foo))
+        assert is_sanitized(divmod(1, wrapped_foo))
+
+        # __rpow__
+        assert not is_sanitized(1 ** foo)
+        assert is_sanitized(1 ** wrapped_foo)
+
+        # __rlshift__
+        assert not is_sanitized(1 << foo)
+        assert is_sanitized(1 << wrapped_foo)
+
+        # __rrshift__
+        assert not is_sanitized(1 >> foo)
+        assert is_sanitized(1 >> wrapped_foo)
+
+        # __rand__
+        assert not is_sanitized(1 & foo)
+        assert is_sanitized(1 & wrapped_foo)
+
+        # __rxor__
+        assert not is_sanitized(1 ^ foo)
+        assert is_sanitized(1 ^ wrapped_foo)
+
+        # __ror__
+        assert not is_sanitized(1 | foo)
+        assert is_sanitized(1 | wrapped_foo)
+
 
 class Foo:
     pass
