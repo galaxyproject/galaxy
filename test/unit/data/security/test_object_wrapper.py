@@ -297,34 +297,67 @@ class TestSafeStringWrapper:
         wrapped_foo = wrap_with_safe_string(foo)
         assert len(foo) == len(wrapped_foo)
 
-    def test_numerical_methods(self):
-        foo, n = IntWrapper(42), 2
-        wrapped_foo = wrap_with_safe_string(foo)
-        assert foo + n == wrapped_foo + n
-        assert foo - n == wrapped_foo - n
-        assert foo * n == wrapped_foo * n
-        assert foo // n == wrapped_foo // n
-        assert foo % n == wrapped_foo % n
-        assert divmod(foo, n) == divmod(wrapped_foo, n)
-        assert foo ** n == wrapped_foo ** n
-        assert foo << n == wrapped_foo << n
-        assert foo >> n == wrapped_foo >> n
-        assert foo / n == wrapped_foo / n
-        assert -foo == -wrapped_foo
-        assert +foo == +wrapped_foo
-        assert abs(foo) == abs(wrapped_foo)
-        assert ~foo == ~wrapped_foo
-        assert complex(foo) == complex(wrapped_foo)
 
-    def test__int__(self):
-        foo = '1'
-        wrapped_foo = wrap_with_safe_string(foo)
-        assert int(foo) == int(wrapped_foo)
+class TestNumericTypesMethods:
+    # See https://docs.python.org/3/reference/datamodel.html?highlight=__xor__#emulating-numeric-types
+    # Not covered:
+    #   __matmul__ (not implemented)
+    #   in-place methods (return is None, so they are irrelevant for wrapping)
 
-    def test__float__(self):
-        foo = '1.5'
+    def test_numeric_method_return_values_are_correct(self):
+        # Test ensures that when we overwrite a numeric method, we don't screw up its core function.
+        # For each method, we compare 3 expressions where the method under test is called on
+        # (1) IntWrapper, (2) IntWRapper wrapped w/SafeStringWrapper, (3) literal value.
+        # Thus, we verify both the correctness of the overridden method in SafeStringWrapper,
+        # as well as the method in IntWrapper that simply delegates the call to the wrapped value.
+        # (See comment in IntWrapper definition.)
+        m, n = 2, 3
+        foo = IntWrapper(m)
         wrapped_foo = wrap_with_safe_string(foo)
-        assert float(foo) == float(wrapped_foo)
+
+        # Binary arithmetic operations
+        assert foo + n == wrapped_foo + n == m + n
+        assert foo - n == wrapped_foo - n == m - n
+        assert foo * n == wrapped_foo * n == m * n
+        assert foo / n == wrapped_foo / n == m / n
+        assert foo // n == wrapped_foo // n == m // n
+        assert foo % n == wrapped_foo % n == m % n
+        assert divmod(foo, n) == divmod(wrapped_foo, n) == divmod(m, n)
+        assert foo ** n == wrapped_foo ** n == m ** n
+        assert foo << n == wrapped_foo << n == m << n
+        assert foo >> n == wrapped_foo >> n == m >> n
+        assert foo & n == wrapped_foo & n == n & m
+
+        # Binary arithmetic operations with reflected (swapped) operands
+        assert n + foo == n + wrapped_foo == n + m
+        assert n - foo == n - wrapped_foo == n - m
+        assert n * foo == n * wrapped_foo == n * m
+        assert n / foo == n / wrapped_foo == n / m
+        assert n // foo == n // wrapped_foo == n // m
+        assert n % foo == n % wrapped_foo == n % m
+        assert divmod(n, foo) == divmod(n, wrapped_foo) == divmod(n, m)
+        assert n ** foo == n ** wrapped_foo == n ** m
+        assert n << foo == n << wrapped_foo == n << m
+        assert n >> foo == n >> wrapped_foo == n >> m
+        assert n & foo == n & wrapped_foo == n & m
+        assert n ^ foo == n ^ wrapped_foo == n ^ m
+        assert n | foo == n | wrapped_foo == n | m
+
+        # Unary arithmetic operations
+        assert -foo == -wrapped_foo == -m
+        assert +foo == +wrapped_foo == +m
+        assert abs(foo) == abs(wrapped_foo) == abs(m)
+        assert ~foo == ~wrapped_foo == ~m
+
+        # Misc.
+        assert complex(foo) == complex(wrapped_foo) == complex(m)
+        assert int(foo) == int(wrapped_foo) == int(m)
+        assert float(foo) == float(wrapped_foo) == float(m)
+        assert foo.__index__() == wrapped_foo.__index__() == m.__index__()
+        assert round(foo) == round(wrapped_foo) == round(m)
+        assert math.trunc(foo) == math.trunc(wrapped_foo) == math.trunc(m)
+        assert math.floor(foo) == math.floor(wrapped_foo) == math.floor(m)
+        assert math.ceil(foo) == math.ceil(wrapped_foo) == math.ceil(m)
 
 
 class Foo:
@@ -337,7 +370,7 @@ class Bar:
 
 class IntWrapper:
     # Wraps an integer value. This class is needed to test special methods that require an
-    # integer or numeric value: a plain numeric value would not be wrapped by SafeStringWrapper.
+    # integer or numeric value: a literal numeric value would not be wrapped by SafeStringWrapper.
     # NOTE: __add__ can use string values which would be wrapped; it's included here for consistency.
     def __init__(self, number):
         self.number = number
