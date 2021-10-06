@@ -6,7 +6,7 @@ export default {
             type: String,
             required: true,
         },
-        selectDefaultPanelView: {
+        setDefaultPanelView: {
             type: Boolean,
             default: false,
         },
@@ -18,7 +18,7 @@ export default {
         ...mapActions("panels", ["initCurrentPanelView", "setCurrentPanelView"]),
     },
     created() {
-        if (this.selectDefaultPanelView) {
+        if (this.setDefaultPanelView) {
             this.setCurrentPanelView(this.siteDefaultPanelView);
         } else {
             this.initCurrentPanelView(this.siteDefaultPanelView);
