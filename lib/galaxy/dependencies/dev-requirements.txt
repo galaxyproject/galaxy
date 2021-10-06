@@ -2,6 +2,7 @@
 
 adal==1.2.7
 aiofiles==0.6.0
+aiotus==0.1.10
 alabaster==0.7.12; python_version >= "3.5"
 amqp==5.0.6; python_version >= "3.6"
 appdirs==1.4.4; python_version >= "3.6"
