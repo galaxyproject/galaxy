@@ -163,11 +163,23 @@ export default {
         .ti-input {
             padding: 0;
             border: none;
-            .error {
-                background: url("../../assets/images/error_icon.svg");
-                background-repeat: no-repeat;
-                background-size: contain;
-                background-position: right;
+
+            .ti-new-tag-input {
+                &.error:focus {
+                    //TODO: These relative URLs are unfortunate.
+                    background: url("../../../node_modules/@fortawesome/fontawesome-free/svgs/solid/times.svg");
+                    padding-right: 1.5rem;
+                    background-repeat: no-repeat;
+                    background-size: contain;
+                    background-position: right;
+                }
+                &:not(.error):focus {
+                    background: url("../../../node_modules/@fortawesome/fontawesome-free/svgs/solid/check.svg");
+                    padding-right: 1.5rem;
+                    background-repeat: no-repeat;
+                    background-size: contain;
+                    background-position: right;
+                }
             }
         }
         .ti-tag {
