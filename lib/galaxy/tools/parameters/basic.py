@@ -1812,6 +1812,7 @@ class BaseDataToolParameter(ToolParameter):
                     validator.validate(v, trans)
 
         dataset_count = 0
+        collection = None
         if value:
             if self.multiple:
                 if not isinstance(value, list):
@@ -1821,13 +1822,16 @@ class BaseDataToolParameter(ToolParameter):
 
             for v in value:
                 if isinstance(v, galaxy.model.HistoryDatasetCollectionAssociation):
-                    for dataset_instance in v.collection.dataset_instances:
-                        dataset_count += 1
-                        do_validate(dataset_instance)
+                    collection = v.collection
                 elif isinstance(v, galaxy.model.DatasetCollectionElement):
-                    for dataset_instance in v.child_collection.dataset_instances:
-                        dataset_count += 1
-                        do_validate(dataset_instance)
+                    collection = v.child_collection
+                if collection:
+                    if self.validators:
+                        for dataset_instance in collection.dataset_instances:
+                            dataset_count += 1
+                            do_validate(dataset_instance)
+                    elif self.min or self.max:
+                        dataset_count += collection.dataset_instances.count()
                 else:
                     dataset_count += 1
                     do_validate(v)

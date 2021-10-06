@@ -403,13 +403,13 @@ class MappingTests(BaseModelTestCase):
         q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation, model.Dataset))
         assert q.all() == [(d1, d1.dataset), (d2, d2.dataset)]
         # Assert properties that use _get_nested_collection_attributes return correct content
-        assert c2.dataset_instances == [d1, d2]
+        assert c2.dataset_instances.all() == [d1, d2]
         assert c2.dataset_elements == [dce1, dce2]
         assert c2.dataset_action_tuples == []
         assert c2.populated_optimized
         assert c2.dataset_states_and_extensions_summary == ({'new'}, {'txt', 'bam'})
         assert c2.element_identifiers_extensions_paths_and_metadata_files == [[('inner_list', 'forward'), 'bam', 'mock_dataset_14.dat', [('bai', 'mock_dataset_14.dat'), ('bam.csi', 'mock_dataset_14.dat')]], [('inner_list', 'reverse'), 'txt', 'mock_dataset_14.dat', []]]
-        assert c3.dataset_instances == []
+        assert c3.dataset_instances.all() == []
         assert c3.dataset_elements == []
         assert c3.dataset_states_and_extensions_summary == (set(), set())
         q = c4._get_nested_collection_attributes(element_attributes=('element_identifier',))
