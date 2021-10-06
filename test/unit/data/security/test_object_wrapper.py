@@ -498,3 +498,143 @@ class IntWrapper:
 
     def __ceil__(self):
         return math.ceil(self.number)
+
+
+class IllegalReturnValueSimulator:
+    # Wraps dunder methods. Returns the same string value regardless of method.
+    # The value consists of a valid character, a character that requies escaping,
+    # and an illegal character.
+
+    # This is needed to test that the return value of a method is sanitized. By
+    # forcing the return of a value that would require sanitizing, we can check
+    # whether it was sanitized or not. Returning a real value (e.g. the sum of 2
+    # operands for __add__) would bypass wrapping (because we don't wrap a
+    # number), so it would be impossible to verify that the return value is
+    # wrapped when needed.
+
+    # The value used here ('a<\v'), when wrapped, becomes 'a__lt__x'.
+
+    # Do NOT refactor/add indirection: methods must return a literal so that
+    # attribute access methods are not called.
+
+    # Binary arithmetic operations
+
+    def __add__(self, other):
+        return 'a<\v'
+
+    def __sub__(self, other):
+        return 'a<\v'
+
+    def __mul__(self, other):
+        return 'a<\v'
+
+    def __truediv__(self, other):
+        return 'a<\v'
+
+    def __floordiv__(self, other):
+        return 'a<\v'
+
+    def __mod__(self, other):
+        return 'a<\v'
+
+    def __divmod__(self, other):
+        return 'a<\v'
+
+    def __pow__(self, *other):
+        return 'a<\v'
+
+    def __lshift__(self, other):
+        return 'a<\v'
+
+    def __rshift__(self, *other):
+        return 'a<\v'
+
+    def __and__(self, *other):
+        return 'a<\v'
+
+    def __xor__(self, *other):
+        return 'a<\v'
+
+    def __or__(self, *other):
+        return 'a<\v'
+
+    # Binary arithmetic operations with reflected (swapped) operands
+
+    def __radd__(self, other):
+        return 'a<\v'
+
+    def __rsub__(self, other):
+        return 'a<\v'
+
+    def __rmul__(self, other):
+        return 'a<\v'
+
+    def __rtruediv__(self, other):
+        return 'a<\v'
+
+    def __rfloordiv__(self, other):
+        return 'a<\v'
+
+    def __rmod__(self, other):
+        return 'a<\v'
+
+    def __rdivmod__(self, other):
+        return 'a<\v'
+
+    def __rpow__(self, *other):
+        return 'a<\v'
+
+    def __rlshift__(self, other):
+        return 'a<\v'
+
+    def __rrshift__(self, *other):
+        return 'a<\v'
+
+    def __rand__(self, *other):
+        return 'a<\v'
+
+    def __rxor__(self, *other):
+        return 'a<\v'
+
+    def __ror__(self, *other):
+        return 'a<\v'
+
+    # Unary arithmetic operations
+
+    def __neg__(self):
+        return 'a<\v'
+
+    def __pos__(self):
+        return 'a<\v'
+
+    def __abs__(self):
+        return 'a<\v'
+
+    def __invert__(self):
+        return 'a<\v'
+
+    # Misc.
+
+    def __complex__(self):
+        return 'a<\v'
+
+    def __int__(self):
+        return 'a<\v'
+
+    def __float__(self):
+        return 'a<\v'
+
+    def __index__(self):
+        return 'a<\v'
+
+    def __round__(self):
+        return 'a<\v'
+
+    def __trunc__(self):
+        return 'a<\v'
+
+    def __floor__(self):
+        return 'a<\v'
+
+    def __ceil__(self):
+        return 'a<\v'
