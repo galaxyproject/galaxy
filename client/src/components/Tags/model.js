@@ -6,7 +6,8 @@
 import { keyedColorScheme } from "utils/color";
 
 // VALID TAG REGEX
-export const VALID_TAG_RE = /([a-zA-Z0-9])+(.[a-zA-Z0-9]+)?(:[a-zA-Z0-9]+)?/;
+export const VALID_TAG_RE = /([^\s.:])+(.[^\s.:]+)?(:[^\s.:]+)?/;
+
 function TagModel(props = {}) {
     this.text = "";
 
