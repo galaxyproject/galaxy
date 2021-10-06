@@ -1,3 +1,4 @@
+import math
 from collections import UserDict
 from numbers import Number
 from types import (
@@ -347,10 +348,11 @@ class Bar:
 class IntWrapper:
     # Wraps an integer value. This class is needed to test special methods that require an
     # integer or numeric value: a plain numeric value would not be wrapped by SafeStringWrapper.
-    # The set of methods is limited to those handled by SafeStringWrapper.
     # NOTE: __add__ can use string values which would be wrapped; it's included here for consistency.
     def __init__(self, number):
         self.number = number
+
+    # Binary arithmetic operations
 
     def __add__(self, other):
         return self.number + other
@@ -360,6 +362,9 @@ class IntWrapper:
 
     def __mul__(self, other):
         return self.number * other
+
+    def __truediv__(self, other):
+        return self.number / other
 
     def __floordiv__(self, other):
         return self.number // other
@@ -379,8 +384,59 @@ class IntWrapper:
     def __rshift__(self, other):
         return self.number >> other
 
-    def __truediv__(self, other):
-        return self.number / other
+    def __and__(self, other):
+        return self.number.__and__(other)
+
+    def __xor__(self, other):
+        return self.number.__xor__(other)
+
+    def __or__(self, other):
+        return self.number.__or__(other)
+
+    # Binary arithmetic operations with reflected (swapped) operands
+
+    def __radd__(self, other):
+        return other + self.number
+
+    def __rsub__(self, other):
+        return other - self.number
+
+    def __rmul__(self, other):
+        return other * self.number
+
+    def __rtruediv__(self, other):
+        return other / self.number
+
+    def __rfloordiv__(self, other):
+        return other // self.number
+
+    def __rmod__(self, other):
+        return other % self.number
+
+    def __rdivmod__(self, other):
+        return divmod(other, self.number)
+
+    def __rpow__(self, other):
+        # As per python docs: "ternary pow() will not try calling __rpow__()
+        # (the coercion rules would become too complicated)."
+        return other ** self.number
+
+    def __rlshift__(self, other):
+        return other << self.number
+
+    def __rrshift__(self, other):
+        return other >> self.number
+
+    def __rand__(self, other):
+        return other & self.number
+
+    def __rxor__(self, other):
+        return other ^ self.number
+
+    def __ror__(self, other):
+        return other | self.number
+
+    # Unary arithmetic operations
 
     def __neg__(self):
         return -self.number
@@ -394,5 +450,28 @@ class IntWrapper:
     def __invert__(self):
         return ~self.number
 
+    # Misc.
+
     def __complex__(self):
         return complex(self.number)
+
+    def __int__(self):
+        return int(self.number)
+
+    def __float__(self):
+        return float(self.number)
+
+    def __index__(self):
+        return self.number.__index__()
+
+    def __round__(self):
+        return round(self.number)
+
+    def __trunc__(self):
+        return math.trunc(self.number)
+
+    def __floor__(self):
+        return math.floor(self.number)
+
+    def __ceil__(self):
+        return math.ceil(self.number)
