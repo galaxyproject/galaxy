@@ -6,15 +6,23 @@ export default {
             type: String,
             required: true,
         },
+        selectDefaultPanelView: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         ...mapGetters("panels", ["currentPanel", "currentPanelView"]),
     },
     methods: {
-        ...mapActions("panels", ["initCurrentPanelView"]),
+        ...mapActions("panels", ["initCurrentPanelView", "setCurrentPanelView"]),
     },
     created() {
-        this.initCurrentPanelView(this.siteDefaultPanelView);
+        if (this.selectDefaultPanelView) {
+            this.setCurrentPanelView(this.siteDefaultPanelView);
+        } else {
+            this.initCurrentPanelView(this.siteDefaultPanelView);
+        }
     },
     render() {
         return this.$scopedSlots.default({

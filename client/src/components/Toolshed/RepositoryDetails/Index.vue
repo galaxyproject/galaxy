@@ -41,6 +41,7 @@
                             v-if="config.default_panel_view"
                             v-slot="{ currentPanel }"
                             :site-default-panel-view="config.default_panel_view"
+                            :select-default-panel-view="true"
                         >
                             <InstallationSettings
                                 v-if="showSettings"
