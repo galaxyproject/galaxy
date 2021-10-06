@@ -20,5 +20,8 @@ jobs:
         yarn-lock-file: 'client/yarn.lock'
     - run: yarn install --frozen-lockfile
       working-directory: client
+    - name: Build Client
+      run: yarn run build
+      working-directory: client
     - run: yarn jest
       working-directory: client
