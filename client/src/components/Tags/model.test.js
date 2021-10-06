@@ -64,7 +64,7 @@ describe("Tags/model.js", () => {
 
     describe("Tag matching regular expression tests", () => {
         it("Should allow valid tags", () => {
-            const validTags = ["tag1", "tag.subtag", "tag.subtag:value", "🌌", "name:🌌", "🌌.🌌"];
+            const validTags = ["tag1", "tag.subtag", "tag.subtag.subtag", "tag.subtag:value", "🌌", "name:🌌", "🌌.🌌"];
             for (const tag of validTags) {
                 expect(VALID_TAG_RE.test(tag)).toBeTruthy();
             }
