@@ -1,6 +1,7 @@
 <template>
     <CurrentUser v-slot="{ user }">
         <ToolCard
+            v-if="hasData"
             :id="node.config_form.id"
             :user="user"
             :version="node.config_form.version"
@@ -105,6 +106,9 @@ export default {
         },
         nodeId() {
             return this.node.id;
+        },
+        hasData() {
+            return !!this.node.config_form;
         },
         errorLabel() {
             return checkLabels(this.node.id, this.node.label, this.workflow.nodes);
