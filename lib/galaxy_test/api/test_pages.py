@@ -114,7 +114,7 @@ steps:
         self._assert_status_code_is(page_response_1, 200)
         page_response_2 = self._post("pages", page_request, json=True)
         self._assert_status_code_is(page_response_2, 400)
-        self._assert_error_code_is(page_response_2, error_codes.USER_SLUG_DUPLICATE)
+        self._assert_error_code_is(page_response_2, error_codes.error_codes_by_name["USER_SLUG_DUPLICATE"])
 
     def test_cannot_create_pages_with_invalid_slug(self):
         page_request = self._test_page_payload(slug="invalid slug!")
@@ -126,14 +126,14 @@ steps:
         page_request["content_format"] = "xml"
         page_response_1 = self._post("pages", page_request, json=True)
         self._assert_status_code_is(page_response_1, 400)
-        self._assert_error_code_is(page_response_1, error_codes.USER_REQUEST_INVALID_PARAMETER)
+        self._assert_error_code_is(page_response_1, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
 
     def test_page_requires_name(self):
         page_request = self._test_page_payload(slug="requires-name")
         del page_request['title']
         page_response = self._post("pages", page_request, json=True)
         self._assert_status_code_is(page_response, 400)
-        self._assert_error_code_is(page_response, error_codes.USER_REQUEST_MISSING_PARAMETER)
+        self._assert_error_code_is(page_response, error_codes.error_codes_by_name["USER_REQUEST_MISSING_PARAMETER"])
 
     def test_page_requires_slug(self):
         page_request = self._test_page_payload()
@@ -149,27 +149,27 @@ steps:
     def test_400_on_delete_invalid_page_id(self):
         delete_response = delete(self._api_url(f"pages/{self._random_key()}", use_key=True))
         self._assert_status_code_is(delete_response, 400)
-        self._assert_error_code_is(delete_response, error_codes.MALFORMED_ID)
+        self._assert_error_code_is(delete_response, error_codes.error_codes_by_name["MALFORMED_ID"])
 
     def test_403_on_delete_unowned_page(self):
         page_response = self._create_valid_page_as("others_page@bx.psu.edu", "otherspage")
         delete_response = delete(self._api_url(f"pages/{page_response['id']}", use_key=True))
         self._assert_status_code_is(delete_response, 403)
-        self._assert_error_code_is(delete_response, error_codes.USER_DOES_NOT_OWN_ITEM)
+        self._assert_error_code_is(delete_response, error_codes.error_codes_by_name["USER_DOES_NOT_OWN_ITEM"])
 
     def test_400_on_invalid_id_encoding(self):
         page_request = self._test_page_payload(slug="invalid-id-encding")
         page_request["content"] = '''<p>Page!<div class="embedded-item" id="History-invaidencodedid"></div></p>'''
         page_response = self._post("pages", page_request, json=True)
         self._assert_status_code_is(page_response, 400)
-        self._assert_error_code_is(page_response, error_codes.MALFORMED_ID)
+        self._assert_error_code_is(page_response, error_codes.error_codes_by_name["MALFORMED_ID"])
 
     def test_400_on_invalid_id_encoding_markdown(self):
         page_request = self._test_page_payload(slug="invalid-id-encding-markdown", content_format="markdown")
         page_request["content"] = '''```galaxy\nhistory_dataset_display(history_dataset_id=badencoding)\n```\n'''
         page_response = self._post("pages", page_request, json=True)
         self._assert_status_code_is(page_response, 400)
-        self._assert_error_code_is(page_response, error_codes.MALFORMED_ID)
+        self._assert_error_code_is(page_response, error_codes.error_codes_by_name["MALFORMED_ID"])
 
     def test_400_on_invalid_embedded_content(self):
         dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -178,7 +178,7 @@ steps:
         page_request["content"] = f'''<p>Page!<div class="embedded-item" id="CoolObject-{valid_id}"></div></p>'''
         page_response = self._post("pages", page_request, json=True)
         self._assert_status_code_is(page_response, 400)
-        self._assert_error_code_is(page_response, error_codes.USER_REQUEST_INVALID_PARAMETER)
+        self._assert_error_code_is(page_response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
         assert "embedded HTML content" in page_response.text
 
     def test_400_on_invalid_markdown_call(self):
@@ -186,7 +186,7 @@ steps:
         page_request["content"] = '''```galaxy\njob_metrics(job_id)\n```\n'''
         page_response = self._post("pages", page_request, json=True)
         self._assert_status_code_is(page_response, 400)
-        self._assert_error_code_is(page_response, error_codes.MALFORMED_CONTENTS)
+        self._assert_error_code_is(page_response, error_codes.error_codes_by_name["MALFORMED_CONTENTS"])
 
     def test_show(self):
         response_json = self._create_valid_page_with_slug("pagetoshow")
@@ -203,7 +203,7 @@ steps:
         response_json = self._create_valid_page_as("others_page_show@bx.psu.edu", "otherspageshow")
         show_response = self._get(f"pages/{response_json['id']}")
         self._assert_status_code_is(show_response, 403)
-        self._assert_error_code_is(show_response, error_codes.USER_CANNOT_ACCESS_ITEM)
+        self._assert_error_code_is(show_response, error_codes.error_codes_by_name["USER_CANNOT_ACCESS_ITEM"])
 
     def test_400_on_download_pdf_when_service_unavailable(self):
         page_request = self._test_page_payload(slug="md-page-to-pdf", content_format="markdown")
