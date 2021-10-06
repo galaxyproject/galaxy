@@ -438,7 +438,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @uses_test_history(require_new=False)
     def test_convert_dataset_explicit_history(self, history_id):
         fasta1_contents = open(self.get_filename("1.fasta")).read()
-        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents, file_type="fasta")
 
         payload = {
             "src": "hda",
@@ -457,7 +457,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @uses_test_history(require_new=False)
     def test_convert_dataset_implicit_history(self, history_id):
         fasta1_contents = open(self.get_filename("1.fasta")).read()
-        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents, file_type="fasta")
 
         payload = {
             "src": "hda",
