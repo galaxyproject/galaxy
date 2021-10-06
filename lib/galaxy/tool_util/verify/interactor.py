@@ -1188,9 +1188,9 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
                     print(_format_stream(job_stdio[stream], stream=stream, format=True), file=sys.stderr)
         found_exceptions.append(e)
 
-    # if testdef.expect_failure:
-    #     if testdef.outputs:
-    #         raise Exception("Cannot specify outputs in a test expecting failure.")
+    if testdef.expect_failure:
+        if testdef.outputs:
+            raise Exception("Cannot specify outputs in a test expecting failure.")
 
     # Wait for the job to complete and register expections if the final
     # status was not what test was expecting.
@@ -1293,7 +1293,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
         except Exception as e:
             register_exception(e)
 
-    if found_exceptions and not testdef.expect_failure:
+    if found_exceptions and not testdef.expect_test_failure:
         raise JobOutputsError(found_exceptions, job_stdio)
     else:
         return job_stdio
@@ -1366,6 +1366,7 @@ class ToolTestDescription:
         self.stderr = processed_test_dict.get("stderr", None)
         self.expect_exit_code = processed_test_dict.get("expect_exit_code", None)
         self.expect_failure = processed_test_dict.get("expect_failure", False)
+        self.expect_test_failure = processed_test_dict.get("expect_test_failure", False)
 
     def test_data(self):
         """
@@ -1392,6 +1393,7 @@ class ToolTestDescription:
             "stderr": self.stderr,
             "expect_exit_code": self.expect_exit_code,
             "expect_failure": self.expect_failure,
+            "expect_test_failure": self.expect_test_failure,
             "name": self.name,
             "test_index": self.test_index,
             "tool_id": self.tool_id,

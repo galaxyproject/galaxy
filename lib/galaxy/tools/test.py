@@ -57,6 +57,7 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
             "stderr": raw_test_dict.get("stderr", None),
             "expect_exit_code": raw_test_dict.get("expect_exit_code", None),
             "expect_failure": raw_test_dict.get("expect_failure", False),
+            "expect_test_failure": raw_test_dict.get("expect_test_failure", False),
             "required_files": required_files,
             "required_data_tables": required_data_tables,
             "required_loc_files": required_loc_files,

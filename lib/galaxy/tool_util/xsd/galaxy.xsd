@@ -1106,6 +1106,12 @@ the expectation is for the job fail. If set to ``true`` no job output checks may
 be present in ``test`` definition.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="expect_test_failure" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Setting this to ``true`` indicates
+that at least one of the assumptions of the test is not met. This is most useful for internal testing.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="maxseconds" type="xs:integer">
       <xs:annotation>
         <xs:documentation xml:lang="en">Maximum amount of time to let test run.</xs:documentation>
