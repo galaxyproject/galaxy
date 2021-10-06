@@ -23,5 +23,8 @@ jobs:
     - name: Build Client
       run: yarn run build
       working-directory: client
+    - name: Run Unit Tests
+      run: yarn run qunit
+      working-directory: client
     - run: yarn jest
       working-directory: client
