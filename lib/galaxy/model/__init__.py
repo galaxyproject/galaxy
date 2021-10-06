@@ -5218,7 +5218,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
             )
             extensions = set()
             states = set()
-            for extension, state in q:
+            for extension, state in q.all():
                 states.add(state)
                 extensions.add(extension)
 
