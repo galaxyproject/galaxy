@@ -50,7 +50,6 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
 
 Vue.use(BootstrapVue);
 
