@@ -130,7 +130,5 @@ workflows:
           <<: *requires_get_code
       - validate_test_tools:
           <<: *requires_get_code
-      - js_unit:
-          <<: *requires_get_code
       - js_lint:
           <<: *requires_get_code
