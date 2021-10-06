@@ -576,15 +576,15 @@ class NavigatesGalaxy(HasDriver):
             # Make sure the user menu was dropped down
             user_menu = self.components.masthead.user_menu.wait_for_visible()
             try:
-                user_email_element = self.components.masthead.user_email.wait_for_visible()
+                username_element = self.components.masthead.user_email.wait_for_visible()
             except self.TimeoutException as e:
                 menu_items = user_menu.find_elements_by_css_selector("li a")
                 menu_text = [mi.text for mi in menu_items]
                 message = f"Failed to find logged in message in menu items {', '.join(menu_text)}"
                 raise self.prepend_timeout_message(e, message)
 
-            text = user_email_element.text
-            assert email in text
+            text = username_element.text
+            assert username in text
             assert self.get_logged_in_user()["email"] == email
 
             # clicking away no longer closes menu post Masthead -> VueJS
