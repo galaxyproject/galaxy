@@ -490,6 +490,51 @@ class TestNumericTypesMethods:
         assert not is_sanitized(~foo)
         assert is_sanitized(~wrapped_foo)
 
+        # Misc.
+        # The following 8 tests DO verify that an invalid return value
+        # produced by these methods DOES get sanitized when wrapped in a
+        # SafeStringWrapper. However, these tests do NOT call the corresponding
+        # methods in SafeStringWrapper (which happens due to overwritten
+        # attribute access). Those methods are verified by the previous test,
+        # but only for correctness of returned values. The problem is that if
+        # we delete these methods from SafeStringWrapper, all tests will still
+        # pass (implementations on the base classes will be called, and return
+        # values will be sanitized. Thus, none of these tests verify that
+        # overriding these 8 methods is needed.
+        # TODO: Find a use case justifying these methods and add tests.
+
+        # __complex__
+        assert not is_sanitized(foo.__complex__())
+        assert is_sanitized(wrapped_foo.__complex__())
+
+        # __int__
+        assert not is_sanitized(foo.__int__())
+        assert is_sanitized(wrapped_foo.__int__())
+
+        # __float__
+        assert not is_sanitized(foo.__float__())
+        assert is_sanitized(wrapped_foo.__float__())
+
+        # __index__
+        assert not is_sanitized(foo.__index__())
+        assert is_sanitized(wrapped_foo.__index__())
+
+        # __round__
+        assert not is_sanitized(foo.__round__())
+        assert is_sanitized(wrapped_foo.__round__())
+
+        # __trunc__
+        assert not is_sanitized(foo.__trunc__())
+        assert is_sanitized(wrapped_foo.__trunc__())
+
+        # __floor__
+        assert not is_sanitized(foo.__floor__())
+        assert is_sanitized(wrapped_foo.__floor__())
+
+        # __ceil__
+        assert not is_sanitized(foo.__ceil__())
+        assert is_sanitized(wrapped_foo.__ceil__())
+
 
 class Foo:
     pass

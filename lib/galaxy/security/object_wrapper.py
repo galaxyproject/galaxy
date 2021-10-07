@@ -377,6 +377,8 @@ class SafeStringWrapper:
     def __invert__(self):
         return self.__safe_string_wrapper_function__(self.unsanitized.__invert__())
 
+    # Misc.
+
     def __complex__(self):
         return self.__safe_string_wrapper_function__(complex(self.unsanitized))
 
@@ -388,6 +390,15 @@ class SafeStringWrapper:
 
     def __index__(self):
         return self.unsanitized.index()
+
+    def __trunc__(self):
+        return self.unsanitized.__trunc__()
+
+    def __floor__(self):
+        return self.unsanitized.__floor__()
+
+    def __ceil__(self):
+        return self.unsanitized.__ceil__()
 
     def __enter__(self):
         return self.unsanitized.__enter__()
