@@ -4,8 +4,8 @@ are encapsulated here.
 """
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, MetaData, not_, String, Table, TEXT, true, UniqueConstraint
-from sqlalchemy.orm import backref, mapper, relation
+from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, not_, String, Table, TEXT, true, UniqueConstraint
+from sqlalchemy.orm import backref, registry, relation
 
 import tool_shed.webapp.model
 import tool_shed.webapp.util.shed_statistics as shed_statistics
@@ -22,8 +22,9 @@ from tool_shed.webapp.model import Tag, User, UserGroupAssociation, UserRoleAsso
 from tool_shed.webapp.security import CommunityRBACAgent
 
 log = logging.getLogger(__name__)
-metadata = MetaData()
 
+mapper_registry = registry()
+metadata = mapper_registry.metadata
 
 APIKeys.table = Table("api_keys", metadata,
                       Column("id", Integer, primary_key=True),
@@ -198,20 +199,20 @@ Tag.table = Table("tag", metadata,
                   UniqueConstraint("name"))
 
 # With the tables defined we can define the mappers and setup the relationships between the model objects.
-mapper(User, User.table,
+mapper_registry.map_imperatively(User, User.table,
        properties=dict(active_repositories=relation(Repository, primaryjoin=((Repository.table.c.user_id == User.table.c.id) & (not_(Repository.table.c.deleted))), order_by=(Repository.table.c.name)),
                        galaxy_sessions=relation(GalaxySession, order_by=desc(GalaxySession.table.c.update_time)),
                        api_keys=relation(APIKeys, backref="user", order_by=desc(APIKeys.table.c.create_time))))
 
-mapper(PasswordResetToken, PasswordResetToken.table,
+mapper_registry.map_imperatively(PasswordResetToken, PasswordResetToken.table,
        properties=dict(user=relation(User, backref="reset_tokens")))
 
-mapper(APIKeys, APIKeys.table, properties={})
+mapper_registry.map_imperatively(APIKeys, APIKeys.table, properties={})
 
-mapper(Group, Group.table,
+mapper_registry.map_imperatively(Group, Group.table,
        properties=dict(users=relation(UserGroupAssociation)))
 
-mapper(Role, Role.table,
+mapper_registry.map_imperatively(Role, Role.table,
        properties=dict(
            repositories=relation(RepositoryRoleAssociation,
                                  primaryjoin=((Role.table.c.id == RepositoryRoleAssociation.table.c.role_id) & (RepositoryRoleAssociation.table.c.repository_id == Repository.table.c.id))),
@@ -220,16 +221,16 @@ mapper(Role, Role.table,
            groups=relation(GroupRoleAssociation,
                            primaryjoin=((Role.table.c.id == GroupRoleAssociation.table.c.role_id) & (GroupRoleAssociation.table.c.group_id == Group.table.c.id)))))
 
-mapper(RepositoryRoleAssociation, RepositoryRoleAssociation.table,
+mapper_registry.map_imperatively(RepositoryRoleAssociation, RepositoryRoleAssociation.table,
        properties=dict(
            repository=relation(Repository),
            role=relation(Role)))
 
-mapper(UserGroupAssociation, UserGroupAssociation.table,
+mapper_registry.map_imperatively(UserGroupAssociation, UserGroupAssociation.table,
        properties=dict(user=relation(User, backref="groups"),
                        group=relation(Group, backref="members")))
 
-mapper(UserRoleAssociation, UserRoleAssociation.table,
+mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
        properties=dict(
            user=relation(User, backref="roles"),
            non_private_roles=relation(User,
@@ -237,24 +238,24 @@ mapper(UserRoleAssociation, UserRoleAssociation.table,
                                       primaryjoin=((User.table.c.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.table.c.id) & not_(Role.table.c.name == User.table.c.email))),
            role=relation(Role)))
 
-mapper(GroupRoleAssociation, GroupRoleAssociation.table,
+mapper_registry.map_imperatively(GroupRoleAssociation, GroupRoleAssociation.table,
        properties=dict(
            group=relation(Group, backref="roles"),
            role=relation(Role)))
 
-mapper(GalaxySession, GalaxySession.table,
+mapper_registry.map_imperatively(GalaxySession, GalaxySession.table,
        properties=dict(user=relation(User)))
 
-mapper(Tag, Tag.table,
+mapper_registry.map_imperatively(Tag, Tag.table,
        properties=dict(children=relation(Tag, backref=backref('parent', remote_side=[Tag.table.c.id]))))
 
-mapper(Category, Category.table,
+mapper_registry.map_imperatively(Category, Category.table,
        properties=dict(repositories=relation(RepositoryCategoryAssociation,
                                              secondary=Repository.table,
                                              primaryjoin=(Category.table.c.id == RepositoryCategoryAssociation.table.c.category_id),
                                              secondaryjoin=(RepositoryCategoryAssociation.table.c.repository_id == Repository.table.c.id))))
 
-mapper(Repository, Repository.table,
+mapper_registry.map_imperatively(Repository, Repository.table,
        properties=dict(
            categories=relation(RepositoryCategoryAssociation),
            ratings=relation(RepositoryRatingAssociation, order_by=desc(RepositoryRatingAssociation.table.c.update_time), backref="repositories"),
@@ -272,13 +273,13 @@ mapper(Repository, Repository.table,
                               primaryjoin=(Repository.table.c.id == RepositoryReview.table.c.repository_id),
                               secondaryjoin=(RepositoryReview.table.c.user_id == User.table.c.id))))
 
-mapper(RepositoryMetadata, RepositoryMetadata.table,
+mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table,
        properties=dict(repository=relation(Repository),
                        reviews=relation(RepositoryReview,
                                         foreign_keys=[RepositoryMetadata.table.c.repository_id, RepositoryMetadata.table.c.changeset_revision],
                                         primaryjoin=((RepositoryMetadata.table.c.repository_id == RepositoryReview.table.c.repository_id) & (RepositoryMetadata.table.c.changeset_revision == RepositoryReview.table.c.changeset_revision)))))
 
-mapper(RepositoryReview, RepositoryReview.table,
+mapper_registry.map_imperatively(RepositoryReview, RepositoryReview.table,
        properties=dict(repository=relation(Repository,
                                            primaryjoin=(RepositoryReview.table.c.repository_id == Repository.table.c.id)),
                        # Take care when using the mapper below!  It should be used only when a new review is being created for a repository change set revision.
@@ -294,17 +295,17 @@ mapper(RepositoryReview, RepositoryReview.table,
                        private_component_reviews=relation(ComponentReview,
                                                           primaryjoin=((RepositoryReview.table.c.id == ComponentReview.table.c.repository_review_id) & (ComponentReview.table.c.deleted == false()) & (ComponentReview.table.c.private == true())))))
 
-mapper(ComponentReview, ComponentReview.table,
+mapper_registry.map_imperatively(ComponentReview, ComponentReview.table,
        properties=dict(repository_review=relation(RepositoryReview),
                        component=relation(Component,
                                           primaryjoin=(ComponentReview.table.c.component_id == Component.table.c.id))))
 
-mapper(Component, Component.table)
+mapper_registry.map_imperatively(Component, Component.table)
 
-mapper(RepositoryRatingAssociation, RepositoryRatingAssociation.table,
+mapper_registry.map_imperatively(RepositoryRatingAssociation, RepositoryRatingAssociation.table,
        properties=dict(repository=relation(Repository), user=relation(User)))
 
-mapper(RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
+mapper_registry.map_imperatively(RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
        properties=dict(
            category=relation(Category),
            repository=relation(Repository)))
