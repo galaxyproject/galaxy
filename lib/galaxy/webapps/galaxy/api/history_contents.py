@@ -520,6 +520,19 @@ class FastAPIHistoryContents:
         """Updates the values for the history content item with the given ``ID``."""
         return self.service.update(trans, history_id, id, payload.dict(), serialization_params, contents_type=type)
 
+    @router.put(
+        '/api/histories/{history_id}/contents/{id}/validate',
+        summary='Validates the metadata associated with a dataset within a History.',
+    )
+    def validate(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+    ) -> dict:  # TODO: define a response?
+        """Validates the metadata associated with a dataset within a History."""
+        return self.service.validate(trans, history_id, id)
+
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
 

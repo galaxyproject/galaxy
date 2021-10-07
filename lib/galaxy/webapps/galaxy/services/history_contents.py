@@ -534,7 +534,7 @@ class HistoriesContentsService(ServiceBase):
         history_content_id: EncodedDatabaseIdField
     ):
         """
-        Updates the values for the history content item with the given ``id``
+        Validates the metadata associated with a dataset within a History.
 
         :type   history_id: str
         :param  history_id: encoded id string of the items's History
