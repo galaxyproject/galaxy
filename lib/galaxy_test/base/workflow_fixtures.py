@@ -744,7 +744,7 @@ steps:
     state:
       quality: 9
     in:
-      input: input_1
+      input: input_list
 report:
   markdown: |
     ## About This Report
@@ -941,6 +941,7 @@ WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA = """
 input_1:
   value: 1.bed
   type: File
+  file_type: bed
   name: my bed file
 image_input:
   value: 454Score.png
@@ -952,5 +953,6 @@ input_list:
   elements:
     - identifier: i1
       content: "0"
+      ext: txt
   name: example list
 """
