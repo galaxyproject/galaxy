@@ -15,7 +15,7 @@ from typing import (
     List,
 )
 
-from galaxy.app import MinimalManagerApp
+from galaxy.app import StructuredApp
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema import SerializationParams
@@ -30,7 +30,7 @@ VERSION_JSON_FILE = 'version.json'
 class ConfigurationManager:
     """Interface/service object for interacting with configuration and related data."""
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: StructuredApp):
         self._app = app
 
     def get_configuration(
