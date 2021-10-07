@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -24,80 +25,562 @@ class BaseTest:
         return getattr(model, class_name)
 
 
+class TestAPIKeys(BaseTest):
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'api_keys'
+
+    def test_columns(self, session, cls_, user):
+        create_time, user_id, key = datetime.now(), user.id, get_unique_value()
+        obj = cls_(user_id=user_id, key=key, create_time=create_time)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.user_id == user_id
+            assert stored_obj.key == key
+
+
 class TestUser(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'galaxy_user'
+
+    def test_columns(self, session, cls_):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        email = get_unique_value()
+        username = get_unique_value()
+        password = 'c'
+        external = True
+        new_repo_alert = True
+        deleted = True
+        purged = True
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.email = email
+        obj.username = username
+        obj.password = password
+        obj.external = external
+        obj.new_repo_alert = new_repo_alert
+        obj.deleted = deleted
+        obj.purged = purged
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.email == email
+            assert stored_obj.username == username
+            assert stored_obj.password == password
+            assert stored_obj.external == external
+            assert stored_obj.new_repo_alert == new_repo_alert
+            assert stored_obj.deleted == deleted
+            assert stored_obj.purged == purged
 
 
 class TestPasswordResetToken(BaseTest):
-    pass  # TODO
 
+    def test_table(self, cls_):
+        assert cls_.table.name == 'password_reset_token'
 
-class TestAPIKeys(BaseTest):
-    pass  # TODO
+    def test_columns_and_relationships(self, session, cls_, user):
+        token = get_unique_value()
+        expiration_time = datetime.now()
+        obj = cls_(user, token)
+        obj.expiration_time = expiration_time
+
+        where_clause = cls_.token == token
+
+        with dbcleanup(session, obj, where_clause):
+            stored_obj = get_stored_obj(session, cls_, where_clause=where_clause)
+            # test columns
+            assert stored_obj.token == token
+            assert stored_obj.expiration_time == expiration_time
+            assert stored_obj.user_id == user.id
+            # test relationships
+            assert stored_obj.user.id == user.id
 
 
 class TestGroup(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'galaxy_group'
+
+    def test_columns(self, session, cls_):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        name = get_unique_value()
+        deleted = True
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.name = name
+        obj.deleted = deleted
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.name == name
+            assert stored_obj.deleted == deleted
 
 
 class TestRole(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'role'
+
+    def test_columns(self, session, cls_):
+        name, description, type_, deleted = get_unique_value(), 'b', cls_.types.SYSTEM, True
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj = cls_(name, description, type_, deleted)
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.name == name
+            assert stored_obj.description == description
+            assert stored_obj.type == type_
+            assert stored_obj.deleted == deleted
 
 
 class TestRepositoryRoleAssociation(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'repository_role_association'
+
+    def test_columns(self, session, cls_, repository, role):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj = cls_(repository, role)
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.repository_id == repository.id
+            assert stored_obj.role_id == role.id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
 
 
 class TestUserGroupAssociation(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'user_group_association'
+
+    def test_columns(self, session, cls_, user, group):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj = cls_(user, group)
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.group_id == group.id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
 
 
 class TestUserRoleAssociation(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'user_role_association'
+
+    def test_columns(self, session, cls_, user, role):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj = cls_(user, role)
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.role_id == role.id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
 
 
 class TestGroupRoleAssociation(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'group_role_association'
+
+    def test_columns(self, session, cls_, group, role):
+        obj = cls_(group, role)
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.group_id == group.id
+            assert stored_obj.role_id == role.id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
 
 
 class TestGalaxySession(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'galaxy_session'
+
+    def test_columns(self, session, cls_, user, galaxy_session):
+
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        remote_host = 'a'
+        remote_addr = 'b'
+        referer = 'c'
+        session_key = get_unique_value()
+        is_valid = True
+        last_action = update_time + timedelta(hours=1)
+
+        obj = cls_(user=user, prev_session_id=galaxy_session.id)
+
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.remote_host = remote_host
+        obj.remote_addr = remote_addr
+        obj.referer = referer
+        obj.session_key = session_key
+        obj.is_valid = is_valid
+        obj.last_action = last_action
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.user_id == user.id
+            assert stored_obj.remote_host == remote_host
+            assert stored_obj.remote_addr == remote_addr
+            assert stored_obj.referer == referer
+            assert stored_obj.session_key == session_key
+            assert stored_obj.is_valid == is_valid
+            assert stored_obj.prev_session_id == galaxy_session.id
+            assert stored_obj.last_action == last_action
 
 
 class TestTag(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'tag'
+        assert has_unique_constraint(cls_.table, ('name',))
+
+    def test_columns(self, session, cls_):
+        parent_tag = cls_()
+        type_, name = 1, get_unique_value()
+        obj = cls_(type=type_, name=name)
+        obj.parent = parent_tag
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.type == type_
+            assert stored_obj.parent_id == parent_tag.id
+            assert stored_obj.name == name
 
 
 class TestCategory(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'category'
+
+    def test_columns(self, session, cls_):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        name, description, deleted = get_unique_value(), 'b', True
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.name = name
+        obj.description = description
+        obj.deleted = deleted
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.name == name
+            assert stored_obj.description == description
+            assert stored_obj.deleted == deleted
 
 
 class TestRepository(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'repository'
+
+    def test_columns(self, session, cls_, user):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        name = 'a'
+        type = 'b'
+        remote_repository_url = 'c'
+        homepage_url = 'd'
+        description = 'e'
+        long_description = 'f'
+        private = True
+        deleted = True
+        email_alerts = False
+        times_downloaded = 1
+        deprecated = True
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.name = name
+        obj.type = type
+        obj.remote_repository_url = remote_repository_url
+        obj.homepage_url = homepage_url
+        obj.description = description
+        obj.long_description = long_description
+        obj.user = user
+        obj.private = private
+        obj.deleted = deleted
+        obj.email_alerts = email_alerts
+        obj.times_downloaded = times_downloaded
+        obj.deprecated = deprecated
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.name == name
+            assert stored_obj.type == type
+            assert stored_obj.remote_repository_url == remote_repository_url
+            assert stored_obj.homepage_url == homepage_url
+            assert stored_obj.description == description
+            assert stored_obj.long_description == long_description
+            assert stored_obj.user_id == user.id
+            assert stored_obj.private == private
+            assert stored_obj.deleted == deleted
+            assert stored_obj.email_alerts == email_alerts
+            assert stored_obj.times_downloaded == times_downloaded
+            assert stored_obj.deprecated == deprecated
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.name == name
+            assert stored_obj.description == description
+            assert stored_obj.deleted == deleted
 
 
 class TestRepositoryMetadata(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'repository_metadata'
+
+    def test_columns(self, session, cls_, repository):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        changeset_revision = 'a'
+        numeric_revision = 1
+        metadata = 'b'
+        tool_versions = 'c'
+        malicious = True
+        downloadable = False
+        missing_test_components = True
+        has_repository_dependencies = True
+        includes_datatypes = True
+        includes_tools = True
+        includes_tool_dependencies = True
+        includes_workflows = True
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.repository_id = repository.id
+        obj.changeset_revision = changeset_revision
+        obj.numeric_revision = numeric_revision
+        obj.metadata = metadata
+        obj.tool_versions = tool_versions
+        obj.malicious = malicious
+        obj.downloadable = downloadable
+        obj.missing_test_components = missing_test_components
+        obj.has_repository_dependencies = has_repository_dependencies
+        obj.includes_datatypes = includes_datatypes
+        obj.includes_tools = includes_tools
+        obj.includes_tool_dependencies = includes_tool_dependencies
+        obj.includes_workflows = includes_workflows
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.repository_id == repository.id
+            assert stored_obj.changeset_revision == changeset_revision
+            assert stored_obj.numeric_revision == numeric_revision
+            assert stored_obj.metadata == metadata
+            assert stored_obj.tool_versions == tool_versions
+            assert stored_obj.malicious == malicious
+            assert stored_obj.downloadable == downloadable
+            assert stored_obj.missing_test_components == missing_test_components
+            assert stored_obj.has_repository_dependencies == has_repository_dependencies
+            assert stored_obj.includes_datatypes == includes_datatypes
+            assert stored_obj.includes_tools == includes_tools
+            assert stored_obj.includes_tool_dependencies == includes_tool_dependencies
+            assert stored_obj.includes_workflows == includes_workflows
 
 
 class TestRepositoryReview(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'repository_review'
+
+    def test_columns(self, session, cls_, repository, user):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        changeset_revision = 'a'
+        approved = 'b'
+        rating = 1
+        deleted = True
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.repository = repository
+        obj.changeset_revision = changeset_revision
+        obj.user = user
+        obj.approved = approved
+        obj.rating = rating
+        obj.deleted = deleted
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.repository_id == repository.id
+            assert stored_obj.changeset_revision == changeset_revision
+            assert stored_obj.user_id == user.id
+            assert stored_obj.approved == approved
+            assert stored_obj.rating == rating
+            assert stored_obj.deleted == deleted
 
 
 class TestComponentReview(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'component_review'
+
+    def test_columns(self, session, cls_, repository_review, component):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        comment = 'a'
+        private = True
+        approved = 'b'
+        rating = 1
+        deleted = True
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.repository_review = repository_review
+        obj.component = component
+        obj.comment = comment
+        obj.private = private
+        obj.approved = approved
+        obj.rating = rating
+        obj.deleted = deleted
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.repository_review_id == repository_review.id
+            assert stored_obj.component_id == component.id
+            assert stored_obj.comment == comment
+            assert stored_obj.private == private
+            assert stored_obj.approved == approved
+            assert stored_obj.rating == rating
+            assert stored_obj.deleted == deleted
 
 
 class TestComponent(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'component'
+
+    def test_columns(self, session, cls_):
+        name, description = 'a', 'b'
+        obj = cls_(name=name, description=description)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.name == name
+            assert stored_obj.description == description
 
 
 class TestRepositoryRatingAssociation(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'repository_rating_association'
+
+    def test_columns(self, session, cls_, repository, user):
+        create_time = datetime.now()
+        update_time = create_time + timedelta(hours=1)
+        rating = 1
+        comment = 'a'
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.repository = repository
+        obj.user = user
+        obj.rating = rating
+        obj.comment = comment
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.repository_id == repository.id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.rating == rating
+            assert stored_obj.comment == comment
 
 
 class TestRepositoryCategoryAssociation(BaseTest):
-    pass  # TODO
+
+    def test_table(self, cls_):
+        assert cls_.table.name == 'repository_category_association'
+
+    def test_columns(self, session, cls_, repository, category):
+        obj = cls_(repository=repository, category=category)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.repository_id == repository.id
+            assert stored_obj.category_id == category.id
 
 
 # Misc. helper fixtures.
@@ -113,6 +596,55 @@ def session(model):
     Session = model.session
     yield Session()
     Session.remove()  # Ensures we get a new session for each test
+
+
+@pytest.fixture
+def category(model, session):
+    instance = model.Category(name=get_unique_value())
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def component(model, session):
+    instance = model.Component()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def galaxy_session(model, session):
+    instance = model.GalaxySession(session_key=get_unique_value())
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def group(model, session):
+    instance = model.Group(name=get_unique_value())
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def repository(model, session):
+    instance = model.Repository()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def repository_review(model, session, user):
+    instance = model.RepositoryReview()
+    instance.user = user
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def role(model, session):
+    instance = model.Role(name=get_unique_value())
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def user(model, session):
+    instance = model.User(email=get_unique_value(), password='password')
+    yield from dbcleanup_wrapper(session, instance)
 
 
 # Test utilities
