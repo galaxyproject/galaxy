@@ -105,6 +105,7 @@ def get_index_query_params(
     ),
     dataset_details: Optional[str] = Query(
         default=None,
+        alias="details",
         title="Dataset Details",
         description=(
             "A comma-separated list of encoded dataset IDs that will return additional (full) details "
@@ -552,6 +553,8 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         """
         index_params = parse_index_query_params(**kwd)
         legacy_params = parse_legacy_index_query_params(**kwd)
+        # Sometimes the `v=dev` version is called with `details` or `dataset_details`
+        index_params.dataset_details = index_params.dataset_details or legacy_params.dataset_details
         serialization_params = parse_serialization_params(**kwd)
         filter_parameters = FilterQueryParams(**kwd)
         return self.service.index(
