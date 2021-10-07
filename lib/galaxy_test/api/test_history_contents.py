@@ -2,8 +2,6 @@ import time
 import urllib
 from datetime import datetime
 
-from requests import delete, put
-
 from galaxy.webapps.galaxy.services.history_contents import DirectionOptions
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -187,24 +185,24 @@ class HistoryContentsApiTestCase(ApiTestCase):
     def test_update(self):
         hda1 = self._wait_for_new_hda()
         assert str(hda1["deleted"]).lower() == "false"
-        update_response = self._raw_update(hda1["id"], dict(deleted=True))
+        update_response = self._update(hda1["id"], dict(deleted=True))
         self._assert_status_code_is(update_response, 200)
         show_response = self.__show(hda1)
         assert str(show_response.json()["deleted"]).lower() == "true"
 
-        update_response = self._raw_update(hda1["id"], dict(name="Updated Name"))
+        update_response = self._update(hda1["id"], dict(name="Updated Name"))
         assert self.__show(hda1).json()["name"] == "Updated Name"
 
-        update_response = self._raw_update(hda1["id"], dict(name="Updated Name"))
+        update_response = self._update(hda1["id"], dict(name="Updated Name"))
         assert self.__show(hda1).json()["name"] == "Updated Name"
 
         unicode_name = 'ржевский сапоги'
-        update_response = self._raw_update(hda1["id"], dict(name=unicode_name))
+        update_response = self._update(hda1["id"], dict(name=unicode_name))
         updated_hda = self.__show(hda1).json()
         assert updated_hda["name"] == unicode_name, updated_hda
 
         quoted_name = '"Mooo"'
-        update_response = self._raw_update(hda1["id"], dict(name=quoted_name))
+        update_response = self._update(hda1["id"], dict(name=quoted_name))
         updated_hda = self.__show(hda1).json()
         assert updated_hda["name"] == quoted_name, quoted_name
 
@@ -230,28 +228,28 @@ class HistoryContentsApiTestCase(ApiTestCase):
 
         # update deleted flag => true
         payload = dict(items=[{"history_content_type": "dataset", "id": hda1["id"]}], deleted=True)
-        update_response = self._raw_update_batch(payload)
+        update_response = self._update_batch(payload)
         objects = update_response.json()
         assert objects[0]["deleted"] is True
         assert objects[0]["visible"] is True
 
         # update visibility flag => false
         payload = dict(items=[{"history_content_type": "dataset", "id": hda1["id"]}], visible=False)
-        update_response = self._raw_update_batch(payload)
+        update_response = self._update_batch(payload)
         objects = update_response.json()
         assert objects[0]["deleted"] is True
         assert objects[0]["visible"] is False
 
         # update both flags
         payload = dict(items=[{"history_content_type": "dataset", "id": hda1["id"]}], deleted=False, visible=True)
-        update_response = self._raw_update_batch(payload)
+        update_response = self._update_batch(payload)
         objects = update_response.json()
         assert objects[0]["deleted"] is False
         assert objects[0]["visible"] is True
 
     def test_update_type_failures(self):
         hda1 = self._wait_for_new_hda()
-        update_response = self._raw_update(hda1["id"], dict(deleted='not valid'))
+        update_response = self._update(hda1["id"], dict(deleted='not valid'))
         self._assert_status_code_is(update_response, 400)
 
     def _wait_for_new_hda(self):
@@ -259,27 +257,21 @@ class HistoryContentsApiTestCase(ApiTestCase):
         self.dataset_populator.wait_for_history(self.history_id)
         return hda1
 
-    def _set_edit_update(self, json):
-        set_edit_url = f"{self.url}/dataset/set_edit"
-        update_response = put(set_edit_url, json=json)
+    def _set_edit_update(self, data):
+        update_response = self._put(f"{self.url}/dataset/set_edit", data=data, json=True)
         return update_response
 
-    def _raw_update(self, item_id, data, admin=False, history_id=None):
+    def _update(self, item_id, data, admin=False, history_id=None):
         history_id = history_id or self.history_id
-        key_param = "use_admin_key" if admin else "use_key"
-        update_url = self._api_url(f"histories/{history_id}/contents/{item_id}", **{key_param: True})
-        update_response = put(update_url, json=data)
+        update_response = self._put(f"histories/{history_id}/contents/{item_id}", data=data, json=True, admin=admin)
         return update_response
 
     def _update_permissions(self, url, data, admin=False):
-        key_param = "use_admin_key" if admin else "use_key"
-        update_url = self._api_url(url, **{key_param: True})
-        update_response = put(update_url, json=data)
+        update_response = self._put(url, data=data, json=True, admin=admin)
         return update_response
 
-    def _raw_update_batch(self, data):
-        update_url = self._api_url(f"histories/{self.history_id}/contents", use_key=True)
-        update_response = put(update_url, json=data)
+    def _update_batch(self, data):
+        update_response = self._put(f"histories/{self.history_id}/contents", data=data, json=True)
         return update_response
 
     def test_delete(self):
@@ -337,7 +329,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         with self.dataset_populator.test_history() as history_id:
             hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
             hda2_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
-            update_response = self._raw_update(hda2_id, dict(tags=['existing:tag']), history_id=history_id).json()
+            update_response = self._update(hda2_id, dict(tags=['existing:tag']), history_id=history_id).json()
             assert update_response['tags'] == ['existing:tag']
             creation_payload = {'collection_type': 'list',
                                 'history_id': history_id,
@@ -389,7 +381,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
 
         assert not dataset_collection["deleted"]
 
-        delete_response = delete(self._api_url(collection_url, use_key=True))
+        delete_response = self._delete(collection_url)
         self._assert_status_code_is(delete_response, 200)
 
         show_response = self._get(collection_url)
