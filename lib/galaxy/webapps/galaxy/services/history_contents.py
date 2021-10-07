@@ -281,7 +281,7 @@ class HistoriesContentsService(ServiceBase):
         trans,
         id: EncodedDatabaseIdField,
         serialization_params: SerializationParams,
-        contents_type: Optional[HistoryContentType],
+        contents_type: HistoryContentType,
         fuzzy_count: Optional[int] = None,
     ) -> AnyHistoryContentItem:
         """
@@ -314,7 +314,6 @@ class HistoriesContentsService(ServiceBase):
 
         :returns:   dictionary containing detailed HDA or HDCA information
         """
-        contents_type = contents_type or HistoryContentType.dataset
         if contents_type == HistoryContentType.dataset:
             return self.__show_dataset(trans, id, serialization_params)
         elif contents_type == HistoryContentType.dataset_collection:
@@ -348,7 +347,7 @@ class HistoriesContentsService(ServiceBase):
     def show_jobs_summary(
         self, trans,
         id: EncodedDatabaseIdField,
-        contents_type: HistoryContentType = HistoryContentType.dataset,
+        contents_type: HistoryContentType,
     ) -> AnyJobStateSummary:
         """
         Return detailed information about an HDA or HDCAs jobs
@@ -461,7 +460,7 @@ class HistoriesContentsService(ServiceBase):
         id: EncodedDatabaseIdField,
         payload: Dict[str, Any],
         serialization_params: SerializationParams,
-        contents_type: HistoryContentType = HistoryContentType.dataset,
+        contents_type: HistoryContentType,
     ):
         """
         Updates the values for the history content item with the given ``id``
@@ -558,7 +557,7 @@ class HistoriesContentsService(ServiceBase):
         self, trans,
         id,
         serialization_params: SerializationParams,
-        contents_type: HistoryContentType = HistoryContentType.dataset,
+        contents_type: HistoryContentType,
         purge: bool = False,
         recursive: bool = False,
     ) -> Union[AnyHDA, DeleteHDCAResult]:
