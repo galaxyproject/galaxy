@@ -158,6 +158,7 @@ module.exports = (env = {}, argv = {}) => {
                             options: {
                                 sourceMap: true,
                                 sassOptions: {
+                                    quietDeps: true,
                                     includePaths: [
                                         path.join(styleBase, "scss"),
                                         path.resolve(__dirname, "./node_modules"),
