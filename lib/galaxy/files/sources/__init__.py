@@ -3,6 +3,8 @@ import os
 import time
 from typing import Set
 
+from typing_extensions import ClassVar
+
 from galaxy.exceptions import (
     ConfigurationError,
     ItemAccessibilityException,
@@ -22,11 +24,11 @@ class FilesSource(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def get_uri_root(self):
+    def get_uri_root(self) -> str:
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
 
     @abc.abstractmethod
-    def get_scheme(self):
+    def get_scheme(self) -> str:
         """Return a prefix for the root (e.g. the gxfiles in gxfiles://prefix/path)."""
 
     @abc.abstractmethod
@@ -60,6 +62,7 @@ class FilesSource(metaclass=abc.ABCMeta):
 
 
 class BaseFilesSource(FilesSource):
+    plugin_type: ClassVar[str]
 
     def get_prefix(self):
         return self.id
@@ -137,7 +140,7 @@ class BaseFilesSource(FilesSource):
             return ctime.strftime("%m/%d/%Y %I:%M:%S %p")
 
     @abc.abstractmethod
-    def _serialization_props(self):
+    def _serialization_props(self, user_context=None):
         """Serialize properties needed to recover plugin configuration.
 
         Used in to_dict method if for_serialization is True.
