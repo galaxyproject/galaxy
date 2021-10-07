@@ -389,7 +389,7 @@ class SafeStringWrapper:
         return float(self.unsanitized)
 
     def __index__(self):
-        return self.unsanitized.index()
+        return self.unsanitized.__index__()
 
     def __trunc__(self):
         return self.unsanitized.__trunc__()
