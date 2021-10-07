@@ -10,8 +10,19 @@
         <data name="output" format="txt"/>
     </outputs>
     <tests>
-        <test expect_num_outputs="1">
+        <!-- one can not supply bam for a sam input -->
+        <test expect_num_outputs="1" expect_failure="true">
             <param name="forward" value="3unsorted.bam" ftype="unsorted.bam"/>
+            <output name="outfile">
+                <assert_contents>
+                    <has_text text="sam"/>
+                    <not_has_text text="unsorted.bam"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- one can not supply bed for a sam input -->
+        <test expect_num_outputs="1" expect_failure="true">
+            <param name="forward" value="1.bed" ftype="bed"/>
             <output name="outfile">
                 <assert_contents>
                     <has_text text="sam"/>
