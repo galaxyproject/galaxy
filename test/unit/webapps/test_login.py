@@ -22,11 +22,6 @@ class LoginControllerTestCase(TestCase):
         self.trans = galaxy_mock.MockTrans(admin_users=admin_users, admin_users_list=admin_users_list)
         self.app = self.trans.app
 
-        def mock_is_admin_user(user):
-            return user.email in admin_users
-
-        self.trans.app.config.is_admin_user = mock_is_admin_user
-
         self.user_manager = self.app[UserManager]
 
         self.admin_user = self.user_manager.create(email=admin_email, username='admin', password=default_password)
