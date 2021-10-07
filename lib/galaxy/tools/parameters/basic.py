@@ -2417,6 +2417,8 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
 
     def validate(self, value, trans=None):
         super().validate(value, trans=trans)
+        if not value:
+            return  # value is not set yet, do not validate
         file_source = trans.app.file_sources.get_file_source_path(value).file_source
         user_context = ProvidesUserFileSourcesUserContext(trans)
         user_has_access = file_source.user_has_access(user_context)
