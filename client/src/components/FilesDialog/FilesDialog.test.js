@@ -32,14 +32,13 @@ const api_paths_map = new Map([
 const initComponent = async (props) => {
     const axiosMock = new MockAdapter(axios);
 
-    const wrapper = shallowMount(FilesDialog, {
-        propsData: props,
-    });
-
     // register axios paths
     for (const [path, response] of api_paths_map.entries()) {
         axiosMock.onGet(path).reply(200, response);
     }
+    const wrapper = shallowMount(FilesDialog, {
+        propsData: props,
+    });
 
     await flushPromises();
 
