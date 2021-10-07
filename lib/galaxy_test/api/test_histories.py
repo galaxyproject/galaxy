@@ -213,10 +213,9 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
     # TODO: (CE) test_create_from_copy
 
 
-class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
+class ImportExportTests(BaseHistories):
 
-    def setUp(self):
-        super().setUp()
+    def _set_up_populators(self):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
@@ -424,6 +423,13 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
 
         if elements_checker is not None:
             elements_checker(imported_collection_metadata["elements"])
+
+
+class ImportExportHistoryTestCase(ApiTestCase, ImportExportTests):
+
+    def setUp(self):
+        super().setUp()
+        self._set_up_populators()
 
 
 class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):

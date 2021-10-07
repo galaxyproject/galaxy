@@ -77,6 +77,7 @@ def skip_if_github_workflow():
 
 class IntegrationInstance(UsesApiTestCaseMixin):
     """Unit test case with utilities for spinning up Galaxy."""
+    _test_driver: GalaxyTestDriver  # Optional in parent class, but required for integration tests.
 
     prefer_template_database = True
     # Subclasses can override this to force uwsgi for tests.

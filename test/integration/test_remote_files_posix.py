@@ -16,6 +16,7 @@ class PosixFileSourceIntegrationTestCase(PosixFileSourceSetup, integration_util.
 
     def setUp(self):
         super().setUp()
+        self._write_file_fixtures()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_plugin_config(self):
