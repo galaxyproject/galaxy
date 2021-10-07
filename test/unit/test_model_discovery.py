@@ -182,7 +182,7 @@ def test_persist_target_hdca():
 
     import_hdca = import_history.dataset_collections[0]
     datasets = import_hdca.dataset_instances
-    assert len(datasets) == 2
+    assert datasets.count() == 2
     dataset0 = datasets[0]
     dataset1 = datasets[1]
 

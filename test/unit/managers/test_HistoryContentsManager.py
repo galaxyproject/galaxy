@@ -80,10 +80,10 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         history = self.history_manager.create(name='history', user=user2)
         hdas = [self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(3)]
         hdca = self.add_list_collection_to_history(history, hdas)
-        self.assertEqual(hdas, hdca.dataset_instances)
+        self.assertEqual(hdas, hdca.dataset_instances.all())
 
         hdca = self.add_list_collection_to_history(history, hdas, copy_elements=True)
-        self.assertNotEqual(hdas, hdca.dataset_instances)
+        self.assertNotEqual(hdas, hdca.dataset_instances.all())
 
     def test_subcontainers(self):
         user2 = self.user_manager.create(**user2_data)

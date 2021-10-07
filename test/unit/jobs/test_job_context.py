@@ -83,5 +83,5 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     collection_builder.populate()
     assert spy.call_count == 0
     sa_session.flush()
-    assert len(collection.dataset_instances) == 10
+    assert collection.dataset_instances.count() == 10
     assert collection.dataset_instances[0].dataset.file_size == 1

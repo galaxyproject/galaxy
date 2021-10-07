@@ -53,7 +53,7 @@ class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
         collection = hdca.collection
         self.assertEqual(collection.collection_type, 'list')
         self.assertEqual(collection.state, 'ok')
-        self.assertEqual(len(collection.dataset_instances), 3)
+        self.assertEqual(collection.dataset_instances.count(), 3)
         self.assertEqual(len(collection.elements), 3)
 
         self.log("and that collection should have three well-formed Elements")

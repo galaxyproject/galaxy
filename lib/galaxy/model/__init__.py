@@ -5218,7 +5218,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
             )
             extensions = set()
             states = set()
-            for extension, state in q:
+            for extension, state in q.all():
                 states.add(state)
                 extensions.add(extension)
 
@@ -5316,7 +5316,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
     def dataset_instances(self):
         db_session = object_session(self)
         if db_session and self.id:
-            return self._get_nested_collection_attributes(return_entities=(HistoryDatasetAssociation,)).all()
+            return self._get_nested_collection_attributes(return_entities=(HistoryDatasetAssociation,))
         else:
             # Sessionless context
             instances = []
