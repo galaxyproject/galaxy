@@ -1682,9 +1682,9 @@ steps:
       queries2_0|input2: split_up/split_output
 """
             )
-            hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n")
-            hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t20.0\nsamp2\t40.0\n")
-            hda3 = self.dataset_populator.new_dataset(history_id, content="samp1\t30.0\nsamp2\t60.0\n")
+            hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n", file_type="tabular")
+            hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t20.0\nsamp2\t40.0\n", file_type="tabular")
+            hda3 = self.dataset_populator.new_dataset(history_id, content="samp1\t30.0\nsamp2\t60.0\n", file_type="tabular")
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             inputs = {
                 "0": self._ds_entry(hda1),
@@ -1729,8 +1729,8 @@ steps:
       input1: split_up_2/split_output
 """
             )
-            hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n")
-            hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t30.0\nsamp2\t40.0\n")
+            hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n", file_type="tabular")
+            hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t30.0\nsamp2\t40.0\n", file_type="tabular")
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             inputs = {
                 "0": self._ds_entry(hda1),
@@ -1837,6 +1837,7 @@ steps:
         # Testing regression of
         # https://github.com/galaxyproject/galaxy/issues/1514
         with self.dataset_populator.test_history() as history_id:
+            # TODO: use of file_type (for datasets) and ext (for collection elements) to specify the datatype of WF inputs is horribly inconsistent
             self._run_jobs(
                 """
 class: GalaxyWorkflow
@@ -1861,12 +1862,15 @@ test_data:
       - identifier: samp1
         value: 1.fastq
         type: File
+        ext: fastq
       - identifier: samp2
         value: 1.fastq
         type: File
+        ext: fastq
   reference:
     value: 1.fasta
     type: File
+    file_type: fasta
 """,
                 history_id=history_id,
             )
@@ -2136,6 +2140,7 @@ test_data:
     elements:
       - identifier: samp1
         content: "0\n1"
+        ext: tabular
 """,
                 history_id=history_id,
             )
@@ -2681,6 +2686,7 @@ steps:
 outer_input:
   value: 1.bed
   type: File
+  file_type: bed
 """,
                 history_id=history_id,
                 wait=True,
@@ -4847,10 +4853,10 @@ steps:
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_batch")
         workflow_id = self.workflow_populator.create_workflow(workflow)
         with self.dataset_populator.test_history() as history_id:
-            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
-            hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6", wait=True)
-            hda3 = self.dataset_populator.new_dataset(history_id, content="7 8 9", wait=True)
-            hda4 = self.dataset_populator.new_dataset(history_id, content="10 11 12", wait=True)
+            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True, file_type="tabular")
+            hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6", wait=True, file_type="tabular")
+            hda3 = self.dataset_populator.new_dataset(history_id, content="7 8 9", wait=True, file_type="tabular")
+            hda4 = self.dataset_populator.new_dataset(history_id, content="10 11 12", wait=True, file_type="tabular")
             parameters = {
                 "0": {
                     "input": {
@@ -4897,10 +4903,10 @@ steps:
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_batch")
         workflow_id = self.workflow_populator.create_workflow(workflow)
         with self.dataset_populator.test_history() as history_id:
-            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
-            hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6")
-            hda3 = self.dataset_populator.new_dataset(history_id, content="7 8 9")
-            hda4 = self.dataset_populator.new_dataset(history_id, content="10 11 12")
+            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3", file_type="tabular")
+            hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6", file_type="tabular")
+            hda3 = self.dataset_populator.new_dataset(history_id, content="7 8 9", file_type="tabular")
+            hda4 = self.dataset_populator.new_dataset(history_id, content="10 11 12", file_type="tabular")
             inputs = {
                 "coolinput": {
                     "batch": True,
