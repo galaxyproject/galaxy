@@ -6,14 +6,14 @@ from typing import Any, Dict, List, Optional
 
 from fastapi.param_functions import Query
 
-from galaxy.files._schema import (
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.remote_files import RemoteFilesManager
+from galaxy.schema.remote_files import (
     FilesSourcePluginList,
     RemoteFilesDisableMode,
     RemoteFilesFormat,
     RemoteFilesTarget,
 )
-from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.remote_files import RemoteFilesManager
 from galaxy.web import expose_api
 from . import (
     BaseGalaxyAPIController,

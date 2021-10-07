@@ -1,3 +1,4 @@
+galaxy-files
 galaxy-objectstore
 galaxy-sequence-utils
 galaxy-util[template]

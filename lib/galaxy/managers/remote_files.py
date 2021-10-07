@@ -15,13 +15,13 @@ from galaxy.files import (
     ConfiguredFileSources,
     ProvidesUserFileSourcesUserContext,
 )
-from galaxy.files._schema import (
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.schema.remote_files import (
     FilesSourcePluginList,
     RemoteFilesDisableMode,
     RemoteFilesFormat,
     RemoteFilesTarget,
 )
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.util import (
     jstree,
     smart_str,
