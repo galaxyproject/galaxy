@@ -47,7 +47,7 @@ class DatasetsApiTestCase(ApiTestCase):
         }
         updated_hda = self._put(
             f"histories/{self.history_id}/contents/{hda_id}",
-            update_payload).json()
+            update_payload, json=True).json()
         assert 'cool:new_tag' in updated_hda['tags']
         assert 'cool:another_tag' in updated_hda['tags']
         payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag'], 'qv': ['dataset', 'cool:new_tag']}
@@ -169,19 +169,19 @@ class DatasetsApiTestCase(ApiTestCase):
 
         update_while_incomplete_response = self._put(  # try updating datatype while used as output of a running job
             f"histories/{self.history_id}/contents/{queued_id}",
-            {'datatype': 'tabular'})
+            data={'datatype': 'tabular'}, json=True)
         self._assert_status_code_is(update_while_incomplete_response, 400)
 
         self.dataset_populator.wait_for_history_jobs(self.history_id)  # now wait for upload to complete
 
         successful_updated_hda_response = self._put(
             f"histories/{self.history_id}/contents/{hda_id}",
-            {'datatype': 'tabular'}).json()
+            data={'datatype': 'tabular'}, json=True).json()
         assert successful_updated_hda_response['extension'] == 'tabular'
         assert successful_updated_hda_response['data_type'] == 'galaxy.datatypes.tabular.Tabular'
         assert 'scatterplot' in [viz['name'] for viz in successful_updated_hda_response['visualizations']]
 
         invalidly_updated_hda_response = self._put(  # try updating with invalid datatype
             f"histories/{self.history_id}/contents/{hda_id}",
-            {'datatype': 'invalid'})
+            data={'datatype': 'invalid'}, json=True)
         self._assert_status_code_is(invalidly_updated_hda_response, 400)
