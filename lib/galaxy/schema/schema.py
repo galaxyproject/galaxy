@@ -711,6 +711,17 @@ class UpdateHistoryContentsBatchPayload(HistoryBase):
         }
 
 
+class UpdateHistoryContentsPayload(HistoryBase):
+    """Contains arbitrary property values that will be updated for a particular history item."""
+    class Config:
+        schema_extra = {
+            "example": {
+                "visible": False,
+                "annotation": "Test",
+            }
+        }
+
+
 class HistorySummary(HistoryBase):
     """History summary information."""
     model_class: str = ModelClassField(HISTORY_MODEL_CLASS_NAME)

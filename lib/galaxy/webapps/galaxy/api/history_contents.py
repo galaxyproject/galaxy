@@ -32,6 +32,7 @@ from galaxy.schema.schema import (
     HistoryContentType,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
+    UpdateHistoryContentsPayload,
 )
 from galaxy.web import (
     expose_api,
@@ -501,6 +502,22 @@ class FastAPIHistoryContents:
         will be made to the items.
         """
         return self.service.update_batch(trans, history_id, payload, serialization_params)
+
+    @router.put(
+        '/api/histories/{history_id}/contents/{id}',
+        summary='Updates the values for the history content item with the given ``ID``.',
+    )
+    def update(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        type: HistoryContentType = ContentTypeQueryParam,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: UpdateHistoryContentsPayload = Body(...),
+    ) -> AnyHistoryContentItem:
+        """Updates the values for the history content item with the given ``ID``."""
+        return self.service.update(trans, history_id, id, payload.dict(), serialization_params, contents_type=type)
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
