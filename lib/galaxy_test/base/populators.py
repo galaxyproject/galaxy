@@ -1554,10 +1554,11 @@ class BaseDatasetCollectionPopulator:
                         element_identifier = "forward"
                     else:
                         element_identifier = "reverse"
+                    if "file_type" in contents_level:
+                        element["ext"] = contents_level["file_type"]
                 element["name"] = element_identifier
                 element["paste_content"] = dataset_contents
                 elements.append(element)
-
         name = kwds.get("name", "Test Dataset Collection")
 
         files_request_part = {}
@@ -1674,11 +1675,18 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
 
 def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_populator):
     """Load a dictionary as inputs to a workflow (test data focused)."""
-
     def open_test_data(test_dict, mode="rb"):
+        """
+        load test data given in test_dict["value"]
+        - if its a file name: a handle to the file
+        - otherwise: a handle to the raw string data
+        """
         test_data_resolver = TestDataResolver()
         filename = test_data_resolver.get_filename(test_dict["value"])
-        return open(filename, mode)
+        if filename is not None:
+            return open(filename, mode)
+        else:
+            return StringIO(test_dict["value"])
 
     def read_test_data(test_dict):
         return open_test_data(test_dict, mode="r").read()

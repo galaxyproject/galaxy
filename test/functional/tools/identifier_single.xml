@@ -3,7 +3,7 @@
 echo '$input1.element_identifier' > 'output1'
     ]]></command>
     <inputs>
-        <param name="input1" type="data" label="Input 1" />
+        <param name="input1" format="txt" type="data" label="Input 1" />
     </inputs>
     <outputs>
         <data name="output1" format="tabular" from_work_dir="output1" />
