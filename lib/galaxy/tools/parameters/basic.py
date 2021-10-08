@@ -2125,7 +2125,7 @@ class DataToolParameter(BaseDataToolParameter):
                         if match.implicit_conversion:
                             v.implicit_conversion = True
                     else:
-                        raise ParameterValueError("Data set with invalid datatype supplied to input dataset parameter", self.name)
+                        raise ParameterValueError(f"data set ({v.name}) with invalid datatype ({v.ext}) supplied to input dataset parameter (expecting {dataset_matcher.param.extensions})", self.name)
         if not self.multiple:
             if len(rval) > 1:
                 raise ParameterValueError("more than one dataset supplied to single input dataset parameter", self.name)
