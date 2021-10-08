@@ -3,6 +3,7 @@
         <CurrentUser v-slot="{ user }">
             <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
                 <div v-if="currentHistoryId">
+                    <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                     <LoadingSpan v-if="showLoading" message="Loading Tool" />
                     <div v-if="showEntryPoints">
                         <ToolEntryPoints v-for="job in entryPoints" :job-id="job.id" :key="job.id" />
@@ -152,6 +153,7 @@ export default {
             remapAllowed: false,
             errorTitle: null,
             errorContent: null,
+            messageShow: false,
             messageVariant: "",
             messageText: "",
             useCachedJobs: false,
@@ -250,15 +252,20 @@ export default {
                 .then((data) => {
                     this.formConfig = data;
                     this.remapAllowed = this.job_id && data.job_remap;
-                    this.showLoading = false;
                     this.showForm = true;
                     if (newVersion) {
                         this.messageVariant = "success";
                         this.messageText = `Now you are using '${data.name}' version ${data.version}, id '${data.id}'.`;
                     }
                 })
+                .catch((error) => {
+                    this.messageVariant = "danger";
+                    this.messageText = `Loading tool ${this.id} failed: ${error}`;
+                    this.messageShow = true;
+                })
                 .finally(() => {
                     this.disabled = false;
+                    this.showLoading = false;
                 });
         },
         onExecute(config, historyId) {
