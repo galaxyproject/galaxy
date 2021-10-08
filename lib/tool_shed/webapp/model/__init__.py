@@ -75,6 +75,7 @@ class APIKeys(Base, _HasTable):
     create_time = Column(DateTime, default=now)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     key = Column(TrimmedString(32), index=True, unique=True)
+    user = relationship('User', back_populates='api_keys')
 
 
 class User(Base, Dictifiable, _HasTable):
@@ -98,7 +99,7 @@ class User(Base, Dictifiable, _HasTable):
         order_by=lambda: desc(GalaxySession.update_time))  # type: ignore
     api_keys = relationship(
         'APIKeys',
-        backref="user",  # TODO >> back_populates
+        back_populates='user',
         order_by=lambda: desc(APIKeys.create_time))  # type: ignore
     reset_tokens = relationship('PasswordResetToken', back_populates='user')
 
