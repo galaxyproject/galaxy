@@ -823,7 +823,8 @@ class Gff(Tabular, _RemoteCallMixin):
             for hdr in iter_headers(file_prefix, '\t'):
                 if not hdr or hdr == ['']:
                     continue
-                if hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
+                hdr0_parts = hdr[0].split()
+                if hdr0_parts[0] == '##gff-version' and not hdr0_parts[1].startswith('2'):
                     return False
                 # The gff-version header comment may have been stripped, so inspect the data
                 if hdr[0].startswith('#'):
@@ -963,10 +964,9 @@ class Gff3(Gff):
             for hdr in iter_headers(file_prefix, '\t'):
                 if not hdr or hdr == ['']:
                     continue
-                if hdr[0].startswith('##gff-version') and hdr[0].find('3') >= 0:
-                    return True
-                elif hdr[0].startswith('##gff-version') and hdr[0].find('3') < 0:
-                    return False
+                hdr0_parts = hdr[0].split()
+                if hdr0_parts[0] == '##gff-version':
+                    return hdr0_parts[1].startswith('3')
                 # The gff-version header comment may have been stripped, so inspect the data
                 if hdr[0].startswith('#'):
                     continue
@@ -1045,7 +1045,8 @@ class Gtf(Gff):
             for hdr in iter_headers(file_prefix, '\t'):
                 if not hdr or hdr == ['']:
                     continue
-                if hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
+                hdr0_parts = hdr[0].split()
+                if hdr0_parts[0] == '##gff-version' and not hdr0_parts[1].startswith('2'):
                     return False
                 # The gff-version header comment may have been stripped, so inspect the data
                 if hdr[0].startswith('#'):
