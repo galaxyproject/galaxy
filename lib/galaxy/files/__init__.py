@@ -4,6 +4,7 @@ from collections import (
     defaultdict,
     namedtuple,
 )
+from typing import Set
 
 from galaxy import exceptions
 from galaxy.util import (
@@ -246,15 +247,19 @@ class ProvidesUserFileSourcesUserContext:
         return user and user.extra_preferences or defaultdict(lambda: None)
 
     @property
-    def role_names(self):
+    def role_names(self) -> Set[str]:
         """The set of role names of this user."""
         user = self.trans.user
+        if user is None:
+            return set()
         return user and set([ura.role.name for ura in user.roles])
 
     @property
-    def group_names(self):
+    def group_names(self) -> Set[str]:
         """The set of group names to which this user belongs."""
         user = self.trans.user
+        if user is None:
+            return set()
         return user and set([ugr.group.name for ugr in user.groups])
 
     @property
