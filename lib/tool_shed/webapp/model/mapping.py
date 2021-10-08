@@ -26,12 +26,6 @@ log = logging.getLogger(__name__)
 
 metadata = mapper_registry.metadata
 
-APIKeys.table = Table("api_keys", metadata,
-                      Column("id", Integer, primary_key=True),
-                      Column("create_time", DateTime, default=now),
-                      Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                      Column("key", TrimmedString(32), index=True, unique=True))
-
 User.table = Table("galaxy_user", metadata,
                    Column("id", Integer, primary_key=True),
                    Column("create_time", DateTime, default=now),
@@ -202,12 +196,10 @@ Tag.table = Table("tag", metadata,
 mapper_registry.map_imperatively(User, User.table,
        properties=dict(active_repositories=relation(Repository, primaryjoin=((Repository.table.c.user_id == User.table.c.id) & (not_(Repository.table.c.deleted))), order_by=(Repository.table.c.name)),
                        galaxy_sessions=relation(GalaxySession, order_by=desc(GalaxySession.table.c.update_time)),
-                       api_keys=relation(APIKeys, backref="user", order_by=desc(APIKeys.table.c.create_time))))
+                       api_keys=relation(APIKeys, backref="user", order_by=desc(APIKeys.create_time))))
 
 mapper_registry.map_imperatively(PasswordResetToken, PasswordResetToken.table,
        properties=dict(user=relation(User, backref="reset_tokens")))
-
-mapper_registry.map_imperatively(APIKeys, APIKeys.table, properties={})
 
 mapper_registry.map_imperatively(Group, Group.table,
        properties=dict(users=relation(UserGroupAssociation)))

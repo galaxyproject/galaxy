@@ -28,7 +28,7 @@ class BaseTest:
 class TestAPIKeys(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'api_keys'
+        assert cls_.__tablename__ == 'api_keys'
 
     def test_columns(self, session, cls_, user):
         create_time, user_id, key = datetime.now(), user.id, get_unique_value()
@@ -40,6 +40,13 @@ class TestAPIKeys(BaseTest):
             assert stored_obj.create_time == create_time
             assert stored_obj.user_id == user_id
             assert stored_obj.key == key
+
+    def test_relationships(self, session, cls_, user):
+        obj = cls_(user_id=user.id, key=get_unique_value())
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.user.id == user.id
 
 
 class TestUser(BaseTest):

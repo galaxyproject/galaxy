@@ -7,11 +7,18 @@ from datetime import (
 )
 from typing import Any, Mapping, TYPE_CHECKING
 
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+)
 from sqlalchemy.orm import registry
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util
+from galaxy.model.custom_types import TrimmedString
 from galaxy.model.orm.now import now
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import unique_id
@@ -52,8 +59,13 @@ class Base(metaclass=DeclarativeMeta):
         cls.table = cls.__table__
 
 
-class APIKeys(_HasTable):
-    pass
+class APIKeys(Base, _HasTable):
+    __tablename__ = 'api_keys'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    key = Column(TrimmedString(32), index=True, unique=True)
 
 
 class User(Dictifiable, _HasTable):
