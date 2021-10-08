@@ -153,11 +153,6 @@ ComponentReview.table = Table("component_review", metadata,
                               Column("rating", Integer),
                               Column("deleted", Boolean, index=True, default=False))
 
-Component.table = Table("component", metadata,
-                        Column("id", Integer, primary_key=True),
-                        Column("name", TrimmedString(255)),
-                        Column("description", TEXT))
-
 RepositoryRatingAssociation.table = Table("repository_rating_association", metadata,
                                           Column("id", Integer, primary_key=True),
                                           Column("create_time", DateTime, default=now),
@@ -285,9 +280,7 @@ mapper_registry.map_imperatively(RepositoryReview, RepositoryReview.table,
 mapper_registry.map_imperatively(ComponentReview, ComponentReview.table,
        properties=dict(repository_review=relation(RepositoryReview),
                        component=relation(Component,
-                                          primaryjoin=(ComponentReview.table.c.component_id == Component.table.c.id))))
-
-mapper_registry.map_imperatively(Component, Component.table)
+                                          primaryjoin=(ComponentReview.table.c.component_id == Component.id))))
 
 mapper_registry.map_imperatively(RepositoryRatingAssociation, RepositoryRatingAssociation.table,
        properties=dict(repository=relation(Repository), user=relation(User)))

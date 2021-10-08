@@ -13,6 +13,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    TEXT,
 )
 from sqlalchemy.orm import (
     registry,
@@ -450,7 +451,12 @@ class ComponentReview(Dictifiable, _HasTable):
         self.deleted = deleted
 
 
-class Component(_HasTable):
+class Component(Base, _HasTable):
+    __tablename__ = 'component'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(TrimmedString(255))
+    description = Column(TEXT)
 
     def __init__(self, name=None, description=None):
         self.name = name

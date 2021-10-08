@@ -82,7 +82,7 @@ class TestCategory(BaseTest):
 class TestComponent(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'component'
+        assert cls_.__tablename__ == 'component'
 
     def test_columns(self, session, cls_):
         name, description = 'a', 'b'
