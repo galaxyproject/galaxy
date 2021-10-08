@@ -892,6 +892,7 @@
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkBinary"/>
+    <sniffer type="galaxy.datatypes.tabular:GoldenPath"/>
     <sniffer type="galaxy.datatypes.interval:ScIdx"/>
     <sniffer type="galaxy.datatypes.tabular:Vcf"/>
     <sniffer type="galaxy.datatypes.binary:JP2"/>
@@ -1103,7 +1104,6 @@
     module is fixed to not read the entire file.
     <sniffer type="galaxy.datatypes.assembly:Amos"/>
     -->
-    <sniffer type="galaxy.datatypes.tabular:GoldenPath"/>
     <sniffer type="galaxy.datatypes.binary:OxliCountGraph"/>
     <sniffer type="galaxy.datatypes.binary:OxliNodeGraph"/>
     <sniffer type="galaxy.datatypes.binary:OxliTagSet"/>

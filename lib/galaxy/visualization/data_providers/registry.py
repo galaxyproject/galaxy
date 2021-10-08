@@ -7,7 +7,7 @@ from galaxy.datatypes.interval import (
     Gtf,
     Interval
 )
-from galaxy.datatypes.tabular import Tabular, Vcf
+from galaxy.datatypes.tabular import Tabular, Vcf, GoldenPath
 from galaxy.datatypes.xml import Phyloxml
 from galaxy.model import NoConverterException
 from galaxy.visualization.data_providers import genome
@@ -35,6 +35,7 @@ class DataProviderRegistry:
                 "default": genome.TabixDataProvider
             },
             "interval_index": genome.IntervalIndexDataProvider,
+            "agp": genome.GoldenPathDataProvider,
             "bai": genome.BamDataProvider,
             "bam": genome.SamDataProvider,
             "bigwig": genome.BigWigDataProvider,
@@ -58,6 +59,13 @@ class DataProviderRegistry:
                 data_provider_class = genome.RawBedDataProvider
             elif isinstance(original_dataset.datatype, Vcf):
                 data_provider_class = genome.RawVcfDataProvider
+            # Quick reminder, to save the next developer a few minutes of
+            # debugging time, that any datatype class that is a subclass of
+            # another needs to be checked before the parent in this conditional.
+            elif isinstance(original_dataset.datatype, GoldenPath):
+                data_provider_class = genome.GoldenPathDataProvider
+            # Otherwise GoldenPath, being a subclass of Tabular, would match
+            # this clause and we would return the wrong data provider class.
             elif isinstance(original_dataset.datatype, Tabular):
                 data_provider_class = ColumnDataProvider
             elif isinstance(original_dataset.datatype, (Nexus, Newick, Phyloxml)):
