@@ -93,15 +93,6 @@ RepositoryReview.table = Table("repository_review", metadata,
                                Column("rating", Integer, index=True),
                                Column("deleted", Boolean, index=True, default=False))
 
-RepositoryRatingAssociation.table = Table("repository_rating_association", metadata,
-                                          Column("id", Integer, primary_key=True),
-                                          Column("create_time", DateTime, default=now),
-                                          Column("update_time", DateTime, default=now, onupdate=now),
-                                          Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
-                                          Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                                          Column("rating", Integer, index=True),
-                                          Column("comment", TEXT))
-
 Category.table = Table("category", metadata,
                        Column("id", Integer, primary_key=True),
                        Column("create_time", DateTime, default=now),
@@ -136,7 +127,7 @@ mapper_registry.map_imperatively(Category, Category.table,
 mapper_registry.map_imperatively(Repository, Repository.table,
        properties=dict(
            categories=relation(RepositoryCategoryAssociation),
-           ratings=relation(RepositoryRatingAssociation, order_by=desc(RepositoryRatingAssociation.table.c.update_time), backref="repositories"),
+           ratings=relation(RepositoryRatingAssociation, order_by=desc(RepositoryRatingAssociation.update_time), backref="repositories"),
            user=relation(User),
            downloadable_revisions=relation(RepositoryMetadata,
                                            primaryjoin=((Repository.table.c.id == RepositoryMetadata.table.c.repository_id) & (RepositoryMetadata.table.c.downloadable == true())),
@@ -172,9 +163,6 @@ mapper_registry.map_imperatively(RepositoryReview, RepositoryReview.table,
                                                   primaryjoin=((RepositoryReview.table.c.id == ComponentReview.repository_review_id) & (ComponentReview.deleted == false()))),
                        private_component_reviews=relation(ComponentReview,
                                                           primaryjoin=((RepositoryReview.table.c.id == ComponentReview.repository_review_id) & (ComponentReview.deleted == false()) & (ComponentReview.private == true())))))
-
-mapper_registry.map_imperatively(RepositoryRatingAssociation, RepositoryRatingAssociation.table,
-       properties=dict(repository=relation(Repository), user=relation(User)))
 
 
 class ToolShedModelMapping(SharedModelMapping):

@@ -569,7 +569,18 @@ class ItemRatingAssociation(_HasTable):
         """ Set association's item. """
 
 
-class RepositoryRatingAssociation(ItemRatingAssociation, _HasTable):
+class RepositoryRatingAssociation(Base, ItemRatingAssociation, _HasTable):
+    __tablename__ = 'repository_rating_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    repository_id = Column(Integer, ForeignKey("repository.id"), index=True)
+    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    rating = Column(Integer, index=True)
+    comment = Column(TEXT)
+    repository = relationship('Repository')  # TODO add back
+    user = relationship('User')  # TODO add back
 
     def set_item(self, repository):
         self.repository = repository
