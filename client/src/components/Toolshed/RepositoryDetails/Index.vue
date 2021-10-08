@@ -37,11 +37,7 @@
                         </template>
                     </b-table>
                     <ConfigProvider v-slot="{ config }">
-                        <ToolPanelViewProvider
-                            v-slot="{ currentPanel }"
-                            site-default-panel-view="default"
-                            :set-default-panel-view="true"
-                        >
+                        <ToolPanelViewProvider v-slot="{ currentPanel }" :panel-view="`default`" :set-default="false">
                             <InstallationSettings
                                 v-if="showSettings"
                                 :repo="repo"

@@ -42,6 +42,10 @@ const actions = {
         const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`);
         commit("savePanelView", { panelView, panel: data });
     },
+    fetchPanel: async ({ commit }, panelView) => {
+        const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`);
+        commit("savePanelView", { panelView, panel: data });
+    },
 };
 
 const mutations = {
