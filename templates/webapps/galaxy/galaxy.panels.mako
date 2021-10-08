@@ -176,8 +176,7 @@
 <%def name="javascripts()">
     <!-- galaxy.panels.mako javascripts -->
     ${h.dist_js(
-        'libs.chunk',
-        'base.chunk',
+        'libs.bundled',
         'generic.bundled'
     )}
 </%def>

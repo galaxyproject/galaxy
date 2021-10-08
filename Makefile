@@ -155,7 +155,7 @@ client-watch: node-deps ## A useful target for parallel development building.  S
 	cd client && yarn run watch
 
 client-dev-server: node-deps ## Starts a webpack dev server for client development (HMR enabled)
-	cd client && yarn run webpack-dev-server
+	cd client && yarn run serve
 
 client-test: node-deps  ## Run JS unit tests
 	cd client && yarn run test

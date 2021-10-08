@@ -1061,7 +1061,6 @@ class NavigatesGalaxy(HasDriver):
         search_box.send_keys(text)
         value = search_box.get_attribute("value")
         assert value == text, value
-        self.driver.execute_script("$(arguments[0]).keyup();", search_box)
 
     def libraries_folder_create(self, name):
         self.components.libraries.folder.add_folder.wait_for_and_click()

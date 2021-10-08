@@ -39,6 +39,7 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
             store: testStore,
             propsData,
             localVue,
+            attachTo: document.body,
             stubs: {
                 // Need to stub all this horrible-ness because of the last 2 tests
                 // which need to dig into the first layer of the mount tree, will remove
