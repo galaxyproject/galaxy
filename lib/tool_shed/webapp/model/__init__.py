@@ -614,7 +614,6 @@ class RepositoryCategoryAssociation(Base, _HasTable):
     id = Column(Integer, primary_key=True)
     repository_id = Column(Integer, ForeignKey('repository.id'), index=True)
     category_id = Column(Integer, ForeignKey('category.id'), index=True)
-    # TODO add back_populates
     category = relationship('Category', back_populates='repositories')
     repository = relationship('Repository', back_populates='categories')
 

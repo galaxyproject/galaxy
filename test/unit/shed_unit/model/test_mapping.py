@@ -76,7 +76,13 @@ class TestCategory(BaseTest):
             assert stored_obj.deleted == deleted
 
     def test_relationships(self, session, cls_, repository_category_association):
-        pass  # TODO: might be broken
+        obj = cls_()
+        obj.name = get_unique_value()
+        obj.repositories.append(repository_category_association)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.repositories == [repository_category_association]
 
 
 class TestComponent(BaseTest):
