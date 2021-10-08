@@ -253,6 +253,7 @@ export default {
                     this.formConfig = data;
                     this.remapAllowed = this.job_id && data.job_remap;
                     this.showForm = true;
+                    this.messageShow = false;
                     if (newVersion) {
                         this.messageVariant = "success";
                         this.messageText = `Now you are using '${data.name}' version ${data.version}, id '${data.id}'.`;
