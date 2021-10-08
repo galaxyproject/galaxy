@@ -96,7 +96,7 @@ Category.table = Table("category", metadata,
 mapper_registry.map_imperatively(RepositoryRoleAssociation, RepositoryRoleAssociation.table,
        properties=dict(
            repository=relation(Repository),
-           role=relation(Role)))
+           role=relation(Role, back_populates='repositories')))
 
 mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
        properties=dict(

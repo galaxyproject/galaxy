@@ -195,7 +195,7 @@ class Role(Base, Dictifiable, _HasTable):
     description = Column(TEXT)
     type = Column(String(40), index=True)
     deleted = Column(Boolean, index=True, default=False)
-    repositories = relationship('RepositoryRoleAssociation')  # TODO add back_populates
+    repositories = relationship('RepositoryRoleAssociation', back_populates='role')
     groups = relationship('GroupRoleAssociation')  # TODO ADD back_populates='role')
     users = relationship('UserRoleAssociation')  # TODO ADD back_populates='role')
 
