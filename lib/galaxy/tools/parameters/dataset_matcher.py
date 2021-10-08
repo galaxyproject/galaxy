@@ -155,7 +155,8 @@ class DatasetMatcher:
         applicable).
         """
         param = self.param
-        return param.options and param.get_options_filter_attribute(hda) not in self.filter_values
+        options_filter_attribute = param.get_options_filter_attribute(hda)
+        return param.options and options_filter_attribute and options_filter_attribute not in self.filter_values
 
 
 class HdaDirectMatch:

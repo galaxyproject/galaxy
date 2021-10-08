@@ -2261,7 +2261,10 @@ class DataToolParameter(BaseDataToolParameter):
         # this behavior needs to be entirely reworked (in a backwards compatible manner)
         options_filter_attribute = self.options_filter_attribute
         if options_filter_attribute is None:
-            return value.get_dbkey()
+            if value.metadata.element_is_set('dbkey'):
+                return value.get_dbkey()
+            else:
+                return None
         if options_filter_attribute.endswith("()"):
             call_attribute = True
             options_filter_attribute = options_filter_attribute[:-2]
