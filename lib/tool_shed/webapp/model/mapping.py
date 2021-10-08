@@ -148,7 +148,8 @@ mapper_registry.map_imperatively(RepositoryReview, RepositoryReview.table,
                                                     backref='review'),
                        user=relation(User, backref="repository_reviews"),
                        component_reviews=relation(ComponentReview,
-                                                  primaryjoin=((RepositoryReview.table.c.id == ComponentReview.repository_review_id) & (ComponentReview.deleted == false()))),
+                                                  primaryjoin=((RepositoryReview.table.c.id == ComponentReview.repository_review_id) & (ComponentReview.deleted == false())),
+                                                  back_populates='repository_review'),
                        private_component_reviews=relation(ComponentReview,
                                                           primaryjoin=((RepositoryReview.table.c.id == ComponentReview.repository_review_id) & (ComponentReview.deleted == false()) & (ComponentReview.private == true())))))
 

@@ -539,8 +539,7 @@ class ComponentReview(Base, Dictifiable, _HasTable):
     approved = Column(TrimmedString(255))
     rating = Column(Integer)
     deleted = Column(Boolean, index=True, default=False)
-
-    repository_review = relationship('RepositoryReview')
+    repository_review = relationship('RepositoryReview', back_populates='component_reviews')
     component = relationship('Component')
 
     dict_collection_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
