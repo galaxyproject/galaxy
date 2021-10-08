@@ -388,7 +388,7 @@ class TestRepository(BaseTest):
 class TestRepositoryCategoryAssociation(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'repository_category_association'
+        assert cls_.__tablename__ == 'repository_category_association'
 
     def test_columns(self, session, cls_, repository, category):
         obj = cls_(repository=repository, category=category)

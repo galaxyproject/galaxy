@@ -585,7 +585,15 @@ class Category(Dictifiable, _HasTable):
         self.deleted = deleted
 
 
-class RepositoryCategoryAssociation(_HasTable):
+class RepositoryCategoryAssociation(Base, _HasTable):
+    __tablename__ = 'repository_category_association'
+
+    id = Column(Integer, primary_key=True)
+    repository_id = Column(Integer, ForeignKey('repository.id'), index=True)
+    category_id = Column(Integer, ForeignKey('category.id'), index=True)
+    # TODO add back_populates
+    category = relationship('Category')
+    repository = relationship('Repository')
 
     def __init__(self, repository=None, category=None):
         self.repository = repository

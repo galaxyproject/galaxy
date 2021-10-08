@@ -102,11 +102,6 @@ RepositoryRatingAssociation.table = Table("repository_rating_association", metad
                                           Column("rating", Integer, index=True),
                                           Column("comment", TEXT))
 
-RepositoryCategoryAssociation.table = Table("repository_category_association", metadata,
-                                            Column("id", Integer, primary_key=True),
-                                            Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
-                                            Column("category_id", Integer, ForeignKey("category.id"), index=True))
-
 Category.table = Table("category", metadata,
                        Column("id", Integer, primary_key=True),
                        Column("create_time", DateTime, default=now),
@@ -135,8 +130,8 @@ mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
 mapper_registry.map_imperatively(Category, Category.table,
        properties=dict(repositories=relation(RepositoryCategoryAssociation,
                                              secondary=Repository.table,
-                                             primaryjoin=(Category.table.c.id == RepositoryCategoryAssociation.table.c.category_id),
-                                             secondaryjoin=(RepositoryCategoryAssociation.table.c.repository_id == Repository.table.c.id))))
+                                             primaryjoin=(Category.table.c.id == RepositoryCategoryAssociation.category_id),
+                                             secondaryjoin=(RepositoryCategoryAssociation.repository_id == Repository.table.c.id))))
 
 mapper_registry.map_imperatively(Repository, Repository.table,
        properties=dict(
@@ -180,11 +175,6 @@ mapper_registry.map_imperatively(RepositoryReview, RepositoryReview.table,
 
 mapper_registry.map_imperatively(RepositoryRatingAssociation, RepositoryRatingAssociation.table,
        properties=dict(repository=relation(Repository), user=relation(User)))
-
-mapper_registry.map_imperatively(RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
-       properties=dict(
-           category=relation(Category),
-           repository=relation(Repository)))
 
 
 class ToolShedModelMapping(SharedModelMapping):
