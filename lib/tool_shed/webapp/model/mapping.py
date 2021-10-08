@@ -110,7 +110,8 @@ mapper_registry.map_imperatively(Category, Category.table,
        properties=dict(repositories=relation(RepositoryCategoryAssociation,
                                              secondary=Repository.table,
                                              primaryjoin=(Category.table.c.id == RepositoryCategoryAssociation.category_id),
-                                             secondaryjoin=(RepositoryCategoryAssociation.repository_id == Repository.table.c.id))))
+                                             secondaryjoin=(RepositoryCategoryAssociation.repository_id == Repository.table.c.id),
+                                             back_populates='category')))
 
 mapper_registry.map_imperatively(Repository, Repository.table,
        properties=dict(

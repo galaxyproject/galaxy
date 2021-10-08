@@ -592,7 +592,7 @@ class RepositoryRatingAssociation(Base, ItemRatingAssociation, _HasTable):
     rating = Column(Integer, index=True)
     comment = Column(TEXT)
     repository = relationship('Repository', back_populates='ratings')
-    user = relationship('User')  # TODO add back
+    user = relationship('User')
 
     def set_item(self, repository):
         self.repository = repository
@@ -615,7 +615,7 @@ class RepositoryCategoryAssociation(Base, _HasTable):
     repository_id = Column(Integer, ForeignKey('repository.id'), index=True)
     category_id = Column(Integer, ForeignKey('category.id'), index=True)
     # TODO add back_populates
-    category = relationship('Category')
+    category = relationship('Category', back_populates='repositories')
     repository = relationship('Repository')
 
     def __init__(self, repository=None, category=None):
