@@ -94,7 +94,7 @@ class User(Base, Dictifiable, _HasTable):
         primaryjoin=(lambda: (Repository.user_id == User.id) & (not_(Repository.deleted))),  # type: ignore
         order_by=lambda: desc(Repository.name))  # type: ignore
     galaxy_sessions = relationship('GalaxySession',
-    #    back_populates='user',  # TODO add back
+        back_populates='user',
         order_by=lambda: desc(GalaxySession.update_time))  # type: ignore
     api_keys = relationship(
         'APIKeys',
