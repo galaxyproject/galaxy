@@ -14,7 +14,7 @@ from galaxy.model.custom_types import MutableJSONType, TrimmedString
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from tool_shed.webapp.model import APIKeys, Category, ComponentReview
-from tool_shed.webapp.model import GalaxySession, Group, GroupRoleAssociation
+from tool_shed.webapp.model import GalaxySession, Group
 from tool_shed.webapp.model import mapper_registry
 from tool_shed.webapp.model import PasswordResetToken, Repository, RepositoryCategoryAssociation
 from tool_shed.webapp.model import RepositoryMetadata, RepositoryRatingAssociation
@@ -37,15 +37,6 @@ User.table = Table("galaxy_user", metadata,
                    Column("new_repo_alert", Boolean, default=False),
                    Column("deleted", Boolean, index=True, default=False),
                    Column("purged", Boolean, index=True, default=False))
-
-Role.table = Table("role", metadata,
-                   Column("id", Integer, primary_key=True),
-                   Column("create_time", DateTime, default=now),
-                   Column("update_time", DateTime, default=now, onupdate=now),
-                   Column("name", String(255), index=True, unique=True),
-                   Column("description", TEXT),
-                   Column("type", String(40), index=True),
-                   Column("deleted", Boolean, index=True, default=False))
 
 UserGroupAssociation.table = Table("user_group_association", metadata,
                                    Column("id", Integer, primary_key=True),
@@ -152,15 +143,6 @@ mapper_registry.map_imperatively(User, User.table,
            reset_tokens=relation(PasswordResetToken, back_populates='user'),
        ))
 
-mapper_registry.map_imperatively(Role, Role.table,
-       properties=dict(
-           repositories=relation(RepositoryRoleAssociation,
-                                 primaryjoin=((Role.table.c.id == RepositoryRoleAssociation.table.c.role_id) & (RepositoryRoleAssociation.table.c.repository_id == Repository.table.c.id))),
-           users=relation(UserRoleAssociation,
-                          primaryjoin=((Role.table.c.id == UserRoleAssociation.table.c.role_id) & (UserRoleAssociation.table.c.user_id == User.table.c.id))),
-           groups=relation(GroupRoleAssociation,
-                           primaryjoin=((Role.table.c.id == GroupRoleAssociation.role_id) & (GroupRoleAssociation.group_id == Group.id)))))
-
 mapper_registry.map_imperatively(RepositoryRoleAssociation, RepositoryRoleAssociation.table,
        properties=dict(
            repository=relation(Repository),
@@ -175,7 +157,7 @@ mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
            user=relation(User, backref="roles"),
            non_private_roles=relation(User,
                                       backref="non_private_roles",
-                                      primaryjoin=((User.table.c.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.table.c.id) & not_(Role.table.c.name == User.table.c.email))),
+                                      primaryjoin=((User.table.c.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.id) & not_(Role.name == User.table.c.email))),
            role=relation(Role)))
 
 mapper_registry.map_imperatively(Tag, Tag.table,

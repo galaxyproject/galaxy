@@ -606,7 +606,7 @@ class TestRepositoryRoleAssociation(BaseTest):
 class TestRole(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'role'
+        assert cls_.__tablename__ == 'role'
 
     def test_columns(self, session, cls_):
         name, description, type_, deleted = get_unique_value(), 'b', cls_.types.SYSTEM, True

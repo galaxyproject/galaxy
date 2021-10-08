@@ -156,7 +156,20 @@ class Group(Base, Dictifiable, _HasTable):
         self.deleted = False
 
 
-class Role(Dictifiable, _HasTable):
+class Role(Base, Dictifiable, _HasTable):
+    __tablename__ = 'role'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    name = Column(String(255), index=True, unique=True)
+    description = Column(TEXT)
+    type = Column(String(40), index=True)
+    deleted = Column(Boolean, index=True, default=False)
+    repositories = relationship('RepositoryRoleAssociation')  # TODO add back_populates
+    groups = relationship('GroupRoleAssociation')  # TODO ADD back_populates='role')
+    users = relationship('UserRoleAssociation')  # TODO ADD back_populates='role')
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
