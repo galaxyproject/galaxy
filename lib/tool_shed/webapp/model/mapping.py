@@ -5,7 +5,7 @@ are encapsulated here.
 import logging
 
 from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, not_, String, Table, TEXT, true, UniqueConstraint
-from sqlalchemy.orm import backref, registry, relation
+from sqlalchemy.orm import backref, relation
 
 import tool_shed.webapp.model
 import tool_shed.webapp.util.shed_statistics as shed_statistics
@@ -15,6 +15,7 @@ from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from tool_shed.webapp.model import APIKeys, Category, Component, ComponentReview
 from tool_shed.webapp.model import GalaxySession, Group, GroupRoleAssociation
+from tool_shed.webapp.model import mapper_registry
 from tool_shed.webapp.model import PasswordResetToken, Repository, RepositoryCategoryAssociation
 from tool_shed.webapp.model import RepositoryMetadata, RepositoryRatingAssociation
 from tool_shed.webapp.model import RepositoryReview, RepositoryRoleAssociation, Role
@@ -23,7 +24,6 @@ from tool_shed.webapp.security import CommunityRBACAgent
 
 log = logging.getLogger(__name__)
 
-mapper_registry = registry()
 metadata = mapper_registry.metadata
 
 APIKeys.table = Table("api_keys", metadata,
