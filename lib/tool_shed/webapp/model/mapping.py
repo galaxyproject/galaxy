@@ -61,13 +61,6 @@ UserRoleAssociation.table = Table("user_role_association", metadata,
                                   Column("create_time", DateTime, default=now),
                                   Column("update_time", DateTime, default=now, onupdate=now))
 
-GroupRoleAssociation.table = Table("group_role_association", metadata,
-                                   Column("id", Integer, primary_key=True),
-                                   Column("group_id", Integer, ForeignKey("galaxy_group.id"), index=True),
-                                   Column("role_id", Integer, ForeignKey("role.id"), index=True),
-                                   Column("create_time", DateTime, default=now),
-                                   Column("update_time", DateTime, default=now, onupdate=now))
-
 RepositoryRoleAssociation.table = Table("repository_role_association", metadata,
                                         Column("id", Integer, primary_key=True),
                                         Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
@@ -166,7 +159,7 @@ mapper_registry.map_imperatively(Role, Role.table,
            users=relation(UserRoleAssociation,
                           primaryjoin=((Role.table.c.id == UserRoleAssociation.table.c.role_id) & (UserRoleAssociation.table.c.user_id == User.table.c.id))),
            groups=relation(GroupRoleAssociation,
-                           primaryjoin=((Role.table.c.id == GroupRoleAssociation.table.c.role_id) & (GroupRoleAssociation.table.c.group_id == Group.id)))))
+                           primaryjoin=((Role.table.c.id == GroupRoleAssociation.role_id) & (GroupRoleAssociation.group_id == Group.id)))))
 
 mapper_registry.map_imperatively(RepositoryRoleAssociation, RepositoryRoleAssociation.table,
        properties=dict(
@@ -183,11 +176,6 @@ mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
            non_private_roles=relation(User,
                                       backref="non_private_roles",
                                       primaryjoin=((User.table.c.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.table.c.id) & not_(Role.table.c.name == User.table.c.email))),
-           role=relation(Role)))
-
-mapper_registry.map_imperatively(GroupRoleAssociation, GroupRoleAssociation.table,
-       properties=dict(
-           group=relation(Group, back_populates="roles"),
            role=relation(Role)))
 
 mapper_registry.map_imperatively(Tag, Tag.table,

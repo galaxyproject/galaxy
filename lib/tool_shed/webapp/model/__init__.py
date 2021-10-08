@@ -194,7 +194,17 @@ class UserRoleAssociation(_HasTable):
         self.role = role
 
 
-class GroupRoleAssociation(_HasTable):
+class GroupRoleAssociation(Base, _HasTable):
+    __tablename__ = 'group_role_association'
+
+    id = Column(Integer, primary_key=True)
+    group_id = Column(Integer, ForeignKey("galaxy_group.id"), index=True)
+    role_id = Column(Integer, ForeignKey("role.id"), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    group = relationship('Group', back_populates='roles')
+    role = relationship('Role')  # TODO add back_populates='groups'
+
     def __init__(self, group, role):
         self.group = group
         self.role = role

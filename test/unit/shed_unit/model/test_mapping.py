@@ -240,7 +240,7 @@ class TestGroup(BaseTest):
 class TestGroupRoleAssociation(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'group_role_association'
+        assert cls_.__tablename__ == 'group_role_association'
 
     def test_columns(self, session, cls_, group, role):
         obj = cls_(group, role)
