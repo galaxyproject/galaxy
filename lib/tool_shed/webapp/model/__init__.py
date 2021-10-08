@@ -591,7 +591,7 @@ class RepositoryRatingAssociation(Base, ItemRatingAssociation, _HasTable):
     user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
     rating = Column(Integer, index=True)
     comment = Column(TEXT)
-    repository = relationship('Repository')  # TODO add back
+    repository = relationship('Repository', back_populates='ratings')
     user = relationship('User')  # TODO add back
 
     def set_item(self, repository):
