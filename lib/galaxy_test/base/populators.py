@@ -1694,7 +1694,6 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
     inputs = {}
     label_map = {}
     has_uploads = False
-
     for key, value in test_data.items():
         is_dict = isinstance(value, dict)
         if is_dict and ("elements" in value or value.get('collection_type')):
@@ -1746,6 +1745,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
                     new_dataset_kwds["file_type"] = value["file_type"]
                 hda = dataset_populator.new_dataset(history_id, **new_dataset_kwds)
                 label_map[key] = dataset_populator.ds_entry(hda)
+                inputs[key] = hda
                 has_uploads = True
             elif input_type == "raw":
                 label_map[key] = value["value"]
@@ -1757,7 +1757,6 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
             inputs[key] = hda
         else:
             raise ValueError(f"Invalid test_data def {test_data}")
-
     return inputs, label_map, has_uploads
 
 
