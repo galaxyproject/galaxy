@@ -196,7 +196,7 @@ class Role(Base, Dictifiable, _HasTable):
     type = Column(String(40), index=True)
     deleted = Column(Boolean, index=True, default=False)
     repositories = relationship('RepositoryRoleAssociation', back_populates='role')
-    groups = relationship('GroupRoleAssociation')  # TODO ADD back_populates='role')
+    groups = relationship('GroupRoleAssociation', back_populates='role')
     users = relationship('UserRoleAssociation')  # TODO ADD back_populates='role')
 
     dict_collection_visible_keys = ['id', 'name']
@@ -255,7 +255,7 @@ class GroupRoleAssociation(Base, _HasTable):
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
     group = relationship('Group', back_populates='roles')
-    role = relationship('Role')  # TODO add back_populates='groups'
+    role = relationship('Role', back_populates='groups')
 
     def __init__(self, group, role):
         self.group = group
