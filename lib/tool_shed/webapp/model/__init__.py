@@ -93,6 +93,7 @@ class User(Base, Dictifiable, _HasTable):
     purged = Column(Boolean, index=True, default=False)
     active_repositories = relationship('Repository',
         primaryjoin=(lambda: (Repository.user_id == User.id) & (not_(Repository.deleted))),  # type: ignore
+        back_populates='user',
         order_by=lambda: desc(Repository.name))  # type: ignore
     galaxy_sessions = relationship('GalaxySession',
         back_populates='user',
