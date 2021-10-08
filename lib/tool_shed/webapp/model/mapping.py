@@ -108,7 +108,7 @@ mapper_registry.map_imperatively(RepositoryRoleAssociation, RepositoryRoleAssoci
 
 mapper_registry.map_imperatively(UserGroupAssociation, UserGroupAssociation.table,
        properties=dict(user=relation(User, backref="groups"),
-           group=relation(Group, backref="members")))  # TODO fix bug: members should be users; check codebase for references
+           group=relation(Group, back_populates="users")))
 
 mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
        properties=dict(

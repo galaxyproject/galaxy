@@ -174,7 +174,7 @@ class Group(Base, Dictifiable, _HasTable):
     name = Column(String(255), index=True, unique=True)
     deleted = Column(Boolean, index=True, default=False)
     roles = relationship('GroupRoleAssociation', back_populates='group')
-    users = relationship('UserGroupAssociation')  # TODO: fix bug: incorrect usage of backref/duplicate rel users/members; add back_populates
+    users = relationship('UserGroupAssociation', back_populates='group')
 
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name']
