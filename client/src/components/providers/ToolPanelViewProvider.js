@@ -2,32 +2,39 @@ import { mapGetters, mapActions } from "vuex";
 
 export default {
     props: {
-        siteDefaultPanelView: {
+        panelView: {
             type: String,
             required: true,
         },
-        setDefaultPanelView: {
+        setDefault: {
             type: Boolean,
-            default: false,
+            required: false,
+            default: true,
         },
     },
     computed: {
-        ...mapGetters("panels", ["currentPanel", "currentPanelView"]),
+        ...mapGetters("panels", ["currentPanel", "currentPanelView", "panel"]),
+        localPanelView() {
+            return this.setDefault ? this.currentPanelView : this.panelView;
+        },
+        localPanel() {
+            return this.setDefault ? this.currentPanel : this.panel(this.panelView);
+        },
     },
     methods: {
-        ...mapActions("panels", ["initCurrentPanelView", "setCurrentPanelView"]),
+        ...mapActions("panels", ["initCurrentPanelView", "fetchPanel"]),
     },
     created() {
-        if (this.setDefaultPanelView) {
-            this.setCurrentPanelView(this.siteDefaultPanelView);
+        if (this.setDefault) {
+            this.initCurrentPanelView(this.panelView);
         } else {
-            this.initCurrentPanelView(this.siteDefaultPanelView);
+            this.fetchPanel(this.panelView);
         }
     },
     render() {
         return this.$scopedSlots.default({
-            currentPanel: this.currentPanel,
-            currentPanelView: this.currentPanelView,
+            currentPanel: this.localPanel,
+            currentPanelView: this.localPanelView,
         });
     },
 };
