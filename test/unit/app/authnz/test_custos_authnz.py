@@ -90,8 +90,8 @@ class CustosAuthnzTestCase(unittest.TestCase):
         return unicodify(
             jwt.encode(
                 {"nonce": self.test_nonce_hash, "aud": "test-client-id"},
-                key=None,
-                algorithm=None,
+                key="",
+                algorithm="HS256",
             )
         )
 
@@ -382,8 +382,8 @@ class CustosAuthnzTestCase(unittest.TestCase):
                     "sub": self.test_sub,
                     "aud": "test-client-id",
                 },
-                key=None,
-                algorithm=None,
+                key="",
+                algorithm="HS256",
             )
         )
 
@@ -478,7 +478,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
                 .filter_by(external_user_id=self.test_user_id,
                            provider=self.custos_authnz.config['provider'])
                 .one_or_none()
-        ),
+        )
         self.assertEqual(0, len(self.trans.sa_session.items))
         login_redirect_url, user = self.custos_authnz.callback(
             state_token="xxx",

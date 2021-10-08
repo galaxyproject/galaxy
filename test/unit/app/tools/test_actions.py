@@ -57,7 +57,7 @@ def test_on_text_for_names():
     assert_on_text_is("data 1 and data 2", "data 1", "data 1", "data 2")
 
 
-class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools):
+class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
 
     def setUp(self):
         self.setup_app()

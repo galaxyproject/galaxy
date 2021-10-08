@@ -9,7 +9,7 @@ from pykwalify.core import Core
 
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs import JobConfiguration
-from galaxy.util import bunch, galaxy_directory, galaxy_samples_directory
+from galaxy.util import galaxy_directory, galaxy_samples_directory
 from galaxy.web_stack import ApplicationStack, UWSGIApplicationStack
 from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
 
@@ -22,12 +22,24 @@ CONDITIONAL_RUNNER_JOB_CONF = os.path.join(os.path.dirname(__file__), "condition
 HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_template_job_conf.xml")
 
 
+class TestApplicationStack(ApplicationStack):
+
+    def get_preferred_handler_assignment_method(self):
+        return HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
+
+
+class TestUWSGIApplicationStack(UWSGIApplicationStack):
+
+    def get_preferred_handler_assignment_method(self):
+        return HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
+
+
 class BaseJobConfXmlParserTestCase(unittest.TestCase):
     extension = "xml"
 
     def setUp(self):
         self.temp_directory = tempfile.mkdtemp()
-        self.config = bunch.Bunch(
+        self.config = mock.Mock(
             job_config_file=os.path.join(self.temp_directory, "job_conf.%s" % self.extension),
             use_tasked_jobs=False,
             job_resource_params_file="/tmp/fake_absent_path",
@@ -51,7 +63,7 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
     @property
     def app(self):
         if not self._app:
-            self._app = bunch.Bunch(
+            self._app = mock.Mock(
                 config=self.config,
                 job_metrics=JobMetrics(),
                 application_stack=self.application_stack
@@ -59,10 +71,9 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
         return self._app
 
     @property
-    def application_stack(self):
+    def application_stack(self) -> ApplicationStack:
         if not self._application_stack:
-            ApplicationStack.get_preferred_handler_assignment_method = lambda x: HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
-            self._application_stack = ApplicationStack()
+            self._application_stack = TestApplicationStack()
         return self._application_stack
 
     @property
@@ -79,7 +90,7 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
 
     def _with_uwsgi_application_stack(self, **uwsgi_opt):
         self._uwsgi_opt = uwsgi_opt
-        self._application_stack = UWSGIApplicationStack()
+        self._application_stack = TestUWSGIApplicationStack()
 
     def _with_handlers_config(self, assign_with=None, default=None, handlers=None, base_pools=None):
         handlers = handlers or []

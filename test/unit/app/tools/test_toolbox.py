@@ -5,12 +5,13 @@ import os
 import string
 import time
 import unittest
+from typing import Optional
 
 import pytest
 import routes
 
 from galaxy import model
-from galaxy.app_unittest_utils.tools_support import UsesApp, UsesTools
+from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
@@ -43,7 +44,29 @@ REPO_TYPE = collections.namedtuple(
 DEFAULT_TEST_REPO = REPO_TYPE('github.com', 'galaxyproject', 'example', '1', '1', 'description', 'OK')
 
 
-class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
+class SimplifiedToolBox(ToolBox):
+
+    def __init__(self, test_case):
+        app = test_case.app
+        app.watchers.tool_config_watcher.reload_callback = lambda: reload_callback(test_case)
+        # Handle app/config stuff needed by toolbox but not by tools.
+        app.tool_cache = ToolCache() if not hasattr(app, 'tool_cache') else app.tool_cache
+        app.job_config.get_tool_resource_parameters = lambda tool_id: None
+        app.config.update_integrated_tool_panel = True
+        app.config.schema.defaults = {'tool_dependency_dir': 'dependencies'}
+        config_files = test_case.config_files
+        tool_root_dir = test_case.test_directory
+        super().__init__(
+            config_files,
+            tool_root_dir,
+            app,
+        )
+        # Need to start thread now for new reload callback to take effect
+        self.app.watchers.start()
+
+
+class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
+    _toolbox: Optional[SimplifiedToolBox] = None
 
     @property
     def integerated_tool_panel_path(self):
@@ -101,17 +124,15 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         return repository
 
     def _setup_two_versions(self):
-        repository1 = self._repo_install(changeset="1")
+        self._repo_install(changeset="1")
         version1 = tool_shed_install.ToolVersion()
         version1.tool_id = "github.com/galaxyproject/example/test_tool/0.1"
-        version1.repository = repository1
         self.app.install_model.context.add(version1)
         self.app.install_model.context.flush()
 
-        repository2 = self._repo_install(changeset="2")
+        self._repo_install(changeset="2")
         version2 = tool_shed_install.ToolVersion()
         version2.tool_id = "github.com/galaxyproject/example/test_tool/0.2"
-        version2.repository = repository2
         self.app.install_model.context.add(version2)
         self.app.install_model.context.flush()
 
@@ -255,7 +276,8 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
                 e = error
                 time.sleep(.25)
 
-        raise e
+        if e:
+            raise e
 
     def test_enforce_tool_profile(self):
         self._init_tool(filename="old_tool.xml", version="1.0", profile="17.01", tool_id="test_old_tool_profile")
@@ -550,9 +572,6 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         assert default_tool.id == "test_tool"
         assert default_tool.version == "0.2"
 
-    def __remove_itp(self):
-        os.remove(os.path)
-
     def __setup_shed_tool_conf(self):
         self._add_config("""<toolbox tool_path="."></toolbox>""")
 
@@ -560,27 +579,6 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         assert not self.reindexed
 
         os.remove(self.integerated_tool_panel_path)
-
-
-class SimplifiedToolBox(ToolBox):
-
-    def __init__(self, test_case):
-        app = test_case.app
-        app.watchers.tool_config_watcher.reload_callback = lambda: reload_callback(test_case)
-        # Handle app/config stuff needed by toolbox but not by tools.
-        app.tool_cache = ToolCache() if not hasattr(app, 'tool_cache') else app.tool_cache
-        app.job_config.get_tool_resource_parameters = lambda tool_id: None
-        app.config.update_integrated_tool_panel = True
-        app.config.schema.defaults = {'tool_dependency_dir': 'dependencies'}
-        config_files = test_case.config_files
-        tool_root_dir = test_case.test_directory
-        super().__init__(
-            config_files,
-            tool_root_dir,
-            app,
-        )
-        # Need to start thread now for new reload callback to take effect
-        self.app.watchers.start()
 
 
 def reload_callback(test_case):

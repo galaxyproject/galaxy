@@ -263,13 +263,13 @@ def test_test_tools_records_retry_exception():
 
 
 def test_results():
-    f = NamedTemporaryFile()
-    results = Results("my suite", f.name)
+    tf = NamedTemporaryFile()
+    results = Results("my suite", tf.name)
     results.register_result({"id": "foo", "has_data": True, "data": {"status": "success"}})
     results.write()
     message = results.info_message()
 
-    with open(f.name) as f:
+    with open(tf.name) as f:
         report_obj = json.load(f)
     assert "tests" in report_obj
     assert len(report_obj["tests"]) == 1
@@ -284,7 +284,7 @@ def test_results():
     results.write()
     message = results.info_message()
 
-    with open(f.name) as f:
+    with open(tf.name) as f:
         report_obj = json.load(f)
     assert len(report_obj["tests"]) == 2
     assert report_obj["results"]["skips"] == 1

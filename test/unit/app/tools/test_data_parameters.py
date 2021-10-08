@@ -1,3 +1,5 @@
+from typing import Any, Optional, Tuple
+
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from .util import BaseParameterTestCase
@@ -191,7 +193,7 @@ class MockHistoryDatasetAssociation:
         self.deleted = False
         self.dataset = test_dataset
         self.visible = True
-        self.conversion_destination = (True, None, None)
+        self.conversion_destination: Tuple[bool, Optional[str], Optional[Any]] = (True, None, None)
         self.extension = "txt"
         self.dbkey = "hg19"
         self.implicitly_converted_parent_datasets = False
@@ -200,6 +202,7 @@ class MockHistoryDatasetAssociation:
         self.id = id
         self.children = []
         self.tags = []
+        self.metadata = None
 
     @property
     def state(self):

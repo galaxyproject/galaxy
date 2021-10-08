@@ -1,5 +1,7 @@
+import abc
 import os
 from contextlib import contextmanager
+from typing import Dict, Type
 from unittest import TestCase
 
 from galaxy.app_unittest_utils.tools_support import UsesApp
@@ -8,6 +10,7 @@ from galaxy.jobs import (
     TaskWrapper
 )
 from galaxy.model import (
+    Base,
     Job,
     Task,
     User
@@ -30,7 +33,7 @@ class BaseWrapperTestCase(UsesApp):
         job.tool_id = TEST_TOOL_ID
         job.user = User()
         job.object_store_id = "foo"
-        self.model_objects = {Job: {345: job}}
+        self.model_objects: Dict[Type[Base], Dict[int, Base]] = {Job: {345: job}}
         self.app.model.session = MockContext(self.model_objects)
 
         self.app.toolbox = MockToolbox(MockTool(self))
@@ -54,7 +57,7 @@ class BaseWrapperTestCase(UsesApp):
         wrapper = self._wrapper()
         version_path = wrapper.get_version_string_path_legacy()
         expected_path = os.path.join(self.test_directory, "working", "COMMAND_VERSION")
-        self.assertEqual(version_path, expected_path)
+        assert version_path == expected_path
 
     def test_prepare_sets_command_line(self):
         with self._prepared_wrapper() as wrapper:
@@ -63,6 +66,10 @@ class BaseWrapperTestCase(UsesApp):
     def test_prepare_sets_dependency_shell_commands(self):
         with self._prepared_wrapper() as wrapper:
             assert TEST_DEPENDENCIES_COMMANDS == wrapper.dependency_shell_commands
+
+    @abc.abstractmethod
+    def _wrapper(self) -> JobWrapper:
+        pass
 
 
 class JobWrapperTestCase(BaseWrapperTestCase, TestCase):

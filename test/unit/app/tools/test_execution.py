@@ -7,7 +7,6 @@ import webob.exc
 
 import galaxy.model
 from galaxy.app_unittest_utils import tools_support
-from galaxy.tools.parameters import params_to_incoming
 from galaxy.util.bunch import Bunch
 
 BASE_REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
@@ -29,7 +28,8 @@ REPEAT_TOOL_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % '''<param type="text" name="p
 REPEAT_COLLECTION_PARAM_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % '''<param type="data_collection" name="param2" collection_type="paired" />'''
 
 
-class ToolExecutionTestCase(TestCase, tools_support.UsesApp, tools_support.UsesTools):
+class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
+    tool_action: 'MockAction'
 
     def setUp(self):
         self.setup_app()
@@ -111,22 +111,11 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesApp, tools_support.UsesT
         state = self.__assert_rerenders_tool_without_errors(vars)
         assert hda == state["param1"]
 
-    def __handle_with_incoming(self, previous_state=None, **kwds):
+    def __handle_with_incoming(self, **kwds):
         """ Execute tool.handle_input with incoming specified by kwds
         (optionally extending a previous state).
         """
-        if previous_state:
-            incoming = self.__to_incoming(previous_state, **kwds)
-        else:
-            incoming = kwds
-        return self.tool.handle_input(trans=self.trans, incoming=incoming)
-
-    def __to_incoming(self, state, **kwds):
-        new_incoming = {}
-        params_to_incoming(new_incoming, self.tool.inputs, state.inputs, self.app)
-        new_incoming["tool_state"] = self.__state_to_string(state)
-        new_incoming.update(kwds)
-        return new_incoming
+        return self.tool.handle_input(trans=self.trans, incoming=kwds)
 
     def __add_dataset(self, id, state='ok'):
         hda = galaxy.model.HistoryDatasetAssociation()
@@ -145,7 +134,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesApp, tools_support.UsesT
         collection = galaxy.model.DatasetCollection()
         hdca.collection = collection
         galaxy.model.DatasetCollectionElement(collection=collection, element=self.__add_dataset(1))
-        collection.type = collection_type
+        collection.collection_type = collection_type
         self.trans.sa_session.model_objects[galaxy.model.HistoryDatasetCollectionAssociation][id] = hdca
         self.history.dataset_collections.append(hdca)
         return hdca
@@ -163,7 +152,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesApp, tools_support.UsesT
         assert not vars["job_errors"]
 
 
-class MockAction:
+class MockAction(tools_support.MockActionI):
 
     def __init__(self, expected_trans):
         self.expected_trans = expected_trans

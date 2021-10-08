@@ -10,7 +10,6 @@ from galaxy import (
     exceptions,
     model
 )
-from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers import (
     base,
     hdas
@@ -797,7 +796,7 @@ class HistoryFiltersTestCase(BaseTestCase):
         self.assertEqual(len(filters), 1)
 
         filter_ = filters[0].filter
-        fake = galaxy_mock.OpenObject()
+        fake = mock.Mock()
         fake.name = '123'
         self.log('123 should return true through the filter')
         self.assertTrue(filter_(fake))

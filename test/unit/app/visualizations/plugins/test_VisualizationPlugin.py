@@ -27,9 +27,8 @@ class VisualizationsPlugin_TestCase(VisualizationsBase_TestCase):
             'static': {},
             'templates': {},
         })
-        config = dict()
         plugin = self.plugin_class(galaxy_mock.MockApp(), vis_dir.root_path,
-            'myvis', config)
+            'myvis', {})
         self.assertEqual(plugin.name, 'myvis')
         self.assertEqual(plugin.path, vis_dir.root_path)
         self.assertEqual(plugin.config, {})
@@ -52,14 +51,13 @@ class VisualizationsPlugin_TestCase(VisualizationsBase_TestCase):
             'static': {},
             'templates': {},
         })
-        config = dict()
         context = dict(
             base_url='u/wot/m8',
             template_cache_dir='template_cache',
             additional_template_paths=['one']
         )
         plugin = self.plugin_class(galaxy_mock.MockApp(), vis_dir.root_path,
-            'myvis', config, context=context)
+            'myvis', {}, context=context)
         self.assertEqual(plugin.base_url, 'u/wot/m8/myvis')
         self.assertEqual(plugin.template_lookup.__class__.__name__, 'TemplateLookup')
 
@@ -100,7 +98,7 @@ class VisualizationsPlugin_TestCase(VisualizationsBase_TestCase):
     def test_build_config(self):
         """
         """
-        plugin_config = dict()
+        plugin_config: dict = dict()
         plugin = self.plugin_class(galaxy_mock.MockApp(), '', 'myvis', plugin_config)
         config = plugin._build_config({})
         self.assertIsInstance(config, vis_utils.OpenObject)

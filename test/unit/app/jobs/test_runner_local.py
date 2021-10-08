@@ -1,21 +1,19 @@
 import os
 import threading
 import time
+from typing import Optional
 from unittest import TestCase
 
 import psutil
 
 from galaxy import job_metrics
 from galaxy import model
-from galaxy.app_unittest_utils.tools_support import (
-    UsesApp,
-    UsesTools,
-)
+from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
 
 
-class TestLocalJobRunner(TestCase, UsesApp, UsesTools):
+class TestLocalJobRunner(TestCase, UsesTools):
 
     def setUp(self):
         self.setup_app()
@@ -150,7 +148,7 @@ class MockJobWrapper:
         self.guest_ports = []
 
         # Cruft for setting metadata externally, axe at some point.
-        self.external_output_metadata = bunch.Bunch(
+        self.external_output_metadata: Optional[bunch.Bunch] = bunch.Bunch(
             set_job_runner_external_pid=lambda pid, session: None
         )
         self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(

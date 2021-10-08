@@ -4,6 +4,7 @@ Test lib/galaxy/visualization/plugins/registry.
 import os
 import re
 import unittest
+from typing import Dict
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
@@ -151,25 +152,26 @@ class VisualizationsRegistry_TestCase(VisualizationsBase_TestCase):
         </interactive_environment>
         """)
 
-        mock_app_dir = {
+        templates: Dict[str, str] = {}
+        mock_app_dir_config = {
             'plugins': {
                 'jupyter': {
                     'config': {
                         'jupyter.xml': jupyter_config
                     },
-                    'templates': {}
+                    'templates': templates,
                 },
             },
         }
 
         # going to use a fake template here to simplify testing
         jupyter_template = "${ ie_request }-${ get_api_key() }"
-        mock_app_dir['plugins']['jupyter']['templates']['jupyter.mako'] = jupyter_template
+        templates['jupyter.mako'] = jupyter_template
         # so that we don't create a cached version of that fake template in the real mako caches
         #   we'll set up a cache in the temp dir
-        mock_app_dir['caches'] = {}
+        mock_app_dir_config['caches'] = {}
         # and make sure the vis reg uses that
-        mock_app_dir = galaxy_mock.MockDir(mock_app_dir)
+        mock_app_dir = galaxy_mock.MockDir(mock_app_dir_config)
         mock_app = galaxy_mock.MockApp(root=mock_app_dir.root_path)
         plugin_mgr = VisualizationsRegistry(mock_app,
             directories_setting='plugins',
@@ -205,7 +207,7 @@ class VisualizationsRegistry_TestCase(VisualizationsBase_TestCase):
         self.assertEqual(ie_request, 'mock')
 
         match = re.match(r'[a-f0-9]{32}', api_key)
-        self.assertIsNotNone(match)
+        assert match
         self.assertEqual(match.span(), (0, 32))
 
         mock_app_dir.remove()

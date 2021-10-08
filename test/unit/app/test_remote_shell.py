@@ -1,5 +1,6 @@
 import os
 import unittest
+from typing import Any, Dict
 
 try:
     import mockssh
@@ -7,10 +8,14 @@ except ImportError:
     raise unittest.SkipTest("Skipping tests that require mockssh")
 
 from galaxy.jobs.runners.cli import CliInterface
-from galaxy_test.base.ssh_util import generate_ssh_keys
+from galaxy_test.base.ssh_util import generate_ssh_keys, SSHKeys
 
 
 class TestCliInterface(unittest.TestCase):
+    ssh_keys: SSHKeys
+    username: str
+    shell_params: Dict[str, Any]
+    cli_interface: CliInterface
 
     @classmethod
     def tearDownClass(cls):

@@ -1,5 +1,6 @@
 import os
 import tempfile
+from unittest.mock import Mock
 
 import pytest
 
@@ -12,6 +13,7 @@ from galaxy.tools.parameters.basic import (
     IntegerToolParameter,
     SelectToolParameter,
     TextToolParameter,
+    ToolParameter,
 )
 from galaxy.tools.wrappers import (
     DatasetFilenameWrapper,
@@ -20,7 +22,6 @@ from galaxy.tools.wrappers import (
     SelectToolParameterWrapper
 )
 from galaxy.util import XML
-from galaxy.util.bunch import Bunch
 
 
 def with_mock_tool(func):
@@ -106,7 +107,7 @@ def test_select_wrapper_with_path_rewritting(tool):
 
 
 def test_raw_object_wrapper():
-    obj = Bunch(x=4)
+    obj = Mock(x=4)
     wrapper = RawObjectWrapper(obj)
     assert wrapper.x == 4
     assert wrapper
@@ -116,6 +117,7 @@ def test_raw_object_wrapper():
 
 
 def valuewrapper(tool, value, paramtype, optional=False):
+    parameter: ToolParameter
     if paramtype == "integer":
         optional = 'optional="true"' if optional else 'value="10"'
         parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" %s min="0" />' % optional))
@@ -287,13 +289,13 @@ class MockTool:
 
     def __init__(self, app):
         self.app = app
-        self.options = Bunch(sanitize=False)
+        self.options = Mock(sanitize=False)
 
 
 class MockApp:
 
     def __init__(self, test_directory):
-        self.config = Bunch(tool_data_path=test_directory)
+        self.config = Mock(tool_data_path=test_directory)
 
     def write_test_tool_data(self, name, contents):
         path = os.path.join(self.config.tool_data_path, name)

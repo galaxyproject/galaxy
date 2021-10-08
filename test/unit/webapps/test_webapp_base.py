@@ -35,7 +35,7 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         app.config = CORSParsingMockConfig(
             allowed_origin_hostnames=allowed_origin_hostnames
         )
-        webapp = galaxy_mock.MockWebapp()
+        webapp = galaxy_mock.MockWebapp(app.security)
         environ = galaxy_mock.buildMockEnviron()
         trans = StubGalaxyWebTransaction(environ, app, webapp)
         return trans
@@ -63,7 +63,7 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         try:
             Pattern = re.Pattern
         except AttributeError:
-            Pattern = re._pattern_type
+            Pattern = re._pattern_type  # type: ignore
         self.assertTrue(isinstance(hostnames[0], Pattern))
         self.assertTrue(isinstance(hostnames[1], str))
         self.assertTrue(isinstance(hostnames[2], str))

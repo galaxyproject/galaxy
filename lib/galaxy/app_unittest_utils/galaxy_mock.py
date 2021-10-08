@@ -4,6 +4,7 @@ Mock infrastructure for testing ModelManagers.
 import os
 import shutil
 import tempfile
+from typing import Any
 
 from sqlalchemy.orm.scoping import scoped_session
 
@@ -12,6 +13,7 @@ from galaxy import (
     quota,
 )
 from galaxy.auth import AuthManager
+from galaxy.config import CommonConfigurationMixin
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.users import UserManager
 from galaxy.model import tags
@@ -29,10 +31,6 @@ from .celery_helper import rebind_container_to_task
 
 
 # =============================================================================
-class OpenObject:
-    pass
-
-
 def buildMockEnviron(**kwargs):
     environ = {
         'CONTENT_LENGTH': '0',
@@ -62,6 +60,7 @@ def buildMockEnviron(**kwargs):
 
 
 class MockApp(di.Container, GalaxyDataTestApp):
+    config: 'MockAppConfig'
 
     def __init__(self, config=None, **kwargs):
         super().__init__()
@@ -117,7 +116,7 @@ class MockLock:
         pass
 
 
-class MockAppConfig(GalaxyDataTestConfig):
+class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
     class MockSchema(Bunch):
         pass
@@ -173,6 +172,17 @@ class MockAppConfig(GalaxyDataTestConfig):
 
         self.config_file = None
 
+        self._admin_users = ""
+        self.drmaa_external_runjob_script = None
+        self.tool_secret = None
+        self.track_jobs_in_database = False
+        self.amqp_internal_connection = None
+        self.tool_configs = []
+        self.manage_dependency_relationships = False
+        self.enable_tool_shed_check = False
+        self.monitor_thread_join_timeout = 1
+        self.integrated_tool_panel_config = None
+
     @property
     def config_dict(self):
         return self.dict()
@@ -189,8 +199,9 @@ class MockAppConfig(GalaxyDataTestConfig):
 
 class MockWebapp:
 
-    def __init__(self, **kwargs):
+    def __init__(self, security: idencoding.IdEncodingHelper, **kwargs):
         self.name = kwargs.get('name', 'galaxy')
+        self.security = security
 
 
 class MockTrans:
@@ -198,8 +209,7 @@ class MockTrans:
     def __init__(self, app=None, user=None, history=None, **kwargs):
         self.app = app or MockApp(**kwargs)
         self.model = self.app.model
-        self.webapp = MockWebapp(**kwargs)
-        self.webapp.security = self.app.security
+        self.webapp = MockWebapp(self.app.security, **kwargs)
         self.sa_session = self.app.model.session
         self.workflow_building_mode = False
         self.error_message = None
@@ -213,8 +223,8 @@ class MockTrans:
         self.security = self.app.security
         self.history = history
 
-        self.request = Bunch(headers={}, body=None)
-        self.response = Bunch(headers={}, set_content_type=lambda i: None)
+        self.request: Any = Bunch(headers={}, body=None)
+        self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
 
     def check_csrf_token(self, payload):
         pass

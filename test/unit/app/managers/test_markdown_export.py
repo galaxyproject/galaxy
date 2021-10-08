@@ -243,7 +243,6 @@ history_dataset_collection_display(history_dataset_collection_id=1)
         workflow = model.Workflow()
         stored_workflow.latest_workflow = workflow
         workflow_step_0 = model.WorkflowStep()
-        workflow_step_0.annotation = "My Cool Annotation"
         workflow.steps = [workflow_step_0]
         self.trans.app.workflow_manager.get_stored_accessible_workflow.return_value = stored_workflow
         example = """# Example

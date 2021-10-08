@@ -37,11 +37,6 @@ class BaseTestCase(unittest.TestCase):
         self.trans = galaxy_mock.MockTrans(admin_users=admin_users, admin_users_list=admin_users_list)
         self.app = self.trans.app
 
-        def mock_is_admin_user(user):
-            return user.email in admin_users
-
-        self.trans.app.config.is_admin_user = mock_is_admin_user
-
     def set_up_managers(self):
         self.user_manager = self.app[UserManager]
 
@@ -120,6 +115,7 @@ class BaseTestCase(unittest.TestCase):
 
 
 class CreatesCollectionsMixin:
+    trans: galaxy_mock.MockTrans
 
     def build_element_identifiers(self, elements):
         identifier_list = []
