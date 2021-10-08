@@ -30,14 +30,14 @@
                 Back
             </b-btn>
             <b-btn
-                v-if="multiple"
+                v-if="multiple || !fileMode"
                 size="sm"
                 class="float-right ml-1 file-dialog-modal-ok"
                 variant="primary"
-                @click="finalize"
-                :disabled="!hasValue || isBusy"
+                @click="fileMode ? finalize : selectDirectory(currentDirectory)"
+                :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())"
             >
-                Ok
+                {{ fileMode ? "Ok" : "Select this folder" }}
             </b-btn>
         </template>
     </selection-dialog>
@@ -135,7 +135,11 @@ export default {
         },
         /** Collects selected datasets in value array **/
         clicked: function (record) {
-            if (record.isLeaf || !this.fileMode) {
+            // ignore the click during directory mode
+            if (!this.fileMode) {
+                return;
+            }
+            if (record.isLeaf) {
                 // record is file
                 this.selectFile(record);
             } else {
@@ -222,7 +226,12 @@ export default {
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         finalize: function () {
-            const results = this.model.finalize();
+            let results;
+            if (this.fileMode) {
+                results = this.model.finalize();
+            } else {
+                results = this.currentDirectory.url;
+            }
             this.modalShow = false;
             this.callback(results);
         },
