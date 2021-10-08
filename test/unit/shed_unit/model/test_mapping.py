@@ -93,65 +93,30 @@ class TestUser(BaseTest):
         role,
         group,
         password_reset_token,
+        user_group_association,
+        user_role_association,
     ):
         obj = cls_()
         obj.email = get_unique_value()
         obj.password = 'a'
+        obj.active_repositories.append(repository)
+        obj.galaxy_sessions.append(galaxy_session)
+        obj.api_keys.append(api_keys)
+        obj.reset_tokens.append(password_reset_token)
+        obj.groups.append(user_group_association)
+        obj.roles.append(user_role_association)
+        obj.repository_reviews.append(repository_review)
 
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.active_repositories == [repository]
+            assert stored_obj.galaxy_sessions == [galaxy_session]
+            assert stored_obj.api_keys == [api_keys]
+            assert stored_obj.reset_tokens == [password_reset_token]
+            assert stored_obj.groups == [user_group_association]
+            assert stored_obj.roles == [user_role_association]
+            assert stored_obj.repository_reviews == [repository_review]
 
-
-#        obj.addresses.append(user_address)
-#        obj.cloudauthz.append(cloud_authz)
-#        obj.custos_auth.append(custos_authnz_token)
-#        obj.default_permissions.append(default_user_permissions)
-#        obj.groups.append(user_group_association)
-#        obj.histories.append(history1)
-#        obj.histories.append(history2)
-#        obj.galaxy_sessions.append(galaxy_session)
-#        obj.quotas.append(user_quota_association)
-#        obj.social_auth.append(user_authnz_token)
-#
-#        _private_role = role_factory(name=obj.email)
-#        private_user_role = user_role_association_factory(obj, _private_role)
-#        obj.roles.append(private_user_role)
-#
-#        _non_private_role = role_factory(name='a')
-#        non_private_user_role = user_role_association_factory(obj, _non_private_role)
-#        obj.roles.append(non_private_user_role)
-#
-#        swme = stored_workflow_menu_entry_factory()
-#        swme.stored_workflow = stored_workflow
-#        swme.user = obj
-#
-#        user_preference.name = 'a'
-#        obj._preferences.set(user_preference)
-#
-#        obj.api_keys.append(api_keys)
-#        obj.data_manager_histories.append(data_manager_history_association)
-#        obj.stored_workflows.append(stored_workflow)
-#
-#        with dbcleanup(session, obj) as obj_id:
-#            stored_obj = get_stored_obj(session, cls_, obj_id)
-#            assert stored_obj.values.id == form_values.id
-#            assert stored_obj.addresses == [user_address]
-#            assert stored_obj.cloudauthz == [cloud_authz]
-#            assert stored_obj.custos_auth == [custos_authnz_token]
-#            assert stored_obj.default_permissions == [default_user_permissions]
-#            assert stored_obj.groups == [user_group_association]
-#            assert are_same_entity_collections(stored_obj.histories, [history1, history2])
-#            assert stored_obj.active_histories == [history1]
-#            assert stored_obj.galaxy_sessions == [galaxy_session]
-#            assert stored_obj.quotas == [user_quota_association]
-#            assert stored_obj.social_auth == [user_authnz_token]
-#            assert stored_obj.stored_workflow_menu_entries == [swme]
-#            assert user_preference in stored_obj._preferences.values()
-#            assert stored_obj.api_keys == [api_keys]
-#            assert stored_obj.data_manager_histories == [data_manager_history_association]
-#            assert are_same_entity_collections(stored_obj.roles, [private_user_role, non_private_user_role])
-#            assert stored_obj.non_private_roles == [non_private_user_role]
-#            assert stored_obj.stored_workflows == [stored_workflow]
-#
-#        delete_from_database(session, [history1, history2, swme, private_user_role, non_private_user_role])
 
 class TestPasswordResetToken(BaseTest):
 
@@ -248,19 +213,24 @@ class TestRole(BaseTest):
         cls_,
         repository_role_association,
         user_role_association,
-        group_role_association,
+        group_role_association_factory,
+        group,
     ):
         name, description, type_ = get_unique_value(), 'b', cls_.types.SYSTEM
         obj = cls_(name, description, type_)
         obj.repositories.append(repository_role_association)
         obj.users.append(user_role_association)
-        obj.groups.append(group_role_association)
+
+        gra = group_role_association_factory(group, obj)
+        obj.groups.append(gra)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.repositories == [repository_role_association]
             assert stored_obj.users == [user_role_association]
-            #assert stored_obj.groups == [group_role_association]  # TODO broken
+            assert stored_obj.groups == [gra]
+
+        delete_from_database(session, gra)
 
 
 class TestRepositoryRoleAssociation(BaseTest):
@@ -282,6 +252,14 @@ class TestRepositoryRoleAssociation(BaseTest):
             assert stored_obj.role_id == role.id
             assert stored_obj.create_time == create_time
             assert stored_obj.update_time == update_time
+
+    def test_relationships(self, session, cls_, repository, role):
+        obj = cls_(repository, role)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.repository.id == repository.id
+            assert stored_obj.role.id == role.id
 
 
 class TestUserGroupAssociation(BaseTest):
@@ -312,6 +290,7 @@ class TestUserGroupAssociation(BaseTest):
             assert stored_obj.user.id == user.id
             assert stored_obj.group.id == group.id
 
+
 class TestUserRoleAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -340,6 +319,7 @@ class TestUserRoleAssociation(BaseTest):
             assert stored_obj.user.id == user.id
             assert stored_obj.role.id == role.id
 
+
 class TestGroupRoleAssociation(BaseTest):
 
     def test_table(self, cls_):
@@ -367,6 +347,7 @@ class TestGroupRoleAssociation(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.group.id == group.id
             assert stored_obj.role.id == role.id
+
 
 class TestGalaxySession(BaseTest):
 
@@ -484,13 +465,8 @@ class TestCategory(BaseTest):
             assert stored_obj.description == description
             assert stored_obj.deleted == deleted
 
-    #def test_relationships(self, session, cls_, repository_category_association):
-    #    obj = cls_()
-    #    obj.name = get_unique_value()
-    #    obj.repositories.append(repository_category_association)  # TODO broken
-
-    #    with dbcleanup(session, obj) as obj_id:
-    #        stored_obj = get_stored_obj(session, cls_, obj_id)
+    def test_relationships(self, session, cls_, repository_category_association):
+        pass  # TODO: might be broken
 
 
 class TestRepository(BaseTest):
@@ -552,14 +528,41 @@ class TestRepository(BaseTest):
             assert stored_obj.description == description
             assert stored_obj.deleted == deleted
 
-#    def test_relationships(self, session, cls_, user):
-#        obj = cls_()
-#
-#        with dbcleanup(session, obj) as obj_id:
-#            stored_obj = get_stored_obj(session, cls_, obj_id)
-#            assert stored_obj.user.id == user.id
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        repository_category_association,
+        repository_rating_association,
+        repository_metadata_factory,
+        repository_role_association,
+        repository_review,
+        user_factory,
+    ):
+        metadata1 = repository_metadata_factory()
+        metadata2 = repository_metadata_factory()
+        user = user_factory()
+        reviewer = user_factory()
 
+        obj = cls_()
+        obj.user = user
+        obj.categories.append(repository_category_association)
+        obj.ratings.append(repository_rating_association)
+        obj.downloadable_revisions.append(metadata1)
+        obj.metadata_revisions.append(metadata2)
+        obj.roles.append(repository_role_association)
+        obj.reviews.append(repository_review)
+        obj.reviewers.append(reviewer)
 
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.user.id == user.id
+            assert stored_obj.categories == [repository_category_association]
+            assert stored_obj.ratings == [repository_rating_association]
+            assert stored_obj.roles == [repository_role_association]
+            # assert stored_obj.reviews == [repository_review]  # TODO broken
+            # assert stored_obj.reviewers == [reviewer]  # TODO
+            # TODO: metadata_revisions, downloadable_revisions
 
 
 class TestRepositoryMetadata(BaseTest):
@@ -622,14 +625,11 @@ class TestRepositoryMetadata(BaseTest):
     def test_relationships(self, session, cls_, repository, repository_review):
         obj = cls_()
         obj.repository = repository
-        obj.review.append(repository_review)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.repository.id == repository.id
-#            assert stored_obj.review == [repository_review]  # TODO broken
-
-
+            # TODO broken: has both review and reviews due to mistake in backref
 
 
 class TestRepositoryReview(BaseTest):
@@ -669,24 +669,26 @@ class TestRepositoryReview(BaseTest):
 
     def test_relationships(self, session, cls_, repository, user, repository_metadata, component_review_factory):
         component_review1 = component_review_factory()
+        component_review1.deleted = False
         component_review2 = component_review_factory()
+        component_review2.deleted = False
+        component_review2.private = True
         obj = cls_()
         obj.repository = repository
         obj.user = user
-        #obj.repository_metadata.append(repository_metadata)  # TODO broken
         obj.component_reviews.append(component_review1)
         obj.private_component_reviews.append(component_review2)
+        # obj.repository_metadata.append(repository_metadata)  # TODO may be broken
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.repository.id == repository.id
             assert stored_obj.user.id == user.id
-  # TODO broken
-        #    assert stored_obj.repository_metadata == [repository_metadata]
-            #assert stored_obj.component_reviews == [component_review1]
-            #assert stored_obj.private_component_reviews == [component_review2]
+            # assert stored_obj.repository_metadata == [repository_metadata]  # TODO
+            assert are_same_entity_collections(stored_obj.component_reviews, [component_review1, component_review2])
+            assert stored_obj.private_component_reviews == [component_review2]
 
-
+        delete_from_database(session, [component_review1, component_review2])
 
 
 class TestComponentReview(BaseTest):
@@ -738,8 +740,6 @@ class TestComponentReview(BaseTest):
             assert stored_obj.component.id == component.id
 
 
-
-
 class TestComponent(BaseTest):
 
     def test_table(self, cls_):
@@ -785,14 +785,15 @@ class TestRepositoryRatingAssociation(BaseTest):
             assert stored_obj.rating == rating
             assert stored_obj.comment == comment
 
-#    def test_relationships(self, session, cls_, user):
-#        obj = cls_()
-#
-#        with dbcleanup(session, obj) as obj_id:
-#            stored_obj = get_stored_obj(session, cls_, obj_id)
-#            assert stored_obj.user.id == user.id
+    def test_relationships(self, session, cls_, repository, user):
+        obj = cls_()
+        obj.repository = repository
+        obj.user = user
 
-
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.repository.id == repository.id
+            assert stored_obj.user.id == user.id
 
 
 class TestRepositoryCategoryAssociation(BaseTest):
@@ -809,14 +810,13 @@ class TestRepositoryCategoryAssociation(BaseTest):
             assert stored_obj.repository_id == repository.id
             assert stored_obj.category_id == category.id
 
-#    def test_relationships(self, session, cls_, user):
-#        obj = cls_()
-#
-#        with dbcleanup(session, obj) as obj_id:
-#            stored_obj = get_stored_obj(session, cls_, obj_id)
-#            assert stored_obj.user.id == user.id
+    def test_relationships(self, session, cls_, repository, category):
+        obj = cls_(repository=repository, category=category)
 
-
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.repository.id == repository.id
+            assert stored_obj.category.id == category.id
 
 
 # Misc. helper fixtures.
@@ -904,6 +904,12 @@ def repository_category_association(model, session, repository, category):
 
 
 @pytest.fixture
+def repository_rating_association(model, session):
+    instance = model.RepositoryRatingAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def repository_role_association(model, session, repository, role):
     instance = model.RepositoryRoleAssociation(repository, role)
     yield from dbcleanup_wrapper(session, instance)
@@ -939,6 +945,30 @@ def user_role_association(model, session, user, role):
 def component_review_factory(model):
     def make_instance(*args, **kwds):
         return model.ComponentReview(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def group_role_association_factory(model):
+    def make_instance(*args, **kwds):
+        return model.GroupRoleAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def repository_metadata_factory(model):
+    def make_instance(*args, **kwds):
+        return model.RepositoryMetadata(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def user_factory(model):
+    def make_instance(*args, **kwds):
+        user = model.User(*args, **kwds)
+        user.email = get_unique_value()
+        user.password = 'a'
+        return user
     return make_instance
 
 
@@ -982,6 +1012,22 @@ def persist(session, obj, return_id=True):
     return obj_id
 
 
+def delete_from_database(session, objects):
+    """
+    Delete each object in objects from database.
+    May be called at the end of a test if use of a context manager is impractical.
+    (Assume all objects have the id field as their primary key.)
+    """
+    # Ensure we have a list of objects (check for list explicitly: a model can be iterable)
+    if not isinstance(objects, list):
+        objects = [objects]
+
+    for obj in objects:
+        table = obj.__table__
+        stmt = delete(table).where(table.c.id == obj.id)
+        session.execute(stmt)
+
+
 def get_stored_obj(session, cls, obj_id=None, where_clause=None, unique=False):
     # Either obj_id or where_clause must be provided, but not both
     assert bool(obj_id) ^ (where_clause is not None)
@@ -1012,3 +1058,23 @@ def has_unique_constraint(table, fields):
 def get_unique_value():
     """Generate unique values to accommodate unique constraints."""
     return uuid4().hex
+
+
+def are_same_entity_collections(collection1, collection2):
+    """
+    The 2 arguments are collections of instances of models that have an `id`
+    attribute as their primary key.
+    Returns `True` if collections are the same size and contain the same
+    instances. Instance equality is determined by the object's `id` attribute,
+    not its Python object identifier.
+    """
+    if len(collection1) != len(collection2):
+        return False
+
+    collection1.sort(key=lambda item: item.id)
+    collection2.sort(key=lambda item: item.id)
+
+    for item1, item2 in zip(collection1, collection2):
+        if item1.id != item2.id:
+            return False
+    return True
