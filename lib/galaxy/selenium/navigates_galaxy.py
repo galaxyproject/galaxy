@@ -205,7 +205,7 @@ class NavigatesGalaxy(HasDriver):
         """
         time.sleep(duration)
 
-    def timeout_for(self, wait_type: WaitType = DEFAULT_WAIT_TYPE) -> float:
+    def timeout_for(self, wait_type: WaitType = DEFAULT_WAIT_TYPE, **kwd) -> float:
         return self.wait_length(wait_type)
 
     def home(self) -> None:
