@@ -29,6 +29,8 @@ from galaxy.schema.schema import (
     AnyHistoryContentItem,
     AnyJobStateSummary,
     DatasetAssociationRoles,
+    DeleteHistoryContentPayload,
+    DeleteHistoryContentResult,
     HistoryContentType,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
@@ -369,7 +371,7 @@ class FastAPIHistoryContents:
         """
         Return detailed information about an `HDA` or `HDCA` within a history.
 
-        .. note:: Anonymous users are allowed to get their current history contents.
+        **Note**: Anonymous users are allowed to get their current history contents.
         """
         return self.service.show(
             trans,
@@ -532,6 +534,54 @@ class FastAPIHistoryContents:
     ) -> dict:  # TODO: define a response?
         """Validates the metadata associated with a dataset within a History."""
         return self.service.validate(trans, history_id, id)
+
+    @router.delete(
+        '/api/histories/{history_id}/contents/{id}',
+        summary='Delete the history dataset with the given ``ID``.',
+    )
+    @router.delete(
+        '/api/histories/{history_id}/contents/{type}s/{id}',
+        summary='Delete the history content with the given ``ID`` and specified type.',
+    )
+    def delete(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        type: HistoryContentType = ContentTypeQueryParam,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        purge: Optional[bool] = Query(
+            default=False,
+            title="Purge",
+            description="Whether to remove from disk the target HDA or child HDAs of the target HDCA.",
+            deprecated=True,
+        ),
+        recursive: Optional[bool] = Query(
+            default=False,
+            title="Recursive",
+            description="When deleting a dataset collection, whether to also delete containing datasets.",
+            deprecated=True,
+        ),
+        payload: DeleteHistoryContentPayload = Body(None),
+    ) -> DeleteHistoryContentResult:
+        """
+        Delete the history content with the given ``ID`` and specified type (defaults to dataset).
+
+        **Note**: Currently does not stop any active jobs for which this dataset is an output.
+        """
+        # TODO: should we just use the default payload and deprecate the query params?
+        if payload is None:
+            payload = DeleteHistoryContentPayload()
+        payload.purge = payload.purge or purge is True
+        payload.recursive = payload.recursive or recursive is True
+        rval = self.service.delete(
+            trans,
+            id=id,
+            serialization_params=serialization_params,
+            contents_type=type,
+            payload=payload,
+        )
+        return rval
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
@@ -938,7 +988,8 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             # payload takes priority
             purge = util.string_as_bool(kwd['payload'].get('purge', purge))
             recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
-        return self.service.delete(trans, id, serialization_params, contents_type, purge, recursive)
+        delete_payload = DeleteHistoryContentPayload(purge=purge, recursive=recursive)
+        return self.service.delete(trans, id, serialization_params, contents_type, delete_payload)
 
     @expose_api_raw
     def archive(self, trans, history_id, filename='', format='zip', dry_run=True, **kwd):

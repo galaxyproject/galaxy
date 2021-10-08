@@ -2472,19 +2472,6 @@ class UpdateDatasetPermissionsPayload(Model):
     )
 
 
-class DeleteHDCAResult(Model):
-    id: EncodedDatabaseIdField = Field(
-        ...,
-        title="ID",
-        description="The encoded ID of the collection.",
-    )
-    deleted: bool = Field(
-        ...,
-        title="Deleted",
-        description="True if the collection was successfully deleted.",
-    )
-
-
 class CustomHistoryItem(Model):
     """Can contain any serializable property of the item.
 
@@ -2511,6 +2498,40 @@ AnyJobStateSummary = Union[
 ]
 
 HistoryArchiveExportResult = Union[JobExportHistoryArchiveModel, JobIdResponse]
+
+
+class DeleteHistoryContentPayload(BaseModel):
+    purge: bool = Field(
+        default=False,
+        title="Purge",
+        description="Whether to remove from disk the target HDA or child HDAs of the target HDCA.",
+    )
+    recursive: bool = Field(
+        default=False,
+        title="Recursive",
+        description="When deleting a dataset collection, whether to also delete containing datasets.",
+    )
+
+
+class DeleteHistoryContentResult(CustomHistoryItem):
+    """Contains minimum information about the deletion state of a history item.
+
+    Can also contain any other properties of the item."""
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="The encoded ID of the history item.",
+    )
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="True if the item was successfully deleted.",
+    )
+    purged: Optional[bool] = Field(
+        default=None,
+        title="Purged",
+        description="True if the item was successfully removed from disk.",
+    )
 
 # Sharing -----------------------------------------------------------------
 

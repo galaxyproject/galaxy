@@ -305,7 +305,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert str(self.__show(hda1).json()["deleted"]).lower() == "false"
         assert str(self.__show(hda1).json()["purged"]).lower() == "false"
         data = {'purge': True}
-        delete_response = self._delete(f"histories/{self.history_id}/contents/{hda1['id']}", data=data)
+        delete_response = self._delete(f"histories/{self.history_id}/contents/{hda1['id']}", data=data, json=True)
         assert delete_response.status_code < 300  # Something in the 200s :).
         assert str(self.__show(hda1).json()["deleted"]).lower() == "true"
         assert str(self.__show(hda1).json()["purged"]).lower() == "true"

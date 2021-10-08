@@ -57,12 +57,12 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
 )
 from galaxy.schema.schema import (
-    AnyHDA,
     AnyHistoryContentItem,
     AnyJobStateSummary,
     ColletionSourceType,
     DatasetAssociationRoles,
-    DeleteHDCAResult,
+    DeleteHistoryContentPayload,
+    DeleteHistoryContentResult,
     HistoryContentSource,
     HistoryContentType,
     JobSourceType,
@@ -558,31 +558,20 @@ class HistoriesContentsService(ServiceBase):
         id,
         serialization_params: SerializationParams,
         contents_type: HistoryContentType,
-        purge: bool = False,
-        recursive: bool = False,
-    ) -> Union[AnyHDA, DeleteHDCAResult]:
+        payload: DeleteHistoryContentPayload,
+    ) -> DeleteHistoryContentResult:
         """
         Delete the history content with the given ``id`` and specified type (defaults to dataset)
 
         .. note:: Currently does not stop any active jobs for which this dataset is an output.
-
-        :param  id:     the encoded id of the history item to delete
-        :type   recursive:  bool
-        :param  recursive:  if True, and deleted an HDCA also delete containing HDAs
-        :type   purge:  bool
-        :param  purge:  if True, purge the target HDA or child HDAs of the target HDCA
-
-        :rtype:     dict
-        :returns:   an error object if an error occurred or a dictionary containing:
-            * id:         the encoded id of the history,
-            * deleted:    if the history content was marked as deleted,
-            * purged:     if the history content was purged
         """
         if contents_type == HistoryContentType.dataset:
-            return self.__delete_dataset(trans, id, purge, serialization_params)
+            return self.__delete_dataset(trans, id, payload.purge, serialization_params)
         elif contents_type == HistoryContentType.dataset_collection:
-            self.dataset_collection_manager.delete(trans, "history", id, recursive=recursive, purge=purge)
-            return DeleteHDCAResult(id=id, deleted=True)
+            self.dataset_collection_manager.delete(
+                trans, "history", id, recursive=payload.recursive, purge=payload.purge
+            )
+            return DeleteHistoryContentResult(id=id, deleted=True)
         else:
             raise exceptions.UnknownContentsType(f'Unknown contents type: {contents_type}')
 
