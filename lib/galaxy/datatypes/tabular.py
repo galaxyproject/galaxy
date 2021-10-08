@@ -464,11 +464,16 @@ class Taxonomy(Tabular):
         return self.make_html_table(dataset, column_names=self.column_names)
 
 
+@dataproviders.decorators.has_dataproviders
 @build_sniff_from_prefix
 class GoldenPath(Tabular):
     """Class describing NCBI's Golden Path assembly format"""
     edam_format = 'format_3693'
     file_ext = 'agp'
+
+    @dataproviders.decorators.dataprovider_factory('dict', dataproviders.column.GoldenPathDataProvider.settings)
+    def dict_dataprovider(self, dataset, **settings):
+        return super().dict_dataprovider(dataset, **settings)
 
     def sniff_prefix(self, file_prefix):
         """

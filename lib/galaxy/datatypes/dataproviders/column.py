@@ -6,6 +6,8 @@ import logging
 import re
 from urllib.parse import unquote_plus
 
+from galaxy.datatypes.goldenpath import AGPFile
+
 from . import line
 
 _TODO = """
@@ -353,3 +355,19 @@ class DictDataProvider(ColumnarDataProvider):
         for column_values in parent_gen:
             map = dict(zip(self.column_names, column_values))
             yield map
+
+
+class GoldenPathDataProvider(DictDataProvider):
+    '''
+    Class that defines a data provider for AGP datasets.
+    '''
+    settings = {}
+
+    def __init__(self, source, **kwargs):
+        self.goldenpath = AGPFile(source)
+        self.column_names = [str(gp) for gp in self.goldenpath]
+        super().__init__(source, **kwargs)
+
+    def __iter__(self):
+        for gp in self.goldenpath:
+            yield gp
