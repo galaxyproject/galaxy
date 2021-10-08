@@ -198,7 +198,7 @@ class Role(Base, Dictifiable, _HasTable):
     deleted = Column(Boolean, index=True, default=False)
     repositories = relationship('RepositoryRoleAssociation', back_populates='role')
     groups = relationship('GroupRoleAssociation', back_populates='role')
-    users = relationship('UserRoleAssociation')  # TODO ADD back_populates='role')
+    users = relationship('UserRoleAssociation', back_populates='role')
 
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']

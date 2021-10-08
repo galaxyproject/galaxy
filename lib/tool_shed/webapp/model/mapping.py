@@ -104,7 +104,7 @@ mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
            non_private_roles=relation(User,
                                       backref="non_private_roles",
                                       primaryjoin=((User.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.id) & not_(Role.name == User.email))),
-           role=relation(Role)))
+           role=relation(Role, back_populates='users')))
 
 mapper_registry.map_imperatively(Category, Category.table,
        properties=dict(repositories=relation(RepositoryCategoryAssociation,
