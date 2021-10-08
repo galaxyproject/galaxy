@@ -22,8 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import os
 import abc
+import os
 
 
 class AGPError(Exception):
@@ -331,7 +331,7 @@ class AGPObject:
             yield i
 
 
-class AGPLine:
+class AGPLine(object, metaclass=abc.ABCMeta):
 
     """
     An abstract base class representing a single AGP file line. Inheriting subclasses should
@@ -339,7 +339,6 @@ class AGPLine:
     checks that involve multiple lines should not be considered.
     """
 
-    __metaclass__ = abc.ABCMeta
     allowed_comp_types = set()
 
     def __init__(self, fname, line_number, obj, obj_beg, obj_end, pid, comp_type):
@@ -467,7 +466,7 @@ class AGPSeqLine(AGPLine):
         if self.comp_beg > self.comp_end:
             raise AGPError(self.fname, self.line_number, "component_beg (%d) must be <= component_end (%d)" % (self.comp_beg, self.comp_end))
 
-        if self.obj_end - (self.obj_beg-1) != self.comp_end - (self.comp_beg-1):
+        if self.obj_end - (self.obj_beg - 1) != self.comp_end - (self.comp_beg - 1):
             raise AGPError(self.fname, self.line_number, "object coordinates (%d, %d) and component coordinates (%d, %d) do not have the same length" % (self.obj_beg, self.obj_end, self.comp_beg, self.comp_end))
 
     def _validate_strings(self):
@@ -521,7 +520,6 @@ class AGPGapLine(AGPLine):
                             linkage=str(self.linkage),
                             linkage_evidence=str(self.linkage_evidence))
 
-
     def __str__(self):
         return "\t".join([
             self.obj,
@@ -560,7 +558,7 @@ class AGPGapLine(AGPLine):
             raise AGPError(self.fname, self.line_number, "encountered an invalid negative numeric AGP field")
 
         # Make sure the coordinates match
-        if self.obj_end - (self.obj_beg-1) != self.gap_len:
+        if self.obj_end - (self.obj_beg - 1) != self.gap_len:
             raise AGPError(self.fname, self.line_number, "object coordinates (%d, %d) and gap length (%d) are not the same length" % (self.obj_beg, self.obj_end, self.gap_len))
 
     def _validate_strings(self):

@@ -7,7 +7,7 @@ from galaxy.datatypes.interval import (
     Gtf,
     Interval
 )
-from galaxy.datatypes.tabular import Tabular, Vcf, GoldenPath
+from galaxy.datatypes.tabular import GoldenPath, Tabular, Vcf
 from galaxy.datatypes.xml import Phyloxml
 from galaxy.model import NoConverterException
 from galaxy.visualization.data_providers import genome

@@ -7,7 +7,6 @@ import re
 from urllib.parse import unquote_plus
 
 from galaxy.datatypes.goldenpath import AGPFile
-
 from . import line
 
 _TODO = """
