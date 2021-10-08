@@ -648,7 +648,7 @@ class SeleniumSessionWorkflowPopulator(SeleniumSessionGetPostMixin, populators.B
         """Construct a workflow populator from a bioblend GalaxyInstance."""
         self.selenium_context = selenium_context
         self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_context)
-        self.dataset_collection_populator = SeleniumSessionDatasetPopulator(selenium_context)
+        self.dataset_collection_populator = SeleniumSessionDatasetCollectionPopulator(selenium_context)
 
     def import_workflow(self, workflow: dict, **kwds) -> dict:
         workflow_str = json.dumps(workflow, indent=4)
