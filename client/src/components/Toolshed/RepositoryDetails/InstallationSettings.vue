@@ -16,7 +16,7 @@
         >
             <b-form-input list="sectionSelect" v-model="toolSection" />
             <datalist id="sectionSelect">
-                <option v-for="section in toolSections" :key="section.name">
+                <option v-for="section in toolSections" :key="section.id">
                     {{ section.name }}
                 </option>
             </datalist>
@@ -48,12 +48,6 @@
     </b-modal>
 </template>
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
-
-Vue.use(BootstrapVue);
-
 export default {
     props: {
         repo: {
@@ -72,9 +66,17 @@ export default {
             type: String,
             required: true,
         },
+        currentPanel: {
+            type: Array,
+            default: null,
+        },
+        toolDynamicConfigs: {
+            type: Array,
+            default: null,
+        },
         modalStatic: {
             type: Boolean,
-            required: true,
+            default: false,
         },
     },
     data() {
@@ -84,9 +86,7 @@ export default {
             installToolDependencies: true,
             installRepositoryDependencies: true,
             installResolverDependencies: true,
-            toolConfigs: [],
             toolConfig: null,
-            toolSections: [],
             toolSection: null,
         };
     },
@@ -100,9 +100,22 @@ export default {
         showConfig() {
             return this.toolConfigs.length > 1;
         },
+        toolSections() {
+            const panel = this.currentPanel;
+            if (panel) {
+                return panel.filter((x) => x.elems);
+            } else {
+                return [];
+            }
+        },
+        toolConfigs() {
+            return this.toolDynamicConfigs || [];
+        },
     },
     created() {
-        this.load();
+        if (this.toolConfigs.length > 0) {
+            this.toolConfig = this.toolConfigs[0];
+        }
     },
     methods: {
         findSection: function (name) {
@@ -118,17 +131,6 @@ export default {
                 }
             }
             return result;
-        },
-        load: function () {
-            const galaxy = getGalaxyInstance();
-            const sections = galaxy.config.toolbox;
-            if (sections) {
-                this.toolSections = sections.filter((x) => x.elems);
-            }
-            this.toolConfigs = galaxy.config.tool_dynamic_configs || [];
-            if (this.toolConfigs.length > 0) {
-                this.toolConfig = this.toolConfigs[0];
-            }
         },
         onAdvanced: function () {
             this.advancedShow = !this.advancedShow;

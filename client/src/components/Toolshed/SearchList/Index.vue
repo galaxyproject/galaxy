@@ -37,7 +37,7 @@ export default {
     props: {
         query: {
             type: String,
-            required: true,
+            default: null,
         },
         scrolled: {
             type: Boolean,
