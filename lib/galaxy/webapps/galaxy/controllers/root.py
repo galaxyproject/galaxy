@@ -122,13 +122,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
 
     # ---- History management -----------------------------------------------
     @web.expose
-    def history_delete(self, trans, id):
-        """Backward compatibility with check_galaxy script.
-        """
-        # TODO: unused?
-        return trans.webapp.controllers['history'].list(trans, id, operation='delete')
-
-    @web.expose
     def clear_history(self, trans):
         """Clears the history for a user.
         """
