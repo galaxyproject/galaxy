@@ -102,6 +102,7 @@ class User(Base, Dictifiable, _HasTable):
         back_populates='user',
         order_by=lambda: desc(APIKeys.create_time))  # type: ignore
     reset_tokens = relationship('PasswordResetToken', back_populates='user')
+    groups = relationship('UserGroupAssociation', back_populates='user')
 
     dict_collection_visible_keys = ['id', 'username']
     dict_element_visible_keys = ['id', 'username']
@@ -223,7 +224,17 @@ class Role(Base, Dictifiable, _HasTable):
         return False
 
 
-class UserGroupAssociation(_HasTable):
+class UserGroupAssociation(Base, _HasTable):
+    __tablename__ = 'user_group_association'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    group_id = Column(Integer, ForeignKey('galaxy_group.id'), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    user = relationship('User', back_populates='groups')
+    group = relationship('Group', back_populates='users')
+
     def __init__(self, user, group):
         self.user = user
         self.group = group

@@ -14,24 +14,16 @@ from galaxy.model.custom_types import MutableJSONType, TrimmedString
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from tool_shed.webapp.model import Category, ComponentReview
-from tool_shed.webapp.model import Group
 from tool_shed.webapp.model import mapper_registry
 from tool_shed.webapp.model import Repository, RepositoryCategoryAssociation
 from tool_shed.webapp.model import RepositoryMetadata, RepositoryRatingAssociation
 from tool_shed.webapp.model import RepositoryReview, RepositoryRoleAssociation, Role
-from tool_shed.webapp.model import User, UserGroupAssociation, UserRoleAssociation
+from tool_shed.webapp.model import User, UserRoleAssociation
 from tool_shed.webapp.security import CommunityRBACAgent
 
 log = logging.getLogger(__name__)
 
 metadata = mapper_registry.metadata
-
-UserGroupAssociation.table = Table("user_group_association", metadata,
-                                   Column("id", Integer, primary_key=True),
-                                   Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                                   Column("group_id", Integer, ForeignKey("galaxy_group.id"), index=True),
-                                   Column("create_time", DateTime, default=now),
-                                   Column("update_time", DateTime, default=now, onupdate=now))
 
 UserRoleAssociation.table = Table("user_role_association", metadata,
                                   Column("id", Integer, primary_key=True),
@@ -105,10 +97,6 @@ mapper_registry.map_imperatively(RepositoryRoleAssociation, RepositoryRoleAssoci
        properties=dict(
            repository=relation(Repository),
            role=relation(Role)))
-
-mapper_registry.map_imperatively(UserGroupAssociation, UserGroupAssociation.table,
-       properties=dict(user=relation(User, backref="groups"),
-           group=relation(Group, back_populates="users")))
 
 mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
        properties=dict(
