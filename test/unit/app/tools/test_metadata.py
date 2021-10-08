@@ -10,7 +10,7 @@ from galaxy.objectstore import ObjectStorePopulator
 from galaxy.util import galaxy_directory, safe_makedirs
 
 
-class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools):
+class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
 
     def setUp(self):
         super().setUp()
@@ -56,6 +56,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         self._write_output_dataset_contents(output_dataset, ">seq1\nGCTGCATG\n")
         self._write_job_files()
         self.exec_metadata_command(command)
+        assert self.metadata_compute_strategy
         metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
         assert metadata_set_successfully
         self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
@@ -84,6 +85,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         self._write_output_dataset_contents(output_dataset, ">seq1\nGCTGCATG\n")
         self._write_job_files()
         self.exec_metadata_command(command)
+        assert self.metadata_compute_strategy
         metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
         assert metadata_set_successfully
         output_dataset.extension = "fasta"  # gets done in job finish...
@@ -115,6 +117,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         self._write_output_dataset_contents(output_dataset, ">seq1\nGCTGCATG\n")
         self._write_job_files()
         self.exec_metadata_command(command)
+        assert self.metadata_compute_strategy
         metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
         assert metadata_set_successfully
         output_dataset.extension = "fasta"  # get done in job finish...

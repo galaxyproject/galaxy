@@ -33,6 +33,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    NamedTuple,
     Optional,
     Set,
     Tuple,
@@ -48,12 +49,17 @@ from galaxy.model import tool_shed_install
 from galaxy.schema import FilterQueryParams
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import BasicApp, MinimalManagerApp
-from galaxy.util import namedtuple
 from galaxy.web import url_for as gx_url_for
 
 log = logging.getLogger(__name__)
 
-parsed_filter = namedtuple("ParsedFilter", "filter_type filter")
+
+class ParsedFilter(NamedTuple):
+    filter_type: str  # orm_function, function, or orm
+    filter: Any
+
+
+parsed_filter = ParsedFilter
 
 
 # ==== accessors from base/controller.py

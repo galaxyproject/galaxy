@@ -1,3 +1,4 @@
+from typing import Any, Dict
 from unittest import TestCase
 
 from galaxy.tools.parameters.meta import process_key
@@ -7,7 +8,7 @@ from .util import BaseParameterTestCase
 class ProcessKeyTestCase(TestCase):
 
     def test_process_key(self):
-        nested_dict = {}
+        nested_dict: Dict[str, Any] = {}
         d = {
             'repeat_1|inner_repeat_1|data_table_column_value': 'bla4',
             'repeat_0|inner_repeat_1|data_table_column_value': 'bla2',
@@ -25,7 +26,7 @@ class ProcessKeyTestCase(TestCase):
         self.assertEqual(nested_dict, expected_dict)
 
     def test_process_key_2(self):
-        nested_dict = {}
+        nested_dict: Dict[str, Any] = {}
         d = {
             'data_tables_0|columns_0|data_table_column_value': 'Amel_HAv3.1',
             'data_tables': [],

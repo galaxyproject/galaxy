@@ -1,4 +1,5 @@
 from tempfile import mkdtemp
+from unittest.mock import Mock
 
 import pytest
 
@@ -6,12 +7,11 @@ from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.tools.cache import ToolShedRepositoryCache
-from galaxy.util import bunch
 
 
 @pytest.fixture
 def mock_app():
-    app = bunch.Bunch()
+    app = Mock()
     app.install_model = mapping.init("sqlite:///:memory:", create_tables=True)
     return app
 

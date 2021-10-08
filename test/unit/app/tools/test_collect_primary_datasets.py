@@ -8,13 +8,17 @@ from galaxy import (
 )
 from galaxy.app_unittest_utils import tools_support
 from galaxy.tool_util.parser import output_collection_def
-from galaxy.tool_util.provided_metadata import LegacyToolProvidedMetadata, NullToolProvidedMetadata
+from galaxy.tool_util.provided_metadata import (
+    BaseToolProvidedMetadata,
+    LegacyToolProvidedMetadata,
+    NullToolProvidedMetadata,
+)
 
 DEFAULT_TOOL_OUTPUT = "out1"
 DEFAULT_EXTRA_NAME = "test1"
 
 
-class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools):
+class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools):
 
     def setUp(self):
         self.setup_app()
@@ -326,6 +330,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         if not job_working_directory:
             job_working_directory = self.test_directory
         meta_file = os.path.join(self.test_directory, "galaxy.json")
+        tool_provided_metadata: BaseToolProvidedMetadata
         if not os.path.exists(meta_file):
             tool_provided_metadata = NullToolProvidedMetadata()
         else:

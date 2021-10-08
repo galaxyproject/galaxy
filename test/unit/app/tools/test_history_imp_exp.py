@@ -3,6 +3,7 @@ import os
 import tarfile
 import tempfile
 from shutil import rmtree
+from unittest.mock import Mock
 
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
@@ -701,7 +702,7 @@ def import_archive(archive_path, app=None):
     dest_parent = tempfile.mkdtemp()
     dest_dir = os.path.join(dest_parent, 'dest')
 
-    options = Dummy()
+    options = Mock()
     options.is_url = False
     options.is_file = True
     options.is_b64encoded = False
@@ -716,7 +717,7 @@ def _run_unpack(history_archive, dest_parent, msg):
     dest_dir = os.path.join(dest_parent, 'dest')
     insecure_dir = os.path.join(dest_parent, 'insecure')
     os.makedirs(dest_dir)
-    options = Dummy()
+    options = Mock()
     options.is_url = False
     options.is_file = True
     options.is_b64encoded = False

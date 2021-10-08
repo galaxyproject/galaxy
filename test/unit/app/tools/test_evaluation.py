@@ -211,8 +211,6 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         def hda(id, name, path):
             hda = HistoryDatasetAssociation(name=name, metadata=dict())
             hda.dataset = Dataset(id=id, external_filename=path)
-            hda.dataset.metadata = dict()
-            hda.children = []
             return hda
 
         id, name, path = 111, 'input1', '/galaxy/files/dataset_1.dat'

@@ -101,6 +101,7 @@ async def test_request_scoped_sa_session_single_request():
         response = await client.get("/")
         assert response.status_code == 200
         assert response.json() == {"msg": "Hello World"}
+        assert GX_APP
         assert GX_APP.model.scoped_registry.registry == {}
 
 
@@ -110,6 +111,7 @@ async def test_request_scoped_sa_session_exception():
     async with AsyncClient(app=app, base_url="http://test") as client:
         with pytest.raises(UnexpectedException):
             await client.get("/internal_server_error")
+        assert GX_APP
         assert GX_APP.model.scoped_registry.registry == {}
 
 
@@ -124,6 +126,7 @@ async def test_request_scoped_sa_session_concurrent_requests_sync():
             assert r.status_code == 200
             uuids.append(r.json())
         assert len(set(uuids)) == 10
+        assert GX_APP
         assert GX_APP.model.scoped_registry.registry == {}
 
 
@@ -138,6 +141,7 @@ async def test_request_scoped_sa_session_concurrent_requests_async():
             assert r.status_code == 200
             uuids.append(r.json())
         assert len(set(uuids)) == 10
+        assert GX_APP
         assert GX_APP.model.scoped_registry.registry == {}
 
 
@@ -156,6 +160,7 @@ async def test_request_scoped_sa_session_concurrent_requests_and_background_thre
                 assert r.status_code == 200
                 uuids.append(r.json())
             assert len(set(uuids)) == 10
+            assert GX_APP
             assert GX_APP.model.scoped_registry.registry == {}
         GX_APP.stop = True
         await background_pool

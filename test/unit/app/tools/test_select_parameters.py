@@ -1,8 +1,9 @@
+from unittest.mock import Mock
+
 import pytest
 
 from galaxy import model
 from galaxy.tools.parameters import basic
-from galaxy.util import bunch
 from .util import BaseParameterTestCase
 
 
@@ -57,12 +58,12 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
         self.app.model.context.add(self.test_history)
         self.app.model.context.flush()
         self.app.tool_data_tables["test_table"] = MockToolDataTable()
-        self.trans = bunch.Bunch(
+        self.trans = Mock(
             app=self.app,
             get_history=lambda: self.test_history,
             get_current_user_roles=lambda: [],
             workflow_building_mode=False,
-            webapp=bunch.Bunch(name="galaxy"),
+            webapp=Mock(name="galaxy"),
         )
         self.type = "select"
         self.set_data_ref = False

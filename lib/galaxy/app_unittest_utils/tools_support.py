@@ -8,6 +8,7 @@ import shutil
 import string
 import tempfile
 from collections import defaultdict
+from typing import Optional
 
 import galaxy.datatypes.registry
 import galaxy.model
@@ -64,7 +65,14 @@ SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="${tool_id}" name="Test Tool" version="$v
 '''
 
 
-class UsesTools:
+class MockActionI:
+
+    def execute(self, tool, trans, **kwds):
+        pass
+
+
+class UsesTools(UsesApp):
+    tool_action: Optional[MockActionI] = None
 
     def _init_tool(
         self,
@@ -103,7 +111,7 @@ class UsesTools:
             self.tool.assert_finalized()
         except Exception:
             self.tool = None
-        if getattr(self, "tool_action", None and self.tool):
+        if getattr(self, "tool_action", None) and self.tool:
             self.tool.tool_action = self.tool_action
         return self.tool
 
