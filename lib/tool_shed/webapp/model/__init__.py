@@ -11,8 +11,10 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    desc,
     ForeignKey,
     Integer,
+    not_,
     String,
     TEXT,
     UniqueConstraint,
@@ -75,7 +77,31 @@ class APIKeys(Base, _HasTable):
     key = Column(TrimmedString(32), index=True, unique=True)
 
 
-class User(Dictifiable, _HasTable):
+class User(Base, Dictifiable, _HasTable):
+    __tablename__ = 'galaxy_user'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    email = Column(TrimmedString(255), nullable=False)
+    username = Column(String(255), index=True)
+    password = Column(TrimmedString(40), nullable=False)
+    external = Column(Boolean, default=False)
+    new_repo_alert = Column(Boolean, default=False)
+    deleted = Column(Boolean, index=True, default=False)
+    purged = Column(Boolean, index=True, default=False)
+    active_repositories = relationship('Repository',
+        primaryjoin=(lambda: (Repository.user_id == User.id) & (not_(Repository.deleted))),  # type: ignore
+        order_by=lambda: desc(Repository.name))  # type: ignore
+    galaxy_sessions = relationship('GalaxySession',
+    #    back_populates='user',  # TODO add back
+        order_by=lambda: desc(GalaxySession.update_time))  # type: ignore
+    api_keys = relationship(
+        'APIKeys',
+        backref="user",  # TODO >> back_populates
+        order_by=lambda: desc(APIKeys.create_time))  # type: ignore
+    reset_tokens = relationship('PasswordResetToken', back_populates='user')
+
     dict_collection_visible_keys = ['id', 'username']
     dict_element_visible_keys = ['id', 'username']
     bootstrap_admin_user = False

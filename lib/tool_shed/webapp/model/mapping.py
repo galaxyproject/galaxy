@@ -4,7 +4,7 @@ are encapsulated here.
 """
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, not_, String, Table, TEXT, true
+from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, not_, Table, TEXT, true
 from sqlalchemy.orm import relation
 
 import tool_shed.webapp.model
@@ -13,10 +13,10 @@ from galaxy.model.base import SharedModelMapping
 from galaxy.model.custom_types import MutableJSONType, TrimmedString
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from tool_shed.webapp.model import APIKeys, Category, ComponentReview
-from tool_shed.webapp.model import GalaxySession, Group
+from tool_shed.webapp.model import Category, ComponentReview
+from tool_shed.webapp.model import Group
 from tool_shed.webapp.model import mapper_registry
-from tool_shed.webapp.model import PasswordResetToken, Repository, RepositoryCategoryAssociation
+from tool_shed.webapp.model import Repository, RepositoryCategoryAssociation
 from tool_shed.webapp.model import RepositoryMetadata, RepositoryRatingAssociation
 from tool_shed.webapp.model import RepositoryReview, RepositoryRoleAssociation, Role
 from tool_shed.webapp.model import User, UserGroupAssociation, UserRoleAssociation
@@ -25,18 +25,6 @@ from tool_shed.webapp.security import CommunityRBACAgent
 log = logging.getLogger(__name__)
 
 metadata = mapper_registry.metadata
-
-User.table = Table("galaxy_user", metadata,
-                   Column("id", Integer, primary_key=True),
-                   Column("create_time", DateTime, default=now),
-                   Column("update_time", DateTime, default=now, onupdate=now),
-                   Column("email", TrimmedString(255), nullable=False),
-                   Column("username", String(255), index=True),
-                   Column("password", TrimmedString(40), nullable=False),
-                   Column("external", Boolean, default=False),
-                   Column("new_repo_alert", Boolean, default=False),
-                   Column("deleted", Boolean, index=True, default=False),
-                   Column("purged", Boolean, index=True, default=False))
 
 UserGroupAssociation.table = Table("user_group_association", metadata,
                                    Column("id", Integer, primary_key=True),
@@ -127,15 +115,6 @@ Category.table = Table("category", metadata,
                        Column("description", TEXT),
                        Column("deleted", Boolean, index=True, default=False))
 
-# With the tables defined we can define the mappers and setup the relationships between the model objects.
-mapper_registry.map_imperatively(User, User.table,
-       properties=dict(
-           active_repositories=relation(Repository, primaryjoin=((Repository.table.c.user_id == User.table.c.id) & (not_(Repository.table.c.deleted))), order_by=(Repository.table.c.name)),
-           galaxy_sessions=relation(GalaxySession, order_by=desc(GalaxySession.update_time)),
-           api_keys=relation(APIKeys, backref="user", order_by=desc(APIKeys.create_time)),
-           reset_tokens=relation(PasswordResetToken, back_populates='user'),
-       ))
-
 mapper_registry.map_imperatively(RepositoryRoleAssociation, RepositoryRoleAssociation.table,
        properties=dict(
            repository=relation(Repository),
@@ -150,7 +129,7 @@ mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
            user=relation(User, backref="roles"),
            non_private_roles=relation(User,
                                       backref="non_private_roles",
-                                      primaryjoin=((User.table.c.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.id) & not_(Role.name == User.table.c.email))),
+                                      primaryjoin=((User.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.id) & not_(Role.name == User.email))),
            role=relation(Role)))
 
 mapper_registry.map_imperatively(Category, Category.table,
@@ -175,7 +154,7 @@ mapper_registry.map_imperatively(Repository, Repository.table,
            reviewers=relation(User,
                               secondary=RepositoryReview.table,
                               primaryjoin=(Repository.table.c.id == RepositoryReview.table.c.repository_id),
-                              secondaryjoin=(RepositoryReview.table.c.user_id == User.table.c.id))))
+                              secondaryjoin=(RepositoryReview.table.c.user_id == User.id))))
 
 mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table,
        properties=dict(repository=relation(Repository),
