@@ -35,6 +35,7 @@
                         :options="formConfig"
                         :message-text="messageText"
                         :message-variant="messageVariant"
+                        :disabled="disabled || showExecuting"
                         @onChangeVersion="onChangeVersion"
                         @onUpdateFavorites="onUpdateFavorites"
                         itemscope="itemscope"
@@ -137,6 +138,7 @@ export default {
     },
     data() {
         return {
+            disabled: false,
             showLoading: true,
             showForm: false,
             showEntryPoints: false,
@@ -226,9 +228,14 @@ export default {
             }
         },
         onUpdate() {
-            updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData).then((data) => {
-                this.formConfig = data;
-            });
+            this.disabled = true;
+            updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData)
+                .then((data) => {
+                    this.formConfig = data;
+                })
+                .finally(() => {
+                    this.disabled = false;
+                });
         },
         onChangeVersion(newVersion) {
             this.requestTool(newVersion);
@@ -238,16 +245,21 @@ export default {
         },
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
-            return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
-                this.formConfig = data;
-                this.remapAllowed = this.job_id && data.job_remap;
-                this.showLoading = false;
-                this.showForm = true;
-                if (newVersion) {
-                    this.messageVariant = "success";
-                    this.messageText = `Now you are using '${data.name}' version ${data.version}, id '${data.id}'.`;
-                }
-            });
+            this.disabled = true;
+            return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
+                .then((data) => {
+                    this.formConfig = data;
+                    this.remapAllowed = this.job_id && data.job_remap;
+                    this.showLoading = false;
+                    this.showForm = true;
+                    if (newVersion) {
+                        this.messageVariant = "success";
+                        this.messageText = `Now you are using '${data.name}' version ${data.version}, id '${data.id}'.`;
+                    }
+                })
+                .finally(() => {
+                    this.disabled = false;
+                });
         },
         onExecute(config, historyId) {
             if (this.validationInternal) {
