@@ -4,7 +4,7 @@
 cat '$input1' #for $q in $queries# '${q.input2}' #end for# > '$out_file1'
     ]]></command>
     <inputs>
-        <param name="input1" type="data" format="txt" label="Concatenate Dataset"/>
+        <param name="input1" type="data" label="Concatenate Dataset"/>
         <repeat name="queries" title="Dataset">
             <param name="input2" type="data" label="Select" />
         </repeat>
