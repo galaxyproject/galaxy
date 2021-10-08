@@ -8,6 +8,7 @@ from datetime import (
 from typing import Any, Mapping, TYPE_CHECKING
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -436,7 +437,23 @@ class RepositoryReview(Dictifiable, _HasTable):
         self.deleted = deleted
 
 
-class ComponentReview(Dictifiable, _HasTable):
+class ComponentReview(Base, Dictifiable, _HasTable):
+    __tablename__ = 'component_review'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    repository_review_id = Column(Integer, ForeignKey("repository_review.id"), index=True)
+    component_id = Column(Integer, ForeignKey("component.id"), index=True)
+    comment = Column(TEXT)
+    private = Column(Boolean, default=False)
+    approved = Column(TrimmedString(255))
+    rating = Column(Integer)
+    deleted = Column(Boolean, index=True, default=False)
+
+    repository_review = relationship('RepositoryReview')
+    component = relationship('Component')
+
     dict_collection_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
     dict_element_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes', NA='not_applicable')

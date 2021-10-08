@@ -98,7 +98,7 @@ class TestComponent(BaseTest):
 class TestComponentReview(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'component_review'
+        assert cls_.__tablename__ == 'component_review'
 
     def test_columns(self, session, cls_, repository_review, component):
         create_time = datetime.now()

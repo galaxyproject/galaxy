@@ -13,7 +13,7 @@ from galaxy.model.base import SharedModelMapping
 from galaxy.model.custom_types import MutableJSONType, TrimmedString
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from tool_shed.webapp.model import APIKeys, Category, Component, ComponentReview
+from tool_shed.webapp.model import APIKeys, Category, ComponentReview
 from tool_shed.webapp.model import GalaxySession, Group, GroupRoleAssociation
 from tool_shed.webapp.model import mapper_registry
 from tool_shed.webapp.model import PasswordResetToken, Repository, RepositoryCategoryAssociation
@@ -141,18 +141,6 @@ RepositoryReview.table = Table("repository_review", metadata,
                                Column("rating", Integer, index=True),
                                Column("deleted", Boolean, index=True, default=False))
 
-ComponentReview.table = Table("component_review", metadata,
-                              Column("id", Integer, primary_key=True),
-                              Column("create_time", DateTime, default=now),
-                              Column("update_time", DateTime, default=now, onupdate=now),
-                              Column("repository_review_id", Integer, ForeignKey("repository_review.id"), index=True),
-                              Column("component_id", Integer, ForeignKey("component.id"), index=True),
-                              Column("comment", TEXT),
-                              Column("private", Boolean, default=False),
-                              Column("approved", TrimmedString(255)),
-                              Column("rating", Integer),
-                              Column("deleted", Boolean, index=True, default=False))
-
 RepositoryRatingAssociation.table = Table("repository_rating_association", metadata,
                                           Column("id", Integer, primary_key=True),
                                           Column("create_time", DateTime, default=now),
@@ -273,14 +261,9 @@ mapper_registry.map_imperatively(RepositoryReview, RepositoryReview.table,
                                                     backref='review'),
                        user=relation(User, backref="repository_reviews"),
                        component_reviews=relation(ComponentReview,
-                                                  primaryjoin=((RepositoryReview.table.c.id == ComponentReview.table.c.repository_review_id) & (ComponentReview.table.c.deleted == false()))),
+                                                  primaryjoin=((RepositoryReview.table.c.id == ComponentReview.repository_review_id) & (ComponentReview.deleted == false()))),
                        private_component_reviews=relation(ComponentReview,
-                                                          primaryjoin=((RepositoryReview.table.c.id == ComponentReview.table.c.repository_review_id) & (ComponentReview.table.c.deleted == false()) & (ComponentReview.table.c.private == true())))))
-
-mapper_registry.map_imperatively(ComponentReview, ComponentReview.table,
-       properties=dict(repository_review=relation(RepositoryReview),
-                       component=relation(Component,
-                                          primaryjoin=(ComponentReview.table.c.component_id == Component.id))))
+                                                          primaryjoin=((RepositoryReview.table.c.id == ComponentReview.repository_review_id) & (ComponentReview.deleted == false()) & (ComponentReview.private == true())))))
 
 mapper_registry.map_imperatively(RepositoryRatingAssociation, RepositoryRatingAssociation.table,
        properties=dict(repository=relation(Repository), user=relation(User)))
