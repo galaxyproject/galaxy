@@ -4,8 +4,8 @@ are encapsulated here.
 """
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, not_, String, Table, TEXT, true, UniqueConstraint
-from sqlalchemy.orm import backref, relation
+from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, not_, String, Table, TEXT, true
+from sqlalchemy.orm import relation
 
 import tool_shed.webapp.model
 import tool_shed.webapp.util.shed_statistics as shed_statistics
@@ -19,7 +19,7 @@ from tool_shed.webapp.model import mapper_registry
 from tool_shed.webapp.model import PasswordResetToken, Repository, RepositoryCategoryAssociation
 from tool_shed.webapp.model import RepositoryMetadata, RepositoryRatingAssociation
 from tool_shed.webapp.model import RepositoryReview, RepositoryRoleAssociation, Role
-from tool_shed.webapp.model import Tag, User, UserGroupAssociation, UserRoleAssociation
+from tool_shed.webapp.model import User, UserGroupAssociation, UserRoleAssociation
 from tool_shed.webapp.security import CommunityRBACAgent
 
 log = logging.getLogger(__name__)
@@ -127,13 +127,6 @@ Category.table = Table("category", metadata,
                        Column("description", TEXT),
                        Column("deleted", Boolean, index=True, default=False))
 
-Tag.table = Table("tag", metadata,
-                  Column("id", Integer, primary_key=True),
-                  Column("type", Integer),
-                  Column("parent_id", Integer, ForeignKey("tag.id")),
-                  Column("name", TrimmedString(255)),
-                  UniqueConstraint("name"))
-
 # With the tables defined we can define the mappers and setup the relationships between the model objects.
 mapper_registry.map_imperatively(User, User.table,
        properties=dict(
@@ -159,9 +152,6 @@ mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
                                       backref="non_private_roles",
                                       primaryjoin=((User.table.c.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.id) & not_(Role.name == User.table.c.email))),
            role=relation(Role)))
-
-mapper_registry.map_imperatively(Tag, Tag.table,
-       properties=dict(children=relation(Tag, backref=backref('parent', remote_side=[Tag.table.c.id]))))
 
 mapper_registry.map_imperatively(Category, Category.table,
        properties=dict(repositories=relation(RepositoryCategoryAssociation,

@@ -655,7 +655,7 @@ class TestRole(BaseTest):
 class TestTag(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'tag'
+        assert cls_.__tablename__ == 'tag'
         assert has_unique_constraint(cls_.table, ('name',))
 
     def test_columns(self, session, cls_):

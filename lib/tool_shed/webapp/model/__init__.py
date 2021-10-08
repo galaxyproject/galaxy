@@ -15,6 +15,7 @@ from sqlalchemy import (
     Integer,
     String,
     TEXT,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import (
     registry,
@@ -565,7 +566,18 @@ class RepositoryCategoryAssociation(_HasTable):
         self.category = category
 
 
-class Tag(_HasTable):
+class Tag(Base, _HasTable):
+    __tablename__ = 'tag'
+    __table_args__ = (
+        UniqueConstraint('name'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    type = Column(Integer)
+    parent_id = Column(Integer, ForeignKey('tag.id'))
+    name = Column(TrimmedString(255))
+    children = relationship('Tag', back_populates='parent')
+    parent = relationship('Tag', back_populates='children', remote_side=[id])
 
     def __init__(self, id=None, type=None, parent_id=None, name=None):
         self.id = id
