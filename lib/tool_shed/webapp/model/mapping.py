@@ -82,19 +82,6 @@ RepositoryRoleAssociation.table = Table("repository_role_association", metadata,
                                         Column("create_time", DateTime, default=now),
                                         Column("update_time", DateTime, default=now, onupdate=now))
 
-GalaxySession.table = Table("galaxy_session", metadata,
-                            Column("id", Integer, primary_key=True),
-                            Column("create_time", DateTime, default=now),
-                            Column("update_time", DateTime, default=now, onupdate=now),
-                            Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=True),
-                            Column("remote_host", String(255)),
-                            Column("remote_addr", String(255)),
-                            Column("referer", TEXT),
-                            Column("session_key", TrimmedString(255), index=True, unique=True),  # unique 128 bit random number coerced to a string
-                            Column("is_valid", Boolean, default=False),
-                            Column("prev_session_id", Integer),  # saves a reference to the previous session so we have a way to chain them together
-                            Column("last_action", DateTime))
-
 Repository.table = Table("repository", metadata,
                          Column("id", Integer, primary_key=True),
                          Column("create_time", DateTime, default=now),
@@ -174,7 +161,7 @@ Tag.table = Table("tag", metadata,
 mapper_registry.map_imperatively(User, User.table,
        properties=dict(
            active_repositories=relation(Repository, primaryjoin=((Repository.table.c.user_id == User.table.c.id) & (not_(Repository.table.c.deleted))), order_by=(Repository.table.c.name)),
-           galaxy_sessions=relation(GalaxySession, order_by=desc(GalaxySession.table.c.update_time)),
+           galaxy_sessions=relation(GalaxySession, order_by=desc(GalaxySession.update_time)),
            api_keys=relation(APIKeys, backref="user", order_by=desc(APIKeys.create_time)),
            reset_tokens=relation(PasswordResetToken, back_populates='user'),
        ))
@@ -212,9 +199,6 @@ mapper_registry.map_imperatively(GroupRoleAssociation, GroupRoleAssociation.tabl
        properties=dict(
            group=relation(Group, backref="roles"),
            role=relation(Role)))
-
-mapper_registry.map_imperatively(GalaxySession, GalaxySession.table,
-       properties=dict(user=relation(User)))
 
 mapper_registry.map_imperatively(Tag, Tag.table,
        properties=dict(children=relation(Tag, backref=backref('parent', remote_side=[Tag.table.c.id]))))
