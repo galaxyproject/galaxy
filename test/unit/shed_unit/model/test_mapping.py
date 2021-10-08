@@ -128,7 +128,7 @@ class TestUser(BaseTest):
 class TestPasswordResetToken(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'password_reset_token'
+        assert cls_.__tablename__ == 'password_reset_token'
 
     def test_columns_and_relationships(self, session, cls_, user):
         token = get_unique_value()

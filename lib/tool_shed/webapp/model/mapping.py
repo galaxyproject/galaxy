@@ -38,11 +38,6 @@ User.table = Table("galaxy_user", metadata,
                    Column("deleted", Boolean, index=True, default=False),
                    Column("purged", Boolean, index=True, default=False))
 
-PasswordResetToken.table = Table("password_reset_token", metadata,
-                                 Column("token", String(32), primary_key=True, unique=True, index=True),
-                                 Column("expiration_time", DateTime),
-                                 Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
-
 Group.table = Table("galaxy_group", metadata,
                     Column("id", Integer, primary_key=True),
                     Column("create_time", DateTime, default=now),
@@ -194,12 +189,12 @@ Tag.table = Table("tag", metadata,
 
 # With the tables defined we can define the mappers and setup the relationships between the model objects.
 mapper_registry.map_imperatively(User, User.table,
-       properties=dict(active_repositories=relation(Repository, primaryjoin=((Repository.table.c.user_id == User.table.c.id) & (not_(Repository.table.c.deleted))), order_by=(Repository.table.c.name)),
-                       galaxy_sessions=relation(GalaxySession, order_by=desc(GalaxySession.table.c.update_time)),
-                       api_keys=relation(APIKeys, backref="user", order_by=desc(APIKeys.create_time))))
-
-mapper_registry.map_imperatively(PasswordResetToken, PasswordResetToken.table,
-       properties=dict(user=relation(User, backref="reset_tokens")))
+       properties=dict(
+           active_repositories=relation(Repository, primaryjoin=((Repository.table.c.user_id == User.table.c.id) & (not_(Repository.table.c.deleted))), order_by=(Repository.table.c.name)),
+           galaxy_sessions=relation(GalaxySession, order_by=desc(GalaxySession.table.c.update_time)),
+           api_keys=relation(APIKeys, backref="user", order_by=desc(APIKeys.create_time)),
+           reset_tokens=relation(PasswordResetToken, back_populates='user'),
+       ))
 
 mapper_registry.map_imperatively(Group, Group.table,
        properties=dict(users=relation(UserGroupAssociation)))

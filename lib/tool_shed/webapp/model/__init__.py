@@ -12,8 +12,12 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    String,
 )
-from sqlalchemy.orm import registry
+from sqlalchemy.orm import (
+    registry,
+    relationship,
+)
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 import tool_shed.repository_types.util as rt_util
@@ -114,7 +118,14 @@ class User(Dictifiable, _HasTable):
         self.password = new_secure_hash(text_type=cleartext)
 
 
-class PasswordResetToken(_HasTable):
+class PasswordResetToken(Base, _HasTable):
+    __tablename__ = 'password_reset_token'
+
+    token = Column(String(32), primary_key=True, unique=True, index=True)
+    expiration_time = Column(DateTime)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user = relationship('User', back_populates='reset_tokens')
+
     def __init__(self, user, token=None):
         if token:
             self.token = token
