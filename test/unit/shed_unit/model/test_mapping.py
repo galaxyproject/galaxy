@@ -197,7 +197,7 @@ class TestGalaxySession(BaseTest):
 class TestGroup(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'galaxy_group'
+        assert cls_.__tablename__ == 'galaxy_group'
 
     def test_columns(self, session, cls_):
         create_time = datetime.now()

@@ -137,7 +137,17 @@ class PasswordResetToken(Base, _HasTable):
         self.expiration_time = now() + timedelta(hours=24)
 
 
-class Group(Dictifiable, _HasTable):
+class Group(Base, Dictifiable, _HasTable):
+    __tablename__ = 'galaxy_group'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    name = Column(String(255), index=True, unique=True)
+    deleted = Column(Boolean, index=True, default=False)
+    roles = relationship('GroupRoleAssociation', back_populates='group')
+    users = relationship('UserGroupAssociation')  # TODO: fix bug: incorrect usage of backref/duplicate rel users/members; add back_populates
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name']
 

@@ -38,13 +38,6 @@ User.table = Table("galaxy_user", metadata,
                    Column("deleted", Boolean, index=True, default=False),
                    Column("purged", Boolean, index=True, default=False))
 
-Group.table = Table("galaxy_group", metadata,
-                    Column("id", Integer, primary_key=True),
-                    Column("create_time", DateTime, default=now),
-                    Column("update_time", DateTime, default=now, onupdate=now),
-                    Column("name", String(255), index=True, unique=True),
-                    Column("deleted", Boolean, index=True, default=False))
-
 Role.table = Table("role", metadata,
                    Column("id", Integer, primary_key=True),
                    Column("create_time", DateTime, default=now),
@@ -166,9 +159,6 @@ mapper_registry.map_imperatively(User, User.table,
            reset_tokens=relation(PasswordResetToken, back_populates='user'),
        ))
 
-mapper_registry.map_imperatively(Group, Group.table,
-       properties=dict(users=relation(UserGroupAssociation)))
-
 mapper_registry.map_imperatively(Role, Role.table,
        properties=dict(
            repositories=relation(RepositoryRoleAssociation,
@@ -176,7 +166,7 @@ mapper_registry.map_imperatively(Role, Role.table,
            users=relation(UserRoleAssociation,
                           primaryjoin=((Role.table.c.id == UserRoleAssociation.table.c.role_id) & (UserRoleAssociation.table.c.user_id == User.table.c.id))),
            groups=relation(GroupRoleAssociation,
-                           primaryjoin=((Role.table.c.id == GroupRoleAssociation.table.c.role_id) & (GroupRoleAssociation.table.c.group_id == Group.table.c.id)))))
+                           primaryjoin=((Role.table.c.id == GroupRoleAssociation.table.c.role_id) & (GroupRoleAssociation.table.c.group_id == Group.id)))))
 
 mapper_registry.map_imperatively(RepositoryRoleAssociation, RepositoryRoleAssociation.table,
        properties=dict(
@@ -185,7 +175,7 @@ mapper_registry.map_imperatively(RepositoryRoleAssociation, RepositoryRoleAssoci
 
 mapper_registry.map_imperatively(UserGroupAssociation, UserGroupAssociation.table,
        properties=dict(user=relation(User, backref="groups"),
-                       group=relation(Group, backref="members")))
+           group=relation(Group, backref="members")))  # TODO fix bug: members should be users; check codebase for references
 
 mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
        properties=dict(
@@ -197,7 +187,7 @@ mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
 
 mapper_registry.map_imperatively(GroupRoleAssociation, GroupRoleAssociation.table,
        properties=dict(
-           group=relation(Group, backref="roles"),
+           group=relation(Group, back_populates="roles"),
            role=relation(Role)))
 
 mapper_registry.map_imperatively(Tag, Tag.table,
