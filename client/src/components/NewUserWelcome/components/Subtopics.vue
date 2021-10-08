@@ -6,7 +6,7 @@
         </header>
         <b-row class="justify-content-md-center mb-3">
             <b-card-group v-for="(subject, idx) in topics" :key="idx">
-                <b-card class="text-center m-2" body-class="d-flex flex-column">
+                <b-card class="text-center m-2 border-0" body-class="d-flex flex-column">
                     <b-card-img
                         class="section-header mb-3"
                         height="50h"
