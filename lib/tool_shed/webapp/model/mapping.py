@@ -115,7 +115,7 @@ mapper_registry.map_imperatively(Category, Category.table,
 
 mapper_registry.map_imperatively(Repository, Repository.table,
        properties=dict(
-           categories=relation(RepositoryCategoryAssociation),
+           categories=relation(RepositoryCategoryAssociation, back_populates='repository'),
            ratings=relation(RepositoryRatingAssociation, order_by=desc(RepositoryRatingAssociation.update_time), back_populates='repository'),
            user=relation(User, back_populates='active_repositories'),
            downloadable_revisions=relation(RepositoryMetadata,
