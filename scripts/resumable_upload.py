@@ -3,13 +3,12 @@ import os
 import aiotus
 import asyncclick as click
 
-creation_url = "http://localhost:8000/"
 UPLOAD_ENDPOINT = '/api/upload/resumable_upload'
 
 
 @click.command()
 @click.option("--url", default='http://localhost:8080', help="URL of Galaxy instance")
-@click.option("--api_key", envvar="GALAXY_API_KEY", help="API key for Galaxy instance")
+@click.option("--api_key", envvar="GALAXY_API_KEY", required=True, help="API key for Galaxy instance")
 @click.option('--history_id', type=str, required=True, help="Target History ID")
 @click.option('--file_type', default="auto", type=str, help="Galaxy file type to use")
 @click.option('--dbkey', default="?", type=str, help="Genome Build for dataset")

@@ -23,40 +23,45 @@ class UploadsAPIController(BaseGalaxyAPIController):
     READ_CHUNK_SIZE = 2 ** 16
 
     @expose_api_raw_anonymous
-    def tus(self, trans, **kwargs):
+    def tus(self, trans, payload, session_id=None, **kwargs):
         """
         PATCH /api/upload/resumable_upload/{filename}
         """
-        upload_path = kwargs.get('payload')
-        with open(f"{upload_path}.info") as info:
-            metadata = json.load(info)
-        trans.response.headers['upload-offset'] = metadata['upload_length']
-        if trans.user or trans.session:
-            # This is a hack that works nicely with tusc
-            # e.g tusc client <galaxy_url>/api/upload/resumable_upload <file_path> -r -H 'x-api-key: <api_key>'
-            # I believe we can put arbitrary values in the metadata for history_id, dbkey, file_type, etc
-            upload_metadata = metadata['upload_metadata']
-            filename = upload_metadata.get('filename', 'Uploaded dataset')
-            dbkey = upload_metadata.get('dbkey', '?')
-            history_id = upload_metadata.get('history_id')
-            ext = 'auto'
-            for key in ['ext', 'file_type', 'extension']:
-                if key in upload_metadata:
-                    ext = upload_metadata[key]
-                    break
-            _create = trans.webapp.api_controllers['tools']._create
-            payload = {
-                "file_count": 1,
-                "dbkey": dbkey,
-                "file_type": "auto",
-                "files_0|type": "upload_dataset",
-                "files_0|NAME": filename,
-                "files_0|to_posix_lines": "Yes",
-                "files_0|dbkey": dbkey,
-                "files_0|file_type": ext,
-                "files_0|file_data": {"session_id": kwargs['tmpfile'], "name": filename}}
-            payload = {'tool_id': 'upload1', 'inputs': payload, 'history_id': history_id}
-            _create(trans, payload)
+        if isinstance(payload, str):
+            # WSGI middleware
+            with open(f"{payload}.info") as info:
+                payload = json.load(info)
+                metadata = payload['upload_metadata']
+                size = payload['upload_length']
+        else:
+            # tusd server hook
+            metadata = payload['Upload']['MetaData']
+            session_id = payload['Upload']['ID']
+            size = payload['Upload']['Size']
+        trans.response.headers['upload-offset'] = size
+        filename = metadata.get('filename', 'Uploaded dataset')
+        dbkey = metadata.get('dbkey', '?')
+        history_id = metadata.get('history_id')
+        if not history_id and not trans.session:
+            raise exceptions.RequestParameterMissingException("history_id or galaxy session required")
+        ext = 'auto'
+        for key in ['ext', 'file_type', 'extension']:
+            if key in metadata:
+                ext = metadata[key]
+                break
+        _create = trans.webapp.api_controllers['tools']._create
+        inputs = {
+            "file_count": 1,
+            "dbkey": dbkey,
+            "file_type": "auto",
+            "files_0|type": "upload_dataset",
+            "files_0|NAME": filename,
+            "files_0|to_posix_lines": "Yes",
+            "files_0|dbkey": dbkey,
+            "files_0|file_type": ext,
+            "files_0|file_data": {"session_id": session_id, "name": filename}}
+        tool_payload = {'tool_id': 'upload1', 'inputs': inputs, 'history_id': history_id}
+        _create(trans, tool_payload)
         trans.response.status = 204
 
     @legacy_expose_api_anonymous
