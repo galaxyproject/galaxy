@@ -108,6 +108,14 @@ class User(Base, Dictifiable, _HasTable):
     dict_collection_visible_keys = ['id', 'username']
     dict_element_visible_keys = ['id', 'username']
     bootstrap_admin_user = False
+    non_private_roles = relationship(
+        'UserRoleAssociation',
+        viewonly=True,
+        primaryjoin=(lambda:
+            (User.id == UserRoleAssociation.user_id)  # type: ignore
+            & (UserRoleAssociation.role_id == Role.id)  # type: ignore
+            & not_(Role.name == User.email))  # type: ignore
+    )
 
     def __init__(self, email=None, password=None):
         self.email = email

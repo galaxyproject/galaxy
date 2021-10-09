@@ -751,6 +751,8 @@ class TestUser(BaseTest):
         password_reset_token,
         user_group_association,
         user_role_association,
+        role_factory,
+        user_role_association_factory
     ):
         obj = cls_()
         obj.email = get_unique_value()
@@ -760,8 +762,15 @@ class TestUser(BaseTest):
         obj.api_keys.append(api_keys)
         obj.reset_tokens.append(password_reset_token)
         obj.groups.append(user_group_association)
-        obj.roles.append(user_role_association)
         obj.repository_reviews.append(repository_review)
+
+        _private_role = role_factory(name=obj.email)
+        private_user_role = user_role_association_factory(obj, _private_role)
+        obj.roles.append(private_user_role)
+
+        _non_private_role = role_factory(name='a')
+        non_private_user_role = user_role_association_factory(obj, _non_private_role)
+        obj.roles.append(non_private_user_role)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -770,8 +779,9 @@ class TestUser(BaseTest):
             assert stored_obj.api_keys == [api_keys]
             assert stored_obj.reset_tokens == [password_reset_token]
             assert stored_obj.groups == [user_group_association]
-            assert stored_obj.roles == [user_role_association]
             assert stored_obj.repository_reviews == [repository_review]
+            assert are_same_entity_collections(stored_obj.roles, [private_user_role, non_private_user_role])
+            assert stored_obj.non_private_roles == [non_private_user_role]
 
 
 class TestUserGroupAssociation(BaseTest):
@@ -976,12 +986,26 @@ def repository_metadata_factory(model):
 
 
 @pytest.fixture
+def role_factory(model):
+    def make_instance(*args, **kwds):
+        return model.Role(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
 def user_factory(model):
     def make_instance(*args, **kwds):
         user = model.User(*args, **kwds)
         user.email = get_unique_value()
         user.password = 'a'
         return user
+    return make_instance
+
+
+@pytest.fixture
+def user_role_association_factory(model):
+    def make_instance(*args, **kwds):
+        return model.UserRoleAssociation(*args, **kwds)
     return make_instance
 
 

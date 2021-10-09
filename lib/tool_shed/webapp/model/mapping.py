@@ -4,7 +4,7 @@ are encapsulated here.
 """
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, not_, Table, TEXT, true
+from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, Table, TEXT, true
 from sqlalchemy.orm import relation
 
 import tool_shed.webapp.model
@@ -81,9 +81,6 @@ RepositoryReview.table = Table("repository_review", metadata,
 mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
        properties=dict(
            user=relation(User, backref="roles"),
-           non_private_roles=relation(User,
-                                      backref="non_private_roles",
-                                      primaryjoin=((User.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.id) & not_(Role.name == User.email))),
            role=relation(Role, back_populates='users')))
 
 mapper_registry.map_imperatively(Repository, Repository.table,
