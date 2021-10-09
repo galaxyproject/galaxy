@@ -28,6 +28,9 @@ TEST_INPUT_FILES_CONTENT = "1 2 3"
 
 
 class MixedStoreByObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+    # setup by _configure_object_store
+    files1_path: str
+    files2_path: str
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -52,7 +55,9 @@ class MixedStoreByObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestC
                     raise Exception("Problem with logic of test, randomly each object store should have at least one file by now")
 
             def strip_to_id(x):
-                return re.match(r'dataset_(.*)\.dat', os.path.basename(x)).group(1)
+                match = re.match(r'dataset_(.*)\.dat', os.path.basename(x))
+                assert match
+                return match.group(1)
 
             files1_paths = [strip_to_id(p) for p in _get_datasets_files_in_path(self.files1_path)]
             files2_paths = [strip_to_id(p) for p in _get_datasets_files_in_path(self.files2_path)]
