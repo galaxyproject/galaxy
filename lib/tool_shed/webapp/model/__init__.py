@@ -117,6 +117,7 @@ class User(Base, Dictifiable, _HasTable):
             & (UserRoleAssociation.role_id == Role.id)  # type: ignore
             & not_(Role.name == User.email))  # type: ignore
     )
+    repository_reviews = relationship('RepositoryReview', back_populates='user')
 
     def __init__(self, email=None, password=None):
         self.email = email
