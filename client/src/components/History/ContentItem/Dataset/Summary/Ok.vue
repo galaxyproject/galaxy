@@ -9,7 +9,7 @@
         </div>
         <div v-if="props.dataset.genome_build" class="dbkey">
             <label class="prompt" v-localize>database</label>
-            <a class="value" @click.stop="listeners['edit']()">{{ props.dataset.genome_build }}</a>
+            <b-link class="value" @click.stop="listeners['edit']()">{{ props.dataset.genome_build }}</b-link>
         </div>
         <div v-if="props.dataset.misc_info" class="info">
             <span class="value">{{ props.dataset.misc_info }}</span>
