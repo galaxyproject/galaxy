@@ -263,7 +263,17 @@ class GroupRoleAssociation(Base, _HasTable):
         self.role = role
 
 
-class RepositoryRoleAssociation(_HasTable):
+class RepositoryRoleAssociation(Base, _HasTable):
+    __tablename__ = 'repository_role_association'
+
+    id = Column(Integer, primary_key=True)
+    repository_id = Column(Integer, ForeignKey("repository.id"), index=True)
+    role_id = Column(Integer, ForeignKey("role.id"), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    repository = relationship('Repository', back_populates='roles')
+    role = relationship('Role', back_populates='repositories')
+
     def __init__(self, repository, role):
         self.repository = repository
         self.role = role

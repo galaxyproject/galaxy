@@ -583,7 +583,7 @@ class TestRepositoryReview(BaseTest):
 class TestRepositoryRoleAssociation(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'repository_role_association'
+        assert cls_.__tablename__ == 'repository_role_association'
 
     def test_columns(self, session, cls_, repository, role):
         create_time = datetime.now()

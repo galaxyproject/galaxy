@@ -32,13 +32,6 @@ UserRoleAssociation.table = Table("user_role_association", metadata,
                                   Column("create_time", DateTime, default=now),
                                   Column("update_time", DateTime, default=now, onupdate=now))
 
-RepositoryRoleAssociation.table = Table("repository_role_association", metadata,
-                                        Column("id", Integer, primary_key=True),
-                                        Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
-                                        Column("role_id", Integer, ForeignKey("role.id"), index=True),
-                                        Column("create_time", DateTime, default=now),
-                                        Column("update_time", DateTime, default=now, onupdate=now))
-
 Repository.table = Table("repository", metadata,
                          Column("id", Integer, primary_key=True),
                          Column("create_time", DateTime, default=now),
@@ -85,11 +78,6 @@ RepositoryReview.table = Table("repository_review", metadata,
                                Column("rating", Integer, index=True),
                                Column("deleted", Boolean, index=True, default=False))
 
-mapper_registry.map_imperatively(RepositoryRoleAssociation, RepositoryRoleAssociation.table,
-       properties=dict(
-           repository=relation(Repository),
-           role=relation(Role, back_populates='repositories')))
-
 mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
        properties=dict(
            user=relation(User, backref="roles"),
@@ -108,7 +96,7 @@ mapper_registry.map_imperatively(Repository, Repository.table,
                                            order_by=desc(RepositoryMetadata.table.c.update_time)),
            metadata_revisions=relation(RepositoryMetadata,
                                        order_by=desc(RepositoryMetadata.table.c.update_time)),
-           roles=relation(RepositoryRoleAssociation),
+           roles=relation(RepositoryRoleAssociation, back_populates='repository'),
            reviews=relation(RepositoryReview,
                             primaryjoin=(Repository.table.c.id == RepositoryReview.table.c.repository_id)),
            reviewers=relation(User,
