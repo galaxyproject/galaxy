@@ -52,7 +52,7 @@ class TestAPIKeys(BaseTest):
 class TestCategory(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'category'
+        assert cls_.__tablename__ == 'category'
 
     def test_columns(self, session, cls_):
         create_time = datetime.now()

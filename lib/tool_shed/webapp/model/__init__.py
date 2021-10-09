@@ -598,7 +598,17 @@ class RepositoryRatingAssociation(Base, ItemRatingAssociation, _HasTable):
         self.repository = repository
 
 
-class Category(Dictifiable, _HasTable):
+class Category(Base, Dictifiable, _HasTable):
+    __tablename__ = 'category'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    name = Column(TrimmedString(255), index=True, unique=True)
+    description = Column(TEXT)
+    deleted = Column(Boolean, index=True, default=False)
+    repositories = relationship('RepositoryCategoryAssociation', back_populates='category')
+
     dict_collection_visible_keys = ['id', 'name', 'description', 'deleted']
     dict_element_visible_keys = ['id', 'name', 'description', 'deleted']
 

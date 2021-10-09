@@ -13,7 +13,7 @@ from galaxy.model.base import SharedModelMapping
 from galaxy.model.custom_types import MutableJSONType, TrimmedString
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from tool_shed.webapp.model import Category, ComponentReview
+from tool_shed.webapp.model import ComponentReview
 from tool_shed.webapp.model import mapper_registry
 from tool_shed.webapp.model import Repository, RepositoryCategoryAssociation
 from tool_shed.webapp.model import RepositoryMetadata, RepositoryRatingAssociation
@@ -85,14 +85,6 @@ RepositoryReview.table = Table("repository_review", metadata,
                                Column("rating", Integer, index=True),
                                Column("deleted", Boolean, index=True, default=False))
 
-Category.table = Table("category", metadata,
-                       Column("id", Integer, primary_key=True),
-                       Column("create_time", DateTime, default=now),
-                       Column("update_time", DateTime, default=now, onupdate=now),
-                       Column("name", TrimmedString(255), index=True, unique=True),
-                       Column("description", TEXT),
-                       Column("deleted", Boolean, index=True, default=False))
-
 mapper_registry.map_imperatively(RepositoryRoleAssociation, RepositoryRoleAssociation.table,
        properties=dict(
            repository=relation(Repository),
@@ -105,10 +97,6 @@ mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
                                       backref="non_private_roles",
                                       primaryjoin=((User.id == UserRoleAssociation.table.c.user_id) & (UserRoleAssociation.table.c.role_id == Role.id) & not_(Role.name == User.email))),
            role=relation(Role, back_populates='users')))
-
-mapper_registry.map_imperatively(Category, Category.table,
-       properties=dict(repositories=relation(RepositoryCategoryAssociation,
-                                             back_populates='category')))
 
 mapper_registry.map_imperatively(Repository, Repository.table,
        properties=dict(
