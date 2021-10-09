@@ -82,8 +82,7 @@ mapper_registry.map_imperatively(Repository, Repository.table,
            metadata_revisions=relation(RepositoryMetadata,
                                        order_by=desc(RepositoryMetadata.table.c.update_time)),
            roles=relation(RepositoryRoleAssociation, back_populates='repository'),
-           reviews=relation(RepositoryReview,
-                            primaryjoin=(Repository.table.c.id == RepositoryReview.table.c.repository_id)),
+           reviews=relation(RepositoryReview, back_populates='repository'),
            reviewers=relation(User,
                               secondary=RepositoryReview.table,
                               primaryjoin=(Repository.table.c.id == RepositoryReview.table.c.repository_id),
@@ -96,8 +95,7 @@ mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table,
                                         primaryjoin=((RepositoryMetadata.table.c.repository_id == RepositoryReview.table.c.repository_id) & (RepositoryMetadata.table.c.changeset_revision == RepositoryReview.table.c.changeset_revision)))))
 
 mapper_registry.map_imperatively(RepositoryReview, RepositoryReview.table,
-       properties=dict(repository=relation(Repository,
-                                           primaryjoin=(RepositoryReview.table.c.repository_id == Repository.table.c.id)),
+       properties=dict(repository=relation(Repository, back_populates='reviews'),
                        # Take care when using the mapper below!  It should be used only when a new review is being created for a repository change set revision.
                        # Keep in mind that repository_metadata records can be removed from the database for certain change set revisions when metadata is being
                        # reset on a repository!

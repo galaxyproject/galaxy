@@ -368,7 +368,7 @@ class TestRepository(BaseTest):
         metadata1 = repository_metadata_factory()
         metadata2 = repository_metadata_factory()
         user = user_factory()
-        reviewer = user_factory()
+        # reviewer = user_factory()
 
         obj = cls_()
         obj.user = user
@@ -378,7 +378,7 @@ class TestRepository(BaseTest):
         obj.metadata_revisions.append(metadata2)
         obj.roles.append(repository_role_association)
         obj.reviews.append(repository_review)
-        obj.reviewers.append(reviewer)
+        # obj.reviewers.append(reviewer)  # TODO
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -386,7 +386,7 @@ class TestRepository(BaseTest):
             assert stored_obj.categories == [repository_category_association]
             assert stored_obj.ratings == [repository_rating_association]
             assert stored_obj.roles == [repository_role_association]
-            # assert stored_obj.reviews == [repository_review]  # TODO broken
+            assert stored_obj.reviews == [repository_review]
             # assert stored_obj.reviewers == [reviewer]  # TODO
             # TODO: metadata_revisions, downloadable_revisions
 
