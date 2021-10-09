@@ -17,20 +17,13 @@ from tool_shed.webapp.model import ComponentReview
 from tool_shed.webapp.model import mapper_registry
 from tool_shed.webapp.model import Repository, RepositoryCategoryAssociation
 from tool_shed.webapp.model import RepositoryMetadata, RepositoryRatingAssociation
-from tool_shed.webapp.model import RepositoryReview, RepositoryRoleAssociation, Role
-from tool_shed.webapp.model import User, UserRoleAssociation
+from tool_shed.webapp.model import RepositoryReview, RepositoryRoleAssociation
+from tool_shed.webapp.model import User
 from tool_shed.webapp.security import CommunityRBACAgent
 
 log = logging.getLogger(__name__)
 
 metadata = mapper_registry.metadata
-
-UserRoleAssociation.table = Table("user_role_association", metadata,
-                                  Column("id", Integer, primary_key=True),
-                                  Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                                  Column("role_id", Integer, ForeignKey("role.id"), index=True),
-                                  Column("create_time", DateTime, default=now),
-                                  Column("update_time", DateTime, default=now, onupdate=now))
 
 Repository.table = Table("repository", metadata,
                          Column("id", Integer, primary_key=True),
@@ -77,11 +70,6 @@ RepositoryReview.table = Table("repository_review", metadata,
                                Column("approved", TrimmedString(255)),
                                Column("rating", Integer, index=True),
                                Column("deleted", Boolean, index=True, default=False))
-
-mapper_registry.map_imperatively(UserRoleAssociation, UserRoleAssociation.table,
-       properties=dict(
-           user=relation(User, backref="roles"),
-           role=relation(Role, back_populates='users')))
 
 mapper_registry.map_imperatively(Repository, Repository.table,
        properties=dict(

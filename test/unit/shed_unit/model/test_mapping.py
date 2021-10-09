@@ -816,7 +816,7 @@ class TestUserGroupAssociation(BaseTest):
 class TestUserRoleAssociation(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'user_role_association'
+        assert cls_.__tablename__ == 'user_role_association'
 
     def test_columns(self, session, cls_, user, role):
         create_time = datetime.now()

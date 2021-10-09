@@ -108,6 +108,7 @@ class User(Base, Dictifiable, _HasTable):
     dict_collection_visible_keys = ['id', 'username']
     dict_element_visible_keys = ['id', 'username']
     bootstrap_admin_user = False
+    roles = relationship('UserRoleAssociation', back_populates='user')
     non_private_roles = relationship(
         'UserRoleAssociation',
         viewonly=True,
@@ -249,7 +250,17 @@ class UserGroupAssociation(Base, _HasTable):
         self.group = group
 
 
-class UserRoleAssociation(_HasTable):
+class UserRoleAssociation(Base, _HasTable):
+    __tablename__ = 'user_role_association'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    role_id = Column(Integer, ForeignKey('role.id'), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    user = relationship('User', back_populates='roles')
+    role = relationship('Role', back_populates='users')
+
     def __init__(self, user, role):
         self.user = user
         self.role = role
