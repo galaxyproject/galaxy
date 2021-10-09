@@ -145,7 +145,7 @@ history_panel:
       # Action buttons...
       download_button: '${_} .icon-btn.download-btn'
       info_button: '${_} .icon-btn.params-btn'
-      dbkey_button: '${_} .fa.fa-question'
+      tool_help_button: '${_} .fa.fa-question'
       rerun_button: '${_} .icon-btn.rerun-btn'
       nametags: '${_} .nametags .badge-tags'
 
@@ -174,7 +174,6 @@ history_panel:
       # Action buttons...
       download_button: '${_} .download-btn'
       info_button: '${_} .params-btn'
-      dbkey_button: '${_} .fa.fa-question'
       nametags: '${_} .nametags .badge-tags'
 
       dataset_operations_dropdown: '${_}  .dataset-operations-dropdown'

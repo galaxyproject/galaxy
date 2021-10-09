@@ -26,17 +26,17 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_item_body_component(FIRST_HID, wait=True)
 
         self.assert_item_summary_includes(FIRST_HID, "1 sequence")
-        if not self.is_beta_history():
-            # it doesn't seem like we display the dbkey in the beta history panel?
-            self.assert_item_dbkey_displayed_as(FIRST_HID, "?")
+        self.assert_item_dbkey_displayed_as(FIRST_HID, "?")
         self.assert_item_info_includes(FIRST_HID, 'uploaded fasta file')
         self.assert_item_peek_includes(FIRST_HID, ">hg17")
 
         self.screenshot("history_panel_dataset_before_click_dbkey")
 
         if not self.is_beta_history():
-            # is this a problem???
-            item.dbkey_button.wait_for_and_click()
+            # beta history doesn't have a button - rewrite this is as a helper
+            # that works with beta history.
+            item.tool_help_button.wait_for_and_click()
+            self.screenshot("history_panel_dataset_tool_help")
 
         if not self.is_beta_history():
             # need to redo tooltip stuff for beta history panel...
