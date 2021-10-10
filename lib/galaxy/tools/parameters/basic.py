@@ -2349,6 +2349,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                 yield history_dataset_collection, match.implicit_conversion
 
     def from_json(self, value, trans, other_values=None):
+        log.error(f"from_json value {value} trans {trans} other_values {other_values}")
         other_values = other_values or {}
         rval: Optional[Union[DatasetCollectionElement, HistoryDatasetCollectionAssociation]] = None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
@@ -2396,6 +2397,25 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if rval.deleted:
                 raise ParameterValueError("the previously selected dataset collection has been deleted", self.name)
             # TODO: Handle error states, implement error states ...
+
+        # prepare dataset/collection matching
+        values = util.listify(rval)
+        dataset_matcher_factory = get_dataset_matcher_factory(trans)
+        dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
+        dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
+
+        for v in values:
+            log.error(f"from_json v {v}")
+            match = dataset_collection_matcher.hdca_match(v)
+            if match:
+                pass
+                # not sure if implicit conversion needs to be handled here
+                # if implicit_conversion:
+                #     v.implicit_conversion = True
+            else:
+                representative = v.to_hda_representative()
+                raise ParameterValueError(f"data set ({v.name}) with invalid datatype ({representative.ext}) supplied to input dataset parameter (expecting {dataset_matcher.param.extensions})", self.name)
+
         return rval
 
     def to_text(self, value):
