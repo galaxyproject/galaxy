@@ -87,7 +87,6 @@ Whoosh = "*"
 zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
-aiotus = "*"
 fluent-logger = "*"
 httpx = "*"
 gunicorn = "*"
@@ -114,4 +113,5 @@ sphinx_rtd_theme = "*"
 statsd = "*"
 testfixtures = "*"
 twill = "*"
+tuspy = "*"
 watchdog = "*"

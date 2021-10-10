@@ -1,9 +1,8 @@
-import asyncio
 import json
 import os
 
-import aiotus
 import pytest
+from tusclient import client
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.constants import (
@@ -912,28 +911,19 @@ class ToolsUploadTestCase(ApiTestCase):
 
     def test_upload_dataset_resumable(self):
 
-        async def upload_file(url, path, api_key, history_id, ):
+        def upload_file(url, path, api_key, history_id):
             filename = os.path.basename(path)
             metadata = {
-                'filename': filename.encode(),
-                'history_id': history_id.encode(),
+                'filename': filename,
+                'history_id': history_id,
             }
-            headers = {'x-api-key': api_key}
+            my_client = client.TusClient(url, headers={'x-api-key': api_key})
 
             # Upload a file to a tus server.
-            with open(path, "rb") as f:
-                location = await aiotus.upload(url, f, metadata, headers=headers)
-                # 'location' is the URL where the file was uploaded to.
+            my_client.uploader(path, metadata=metadata).upload()
 
-            # Read back the metadata from the server.
-            return await aiotus.metadata(location, headers=headers)
-
-        loop = asyncio.get_event_loop()
         with self.dataset_populator.test_history() as history_id:
-            future = upload_file(url=f"{self.url}/api/upload/resumable_upload", path=TestDataResolver().get_filename("1.fastqsanger.gz"), api_key=self.galaxy_interactor.api_key, history_id=history_id)
-            result = loop.run_until_complete(future)
-            assert result['filename']
-            assert result['history_id']
+            upload_file(url=f"{self.url}/api/upload/resumable_upload", path=TestDataResolver().get_filename("1.fastqsanger.gz"), api_key=self.galaxy_interactor.api_key, history_id=history_id)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             dataset = self.dataset_populator.get_history_dataset_details(history_id)
             assert dataset['name'] == '1.fastqsanger.gz'
