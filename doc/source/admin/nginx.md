@@ -276,7 +276,80 @@ If you start Galaxy from supervisord, you can set the `umask` option in the [pro
 section](http://supervisord.org/configuration.html#program-x-section-settings) after adding the nginx user to the Galaxy
 group as shown above.
 
-### Receiving Files With Nginx
+### Receiving Files via the tus protocol
+
+[tus](https://tus.io/) is a protocol based on HTTP for resumable file uploads. Resumable means that an upload can be interrupted at any moment and can be resumed without re-uploading the previous data again. An interruption may happen willingly, if the user wants to pause, or by accident in case of an network issue or server outage.
+
+Galaxy includes a WSGI middleware that implements a tus server for which no configuration is needed.
+However the middleware ties up resources on the Galaxy server process, and uploads will be interrupted
+while Galaxy restarts. A more efficient alternative is to run an external server that implements the tus protocol.
+Any tus server that can send the post-finish hook to a URL will work. Here we will use [tusd](https://github.com/tus/tusd).
+Binaries can be downloaded from https://github.com/tus/tusd/releases/.
+
+In this example we will set up tusd to:
+
+- listen on port 1080 on localhost (`-host localhost -port 1080`)
+- store uploads in database/tmp (replace this with the value of new_file_path in your galaxy.yml config) (`-upload-dir=<galaxy_root>/database/tmp`)
+- send an event via http to /api/upload/_resumable_upload when an upload has finished (`-hooks-http=<galaxy_url>/api/upload/_resumable_upload`)
+- forward authentication headers in that event (`-hooks-http-forward-headers=X-Api-Key,sessioncookie`)
+- and enable only the post-finish event hook (`-hooks-enabled-events=post-finish`)
+
+The complete command is thus (replace `<galaxy_url>` with your Galaxy URL and `<galaxy_root>` with the path to your Galaxy installation):
+
+```sh
+tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp -hooks-http=<galaxy_url>/api/upload/_resumable_upload -hooks-http-forward-headers=X-Api-Key,sessioncookie --hooks-enabled-events=post-finish
+```
+
+We now need to set up nginx to proxy requests to /api/upload/resumable_upload to our tusd server.
+To do this, add the following to your Galaxy's `server {}` block:
+
+```nginx
+        location /api/upload/resumable_upload {
+        # Disable request and response buffering
+            proxy_request_buffering  off;
+            proxy_buffering          off;
+            proxy_http_version       1.1;
+
+            # Add X-Forwarded-* headers
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            proxy_set_header         Upgrade $http_upgrade;
+            proxy_set_header         Connection "upgrade";
+            client_max_body_size     0;
+            proxy_pass http://localhost:1080/files/;
+        }
+```
+
+If you serve Galaxy at a prefix exchange `/api/upload/resumable_upload` with `/prefix/api/upload/resumable_upload`.
+
+After reloading the nginx configuration you can verify that this configuration works correctly by uploading a file to Galaxy. Make sure the tusd server logs the request. It should look similar to the following
+
+```log
+[tusd] 2021/10/10 10:54:11 event="RequestIncoming" method="POST" path="" requestId=""
+[tusd] 2021/10/10 10:54:11 event="UploadCreated" id="92ad5d17d0ab0d865991bfef79bbb54d" size="2033" url="http://localhost:1080/files/92ad5d17d0ab0d865991bfef79bbb54d"
+[tusd] 2021/10/10 10:54:11 event="ResponseOutgoing" status="201" method="POST" path="" requestId=""
+[tusd] 2021/10/10 10:54:11 event="RequestIncoming" method="HEAD" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
+[tusd] 2021/10/10 10:54:11 event="ResponseOutgoing" status="200" method="HEAD" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
+[tusd] 2021/10/10 10:54:11 event="RequestIncoming" method="PATCH" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
+[tusd] 2021/10/10 10:54:11 event="ChunkWriteStart" id="92ad5d17d0ab0d865991bfef79bbb54d" maxSize="2033" offset="0"
+[tusd] 2021/10/10 10:54:11 event="ChunkWriteComplete" id="92ad5d17d0ab0d865991bfef79bbb54d" bytesWritten="2033"
+[tusd] 2021/10/10 10:54:11 event="ResponseOutgoing" status="204" method="PATCH" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
+[tusd] 2021/10/10 10:54:11 event="UploadFinished" id="92ad5d17d0ab0d865991bfef79bbb54d" size="2033"
+[tusd] 2021/10/10 10:54:11 event="HookInvocationStart" type="post-finish" id="92ad5d17d0ab0d865991bfef79bbb54d"
+[tusd] 2021/10/10 10:54:11 event="RequestIncoming" method="HEAD" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
+[tusd] 2021/10/10 10:54:11 event="ResponseOutgoing" status="200" method="HEAD" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
+[tusd] 2021/10/10 10:54:12 event="HookInvocationFinish" type="post-finish" id="92ad5d17d0ab0d865991bfef79bbb54d"
+```
+
+Note that the tusd server does not need to run on the same host that serves Galaxy.
+See the [tusd documentation](https://github.com/tus/tusd#documentation) for additional information.
+
+### Receiving Files With Nginx (Legacy)
+
+As of Galaxy release 22.01 we recommend setting up tusd to upload files.
+The instructions below will continue to work for older, legacy client applications,
+but the Galaxy user interface will not use this method of uploading files.
 
 Galaxy receives files (e.g. dataset uploads) by streaming them in chunks through the proxy server and writing the files
 to disk. However, this again ties up the Galaxy process. nginx can assume this task instead and as an added benefit,
