@@ -8,7 +8,7 @@ import threading
 import traceback
 
 from paste import httpexceptions
-from tusfilter import TusFilter
+from tuswsgi import TusMiddleware
 
 import galaxy.app
 import galaxy.datatypes.registry
@@ -1398,7 +1398,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # Request ID middleware
     app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     # TUS upload middleware
-    app = wrap_if_allowed(app, stack, TusFilter, kwargs={
+    app = wrap_if_allowed(app, stack, TusMiddleware, kwargs={
         'upload_path': '/api/upload/resumable_upload',
         'tmp_dir': application_stack.config.new_file_path,
         'max_size': application_stack.config.maximum_upload_file_size * 1024 ** 3
