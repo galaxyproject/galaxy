@@ -11,8 +11,7 @@
     </outputs>
     <tests>
         <!-- one can not supply bam for a sam input -->
-        <!-- TODO  expect_failure="true"-->
-        <test expect_num_outputs="1">
+        <test expect_num_outputs="1" expect_failure="true">
             <param name="reads">
                 <collection type="paired">
                     <element name="forward" value="3unsorted.bam" ftype="unsorted.bam"/>
@@ -27,8 +26,7 @@
             </output>
         </test>
         <!-- one can not supply bed for a sam input -->
-        <!-- TODO  expect_failure="true"-->
-        <test expect_num_outputs="1">
+        <test expect_num_outputs="1" expect_failure="true">
             <param name="reads">
                 <collection type="paired">
                     <element name="forward" value="1.bed" ftype="bed"/>
