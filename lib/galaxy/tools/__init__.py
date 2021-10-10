@@ -222,6 +222,7 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     'Grep1': safe_update(packaging.version.parse("1.0.1"), packaging.version.parse("1.0.3")),
     'Show beginning1': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
     'Show tail1': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
+    'sort1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.2.0")),
 }
 
 
