@@ -3,7 +3,7 @@ const path = require("path");
 // For a detailed explanation regarding each configuration property, visit:
 // https://jestjs.io/docs/en/configuration.html
 
-const modulesToTransform = ["bootstrap-vue/src/components/form-input"];
+const modulesToTransform = ["bootstrap-vue/src/components/form-input", "rxjs/internal/scheduler/AsyncScheduler"].join("|");
 
 module.exports = {
     // All imported modules in your tests should be mocked automatically
