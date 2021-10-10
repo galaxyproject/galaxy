@@ -26,6 +26,7 @@ class UploadsAPIController(BaseGalaxyAPIController):
     def tus(self, trans, payload, session_id=None, **kwargs):
         """
         PATCH /api/upload/resumable_upload/{filename}
+        POST /api/upload/_resumable_upload
         """
         if isinstance(payload, str):
             # WSGI middleware
