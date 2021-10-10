@@ -51,17 +51,27 @@ class UploadsAPIController(BaseGalaxyAPIController):
                 ext = metadata[key]
                 break
         _create = trans.webapp.api_controllers['tools']._create
-        inputs = {
-            "file_count": 1,
-            "dbkey": dbkey,
-            "file_type": "auto",
-            "files_0|type": "upload_dataset",
-            "files_0|NAME": filename,
-            "files_0|to_posix_lines": "Yes",
-            "files_0|dbkey": dbkey,
-            "files_0|file_type": ext,
-            "files_0|file_data": {"session_id": session_id, "name": filename}}
-        tool_payload = {'tool_id': 'upload1', 'inputs': inputs, 'history_id': history_id}
+        if 'inputs' in metadata:
+            # Do we want to just dump the "normal" tool payload here, or have some more user-friendly API, or both ?
+            # Going with both for now since I don't want to redo the client-side of this for now.
+            # This is the 'normal' payload approach
+            inputs = json.loads(metadata['inputs'])
+            inputs['files_0|file_data'] = {"session_id": session_id, "name": inputs["files_0|NAME"]}
+            tool_id = metadata['tool_id']
+        else:
+            # This feels a bit more user-friendly ?
+            tool_id = 'upload1'
+            inputs = {
+                "file_count": 1,
+                "dbkey": dbkey,
+                "file_type": "auto",
+                "files_0|type": "upload_dataset",
+                "files_0|NAME": filename,
+                "files_0|to_posix_lines": "Yes",
+                "files_0|dbkey": dbkey,
+                "files_0|file_type": ext,
+                "files_0|file_data": {"session_id": session_id, "name": filename}}
+        tool_payload = {'tool_id': tool_id, 'inputs': inputs, 'history_id': history_id}
         _create(trans, tool_payload)
         trans.response.status = 204
 

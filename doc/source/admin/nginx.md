@@ -283,7 +283,7 @@ group as shown above.
 Galaxy includes a WSGI middleware that implements a tus server for which no configuration is needed.
 However the middleware ties up resources on the Galaxy server process, and uploads will be interrupted
 while Galaxy restarts. A more efficient alternative is to run an external server that implements the tus protocol.
-Any tus server that can send the post-finish hook to a URL will work. Here we will use [tusd](https://github.com/tus/tusd).
+Any tus server that can send the pre-finish hook to a URL will work. Here we will use [tusd](https://github.com/tus/tusd).
 Binaries can be downloaded from https://github.com/tus/tusd/releases/.
 
 In this example we will set up tusd to:
@@ -292,12 +292,12 @@ In this example we will set up tusd to:
 - store uploads in database/tmp (replace this with the value of new_file_path in your galaxy.yml config) (`-upload-dir=<galaxy_root>/database/tmp`)
 - send an event via http to /api/upload/_resumable_upload when an upload has finished (`-hooks-http=<galaxy_url>/api/upload/_resumable_upload`)
 - forward authentication headers in that event (`-hooks-http-forward-headers=X-Api-Key,sessioncookie`)
-- and enable only the post-finish event hook (`-hooks-enabled-events=post-finish`)
+- and enable only the pre-finish event hook (`-hooks-enabled-events=pre-finish`)
 
 The complete command is thus (replace `<galaxy_url>` with your Galaxy URL and `<galaxy_root>` with the path to your Galaxy installation):
 
 ```sh
-tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp -hooks-http=<galaxy_url>/api/upload/_resumable_upload -hooks-http-forward-headers=X-Api-Key,sessioncookie --hooks-enabled-events=post-finish
+tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp -hooks-http=<galaxy_url>/api/upload/_resumable_upload -hooks-http-forward-headers=X-Api-Key,sessioncookie --hooks-enabled-events=pre-finish
 ```
 
 We now need to set up nginx to proxy requests to /api/upload/resumable_upload to our tusd server.
