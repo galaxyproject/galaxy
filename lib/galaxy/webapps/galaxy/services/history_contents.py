@@ -60,6 +60,8 @@ from galaxy.schema.schema import (
     AnyHistoryContentItem,
     AnyJobStateSummary,
     ColletionSourceType,
+    ContentsNearResult,
+    ContentsNearStats,
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
@@ -693,7 +695,7 @@ class HistoriesContentsService(ServiceBase):
         hid: int,
         limit: int,
         since: Optional[datetime.datetime] = None,
-    ):
+    ) -> Optional[ContentsNearResult]:
         """
         Return {limit} history items "near" the {hid}. The {direction} determines what items
         are selected:
@@ -715,8 +717,7 @@ class HistoriesContentsService(ServiceBase):
             # If a timezone is provided (since.tzinfo is not None) we convert to UTC and remove tzinfo so that comparison with history.update_time is correct.
             since = since if since.tzinfo is None else since.astimezone(datetime.timezone.utc).replace(tzinfo=None)
             if history.update_time <= since:
-                trans.response.status = 204
-                return
+                return None
 
         order_by_dsc = self.build_order_by(self.history_contents_manager, 'hid-dsc')
         order_by_asc = self.build_order_by(self.history_contents_manager, 'hid-asc')
@@ -755,18 +756,14 @@ class HistoriesContentsService(ServiceBase):
                 matches_up=len(up_matches), matches_down=len(down_matches), total_matches_up=up_total_count,
                 total_matches_down=down_total_count)
 
-        trans.response.headers['matches'] = item_counts['matches']
-        trans.response.headers['matches_up'] = item_counts['matches_up']
-        trans.response.headers['matches_down'] = item_counts['matches_down']
-        trans.response.headers['total_matches'] = item_counts['total_matches']
-        trans.response.headers['total_matches_up'] = item_counts['total_matches_up']
-        trans.response.headers['total_matches_down'] = item_counts['total_matches_down']
-        trans.response.headers['max_hid'] = max_hid
-        trans.response.headers['min_hid'] = min_hid
-        trans.response.headers['history_size'] = str(history.disk_size)
-        trans.response.headers['history_empty'] = json.dumps(history.empty)  # convert to proper bool
-
-        return json.dumps(expanded)
+        stats = ContentsNearStats(
+            max_hid=max_hid,
+            min_hid=min_hid,
+            history_size=history.disk_size,
+            history_empty=history.empty,
+            **item_counts,
+        )
+        return ContentsNearResult(contents=expanded, stats=stats)
 
     def _get_limits(self, limit):
         q, r = divmod(limit, 2)

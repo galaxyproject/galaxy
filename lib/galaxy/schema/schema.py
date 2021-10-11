@@ -2540,6 +2540,29 @@ class HistoryContentsArchiveDryRunResult(BaseModel):
     Contains pairs of filepath/filename."""
     __root__: List[Tuple[str, str]]
 
+
+class ContentsNearStats(BaseModel):
+    matches: int
+    matches_up: int
+    matches_down: int
+    total_matches: int
+    total_matches_up: int
+    total_matches_down: int
+    max_hid: Optional[int] = None
+    min_hid: Optional[int] = None
+    history_size: str
+    history_empty: bool
+
+
+class HistoryContentsResult(Model):
+    __root__: List[AnyHistoryContentItem]
+
+
+class ContentsNearResult(BaseModel):
+    contents: HistoryContentsResult
+    stats: ContentsNearStats
+
+
 # Sharing -----------------------------------------------------------------
 
 
