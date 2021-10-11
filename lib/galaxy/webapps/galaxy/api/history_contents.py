@@ -584,6 +584,41 @@ class FastAPIHistoryContents:
         )
         return rval
 
+    @router.get(
+        '/api/histories/{history_id}/contents/archive/{id}',
+        summary='Build and return a compressed archive of the selected history contents.',
+    )
+    @router.get(
+        '/api/histories/{history_id}/contents/archive/{filename}.{format}',
+        summary='Build and return a compressed archive of the selected history contents.',
+    )
+    def archive(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        filename: Optional[str] = Query(
+            default=None,
+            description="The name that the Archive will have (defaults to history name).",
+        ),
+        format: Optional[str] = Query(
+            default="zip",
+            description="Output format of the archive.",
+            deprecated=True,  # Looks like is not really used?
+        ),
+        dry_run: Optional[bool] = Query(
+            default=True,
+            description="Whether to return the archive and file paths only (as JSON) and not an actual archive file.",
+        ),
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
+    ):
+        """Build and return a compressed archive of the selected history contents.
+
+        **Note**: this is a volatile endpoint and settings and behavior may change."""
+        archive = self.service.archive(trans, history_id, filter_query_params, filename, dry_run)
+        if isinstance(archive, HistoryContentsArchiveDryRunResult):
+            return archive
+        return StreamingResponse(archive.get_iterator(), headers=archive.get_headers(), media_type="application/zip")
+
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
 
