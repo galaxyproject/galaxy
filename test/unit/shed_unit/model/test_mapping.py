@@ -366,15 +366,10 @@ class TestRepository(BaseTest):
         user,
         user_factory,
     ):
-        metadata1 = repository_metadata_factory()
-        metadata2 = repository_metadata_factory()
-
         obj = cls_()
         obj.user = user
         obj.categories.append(repository_category_association)
         obj.ratings.append(repository_rating_association)
-        obj.downloadable_revisions.append(metadata1)
-        obj.metadata_revisions.append(metadata2)
         obj.roles.append(repository_role_association)
 
         reviewer1 = user_factory()
@@ -387,6 +382,16 @@ class TestRepository(BaseTest):
         review2.user = reviewer2
         review2.repository = obj
 
+        metadata1 = repository_metadata_factory()
+        metadata1.repository = obj
+        metadata1.downloadable = False
+
+        metadata2 = repository_metadata_factory()
+        metadata2.repository = obj
+        metadata2.downloadable = True
+
+        session.add_all([metadata1, metadata2])
+
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.user.id == user.id
@@ -395,6 +400,10 @@ class TestRepository(BaseTest):
             assert stored_obj.roles == [repository_role_association]
             assert are_same_entity_collections(stored_obj.reviews, [review1, review2])
             assert are_same_entity_collections(stored_obj.reviewers, [reviewer1, reviewer2])
+            assert are_same_entity_collections(stored_obj.metadata_revisions, [metadata1, metadata2])
+            assert stored_obj.downloadable_revisions == [metadata2]
+
+        delete_from_database(session, [reviewer1, reviewer2, review1, review2, metadata1, metadata2])
 
 
 class TestRepositoryCategoryAssociation(BaseTest):
