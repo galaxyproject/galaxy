@@ -95,6 +95,7 @@ import * as tus from "tus-js-client";
             cnf.error(cnf.error_file);
             return;
         }
+        const startTime = performance.now();
         const file = file_data.file;
         const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload`;
         const chunkSize = cnf.session.chunk_upload_size;
@@ -114,7 +115,11 @@ import * as tus from "tus-js-client";
                 cnf.progress(percentage);
             },
             onSuccess: function () {
-                console.log("Download %s from %s", upload.file.name, upload.url);
+                console.log(
+                    `Download ${upload.file.name} from ${upload.url} took ${
+                        (performance.now() - startTime) / 1000
+                    } seconds`
+                );
                 cnf.success({});
             },
         });
