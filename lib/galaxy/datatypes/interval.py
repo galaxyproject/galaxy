@@ -824,8 +824,8 @@ class Gff(Tabular, _RemoteCallMixin):
                 if not hdr or hdr == ['']:
                     continue
                 hdr0_parts = hdr[0].split()
-                if hdr0_parts[0] == '##gff-version' and not hdr0_parts[1].startswith('2'):
-                    return False
+                if hdr0_parts[0] == '##gff-version':
+                    return hdr0_parts[1].startswith('2')
                 # The gff-version header comment may have been stripped, so inspect the data
                 if hdr[0].startswith('#'):
                     continue
@@ -1507,7 +1507,7 @@ class ScIdx(Tabular):
                 else:
                     return False
             # Skip first line.
-            if count > 1:
+            if count >= 1:
                 items = line.split('\t')
                 if len(items) != 5:
                     return False
