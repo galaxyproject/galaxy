@@ -3,7 +3,11 @@ const path = require("path");
 // For a detailed explanation regarding each configuration property, visit:
 // https://jestjs.io/docs/en/configuration.html
 
-const modulesToTransform = ["bootstrap-vue/src/components/form-input", "rxjs/internal/scheduler/AsyncScheduler"].join("|");
+const modulesToTransform = [
+    "bootstrap-vue",
+    "rxjs/internal/scheduler/AsyncScheduler",
+    "@hirez_io"
+].join("|");
 
 module.exports = {
     // All imported modules in your tests should be mocked automatically
@@ -169,7 +173,7 @@ module.exports = {
 
     // A map from regular expressions to paths to transformers
     transform: {
-        [`(${modulesToTransform}).+\\.js$`]: "vue-jest",
+        // [`(${modulesToTransform}).+\\.js$`]: "vue-jest",
         ".*\\.(vue)$": "vue-jest",
         "^.+\\.js$": "babel-jest",
         "\\.yml$": "jest-transform-yaml",
