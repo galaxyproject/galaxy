@@ -49,7 +49,6 @@ class HDF5SummarizedExperiment(Data):
     def init_meta(self, dataset, copy_from=None):
         """Override parent init metadata."""
         Data.init_meta(self, dataset, copy_from=copy_from)
-        pass
 
     def generate_primary_file(self, dataset=None):
         """Generate primary file to represent dataset."""
