@@ -23,6 +23,7 @@ PACKAGE_DIRS=(
     objectstore
     job_metrics
     containers
+    files
     tool_util
     data
     job_execution
@@ -32,8 +33,8 @@ PACKAGE_DIRS=(
     app
     webapps
 )
-RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 1 0)
-RUN_MYPY=(1 1 1 1 1 1 1 1 1 1 1 1)
+RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 1 1 0)
+RUN_MYPY=(1 1 1 1 1 1 1 1 1 1 1 1 1)
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     package_dir=${PACKAGE_DIRS[$i]}
     run_tests=${RUN_TESTS[$i]}

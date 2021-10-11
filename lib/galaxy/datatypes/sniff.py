@@ -14,8 +14,10 @@ import sys
 import tempfile
 import urllib.request
 import zipfile
+from typing import Optional
 
 from galaxy import util
+from galaxy.files import ConfiguredFileSources
 from galaxy.util import compression_utils, stream_to_open_named_file
 from galaxy.util.checkers import (
     check_binary,
@@ -46,7 +48,7 @@ def sniff_with_cls(cls, fname):
         return False
 
 
-def stream_url_to_file(path, file_sources=None):
+def stream_url_to_file(path: str, file_sources: Optional[ConfiguredFileSources] = None):
     prefix = "url_paste"
     if file_sources and file_sources.looks_like_uri(path):
         file_source_path = file_sources.get_file_source_path(path)
