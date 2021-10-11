@@ -2533,6 +2533,13 @@ class DeleteHistoryContentResult(CustomHistoryItem):
         description="True if the item was successfully removed from disk.",
     )
 
+
+class HistoryContentsArchiveDryRunResult(BaseModel):
+    """The structure of the archive for debugging.
+
+    Contains pairs of filepath/filename."""
+    __root__: List[Tuple[str, str]]
+
 # Sharing -----------------------------------------------------------------
 
 

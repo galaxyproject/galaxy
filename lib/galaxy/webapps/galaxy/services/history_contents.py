@@ -63,6 +63,7 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
+    HistoryContentsArchiveDryRunResult,
     HistoryContentSource,
     HistoryContentType,
     JobSourceType,
@@ -71,7 +72,6 @@ from galaxy.schema.schema import (
     UpdateHistoryContentsBatchPayload,
 )
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.util.json import safe_dumps
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.webapps.galaxy.api.common import parse_serialization_params
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -579,9 +579,9 @@ class HistoriesContentsService(ServiceBase):
         self, trans,
         history_id: EncodedDatabaseIdField,
         filter_query_params: FilterQueryParams,
-        filename: str = '',
-        dry_run: bool = True,
-    ):
+        filename: Optional[str] = '',
+        dry_run: Optional[bool] = True,
+    ) -> Union[HistoryContentsArchiveDryRunResult, ZipstreamWrapper]:
         """
         Build and return a compressed archive of the selected history contents
 
@@ -672,8 +672,7 @@ class HistoriesContentsService(ServiceBase):
 
         # if dry_run, return the structure as json for debugging
         if dry_run:
-            trans.response.headers['Content-Type'] = 'application/json'
-            return safe_dumps(paths_and_files)
+            return HistoryContentsArchiveDryRunResult.parse_obj(paths_and_files)
 
         # create the archive, add the dataset files, then stream the archive as a download
         archive = ZipstreamWrapper(
@@ -683,9 +682,7 @@ class HistoriesContentsService(ServiceBase):
         )
         for file_path, archive_path in paths_and_files:
             archive.write(file_path, archive_path)
-
-        trans.response.headers.update(archive.get_headers())
-        return archive.response()
+        return archive
 
     def contents_near(
         self, trans,
