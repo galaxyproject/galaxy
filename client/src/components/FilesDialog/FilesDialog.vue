@@ -34,7 +34,8 @@
                 size="sm"
                 class="float-right ml-1 file-dialog-modal-ok"
                 variant="primary"
-                @click="fileMode ? finalize : selectDirectory(currentDirectory)"
+                id="ok-btn"
+                @click="fileMode ? finalize : selectLeaf(currentDirectory)"
                 :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())"
             >
                 {{ fileMode ? "Ok" : "Select this folder" }}
@@ -54,6 +55,7 @@ import { Model } from "./model";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
+
 
 library.add(faCaretLeft);
 export default {
@@ -141,7 +143,7 @@ export default {
             }
             if (record.isLeaf) {
                 // record is file
-                this.selectFile(record);
+                this.selectLeaf(record);
             } else {
                 // record is directory
                 // you cannot select entire root directory
@@ -173,7 +175,7 @@ export default {
                 this.model.unselectUnderPath(path);
             }
         },
-        selectFile(file, selectOnly = false) {
+        selectLeaf(file, selectOnly = false) {
             const selected = this.model.exists(file.id);
             if (selected) {
                 this.unselectPath(file.url, true);
@@ -208,7 +210,7 @@ export default {
                         const sub_record = this.parseItemFileMode(item);
                         if (sub_record.isLeaf) {
                             // select file under this path
-                            this.selectFile(sub_record, true);
+                            this.selectLeaf(sub_record, true);
                         } else {
                             // select subdirectory
                             this.selectedDirectories.push(sub_record);
