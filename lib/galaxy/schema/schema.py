@@ -1,5 +1,6 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
+import json
 import re
 from datetime import datetime
 from enum import Enum
@@ -2542,6 +2543,7 @@ class HistoryContentsArchiveDryRunResult(BaseModel):
 
 
 class ContentsNearStats(BaseModel):
+    """Stats used by the `contents_near` endpoint."""
     matches: int
     matches_up: int
     matches_down: int
@@ -2550,11 +2552,24 @@ class ContentsNearStats(BaseModel):
     total_matches_down: int
     max_hid: Optional[int] = None
     min_hid: Optional[int] = None
-    history_size: str
+    history_size: int
     history_empty: bool
+
+    def to_headers(self) -> Dict[str, str]:
+        """Converts all field values to json strings.
+
+        The headers values need to be json strings or updating the response
+        headers will raise encoding errors."""
+        headers = {}
+        for key, val in self:
+            headers[key] = json.dumps(val)
+        return headers
 
 
 class HistoryContentsResult(Model):
+    """Collection of history content items.
+    Can contain different views and kinds of items.
+    """
     __root__: List[AnyHistoryContentItem]
 
 

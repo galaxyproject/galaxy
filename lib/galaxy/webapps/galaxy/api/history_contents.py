@@ -2,6 +2,7 @@
 API operations on the contents of a history.
 """
 import logging
+from datetime import datetime
 from typing import (
     Any,
     Dict,
@@ -15,8 +16,10 @@ from fastapi import (
     Depends,
     Path,
     Query,
+    Request,
 )
-from starlette.responses import StreamingResponse
+from starlette import status
+from starlette.responses import Response, StreamingResponse
 
 from galaxy import util
 from galaxy.managers.context import ProvidesHistoryContext
@@ -32,6 +35,7 @@ from galaxy.schema.schema import (
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
     HistoryContentsArchiveDryRunResult,
+    HistoryContentsResult,
     HistoryContentType,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
@@ -280,6 +284,28 @@ def parse_index_jobs_summary_params(
     )
 
 
+def parse_content_filter_params(params: Dict[str, Any]) -> HistoryContentsFilterList:
+    """Alternative way of parsing query parameter for filtering history contents.
+
+    Parses parameters like: ?[field]-[operator]=[value]
+        Example: ?update_time-gt=2015-01-29
+
+    Currently used by the `contents_near` endpoint.
+    """
+    DEFAULT_OP = 'eq'
+    splitchar = '-'
+
+    result = []
+    for key, val in params.items():
+        attr = key
+        op = DEFAULT_OP
+        if splitchar in key:
+            attr, op = key.rsplit(splitchar, 1)
+        result.append([attr, op, val])
+
+    return result
+
+
 def get_update_permission_payload(payload: Dict[str, Any]) -> UpdateDatasetPermissionsPayload:
     """Coverts the generic payload dictionary into a UpdateDatasetPermissionsPayload model with custom parsing.
 
@@ -314,14 +340,14 @@ class FastAPIHistoryContents:
         legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-    ) -> List[AnyHistoryContentItem]:
+    ):
         """
         Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
 
         - The contents can be filtered and queried using the appropriate parameters.
         - The amount of information returned for each item can be customized.
 
-        .. note:: Anonymous users are allowed to get their current history contents.
+        **Note**: Anonymous users are allowed to get their current history contents.
         """
         items = self.service.index(
             trans,
@@ -499,13 +525,14 @@ class FastAPIHistoryContents:
         history_id: EncodedDatabaseIdField = HistoryIDPathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: UpdateHistoryContentsBatchPayload = Body(...),
-    ) -> List[AnyHistoryContentItem]:
+    ) -> HistoryContentsResult:
         """Batch update specific properties of a set items contained in the given History.
 
         If you provide an invalid/unknown property key the request will not fail, but no changes
         will be made to the items.
         """
-        return self.service.update_batch(trans, history_id, payload, serialization_params)
+        result = self.service.update_batch(trans, history_id, payload, serialization_params)
+        return HistoryContentsResult.parse_obj(result)
 
     @router.put(
         '/api/histories/{history_id}/contents/{id}',
@@ -618,6 +645,62 @@ class FastAPIHistoryContents:
         if isinstance(archive, HistoryContentsArchiveDryRunResult):
             return archive
         return StreamingResponse(archive.get_iterator(), headers=archive.get_headers(), media_type="application/zip")
+
+    @router.get(
+        '/api/histories/{history_id}/contents/near/{hid}/{limit}',
+        summary='Get content items around (above and below) a particular `HID`.',
+    )
+    def contents_near(
+        self,
+        request: Request,
+        response: Response,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        hid: int = Path(
+            ...,
+            title="Target HID",
+            description="The target `HID` to get content around it.",
+        ),
+        limit: int = Path(
+            ...,
+            description="The maximum number of content items to return above and below the target `HID`.",
+        ),
+        since: Optional[datetime] = Query(
+            default=None,
+            description=(
+                "A timestamp in ISO format to check if the history has changed since this particular date/time. "
+                "If it hasn't changed, no additional processing will be done and 204 status code will be returned."
+            ),
+        ),
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ) -> HistoryContentsResult:
+        """
+        This endpoint provides random access to a large history without having
+        to know exactly how many pages are in the final query. Pick a target HID
+        and filters, and the endpoint will get LIMIT counts above and below that
+        target regardless of how many gaps may exist in the HID due to
+        filtering.
+
+        It does 2 queries, one up and one down from the target hid with a
+        result size of limit. Additional counts for total matches of both seeks
+        provided in the http headers.
+
+        **Note**: This endpoint uses slightly different filter params syntax. Instead of using `q`/`qv` parameters
+                  it uses the following syntax for query parameters:
+                    ?[field]-[operator]=[value]
+                  Example:
+                    ?update_time-gt=2015-01-29
+        """
+        serialization_params.default_view = serialization_params.default_view or "betawebclient"
+        # Needed to parse arbitrary query parameter names
+        filter_params = parse_content_filter_params(request.query_params)
+        result = self.service.contents_near(
+            trans, history_id, serialization_params, filter_params, hid, limit, since,
+        )
+        if result is None:
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+        response.headers.update(result.stats.to_headers())
+        return result.contents
 
 
 class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
@@ -1083,7 +1166,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         else:
             since = None
 
-        filter_params = self._parse_rest_params(kwd)
+        filter_params = parse_content_filter_params(kwd)
         hid = int(hid)
         limit = int(limit)
 
@@ -1094,20 +1177,5 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             trans.response.status = 204
             return
         # Put stats in http headers
-        trans.response.headers.update(result.stats.dict())
+        trans.response.headers.update(result.stats.to_headers())
         return result.contents
-
-    # Parsing query string according to REST standards.
-    def _parse_rest_params(self, qdict: Dict[str, Any]) -> HistoryContentsFilterList:
-        DEFAULT_OP = 'eq'
-        splitchar = '-'
-
-        result = []
-        for key, val in qdict.items():
-            attr = key
-            op = DEFAULT_OP
-            if splitchar in key:
-                attr, op = key.rsplit(splitchar, 1)
-            result.append([attr, op, val])
-
-        return result
