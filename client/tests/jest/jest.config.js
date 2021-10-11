@@ -3,11 +3,7 @@ const path = require("path");
 // For a detailed explanation regarding each configuration property, visit:
 // https://jestjs.io/docs/en/configuration.html
 
-const modulesToTransform = [
-    "bootstrap-vue",
-    "rxjs/internal/scheduler/AsyncScheduler",
-    "@hirez_io"
-].join("|");
+const modulesToTransform = ["bootstrap-vue", "rxjs/internal/scheduler/AsyncScheduler", "@hirez_io"].join("|");
 
 module.exports = {
     // All imported modules in your tests should be mocked automatically
