@@ -693,7 +693,7 @@ class FastAPIHistoryContents:
         """
         serialization_params.default_view = serialization_params.default_view or "betawebclient"
         # Needed to parse arbitrary query parameter names
-        filter_params = parse_content_filter_params(request.query_params)
+        filter_params = parse_content_filter_params(request.query_params._dict)
         result = self.service.contents_near(
             trans, history_id, serialization_params, filter_params, hid, limit, since,
         )
