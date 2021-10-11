@@ -23,7 +23,7 @@
     "@fortawesome/vue-fontawesome": "^2.0.2",
     "@galaxyproject/bootstrap-tour": "^0.12.1",
     "@handsontable/vue": "^2.0.0-beta1",
-    "@hirez_io/observer-spy": "^2.0.0",
+    "@hirez_io/observer-spy": "^2.1.0",
     "@johmun/vue-tags-input": "^2.1.0",
     "@sentry/browser": "^5.20.1",
     "axios": "^0.21.1",
