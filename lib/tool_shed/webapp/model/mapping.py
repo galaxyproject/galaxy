@@ -84,10 +84,7 @@ mapper_registry.map_imperatively(Repository, Repository.table,
                                        order_by=desc(RepositoryMetadata.table.c.update_time)),
            roles=relation(RepositoryRoleAssociation, back_populates='repository'),
            reviews=relation(RepositoryReview, back_populates='repository'),
-           reviewers=relation(User,
-                              secondary=RepositoryReview.table,
-                              primaryjoin=(Repository.table.c.id == RepositoryReview.table.c.repository_id),
-                              secondaryjoin=(RepositoryReview.table.c.user_id == User.id))))
+           reviewers=relation(User, secondary=RepositoryReview.table, viewonly=True)))
 
 mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table,
        properties=dict(repository=relation(Repository),

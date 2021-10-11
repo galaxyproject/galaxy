@@ -362,13 +362,12 @@ class TestRepository(BaseTest):
         repository_rating_association,
         repository_metadata_factory,
         repository_role_association,
-        repository_review,
+        repository_review_factory,
+        user,
         user_factory,
     ):
         metadata1 = repository_metadata_factory()
         metadata2 = repository_metadata_factory()
-        user = user_factory()
-        # reviewer = user_factory()
 
         obj = cls_()
         obj.user = user
@@ -377,8 +376,16 @@ class TestRepository(BaseTest):
         obj.downloadable_revisions.append(metadata1)
         obj.metadata_revisions.append(metadata2)
         obj.roles.append(repository_role_association)
-        obj.reviews.append(repository_review)
-        # obj.reviewers.append(reviewer)  # TODO
+
+        reviewer1 = user_factory()
+        review1 = repository_review_factory()
+        review1.user = reviewer1
+        review1.repository = obj
+
+        reviewer2 = user_factory()
+        review2 = repository_review_factory()
+        review2.user = reviewer2
+        review2.repository = obj
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -386,9 +393,8 @@ class TestRepository(BaseTest):
             assert stored_obj.categories == [repository_category_association]
             assert stored_obj.ratings == [repository_rating_association]
             assert stored_obj.roles == [repository_role_association]
-            assert stored_obj.reviews == [repository_review]
-            # assert stored_obj.reviewers == [reviewer]  # TODO
-            # TODO: metadata_revisions, downloadable_revisions
+            assert are_same_entity_collections(stored_obj.reviews, [review1, review2])
+            assert are_same_entity_collections(stored_obj.reviewers, [reviewer1, reviewer2])
 
 
 class TestRepositoryCategoryAssociation(BaseTest):
@@ -982,6 +988,13 @@ def group_role_association_factory(model):
 def repository_metadata_factory(model):
     def make_instance(*args, **kwds):
         return model.RepositoryMetadata(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
+def repository_review_factory(model):
+    def make_instance(*args, **kwds):
+        return model.RepositoryReview(*args, **kwds)
     return make_instance
 
 
