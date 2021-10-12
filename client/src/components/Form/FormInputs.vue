@@ -8,9 +8,10 @@
                     :title="input.test_param.label"
                     :type="input.test_param.type"
                     :help="input.test_param.help"
+                    :refreshOnChange="false"
                     :attributes="input.test_param"
                     :backbonejs="true"
-                    @input="onChange"
+                    @change="onChange"
                 />
                 <FormNode
                     v-for="(caseDetails, caseId) in input.cases"
@@ -75,9 +76,10 @@
                 :type="input.type"
                 :error="input.error"
                 :help="input.help"
+                :refreshOnChange="input.refresh_on_change"
                 :attributes="input.attributes || input"
                 :backbonejs="true"
-                @input="onChange"
+                @change="onChange"
             />
         </div>
     </div>

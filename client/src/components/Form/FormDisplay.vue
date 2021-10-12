@@ -182,7 +182,7 @@ export default {
                 this.formIndex[name] = input;
             });
         },
-        onChangeForm(requiresRequest = true) {
+        onChangeForm() {
             this.formInputs = JSON.parse(JSON.stringify(this.formInputs));
             this.onCreateIndex();
         },
@@ -190,7 +190,7 @@ export default {
             this.formInputs = JSON.parse(JSON.stringify(this.inputs));
             this.onCreateIndex();
         },
-        onChange(requiresRequest = true) {
+        onChange(refreshOnChange) {
             this.onCreateIndex();
             const params = {};
             Object.entries(this.formIndex).forEach(([key, input]) => {
@@ -199,7 +199,7 @@ export default {
             if (JSON.stringify(params) != JSON.stringify(this.formData)) {
                 this.formData = params;
                 this.resetError();
-                this.$emit("onChange", params, requiresRequest);
+                this.$emit("onChange", params, refreshOnChange);
             }
         },
         onHighlight(validation, silent = false) {

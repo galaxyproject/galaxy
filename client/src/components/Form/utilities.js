@@ -69,7 +69,7 @@ export function matchCase(input, value) {
         }
     }
     return -1;
-};
+}
 
 /** Match server validation response to highlight errors
  * @param{dict}   response  - Nested dictionary with error messages

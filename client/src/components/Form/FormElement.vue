@@ -47,6 +47,10 @@ export default {
             type: String,
             default: null,
         },
+        refreshOnChange: {
+            type: Boolean,
+            default: false,
+        },
         help: {
             type: String,
             default: null,
@@ -71,6 +75,7 @@ export default {
             },
             set(val) {
                 this.$emit("input", val);
+                this.$emit("change", this.refreshOnChange);
             },
         },
         elementId() {

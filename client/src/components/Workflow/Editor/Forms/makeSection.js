@@ -44,8 +44,8 @@ function _makeRenameHelp(name_labels) {
             ${name_labels
                 .map(
                     (name_label) => `<li><strong>${name_label.name.replace(/\|/g, ".")}</strong>
-                                                         ${name_label.label ? `(${name_label.label})` : ""}
-                                             </li>`
+                                        ${name_label.label ? `(${name_label.label})` : ""}
+                                    </li>`
                 )
                 .join("")}
         </ul>
