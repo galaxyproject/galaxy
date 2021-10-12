@@ -25,6 +25,8 @@ SOFTWARE.
 import abc
 import os
 
+from typing import Set
+
 
 class AGPError(Exception):
     """ Exception raised for AGP related errors. """
@@ -339,7 +341,7 @@ class AGPLine(object, metaclass=abc.ABCMeta):
     checks that involve multiple lines should not be considered.
     """
 
-    allowed_comp_types = set()
+    allowed_comp_types = set() # type: Set[str]
 
     def __init__(self, fname, line_number, obj, obj_beg, obj_end, pid, comp_type):
         self.is_gap = None

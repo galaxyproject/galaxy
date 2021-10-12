@@ -5,6 +5,7 @@ is further subdivided into multiple data (e.g. columns from a line).
 import logging
 import re
 from urllib.parse import unquote_plus
+from typing import Dict
 
 from galaxy.datatypes.goldenpath import AGPFile
 from . import line
@@ -360,7 +361,7 @@ class GoldenPathDataProvider(DictDataProvider):
     '''
     Class that defines a data provider for AGP datasets.
     '''
-    settings = {}
+    settings = {} # type: Dict[str, str]
 
     def __init__(self, source, **kwargs):
         self.goldenpath = AGPFile(source)
