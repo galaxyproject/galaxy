@@ -55,7 +55,7 @@ RepositoryReview.table = Table("repository_review", metadata,
                                Column("deleted", Boolean, index=True, default=False))
 
 mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table, properties=dict(
-    repository=relation(Repository),
+    repository=relation(Repository, back_populates='metadata_revisions'),
     reviews=relation(RepositoryReview,
         viewonly=True,
         foreign_keys=[RepositoryReview.table.c.repository_id, RepositoryReview.table.c.changeset_revision],

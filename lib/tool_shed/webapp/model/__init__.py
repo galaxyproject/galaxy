@@ -368,7 +368,8 @@ class Repository(Base, Dictifiable, _HasTable):
         viewonly=True,
         order_by=lambda: desc(RepositoryMetadata.update_time))  # type: ignore
     metadata_revisions = relationship('RepositoryMetadata',
-        order_by=lambda: desc(RepositoryMetadata.update_time))  # type: ignore
+        order_by=lambda: desc(RepositoryMetadata.update_time),  # type: ignore
+        back_populates='repository')
     roles = relationship('RepositoryRoleAssociation', back_populates='repository')
     reviews = relationship('RepositoryReview', back_populates='repository')
     reviewers = relationship('User', secondary=lambda: RepositoryReview.table, viewonly=True)  # type: ignore
