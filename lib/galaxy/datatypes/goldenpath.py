@@ -24,7 +24,6 @@ SOFTWARE.
 
 import abc
 import os
-
 from typing import Set, Union
 
 
