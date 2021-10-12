@@ -54,11 +54,12 @@ RepositoryReview.table = Table("repository_review", metadata,
                                Column("rating", Integer, index=True),
                                Column("deleted", Boolean, index=True, default=False))
 
-mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table,
-       properties=dict(repository=relation(Repository),
-                       reviews=relation(RepositoryReview,
-                                        foreign_keys=[RepositoryMetadata.table.c.repository_id, RepositoryMetadata.table.c.changeset_revision],
-                                        primaryjoin=((RepositoryMetadata.table.c.repository_id == RepositoryReview.table.c.repository_id) & (RepositoryMetadata.table.c.changeset_revision == RepositoryReview.table.c.changeset_revision)))))
+mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table, properties=dict(
+    repository=relation(Repository),
+    reviews=relation(RepositoryReview,
+        foreign_keys=[RepositoryReview.table.c.repository_id, RepositoryReview.table.c.changeset_revision],
+        primaryjoin=((RepositoryReview.table.c.repository_id == RepositoryMetadata.table.c.repository_id) & (RepositoryReview.table.c.changeset_revision == RepositoryMetadata.table.c.changeset_revision)),
+        back_populates='repository_metadata')))
 
 mapper_registry.map_imperatively(RepositoryReview, RepositoryReview.table,
        properties=dict(repository=relation(Repository, back_populates='reviews'),
@@ -67,7 +68,9 @@ mapper_registry.map_imperatively(RepositoryReview, RepositoryReview.table,
                        # reset on a repository!
                        repository_metadata=relation(RepositoryMetadata,
                                                     foreign_keys=[RepositoryReview.table.c.repository_id, RepositoryReview.table.c.changeset_revision],
-                                                    primaryjoin=((RepositoryReview.table.c.repository_id == RepositoryMetadata.table.c.repository_id) & (RepositoryReview.table.c.changeset_revision == RepositoryMetadata.table.c.changeset_revision))),
+                                                    primaryjoin=((RepositoryReview.table.c.repository_id == RepositoryMetadata.table.c.repository_id) & (RepositoryReview.table.c.changeset_revision == RepositoryMetadata.table.c.changeset_revision)),
+                                                    back_populates='reviews',
+                                                    ),
                        user=relation(User, back_populates="repository_reviews"),
                        component_reviews=relation(ComponentReview,
                                                   primaryjoin=((RepositoryReview.table.c.id == ComponentReview.repository_review_id) & (ComponentReview.deleted == false())),

@@ -486,14 +486,48 @@ class TestRepositoryMetadata(BaseTest):
             assert stored_obj.includes_tool_dependencies == includes_tool_dependencies
             assert stored_obj.includes_workflows == includes_workflows
 
-    def test_relationships(self, session, cls_, repository, repository_review):
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        repository,
+        repository_review_factory,
+        user,
+    ):
+
         obj = cls_()
         obj.repository = repository
+        obj.changeset_revision = 'nonempty'
+
+        # create 3 reviews
+        review1 = repository_review_factory()
+        review2 = repository_review_factory()
+        review3 = repository_review_factory()
+
+        # set the same user for all reviews
+        review1.user = user
+        review2.user = user
+        review3.user = user
+
+        # set the same repository for all reviews
+        review1.repository = obj.repository
+        review2.repository = obj.repository
+        review3.repository = obj.repository
+
+        # set the same changeset for reviews 1,2
+        review1.changeset_revision = obj.changeset_revision
+        review2.changeset_revision = obj.changeset_revision
+        review3.changeset_revision = 'something else'  # this won't be in reviews for this metadata
+
+        # add to session
+        session.add(review1)
+        session.add(review2)
+        session.add(review3)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.repository.id == repository.id
-            # TODO broken: has both review and reviews due to mistake in backref
+            assert are_same_entity_collections(stored_obj.reviews, [review1, review2])
 
 
 class TestRepositoryRatingAssociation(BaseTest):
