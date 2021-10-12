@@ -5,6 +5,8 @@ import os
 import shutil
 from tempfile import mkdtemp
 
+from .driver_util import GalaxyTestDriver
+
 REQUIRED_ROLE = "user@bx.psu.edu"
 REQUIRED_GROUP = "fs_test_group"
 
@@ -32,6 +34,8 @@ def create_file_source_config_file_on(temp_dir, root_dir):
 
 
 class PosixFileSourceSetup:
+    _test_driver: GalaxyTestDriver
+    root_dir: str
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -62,7 +66,3 @@ class PosixFileSourceSetup:
             f.write("b\n")
 
         return root
-
-    def setUp(self):
-        super().setUp()
-        self._write_file_fixtures()

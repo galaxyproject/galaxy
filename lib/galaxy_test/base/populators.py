@@ -51,6 +51,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    List,
     NamedTuple,
     Optional,
 )
@@ -311,7 +312,7 @@ class BaseDatasetPopulator(BasePopulator):
             raise TimeoutAssertionError(message)
 
         if assert_ok:
-            return self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
+            self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
 
     def wait_for_job(self, job_id: str, assert_ok: bool = False, timeout: timeout_type = DEFAULT_TIMEOUT):
         return wait_on_state(lambda: self.get_job_details(job_id), desc="job state", assert_ok=assert_ok, timeout=timeout)
@@ -324,7 +325,7 @@ class BaseDatasetPopulator(BasePopulator):
         for active_job in active_jobs:
             self.cancel_job(active_job["id"])
 
-    def history_jobs(self, history_id: str) -> dict:
+    def history_jobs(self, history_id: str) -> List[Dict[str, Any]]:
         query_params = {"history_id": history_id, "order_by": "create_time"}
         jobs_response = self._get("jobs", query_params)
         assert jobs_response.status_code == 200
@@ -346,7 +347,7 @@ class BaseDatasetPopulator(BasePopulator):
         delete_response = self._delete(f"histories/{history_id}/contents/{content_id}")
         return delete_response
 
-    def create_tool_from_path(self, tool_path: str) -> Response:
+    def create_tool_from_path(self, tool_path: str) -> Dict[str, Any]:
         tool_directory = os.path.dirname(os.path.abspath(tool_path))
         payload = dict(
             src="from_path",
@@ -355,7 +356,7 @@ class BaseDatasetPopulator(BasePopulator):
         )
         return self._create_tool_raw(payload)
 
-    def create_tool(self, representation, tool_directory: Optional[str] = None) -> Response:
+    def create_tool(self, representation, tool_directory: Optional[str] = None) -> Dict[str, Any]:
         if isinstance(representation, dict):
             representation = json.dumps(representation)
         payload = dict(
@@ -364,7 +365,7 @@ class BaseDatasetPopulator(BasePopulator):
         )
         return self._create_tool_raw(payload)
 
-    def _create_tool_raw(self, payload) -> Response:
+    def _create_tool_raw(self, payload) -> Dict[str, Any]:
         try:
             create_response = self._post("dynamic_tools", data=payload, admin=True)
         except TypeError:
@@ -395,7 +396,7 @@ class BaseDatasetPopulator(BasePopulator):
         history_id = None
 
         def wrap_up():
-            if cleanup and cancel_executions:
+            if cleanup and cancel_executions and history_id:
                 self.cancel_history_jobs(history_id)
 
         try:
@@ -644,13 +645,13 @@ class BaseDatasetPopulator(BasePopulator):
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
-    def validate_dataset(self, history_id, dataset_id):
+    def validate_dataset(self, history_id: str, dataset_id: str) -> Dict[str, Any]:
         url = f"histories/{history_id}/contents/{dataset_id}/validate"
-        update_response = self.galaxy_interactor._put(url, {})
+        update_response = self._put(url)
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
-    def validate_dataset_and_wait(self, history_id, dataset_id):
+    def validate_dataset_and_wait(self, history_id, dataset_id) -> Optional[str]:
         self.validate_dataset(history_id, dataset_id)
 
         def validated():
@@ -695,19 +696,19 @@ class BaseDatasetPopulator(BasePopulator):
             assert "job_id" in job_desc
             return self.wait_for_job(job_desc["job_id"])
 
-    def export_url(self, history_id, data, check_download=True):
+    def export_url(self, history_id: str, data, api_key: str, check_download: bool = True) -> str:
         put_response = self.prepare_export(history_id, data)
         response = put_response.json()
         api_asserts.assert_has_keys(response, "download_url")
         download_url = response["download_url"]
 
         if check_download:
-            self.get_export_url(download_url)
+            self.get_export_url(download_url, api_key)
 
         return download_url
 
-    def get_export_url(self, export_url):
-        full_download_url = f"{export_url}?key={self._api_key}"
+    def get_export_url(self, export_url, api_key) -> Response:
+        full_download_url = f"{export_url}?key={api_key}"
         download_response = self._get(full_download_url)
         api_asserts.assert_status_code_is(download_response, 200)
         return download_response
@@ -764,7 +765,7 @@ class BaseDatasetPopulator(BasePopulator):
 
     def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, url, api_key):
         # Export the history.
-        download_path = self.export_url(history_id, export_kwds, check_download=True)
+        download_path = self.export_url(history_id, export_kwds, api_key, check_download=True)
 
         # Create download for history
         full_download_url = f"{url}{download_path}?key={api_key}"
@@ -826,6 +827,8 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
 
 
 class BaseWorkflowPopulator(BasePopulator):
+    dataset_populator: BaseDatasetPopulator
+    dataset_collection_populator: 'BaseDatasetCollectionPopulator'
 
     def load_workflow(self, name: str, content: str = workflow_str, add_pja=False) -> dict:
         workflow = json.loads(content)
@@ -1062,7 +1065,7 @@ class BaseWorkflowPopulator(BasePopulator):
         if history_id is None:
             history_id = self.dataset_populator.new_history()
         inputs, label_map, has_uploads = load_data_dict(history_id, test_data, self.dataset_populator, self.dataset_collection_populator)
-        workflow_request = dict(
+        workflow_request: Dict[str, Any] = dict(
             history=f"hist_id={history_id}",
             workflow_id=workflow_id,
         )
@@ -1403,6 +1406,7 @@ class LibraryPopulator:
 
 
 class BaseDatasetCollectionPopulator:
+    dataset_populator: BaseDatasetPopulator
 
     def create_list_from_pairs(self, history_id, pairs, name="Dataset Collection from pairs"):
         return self.create_nested_collection(history_id=history_id,
@@ -1517,7 +1521,6 @@ class BaseDatasetCollectionPopulator:
             return self.__create_payload_collection(*args, **kwds)
 
     def __create_payload_fetch(self, history_id, collection_type, **kwds):
-        files = []
         contents = None
         if "contents" in kwds:
             contents = kwds["contents"]
@@ -1560,10 +1563,6 @@ class BaseDatasetCollectionPopulator:
 
         name = kwds.get("name", "Test Dataset Collection")
 
-        files_request_part = {}
-        for i, content in enumerate(files):
-            files_request_part["files_%d|file_data" % i] = StringIO(content)
-
         targets = [{
             "destination": {"type": "hdca"},
             "elements": elements,
@@ -1573,7 +1572,6 @@ class BaseDatasetCollectionPopulator:
         payload = dict(
             history_id=history_id,
             targets=json.dumps(targets),
-            __files=files_request_part,
         )
         return payload
 
@@ -1804,7 +1802,7 @@ class GiHttpMixin:
     def _api_url(self):
         return self._gi.url
 
-    def _get(self, route, data=None):
+    def _get(self, route, data=None, headers=None, admin=False) -> Response:
         if data is None:
             data = {}
         return self._gi.make_get_request(self._url(route), data=data)
@@ -1837,7 +1835,7 @@ class GiHttpMixin:
         return f"{self._api_url()}/{route}"
 
 
-class GiDatasetPopulator(BaseDatasetPopulator, GiHttpMixin):
+class GiDatasetPopulator(GiHttpMixin, BaseDatasetPopulator):
 
     """Implementation of BaseDatasetPopulator backed by bioblend."""
 
@@ -1846,7 +1844,7 @@ class GiDatasetPopulator(BaseDatasetPopulator, GiHttpMixin):
         self._gi = gi
 
 
-class GiDatasetCollectionPopulator(BaseDatasetCollectionPopulator, GiHttpMixin):
+class GiDatasetCollectionPopulator(GiHttpMixin, BaseDatasetCollectionPopulator):
 
     """Implementation of BaseDatasetCollectionPopulator backed by bioblend."""
 
@@ -1861,7 +1859,7 @@ class GiDatasetCollectionPopulator(BaseDatasetCollectionPopulator, GiHttpMixin):
         return create_response
 
 
-class GiWorkflowPopulator(BaseWorkflowPopulator, GiHttpMixin):
+class GiWorkflowPopulator(GiHttpMixin, BaseWorkflowPopulator):
 
     """Implementation of BaseWorkflowPopulator backed by bioblend."""
 

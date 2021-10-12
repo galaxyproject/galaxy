@@ -14,17 +14,17 @@ import sys
 import tempfile
 import urllib.request
 import zipfile
-from typing import Optional
+from typing import Callable, Dict, IO, Optional
+
+from typing_extensions import Protocol
 
 from galaxy import util
 from galaxy.files import ConfiguredFileSources
 from galaxy.util import compression_utils, stream_to_open_named_file
 from galaxy.util.checkers import (
     check_binary,
-    check_bz2,
-    check_gzip,
     check_html,
-    check_zip,
+    COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
 
@@ -621,7 +621,7 @@ def disable_parent_class_sniffing(klass):
 
 
 def handle_compressed_file(
-        filename,
+        filename: str,
         datatypes_registry,
         ext='auto',
         tmp_prefix='sniff_uncompress_',
@@ -650,7 +650,7 @@ def handle_compressed_file(
     compressed_type = None
     keep_compressed = False
     is_valid = False
-    uncompressed = filename
+    uncompressed_path = filename
     tmp_dir = tmp_dir or os.path.dirname(filename)
     for key, check_compressed_function in COMPRESSION_CHECK_FUNCTIONS:
         is_compressed, is_valid = check_compressed_function(filename, check_content=check_content)
@@ -670,6 +670,7 @@ def handle_compressed_file(
             keep_compressed = getattr(datatype, 'compressed', False)
     # don't waste time decompressing if we sniff invalid contents
     if is_compressed and is_valid and auto_decompress and not keep_compressed:
+        assert compressed_type  # Tell type checker is_compressed will only be true if compressed_type is also set.
         with tempfile.NamedTemporaryFile(prefix=tmp_prefix, dir=tmp_dir, delete=False) as uncompressed:
             compressed_file = DECOMPRESSION_FUNCTIONS[compressed_type](filename)
             # TODO: it'd be ideal to convert to posix newlines and space-to-tab here as well
@@ -683,15 +684,15 @@ def handle_compressed_file(
                 if not chunk:
                     break
                 uncompressed.write(chunk)
-        uncompressed = uncompressed.name
+        uncompressed_path = uncompressed.name
         compressed_file.close()
         if in_place:
             # Replace the compressed file with the uncompressed file
-            shutil.move(uncompressed, filename)
-            uncompressed = filename
+            shutil.move(uncompressed_path, filename)
+            uncompressed_path = filename
     elif not is_compressed or not check_content:
         is_valid = True
-    return is_valid, ext, uncompressed, compressed_type
+    return is_valid, ext, uncompressed_path, compressed_type
 
 
 def handle_uploaded_dataset_file(*args, **kwds):
@@ -742,6 +743,7 @@ def handle_uploaded_dataset_file_internal(
 
         if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
+            convert_fxn: Callable
             if convert_spaces_to_tabs:
                 convert_fxn = convert_newlines_sep2tabs
             else:
@@ -766,8 +768,15 @@ def handle_uploaded_dataset_file_internal(
 
 
 AUTO_DETECT_EXTENSIONS = ['auto']  # should 'data' also cause auto detect?
-DECOMPRESSION_FUNCTIONS = dict(gz=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
-COMPRESSION_CHECK_FUNCTIONS = [('gz', check_gzip), ('bz2', check_bz2), ('zip', check_zip)]
+
+
+class Decompress(Protocol):
+
+    def __call__(self, path: str) -> IO[bytes]:
+        ...
+
+
+DECOMPRESSION_FUNCTIONS: Dict[str, Decompress] = dict(gz=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
 
 
 class InappropriateDatasetContentError(Exception):

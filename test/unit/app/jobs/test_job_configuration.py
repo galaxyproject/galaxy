@@ -113,14 +113,14 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
         except FileNotFoundError:
             dir_path = os.path.dirname(path)
             if os.path.exists(dir_path):
-                contents = os.listdir(dir_path)
-                raise Exception(f"Failed to find file {path}, directory {dir_path} exists and contains {contents}")
+                dir_contents = os.listdir(dir_path)
+                raise Exception(f"Failed to find file {path}, directory {dir_path} exists and contains {dir_contents}")
             else:
                 dir_that_exists = dir_path
                 while not os.path.exists(dir_that_exists):
                     dir_that_exists = os.path.dirname(dir_that_exists)
-                contents = os.listdir(dir_that_exists)
-                raise Exception(f"Failed to find file {path}, directory {dir_path} does not exist - {dir_that_exists} is the first root that exists and contains {contents}.")
+                dir_contents = os.listdir(dir_that_exists)
+                raise Exception(f"Failed to find file {path}, directory {dir_path} does not exist - {dir_that_exists} is the first root that exists and contains {dir_contents}.")
         if template:
             contents = contents.format(**template)
         self._write_config(contents)

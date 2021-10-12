@@ -3,6 +3,7 @@ import operator
 import os
 import shutil
 from tempfile import mkdtemp
+from typing import ClassVar
 
 from galaxy.exceptions import error_codes
 from galaxy_test.base.api_asserts import assert_error_code_is, assert_error_message_contains
@@ -18,6 +19,10 @@ USER_EMAIL = 'user@bx.psu.edu'
 
 
 class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
+    library_dir: ClassVar[str]
+    user_library_dir: ClassVar[str]
+    ftp_upload_dir: ClassVar[str]
+    root: ClassVar[str]
 
     framework_tool_and_types = True
 
@@ -68,7 +73,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
 
         # Get a 404 if the directory doesn't exist.
         index = self.galaxy_interactor.get("remote_files?target=userdir").json()
-        assert_error_code_is(index, error_codes.USER_OBJECT_NOT_FOUND)
+        assert_error_code_is(index, error_codes.error_codes_by_name['USER_OBJECT_NOT_FOUND'])
 
         users_dir = os.path.join(self.user_library_dir, USER_EMAIL)
         os.mkdir(users_dir)
@@ -264,20 +269,20 @@ class RemoteFilesNotConfiguredIntegrationTestCase(integration_util.IntegrationTe
 
     def test_configuration_statuses(self):
         importfiles = self.galaxy_interactor.get("remote_files?target=importdir")
-        assert_error_code_is(importfiles, error_codes.CONFIG_DOES_NOT_ALLOW)
+        assert_error_code_is(importfiles, error_codes.error_codes_by_name['CONFIG_DOES_NOT_ALLOW'])
         assert_error_message_contains(importfiles, 'import directory')
 
         importfiles = self.galaxy_interactor.get("remote_files?target=ftpdir")
-        assert_error_code_is(importfiles, error_codes.CONFIG_DOES_NOT_ALLOW)
+        assert_error_code_is(importfiles, error_codes.error_codes_by_name['CONFIG_DOES_NOT_ALLOW'])
         assert_error_message_contains(importfiles, 'FTP directories')
 
         importfiles = self.galaxy_interactor.get("remote_files?target=userdir")
-        assert_error_code_is(importfiles, error_codes.CONFIG_DOES_NOT_ALLOW)
+        assert_error_code_is(importfiles, error_codes.error_codes_by_name['CONFIG_DOES_NOT_ALLOW'])
         assert_error_message_contains(importfiles, 'user directories')
 
         # invalid request parameter waitwhat...
         importfiles = self.galaxy_interactor.get("remote_files?target=waitwhat")
-        assert_error_code_is(importfiles, error_codes.USER_REQUEST_INVALID_PARAMETER)
+        assert_error_code_is(importfiles, error_codes.error_codes_by_name['USER_REQUEST_INVALID_PARAMETER'])
 
 
 def _write_file_fixtures(tmp, root):

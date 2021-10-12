@@ -9,6 +9,7 @@ from ._framework import ApiTestCase
 
 
 class DatasetsApiTestCase(ApiTestCase):
+    history_id: str
 
     def setUp(self):
         super().setUp()
@@ -28,15 +29,15 @@ class DatasetsApiTestCase(ApiTestCase):
         assert index_response[0]['id'] == hda_id
         hdca_id = self.dataset_collection_populator.create_list_in_history(self.history_id,
                                                                            contents=["1\n2\n3"]).json()['id']
-        payload = {'limit': 3, 'offset': 0}
-        index_response = self._get("datasets", payload).json()
+        index_payload_1 = {'limit': 3, 'offset': 0}
+        index_response = self._get("datasets", index_payload_1).json()
         assert len(index_response) == 3
         assert index_response[0]['id'] == hdca_id
         assert index_response[0]['history_content_type'] == 'dataset_collection'
         assert index_response[2]['id'] == hda_id
         assert index_response[2]['history_content_type'] == 'dataset'
-        payload = {'limit': 2, 'offset': 0, 'q': ['history_content_type'], 'qv': ['dataset']}
-        index_response = self._get("datasets", payload).json()
+        index_payload_2 = {'limit': 2, 'offset': 0, 'q': ['history_content_type'], 'qv': ['dataset']}
+        index_response = self._get("datasets", index_payload_2).json()
         assert index_response[1]['id'] == hda_id
 
     def test_search_by_tag(self):

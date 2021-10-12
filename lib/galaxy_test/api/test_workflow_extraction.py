@@ -8,6 +8,7 @@ from .test_workflows import BaseWorkflowsApiTestCase
 
 
 class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
+    history_id: str
 
     def setUp(self):
         super().setUp()
@@ -179,7 +180,7 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
 
     @skip_without_tool("collection_paired_test")
     def test_extract_workflows_with_dataset_collections(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1
@@ -213,7 +214,7 @@ test_data:
 
     @skip_without_tool("cat_collection")
     def test_subcollection_mapping(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1
@@ -254,7 +255,7 @@ test_data:
     @skip_without_tool("cat_list")
     @skip_without_tool("collection_creates_dynamic_nested")
     def test_subcollection_reduction(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   creates_nested_list:
@@ -276,7 +277,7 @@ steps:
 
     @skip_without_tool("collection_split_on_column")
     def test_extract_workflow_with_output_collections(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1
@@ -323,7 +324,7 @@ test_data:
     @skip_without_tool("collection_creates_pair")
     @summarize_instance_history_on_error
     def test_extract_with_mapped_output_collections(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1

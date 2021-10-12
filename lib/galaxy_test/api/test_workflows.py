@@ -1,7 +1,9 @@
 import json
 import os
+import shutil
 import time
 from json import dumps
+from tempfile import mkdtemp
 from typing import Any, cast, Dict, Union
 from uuid import uuid4
 
@@ -4402,19 +4404,22 @@ input_c:
 
     def test_workflow_from_path_requires_admin(self):
         # There are two ways to import workflows from paths, just verify both require an admin.
-        workflow_directory = self._test_driver.mkdtemp()
-        workflow_path = os.path.join(workflow_directory, "workflow.yml")
-        with open(workflow_path, "w") as f:
-            f.write(WORKFLOW_NESTED_REPLACEMENT_PARAMETER)
-        import_response = self.workflow_populator.import_workflow_from_path_raw(workflow_path)
-        self._assert_status_code_is(import_response, 403)
-        self._assert_error_code_is(import_response, error_codes.error_codes_by_name["ADMIN_REQUIRED"])
+        workflow_directory = mkdtemp()
+        try:
+            workflow_path = os.path.join(workflow_directory, "workflow.yml")
+            with open(workflow_path, "w") as f:
+                f.write(WORKFLOW_NESTED_REPLACEMENT_PARAMETER)
+            import_response = self.workflow_populator.import_workflow_from_path_raw(workflow_path)
+            self._assert_status_code_is(import_response, 403)
+            self._assert_error_code_is(import_response, error_codes.error_codes_by_name["ADMIN_REQUIRED"])
 
-        path_as_uri = f"file://{workflow_path}"
-        import_data = dict(archive_source=path_as_uri)
-        import_response = self._post("workflows", data=import_data)
-        self._assert_status_code_is(import_response, 403)
-        self._assert_error_code_is(import_response, error_codes.error_codes_by_name["ADMIN_REQUIRED"])
+            path_as_uri = f"file://{workflow_path}"
+            import_data = dict(archive_source=path_as_uri)
+            import_response = self._post("workflows", data=import_data)
+            self._assert_status_code_is(import_response, 403)
+            self._assert_error_code_is(import_response, error_codes.error_codes_by_name["ADMIN_REQUIRED"])
+        finally:
+            shutil.rmtree(workflow_directory)
 
     def _invoke_paused_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")

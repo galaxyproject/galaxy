@@ -1,6 +1,7 @@
 """Integration tests for dependency resolution."""
 import os
 from tempfile import mkdtemp
+from typing import ClassVar
 
 from galaxy_test.base.populators import (
     DatasetPopulator,
@@ -15,6 +16,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
     """Test conda dependency resolution through API."""
 
     framework_tool_and_types = True
+    conda_tmp_prefix: ClassVar[str]
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
