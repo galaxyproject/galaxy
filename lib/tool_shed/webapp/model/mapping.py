@@ -68,6 +68,7 @@ mapper_registry.map_imperatively(RepositoryReview, RepositoryReview.table,
                        # Keep in mind that repository_metadata records can be removed from the database for certain change set revisions when metadata is being
                        # reset on a repository!
                        repository_metadata=relation(RepositoryMetadata,
+                                                    viewonly=True,
                                                     foreign_keys=[RepositoryReview.table.c.repository_id, RepositoryReview.table.c.changeset_revision],
                                                     primaryjoin=((RepositoryReview.table.c.repository_id == RepositoryMetadata.table.c.repository_id) & (RepositoryReview.table.c.changeset_revision == RepositoryMetadata.table.c.changeset_revision)),
                                                     back_populates='reviews',
