@@ -1,5 +1,6 @@
 import Backbone from "backbone";
 import { filesDialog } from "utils/data";
+import { breadcrump } from "utils/mountBreadcrump";
 import _l from "utils/localization";
 import Ui from "mvc/ui/ui-misc";
 
@@ -51,7 +52,14 @@ var View = Backbone.View.extend({
                 this.$text.text(value.url);
             }
         } else {
-            this.$text.text("select...");
+            breadcrump(
+                ".ui-uri-preview",
+                (uri) => {
+                    this._handleRemoteFilesUri(uri);
+                },
+
+                { test_props: true }
+            );
         }
     },
 
