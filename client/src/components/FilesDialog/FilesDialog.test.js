@@ -5,10 +5,8 @@ import { shallowMount, createLocalVue } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { BButton } from "bootstrap-vue";
 import MockAdapter from "axios-mock-adapter";
-import Vue from "vue";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
 
 import {
     rootId,
@@ -117,7 +115,7 @@ describe("FilesDialog, file mode", () => {
         // assert that OK button is active
         expect(wrapper.vm.hasValue).toBe(true);
 
-        //    unselect each file
+        // unselect each file
         applyForEachFile((file) => utils.clickOn(file));
 
         // assert that OK button is disabled
@@ -219,11 +217,9 @@ describe("FilesDialog, directory mode", () => {
     });
 
     it("should select folders", async () => {
-        // console.log(wrapper.html());
         const btn = wrapper.find("#ok-btn");
 
         expect(btn.attributes().disabled).toBe("disabled");
-        // const okBtn = buttons.find((btn) => btn.getAttribute("id") === "ok-btn");
         await utils.open_root_folder(false);
         const folder = utils.getRenderedDirectory(directoryId);
         await utils.getTable().$emit("open", folder);

@@ -35,7 +35,7 @@
                 class="float-right ml-1 file-dialog-modal-ok"
                 variant="primary"
                 id="ok-btn"
-                @click="fileMode ? finalize : selectLeaf(currentDirectory)"
+                @click="fileMode ? finalize() : selectLeaf(currentDirectory)"
                 :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())"
             >
                 {{ fileMode ? "Ok" : "Select this folder" }}
@@ -227,12 +227,7 @@ export default {
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         finalize: function () {
-            let results;
-            if (this.fileMode) {
-                results = this.model.finalize();
-            } else {
-                results = this.currentDirectory.url;
-            }
+            const results = this.model.finalize();
             this.modalShow = false;
             this.callback(results);
         },
