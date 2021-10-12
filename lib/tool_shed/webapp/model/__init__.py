@@ -17,6 +17,7 @@ from sqlalchemy import (
     Integer,
     not_,
     String,
+    Table,
     TEXT,
     true,
     UniqueConstraint,
@@ -48,8 +49,6 @@ log = logging.getLogger(__name__)
 WEAK_HG_REPO_CACHE: Mapping['Repository', Any] = weakref.WeakKeyDictionary()
 
 if TYPE_CHECKING:
-    from sqlalchemy.schema import Table
-
     class _HasTable:
         table: Table
 else:
@@ -533,50 +532,6 @@ class Repository(Base, Dictifiable, _HasTable):
         return rval
 
 
-class RepositoryMetadata(Dictifiable, _HasTable):
-    dict_collection_visible_keys = ['id', 'repository_id', 'numeric_revision', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
-                                    'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
-                                    'includes_tools_for_display_in_tool_panel', 'includes_workflows']
-    dict_element_visible_keys = ['id', 'repository_id', 'numeric_revision', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
-                                 'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
-                                 'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'repository_dependencies']
-
-    def __init__(self, id=None, repository_id=None, numeric_revision=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False,
-                 downloadable=False, missing_test_components=None, tools_functionally_correct=False, test_install_error=False,
-                 has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False,
-                 includes_workflows=False):
-        self.id = id
-        self.repository_id = repository_id
-        self.numeric_revision = numeric_revision
-        self.changeset_revision = changeset_revision
-        self.metadata = metadata
-        self.tool_versions = tool_versions
-        self.malicious = malicious
-        self.downloadable = downloadable
-        self.missing_test_components = missing_test_components
-        self.has_repository_dependencies = has_repository_dependencies
-        # We don't consider the special case has_repository_dependencies_only_if_compiling_contained_td here.
-        self.includes_datatypes = includes_datatypes
-        self.includes_tools = includes_tools
-        self.includes_tool_dependencies = includes_tool_dependencies
-        self.includes_workflows = includes_workflows
-
-    @property
-    def includes_tools_for_display_in_tool_panel(self):
-        if self.metadata:
-            tool_dicts = self.metadata.get('tools', [])
-            for tool_dict in tool_dicts:
-                if tool_dict.get('add_to_tool_panel', True):
-                    return True
-        return False
-
-    @property
-    def repository_dependencies(self):
-        if self.has_repository_dependencies:
-            return [repository_dependency for repository_dependency in self.metadata['repository_dependencies']['repository_dependencies']]
-        return []
-
-
 class RepositoryReview(Base, Dictifiable, _HasTable):
     __tablename__ = 'repository_review'
 
@@ -751,6 +706,86 @@ class Tag(Base, _HasTable):
 
     def __str__(self):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type, self.parent_id, self.name)
+
+
+# The RepositoryMetadata model is mapped imperatively (for details see discussion in PR #12064).
+# TLDR: a declaratively-mapped class cannot have a .metadata attribute (it is used by SQLAlchemy's DeclarativeBase).
+
+class RepositoryMetadata(Dictifiable, _HasTable):
+    # Once the class has been mapped, all Column items in this table will be available
+    # as instrumented class attributes on RepositoryMetadata.
+    table = Table('repository_metadata', mapper_registry.metadata,
+        Column('id', Integer, primary_key=True),
+        Column('create_time', DateTime, default=now),
+        Column('update_time', DateTime, default=now, onupdate=now),
+        Column('repository_id', Integer, ForeignKey('repository.id'), index=True),
+        Column('changeset_revision', TrimmedString(255), index=True),
+        Column('numeric_revision', Integer, index=True),
+        Column('metadata', MutableJSONType, nullable=True),
+        Column('tool_versions', MutableJSONType, nullable=True),
+        Column('malicious', Boolean, default=False),
+        Column('downloadable', Boolean, default=True),
+        Column('missing_test_components', Boolean, default=False, index=True),
+        Column('has_repository_dependencies', Boolean, default=False, index=True),
+        Column('includes_datatypes', Boolean, default=False, index=True),
+        Column('includes_tools', Boolean, default=False, index=True),
+        Column('includes_tool_dependencies', Boolean, default=False, index=True),
+        Column('includes_workflows', Boolean, default=False, index=True))
+
+    dict_collection_visible_keys = ['id', 'repository_id', 'numeric_revision', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
+                                    'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
+                                    'includes_tools_for_display_in_tool_panel', 'includes_workflows']
+    dict_element_visible_keys = ['id', 'repository_id', 'numeric_revision', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
+                                 'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
+                                 'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'repository_dependencies']
+
+    def __init__(self, id=None, repository_id=None, numeric_revision=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False,
+                 downloadable=False, missing_test_components=None, tools_functionally_correct=False, test_install_error=False,
+                 has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False,
+                 includes_workflows=False):
+        self.id = id
+        self.repository_id = repository_id
+        self.numeric_revision = numeric_revision
+        self.changeset_revision = changeset_revision
+        self.metadata = metadata
+        self.tool_versions = tool_versions
+        self.malicious = malicious
+        self.downloadable = downloadable
+        self.missing_test_components = missing_test_components
+        self.has_repository_dependencies = has_repository_dependencies
+        # We don't consider the special case has_repository_dependencies_only_if_compiling_contained_td here.
+        self.includes_datatypes = includes_datatypes
+        self.includes_tools = includes_tools
+        self.includes_tool_dependencies = includes_tool_dependencies
+        self.includes_workflows = includes_workflows
+
+    @property
+    def includes_tools_for_display_in_tool_panel(self):
+        if self.metadata:
+            tool_dicts = self.metadata.get('tools', [])
+            for tool_dict in tool_dicts:
+                if tool_dict.get('add_to_tool_panel', True):
+                    return True
+        return False
+
+    @property
+    def repository_dependencies(self):
+        if self.has_repository_dependencies:
+            return [repository_dependency for repository_dependency in self.metadata['repository_dependencies']['repository_dependencies']]
+        return []
+
+
+# After the map_imperatively statement has been executed, the members of the
+# properties dictionary (repository, reviews) will be available as instrumented
+# class attributes on RepositoryMetadata.
+mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table, properties=dict(
+    repository=relationship(Repository, back_populates='metadata_revisions'),
+    reviews=relationship(RepositoryReview,
+        viewonly=True,
+        foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],  # type: ignore
+        primaryjoin=lambda: ((RepositoryReview.repository_id == RepositoryMetadata.repository_id)  # type: ignore
+            & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)),  # type: ignore
+        back_populates='repository_metadata')))
 
 
 # Utility methods
