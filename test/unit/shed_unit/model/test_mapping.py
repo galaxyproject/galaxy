@@ -614,18 +614,11 @@ class TestRepositoryReview(BaseTest):
         repository_metadata_factory,
         component_review_factory
     ):
-        component_review1 = component_review_factory()
-        component_review1.deleted = False
-        component_review2 = component_review_factory()
-        component_review2.deleted = False
-        component_review2.private = True
         obj = cls_()
         changeset = 'nonempty'
         obj.changeset_revision = changeset
         obj.repository = repository
         obj.user = user
-        obj.component_reviews.append(component_review1)
-        obj.private_component_reviews.append(component_review2)
 
         metadata1 = repository_metadata_factory()
         metadata2 = repository_metadata_factory()
@@ -633,7 +626,17 @@ class TestRepositoryReview(BaseTest):
         metadata2.repository = repository
         metadata1.changeset_revision = changeset
         metadata2.changeset_revision = 'something else'
-        session.add_all([metadata1, metadata2])
+
+        component_review1 = component_review_factory()
+        component_review1.repository_review = obj
+        component_review1.deleted = False
+
+        component_review2 = component_review_factory()
+        component_review2.repository_review = obj
+        component_review2.deleted = False
+        component_review2.private = True
+
+        session.add_all([metadata1, metadata2, component_review1, component_review2])
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)

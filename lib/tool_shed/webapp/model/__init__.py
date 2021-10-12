@@ -600,11 +600,15 @@ class RepositoryReview(Base, Dictifiable, _HasTable):
             & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)),  # type: ignore
         back_populates='reviews')
     user = relationship('User', back_populates='repository_reviews')
+
     component_reviews = relationship('ComponentReview',
+        viewonly=True,
         primaryjoin=lambda: ((RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore
             & (ComponentReview.deleted == false())),  # type: ignore
         back_populates='repository_review')
+
     private_component_reviews = relationship('ComponentReview',
+        viewonly=True,
         primaryjoin=lambda: ((RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore
             & (ComponentReview.deleted == false()) & (ComponentReview.private == true())))  # type: ignore
 
