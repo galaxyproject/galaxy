@@ -36,10 +36,7 @@ class AGPError(Exception):
         self.line_number = line_number
         self.message = message
 
-        self.report = ""
-        self.report += "\n\nFILE : {}\n".format(self.fname)
-        self.report += "LINE : {}\n".format(self.line_number)
-        self.report += "ERROR: {}\n".format(self.message)
+        self.report = f"\n\nFILE: {self.fname}\nLINE: {self.line_number}\nERROR: {self.message}"
         super().__init__(self.report)
 
     def __repr__(self):
@@ -172,7 +169,7 @@ class AGPFile:
         return len(self._objects)
 
     def add_pragma(self):
-        pragma = "## agp-version {}".format(self.agp_version)
+        pragma = f"## agp-version {self.agp_version}"
         if self._comment_lines:
             new_comment_lines = [pragma]
             for i in self._comment_lines:
@@ -293,7 +290,7 @@ class AGPObject:
         return "\n".join([str(i) for i in self._agp_lines])
 
     def __repr__(self):
-        return "AGP Object: {}".format(self.obj)
+        return f"AGP Object: {self.obj}"
 
     def __iter__(self):
         for line in self._agp_lines:
@@ -314,7 +311,7 @@ class AGPObject:
     def add_line(self, agp_line):
         # Perform validity checks if this is a new object
         if agp_line.obj != self.obj:
-            raise AGPError(self.fname, agp_line, "cannot add line from object {} to object {}".format(agp_line.obj, self.obj))
+            raise AGPError(self.fname, agp_line, f"cannot add line from object {agp_line.obj} to object {self.obj}")
 
         # Check that our PID is sequential
         if agp_line.pid - self.previous_pid != 1:
@@ -323,7 +320,7 @@ class AGPObject:
         # Check that the object intervals are sequential
         if self.obj_intervals:
             if self.obj_intervals[-1][1] != agp_line.obj_beg - 1:
-                raise AGPError(self.fname, agp_line.line_number, "some positions in %s are not accounted for or overlapping" % agp_line.obj)
+                raise AGPError(self.fname, agp_line.line_number, f"some positions in {agp_line.obj} are not accounted for or overlapping")
 
         self.previous_pid = agp_line.pid
         self.obj_intervals.append((agp_line.obj_beg - 1, agp_line.obj_end))
@@ -385,11 +382,11 @@ class AGPLine(object, metaclass=abc.ABCMeta):
 
     def _validate_obj_coords(self):
         if self.obj_beg > self.obj_end:
-            raise AGPError(self.fname, self.line_number, "object_beg (%d) must be <= object_end (%d)" % (self.obj_beg, self.obj_end))
+            raise AGPError(self.fname, self.line_number, f"object_beg ({self.obj_beg}) must be <= object_end ({self.obj_end})")
 
     def _validate_component_type(self):
         if self.comp_type not in self.allowed_comp_types:
-            raise AGPError(self.fname, self.line_number, "invalid component type: %s" % self.comp_type)
+            raise AGPError(self.fname, self.line_number, f"invalid component type: {self.comp_type}")
 
     @abc.abstractmethod
     def _validate_line(self):
@@ -467,10 +464,10 @@ class AGPSeqLine(AGPLine):
 
         # Check the coordinates
         if self.comp_beg > self.comp_end:
-            raise AGPError(self.fname, self.line_number, "component_beg (%d) must be <= component_end (%d)" % (self.comp_beg, self.comp_end))
+            raise AGPError(self.fname, self.line_number, f"component_beg ({self.comp_beg}) must be <= component_end ({self.comp_end})")
 
         if self.obj_end - (self.obj_beg - 1) != self.comp_end - (self.comp_beg - 1):
-            raise AGPError(self.fname, self.line_number, "object coordinates (%d, %d) and component coordinates (%d, %d) do not have the same length" % (self.obj_beg, self.obj_end, self.comp_beg, self.comp_end))
+            raise AGPError(self.fname, self.line_number, f"object coordinates ({self.obj_beg}, {self.obj_end}) and component coordinates ({self.comp_beg}, {self.comp_end}) do not have the same length")
 
     def _validate_strings(self):
         try:
@@ -483,7 +480,7 @@ class AGPSeqLine(AGPLine):
 
     def _validate_line(self):
         if self.orientation not in AGPSeqLine.allowed_orientations:
-            raise AGPError(self.fname, self.line_number, "invalid orientation: %s" % self.orientation)
+            raise AGPError(self.fname, self.line_number, f"invalid orientation: {self.orientation}")
 
 
 class AGPGapLine(AGPLine):
@@ -562,7 +559,7 @@ class AGPGapLine(AGPLine):
 
         # Make sure the coordinates match
         if self.obj_end - (self.obj_beg - 1) != self.gap_len:
-            raise AGPError(self.fname, self.line_number, "object coordinates (%d, %d) and gap length (%d) are not the same length" % (self.obj_beg, self.obj_end, self.gap_len))
+            raise AGPError(self.fname, self.line_number, f"object coordinates ({self.obj_beg}, {self.obj_end}) and gap length ({self.gap_len}) are not the same length")
 
     def _validate_strings(self):
         try:
@@ -577,25 +574,25 @@ class AGPGapLine(AGPLine):
     def _validate_line(self):
         """ Validation specific to AGP gap lines. """
         if self.comp_type == "U" and self.gap_len != 100:
-            raise AGPError(self.fname, self.line_number, "invalid gap length for component type 'U': %d (should be 100)" % self.gap_len)
+            raise AGPError(self.fname, self.line_number, f"invalid gap length for component type 'U': {self.gap_len} (should be 100)")
 
         if self.gap_type not in AGPGapLine.allowed_gap_types:
-            raise AGPError(self.fname, self.line_number, "invalid gap type: %s" % self.gap_type)
+            raise AGPError(self.fname, self.line_number, f"invalid gap type: {self.gap_type}")
 
         if self.linkage not in AGPGapLine.allowed_linkage_types:
-            raise AGPError(self.fname, self.line_number, "invalid linkage field: %s" % self.linkage)
+            raise AGPError(self.fname, self.line_number, f"invalid linkage field: {self.linkage}")
 
         all_evidence = self.linkage_evidence.split(";")
         for e in all_evidence:
             if e not in AGPGapLine.allowed_evidence_types:
-                raise AGPError(self.fname, self.line_number, "invalid linkage evidence: %s" % e)
+                raise AGPError(self.fname, self.line_number, f"invalid linkage evidence: {e}")
 
         if self.linkage == "no":
             if self.gap_type == "scaffold":
                 raise AGPError(self.fname, self.line_number, "invalid 'scaffold' gap without linkage evidence")
 
             if self.linkage_evidence != "na":
-                raise AGPError(self.fname, self.line_number, "linkage evidence must be 'na' when not asserting linkage. Got {}".format(self.linkage_evidence))
+                raise AGPError(self.fname, self.line_number, f"linkage evidence must be 'na' when not asserting linkage. Got {self.linkage_evidence}")
         else:
             if "na" in all_evidence:
                 raise AGPError(self.fname, self.line_number, "'na' is invalid linkage evidence when asserting linkage")
