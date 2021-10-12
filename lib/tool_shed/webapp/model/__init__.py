@@ -12,6 +12,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     desc,
+    false,
     ForeignKey,
     Integer,
     not_,
@@ -372,7 +373,7 @@ class Repository(Base, Dictifiable, _HasTable):
         back_populates='repository')
     roles = relationship('RepositoryRoleAssociation', back_populates='repository')
     reviews = relationship('RepositoryReview', back_populates='repository')
-    reviewers = relationship('User', secondary=lambda: RepositoryReview.table, viewonly=True)  # type: ignore
+    reviewers = relationship('User', secondary=lambda: RepositoryReview.__table__, viewonly=True)  # type: ignore
 
     dict_collection_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
                                     'times_downloaded', 'deprecated', 'create_time']
@@ -576,7 +577,37 @@ class RepositoryMetadata(Dictifiable, _HasTable):
         return []
 
 
-class RepositoryReview(Dictifiable, _HasTable):
+class RepositoryReview(Base, Dictifiable, _HasTable):
+    __tablename__ = 'repository_review'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    repository_id = Column(Integer, ForeignKey('repository.id'), index=True)
+    changeset_revision = Column(TrimmedString(255), index=True)
+    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True, nullable=False)
+    approved = Column(TrimmedString(255))
+    rating = Column(Integer, index=True)
+    deleted = Column(Boolean, index=True, default=False)
+    repository = relationship('Repository', back_populates='reviews')
+    # Take care when using the mapper below!  It should be used only when a new review is being created for a repository change set revision.
+    # Keep in mind that repository_metadata records can be removed from the database for certain change set revisions when metadata is being
+    # reset on a repository!
+    repository_metadata = relationship('RepositoryMetadata',
+        viewonly=True,
+        foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],  # type: ignore
+        primaryjoin=lambda: ((RepositoryReview.repository_id == RepositoryMetadata.repository_id)  # type: ignore
+            & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)),  # type: ignore
+        back_populates='reviews')
+    user = relationship('User', back_populates='repository_reviews')
+    component_reviews = relationship('ComponentReview',
+        primaryjoin=lambda: ((RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore
+            & (ComponentReview.deleted == false())),  # type: ignore
+        back_populates='repository_review')
+    private_component_reviews = relationship('ComponentReview',
+        primaryjoin=lambda: ((RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore
+            & (ComponentReview.deleted == false()) & (ComponentReview.private == true())))  # type: ignore
+
     dict_collection_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
     dict_element_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes')
