@@ -291,12 +291,12 @@ In this example we will set up tusd to:
 - listen on port 1080 on localhost (`-host localhost -port 1080`)
 - store uploads in database/tmp (replace this with the value of new_file_path in your galaxy.yml config) (`-upload-dir=<galaxy_root>/database/tmp`)
 - send an event via http to /api/upload/hooks to ensure the user is logged in (`-hooks-http=<galaxy_url>/api/upload/hooks`)
-- forward authentication headers in that event (`-hooks-http-forward-headers=X-Api-Key,sessioncookie`)
+- forward authentication headers in that event (`-hooks-http-forward-headers=X-Api-Key,Cookie`)
 
 The complete command is thus (replace `<galaxy_url>` with your Galaxy URL and `<galaxy_root>` with the path to your Galaxy installation):
 
 ```sh
-tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp -hooks-http=<galaxy_url>/api/upload/hooks -hooks-http-forward-headers=X-Api-Key,sessioncookie
+tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp -hooks-http=<galaxy_url>/api/upload/hooks -hooks-http-forward-headers=X-Api-Key,Cookie
 ```
 
 We now need to set up nginx to proxy requests to /api/upload/resumable_upload to our tusd server.
