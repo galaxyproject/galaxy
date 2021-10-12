@@ -8,6 +8,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
 )
 
 import dateutil.parser
@@ -284,19 +285,26 @@ def parse_index_jobs_summary_params(
     )
 
 
-def parse_content_filter_params(params: Dict[str, Any]) -> HistoryContentsFilterList:
+def parse_content_filter_params(
+    params: Dict[str, Any],
+    exclude: Optional[Set[str]] = None,
+) -> HistoryContentsFilterList:
     """Alternative way of parsing query parameter for filtering history contents.
 
     Parses parameters like: ?[field]-[operator]=[value]
         Example: ?update_time-gt=2015-01-29
 
-    Currently used by the `contents_near` endpoint.
+    Currently used by the `contents_near` endpoint. The `exclude` set can contain
+    names of parameters that will be ignored and not added to the filters.
     """
     DEFAULT_OP = 'eq'
     splitchar = '-'
 
+    exclude = exclude or set()
     result = []
     for key, val in params.items():
+        if key in exclude:
+            continue
         attr = key
         op = DEFAULT_OP
         if splitchar in key:
@@ -692,8 +700,15 @@ class FastAPIHistoryContents:
                     ?update_time-gt=2015-01-29
         """
         serialization_params.default_view = serialization_params.default_view or "betawebclient"
-        # Needed to parse arbitrary query parameter names
-        filter_params = parse_content_filter_params(request.query_params._dict)
+
+        # Needed to parse arbitrary query parameter names for the filters.
+        # Since we are directly accessing the request's query_params we also need to exclude the
+        # known params that are already parsed by FastAPI or they may be treated as filter params too.
+        # This looks a bit hacky...
+        exclude_params = set(["since"])
+        exclude_params.update(SerializationParams.__fields__.keys())
+        filter_params = parse_content_filter_params(request.query_params._dict, exclude=exclude_params)
+
         result = self.service.contents_near(
             trans, history_id, serialization_params, filter_params, hid, limit, since,
         )
