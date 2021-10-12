@@ -409,13 +409,7 @@ import * as tus from "tus-js-client";
             // create and submit data
             var submitter = $.uploadpost;
             var requestData = opts.initialize(index);
-            if (
-                file.chunk_mode &&
-                session &&
-                session.id &&
-                session.chunk_upload_size &&
-                session.chunk_upload_size > 0
-            ) {
+            if (file.chunk_mode && session.chunk_upload_size && session.chunk_upload_size > 0) {
                 submitter = $.uploadchunk;
             } else if (requestData.fetchRequest) {
                 submitter = $.datafetchpost;
