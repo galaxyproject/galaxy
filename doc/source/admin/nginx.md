@@ -316,7 +316,7 @@ To do this, add the following to your Galaxy's `server {}` block:
             proxy_set_header         Upgrade $http_upgrade;
             proxy_set_header         Connection "upgrade";
             client_max_body_size     0;
-            proxy_pass http://localhost:1080/files/;
+            proxy_pass http://localhost:1080/files;
         }
 ```
 
