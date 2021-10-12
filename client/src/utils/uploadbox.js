@@ -116,10 +116,28 @@ import * as tus from "tus-js-client";
             },
             onSuccess: function () {
                 console.log(
-                    `Download ${upload.file.name} from ${upload.url} took ${
+                    `Upload of ${upload.file.name} to ${upload.url} took ${
                         (performance.now() - startTime) / 1000
                     } seconds`
                 );
+                const toolInputs = JSON.parse(data.payload.inputs);
+                toolInputs["files_0|file_data"] = {
+                    session_id: upload.url.split("/").at(-1),
+                    name: file.name,
+                };
+                data.payload.inputs = JSON.stringify(toolInputs);
+                $.ajax({
+                    url: `${getAppRoot()}api/tools`,
+                    method: "POST",
+                    data: data.payload,
+                    success: (tool_response) => {
+                        cnf.success(tool_response);
+                    },
+                    error: (tool_response) => {
+                        var err_msg = tool_response && tool_response.responseJSON && tool_response.responseJSON.err_msg;
+                        cnf.error(err_msg || cnf.error_tool);
+                    },
+                });
                 cnf.success({});
             },
         });

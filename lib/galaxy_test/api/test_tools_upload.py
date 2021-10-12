@@ -920,10 +920,18 @@ class ToolsUploadTestCase(ApiTestCase):
             my_client = client.TusClient(url, headers={'x-api-key': api_key})
 
             # Upload a file to a tus server.
-            my_client.uploader(path, metadata=metadata).upload()
+            uploader = my_client.uploader(path, metadata=metadata)
+            uploader.upload()
+            return uploader.url.rsplit('/', 1)[1]
 
         with self.dataset_populator.test_history() as history_id:
-            upload_file(url=f"{self.url}/api/upload/resumable_upload", path=TestDataResolver().get_filename("1.fastqsanger.gz"), api_key=self.galaxy_interactor.api_key, history_id=history_id)
+            session_id = upload_file(url=f"{self.url}/api/upload/resumable_upload", path=TestDataResolver().get_filename("1.fastqsanger.gz"), api_key=self.galaxy_interactor.api_key, history_id=history_id)
+            upload_params = {
+                'files_0|NAME': '1.fastqsanger.gz',
+                'files_0|file_data': json.dumps({'session_id': session_id, 'name': '1.fastqsanger.gz'}),
+                'file_type': 'fastqsanger.gz',
+            }
+            self.dataset_populator.run_tool('upload1', history_id=history_id, inputs=upload_params)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             dataset = self.dataset_populator.get_history_dataset_details(history_id)
             assert dataset['name'] == '1.fastqsanger.gz'

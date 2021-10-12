@@ -1,13 +1,12 @@
 """
 API operations for uploaded files in storage.
 """
-import json
 import logging
 import os
 import re
 
 from galaxy import exceptions
-from galaxy.web import (
+from galaxy.web.framework.decorators import (
     expose_api_raw_anonymous,
     legacy_expose_api_anonymous,
 )
@@ -23,57 +22,12 @@ class UploadsAPIController(BaseGalaxyAPIController):
     READ_CHUNK_SIZE = 2 ** 16
 
     @expose_api_raw_anonymous
-    def tus(self, trans, payload, session_id=None, **kwargs):
+    def hooks(self, trans, **kwds):
         """
-        PATCH /api/upload/resumable_upload/{filename}
-        POST /api/upload/_resumable_upload
+        Exposed as POST /api/upload/hooks and /api/upload/resumable_upload
         """
-        if isinstance(payload, str):
-            # WSGI middleware
-            with open(f"{payload}.info") as info:
-                payload = json.load(info)
-                metadata = payload['upload_metadata']
-                size = payload['upload_length']
-        else:
-            # tusd server hook
-            metadata = payload['Upload']['MetaData']
-            session_id = payload['Upload']['ID']
-            size = payload['Upload']['Size']
-        trans.response.headers['upload-offset'] = size
-        filename = metadata.get('filename', 'Uploaded dataset')
-        dbkey = metadata.get('dbkey', '?')
-        history_id = metadata.get('history_id')
-        if not history_id and not trans.session:
-            raise exceptions.RequestParameterMissingException("history_id or galaxy session required")
-        ext = 'auto'
-        for key in ['ext', 'file_type', 'extension']:
-            if key in metadata:
-                ext = metadata[key]
-                break
-        _create = trans.webapp.api_controllers['tools']._create
-        if 'inputs' in metadata:
-            # Do we want to just dump the "normal" tool payload here, or have some more user-friendly API, or both ?
-            # Going with both for now since I don't want to redo the client-side of this for now.
-            # This is the 'normal' payload approach
-            inputs = json.loads(metadata['inputs'])
-            inputs['files_0|file_data'] = {"session_id": session_id, "name": inputs["files_0|NAME"]}
-            tool_id = metadata['tool_id']
-        else:
-            # This feels a bit more user-friendly ?
-            tool_id = 'upload1'
-            inputs = {
-                "file_count": 1,
-                "dbkey": dbkey,
-                "file_type": "auto",
-                "files_0|type": "upload_dataset",
-                "files_0|NAME": filename,
-                "files_0|to_posix_lines": "Yes",
-                "files_0|dbkey": dbkey,
-                "files_0|file_type": ext,
-                "files_0|file_data": {"session_id": session_id, "name": filename}}
-        tool_payload = {'tool_id': tool_id, 'inputs': inputs, 'history_id': history_id}
-        _create(trans, tool_payload)
-        trans.response.status = 204
+        # Internal endpoint, only purpose is to authenticate user, but may grow additional functionality in the future
+        return None
 
     @legacy_expose_api_anonymous
     def index(self, trans, **kwd):

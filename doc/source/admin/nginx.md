@@ -283,21 +283,20 @@ group as shown above.
 Galaxy includes a WSGI middleware that implements a tus server for which no configuration is needed.
 However the middleware ties up resources on the Galaxy server process, and uploads will be interrupted
 while Galaxy restarts. A more efficient alternative is to run an external server that implements the tus protocol.
-Any tus server that can send the pre-finish hook to a URL will work. Here we will use [tusd](https://github.com/tus/tusd).
+Any tus server will work. Here we will use [tusd](https://github.com/tus/tusd).
 Binaries can be downloaded from https://github.com/tus/tusd/releases/.
 
 In this example we will set up tusd to:
 
 - listen on port 1080 on localhost (`-host localhost -port 1080`)
 - store uploads in database/tmp (replace this with the value of new_file_path in your galaxy.yml config) (`-upload-dir=<galaxy_root>/database/tmp`)
-- send an event via http to /api/upload/_resumable_upload when an upload has finished (`-hooks-http=<galaxy_url>/api/upload/_resumable_upload`)
+- send an event via http to /api/upload/hooks to ensure the user is logged in (`-hooks-http=<galaxy_url>/api/upload/hooks`)
 - forward authentication headers in that event (`-hooks-http-forward-headers=X-Api-Key,sessioncookie`)
-- and enable only the pre-finish event hook (`-hooks-enabled-events=pre-finish`)
 
 The complete command is thus (replace `<galaxy_url>` with your Galaxy URL and `<galaxy_root>` with the path to your Galaxy installation):
 
 ```sh
-tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp -hooks-http=<galaxy_url>/api/upload/_resumable_upload -hooks-http-forward-headers=X-Api-Key,sessioncookie --hooks-enabled-events=pre-finish
+tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp -hooks-http=<galaxy_url>/api/upload/hooks -hooks-http-forward-headers=X-Api-Key,sessioncookie
 ```
 
 We now need to set up nginx to proxy requests to /api/upload/resumable_upload to our tusd server.
@@ -326,20 +325,31 @@ If you serve Galaxy at a prefix exchange `/api/upload/resumable_upload` with `/p
 After reloading the nginx configuration you can verify that this configuration works correctly by uploading a file to Galaxy. Make sure the tusd server logs the request. It should look similar to the following
 
 ```log
-[tusd] 2021/10/10 10:54:11 event="RequestIncoming" method="POST" path="" requestId=""
-[tusd] 2021/10/10 10:54:11 event="UploadCreated" id="92ad5d17d0ab0d865991bfef79bbb54d" size="2033" url="http://localhost:1080/files/92ad5d17d0ab0d865991bfef79bbb54d"
-[tusd] 2021/10/10 10:54:11 event="ResponseOutgoing" status="201" method="POST" path="" requestId=""
-[tusd] 2021/10/10 10:54:11 event="RequestIncoming" method="HEAD" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
-[tusd] 2021/10/10 10:54:11 event="ResponseOutgoing" status="200" method="HEAD" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
-[tusd] 2021/10/10 10:54:11 event="RequestIncoming" method="PATCH" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
-[tusd] 2021/10/10 10:54:11 event="ChunkWriteStart" id="92ad5d17d0ab0d865991bfef79bbb54d" maxSize="2033" offset="0"
-[tusd] 2021/10/10 10:54:11 event="ChunkWriteComplete" id="92ad5d17d0ab0d865991bfef79bbb54d" bytesWritten="2033"
-[tusd] 2021/10/10 10:54:11 event="ResponseOutgoing" status="204" method="PATCH" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
-[tusd] 2021/10/10 10:54:11 event="UploadFinished" id="92ad5d17d0ab0d865991bfef79bbb54d" size="2033"
-[tusd] 2021/10/10 10:54:11 event="HookInvocationStart" type="post-finish" id="92ad5d17d0ab0d865991bfef79bbb54d"
-[tusd] 2021/10/10 10:54:11 event="RequestIncoming" method="HEAD" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
-[tusd] 2021/10/10 10:54:11 event="ResponseOutgoing" status="200" method="HEAD" path="92ad5d17d0ab0d865991bfef79bbb54d" requestId=""
-[tusd] 2021/10/10 10:54:12 event="HookInvocationFinish" type="post-finish" id="92ad5d17d0ab0d865991bfef79bbb54d"
+[tusd] 2021/10/12 13:30:14 Using '/Users/mvandenb/src/galaxy/database/tmp' as directory storage.
+[tusd] 2021/10/12 13:30:14 Using 0.00MB as maximum size.
+[tusd] 2021/10/12 13:30:14 Using 'http://localhost:8000/api/upload/hooks' as the endpoint for hooks
+[tusd] 2021/10/12 13:30:14 Enabled hook events: pre-create, post-create, post-receive, post-terminate, post-finish
+[tusd] 2021/10/12 13:30:14 Using localhost:1080 as address to listen.
+[tusd] 2021/10/12 13:30:14 Using /files/ as the base path.
+[tusd] 2021/10/12 13:30:14 Using /metrics as the metrics path.
+[tusd] 2021/10/12 13:30:14 Supported tus extensions: creation,creation-with-upload,termination,concatenation,creation-defer-length
+[tusd] 2021/10/12 13:30:14 You can now upload files to: http://localhost:1080/files/
+[tusd] 2021/10/12 13:30:59 event="RequestIncoming" method="POST" path="" requestId=""
+[tusd] 2021/10/12 13:30:59 event="HookInvocationStart" type="pre-create" id=""
+[tusd] 2021/10/12 13:30:59 event="HookInvocationFinish" type="pre-create" id=""
+[tusd] 2021/10/12 13:30:59 event="UploadCreated" id="b1b16fdf8cd76eb0dc4f86d492424949" size="3670032" url="http://localhost:1080/files/b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="ResponseOutgoing" status="201" method="POST" path="" requestId=""
+[tusd] 2021/10/12 13:30:59 event="HookInvocationStart" type="post-create" id="b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="HookInvocationFinish" type="post-create" id="b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="RequestIncoming" method="PATCH" path="b1b16fdf8cd76eb0dc4f86d492424949" requestId=""
+[tusd] 2021/10/12 13:30:59 event="ChunkWriteStart" id="b1b16fdf8cd76eb0dc4f86d492424949" maxSize="3670032" offset="0"
+[tusd] 2021/10/12 13:30:59 event="ChunkWriteComplete" id="b1b16fdf8cd76eb0dc4f86d492424949" bytesWritten="3670032"
+[tusd] 2021/10/12 13:30:59 event="ResponseOutgoing" status="204" method="PATCH" path="b1b16fdf8cd76eb0dc4f86d492424949" requestId=""
+[tusd] 2021/10/12 13:30:59 event="UploadFinished" id="b1b16fdf8cd76eb0dc4f86d492424949" size="3670032"
+[tusd] 2021/10/12 13:30:59 event="HookInvocationStart" type="post-finish" id="b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="HookInvocationStart" type="post-receive" id="b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="HookInvocationFinish" type="post-receive" id="b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="HookInvocationFinish" type="post-finish" id="b1b16fdf8cd76eb0dc4f86d492424949"
 ```
 
 Note that the tusd server does not need to run on the same host that serves Galaxy.
