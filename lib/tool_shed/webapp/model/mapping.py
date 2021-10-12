@@ -4,7 +4,7 @@ are encapsulated here.
 """
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, Table, TEXT, true
+from sqlalchemy import Boolean, Column, DateTime, false, ForeignKey, Integer, Table, true
 from sqlalchemy.orm import relation
 
 import tool_shed.webapp.model
@@ -15,32 +15,15 @@ from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from tool_shed.webapp.model import ComponentReview
 from tool_shed.webapp.model import mapper_registry
-from tool_shed.webapp.model import Repository, RepositoryCategoryAssociation
-from tool_shed.webapp.model import RepositoryMetadata, RepositoryRatingAssociation
-from tool_shed.webapp.model import RepositoryReview, RepositoryRoleAssociation
+from tool_shed.webapp.model import Repository
+from tool_shed.webapp.model import RepositoryMetadata
+from tool_shed.webapp.model import RepositoryReview
 from tool_shed.webapp.model import User
 from tool_shed.webapp.security import CommunityRBACAgent
 
 log = logging.getLogger(__name__)
 
 metadata = mapper_registry.metadata
-
-Repository.table = Table("repository", metadata,
-                         Column("id", Integer, primary_key=True),
-                         Column("create_time", DateTime, default=now),
-                         Column("update_time", DateTime, default=now, onupdate=now),
-                         Column("name", TrimmedString(255), index=True),
-                         Column("type", TrimmedString(255), index=True),
-                         Column("remote_repository_url", TrimmedString(255)),
-                         Column("homepage_url", TrimmedString(255)),
-                         Column("description", TEXT),
-                         Column("long_description", TEXT),
-                         Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                         Column("private", Boolean, default=False),
-                         Column("deleted", Boolean, index=True, default=False),
-                         Column("email_alerts", MutableJSONType, nullable=True),
-                         Column("times_downloaded", Integer),
-                         Column("deprecated", Boolean, default=False))
 
 RepositoryMetadata.table = Table("repository_metadata", metadata,
                                  Column("id", Integer, primary_key=True),
@@ -70,21 +53,6 @@ RepositoryReview.table = Table("repository_review", metadata,
                                Column("approved", TrimmedString(255)),
                                Column("rating", Integer, index=True),
                                Column("deleted", Boolean, index=True, default=False))
-
-mapper_registry.map_imperatively(Repository, Repository.table,
-       properties=dict(
-           categories=relation(RepositoryCategoryAssociation, back_populates='repository'),
-           ratings=relation(RepositoryRatingAssociation, order_by=desc(RepositoryRatingAssociation.update_time), back_populates='repository'),
-           user=relation(User, back_populates='active_repositories'),
-           downloadable_revisions=relation(RepositoryMetadata,
-                                           primaryjoin=((Repository.table.c.id == RepositoryMetadata.table.c.repository_id) & (RepositoryMetadata.table.c.downloadable == true())),
-                                           viewonly=True,
-                                           order_by=desc(RepositoryMetadata.table.c.update_time)),
-           metadata_revisions=relation(RepositoryMetadata,
-                                       order_by=desc(RepositoryMetadata.table.c.update_time)),
-           roles=relation(RepositoryRoleAssociation, back_populates='repository'),
-           reviews=relation(RepositoryReview, back_populates='repository'),
-           reviewers=relation(User, secondary=RepositoryReview.table, viewonly=True)))
 
 mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table,
        properties=dict(repository=relation(Repository),
@@ -129,7 +97,6 @@ def init(file_path, url, engine_options=None, create_tables=False) -> ToolShedMo
 
     result.create_tables = create_tables
 
-    # Load local tool shed security policy
     result.security_agent = CommunityRBACAgent(result)
     result.shed_counter = shed_statistics.ShedCounter(result)
     return result

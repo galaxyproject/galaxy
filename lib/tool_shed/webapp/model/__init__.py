@@ -17,6 +17,7 @@ from sqlalchemy import (
     not_,
     String,
     TEXT,
+    true,
     UniqueConstraint,
 )
 from sqlalchemy.orm import (
@@ -27,7 +28,7 @@ from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util
-from galaxy.model.custom_types import TrimmedString
+from galaxy.model.custom_types import MutableJSONType, TrimmedString
 from galaxy.model.orm.now import now
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import unique_id
@@ -340,7 +341,38 @@ class GalaxySession(Base, _HasTable):
         self.last_action = last_action or datetime.now()
 
 
-class Repository(Dictifiable, _HasTable):
+class Repository(Base, Dictifiable, _HasTable):
+    __tablename__ = 'repository'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    name = Column(TrimmedString(255), index=True)
+    type = Column(TrimmedString(255), index=True)
+    remote_repository_url = Column(TrimmedString(255))
+    homepage_url = Column(TrimmedString(255))
+    description = Column(TEXT)
+    long_description = Column(TEXT)
+    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    private = Column(Boolean, default=False)
+    deleted = Column(Boolean, index=True, default=False)
+    email_alerts = Column(MutableJSONType, nullable=True)
+    times_downloaded = Column(Integer)
+    deprecated = Column(Boolean, default=False)
+    categories = relationship('RepositoryCategoryAssociation', back_populates='repository')
+    ratings = relationship('RepositoryRatingAssociation',
+        order_by=lambda: desc(RepositoryRatingAssociation.update_time), back_populates='repository')  # type: ignore
+    user = relationship('User', back_populates='active_repositories')
+    downloadable_revisions = relationship('RepositoryMetadata',
+        primaryjoin=lambda: (Repository.id == RepositoryMetadata.repository_id) & (RepositoryMetadata.downloadable == true()),  # type: ignore
+        viewonly=True,
+        order_by=lambda: desc(RepositoryMetadata.update_time))  # type: ignore
+    metadata_revisions = relationship('RepositoryMetadata',
+        order_by=lambda: desc(RepositoryMetadata.update_time))  # type: ignore
+    roles = relationship('RepositoryRoleAssociation', back_populates='repository')
+    reviews = relationship('RepositoryReview', back_populates='repository')
+    reviewers = relationship('User', secondary=lambda: RepositoryReview.table, viewonly=True)  # type: ignore
+
     dict_collection_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
                                     'times_downloaded', 'deprecated', 'create_time']
     dict_element_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'long_description', 'user_id', 'private',

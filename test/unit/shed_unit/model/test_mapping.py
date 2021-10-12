@@ -298,7 +298,7 @@ class TestPasswordResetToken(BaseTest):
 class TestRepository(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'repository'
+        assert cls_.__tablename__ == 'repository'
 
     def test_columns(self, session, cls_, user):
         create_time = datetime.now()
