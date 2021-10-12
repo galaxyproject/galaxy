@@ -40,11 +40,9 @@ class HistoryImportExportFtpSeleniumIntegrationTestCase(SeleniumIntegrationTestC
         history_export.export_link.wait_for_absent_or_hidden()
         history_export.directory_input.wait_for_and_click()
 
-        # test opening folder by clicking on its name
+        # open directory by clicking on its name
         files_dialog.ftp_label.wait_for_and_click()
-        # navigate back
-        files_dialog.back_btn.wait_for_and_click()
-        files_dialog.ftp_details.wait_for_and_click()
+        self.components.upload.file_dialog_ok.wait_for_and_click()
 
         history_export.name_input.wait_for_and_send_keys("my_export.tar.gz")
         history_export.export_button.wait_for_and_click()
