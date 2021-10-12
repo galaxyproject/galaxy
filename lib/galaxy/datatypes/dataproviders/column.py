@@ -361,7 +361,7 @@ class GoldenPathDataProvider(DictDataProvider):
     '''
     Class that defines a data provider for AGP datasets.
     '''
-    settings = {} # type: Dict[str, str]
+    settings: Dict[str, str] = {}
 
     def __init__(self, source, **kwargs):
         self.goldenpath = AGPFile(source)

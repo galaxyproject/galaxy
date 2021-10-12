@@ -25,7 +25,7 @@ SOFTWARE.
 import abc
 import os
 
-from typing import Set
+from typing import Set, Union
 
 
 class AGPError(Exception):
@@ -126,6 +126,7 @@ class AGPFile:
                 if not all(fields):
                     raise AGPError(self.fname, line_number, "detected an empty field")
 
+                agp_line: Union[AGPGapLine, AGPSeqLine]
                 # Instantiate all the AGPLine objects. These will do line-specific validations.
                 if fields[4] == "N" or fields[4] == "U":
                     agp_line = AGPGapLine(self.fname, line_number, *fields)
@@ -341,7 +342,7 @@ class AGPLine(object, metaclass=abc.ABCMeta):
     checks that involve multiple lines should not be considered.
     """
 
-    allowed_comp_types = set() # type: Set[str]
+    allowed_comp_types: Set[str] = set()
 
     def __init__(self, fname, line_number, obj, obj_beg, obj_end, pid, comp_type):
         self.is_gap = None
