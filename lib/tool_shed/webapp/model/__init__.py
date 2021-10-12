@@ -126,7 +126,6 @@ class User(Base, Dictifiable, _HasTable):
         self.external = False
         self.deleted = False
         self.purged = False
-        self.username = None
         self.new_repo_alert = False
 
     def all_roles(self):
@@ -220,7 +219,7 @@ class Role(Base, Dictifiable, _HasTable):
                   ADMIN='admin',
                   SHARING='sharing')
 
-    def __init__(self, name="", description="", type="system", deleted=False):
+    def __init__(self, name=None, description=None, type=types.SYSTEM, deleted=False):
         self.name = name
         self.description = description
         self.type = type
@@ -318,27 +317,10 @@ class GalaxySession(Base, _HasTable):
     last_action = Column(DateTime)
     user = relationship('User', back_populates='galaxy_sessions')
 
-    def __init__(self,
-                 id=None,
-                 user=None,
-                 remote_host=None,
-                 remote_addr=None,
-                 referer=None,
-                 current_history=None,
-                 session_key=None,
-                 is_valid=False,
-                 prev_session_id=None,
-                 last_action=None):
-        self.id = id
-        self.user = user
-        self.remote_host = remote_host
-        self.remote_addr = remote_addr
-        self.referer = referer
-        self.current_history = current_history
-        self.session_key = session_key
+    def __init__(self, is_valid=False, **kwd):
+        super().__init__(**kwd)
         self.is_valid = is_valid
-        self.prev_session_id = prev_session_id
-        self.last_action = last_action or datetime.now()
+        self.last_action = self.last_action or datetime.now()
 
 
 class Repository(Base, Dictifiable, _HasTable):
@@ -384,24 +366,12 @@ class Repository(Base, Dictifiable, _HasTable):
                         MARKED_FOR_ADDITION='a',
                         NOT_TRACKED='?')
 
-    def __init__(self, id=None, name=None, type=None, remote_repository_url=None, homepage_url=None,
-                 description=None, long_description=None, user_id=None, private=False,
-                 deleted=None, email_alerts=None, times_downloaded=0, deprecated=False,
-                 create_time=None):
-        self.id = id
-        self.name = name or "Unnamed repository"
-        self.type = type
-        self.remote_repository_url = remote_repository_url
-        self.homepage_url = homepage_url
-        self.description = description
-        self.long_description = long_description
-        self.user_id = user_id
+    def __init__(self, private=False, times_downloaded=0, deprecated=False, **kwd):
+        super().__init__(**kwd)
         self.private = private
-        self.deleted = deleted
-        self.email_alerts = email_alerts
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
-        self.create_time = create_time
+        self.name = self.name or "Unnamed repository"
 
     @property
     def hg_repo(self):
@@ -571,11 +541,8 @@ class RepositoryReview(Base, Dictifiable, _HasTable):
     dict_element_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes')
 
-    def __init__(self, repository_id=None, changeset_revision=None, user_id=None, rating=None, deleted=False):
-        self.repository_id = repository_id
-        self.changeset_revision = changeset_revision
-        self.user_id = user_id
-        self.rating = rating
+    def __init__(self, deleted=False, **kwd):
+        super().__init__(**kwd)
         self.deleted = deleted
 
 
@@ -599,13 +566,10 @@ class ComponentReview(Base, Dictifiable, _HasTable):
     dict_element_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes', NA='not_applicable')
 
-    def __init__(self, repository_review_id=None, component_id=None, comment=None, private=False, approved=False, rating=None, deleted=False):
-        self.repository_review_id = repository_review_id
-        self.component_id = component_id
-        self.comment = comment
+    def __init__(self, private=False, approved=False, deleted=False, **kwd):
+        super().__init__(**kwd)
         self.private = private
         self.approved = approved
-        self.rating = rating
         self.deleted = deleted
 
 
@@ -615,10 +579,6 @@ class Component(Base, _HasTable):
     id = Column(Integer, primary_key=True)
     name = Column(TrimmedString(255))
     description = Column(TEXT)
-
-    def __init__(self, name=None, description=None):
-        self.name = name
-        self.description = description
 
 
 class ItemRatingAssociation(_HasTable):
@@ -665,9 +625,8 @@ class Category(Base, Dictifiable, _HasTable):
     dict_collection_visible_keys = ['id', 'name', 'description', 'deleted']
     dict_element_visible_keys = ['id', 'name', 'description', 'deleted']
 
-    def __init__(self, name=None, description=None, deleted=False):
-        self.name = name
-        self.description = description
+    def __init__(self, deleted=False, **kwd):
+        super().__init__(**kwd)
         self.deleted = deleted
 
 
@@ -697,12 +656,6 @@ class Tag(Base, _HasTable):
     name = Column(TrimmedString(255))
     children = relationship('Tag', back_populates='parent')
     parent = relationship('Tag', back_populates='children', remote_side=[id])
-
-    def __init__(self, id=None, type=None, parent_id=None, name=None):
-        self.id = id
-        self.type = type
-        self.parent_id = parent_id
-        self.name = name
 
     def __str__(self):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type, self.parent_id, self.name)
