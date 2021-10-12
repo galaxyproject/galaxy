@@ -57,6 +57,7 @@ RepositoryReview.table = Table("repository_review", metadata,
 mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table, properties=dict(
     repository=relation(Repository),
     reviews=relation(RepositoryReview,
+        viewonly=True,
         foreign_keys=[RepositoryReview.table.c.repository_id, RepositoryReview.table.c.changeset_revision],
         primaryjoin=((RepositoryReview.table.c.repository_id == RepositoryMetadata.table.c.repository_id) & (RepositoryReview.table.c.changeset_revision == RepositoryMetadata.table.c.changeset_revision)),
         back_populates='repository_metadata')))
