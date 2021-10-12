@@ -74,7 +74,7 @@ class APIKeys(Base, _HasTable):
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
-    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_id = Column(ForeignKey('galaxy_user.id'), index=True)
     key = Column(TrimmedString(32), index=True, unique=True)
     user = relationship('User', back_populates='api_keys')
 
@@ -166,7 +166,7 @@ class PasswordResetToken(Base, _HasTable):
 
     token = Column(String(32), primary_key=True, unique=True, index=True)
     expiration_time = Column(DateTime)
-    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
+    user_id = Column(ForeignKey('galaxy_user.id'), index=True)
     user = relationship('User', back_populates='reset_tokens')
 
     def __init__(self, user, token=None):
@@ -240,8 +240,8 @@ class UserGroupAssociation(Base, _HasTable):
     __tablename__ = 'user_group_association'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    group_id = Column(Integer, ForeignKey('galaxy_group.id'), index=True)
+    user_id = Column(ForeignKey('galaxy_user.id'), index=True)
+    group_id = Column(ForeignKey('galaxy_group.id'), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
     user = relationship('User', back_populates='groups')
@@ -256,8 +256,8 @@ class UserRoleAssociation(Base, _HasTable):
     __tablename__ = 'user_role_association'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
-    role_id = Column(Integer, ForeignKey('role.id'), index=True)
+    user_id = Column(ForeignKey('galaxy_user.id'), index=True)
+    role_id = Column(ForeignKey('role.id'), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
     user = relationship('User', back_populates='roles')
@@ -272,8 +272,8 @@ class GroupRoleAssociation(Base, _HasTable):
     __tablename__ = 'group_role_association'
 
     id = Column(Integer, primary_key=True)
-    group_id = Column(Integer, ForeignKey("galaxy_group.id"), index=True)
-    role_id = Column(Integer, ForeignKey("role.id"), index=True)
+    group_id = Column(ForeignKey("galaxy_group.id"), index=True)
+    role_id = Column(ForeignKey("role.id"), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
     group = relationship('Group', back_populates='roles')
@@ -288,8 +288,8 @@ class RepositoryRoleAssociation(Base, _HasTable):
     __tablename__ = 'repository_role_association'
 
     id = Column(Integer, primary_key=True)
-    repository_id = Column(Integer, ForeignKey("repository.id"), index=True)
-    role_id = Column(Integer, ForeignKey("role.id"), index=True)
+    repository_id = Column(ForeignKey("repository.id"), index=True)
+    role_id = Column(ForeignKey("role.id"), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
     repository = relationship('Repository', back_populates='roles')
@@ -306,7 +306,7 @@ class GalaxySession(Base, _HasTable):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True, nullable=True)
+    user_id = Column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
     remote_host = Column(String(255))
     remote_addr = Column(String(255))
     referer = Column(TEXT)
@@ -353,7 +353,7 @@ class Repository(Base, Dictifiable, _HasTable):
     homepage_url = Column(TrimmedString(255))
     description = Column(TEXT)
     long_description = Column(TEXT)
-    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
     private = Column(Boolean, default=False)
     deleted = Column(Boolean, index=True, default=False)
     email_alerts = Column(MutableJSONType, nullable=True)
@@ -538,9 +538,9 @@ class RepositoryReview(Base, Dictifiable, _HasTable):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    repository_id = Column(Integer, ForeignKey('repository.id'), index=True)
+    repository_id = Column(ForeignKey('repository.id'), index=True)
     changeset_revision = Column(TrimmedString(255), index=True)
-    user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True, nullable=False)
+    user_id = Column(ForeignKey('galaxy_user.id'), index=True, nullable=False)
     approved = Column(TrimmedString(255))
     rating = Column(Integer, index=True)
     deleted = Column(Boolean, index=True, default=False)
@@ -585,8 +585,8 @@ class ComponentReview(Base, Dictifiable, _HasTable):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    repository_review_id = Column(Integer, ForeignKey("repository_review.id"), index=True)
-    component_id = Column(Integer, ForeignKey("component.id"), index=True)
+    repository_review_id = Column(ForeignKey("repository_review.id"), index=True)
+    component_id = Column(ForeignKey("component.id"), index=True)
     comment = Column(TEXT)
     private = Column(Boolean, default=False)
     approved = Column(TrimmedString(255))
@@ -640,8 +640,8 @@ class RepositoryRatingAssociation(Base, ItemRatingAssociation, _HasTable):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    repository_id = Column(Integer, ForeignKey("repository.id"), index=True)
-    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    repository_id = Column(ForeignKey("repository.id"), index=True)
+    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
     rating = Column(Integer, index=True)
     comment = Column(TEXT)
     repository = relationship('Repository', back_populates='ratings')
@@ -675,8 +675,8 @@ class RepositoryCategoryAssociation(Base, _HasTable):
     __tablename__ = 'repository_category_association'
 
     id = Column(Integer, primary_key=True)
-    repository_id = Column(Integer, ForeignKey('repository.id'), index=True)
-    category_id = Column(Integer, ForeignKey('category.id'), index=True)
+    repository_id = Column(ForeignKey('repository.id'), index=True)
+    category_id = Column(ForeignKey('category.id'), index=True)
     category = relationship('Category', back_populates='repositories')
     repository = relationship('Repository', back_populates='categories')
 
@@ -693,7 +693,7 @@ class Tag(Base, _HasTable):
 
     id = Column(Integer, primary_key=True)
     type = Column(Integer)
-    parent_id = Column(Integer, ForeignKey('tag.id'))
+    parent_id = Column(ForeignKey('tag.id'))
     name = Column(TrimmedString(255))
     children = relationship('Tag', back_populates='parent')
     parent = relationship('Tag', back_populates='children', remote_side=[id])
@@ -718,7 +718,7 @@ class RepositoryMetadata(Dictifiable, _HasTable):
         Column('id', Integer, primary_key=True),
         Column('create_time', DateTime, default=now),
         Column('update_time', DateTime, default=now, onupdate=now),
-        Column('repository_id', Integer, ForeignKey('repository.id'), index=True),
+        Column('repository_id', ForeignKey('repository.id'), index=True),
         Column('changeset_revision', TrimmedString(255), index=True),
         Column('numeric_revision', Integer, index=True),
         Column('metadata', MutableJSONType, nullable=True),
