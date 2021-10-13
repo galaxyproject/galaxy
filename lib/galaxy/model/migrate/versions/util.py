@@ -201,4 +201,5 @@ def execute_statements(engine, raw_sql):
     for sql in statements:
         cmd = DDL(sql)
         with engine.connect() as connection:
-            connection.execute(cmd)
+            with connection.begin():
+                connection.execute(cmd)
