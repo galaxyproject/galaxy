@@ -30,7 +30,7 @@ class SpeechToTextResult:
 		self.words = words
 	# TODO add offset to the param list below and update all references	
 	def addWord(self, type, start:float, end:float, text, scoreType, scoreValue):
-		newWord = SpeechToTextWord(type, text, start, end, scoreType, scoreValue)
+		newWord = SpeechToTextWord(type, text, start, end, None, scoreType, scoreValue)
 		self.words.append(newWord)
 	@classmethod
 	def from_json(cls, json_data: dict):
