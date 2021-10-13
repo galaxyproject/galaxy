@@ -81,6 +81,7 @@ import * as tus from "tus-js-client";
                 error_attempt: "Maximum number of attempts reached.",
                 error_tool: "Tool submission failed.",
                 chunkSize: 10485760,
+                toolSubmission: false,
             },
             config
         );
@@ -99,7 +100,7 @@ import * as tus from "tus-js-client";
         const startTime = performance.now();
         const file = file_data.file;
         const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
-        const chunkSize = cnf.session.chunk_upload_size;
+        const chunkSize = cnf.chunkSize;
         console.debug(`Starting chunked uploads [size=${chunkSize}].`);
 
         const upload = new tus.Upload(file, {
@@ -121,6 +122,7 @@ import * as tus from "tus-js-client";
                         (performance.now() - startTime) / 1000
                     } seconds`
                 );
+
                 const toolInputs = JSON.parse(data.payload.inputs);
                 toolInputs["files_0|file_data"] = {
                     session_id: upload.url.split("/").at(-1),
@@ -139,7 +141,6 @@ import * as tus from "tus-js-client";
                         cnf.error(err_msg || cnf.error_tool);
                     },
                 });
-                cnf.success({});
             },
         });
         // Check if there are any previous uploads to continue.
@@ -417,6 +418,7 @@ import * as tus from "tus-js-client";
             submitter({
                 url: opts.initUrl(index),
                 data: requestData.fetchRequest ? requestData.fetchRequest : requestData.uploadRequest,
+                toolSubmission: opts.toolSubmission,
                 success: (message) => {
                     opts.success(index, message);
                     process();
