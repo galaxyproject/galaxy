@@ -5,10 +5,12 @@ order to test something that cannot be tested with the default functional/api
 testing configuration.
 """
 import os
+from typing import ClassVar
 from unittest import skip, SkipTest, TestCase
 
 import pytest
 
+from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.commands import which
 from galaxy_test.base.api import UsesApiTestCaseMixin
@@ -79,6 +81,8 @@ class IntegrationInstance(UsesApiTestCaseMixin):
     """Unit test case with utilities for spinning up Galaxy."""
     _test_driver: GalaxyTestDriver  # Optional in parent class, but required for integration tests.
 
+    _app_available: ClassVar[bool]
+
     prefer_template_database = True
     # Subclasses can override this to force uwsgi for tests.
     require_uwsgi = False
@@ -121,9 +125,11 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         self._configure_interactor()
 
     @property
-    def _app(self):
+    def _app(self) -> UniverseApplication:
         assert self._app_available, NO_APP_MESSAGE
-        return self._test_driver.app
+        app = self._test_driver.app
+        assert app, NO_APP_MESSAGE
+        return app
 
     @property
     def _tempdir(self):
