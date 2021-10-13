@@ -61,8 +61,8 @@ try:
     import docutils.core as docutils_core
     import docutils.writers.html4css1 as docutils_html4css1
 except ImportError:
-    docutils_core = None
-    docutils_html4css1 = None
+    docutils_core = None  # type: ignore
+    docutils_html4css1 = None  # type: ignore
 
 try:
     import uwsgi
