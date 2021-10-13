@@ -8,7 +8,7 @@ from tusclient.storage import filestorage
 
 
 UPLOAD_ENDPOINT = '/api/upload/resumable_upload'
-TOOLS_ENDPOINT = '/api/tools'
+SUBMISSION_ENDPOINT = '/api/tools/fetch'
 CHUNK_SIZE = 10 ** 7
 
 
@@ -41,20 +41,23 @@ def upload_file(url, path, api_key, history_id, file_type='auto', dbkey='?', fil
 
     # Extract session from created upload URL
     session_id = uploader.url.rsplit('/', 1)[1]
-    # This feels a bit more user-friendly ?
-    tool_id = 'upload1'
-    inputs = {
-        "file_count": 1,
-        "dbkey": dbkey,
-        "file_type": "auto",
-        "files_0|type": "upload_dataset",
-        "files_0|NAME": filename,
-        "files_0|to_posix_lines": "Yes",
-        "files_0|dbkey": dbkey,
-        "files_0|file_type": file_type,
-        "files_0|file_data": {"session_id": session_id, "name": filename}}
-    tool_payload = {'tool_id': tool_id, 'inputs': inputs, 'history_id': history_id}
-    response = requests.post(f"{url}{TOOLS_ENDPOINT}", data=json.dumps(tool_payload), headers=headers)
+    payload = {
+        'history_id': history_id,
+        'targets': json.dumps([
+            {
+                "destination": {"type": "hdas"},
+                "elements": [
+                    {
+                        "src": "files",
+                        "ext": file_type,
+                        "dbkey": dbkey,
+                        "name": filename
+                    }
+                ]
+            }
+        ]),
+    }
+    response = requests.post(f"{url}{SUBMISSION_ENDPOINT}", data=payload, files={'files_0|file_data': json.dumps({"session_id": session_id})}, headers=headers)
     response.raise_for_status()
 
 

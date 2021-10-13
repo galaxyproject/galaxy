@@ -227,10 +227,11 @@ mapping:
 
       maximum_upload_file_size:
         type: int
-        default: 100
+        default: 107374182400
         required: false
         desc: |
-          Maximum size of uploadable files in gigabytes.
+          Maximum size of uploadable files, specified in bytes (default: 100GB).
+          This value is ignored if an external upload server is configured.
 
       tool_config_file:
         type: any
