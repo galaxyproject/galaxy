@@ -81,7 +81,6 @@ import * as tus from "tus-js-client";
                 error_attempt: "Maximum number of attempts reached.",
                 error_tool: "Tool submission failed.",
                 chunkSize: 10485760,
-                toolSubmission: false,
             },
             config
         );
@@ -320,7 +319,6 @@ import * as tus from "tus-js-client";
                 },
                 complete: () => {},
                 multiple: true,
-                chunkSize: 10485760,
             },
             options
         );
@@ -418,7 +416,6 @@ import * as tus from "tus-js-client";
             submitter({
                 url: opts.initUrl(index),
                 data: requestData.fetchRequest ? requestData.fetchRequest : requestData.uploadRequest,
-                toolSubmission: opts.toolSubmission,
                 success: (message) => {
                     opts.success(index, message);
                     process();

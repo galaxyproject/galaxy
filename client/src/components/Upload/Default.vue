@@ -112,7 +112,6 @@
 <script>
 import _l from "utils/localization";
 import _ from "underscore";
-import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/default/default-row";
 import UploadBoxMixin from "./UploadBoxMixin";
 import { BButton } from "bootstrap-vue";
@@ -199,6 +198,7 @@ export default {
             ondragleave: () => {
                 this.highlightBox = false;
             },
+            chunkSize: this.app.chunkUploadSize,
         });
         this.collection.on("remove", (model) => {
             this._eventRemove(model);
@@ -282,11 +282,7 @@ export default {
                 this._uploadFtp();
 
                 // queue remaining files
-                const Galaxy = getGalaxyInstance();
-                this.uploadbox.start({
-                    id: Galaxy.user.id,
-                    chunk_upload_size: this.app.chunkUploadSize,
-                });
+                this.uploadbox.start();
                 this._updateStateForCounters();
             }
         },
