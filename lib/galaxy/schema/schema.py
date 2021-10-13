@@ -15,6 +15,8 @@ from pydantic import (
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
+    constr,
+    ConstrainedStr,
     Extra,
     Field,
     FilePath,
@@ -241,9 +243,12 @@ class HistoryContentSource(str, Enum):
     new_collection = "new_collection"
 
 
+TagItem: ConstrainedStr = constr(regex=r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")
+
+
 class TagCollection(Model):
     """Represents the collection of tags associated with an item."""
-    __root__: List[str] = Field(
+    __root__: List[TagItem] = Field(
         default=...,
         title="Tags",
         description="The collection of tags associated with an item.",
