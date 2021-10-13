@@ -1489,10 +1489,14 @@ class LibraryPopulator:
 
         return library, library_dataset
 
-    def get_library_contents_with_path(self, library_id, path):
+    def get_library_contents(self, library_id: str) -> List[Dict[str, Any]]:
         all_contents_response = self.galaxy_interactor.get(f"libraries/{library_id}/contents")
         api_asserts.assert_status_code_is(all_contents_response, 200)
         all_contents = all_contents_response.json()
+        return all_contents
+
+    def get_library_contents_with_path(self, library_id: str, path: str) -> Dict[str, Any]:
+        all_contents = self.get_library_contents(library_id)
         matching = [c for c in all_contents if c["name"] == path]
         if len(matching) == 0:
             raise Exception(f"Failed to find library contents with path [{path}], contents are {all_contents}")
