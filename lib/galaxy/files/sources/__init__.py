@@ -3,6 +3,8 @@ import os
 import time
 from typing import Set
 
+from typing_extensions import ClassVar
+
 from galaxy.exceptions import (
     ConfigurationError,
     ItemAccessibilityException,
@@ -22,11 +24,11 @@ class FilesSource(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def get_uri_root(self):
+    def get_uri_root(self) -> str:
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
 
     @abc.abstractmethod
-    def get_scheme(self):
+    def get_scheme(self) -> str:
         """Return a prefix for the root (e.g. the gxfiles in gxfiles://prefix/path)."""
 
     @abc.abstractmethod
@@ -60,6 +62,7 @@ class FilesSource(metaclass=abc.ABCMeta):
 
 
 class BaseFilesSource(FilesSource):
+    plugin_type: ClassVar[str]
 
     def get_prefix(self):
         return self.id
@@ -71,6 +74,8 @@ class BaseFilesSource(FilesSource):
         return self.writable
 
     def user_has_access(self, user_context) -> bool:
+        if user_context is None and self.user_context_required:
+            return False
         return (
             user_context is None
             or user_context.is_admin
@@ -79,6 +84,10 @@ class BaseFilesSource(FilesSource):
                 and self._user_has_required_groups(user_context)
             )
         )
+
+    @property
+    def user_context_required(self) -> bool:
+        return self.requires_roles is not None or self.requires_groups is not None
 
     def get_uri_root(self):
         prefix = self.get_prefix()
@@ -131,7 +140,7 @@ class BaseFilesSource(FilesSource):
             return ctime.strftime("%m/%d/%Y %I:%M:%S %p")
 
     @abc.abstractmethod
-    def _serialization_props(self):
+    def _serialization_props(self, user_context=None):
         """Serialize properties needed to recover plugin configuration.
 
         Used in to_dict method if for_serialization is True.
@@ -164,7 +173,11 @@ class BaseFilesSource(FilesSource):
         pass
 
     def _check_user_access(self, user_context):
-        """Raises an exception if the given user doesn't have the rights to access this file source."""
+        """Raises an exception if the given user doesn't have the rights to access this file source.
+
+        Warning: if the user_context is None, then the check is skipped. This is due to tool executions context
+        not having access to the user_context. The validation will be done when checking the tool parameters.
+        """
         if user_context is not None and not self.user_has_access(user_context):
             raise ItemAccessibilityException(f"User {user_context.username} has no access to file source.")
 

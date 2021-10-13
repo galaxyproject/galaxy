@@ -215,8 +215,8 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
         payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_paths", paths=path, link_data=True)
         response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
         assert response.status_code == 200
-        assert os.path.exists(path)
-        self.library_populator.wait_on_library_dataset(library, response.json()[0])
+        dataset = response.json()[0]
+        self.library_populator.wait_on_library_dataset(library["id"], dataset["id"])
         # We should probably verify the linking, but this was enough for now to exhibit
         # https://github.com/galaxyproject/galaxy/issues/8756
 
@@ -693,7 +693,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
 
         assert library_dataset["file_size"] == 12, library_dataset
 
-    def link_data_only(self):
+    def test_link_data_only(self):
         content = "hello world\n"
         dir_path = os.path.join(self.server_dir(), "lib1")
         file_path = self._write_file(dir_path, content)
@@ -703,7 +703,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
         response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
         assert response.status_code == 200, response.json()
         dataset = response.json()[0]
-        ok_dataset = self.library_populator.wait_on_library_dataset(library, dataset)
+        ok_dataset = self.library_populator.wait_on_library_dataset(library["id"], dataset["id"])
         assert ok_dataset["file_size"] == 12, ok_dataset
         assert ok_dataset["file_name"] == file_path, ok_dataset
 

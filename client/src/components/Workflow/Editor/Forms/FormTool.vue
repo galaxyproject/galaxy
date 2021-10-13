@@ -1,6 +1,7 @@
 <template>
     <CurrentUser v-slot="{ user }">
         <ToolCard
+            v-if="hasData"
             :id="node.config_form.id"
             :user="user"
             :version="node.config_form.version"
@@ -55,7 +56,6 @@ import FormDisplay from "components/Form/FormDisplay";
 import ToolCard from "components/Tool/ToolCard";
 import FormSection from "./FormSection";
 import FormElement from "components/Form/FormElement";
-import { getModule } from "components/Workflow/Editor/modules/services";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import Utils from "utils/utils";
 
@@ -85,9 +85,14 @@ export default {
         return {
             mainValues: {},
             sectionValues: {},
-            messageVariant: "",
             messageText: "",
+            messageVariant: "success",
         };
+    },
+    watch: {
+        nodeId() {
+            this.messageText = "";
+        },
     },
     computed: {
         node() {
@@ -98,6 +103,12 @@ export default {
         },
         id() {
             return `${this.node.id}:${this.node.config_form.id}`;
+        },
+        nodeId() {
+            return this.node.id;
+        },
+        hasData() {
+            return !!this.node.config_form;
         },
         errorLabel() {
             return checkLabels(this.node.id, this.node.label, this.workflow.nodes);
@@ -110,9 +121,6 @@ export default {
                         input.hiddenInWorkflow = true;
                         input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
                         input.value = { __class__: "RuntimeValue" };
-                    } else if (input.type == "conditional") {
-                        input.connectable = false;
-                        input.test_param.collapsible_value = undefined;
                     } else if (!input.fixed) {
                         input.connectable = true;
                         input.collapsible_value = {
@@ -122,6 +130,12 @@ export default {
                             (input.options && input.options.length === 0) ||
                             ["integer", "float"].indexOf(input.type) != -1;
                     }
+                }
+            });
+            Utils.deepeach(inputs, (input) => {
+                if (input.type === "conditional") {
+                    input.connectable = false;
+                    input.test_param.collapsible_value = undefined;
                 }
             });
             return inputs;
@@ -149,6 +163,7 @@ export default {
             this.postChanges();
         },
         onChangeVersion(newVersion) {
+            this.messageText = `Now you are using '${this.node.config_form.name}' version ${newVersion}.`;
             this.postChanges(newVersion);
         },
         onUpdateFavorites(user, newFavorites) {
@@ -156,18 +171,11 @@ export default {
         },
         postChanges(newVersion) {
             const options = this.node.config_form;
-            getModule({
+            this.$emit("onSetData", this.node.id, {
                 tool_id: options.id,
                 tool_version: newVersion || options.version,
                 type: "tool",
                 inputs: Object.assign({}, this.mainValues, this.sectionValues),
-            }).then((data) => {
-                this.$emit("onSetData", this.node.id, data);
-                if (newVersion) {
-                    const options = data.config_form;
-                    this.messageVariant = "success";
-                    this.messageText = `Now you are using '${options.name}' version ${options.version}, id '${options.id}'.`;
-                }
             });
         },
     },

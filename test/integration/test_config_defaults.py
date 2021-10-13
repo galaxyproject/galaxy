@@ -226,6 +226,9 @@ def driver(request):
     return DRIVER
 
 
+DRIVER: GalaxyTestDriver
+
+
 def create_driver():
     # Same approach as in functional/test_toolbox_pytest.py:
     # We setup a global driver, so that the driver fixture can tear down the driver.
@@ -241,6 +244,7 @@ def create_driver():
 
 
 def get_config_data():
+    global DRIVER
 
     def load_parent_dirs():
         return {
@@ -294,6 +298,7 @@ def test_config_option(data, driver):
 
 @pytest.mark.parametrize('data', get_path_data())
 def test_is_path_absolute(data, driver):
+    global DRIVER
     path = getattr(DRIVER.app.config, data)
     if path:
         assert os.path.isabs(path)

@@ -1,0 +1,681 @@
+
+.. to_doc
+
+21.09
+===============================
+
+.. announce_start
+
+Please note that the release is still being tested and finalized, and that these
+are pre-release notes.
+
+Check back here for the official and comprehensive notes soon!
+
+
+Enhancements
+-------------------------------
+
+.. major_feature
+
+
+.. feature
+
+* New User Welcome page
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 11085`_
+* GPU enabled jupyter notebook for machine learning powered by Jupyter lab and Tensorflow
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 11484`_
+* NCBI Datasets data source tool
+  `Pull Request 11738`_
+* Feature/6965/change datatype and dbkey
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 11799`_
+* Add "View Details" button for collections
+  `Pull Request 12261`_
+* Vuefy and improve granularity for tool HTML sanitization
+  `Pull Request 12283`_
+* Implement tool panel views.
+  `Pull Request 12327`_
+* Implement news webhook to handle release announcements
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 12396`_
+.. enhancement_tag_viz
+
+.. enhancement_tag_datatypes
+
+* Convert/standardize to fstrings across `lib`
+  `Pull Request 11338`_
+* Added documentation for FASTQ datatypes and implemented quality check
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11931`_
+* Make dataset preview for h5mlm datatype
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 11935`_
+* Add datatypes for Structural Materials Hexrd application
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 11957`_
+* Adding new subclass types
+  (thanks to `@maikenp <https://github.com/maikenp>`__).
+  `Pull Request 12097`_
+* Converters: use target datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12185`_
+* Add bref3 datatype
+  (thanks to `@gallardoalba <https://github.com/gallardoalba>`__).
+  `Pull Request 12199`_
+* Converters: add missing tests and add linting to converter tests
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12202`_
+* Converters: Unify converters to tabix and bgzip
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12213`_
+* Converters: Unify dcd, trr, xtc
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12224`_
+* converters: Unify bcf converters
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12225`_
+* Add "ExpressionSet RData object" Datatype
+  (thanks to `@mtekman <https://github.com/mtekman>`__).
+  `Pull Request 12336`_
+* also parse sam metadata from sam files
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12392`_
+* Add ONNX datatype
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 12429`_
+.. enhancement_tag_tools
+
+* Changes to Collection Operation Help sections and parameter names
+  `Pull Request 11068`_
+* Update bam.iobio interactive tool wrapper
+  (thanks to `@luke-c-sargent <https://github.com/luke-c-sargent>`__).
+  `Pull Request 11537`_
+* Add tool for exporting individual files to galaxy file source plugins.
+  `Pull Request 11613`_
+* Update AskOmics interactive tool to 4.3.1
+  (thanks to `@abretaud <https://github.com/abretaud>`__).
+  `Pull Request 12159`_
+* add <creator> to the tool schema template, use live links in xsd
+  `Pull Request 12242`_
+* Systematic handling of remotely required tool files.
+  `Pull Request 12250`_
+* Allow bio.tools mappings for legacy tools.
+  `Pull Request 12289`_
+* Allow skipping sanitization of / char in export_remote tool
+  `Pull Request 12372`_
+* Lock location file before adding values
+  `Pull Request 12446`_
+.. enhancement_tag_workflows
+
+.. enhancement_tag_ui
+
+* Beta history selenium updates and assorted bug fixes
+  `Pull Request 12351`_
+* webpack dev server on remote galaxy server
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 12356`_
+.. enhancement_tag_jobs
+
+* SGE DRMAA example for queue, RAM and CPUs request
+  (thanks to `@pcm32 <https://github.com/pcm32>`__).
+  `Pull Request 12059`_
+* Allow specifying useful classes of tools for mapping in job conf YAML/XML
+  `Pull Request 12258`_
+* Fix galaxy.json dynamic file collection in Pulsar.
+  `Pull Request 12267`_
+* Default k8s_unschedulable_walltime_limit to None and allow for unlimi…
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 12317`_
+* Support setting per-job-environment container resolvers using the `container_resolvers` key in the environment config
+  `Pull Request 12350`_
+* Add config options for controlling handler and runner monitor thread sleep.
+  `Pull Request 12473`_
+.. enhancement_tag_admin
+
+* Make conda_auto_init option overrridable
+  (thanks to `@rhpvorderman <https://github.com/rhpvorderman>`__).
+  `Pull Request 12200`_
+* Support setting the container resolvers configuration directly in the Galaxy app config
+  `Pull Request 12344`_
+* Improve k8s docker image
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 12373`_
+* update admin user list DiskUsageColumn sorting for null values
+  (thanks to `@cat-bro <https://github.com/cat-bro>`__).
+  `Pull Request 12469`_
+* Make the subject and body of the mailing list join message configurable
+  `Pull Request 12484`_
+.. enhancement
+
+* Test configuration for running Selenium tests against beta history panel.
+  `Pull Request 10965`_
+* Add `negate` attribute to validators .. and tests for all
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11043`_
+* build list: list identifiers
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11309`_
+* Prepare FastAPI route for quotas
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 11315`_
+* Create central pydantic models
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 11827`_
+* Use python:3.7-slim container instead of ubuntu
+  (thanks to `@rhpvorderman <https://github.com/rhpvorderman>`__).
+  `Pull Request 11855`_
+* add more examples for the file source plugins
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11949`_
+* Migrate Libraries API (top level) to FastAPI
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 11983`_
+* Upgraded to v0.9.0 of irods client that supports parallel put/get
+  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+  `Pull Request 11984`_
+* Improve handling of tags for collection manipulation tools
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 11992`_
+* Initial setup for migrating to declarative mapping
+  `Pull Request 12042`_
+* Migrate model to declarative mapping
+  `Pull Request 12045`_
+* Unify nested collection attribute or instance access
+  `Pull Request 12056`_
+* Increase API tests coverage for Data Library GET permissions
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12057`_
+* Tweak PR template to be a bit more flexible and lightweight.
+  `Pull Request 12063`_
+* Declarative mappings + tests for all models
+  `Pull Request 12064`_
+* Enable pytest class-based tests
+  `Pull Request 12072`_
+* Rework variable name to clarify this is a wsgi application.
+  `Pull Request 12090`_
+* Upgraded irods client to v1.0.0
+  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+  `Pull Request 12101`_
+* Add configuration option to hide user account management interfaces
+  `Pull Request 12103`_
+* Fix up some typing redundancy.
+  `Pull Request 12108`_
+* Rename dataset_collections_service to dataset_collection_manager.
+  `Pull Request 12110`_
+* allow jupyter IT to take multiple inputs
+  `Pull Request 12113`_
+* docs: change GIEs label to interactive-tools
+  `Pull Request 12114`_
+* Add FastAPI routes for Library Folders
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12131`_
+* Change icon for "Share or Publish" in new history panel
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12143`_
+* Cleanup use of refresh/undo/redo/sync icons
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12145`_
+* Unify how the `GalaxyInteractorApi` handles JSON requests
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12152`_
+* Hide masthead help resources if resource urls are unavailable
+  `Pull Request 12198`_
+* Cancel in progress CI on same branch, cache yarn cache
+  `Pull Request 12211`_
+* show target datatype in datatype conversion
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12230`_
+* Add a note to get Python extension and set interpreter
+  (thanks to `@eancelet <https://github.com/eancelet>`__).
+  `Pull Request 12234`_
+* Lint for whitespace in tool XML
+  (thanks to `@neoformit <https://github.com/neoformit>`__).
+  `Pull Request 12246`_
+* Use relative path in recursive discover_datasets tag
+  `Pull Request 12254`_
+* Deprecate data manager version
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12255`_
+* Add linting for tool parameter validators
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12262`_
+* Create a bug-report issue template
+  `Pull Request 12265`_
+* Enhance page functionalities in data-library folder
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 12270`_
+* Parse edam operation and topic data from bio.tools if available.
+  `Pull Request 12291`_
+* Refactor base toolbox code de-coupled from app & config into tool_util.
+  `Pull Request 12292`_
+* Vueify Dataset Error Details Page and Form
+  `Pull Request 12300`_
+* implement selecting a folder in file source (upload modal)
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 12310`_
+* allow HTML in DatasetStorage view
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 12312`_
+* xsd: document the delta attribute of has_size assert
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12314`_
+* make linter accept from_tool_provided_metadata as means to specify the format for discovered datasets
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12319`_
+* Add Collection Import Pages
+  `Pull Request 12324`_
+* Allow various configuration parameters to be set per host.
+  `Pull Request 12328`_
+* Migrate group_roles endpoints to fastapi
+  (thanks to `@ZimmerA <https://github.com/ZimmerA>`__).
+  `Pull Request 12337`_
+* Restore Upload dialog in global Galaxy object
+  `Pull Request 12339`_
+* Move page export button to title
+  `Pull Request 12340`_
+* API test case to ensure model attributes get escaped during tool evaluation
+  `Pull Request 12357`_
+* Provide more context in EDAM Tool Panel
+  `Pull Request 12365`_
+* fix verify output for collections
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12376`_
+* Extend per_host configurations to include static directories and files.
+  `Pull Request 12379`_
+* Display Tabular datasets as sortable tables, and PDF and HTML in embedded frames in Pages
+  `Pull Request 12387`_
+* create dirs when needed for the pyfilesystem export plugins
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 12388`_
+* Debug Galaxy (that uses a Slurm cluster, not a LocalRunner) in VSCode
+  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+  `Pull Request 12403`_
+* Don't allow beta history panel Selenium tests to fail.
+  `Pull Request 12409`_
+* Selenium test for EDAM tool panel views.
+  `Pull Request 12422`_
+* Spanish Translations for remaining untranslated UI components
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 12427`_
+* Improvements to Selenium testing
+  `Pull Request 12433`_
+* Update refgenconf (refgenie) to 0.12.0. Requires version 0.4 of confi…
+  `Pull Request 12435`_
+* Set default constructor for SA models
+  `Pull Request 12438`_
+* FastAPI: add middelware to deal with file downloads
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12441`_
+* Add options to override the history name and reuse histories in the tool test script
+  `Pull Request 12466`_
+* let invalid profile trigger linter error
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12501`_
+.. small_enhancement
+
+* Refactor Sharing
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 11701`_
+* Migrate to SQLAlchemy 1.4
+  `Pull Request 11737`_
+* Vueify Workflow Editor wrappers
+  `Pull Request 11898`_
+* add double quotes to cp for from_work_dir
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11960`_
+* Prettier version update to new release
+  `Pull Request 12027`_
+* Vueify Tool Form Wrapper
+  `Pull Request 12031`_
+* Normalize Vue mounts in analysis, admin endpoints
+  `Pull Request 12040`_
+* Set cache_ok flag for SQLAlchemy custom types
+  `Pull Request 12060`_
+* Update SQLAlchemy to 1.4.17
+  `Pull Request 12089`_
+* Update dependency resolver docs and drop sample XML file in favor of direct configuration under the dependency_resolvers key of galaxy.yml
+  `Pull Request 12105`_
+* No change; triggering CI
+  `Pull Request 12111`_
+* Update SQLAlchemy to 1.4.18
+  `Pull Request 12132`_
+* Refactoring: Remove ExportsHistoryMixin and ImportsHistoryMixin
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12146`_
+* Remove unused legacy controller things
+  `Pull Request 12172`_
+* Update SQLAlchmey to 1.4.19
+  `Pull Request 12188`_
+* Refactor Histories API controller
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12195`_
+* Converters: Unify molecules converters
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12214`_
+* Vueify Workflow Run form
+  `Pull Request 12227`_
+* Update SQLAlchmey to 1.4.20
+  `Pull Request 12229`_
+* Refactor History contents API
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12231`_
+* Improve `GitHubSearch` class
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12276`_
+*  Some refactoring of interactive tool handling in k8s
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 12285`_
+* Replace form-view imports in Visualizations with Vue component layer
+  `Pull Request 12296`_
+* Fix histories content filtering by type
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12303`_
+* Vueify Dataset Edit Attributes
+  `Pull Request 12323`_
+* Vueify Generic Form Wrapper
+  `Pull Request 12329`_
+* Refactor k8s IT checks to make logic more obvious
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 12360`_
+* Fix variable name typo in watchers
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 12368`_
+* FastAPI: deprecate url attribute (again)
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12370`_
+* Avoid parsing the entire form model to the form display wrapper
+  `Pull Request 12374`_
+* Remove tool_conf.xml.main which is no longer used
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 12380`_
+* Removing unused poolsize from code and config.
+  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+  `Pull Request 12381`_
+* FastAPI: support reverse URL lookups
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12391`_
+* Adapt quotas tests to use JSON payload
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12417`_
+* Declarative mapping follow-up: model constructors cleanup
+  `Pull Request 12424`_
+* Vuefy show_params.mako
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 12432`_
+* Return `tool_name` only when `show_job` is full
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 12457`_
+* Drop unused models: DeferredJob and TransferJob
+  `Pull Request 12461`_
+* Drop bcftools requirement from set_metadata tool
+  `Pull Request 12472`_
+* Revert "Install Tempita from a fork due to `use_2to3` deprecation"
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12504`_
+* FastAPI: explicitly return empty response with 204 status
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12505`_
+
+
+Fixes
+-------------------------------
+
+.. major_bug
+
+
+.. bug_tag_viz
+
+.. bug_tag_datatypes
+
+* Fix edta metadata setting
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12273`_
+* mothur datatype: PairwiseDistanceMatrix sniffer may be too unspecific
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12280`_
+* Small fix in binary.py
+  (thanks to `@melibleq <https://github.com/melibleq>`__).
+  `Pull Request 12384`_
+* Fix cmap sniffer
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 12509`_
+.. bug_tag_tools
+
+* Fix typo in `interactivetool_jupyter_notebook.xml` help section
+  (thanks to `@maximskorik <https://github.com/maximskorik>`__).
+  `Pull Request 12077`_
+* Update interactivetool_pyiron.xml
+  (thanks to `@gmauro <https://github.com/gmauro>`__).
+  `Pull Request 12127`_
+* Fix patterns in Grep1 tool
+  `Pull Request 12166`_
+* Restore Grep1 version 1.0.1
+  `Pull Request 12252`_
+.. bug_tag_workflows
+
+* Add switch for optional select in workflow editor
+  `Pull Request 12138`_
+* Do not persist tool state when invoking workflow
+  `Pull Request 12141`_
+* Fix failure to serialize invocation / drop stored_workflow_id from invocation API
+  `Pull Request 12148`_
+* Fix various TRS bugs and add tests
+  `Pull Request 12182`_
+* Fix simplified workflow run form config setting
+  `Pull Request 12204`_
+* Fix expanding collections in invocation view
+  `Pull Request 12216`_
+.. bug_tag_ui
+
+* Swap to galaxy fork of bootstrap-tour
+  `Pull Request 12210`_
+* Beta history annotation, title, and tag editor
+  `Pull Request 12299`_
+* Fix typo in docs
+  `Pull Request 12450`_
+.. bug_tag_jobs
+
+* Handle k8s job creation failures
+  (thanks to `@brinkmanlab <https://github.com/brinkmanlab>`__).
+  `Pull Request 11715`_
+* More IT and k8s runner fixes
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 11989`_
+* Unquote globs in from_work_dir ouptuts
+  `Pull Request 12049`_
+* quote extract_dataset_parts.sh call
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12183`_
+* Fix crash when uwsgi + mules has unhandled jobs at startup
+  `Pull Request 12215`_
+* k8s - handle metadata explicitly instead of relying on legacy fallback
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 12243`_
+* Fix version command when using extended metadata
+  `Pull Request 12245`_
+* Fix composite inputs when using Pulsar.
+  `Pull Request 12259`_
+* Fix Pulsar dynamic output discovery for various simple tool specified patterns.
+  `Pull Request 12260`_
+* Added additional guard conditions in k8s runner to prevent KeyError
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 12277`_
+* Fix Pulsar's ability to read tool provided metadata when path is overridden.
+  `Pull Request 12284`_
+* Continue handler startup even if job working directory can't be recovered
+  `Pull Request 12316`_
+* tmp_dir can be an expression or the string True - fix sample job_conf…
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 12361`_
+* Fail data manager job when processing table entry fails
+  `Pull Request 12495`_
+.. bug_tag_admin
+
+* change doc for ftp_upload_dir/site
+  (thanks to `@lldelisle <https://github.com/lldelisle>`__).
+  `Pull Request 12164`_
+.. bug
+
+* Fix non-closing masthread downdown
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 11962`_
+* Update tensorflow to 2.5.0.
+  `Pull Request 12026`_
+* Fix query parameter in `/api/libraries/{id}/permissions`
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12047`_
+* Add/drop index together with `job_id` column
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12050`_
+* Fix pysam.view call
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12061`_
+* Open partfile in rb-mode in multipart uploading
+  (thanks to `@bioflowy <https://github.com/bioflowy>`__).
+  `Pull Request 12084`_
+* Make components full width
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 12085`_
+* Fix history audit table row trigger
+  `Pull Request 12130`_
+* Update fastapi to 0.65.2 and dependencies
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12136`_
+* Fix subworkflow tool state upgrade parsing
+  `Pull Request 12139`_
+* adding test case for pair name, fixing other listpaired test case
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 12154`_
+* Fix remote files upload from other pages
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 12155`_
+* Add timeout to all urlopen and requests.* methods
+  `Pull Request 12173`_
+* Allow ``decompress="true"`` in test comparison methods
+  `Pull Request 12187`_
+* Fix TRS search if search term contains -
+  `Pull Request 12196`_
+* Allow leading whitespace in TRS search term
+  `Pull Request 12197`_
+* xsd: fix typo
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12206`_
+* Work around null hid
+  `Pull Request 12217`_
+* Assorted fixes to debugging documentation
+  `Pull Request 12218`_
+* Don't let reports auto-create database tables
+  `Pull Request 12220`_
+* Small fixes for beta history panel.
+  `Pull Request 12228`_
+* Fix fugue pencil on old sharing not showing up correctly.
+  `Pull Request 12235`_
+* Fix string formatting bug in test interactor
+  `Pull Request 12253`_
+* Added check to install 'fs.sshfs' package
+  (thanks to `@kjetilkl <https://github.com/kjetilkl>`__).
+  `Pull Request 12269`_
+* fix type of  `page` and `page_limit` in Libraries Folder permissions
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 12271`_
+* Improve handling of unexpected values in is_empty_file
+  `Pull Request 12275`_
+* Beta history: Dataset Collection API fix for updating tags
+  `Pull Request 12286`_
+* Allow scrolling in autocomplete options, fix search word filtering
+  `Pull Request 12290`_
+* Add a GDPR-friendly user purge to pgcleanup
+  `Pull Request 12293`_
+* Fix admin user manage
+  `Pull Request 12295`_
+* reword history import button text
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12304`_
+* Fix order of dataset instances
+  `Pull Request 12305`_
+* Fix recursive file list in posix remote files
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 12307`_
+* linter support for `format_source` in static collection elements
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12309`_
+* Make authnz end session endpoint optional to support various …
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 12311`_
+* Use workflow step title as defined in the workflow model
+  `Pull Request 12320`_
+* Gitlab Error report - Remove previously required urllib
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 12333`_
+* Identify tool by name, owner, toolshed
+  (thanks to `@pvanheus <https://github.com/pvanheus>`__).
+  `Pull Request 12338`_
+* Fix for empty docker_volumes/singularity_volumes in job config
+  `Pull Request 12341`_
+* Fix up plugin_config module modifying configuration dictionaries.
+  `Pull Request 12354`_
+* Remove NetworkException catch clauses, so if irods server is down, NetworkException percolates up, preventing a silent failure and alerting us
+  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+  `Pull Request 12363`_
+* Bump tensorflow from 2.5.0 to 2.5.1 in /lib/galaxy/dependencies
+  `Pull Request 12378`_
+* Added missing triggers package to galaxy data
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 12389`_
+* Fix hids, alignment, other style issues in beta history.
+  `Pull Request 12406`_
+* Fixes to selenium testing with beta history panel enabled.
+  `Pull Request 12407`_
+* Downgrade Cheetah3 to 3.2.6.post1
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12408`_
+* Install Tempita from a fork due to `use_2to3` deprecation
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12413`_
+* Fix flaky failing workflow editor selenium test.
+  `Pull Request 12423`_
+* Bump sqlparse from 0.4.1 to 0.4.2 in /lib/galaxy/dependencies
+  `Pull Request 12436`_
+* Fix keycloak user creation username handling.
+  `Pull Request 12444`_
+* Make Role description field optional
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12447`_
+* Drop sylink to tool_conf.xml.main
+  `Pull Request 12451`_
+* Fix history contents API update batch with collections
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12456`_
+* Remove default pagination in `LibraryPopulator.get_permissions()`
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12463`_
+* Drop tool_name from dataset details
+  `Pull Request 12465`_
+* stripping whitespace on urls when uploading
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 12474`_
+* removing appended name field for default_value
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 12481`_
+* Explicitly set `page_limit` in `test_get_library_available_permissions`
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12483`_
+* Update dataset edit toggle button to refer to dataset instead of coll…
+  `Pull Request 12485`_
+* Handle deleted panel views in the UI.
+  `Pull Request 12488`_
+* Fix bug when restarting Galaxy in selenium integration tests.
+  `Pull Request 12489`_
+* revert a change to xsd
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12494`_
+* Add PostgreSQL < 9.5 deprecation notice to 21.05 release announce
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12496`_
+* Fix indention for admin panel links
+  `Pull Request 12497`_
+
+.. include:: 21.09_prs.rst
+

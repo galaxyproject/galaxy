@@ -1,6 +1,7 @@
 import json
 import zipfile
 from io import BytesIO
+from typing import List
 
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator, skip_if_github_down
@@ -8,6 +9,7 @@ from ._framework import ApiTestCase
 
 
 class DatasetCollectionApiTestCase(ApiTestCase):
+    history_id: str
 
     def setUp(self):
         super().setUp()
@@ -438,11 +440,10 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
         converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
-        expected = []
-        actual = []
+        actual: List[str] = []
         for converter in converters.json():
             actual.append(converter["tool_id"])
-        assert sorted(actual) == sorted(expected)
+        assert sorted(actual) == sorted([])
 
     def test_collection_tools_tag_propagation(self):
         elements = [{"src": "files", "tags": ["name:element_tag"]}]

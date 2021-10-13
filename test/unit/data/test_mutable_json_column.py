@@ -1,5 +1,6 @@
 import copy
 
+from galaxy import model
 from .test_galaxy_mapping import BaseModelTestCase
 
 
@@ -9,10 +10,10 @@ class MutableColumnTest(BaseModelTestCase):
         item_id = item.id
         self.model.session.flush()
         self.model.session.expunge_all()
-        return self.model.session.query(self.model.Workflow).get(item_id)
+        return self.model.session.query(model.Workflow).get(item_id)
 
     def test_metadata_mutable_column(self):
-        w = self.model.Workflow()
+        w = model.Workflow()
         self.model.session.add(w)
         self.model.session.flush()
         w.reports_config = {'x': 'z'}

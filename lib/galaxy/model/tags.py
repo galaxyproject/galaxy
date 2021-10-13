@@ -156,6 +156,8 @@ class TagHandler:
 
     def apply_item_tag(self, user, item, name, value=None, flush=True):
         # Use lowercase name for searching/creating tag.
+        if name is None:
+            return
         lc_name = name.lower()
         # Get or create item-tag association.
         item_tag_assoc = self._get_item_tag_assoc(user, item, lc_name)

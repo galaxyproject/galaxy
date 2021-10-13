@@ -138,8 +138,8 @@ $form-heading-bg: $panel-bg-color;
 $form-border: darken($form-heading-bg, 20%);
 
 // Table
-$table-heading-bg: $panel-bg-color;
-$table-bg-accent: darken($panel-bg-color, 5%);
+$table-heading-bg: darken($panel-bg-color, 5%);
+$table-bg-accent: $panel-bg-color;
 $table-border-color: transparent;
 
 // Additional state colors

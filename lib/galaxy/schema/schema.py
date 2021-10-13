@@ -811,6 +811,14 @@ class HistoryBeta(HistoryDetailed):
     )
 
 
+AnyHistoryView = Union[
+    HistoryBeta, HistoryDetailed, HistorySummary,
+    # Any will cover those cases in which only specific `keys` are requested
+    # otherwise the validation will fail because the required fields are not returned
+    Any,
+]
+
+
 class ExportHistoryArchivePayload(Model):
     gzip: Optional[bool] = Field(
         default=True,
@@ -875,8 +883,6 @@ class CreateHistoryPayload(Model):
         title="Archive Source",
         description=(
             "The URL that will generate the archive to import when `archive_type='url'`. "
-            # This seems a bit odd but the create history action expects `archive_source` to be != None
-            "When importing from a file using `archive_file`, please set `archive_source=''`."
         ),
     )
     archive_type: Optional[HistoryImportArchiveSourceType] = Field(
@@ -887,11 +893,11 @@ class CreateHistoryPayload(Model):
     archive_file: Optional[Any] = Field(
         default=None,
         title="Archive File",
-        description="Detailed file information when importing the history from a file.",
+        description="Uploaded file information when importing the history from a file.",
     )
 
 
-class JobExportHistoryArchive(Model):
+class JobExportHistoryArchiveModel(Model):
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -932,6 +938,10 @@ class JobExportHistoryArchive(Model):
         title="External Download Permanent URL",
         description="Fully qualified URL to download this particular version of the exported history archive.",
     )
+
+
+class JobExportHistoryArchiveCollection(Model):
+    __root__: List[JobExportHistoryArchiveModel]
 
 
 class LabelValuePair(BaseModel):
@@ -2353,4 +2363,284 @@ class DeleteHDCAResult(Model):
         ...,
         title="Deleted",
         description="True if the collection was successfully deleted.",
+    )
+
+
+AnyHDA = Union[HDASummary, HDADetailed, HDABeta]
+AnyHistoryContentItem = Union[AnyHDA, HDCASummary, HDCADetailed, HDCABeta]
+
+AnyJobStateSummary = Union[
+    JobStateSummary,
+    ImplicitCollectionJobsStateSummary,
+    WorkflowInvocationStateSummary,
+]
+
+HistoryArchiveExportResult = Union[JobExportHistoryArchiveModel, JobIdResponse]
+
+# Sharing -----------------------------------------------------------------
+
+
+class SharingOptions(str, Enum):
+    """Options for sharing resources that may have restricted access to all or part of their contents."""
+    make_public = "make_public"
+    make_accessible_to_shared = "make_accessible_to_shared"
+    no_changes = "no_changes"
+
+
+class ShareWithExtra(BaseModel):
+    can_share: bool = Field(
+        False,
+        title="Can Share",
+        description="Indicates whether the resource can be directly shared or requires further actions.",
+    )
+
+    class Config:
+        extra = Extra.allow
+
+
+UserIdentifier = Union[EncodedDatabaseIdField, str]
+
+
+class ShareWithPayload(BaseModel):
+    user_ids: List[UserIdentifier] = Field(
+        ...,
+        title="User Identifiers",
+        description=(
+            "A collection of encoded IDs (or email addresses) of users "
+            "that this resource will be shared with."
+        ),
+    )
+    share_option: Optional[SharingOptions] = Field(
+        None,
+        title="Share Option",
+        description=(
+            "User choice for sharing resources which its contents may be restricted:\n"
+            " - None: The user did not choose anything yet or no option is needed.\n"
+            f" - {SharingOptions.make_public}: The contents of the resource will be made publicly accessible.\n"
+            f" - {SharingOptions.make_accessible_to_shared}: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.\n"
+            f" - {SharingOptions.no_changes}: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.\n"
+        ),
+    )
+
+
+class SetSlugPayload(BaseModel):
+    new_slug: str = Field(
+        ...,
+        title="New Slug",
+        description="The slug that will be used to access this shared item.",
+    )
+
+
+class UserEmail(BaseModel):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="User ID",
+        description="The encoded ID of the user.",
+    )
+    email: str = Field(
+        ...,
+        title="Email",
+        description="The email of the user.",
+    )
+
+
+class SharingStatus(BaseModel):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="The encoded ID of the resource to be shared.",
+    )
+    title: str = Field(
+        ...,
+        title="Title",
+        description="The title or name of the resource.",
+    )
+    importable: bool = Field(
+        ...,
+        title="Importable",
+        description="Whether this resource can be published using a link.",
+    )
+    published: bool = Field(
+        ...,
+        title="Published",
+        description="Whether this resource is currently published.",
+    )
+    users_shared_with: List[UserEmail] = Field(
+        [],
+        title="Users shared with",
+        description="The list of encoded ids for users the resource has been shared.",
+    )
+    username_and_slug: Optional[str] = Field(
+        None,
+        title="Username and slug",
+        description="The relative URL in the form of /u/{username}/{resource_single_char}/{slug}",
+    )
+
+
+class ShareWithStatus(SharingStatus):
+    errors: List[str] = Field(
+        [],
+        title="Errors",
+        description="Collection of messages indicating that the resource was not shared with some (or all users) due to an error.",
+    )
+    extra: Optional[ShareWithExtra] = Field(
+        None,
+        title="Extra",
+        description=(
+            "Optional extra information about this shareable resource that may be of interest. "
+            "The contents of this field depend on the particular resource."
+        ),
+    )
+
+
+class HDABasicInfo(BaseModel):
+    id: EncodedDatabaseIdField
+    name: str
+
+
+class ShareHistoryExtra(ShareWithExtra):
+    can_change: List[HDABasicInfo] = Field(
+        [],
+        title="Can Change",
+        description=(
+            "A collection of datasets that are not accessible by one or more of the target users "
+            "and that can be made accessible for others by the user sharing the history."
+        ),
+    )
+    cannot_change: List[HDABasicInfo] = Field(
+        [],
+        title="Cannot Change",
+        description=(
+            "A collection of datasets that are not accessible by one or more of the target users "
+            "and that cannot be made accessible for others by the user sharing the history."
+        ),
+    )
+    accessible_count: int = Field(
+        0,
+        title="Accessible Count",
+        description=(
+            "The number of datasets in the history that are public or accessible by all the target users."
+        ),
+    )
+
+# Pages -------------------------------------------------------
+
+
+class PageContentFormat(str, Enum):
+    markdown = "markdown"
+    html = "html"
+
+
+ContentFormatField: PageContentFormat = Field(
+    default=PageContentFormat.html,
+    title="Content format",
+    description="Either `markdown` or `html`.",
+)
+
+ContentField: Optional[str] = Field(
+    default="",
+    title="Content",
+    description="Raw text contents of the first page revision (type dependent on content_format).",
+)
+
+
+class PageSummaryBase(BaseModel):
+    title: str = Field(
+        ...,  # Required
+        title="Title",
+        description="The name of the page",
+    )
+    slug: str = Field(
+        ...,  # Required
+        title="Identifier",
+        description="The title slug for the page URL, must be unique.",
+        regex=r"^[a-z0-9\-]+$",
+    )
+
+
+class CreatePagePayload(PageSummaryBase):
+    content_format: PageContentFormat = ContentFormatField
+    content: Optional[str] = ContentField
+    annotation: Optional[str] = Field(
+        default=None,
+        title="Annotation",
+        description="Annotation that will be attached to the page.",
+    )
+    invocation_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Workflow invocation ID",
+        description="Encoded ID used by workflow generated reports.",
+    )
+
+    class Config:
+        use_enum_values = True  # When using .dict()
+        extra = Extra.allow  # Allow any other extra fields
+
+
+class PageSummary(PageSummaryBase):
+    id: EncodedDatabaseIdField = Field(
+        ...,  # Required
+        title="ID",
+        description="Encoded ID of the Page.",
+    )
+    model_class: str = Field(
+        ...,  # Required
+        title="Model class",
+        description="The class of the model associated with the ID.",
+        example="Page",
+    )
+    username: str = Field(
+        ...,  # Required
+        title="Username",
+        description="The name of the user owning this Page.",
+    )
+    published: bool = Field(
+        ...,  # Required
+        title="Published",
+        description="Whether this Page has been published.",
+    )
+    importable: bool = Field(
+        ...,  # Required
+        title="Importable",
+        description="Whether this Page can be imported.",
+    )
+    deleted: bool = Field(
+        ...,  # Required
+        title="Deleted",
+        description="Whether this Page has been deleted.",
+    )
+    latest_revision_id: EncodedDatabaseIdField = Field(
+        ...,  # Required
+        title="Latest revision ID",
+        description="The encoded ID of the last revision of this Page.",
+    )
+    revision_ids: List[EncodedDatabaseIdField] = Field(
+        ...,  # Required
+        title="List of revisions",
+        description="The history with the encoded ID of each revision of the Page.",
+    )
+
+
+class PageDetails(PageSummary):
+    content_format: PageContentFormat = ContentFormatField
+    content: Optional[str] = ContentField
+    generate_version: Optional[str] = Field(
+        None,
+        title="Galaxy Version",
+        description="The version of Galaxy this page was generated with.",
+    )
+    generate_time: Optional[str] = Field(
+        None,
+        title="Generate Date",
+        description="The date this page was generated.",
+    )
+
+    class Config:
+        extra = Extra.allow  # Allow any other extra fields
+
+
+class PageSummaryList(BaseModel):
+    __root__: List[PageSummary] = Field(
+        default=[],
+        title='List with summary information of Pages.',
     )

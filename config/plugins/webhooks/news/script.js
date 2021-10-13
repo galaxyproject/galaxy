@@ -29,13 +29,11 @@ function addNewsIframe() {
     // now we'll hardcode the version users 'see'. @hexylena will remove this
     // code when she writes the user-facing release notes, and then will file
     // an issue for how we'll fix this properly.
-    if(currentGalaxyVersion == "22.01") {
+    if (currentGalaxyVersion == "22.01") {
         currentGalaxyVersion = "21.09";
-    } else if(currentGalaxyVersion == "21.09") {
-        currentGalaxyVersion = "21.05";
     }
 
-    const releaseNotes = `https://docs.galaxyproject.org/en/master/releases/${currentGalaxyVersion}_announce_user.html`;
+    const releaseNotes = `https://docs.galaxyproject.org/en/latest/releases/${currentGalaxyVersion}_announce_user.html`;
     const lastSeenVersion = window.localStorage.getItem("galaxy-news-seen-release");
     // Check that they've seen the current version's release notes.
     if (lastSeenVersion != currentGalaxyVersion) {

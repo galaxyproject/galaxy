@@ -20,6 +20,7 @@ from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
 
 class UsesApiTestCaseMixin:
+    url: str
 
     def tearDown(self):
         if os.environ.get('GALAXY_TEST_EXTERNAL') is None:

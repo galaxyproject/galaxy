@@ -35,6 +35,10 @@ TEST_INPUT_FILES_CONTENT = "1 2 3"
 
 
 class ObjectStoreJobsIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+    # setup by _configure_object_store
+    files1_path: str
+    files2_path: str
+    files3_path: str
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

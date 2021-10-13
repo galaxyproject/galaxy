@@ -216,7 +216,7 @@ class safe_update(NamedTuple):
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
 WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1")),
-    '__BUILD_LIST__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
+    '__BUILD_LIST__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
     '__APPLY_RULES__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
     '__EXTRACT_DATASET__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
     'Grep1': safe_update(packaging.version.parse("1.0.1"), packaging.version.parse("1.0.3")),
@@ -709,10 +709,13 @@ class Tool(Dictifiable):
         # seem to require Galaxy's Python.
         # FIXME: the (instantiated) tool class should emit this behavior, and not
         #        use inspection by string check
-        if self.tool_type not in ["default", "manage_data", "interactive"]:
+        if self.tool_type not in ["default", "manage_data", "interactive", "data_source"]:
             return True
 
         if self.tool_type == "manage_data" and self.profile < 18.09:
+            return True
+
+        if self.tool_type == "data_source" and self.profile < 21.09:
             return True
 
         config = self.app.config
@@ -1822,7 +1825,7 @@ class Tool(Dictifiable):
             elif isinstance(param, HiddenToolParameter):
                 args[key] = model.User.expand_user_properties(trans.user, param.value)
             else:
-                raise Exception("Unexpected parameter type")
+                args[key] = param.get_initial_value(trans, None)
         return args
 
     def execute(self, trans, incoming=None, set_output_hid=True, history=None, **kwargs):
@@ -2956,7 +2959,18 @@ class BuildListCollectionTool(DatabaseOperationTool):
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
             if incoming_repeat["input"]:
-                new_elements["%d" % i] = incoming_repeat["input"].copy(copy_tags=incoming_repeat["input"].tags)
+                try:
+                    id_select = incoming_repeat["id_cond"]["id_select"]
+                except KeyError:
+                    # Prior to tool version 1.2.0
+                    id_select = 'idx'
+                if id_select == 'idx':
+                    identifier = str(i)
+                elif id_select == 'identifier':
+                    identifier = getattr(incoming_repeat["input"], 'element_identifier', incoming_repeat["input"].name)
+                elif id_select == 'manual':
+                    identifier = incoming_repeat["id_cond"]["identifier"]
+                new_elements[identifier] = incoming_repeat["input"].copy(copy_tags=incoming_repeat["input"].tags)
 
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(

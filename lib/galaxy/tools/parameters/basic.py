@@ -13,6 +13,7 @@ from webob.compat import cgi_FieldStorage
 
 import galaxy.model
 from galaxy import util
+from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     dbkeys,
@@ -623,7 +624,7 @@ class FileToolParameter(ToolParameter):
             except KeyError:
                 return None
         elif isinstance(value, cgi_FieldStorage):
-            return value.filename
+            return value.file.name
         raise Exception("FileToolParameter cannot be persisted")
 
     def to_python(self, value, app):
@@ -2413,6 +2414,16 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
         SimpleTextToolParameter.__init__(self, tool, input_source)
+
+    def validate(self, value, trans=None):
+        super().validate(value, trans=trans)
+        if not value:
+            return  # value is not set yet, do not validate
+        file_source = trans.app.file_sources.get_file_source_path(value).file_source
+        user_context = ProvidesUserFileSourcesUserContext(trans)
+        user_has_access = file_source.user_has_access(user_context)
+        if not user_has_access:
+            raise ParameterValueError(f"The user cannot access {value}.", self.name)
 
 
 class RulesListToolParameter(BaseJsonToolParameter):

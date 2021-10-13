@@ -1,5 +1,6 @@
 import importlib
 import logging
+from types import ModuleType
 
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
@@ -48,6 +49,7 @@ class JobRunnerMapper:
     This class is responsible to managing the mapping of jobs
     (in the form of job_wrappers) to job runner url strings.
     """
+    rules_module: ModuleType
 
     def __init__(self, job_wrapper, url_to_destination, job_config):
         self.job_wrapper = job_wrapper

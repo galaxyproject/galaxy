@@ -61,8 +61,8 @@ try:
     import docutils.core as docutils_core
     import docutils.writers.html4css1 as docutils_html4css1
 except ImportError:
-    docutils_core = None
-    docutils_html4css1 = None
+    docutils_core = None  # type: ignore
+    docutils_html4css1 = None  # type: ignore
 
 try:
     import uwsgi
@@ -1527,6 +1527,7 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
+#  Don't use these two directly, prefer method version that "works" with packaged Galaxy.
 galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore
 galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore
 
@@ -1539,7 +1540,7 @@ def galaxy_directory():
 
 
 def galaxy_samples_directory():
-    return os.path.abspath(galaxy_samples_path)
+    return os.path.join(galaxy_directory(), 'lib', 'galaxy', 'config', 'sample')
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):

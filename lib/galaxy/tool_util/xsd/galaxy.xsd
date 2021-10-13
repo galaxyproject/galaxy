@@ -55,6 +55,10 @@ List of behavior changes associated with profile versions:
 - Exit immediately if a command exits with a non-zero status (`set -e`).
 - Assume sort order for collection elements.
 
+### 21.09
+
+- Do not strip leading and trailing whitespaces in `from_work_dir` attribute.
+
 ### Examples
 
 A normal tool:

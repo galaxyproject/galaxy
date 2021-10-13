@@ -152,13 +152,11 @@ steps:
         inputs = {
             '0': self.dataset_populator.ds_entry(hdca_id),
         }
-        invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
-        self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, inputs=inputs, assert_ok=True)
         jobs1 = self.__jobs_index(data={"workflow_id": workflow_id})
         jobs2 = self.__jobs_index(data={"invocation_id": invocation_id})
         assert len(jobs1) == len(jobs2) == 1
-        second_invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
-        self.workflow_populator.wait_for_invocation(workflow_id, second_invocation_id)
+        second_invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, inputs=inputs, assert_ok=True)
         workflow_jobs = self.__jobs_index(data={"workflow_id": workflow_id})
         second_invocation_jobs = self.__jobs_index(data={"invocation_id": second_invocation_id})
         assert len(workflow_jobs) == 2
@@ -350,6 +348,7 @@ steps:
                                  timeout=DEFAULT_SOCKET_TIMEOUT)
         assert response.status_code == 200, response.text
 
+    @skip_without_tool("create_2")
     @uses_test_history(require_new=True)
     def test_deleting_output_keep_running_until_all_deleted(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 120)
@@ -373,6 +372,7 @@ steps:
         final_state = wait_on_state(job_state, assert_ok=False, timeout=15)
         assert final_state in ["deleting", "deleted"], final_state
 
+    @skip_without_tool("create_2")
     @uses_test_history(require_new=True)
     def test_purging_output_keep_running_until_all_purged(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 120)
@@ -415,6 +415,7 @@ steps:
         if output_dataset_paths_exist:
             wait_on(paths_deleted, "path deletion")
 
+    @skip_without_tool("create_2")
     @uses_test_history(require_new=True)
     def test_purging_output_cleaned_after_ok_run(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 10)
@@ -460,9 +461,11 @@ steps:
             ),
             history_id=history_id,
         )
-        run_response = self._post("tools", data=payload).json()
-        outputs = run_response["outputs"]
-        jobs = run_response["jobs"]
+        run_response = self._post("tools", data=payload)
+        run_response.raise_for_status()
+        run_object = run_response.json()
+        outputs = run_object["outputs"]
+        jobs = run_object["jobs"]
 
         assert len(outputs) == 2
         assert len(jobs) == 1
@@ -475,10 +478,6 @@ steps:
         time.sleep(2)
         running_state = wait_on_state(job_state, skip_states=["queued", "new"], assert_ok=False, timeout=15)
         assert running_state == "running", running_state
-
-        def job_state():
-            jobs_response = self._get(f"jobs/{jobs[0]['id']}")
-            return jobs_response
 
         return job_state, outputs
 

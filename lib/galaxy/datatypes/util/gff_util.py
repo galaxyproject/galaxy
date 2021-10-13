@@ -369,7 +369,10 @@ def parse_gff3_attributes(attr_str):
     attributes_list = attr_str.split(";")
     attributes = {}
     for tag_value_pair in attributes_list:
-        pair = tag_value_pair.strip().split("=")
+        tag_value_pair = tag_value_pair.strip()
+        if tag_value_pair == '':
+            continue
+        pair = tag_value_pair.split("=")
         if len(pair) == 1:
             raise Exception(f"Attribute '{tag_value_pair}' does not contain a '='")
         if pair == '':

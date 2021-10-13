@@ -1268,9 +1268,15 @@ class ToolModule(WorkflowModule):
             current_tool_version = str(self.tool.version)
             if tool_version and exact_tools and self.tool_version != current_tool_version:
                 safe_version = WORKFLOW_SAFE_TOOL_VERSION_UPDATES.get(current_tool_id)
-                if safe_version and safe_version.current_version >= packaging.version.parse(current_tool_id) >= safe_version.min_version:
-                    self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=False, tool_uuid=tool_uuid)
-                else:
+                safe_version_found = False
+                if safe_version and self.tool.lineage:
+                    # tool versions are sorted from old to new, so check newest version first
+                    for lineage_version in reversed(self.tool.lineage.tool_versions):
+                        if safe_version.current_version >= packaging.version.parse(lineage_version) >= safe_version.min_version:
+                            self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=lineage_version, exact=True, tool_uuid=tool_uuid)
+                            safe_version_found = True
+                            break
+                if not safe_version_found:
                     log.info(f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}].")
                     self.tool = None
         self.post_job_actions = {}

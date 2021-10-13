@@ -4,6 +4,7 @@ from collections import (
     defaultdict,
     namedtuple,
 )
+from typing import Set
 
 from galaxy import exceptions
 from galaxy.util import (
@@ -146,6 +147,8 @@ class ConfiguredFileSources:
     def plugins_to_dict(self, for_serialization=False, user_context=None):
         rval = []
         for file_source in self._file_sources:
+            if not file_source.user_has_access(user_context):
+                continue
             el = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
             rval.append(el)
         return rval
@@ -244,16 +247,16 @@ class ProvidesUserFileSourcesUserContext:
         return user and user.extra_preferences or defaultdict(lambda: None)
 
     @property
-    def role_names(self):
+    def role_names(self) -> Set[str]:
         """The set of role names of this user."""
         user = self.trans.user
-        return user and set([ura.role.name for ura in user.roles])
+        return set(ura.role.name for ura in user.roles) if user else set()
 
     @property
-    def group_names(self):
+    def group_names(self) -> Set[str]:
         """The set of group names to which this user belongs."""
         user = self.trans.user
-        return user and set([ugr.group.name for ugr in user.groups])
+        return set(ugr.group.name for ugr in user.groups) if user else set()
 
     @property
     def is_admin(self):

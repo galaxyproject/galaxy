@@ -22,7 +22,7 @@ const createApp = function () {
 
 const nodeData = {
     inputs: [],
-    outputs: [],
+    outputs: [{ name: "out1", extensions: ["data"] }],
     config_form: "{}",
     tool_state: "ok",
     tool_errors: false,
@@ -326,6 +326,7 @@ QUnit.test("Collection output can connect to same collection input type", functi
     const outputTerminal = new Terminals.OutputCollectionTerminal({
         datatypes: "txt",
         collection_type: "list",
+        node: {},
     });
     outputTerminal.node = {postJobActions: {}};
     assert.ok(
@@ -340,6 +341,7 @@ QUnit.test("Optional collection output can not connect to required collection in
         datatypes: "txt",
         collection_type: "list",
         optional: true,
+        node: {},
     });
     outputTerminal.node = {};
     assert.ok(!inputTerminal.canAccept(outputTerminal).canAccept);
@@ -350,6 +352,7 @@ QUnit.test("Collection output cannot connect to different collection input type"
     const outputTerminal = new Terminals.OutputCollectionTerminal({
         datatypes: "txt",
         collection_type: "paired",
+        node: {},
     });
     outputTerminal.node = {};
     assert.ok(!inputTerminal.canAccept(outputTerminal).canAccept);
@@ -542,6 +545,7 @@ QUnit.module("Node view", {
                 datatypes: [outputType],
                 mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION,
                 element: inputEl,
+                node: {},
             });
             outputTerminal.node = {
                 markChanged: function () {},
@@ -572,6 +576,7 @@ QUnit.module("Node view", {
                 datatypes: ["txt"],
                 mapOver: new Terminals.CollectionTypeDescription("list"),
                 element: inputEl,
+                node: {},
             });
             outputTerminal.node = {
                 markChanged: function () {},
@@ -598,6 +603,7 @@ QUnit.module("Node view", {
                 datatypes: ["txt"],
                 mapOver: new Terminals.CollectionTypeDescription("list"),
                 element: inputEl,
+                node: {},
             });
             outputTerminal.node = {
                 markChanged: function () {},
@@ -832,7 +838,10 @@ QUnit.test("equal", function (assert) {
 });
 
 QUnit.test("default constructor", function (assert) {
-    const terminal = new Terminals.InputTerminal({ input: {} });
+    const terminal = new Terminals.InputTerminal({
+        input: {},
+        node: {},
+    });
     assert.ok(terminal.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION);
 });
 
@@ -902,7 +911,11 @@ QUnit.module("terminal mapping logic", {
             output["extensions"] = ["data"];
         }
         const outputEl = $("<div>")[0];
-        const outputTerminal = new Terminals.OutputTerminal({ element: outputEl, datatypes: output.extensions });
+        const outputTerminal = new Terminals.OutputTerminal({
+            element: outputEl,
+            datatypes: output.extensions,
+            node: {},
+        });
         outputTerminal.node = node;
         if (mapOver) {
             outputTerminal.setMapOver(new Terminals.CollectionTypeDescription(mapOver));
@@ -921,6 +934,7 @@ QUnit.module("terminal mapping logic", {
             element: outputEl,
             datatypes: output.extensions,
             collection_type: collectionType,
+            node: {},
         });
         outputTerminal.node = node;
         if (mapOver) {
@@ -1264,4 +1278,15 @@ QUnit.test("simple mapping over collection outputs works correctly", function (a
 
     const testTerminal1 = this.newInputTerminal("list:list:list");
     this.verifyNotAttachable(assert, testTerminal1, connectedOutput);
+});
+
+QUnit.test("node mapping state over collection outputs works correctly", function (assert) {
+    const inputTerminal1 = this.newInputTerminal();
+    const outputCollectionTerminal1 = this.newOutputCollectionTerminal("list");
+    assert.ok(!inputTerminal1.node.mapOver);
+    const connector = new Connector({}, outputCollectionTerminal1, inputTerminal1);
+    outputCollectionTerminal1.connect(connector);
+    assert.ok(inputTerminal1.node.mapOver);
+    inputTerminal1.disconnect(connector);
+    assert.ok(!inputTerminal1.node.mapOver);
 });

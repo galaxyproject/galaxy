@@ -6,6 +6,8 @@ galaxy-web-framework
 galaxy-web-stack
 
 celery
+cloudauthz==0.6.0
+cwltool==3.0.20201109103151
 kombu
 Beaker
 pykwalify
@@ -18,4 +20,3 @@ Markdown
 refgenconf>=0.7.0,<0.10.0 # https://github.com/galaxyproject/galaxy/issues/11601
 Fabric3
 lagom
-fs

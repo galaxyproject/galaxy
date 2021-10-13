@@ -30,6 +30,7 @@ from galaxy import (
 )
 from galaxy.datatypes import sniff
 from galaxy.exceptions import (
+    MessageException,
     ObjectInvalid,
     ObjectNotFound,
 )
@@ -1141,10 +1142,10 @@ class JobWrapper(HasResourceParameters):
         job = self._load_job()
 
         def get_special():
-            special = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=job).first()
-            if not special:
-                special = self.sa_session.query(model.GenomeIndexToolData).filter_by(job=job).first()
-            return special
+            jeha = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=job).first()
+            if jeha:
+                return jeha.fda
+            return self.sa_session.query(model.GenomeIndexToolData).filter_by(job=job).first()
 
         tool_evaluator = self._get_tool_evaluator(job)
         compute_environment = compute_environment or self.default_compute_environment(job)
@@ -1637,8 +1638,11 @@ class JobWrapper(HasResourceParameters):
         self.sa_session.expunge_all()
         job = self.get_job()
 
-        def fail():
-            return self.fail(job.info, tool_stdout=tool_stdout, tool_stderr=tool_stderr, exit_code=tool_exit_code, job_stdout=job_stdout, job_stderr=job_stderr)
+        def fail(message=job.info, exception=None):
+            if not isinstance(exception, (AssertionError, MessageException)):
+                # Only attach MessageException and AssertionErrors to job.traceback
+                exception = None
+            return self.fail(message, tool_stdout=tool_stdout, tool_stderr=tool_stderr, exit_code=tool_exit_code, job_stdout=job_stdout, job_stderr=job_stderr, exception=exception)
 
         # TODO: After failing here, consider returning from the function.
         try:
@@ -1748,7 +1752,7 @@ class JobWrapper(HasResourceParameters):
         # the state instead.
 
         for pja in job.post_job_actions:
-            ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job)
+            ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job, final_job_state=final_job_state)
         # Flush all the dataset and job changes above.  Dataset state changes
         # will now be seen by the user.
         self.sa_session.flush()
@@ -1770,9 +1774,10 @@ class JobWrapper(HasResourceParameters):
         param_dict = self.get_param_dict(job)
         try:
             self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
-        except Exception:
+        except Exception as e:
             log.exception(f"exec_after_process hook failed for job {self.job_id}")
-            final_job_state = job.states.ERROR
+            return fail("exec_after_process hook failed", exception=e)
+
         # Call 'exec_after_process' hook
         self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
                             out_data=out_data, param_dict=param_dict,

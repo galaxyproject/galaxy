@@ -1,5 +1,13 @@
 import json
-from collections import namedtuple
+from typing import (
+    Any,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Union,
+)
 from unittest import mock
 
 import pytest
@@ -237,15 +245,23 @@ def test_subworkflow_new_outputs():
     assert output2["name"] == "4:out_file1", output2["name"]
 
 
+class MapOverTestCase(NamedTuple):
+    data_input: str
+    step_input_def: Union[str, List[str]]
+    step_output_def: str
+    expected_collection_type: Optional[str]
+    steps: Dict[int, Any]
+
+
 def _construct_steps_for_map_over():
-    test_case = namedtuple('MapOverTestCase', 'data_input step_input_def step_output_def expected_collection_type steps')
+    test_case = MapOverTestCase
     # these are the cartesian product of
     # data_input = ['dataset', 'list', 'list:pair', 'list:list']
     # step_input_definition = ['dataset', 'dataset_multiple', 'list', ['list', 'pair']]
     # step_output_definition = ['dataset', 'list', 'list:list']
     # list(itertools.product(data_input, step_input_definition, step_output_definition, [None])),
     # with the last item filled in manually
-    test_case_args = [
+    test_case_args: List[Tuple[str, Union[str, List[str]], str, Optional[str]]] = [
         ('dataset', 'dataset', 'dataset', None),
         ('dataset', 'dataset', 'list', 'list'),
         ('dataset', 'dataset', 'list:list', 'list:list'),
@@ -300,7 +316,7 @@ def _construct_steps_for_map_over():
     ]
     test_cases = []
     for (data_input, step_input_def, step_output_def, expected_collection_type) in test_case_args:
-        steps = {
+        steps: Dict[int, Dict[str, Any]] = {
             0: _input_step(collection_type=data_input),
             1: _output_step(step_input_def=step_input_def, step_output_def=step_output_def)
         }
@@ -316,8 +332,8 @@ def _construct_steps_for_map_over():
     return test_cases
 
 
-def _input_step(collection_type):
-    output = {'name': 'output', 'extensions': ['input_collection']}
+def _input_step(collection_type) -> Dict[str, Any]:
+    output: Dict[str, Any] = {'name': 'output', 'extensions': ['input_collection']}
     if collection_type != 'dataset':
         output['collection'] = True
         output['collection_type'] = collection_type
@@ -332,7 +348,7 @@ def _input_step(collection_type):
     }
 
 
-def _output_step(step_input_def, step_output_def):
+def _output_step(step_input_def, step_output_def) -> Dict[str, Any]:
     multiple = False
     if step_input_def in ['dataset', 'dataset_multiple']:
         input_type = 'dataset'
@@ -342,11 +358,11 @@ def _output_step(step_input_def, step_output_def):
     else:
         input_type = 'dataset_collection'
         collection_types = step_input_def if isinstance(step_input_def, list) else [step_input_def]
-    output = {'name': 'output', 'extensions': ['data']}
+    output: Dict[str, Any] = {'name': 'output', 'extensions': ['data']}
     if step_output_def != 'dataset':
         output['collection'] = True
         output['collection_type'] = step_output_def
-    input_connection_input = [{'id': 0, 'output_name': 'output', 'input_type': input_type}]
+    input_connection_input: Any = [{'id': 0, 'output_name': 'output', 'input_type': input_type}]
     if step_input_def == 'dataset':
         # For whatever reason multiple = False inputs are not wrapped in a list.
         input_connection_input = input_connection_input[0]

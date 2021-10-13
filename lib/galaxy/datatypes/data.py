@@ -46,6 +46,10 @@ DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}_
 DEFAULT_MAX_PEEK_SIZE = 1000000  # 1 MB
 
 
+class DatatypeConverterNotFoundException(Exception):
+    pass
+
+
 class DatatypeValidation:
 
     def __init__(self, state, message):
@@ -479,7 +483,7 @@ class Data(metaclass=DataMeta):
             # Sanitize anytime we respond with plain text/html content.
             # Check to see if this dataset's parent job is allowlisted
             # We cannot currently trust imported datasets for rendering.
-            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id in trans.app.config.sanitize_allowlist:
+            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id.startswith(tuple(trans.app.config.sanitize_allowlist)):
                 return open(filename, mode='rb')
 
             # This is returning to the browser, it needs to be encoded.
@@ -638,7 +642,7 @@ class Data(metaclass=DataMeta):
         converter = trans.app.datatypes_registry.get_converter_by_target_type(original_dataset.ext, target_type)
 
         if converter is None:
-            raise Exception(f"A converter does not exist for {original_dataset.ext} to {target_type}.")
+            raise DatatypeConverterNotFoundException(f"A converter does not exist for {original_dataset.ext} to {target_type}.")
 
         params, input_name = get_params_and_input_name(converter, deps, target_context)
 

@@ -1,6 +1,7 @@
 import random
 import string
 
+import pytest
 from nose.plugins.skip import SkipTest
 
 from galaxy_test.base.populators import DatasetPopulator, skip_if_toolshed_down
@@ -77,6 +78,29 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
                                                                assert_ok=False)
                 self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
 
+    @skip_if_toolshed_down
+    def test_data_manager_hook_can_fail(self):
+        self.install_repository("devteam", "data_manager_fetch_genome_dbkeys_all_fasta", "14eb0fc65c62")
+        inputs = FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT.copy()
+        keys = ['dbkey_source|dbkey', 'dbkey_source|dbkey_name', 'sequence_id', 'sequence_name']
+        for key in keys:
+            inputs[key] = 'unique_dbkey_value'
+        with self._different_user(email="%s@galaxy.org" % self.username):
+            with self.dataset_populator.test_history() as history_id:
+                # First run should work
+                run_response = self.dataset_populator.run_tool(tool_id=FETCH_TOOL_ID,
+                                                inputs=inputs,
+                                                history_id=history_id,
+                                                assert_ok=False)
+                self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
+                # Second run should fail
+                run_response = self.dataset_populator.run_tool(tool_id=FETCH_TOOL_ID,
+                                                inputs=inputs,
+                                                history_id=history_id,
+                                                assert_ok=False)
+                with pytest.raises(AssertionError):
+                    self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
+
     def test_data_manager_manual(self):
         """
         Test that data_manager_manual works, which uses a significant amount of Galaxy-internal code
@@ -105,10 +129,12 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         """
         self.install_repository("devteam", "data_manager_fetch_genome_dbkeys_all_fasta", "14eb0fc65c62")
         self.install_repository('iuc', 'data_manager_manual', '1ed87dee9e68')
+        inputs = FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT.copy()
+        inputs['dbkey_source|dbkey'] = 'another_unique_dbkey_value'
         with self._different_user(email="%s@galaxy.org" % self.username):
             with self.dataset_populator.test_history() as history_id:
                 run_response = self.dataset_populator.run_tool(tool_id=FETCH_TOOL_ID,
-                                                               inputs=FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT,
+                                                               inputs=inputs,
                                                                history_id=history_id,
                                                                assert_ok=False)
                 self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
@@ -118,8 +144,8 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
                                                                assert_ok=False)
                 self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
 
-        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'NC_001617.1', 'dbkey')
-        assert 'NC_001617.1' in entries
+        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'another_unique_dbkey_value', 'dbkey')
+        assert 'another_unique_dbkey_value' in entries
 
         entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'dm6', 'dbkey')
         assert 'dm6' in entries
@@ -133,7 +159,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
 
         self._app.tool_data_tables.get("all_fasta").remove_entry(table_content['NC_001617.1'])
 
-        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'NC_001617.1', 'dbkey')
+        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'another_unique_dbkey_value', 'dbkey')
         assert entries is None
 
     @classmethod

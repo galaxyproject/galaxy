@@ -1,7 +1,7 @@
 import logging
 import os
 import os.path
-
+from typing import List, Tuple
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
@@ -36,9 +36,9 @@ def parse_tests(tool, tests_source):
 
 
 def description_from_tool_object(tool, test_index, raw_test_dict):
-    required_files = []
-    required_data_tables = []
-    required_loc_files = []
+    required_files: List[Tuple[str, dict]] = []
+    required_data_tables: List[str] = []
+    required_loc_files: List[str] = []
 
     num_outputs = raw_test_dict.get('expect_num_outputs', None)
     if num_outputs:

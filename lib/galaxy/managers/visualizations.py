@@ -5,11 +5,9 @@ Visualizations are saved configurations/variables used to
 reproduce a specific view in a Galaxy visualization.
 """
 import logging
-from typing import Optional
 
 from galaxy import model
 from galaxy.managers import sharable
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -73,25 +71,3 @@ class VisualizationDeserializer(sharable.SharableModelDeserializer):
         self.deserializers.update({
         })
         self.deserializable_keyset.update(self.deserializers.keys())
-
-
-class VisualizationsService:
-    """Common interface/service logic for interactions with visualizations in the context of the API.
-
-    Provides the logic of the actions invoked by API controllers and uses type definitions
-    and pydantic models to declare its parameters and return types.
-    """
-
-    def __init__(self, app: MinimalManagerApp, manager: VisualizationManager, serializer: VisualizationSerializer):
-        self.app = app
-        self.manager = manager
-        self.serializer = serializer
-        self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
-
-    # TODO: add the rest of the API actions here and call them directly from the API controller
-
-    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
-        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
-        status of the resource.
-        """
-        return self.shareable_service.sharing(trans, id, payload)

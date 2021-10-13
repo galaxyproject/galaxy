@@ -30,8 +30,7 @@
 <%def name="javascripts()">
     <!--- base/base_panels.mako javascripts() -->
     ${h.dist_js(
-        'libs.chunk',
-        'base.chunk'
+        'libs.bundled',
     )}
     ${ javascript_entry() }
 </%def>

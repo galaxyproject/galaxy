@@ -26,6 +26,7 @@ import yaml
 from paste import httpserver
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
+from galaxy.app_unittest_utils.celery_helper import rebind_container_to_task
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
 from galaxy.model.database_utils import create_database, database_exists
@@ -35,7 +36,6 @@ from galaxy.util import asbool, download_to_file, galaxy_directory
 from galaxy.util.properties import load_app_properties
 from galaxy.webapps.galaxy import buildapp
 from galaxy_test.base.api_util import get_admin_api_key, get_user_api_key
-from galaxy_test.base.celery_helper import rebind_container_to_task
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     target_url_parts,
@@ -439,6 +439,7 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
 
 
 def install_database_conf(db_path, default_merged=False):
+    install_galaxy_database_connection: Optional[str]
     if 'GALAXY_TEST_INSTALL_DBURI' in os.environ:
         install_galaxy_database_connection = os.environ['GALAXY_TEST_INSTALL_DBURI']
     elif asbool(os.environ.get('GALAXY_TEST_INSTALL_DB_MERGED', default_merged)):
@@ -824,9 +825,9 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             "--enable-threads",
             "--die-on-term",
         ]
-        for p in sys.path:
+        for path in sys.path:
             uwsgi_command.append('--pythonpath')
-            uwsgi_command.append(p)
+            uwsgi_command.append(path)
 
         handle_uwsgi_cli_command = getattr(
             config_object, "handle_uwsgi_cli_command", None
@@ -977,7 +978,7 @@ class GalaxyTestDriver(TestDriver):
 
         # Allow a particular test to force uwsgi or any test to use uwsgi with
         # the GALAXY_TEST_UWSGI environment variable.
-        use_uwsgi = os.environ.get('GALAXY_TEST_UWSGI', None)
+        use_uwsgi = bool(os.environ.get('GALAXY_TEST_UWSGI', None))
         if not use_uwsgi:
             if getattr(config_object, "require_uwsgi", None):
                 use_uwsgi = True

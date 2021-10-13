@@ -15,11 +15,11 @@ from typing import (
     List,
 )
 
-from galaxy.app import MinimalManagerApp
+from galaxy.app import StructuredApp
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.schema import SerializationParams
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.schema.types import SerializationParams
 from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ VERSION_JSON_FILE = 'version.json'
 class ConfigurationManager:
     """Interface/service object for interacting with configuration and related data."""
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: StructuredApp):
         self._app = app
 
     def get_configuration(
@@ -42,7 +42,7 @@ class ConfigurationManager:
         host = getattr(trans, "host", None)
         serializer_class = AdminConfigSerializer if is_admin else ConfigSerializer
         serializer = serializer_class(self._app)
-        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params)
+        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params.dict())
 
     def version(self) -> Dict[str, Any]:
         version_info = {
@@ -206,6 +206,7 @@ class ConfigSerializer(base.ModelSerializer):
             'default_panel_view': _use_config,
             'upload_from_form_button': _use_config,
             'release_doc_base_url': _use_config,
+            'expose_user_email': _use_config,
             'user_library_import_dir_available': lambda config, key, **context: bool(config.get('user_library_import_dir')),
             'welcome_directory': _use_config,
         }

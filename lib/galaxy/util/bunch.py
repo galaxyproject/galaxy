@@ -1,4 +1,7 @@
-class Bunch:
+from .dynamic import HasDynamicProperties
+
+
+class Bunch(HasDynamicProperties):
     """
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52308
 

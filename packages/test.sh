@@ -14,7 +14,7 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
 virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
 . "${TEST_ENV_DIR}/bin/activate"
-pip install --upgrade pip setuptools wheel
+pip install --upgrade pip 'setuptools<58' wheel
 pip install -r../lib/galaxy/dependencies/pinned-lint-requirements.txt
 
 # ensure ordered by dependency dag
@@ -23,6 +23,7 @@ PACKAGE_DIRS=(
     objectstore
     job_metrics
     containers
+    files
     tool_util
     data
     job_execution
@@ -32,10 +33,8 @@ PACKAGE_DIRS=(
     app
     webapps
 )
-# tool_util not yet working 100%,
-# data has many problems quota, tool shed install database, etc..
-RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 1 0)
-RUN_MYPY=(1 1 1 1 1 1 1 1 1 1 1 1)
+RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 1 1 0)
+RUN_MYPY=(1 1 1 1 1 1 1 1 1 1 1 1 1)
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     package_dir=${PACKAGE_DIRS[$i]}
     run_tests=${RUN_TESTS[$i]}

@@ -3,7 +3,7 @@ from typing import Optional
 
 from fastapi import Query
 
-from galaxy.schema.types import SerializationParams
+from galaxy.schema import SerializationParams
 
 SerializationViewQueryParam: Optional[str] = Query(
     None,
@@ -17,6 +17,12 @@ SerializationKeysQueryParam: Optional[str] = Query(
     description='Comma-separated list of keys to be passed to the serializer',
 )
 
+SerializationDefaultViewQueryParam: Optional[str] = Query(
+    None,
+    title='Default View',
+    description='The item view that will be used in case no particular view was specified.',
+)
+
 
 def parse_serialization_params(
     view: Optional[str] = None,
@@ -27,4 +33,12 @@ def parse_serialization_params(
     key_list = None
     if keys:
         key_list = keys.split(',')
-    return dict(view=view, keys=key_list, default_view=default_view)
+    return SerializationParams(view=view, keys=key_list, default_view=default_view)
+
+
+def query_serialization_params(
+    view: Optional[str] = SerializationViewQueryParam,
+    keys: Optional[str] = SerializationKeysQueryParam,
+    default_view: Optional[str] = SerializationDefaultViewQueryParam,
+) -> SerializationParams:
+    return parse_serialization_params(view=view, keys=keys, default_view=default_view)

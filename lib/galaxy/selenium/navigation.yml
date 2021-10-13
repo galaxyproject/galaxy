@@ -39,7 +39,7 @@ masthead:
     user_menu: '#user .dropdown-menu a'
     workflow: '#workflow .nav-link'
 
-    user_email:
+    username:
       type: xpath
       selector: '//a[contains(text(), "Logged in as")]'
 
@@ -107,6 +107,11 @@ sign_out:
     cancel_button: '.modal-footer .buttons #button-0'
     sign_out_button: '.modal-footer .buttons #button-1'
 
+dataset_details:
+  selectors:
+    _: 'table#dataset-details'
+    tool_parameters: 'table#tool-parameters'
+
 history_panel:
   menu:
     labels:
@@ -133,14 +138,14 @@ history_panel:
       toolhelp_title: '${_} .toolhelp strong'
 
       # Title buttons...
-      display_button: '${_} .icon-btn.display-btn'
-      edit_button: '${_} .icon-btn.edit-btn'
-      delete_button: '${_} .icon-btn.delete-btn'
+      display_button: '${_} .display-btn'
+      edit_button: '${_} .edit-btn'
+      delete_button: '${_} .delete-btn'
 
       # Action buttons...
       download_button: '${_} .icon-btn.download-btn'
       info_button: '${_} .icon-btn.params-btn'
-      dbkey_button: '${_} .fa.fa-question'
+      tool_help_button: '${_} .fa.fa-question'
       rerun_button: '${_} .icon-btn.rerun-btn'
       nametags: '${_} .nametags .badge-tags'
 
@@ -155,9 +160,6 @@ history_panel:
 
       hid: '${_} .hid'
       name: '${_} .name'
-      title_button_area: '${_} .primary-actions'
-      primary_action_buttons: '${_} .actions .left'
-      secondary_action_buttons: '${_} .actions .right'
       blurb: '${_} .blurb .value'
       dbkey: '${_} .dbkey .value'
       info: '${_} .info .value'
@@ -165,16 +167,16 @@ history_panel:
       toolhelp_title: '${_} .toolhelp strong'
 
       # Title buttons...
-      display_button: '${_} .icon-btn.display-btn'
-      edit_button: '${_} .icon-btn.edit-btn'
-      delete_button: '${_} .icon-btn.delete-btn'
+      display_button: '${_} .display-btn'
+      edit_button: '${_} .edit-btn'
+      delete_button: '${_} .delete-btn'
 
       # Action buttons...
-      download_button: '${_} .icon-btn.download-btn'
-      info_button: '${_} .icon-btn.params-btn'
-      dbkey_button: '${_} .fa.fa-question'
-      rerun_button: '${_} .icon-btn.rerun-btn'
+      download_button: '${_} .download-btn'
+      info_button: '${_} .params-btn'
       nametags: '${_} .nametags .badge-tags'
+
+      dataset_operations_dropdown: '${_}  .dataset-operations-dropdown'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
   editor:
@@ -394,8 +396,12 @@ histories:
 
   sharing:
     selectors:
-      unshare_user_button: '.unshare_user'
-      share_with_a_user_button: '#share_with_a_user'
+      unshare_user_button: '.share_with_view .multiselect__tag-icon'
+      user_email_input: '.user-email-input-form'
+      submit_sharing_with: '.submit-sharing-with'
+      share_with_collapse: '.share-with-collapse'
+      share_with_multiselect: '.share_with_view > .multiselect'
+      share_with_input: '.share_with_view input'
       make_accessible: '.make-accessible label'
       make_publishable: '.make-publishable label'
     labels:
@@ -633,6 +639,21 @@ tour:
       end: '${_} button[data-role="end"]'
 
 admin:
+
+  allowlist:
+    selectors:
+      toolshed:
+        type: xpath
+        selector: '//a[contains(text(), "Toolshed Tools")]'
+      local:
+        type: xpath
+        selector: '//a[contains(text(), "Local Tools")]'
+      sanitized:
+        type: xpath
+        selector: '//a[contains(text(), "HTML Sanitized")]'
+      rendered_active:
+        type: xpath
+        selector: '//div[contains(@class, "active")]//a[contains(text(), "HTML Rendered")]'
 
   manage_dependencies:
     selectors:
