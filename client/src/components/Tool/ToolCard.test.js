@@ -30,6 +30,7 @@ describe("ToolCard", () => {
                 },
                 messageText: "messageText",
                 messageVariant: "warning",
+                disabled: false,
             },
             localVue,
         });
@@ -46,5 +47,8 @@ describe("ToolCard", () => {
         expect(dropdownHeader.attributes("title")).toBe("Options");
         const dropdownItems = wrapper.findAll(".dropdown-item");
         expect(dropdownItems.length).toBe(4);
+        await wrapper.setProps({ disabled: true });
+        const iconSpinner = wrapper.find(".portlet-title-icon");
+        expect(iconSpinner.classes()).toContain("fa-spin");
     });
 });

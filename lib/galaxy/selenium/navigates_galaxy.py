@@ -205,7 +205,7 @@ class NavigatesGalaxy(HasDriver):
         """
         time.sleep(duration)
 
-    def timeout_for(self, wait_type: WaitType = DEFAULT_WAIT_TYPE) -> float:
+    def timeout_for(self, wait_type: WaitType = DEFAULT_WAIT_TYPE, **kwd) -> float:
         return self.wait_length(wait_type)
 
     def home(self) -> None:
@@ -576,15 +576,15 @@ class NavigatesGalaxy(HasDriver):
             # Make sure the user menu was dropped down
             user_menu = self.components.masthead.user_menu.wait_for_visible()
             try:
-                user_email_element = self.components.masthead.user_email.wait_for_visible()
+                username_element = self.components.masthead.username.wait_for_visible()
             except self.TimeoutException as e:
                 menu_items = user_menu.find_elements_by_css_selector("li a")
                 menu_text = [mi.text for mi in menu_items]
                 message = f"Failed to find logged in message in menu items {', '.join(menu_text)}"
                 raise self.prepend_timeout_message(e, message)
 
-            text = user_email_element.text
-            assert email in text
+            text = username_element.text
+            assert username in text
             assert self.get_logged_in_user()["email"] == email
 
             # clicking away no longer closes menu post Masthead -> VueJS
@@ -1061,7 +1061,6 @@ class NavigatesGalaxy(HasDriver):
         search_box.send_keys(text)
         value = search_box.get_attribute("value")
         assert value == text, value
-        self.driver.execute_script("$(arguments[0]).keyup();", search_box)
 
     def libraries_folder_create(self, name):
         self.components.libraries.folder.add_folder.wait_for_and_click()
@@ -1461,6 +1460,17 @@ class NavigatesGalaxy(HasDriver):
         dataset_selector = next_level_element_selector.descendant(".dataset")
         self.wait_for_and_click(dataset_selector)
 
+    def history_panel_item_view_dataset_details(self, hid):
+        if not self.is_beta_history():
+            self.history_panel_ensure_showing_item_details(hid)
+            self.hda_click_details(hid)
+            self.components.dataset_details._.wait_for_visible()
+        else:
+            item = self.history_panel_item_component(hid=hid)
+            item.dataset_operations_dropdown.wait_for_and_click()
+            item.info_button.wait_for_and_click()
+            self.components.dataset_details._.wait_for_visible()
+
     def history_panel_item_click_visualization_menu(self, hid):
         viz_button_selector = f"{self.history_panel_item_selector(hid)} .visualizations-dropdown"
         self.wait_for_and_click_selector(viz_button_selector)
@@ -1512,8 +1522,8 @@ class NavigatesGalaxy(HasDriver):
         return details_component
 
     def hda_click_primary_action_button(self, hid: int, button_key: str):
-        item_component = self.history_panel_click_item_title(hid=hid, wait=True)
-        item_component.primary_action_buttons.wait_for_visible()
+        self.history_panel_ensure_showing_item_details(hid)
+        item_component = self.history_panel_item_component(hid=hid)
         button_component = item_component[f"{button_key}_button"]
         button_component.wait_for_and_click()
 

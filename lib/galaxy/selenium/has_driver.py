@@ -8,6 +8,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -16,6 +17,7 @@ UNSPECIFIED_TIMEOUT = object()
 
 class HasDriver:
     TimeoutException = TimeoutException
+    driver: WebDriver
 
     def assert_xpath(self, xpath):
         assert self.driver.find_element_by_xpath(xpath)
@@ -180,6 +182,9 @@ class HasDriver:
 
     def send_backspace(self, element):
         element.send_keys(Keys.BACKSPACE)
+
+    def timeout_for(self, **kwds) -> float:
+        ...
 
     def wait(self, timeout=UNSPECIFIED_TIMEOUT, **kwds):
         if timeout is UNSPECIFIED_TIMEOUT:

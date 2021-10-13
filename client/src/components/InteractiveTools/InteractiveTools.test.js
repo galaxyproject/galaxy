@@ -16,6 +16,8 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
+        axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
+        axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
         wrapper = mount(InteractiveTools, {
             computed: {
                 currentHistory() {
@@ -26,8 +28,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
             },
             localVue,
         });
-        axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
-        axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
+
         await flushPromises();
     });
 

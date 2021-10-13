@@ -4,7 +4,6 @@ import os
 
 import pytest
 
-from galaxy.datatypes import sniff
 from galaxy.files import ConfiguredFileSources, ConfiguredFileSourcesConfig
 from ._util import (
     find,
@@ -14,6 +13,7 @@ from ._util import (
     serialize_and_recover,
     user_context_fixture,
 )
+from .test_posix import _download_and_check_file
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "webdav_file_sources_conf.yml")
@@ -94,12 +94,3 @@ def test_serialization_user():
 def _configured_file_sources(conf_file=FILE_SOURCES_CONF):
     file_sources_config = ConfiguredFileSourcesConfig()
     return ConfiguredFileSources(file_sources_config, conf_file=conf_file)
-
-
-def _download_and_check_file(file_sources):
-    tmp_name = sniff.stream_url_to_file("gxfiles://test1/a", file_sources=file_sources)
-    try:
-        a_contents = open(tmp_name).read()
-        assert a_contents == "a\n"
-    finally:
-        os.remove(tmp_name)

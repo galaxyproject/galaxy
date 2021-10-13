@@ -18,7 +18,7 @@ import { show, debounceBurst, shareButDie } from "utils/observable";
 import { SearchParams } from "../../model/SearchParams";
 import { processContentUpdate, newUpdateMap, buildContentResult, getKeyForUpdateMap } from "./aggregation";
 import { SEEK } from "../../caching/enums";
-import { reportPayload } from "components/History/test/providerTestHelpers";
+import { reportPayload } from "./helpers";
 
 // prettier-ignore
 export const aggregateCacheUpdates = (monitor, cfg = {}) => (src$) => {

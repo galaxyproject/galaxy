@@ -1,6 +1,7 @@
 import functools
 import logging
 import os
+from typing import Any, Dict, List
 
 try:
     import s3fs
@@ -30,7 +31,7 @@ class S3FsFilesSource(BaseFilesSource):
     def _list(self, path="/", recursive=True, user_context=None):
         fs = self._open_fs(user_context=user_context)
         if recursive:
-            res = []
+            res: List[Dict[str, Any]] = []
             bucket_path = self._bucket_path(path)
             for p, dirs, files in fs.walk(bucket_path, detail=True):
                 to_dict = functools.partial(self._resource_info_to_dict, p)

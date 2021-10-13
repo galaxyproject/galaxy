@@ -6,7 +6,7 @@ import os
 import traceback
 import unittest
 from functools import partial, wraps
-from typing import Any, Dict
+from typing import Any, Dict, TYPE_CHECKING
 
 import requests
 from gxformat2 import (
@@ -22,7 +22,8 @@ from galaxy.selenium.context import (
     GalaxySeleniumContext,
 )
 from galaxy.selenium.navigates_galaxy import (
-    retry_during_transitions
+    NavigatesGalaxy,
+    retry_during_transitions,
 )
 from galaxy.util import (
     asbool,
@@ -456,17 +457,24 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
         """Override this to setup shared data for tests that gets initialized only once."""
 
 
-class UsesLibraryAssertions:
+if TYPE_CHECKING:
+    NavigatesGalaxyMixin = NavigatesGalaxy
+else:
+    NavigatesGalaxyMixin = object
+
+
+class UsesLibraryAssertions(NavigatesGalaxyMixin):
 
     @retry_assertion_during_transitions
     def assert_num_displayed_items_is(self, n):
-        self.assertEqual(n, self.num_displayed_items())
+        num_displayed = self.num_displayed_items()
+        assert n == num_displayed, f"Expected number of displayed items is {n} but actual was {num_displayed}"
 
-    def num_displayed_items(self):
+    def num_displayed_items(self) -> int:
         return len(self.libraries_table_elements())
 
 
-class UsesHistoryItemAssertions:
+class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
 
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
@@ -648,7 +656,7 @@ class SeleniumSessionWorkflowPopulator(SeleniumSessionGetPostMixin, populators.B
         """Construct a workflow populator from a bioblend GalaxyInstance."""
         self.selenium_context = selenium_context
         self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_context)
-        self.dataset_collection_populator = SeleniumSessionDatasetPopulator(selenium_context)
+        self.dataset_collection_populator = SeleniumSessionDatasetCollectionPopulator(selenium_context)
 
     def import_workflow(self, workflow: dict, **kwds) -> dict:
         workflow_str = json.dumps(workflow, indent=4)

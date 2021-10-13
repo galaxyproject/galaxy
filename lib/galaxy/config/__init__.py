@@ -39,6 +39,7 @@ from galaxy.util import (
 )
 from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.properties import (
     find_config_file,
     read_properties_from_file,
@@ -112,7 +113,7 @@ def find_root(kwargs):
     return os.path.abspath(kwargs.get('root_dir', '.'))
 
 
-class BaseAppConfiguration:
+class BaseAppConfiguration(HasDynamicProperties):
     # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
     renamed_options: Optional[Dict[str, str]] = None
