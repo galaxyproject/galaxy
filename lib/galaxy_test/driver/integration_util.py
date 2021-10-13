@@ -169,6 +169,18 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
 
 
+class UsesCeleryTasks:
+    enable_celery_tasks = True
+
+    @pytest.fixture(autouse=True)
+    def _request_celery_app(self, celery_app):
+        self._celery_app = celery_app
+
+    @pytest.fixture(autouse=True)
+    def _request_celery_worker(self, celery_worker):
+        self._celery_worker = celery_worker
+
+
 class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
 
