@@ -2,7 +2,7 @@
 Galaxy sql view models
 """
 from sqlalchemy import Integer
-from sqlalchemy.orm import mapper
+from sqlalchemy.orm import registry
 from sqlalchemy.sql import column, text
 
 from galaxy.model.view.utils import View
@@ -67,4 +67,6 @@ GROUP BY jobstates.hdca_id
     __table__ = View._make_table(name, __view__, pkeys)
 
 
-mapper(HistoryDatasetCollectionJobStateSummary, HistoryDatasetCollectionJobStateSummary.__table__)
+mapper_registry = registry()
+mapper_registry.map_imperatively(
+    HistoryDatasetCollectionJobStateSummary, HistoryDatasetCollectionJobStateSummary.__table__)
