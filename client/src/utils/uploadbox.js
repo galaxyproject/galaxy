@@ -80,6 +80,7 @@ import * as tus from "tus-js-client";
                 error_file: "File not provided.",
                 error_attempt: "Maximum number of attempts reached.",
                 error_tool: "Tool submission failed.",
+                chunkSize: 10485760,
             },
             config
         );
@@ -97,7 +98,7 @@ import * as tus from "tus-js-client";
         }
         const startTime = performance.now();
         const file = file_data.file;
-        const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload`;
+        const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
         const chunkSize = cnf.session.chunk_upload_size;
         console.debug(`Starting chunked uploads [size=${chunkSize}].`);
 
@@ -318,15 +319,13 @@ import * as tus from "tus-js-client";
                 },
                 complete: () => {},
                 multiple: true,
+                chunkSize: 10485760,
             },
             options
         );
 
         // file queue
         var queue = {};
-
-        // session options
-        var session = null;
 
         // queue index/length counter
         var queue_index = 0;
@@ -409,7 +408,7 @@ import * as tus from "tus-js-client";
             // create and submit data
             var submitter = $.uploadpost;
             var requestData = opts.initialize(index);
-            if (file.chunk_mode && session.chunk_upload_size && session.chunk_upload_size > 0) {
+            if (file.chunk_mode && opts.chunkSize > 0) {
                 submitter = $.uploadchunk;
             } else if (requestData.fetchRequest) {
                 submitter = $.datafetchpost;
@@ -418,7 +417,6 @@ import * as tus from "tus-js-client";
             submitter({
                 url: opts.initUrl(index),
                 data: requestData.fetchRequest ? requestData.fetchRequest : requestData.uploadRequest,
-                session: session,
                 success: (message) => {
                     opts.success(index, message);
                     process();
@@ -453,8 +451,7 @@ import * as tus from "tus-js-client";
         }
 
         // initiate upload process
-        function start(_session) {
-            session = _session;
+        function start() {
             if (!queue_running) {
                 queue_running = true;
                 process();
