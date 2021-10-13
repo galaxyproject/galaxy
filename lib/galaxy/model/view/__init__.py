@@ -7,7 +7,11 @@ from sqlalchemy.sql import column, text
 
 from galaxy.model.view.utils import View
 
-AGGREGATE_STATE_QUERY = """
+
+class HistoryDatasetCollectionJobStateSummary(View):
+    name = 'collection_job_state_summary_view'
+
+    aggregate_state_query = """
 SELECT
     hdca_id,
     SUM(CASE WHEN state = 'new' THEN 1 ELSE 0 END) AS new,
@@ -43,11 +47,7 @@ FROM (
 GROUP BY jobstates.hdca_id
 """
 
-
-class HistoryDatasetCollectionJobStateSummary(View):
-    name = 'collection_job_state_summary_view'
-
-    __view__ = text(AGGREGATE_STATE_QUERY).columns(
+    __view__ = text(aggregate_state_query).columns(
         column('hdca_id', Integer),
         column('new', Integer),
         column('resubmitted', Integer),
