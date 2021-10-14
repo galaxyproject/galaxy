@@ -690,7 +690,7 @@ class UpdateContentItem(HistoryBase):
 
 
 class UpdateHistoryContentsBatchPayload(HistoryBase):
-    """Contains property values that will be updated for all the history`items` provided."""
+    """Contains property values that will be updated for all the history `items` provided."""
 
     items: List[UpdateContentItem] = Field(
         ...,
@@ -2505,7 +2505,7 @@ class DeleteHistoryContentPayload(BaseModel):
     purge: bool = Field(
         default=False,
         title="Purge",
-        description="Whether to remove from disk the target HDA or child HDAs of the target HDCA.",
+        description="Whether to remove the dataset from storage. Datasets will only be removed from storage once all HDAs or LDDAs that refer to this datasets are deleted.",
     )
     recursive: bool = Field(
         default=False,
