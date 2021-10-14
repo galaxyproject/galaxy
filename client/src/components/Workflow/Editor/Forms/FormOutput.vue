@@ -1,14 +1,18 @@
 <template>
-    <div>
-        {{ outputName }}
-    </div>
+    <FormCard :title="outputTitle" collapsible :expanded.sync="expanded">
+        <template v-slot:body>
+            {{ outputName }}
+        </template>
+    </FormCard>
 </template>
 
 <script>
+import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 
 export default {
     components: {
+        FormCard,
         FormElement,
     },
     props: {
@@ -24,6 +28,11 @@ export default {
             type: Array,
             default: null,
         },
+    },
+    data() {
+        return {
+            expanded: false,
+        }
     },
     computed: {
         node() {
@@ -62,7 +71,8 @@ export default {
             return this.node.activeOutputs.get(output.name);
         },
         outputTitle() {
-            return this.output.label || this.output.name
+            const title = this.output.label || this.output.name;
+            return `Configure Output: '${title}'`;
         },
         outputName() {
             return this.output.name;
