@@ -259,8 +259,8 @@ class GroupGrid(grids.Grid):
     class UsersColumn(grids.GridColumn):
 
         def get_value(self, trans, grid, group):
-            if group.members:
-                return len(group.members)
+            if group.users:
+                return len(group.users)
             return 0
 
     title = "Groups"
