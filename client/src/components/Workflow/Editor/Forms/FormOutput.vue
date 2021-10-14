@@ -1,7 +1,23 @@
 <template>
     <FormCard :title="outputTitle" collapsible :expanded.sync="expanded">
         <template v-slot:body>
-            {{ outputName }}
+            <FormElement
+                :id="outputLabelId"
+                :value="outputLabel"
+                title="Label"
+                type="text"
+                help="This will provide a short name to describe the output - this must be unique across workflows."
+                @change="onChangeLabel"
+            />
+            <FormElement
+                :id="getActionId('RenameDatasetAction', 'newname')"
+                :v-model="formData[getActionId('RenameDatasetAction', 'newname')]"
+                ignore=""
+                title="Rename dataset"
+                type="text"
+                help="renameHelp"
+                @change="onChange"
+            />
         </template>
     </FormCard>
 </template>
@@ -32,6 +48,7 @@ export default {
     data() {
         return {
             expanded: false,
+            formData: {},
         }
     },
     computed: {
@@ -68,7 +85,7 @@ export default {
             return list;
         },
         activeOutput() {
-            return this.node.activeOutputs.get(output.name);
+            return this.node.activeOutputs.get(this.output.name);
         },
         outputTitle() {
             const title = this.output.label || this.output.name;
@@ -77,10 +94,26 @@ export default {
         outputName() {
             return this.output.name;
         },
+        outputLabel() {
+            return this.activeOutput && this.activeOutput.label;
+        },
+        outputLabelId() {
+            return `__label__${this.output.name}`;
+        },
     },
     methods: {
+        getActionId(action, arg = null) {
+            let id = `pja__${this.outputName}__${action}`;
+            if (arg) {
+                id += `__${arg}`;
+            }
+            return id;
+        },
         onChange(values) {
             this.$emit("onChange", values);
+        },
+        onChangeLabel(newLabel) {
+            //onOutputLabel(node, output.name, newLabel);
         },
     },
 };
