@@ -2,7 +2,6 @@ from functools import wraps
 
 from celery import shared_task
 from kombu import serialization
-from lagom import magic_bind_to_container
 from sqlalchemy.orm.scoping import (
     scoped_session,
 )
@@ -42,7 +41,7 @@ def galaxy_task(*args, **celery_task_kwd):
         def wrapper(*args, **kwds):
             app = get_galaxy_app()
             assert app
-            return magic_bind_to_container(app)(func)(*args, **kwds)
+            return app.magic_partial(func)(*args, **kwds)
 
         return wrapper
 
