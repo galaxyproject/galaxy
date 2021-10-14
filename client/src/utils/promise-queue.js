@@ -11,7 +11,7 @@ export class LastQueue {
         this.pendingPromise = false;
     }
 
-    enqueue(action, ...args) {
+    async enqueue(action, ...args) {
         return new Promise((resolve, reject) => {
             this.nextPromise = { action, args, resolve, reject };
             this.dequeue();
