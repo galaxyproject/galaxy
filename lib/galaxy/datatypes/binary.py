@@ -3152,6 +3152,7 @@ class Pretext(Binary):
     >>> Pretext().sniff(fname)
     True
     """
+    file_ext = "pretext"
 
     def sniff_prefix(self, sniff_prefix):
         # The first 4 bytes of any pretext file is 'pstm', and the rest of the
