@@ -1,7 +1,7 @@
 /**
  * This queue waits until the current promise is resolved and only executes the last enqueued
  * promise. Promises added between the last and the currently executing promise are skipped.
- * This is useful when earlier enqueued promises become obsolete.
+ * This is useful when promises earlier enqueued become obsolete.
  * See also: https://stackoverflow.com/questions/53540348/js-async-await-tasks-queue
  */
 export class LastQueue {
