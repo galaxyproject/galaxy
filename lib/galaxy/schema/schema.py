@@ -2536,9 +2536,14 @@ class DeleteHistoryContentResult(CustomHistoryItem):
 
 
 class HistoryContentsArchiveDryRunResult(BaseModel):
-    """The structure of the archive for debugging.
+    """
+    Contains a collection of filepath/filename entries that represent
+    the contents that would have been included in the archive.
+    This is returned when the `dry_run` flag is active when
+    creating an archive with the contents of the history.
 
-    Contains pairs of filepath/filename."""
+    This is used for debugging purposes.
+    """
     __root__: List[Tuple[str, str]]
 
 
