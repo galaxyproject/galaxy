@@ -5,38 +5,35 @@
  * See: https://stackoverflow.com/questions/53540348/js-async-await-tasks-queue
  */
 export class LastQueue {
-    constructor() {
-        this._nextPromise = null;
-        this._pendingPromise = false;
+    constructor(throttlePeriod = 1000) {
+        this.throttlePeriod = throttlePeriod;
+        this.nextPromise = null;
+        this.pendingPromise = false;
     }
 
     enqueue(action, payload) {
         return new Promise((resolve, reject) => {
-            this._nextPromise = { action, payload, resolve, reject };
+            this.nextPromise = { action, payload, resolve, reject };
             this.dequeue();
         });
     }
 
     async dequeue() {
-        if (this._pendingPromise) {
-            return false;
-        }
-        if (this._nextPromise) {
-            let item = this._nextPromise;
-            this._nextPromise = null;
+        if (!this.pendingPromise && this.nextPromise) {
+            let item = this.nextPromise;
+            this.nextPromise = null;
+            this.pendingPromise = true;
             try {
-                this._pendingPromise = true;
                 let payload = await item.action(item.payload);
-                this._pendingPromise = false;
                 item.resolve(payload);
             } catch (e) {
-                this._pendingPromise = false;
                 item.reject(e);
             } finally {
-                this.dequeue();
+                setTimeout(() => {
+                    this.pendingPromise = false;
+                    this.dequeue();
+                }, this.throttlePeriod);
             }
-            return true;
         }
-        return false;
     }
 }
