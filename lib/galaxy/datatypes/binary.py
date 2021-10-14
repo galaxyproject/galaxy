@@ -2309,21 +2309,120 @@ class Sra(Binary):
 
 
 class RData(Binary):
-    """Generic R Data file datatype implementation"""
+    """Generic R Data file datatype implementation
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.rdata')
+    >>> RData().sniff(fname)
+    True
+    >>> fname = get_test_fname('int-r4.rds')
+    >>> RData().sniff(fname)
+    False
+    """
     file_ext = 'rdata'
 
     def sniff(self, filename):
-        rdata_header = b'RDX2\nX\n'
+        rdata_header = [b'RDX2\nX\n', b'RDX3\nX\n']
         try:
             header = open(filename, 'rb').read(7)
-            if header == rdata_header:
+            # log.error(f"{filename} {rdata_header} {header}")
+            if header in rdata_header:
                 return True
 
             header = gzip.open(filename).read(7)
-            if header == rdata_header:
+            # log.error(f"{filename} {rdata_header} {header}")
+            if header in rdata_header:
                 return True
         except Exception:
             return False
+        return False
+
+
+class RDS(Binary):
+    """
+    File using a serialized R object generated with R's saveRDS function
+    see https://cran.r-project.org/doc/manuals/r-patched/R-ints.html#Serialization-Formats
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('int-r3.rds')
+    >>> RDS().sniff(fname)
+    True
+    >>> fname = get_test_fname('int-r4.rds')
+    >>> RDS().sniff(fname)
+    True
+    >>> fname = get_test_fname('int-r3-version2.rds')
+    >>> RDS().sniff(fname)
+    True
+    """
+    file_ext = 'rds'
+
+    MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=True, optional=False, no_value=None)
+    MetadataElement(name="rversion", default=None, desc="R version", param=MetadataParameter, readonly=True, visible=True, optional=False, no_value=None)
+    MetadataElement(name="minrversion", default=None, desc="minimum R version", param=MetadataParameter, readonly=True, visible=True, optional=False, no_value=None)
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        # super().set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            with open(dataset.file_name) as fh:
+                mode, version, rversion, minrversion = self._sniff_rds(fh)
+        except Exception as e:
+            log.error(f"A Exception {e} {dataset.file_name}") 
+            try:
+                with gzip.open(dataset.file_name) as fh:
+                    mode, version, rversion, minrversion = self._sniff_rds(fh)
+            except Exception as e:
+                log.error(f"B Exception {e} {dataset.file_name}")
+                return
+        log.error(f"{version} {rversion} {minrversion}")
+        dataset.metadata.version = version
+        dataset.metadata.rversion = rversion
+        dataset.metadata.minrversion = minrversion
+
+    def sniff(self, filename):
+        # try to read plain file
+        try:
+            with open(filename, 'rb') as fh:
+                self._sniff_rds(fh)
+        except Exception:
+            pass
+        else:
+            return True
+        # try to read compressed file
+        try:
+            with gzip.open(filename) as fh:
+                self._sniff_rds(fh)
+        except Exception:
+            raise
+            pass
+        else:
+            return True
+        # no rds if both fails
+        return False
+
+    def _sniff_rds(self, fh):
+        """
+        get the header info from a rds file
+        - starts with b'X\n' or 'A\n'
+        - then 3 integers (each 4bytes)
+          - the serialization version (2/3)
+          - the r version used to generate the file
+          - the minimum r version needed to read the file
+        """
+        header = fh.read(2)
+        if header == b'X\n':
+            mode = "X"
+        elif header == b'A\n':
+            mode = "A"
+        else:
+            raise Exception()
+        version = int.from_bytes(fh.read(4), byteorder='big')
+        if version not in [2, 3]:
+            raise Exception()
+        rversion = int.from_bytes(fh.read(4), byteorder='big')
+        minrversion = int.from_bytes(fh.read(4), byteorder='big')
+        rversion = ".".join(str(rversion))
+        minrversion = ".".join(str(rversion))
+        return mode, version, rversion, minrversion
 
 
 class OxliBinary(Binary):
