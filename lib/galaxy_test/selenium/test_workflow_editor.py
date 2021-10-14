@@ -72,7 +72,6 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         new_annotation = 'look new annotation'
         edit_annotation.wait_for_and_send_keys(new_annotation)
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open_with_name(name)
         self.assert_wf_annotation_is(new_annotation)
 
@@ -86,7 +85,6 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         edit_name.wait_for_and_send_keys(new_name)
 
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open_with_name(new_name)
         self.assert_wf_name_is(name)
 
@@ -107,21 +105,18 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.components.tool_form.parameter_input(parameter='select_single').wait_for_and_send_keys('e')
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         workflow = self.workflow_populator.download_workflow(workflow_id)
         tool_state = json.loads(workflow['steps']['0']['tool_state'])
         assert tool_state['select_single'] == 'parameter value'
         # Disable optional button, resets value to null
         self.components.tool_form.parameter_checkbox(parameter='select_single').wait_for_and_click()
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         workflow = self.workflow_populator.download_workflow(workflow_id)
         tool_state = json.loads(workflow['steps']['0']['tool_state'])
         assert tool_state['select_single'] is None
         # Enable button but don't provide a value
         self.components.tool_form.parameter_checkbox(parameter='select_single').wait_for_and_click()
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         workflow = self.workflow_populator.download_workflow(workflow_id)
         tool_state = json.loads(workflow['steps']['0']['tool_state'])
         assert tool_state['select_single'] == ""
@@ -198,7 +193,6 @@ steps:
         self.set_text_element(columns, '4\n5\n6\n')
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.driver.refresh()
         node.title.wait_for_and_click()
         textarea_columns = columns.wait_for_visible()
@@ -307,7 +301,6 @@ steps:
         self.assert_connected("input1#output", "first_cat#input1")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open_with_name(name)
         self.assert_connected("input1#output", "first_cat#input1")
 
@@ -430,7 +423,6 @@ steps:
         self.screenshot("workflow_editor_version_update")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         workflow = self.workflow_populator.download_workflow(workflow_id)
         assert workflow['steps']['0']['tool_version'] == '0.2'
 
@@ -492,10 +484,8 @@ steps:
         # Select node using new label, ensures labels are synced between side panel and node
         cat_node = editor.node._(label="source label")
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         editor.annotation_input.wait_for_and_send_keys("source annotation")
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         editor.configure_output(output='out_file1').wait_for_and_click()
         output_label = editor.label_output(output='out_file1')
         self.set_text_element(output_label, 'workflow output label')
@@ -510,7 +500,6 @@ steps:
         output_label = editor.label_output(output='out_file1')
         self.set_text_element(output_label, 'cloned output label')
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         edited_workflow = self.workflow_populator.download_workflow(workflow_id)
         source_step = next(iter(step for step in edited_workflow['steps'].values() if step['label'] == 'source label'))
         cloned_step = next(iter(step for step in edited_workflow['steps'].values() if step['label'] == 'cloned label'))
@@ -543,7 +532,6 @@ steps:
         editor.workflow_link(workflow_title=child_workflow_name).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
         subworkflow_step = workflow['steps']['1']
         assert subworkflow_step['name'] == child_workflow_name
@@ -720,6 +708,7 @@ steps:
         save_button.wait_for_visible()
         assert not save_button.has_class("disabled")
         save_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     @retry_assertion_during_transitions
     def assert_wf_name_is(self, expected_name):
