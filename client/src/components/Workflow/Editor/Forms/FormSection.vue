@@ -21,7 +21,7 @@
         />
         <FormOutput v-for="(output, index) in outputs"
             :key="index"
-            :output-name="output.name"
+            :output="output"
             :get-node="getNode"
             :datatypes="datatypes"
         />
