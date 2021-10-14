@@ -1,3 +1,7 @@
+from functools import wraps
+
+from celery import shared_task
+from kombu import serialization
 from lagom import magic_bind_to_container
 from sqlalchemy.orm.scoping import (
     scoped_session,
@@ -5,28 +9,50 @@ from sqlalchemy.orm.scoping import (
 
 from galaxy import model
 from galaxy.app import MinimalManagerApp
-from galaxy.celery import celery_app
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from . import get_galaxy_app
+from ._serialization import schema_dumps, schema_loads
 
 log = get_logger(__name__)
 CELERY_TASKS = []
+PYDANTIC_AWARE_SERIALIER_NAME = 'pydantic-aware-json'
 
 
-def galaxy_task(func):
-    CELERY_TASKS.append(func.__name__)
-    app = get_galaxy_app()
-    if app:
-        return magic_bind_to_container(app)(func)
-    return func
+serialization.register(
+    PYDANTIC_AWARE_SERIALIER_NAME,
+    encoder=schema_dumps,
+    decoder=schema_loads,
+    content_type='application/json'
+)
 
 
-@celery_app.task(ignore_result=True)
-@galaxy_task
+def galaxy_task(*args, **celery_task_kwd):
+    if 'serializer' not in celery_task_kwd:
+        celery_task_kwd['serializer'] = PYDANTIC_AWARE_SERIALIER_NAME
+
+    def decorate(func):
+        CELERY_TASKS.append(func.__name__)
+
+        @shared_task(**celery_task_kwd)
+        @wraps(func)
+        def wrapper(*args, **kwds):
+            app = get_galaxy_app()
+            assert app
+            return magic_bind_to_container(app)(func)(*args, **kwds)
+
+        return wrapper
+
+    if len(args) == 1 and callable(args[0]):
+        return decorate(args[0])
+    else:
+        return decorate
+
+
+@galaxy_task(ignore_result=True)
 def recalculate_user_disk_usage(session: scoped_session, user_id=None):
     if user_id:
         user = session.query(model.User).get(user_id)
@@ -39,14 +65,12 @@ def recalculate_user_disk_usage(session: scoped_session, user_id=None):
         log.error("Recalculate user disk usage task received without user_id.")
 
 
-@celery_app.task(ignore_result=True)
-@galaxy_task
+@galaxy_task(ignore_result=True)
 def purge_hda(hda_manager: HDAManager, hda_id):
     hda = hda_manager.by_id(hda_id)
     hda_manager._purge(hda)
 
 
-@celery_app.task
 @galaxy_task
 def set_metadata(hda_manager: HDAManager, ldda_manager: LDDAManager, dataset_id, model_class='HistoryDatasetAssociation'):
     if model_class == 'HistoryDatasetAssociation':
@@ -56,8 +80,7 @@ def set_metadata(hda_manager: HDAManager, ldda_manager: LDDAManager, dataset_id,
     dataset.datatype.set_meta(dataset)
 
 
-@celery_app.task(ignore_result=True)
-@galaxy_task
+@galaxy_task(ignore_result=True)
 def export_history(
         app: MinimalManagerApp,
         sa_session: scoped_session,
@@ -76,7 +99,6 @@ def export_history(
     job_manager.enqueue(job)
 
 
-@celery_app.task
 @galaxy_task
 def prune_history_audit_table(sa_session: scoped_session):
     """Prune ever growing history_audit table."""

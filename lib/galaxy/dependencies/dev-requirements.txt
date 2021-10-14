@@ -169,6 +169,7 @@ pyreadline==2.1; python_version >= "3.6" and python_full_version < "3.0.0" and p
 pyrsistent==0.17.3; python_version >= "3.5"
 pysam==0.16.0.1
 pytest-asyncio==0.15.1; python_version >= "3.6"
+pytest-celery==0.0.0
 pytest-cov==2.11.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 pytest-html==3.1.1; python_version >= "3.6"
 pytest-json-report==1.2.4
