@@ -583,7 +583,7 @@ def uvicorn_serve(app, port, host=None):
     t = threading.Thread(target=run_in_loop, args=(loop,))
     t.start()
 
-    return server, port
+    return server, port, t
 
 
 def cleanup_directory(tempdir):
@@ -724,10 +724,11 @@ class ServerWrapper:
 
 class EmbeddedServerWrapper(ServerWrapper):
 
-    def __init__(self, app, server, name, host, port):
+    def __init__(self, app, server, name, host, port, thread=None):
         super().__init__(name, host, port)
         self._app = app
         self._server = server
+        self._thread = thread
 
     @property
     def app(self):
@@ -743,6 +744,11 @@ class EmbeddedServerWrapper(ServerWrapper):
             log.info(f"Shutting down embedded {self.name} uvicorn server")
             self._server.should_exit = True
             log.info(f"Embedded web server {self.name} stopped")
+
+        if self._thread is not None:
+            log.info("Stopping embedded server thread")
+            self._thread.join()
+            log.info("Embedded server thread stopped")
 
         if self._app is not None:
             log.info(f"Stopping application {self.name}")
@@ -872,11 +878,11 @@ def launch_uvicorn(webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=N
     )
     from galaxy.webapps.galaxy.fast_app import initialize_fast_app
     app = initialize_fast_app(gx_wsgi_webapp, gx_app)
-    server, port = uvicorn_serve(app, host=host, port=port)
+    server, port, thread = uvicorn_serve(app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port)
     log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}")
     return EmbeddedServerWrapper(
-        gx_app, server, name, host, port
+        gx_app, server, name, host, port, thread=thread
     )
 
 
