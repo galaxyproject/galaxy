@@ -1,5 +1,6 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
+import re
 from datetime import datetime
 from enum import Enum
 from typing import (
@@ -15,7 +16,6 @@ from pydantic import (
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
-    constr,
     ConstrainedStr,
     Extra,
     Field,
@@ -243,7 +243,8 @@ class HistoryContentSource(str, Enum):
     new_collection = "new_collection"
 
 
-TagItem: ConstrainedStr = constr(regex=r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")
+class TagItem(ConstrainedStr):
+    regex = re.compile(r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")
 
 
 class TagCollection(Model):
