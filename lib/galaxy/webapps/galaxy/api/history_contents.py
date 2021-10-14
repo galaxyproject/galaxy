@@ -652,6 +652,8 @@ class FastAPIHistoryContents:
         archive = self.service.archive(trans, history_id, filter_query_params, filename, dry_run)
         if isinstance(archive, HistoryContentsArchiveDryRunResult):
             return archive
+        if archive.upstream_mod_zip:
+            return StreamingResponse(archive.response(), headers=archive.get_headers())
         return StreamingResponse(archive.get_iterator(), headers=archive.get_headers(), media_type="application/zip")
 
     @router.get(
@@ -1148,7 +1150,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         archive = self.service.archive(trans, history_id, filter_parameters, filename, dry_run)
         if not isinstance(archive, HistoryContentsArchiveDryRunResult):
             trans.response.headers.update(archive.get_headers())
-            return archive.response
+            return archive.response()
         return archive
 
     @expose_api_raw_anonymous
