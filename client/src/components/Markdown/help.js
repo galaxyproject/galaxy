@@ -1,13 +1,12 @@
 export const markdownGeneralHelpHtml = `
 <p>
-    For an overview of standard Markdown visit the
-    <a href="https://commonmark.org/help/tutorial/">commonmark.org tutorial</a>.
+    For an overview of standard Markdown please visit the <a href="https://commonmark.org/help/tutorial/" target="_blank">tutorial</a>.
 </p>
 
 <p>
-    The Galaxy extensions to Markdown are represented as code blocks, these blocks start
-    with the line <tt>\`\`\`galaxy</tt> and end with the line <tt>\`\`\`</tt> and have a
-    command with arguments that reference parts of the workflow in the middle.
+    The Galaxy extensions to Markdown are represented as code blocks (using three backticks <code>\`\`\`</code>).
+    They start with the line <code>\`\`\`galaxy</code> and end with the line <code>\`\`\`</code> and have a
+    command with arguments that reference Galaxy objects in the middle.
 </p>`;
 
 export const datasetCommandsHtml = `
