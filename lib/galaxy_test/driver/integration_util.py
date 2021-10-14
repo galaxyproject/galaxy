@@ -181,8 +181,21 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
 
 
+def setup_celery_includes():
+    from galaxy.celery import TASKS_MODULES
+
+    def celery_includes():
+        return TASKS_MODULES
+
+    return pytest.fixture(scope="session")(celery_includes)
+
+
 class UsesCeleryTasks:
-    enable_celery_tasks = True
+    @classmethod
+    def setup_celery_config(cls, config):
+        config["enable_celery_tasks"] = True
+        config["celery_broker"] = "memory://"
+        config["celery_backend"] = "cache+memory://"
 
     @pytest.fixture(autouse=True)
     def _request_celery_app(self, celery_app):
