@@ -1,6 +1,7 @@
 from functools import wraps
 
 from celery import shared_task
+from kombu import serialization
 from lagom import magic_bind_to_container
 from sqlalchemy.orm.scoping import (
     scoped_session,
@@ -14,12 +15,24 @@ from galaxy.managers.lddas import LDDAManager
 from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from . import get_galaxy_app
+from ._serialization import schema_dumps, schema_loads
 
 log = get_logger(__name__)
 CELERY_TASKS = []
+PYDANTIC_AWARE_SERIALIER_NAME = 'pydantic-aware-json'
+
+
+serialization.register(
+    PYDANTIC_AWARE_SERIALIER_NAME,
+    encoder=schema_dumps,
+    decoder=schema_loads,
+    content_type='application/json'
+)
 
 
 def galaxy_task(*args, **celery_task_kwd):
+    if 'serializer' not in celery_task_kwd:
+        celery_task_kwd['serializer'] = PYDANTIC_AWARE_SERIALIER_NAME
 
     def decorate(func):
         CELERY_TASKS.append(func.__name__)

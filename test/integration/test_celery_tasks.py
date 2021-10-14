@@ -1,7 +1,8 @@
 from celery import shared_task
 
-from galaxy.celery.tasks import purge_hda
+from galaxy.celery.tasks import galaxy_task, purge_hda
 from galaxy.model import HistoryDatasetAssociation
+from galaxy.schema.schema import CreatePagePayload
 from galaxy_test.base.populators import DatasetPopulator, wait_on
 from galaxy_test.driver.integration_util import IntegrationTestCase, UsesCeleryTasks
 
@@ -9,6 +10,12 @@ from galaxy_test.driver.integration_util import IntegrationTestCase, UsesCeleryT
 @shared_task
 def mul(x, y):
     return x * y
+
+
+@galaxy_task
+def process_page(request: CreatePagePayload):
+    # an example task that consumes a pydantic model
+    return f"content_format is {request.content_format} with annotation {request.annotation}"
 
 
 class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
@@ -19,6 +26,15 @@ class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
 
     def test_random_simple_task_to_verify_framework_for_testing(self):
         assert mul.delay(4, 4).get(timeout=10) == 16
+
+    def test_task_with_pydantic_argument(self):
+        request = CreatePagePayload(
+            content_format="markdown",
+            title="my cool title",
+            slug="my-cool-title",
+            annotation="my cool annotation",
+        )
+        assert process_page.delay(request).get(timeout=10) == "content_format is markdown with annotation my cool annotation"
 
     def test_galaxy_task(self):
         history_id = self.dataset_populator.new_history()
