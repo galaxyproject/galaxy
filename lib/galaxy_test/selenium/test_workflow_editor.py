@@ -196,6 +196,7 @@ steps:
         textarea_column_names = column_names.wait_for_visible()
         assert textarea_column_names.get_attribute('value') == 'a\nb\nc\n'
         self.set_text_element(columns, '4\n5\n6\n')
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_has_changes_and_save()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.driver.refresh()
@@ -304,6 +305,7 @@ steps:
         self.assert_not_connected("input1#output", "first_cat#input1")
         self.workflow_editor_connect("input1#output", "first_cat#input1")
         self.assert_connected("input1#output", "first_cat#input1")
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_has_changes_and_save()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open_with_name(name)
@@ -426,6 +428,7 @@ steps:
         editor.tool_version_button.wait_for_and_click()
         assert self.select_dropdown_item('Switch to 0.2'), 'Switch to tool version dropdown item not found'
         self.screenshot("workflow_editor_version_update")
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_has_changes_and_save()
         self.sleep_for(self.wait_types.UX_RENDER)
         workflow = self.workflow_populator.download_workflow(workflow_id)
@@ -501,6 +504,7 @@ steps:
         editor.select_datatype(datatype='bam').wait_for_and_click()
         self.set_text_element(editor.add_tags, '#crazynewtag')
         self.set_text_element(editor.remove_tags, '#oldboringtag')
+        self.sleep_for(self.wait_types.UX_RENDER)
         cat_node.clone.wait_for_and_click()
         editor.label_input.wait_for_and_send_keys('cloned label')
         output_label = editor.label_output(output='out_file1')

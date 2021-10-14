@@ -1,8 +1,8 @@
 /**
  * This queue waits until the current promise is resolved and only executes the last enqueued
  * promise. Promises added between the last and the currently executing promise are skipped.
- * This is useful when earlier enqueued promises become obselete.
- * See: https://stackoverflow.com/questions/53540348/js-async-await-tasks-queue
+ * This is useful when earlier enqueued promises become obsolete.
+ * See also: https://stackoverflow.com/questions/53540348/js-async-await-tasks-queue
  */
 export class LastQueue {
     constructor(throttlePeriod = 1000) {
@@ -20,11 +20,11 @@ export class LastQueue {
 
     async dequeue() {
         if (!this.pendingPromise && this.nextPromise) {
-            let item = this.nextPromise;
+            const item = this.nextPromise;
             this.nextPromise = null;
             this.pendingPromise = true;
             try {
-                let payload = await item.action(...item.args);
+                const payload = await item.action(...item.args);
                 item.resolve(payload);
             } catch (e) {
                 item.reject(e);
