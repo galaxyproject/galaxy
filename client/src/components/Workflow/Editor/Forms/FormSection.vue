@@ -19,15 +19,23 @@
             help="Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
             @change="onChange"
         />
+        <FormOutput v-for="(output, index) in outputs"
+            :key="index"
+            :output-name="output.name"
+            :get-node="getNode"
+            :datatypes="datatypes"
+        />
     </div>
 </template>
 
 <script>
 import FormElement from "components/Form/FormElement";
+import FormOutput from "./FormOutput";
 
 export default {
     components: {
         FormElement,
+        FormOutput,
     },
     props: {
         id: {
