@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import (
     delete,
+    func,
     select,
     UniqueConstraint,
 )
@@ -529,6 +530,8 @@ class TestRepositoryMetadata(BaseTest):
             assert stored_obj.repository.id == repository.id
             assert are_same_entity_collections(stored_obj.reviews, [review1, review2])
 
+        delete_from_database(session, [review1, review2, review3])
+
 
 class TestRepositoryRatingAssociation(BaseTest):
 
@@ -746,6 +749,8 @@ class TestTag(BaseTest):
             assert stored_obj.parent_id == parent_tag.id
             assert stored_obj.name == name
 
+        delete_from_database(session, parent_tag)
+
     def test_relationships(
         self,
         session,
@@ -765,6 +770,8 @@ class TestTag(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.parent.id == parent_tag.id
             assert stored_obj.children == [child_tag]
+
+        delete_from_database(session, [parent_tag, child_tag])
 
 
 class TestUser(BaseTest):
@@ -852,6 +859,8 @@ class TestUser(BaseTest):
             assert are_same_entity_collections(stored_obj.roles, [private_user_role, non_private_user_role])
             assert stored_obj.non_private_roles == [non_private_user_role]
 
+        delete_from_database(session, [_private_role, _non_private_role, private_user_role, non_private_user_role])
+
 
 class TestUserGroupAssociation(BaseTest):
 
@@ -912,6 +921,22 @@ class TestUserRoleAssociation(BaseTest):
 
 
 # Misc. helper fixtures.
+@pytest.fixture(autouse=True)
+def ensure_database_is_empty(session, model):
+    """
+    Auto-runs before each test and any unscoped fixtures, except session and model on
+    which it depends. Verifies that all model tables in the database are empty. This
+    ensures that a test is not affected by data leftover from a previous test run.
+    For fixture instantiation order, see:
+    https://docs.pytest.org/en/6.2.x/fixture.html#fixture-instantiation-order
+    """
+    models = (cls_ for cls_ in model.__dict__.values() if hasattr(cls_, '__mapper__'))
+    # For each mapped class, check that the database table to which it is mapped is empty
+    for m in models:
+        stmt = select(func.count()).select_from(m)
+        result = session.execute(stmt).scalar()
+        assert result == 0
+
 
 @pytest.fixture(scope='module')
 def model():
