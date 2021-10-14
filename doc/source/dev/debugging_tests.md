@@ -41,7 +41,7 @@ The first step is often to exclude the workflow runs that are passing, so that y
 To do this you can delete all the workflow files in .github/workflows/*.yaml except for the one that sets up the failing test.
 
 If the yaml file has a strategy section that sets up multiple tests keep just the one that contains the failing test.
-If the test never finishes through in a `-s` in the run_tests.sh arguments, so you see live output.
+If the test never finishes, add `-s` to the options that `run_tests.sh` pass to `pytest` (i.e. `-s` needs to be after a `--`), so you can see live output.
 This diff here adds `-s` and disables strategies that are already passing:
 
 ```diff
