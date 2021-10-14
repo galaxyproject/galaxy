@@ -11,9 +11,9 @@ export class LastQueue {
         this.pendingPromise = false;
     }
 
-    enqueue(action, payload) {
+    enqueue(action, ...args) {
         return new Promise((resolve, reject) => {
-            this.nextPromise = { action, payload, resolve, reject };
+            this.nextPromise = { action, args, resolve, reject };
             this.dequeue();
         });
     }
@@ -24,7 +24,7 @@ export class LastQueue {
             this.nextPromise = null;
             this.pendingPromise = true;
             try {
-                let payload = await item.action(item.payload);
+                let payload = await item.action(...item.args);
                 item.resolve(payload);
             } catch (e) {
                 item.reject(e);
