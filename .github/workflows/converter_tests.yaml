@@ -1,5 +1,7 @@
 name: Converter tests
 on: [push, pull_request]
+env:
+  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
 concurrency:
   group: converter-${{ github.ref }}
   cancel-in-progress: true

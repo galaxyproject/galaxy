@@ -2,6 +2,7 @@
 Shared model and mapping code between Galaxy and Tool Shed, trying to
 generalize to generic database connections.
 """
+import os
 import threading
 from contextvars import ContextVar
 from inspect import (
@@ -106,6 +107,18 @@ def versioned_objects(iter):
     for obj in iter:
         if hasattr(obj, '__create_version__'):
             yield obj
+
+
+def versioned_objects_strict(iter):
+    for obj in iter:
+        if hasattr(obj, '__create_version__'):
+            if not obj.history and not obj.history_id and obj.extension != 'len':
+                raise Exception(f'HistoryDatsetAssociation {obj} without history detected, this is not valid')
+            yield obj
+
+
+if os.environ.get("GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA"):
+    versioned_objects = versioned_objects_strict  # noqa: F811
 
 
 def versioned_session(session):
