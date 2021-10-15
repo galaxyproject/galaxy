@@ -21,6 +21,7 @@
             :key="index"
             :outputName="output.name"
             :outputLabel="getOutputLabel(output)"
+            :output-label-error="outputLabelError"
             :inputs="node.inputs"
             :datatypes="datatypes"
             :form-data="formData"
@@ -57,6 +58,7 @@ export default {
     data() {
         return {
             formData: {},
+            outputLabelError: null,
         };
     },
     watch: {
@@ -105,8 +107,8 @@ export default {
                     pjas[key] = value;
                 });
             });
-            const emailPayloadKey = `${this.emailActionId()}__host`;
-            this.formData[emailPayloadKey] = window.location.host;
+            const emailPayloadKey = `${this.emailActionId}__host`;
+            pjas[emailPayloadKey] = window.location.host;
             this.formData = pjas;
         },
         getOutputLabel(output) {
@@ -122,19 +124,15 @@ export default {
             this.$emit("onChange", this.formData);
         },
         onLabel(outputName, newLabel) {
-            /*const oldLabel = node.labelOutput(outputName, newLabel);
-            const input_id = form.data.match(`__label__${outputName}`);
-            const input_element = form.element_list[input_id];
+            const oldLabel = this.node.labelOutput(outputName, newLabel);
             if (oldLabel) {
-                input_element.field.model.set("value", oldLabel);
-                input_element.model.set(
-                    "error_text",
-                    `Duplicate output label '${newLabel}' will be ignored.`
-                );
+                this.outputLabelError = `Duplicate output label '${newLabel}' will be ignored.`;
             } else {
-                input_element.model.set("error_text", "");
+                this.outputLabelError = null;
             }
-            form.trigger("change");*/
+            const labelKey = `__label__${outputName}`;
+            this.formData[labelKey] = newLabel;
+            this.$emit("onChange", this.formData);
         },
         onDatatype(outputName, newDatatype) {
             this.$emit("onChangeOutputDatatype", outputName, newDatatype);
