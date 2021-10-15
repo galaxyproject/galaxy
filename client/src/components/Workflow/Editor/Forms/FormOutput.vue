@@ -10,8 +10,8 @@
                 @change="onChangeLabel"
             />
             <FormElement
-                :id="getActionId('RenameDatasetAction', 'newname')"
-                :v-model="formData[getActionId('RenameDatasetAction', 'newname')]"
+                :id="actionNames.RenameDatasetAction_newname"
+                :v-model="formData[actionNames.RenameDatasetAction_newname]"
                 ignore=""
                 title="Rename dataset"
                 type="text"
@@ -19,8 +19,8 @@
                 @change="onChange"
             />
             <FormElement
-                :id="getActionId('ChangeDatatypeAction', 'newtype')"
-                :v-model="formData[getActionId('ChangeDatatypeAction', 'newtype')]"
+                :id="actionNames.ChangeDatatypeAction_newtype"
+                :v-model="formData[actionNames.ChangeDatatypeAction_newtype]"
                 ignore="__empty__"
                 title="Change datatype"
                 type="text"
@@ -28,8 +28,8 @@
                 @change="onChangeDatatype"
             />
             <FormElement
-                :id="getActionId('TagDatasetAction', 'tags')"
-                :v-model="formData[getActionId('TagDatasetAction', 'tags')]"
+                :id="actionNames.TagDatasetAction_tags"
+                :v-model="formData[actionNames.TagDatasetAction_tags]"
                 ignore=""
                 title="Add Tags"
                 type="text"
@@ -37,8 +37,8 @@
                 @change="onChange"
             />
             <FormElement
-                :id="getActionId('RemoveTagDatasetAction', 'tags')"
-                :v-model="formData[getActionId('RemoveTagDatasetAction', 'tags')]"
+                :id="actionNames.RemoveTagDatasetAction_tags"
+                :v-model="formData[actionNames.RemoveTagDatasetAction_tags]"
                 ignore=""
                 title="Remove Tags"
                 type="text"
@@ -48,8 +48,8 @@
             <FormCard title="Assign columns" collapsible :expanded.sync="expandedColumns">
                 <template v-slot:body>
                     <FormElement
-                        :id="getActionId('ColumnSetAction', 'chromCol')"
-                        :v-model="formData[getActionId('ColumnSetAction', 'chromCol')]"
+                        :id="actionNames.ColumnSetAction_chromCol"
+                        :v-model="formData[actionNames.ColumnSetAction_chromCol]"
                         ignore=""
                         title="Chrom column"
                         type="text"
@@ -57,8 +57,8 @@
                         @change="onChange"
                     />
                     <FormElement
-                        :id="getActionId('ColumnSetAction', 'startCol')"
-                        :v-model="formData[getActionId('ColumnSetAction', 'startCol')]"
+                        :id="actionNames.ColumnSetAction_startCol"
+                        :v-model="formData[actionNames.ColumnSetAction_startCol]"
                         ignore=""
                         title="Start column"
                         type="text"
@@ -66,8 +66,8 @@
                         @change="onChange"
                     />
                     <FormElement
-                        :id="getActionId('ColumnSetAction', 'endCol')"
-                        :v-model="formData[getActionId('ColumnSetAction', 'endCol')]"
+                        :id="actionNames.ColumnSetAction_endCol"
+                        :v-model="formData[actionNames.ColumnSetAction_endCol]"
                         ignore=""
                         title="End column"
                         type="text"
@@ -75,8 +75,8 @@
                         @change="onChange"
                     />
                     <FormElement
-                        :id="getActionId('ColumnSetAction', 'strandCol')"
-                        :v-model="formData[getActionId('ColumnSetAction', 'strandCol')]"
+                        :id="actionNames.ColumnSetAction_strandCol"
+                        :v-model="formData[actionNames.ColumnSetAction_strandCol]"
                         ignore=""
                         title="Strand column"
                         type="text"
@@ -84,8 +84,8 @@
                         @change="onChange"
                     />
                     <FormElement
-                        :id="getActionId('ColumnSetAction', 'nameCol')"
-                        :v-model="formData[getActionId('ColumnSetAction', 'nameCol')]"
+                        :id="actionNames.ColumnSetAction_nameCol"
+                        :v-model="formData[actionNames.ColumnSetAction_nameCol]"
                         ignore=""
                         title="Name column"
                         type="text"
@@ -177,15 +177,27 @@ export default {
         outputLabelId() {
             return `__label__${this.output.name}`;
         },
+        actionNames() {
+            const actions = [
+                ['RenameDatasetAction', 'newname'],
+                ['ChangeDatatypeAction', 'newtype'],
+                ['TagDatasetAction', 'tags'],
+                ['RemoveTagDatasetAction', 'tags'],
+                ['ColumnSetAction', 'chromCol'],
+                ['ColumnSetAction', 'startCol'],
+                ['ColumnSetAction', 'endCol'],
+                ['ColumnSetAction', 'strandCol'],
+                ['ColumnSetAction', 'nameCol'],
+            ];
+            const index = {};
+            actions.forEach(([action, arg]) => {
+                const name = `${action}_${arg}`;
+                index[name] = `pja__${this.outputName}__${action}__${arg}`;
+            });
+            return index;
+        }
     },
     methods: {
-        getActionId(action, arg = null) {
-            let id = `pja__${this.outputName}__${action}`;
-            if (arg) {
-                id += `__${arg}`;
-            }
-            return id;
-        },
         onChange(values) {
             this.$emit("onChange", values);
         },
