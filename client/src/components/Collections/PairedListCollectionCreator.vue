@@ -480,7 +480,7 @@ export default {
             filters: this.DEFAULT_FILTERS,
             automaticallyPair: true,
             initialPairsPossible: true,
-            matchPercentage: 0.9,
+            matchPercentage: 0.99,
             twoPassAutoPairing: true,
             removeExtensions: true,
             workingElements: [],
