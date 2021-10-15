@@ -18,12 +18,12 @@
                 </b-button>
             </div>
             <b-link class="portlet-title" v-if="collapsible" @click="onCollapse" href="#">
-                <span :class="['portlet-title-icon fa mr-1', icon]" />
+                <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
                 <b itemprop="name">{{ title }}</b>
                 <span itemprop="description">{{ description }}</span>
             </b-link>
             <span class="portlet-title" v-else>
-                <span :class="['portlet-title-icon fa mr-1', icon]" />
+                <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
                 <b itemprop="name">{{ title }}</b>
                 <span itemprop="description">{{ description }}</span>
             </span>
@@ -56,7 +56,7 @@ export default {
         },
         icon: {
             type: String,
-            default: "",
+            default: null,
         },
         collapsible: {
             type: Boolean,
