@@ -50,7 +50,8 @@
                         :id="actionNames.ColumnSetAction__chromCol"
                         :value="formData[actionNames.ColumnSetAction__chromCol]"
                         title="Chrom column"
-                        type="text"
+                        type="integer"
+                        backbonejs
                         help="This action will set the chromosome column."
                         @input="onInput"
                     />
@@ -58,7 +59,8 @@
                         :id="actionNames.ColumnSetAction__startCol"
                         :value="formData[actionNames.ColumnSetAction__startCol]"
                         title="Start column"
-                        type="text"
+                        type="integer"
+                        backbonejs
                         help="This action will set the start column."
                         @input="onInput"
                     />
@@ -66,7 +68,8 @@
                         :id="actionNames.ColumnSetAction__endCol"
                         :value="formData[actionNames.ColumnSetAction__endCol]"
                         title="End column"
-                        type="text"
+                        type="integer"
+                        backbonejs
                         help="This action will set the end column."
                         @input="onInput"
                     />
@@ -74,7 +77,8 @@
                         :id="actionNames.ColumnSetAction__strandCol"
                         :value="formData[actionNames.ColumnSetAction__strandCol]"
                         title="Strand column"
-                        type="text"
+                        type="integer"
+                        backbonejs
                         help="This action will set the strand column."
                         @input="onInput"
                     />
@@ -82,7 +86,8 @@
                         :id="actionNames.ColumnSetAction__nameCol"
                         :value="formData[actionNames.ColumnSetAction__nameCol]"
                         title="Name column"
-                        type="text"
+                        type="integer"
+                        backbonejs
                         help="This action will set the name column."
                         @input="onInput"
                     />
@@ -182,6 +187,7 @@ export default {
             return list;
         },
         renameHelp() {
+            /* TODO: FormElement should provide a slot for custom help templating instead. */
             const helpLink = `<a href="${this.renameHelpUrl}">here</a>`;
             const helpSection = `This action will rename the output dataset. Click ${helpLink} for more information. Valid input variables are:`;
             let helpLabels = "";
