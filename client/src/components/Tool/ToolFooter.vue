@@ -133,18 +133,26 @@ export default {
             citations: [],
         };
     },
+    watch: {
+        id() {
+            this.loadCitations();
+        },
+    },
     created() {
-        if (this.hasCitations) {
-            getCitations("tools", this.id)
-                .then((citations) => {
-                    this.citations = citations;
-                })
-                .catch((e) => {
-                    console.error(e);
-                });
-        }
+        this.loadCitations();
     },
     methods: {
+        loadCitations() {
+            if (this.hasCitations) {
+                getCitations("tools", this.id)
+                    .then((citations) => {
+                        this.citations = citations;
+                    })
+                    .catch((e) => {
+                        console.error(e);
+                    });
+            }
+        },
         copyBibtex() {
             var text = "";
             this.citations.forEach((citation) => {

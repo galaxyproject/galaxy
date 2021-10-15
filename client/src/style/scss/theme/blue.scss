@@ -72,7 +72,7 @@ $state-danger-bg: theme-color-level("danger", $alert-bg-level);
 $state-danger-border: theme-color-level("danger", $alert-border-level);
 
 $state-info-text: theme-color-level("info", $alert-color-level);
-$state-info-bg: theme-color-level("info", $alert-bg-level);
+$state-info-bg: lighten($brand-info, 50%);
 $state-info-border: theme-color-level("info", $alert-border-level);
 
 $state-success-text: theme-color-level("success", $alert-color-level);
@@ -145,7 +145,6 @@ $table-border-color: transparent;
 // Additional state colors
 $state-default-bg: $gray-200;
 $state-default-border: $border-color;
-$state-paused-bg: lighten($brand-info, 50%);
 $state-running-bg: lighten($brand-warning, 40%);
 $state-running-border: $border-color;
 

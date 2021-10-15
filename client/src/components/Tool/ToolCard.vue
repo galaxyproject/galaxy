@@ -80,8 +80,7 @@
                     </b-button>
                 </div>
                 <div class="portlet-title">
-                    <font-awesome-icon v-if="disabled" icon="spinner" class="portlet-title-icon fa-fw mr-1" spin />
-                    <font-awesome-icon v-else icon="wrench" class="portlet-title-icon fa-fw mr-1" />
+                    <font-awesome-icon icon="wrench" class="portlet-title-icon fa-fw mr-1" />
                     <span class="portlet-title-text">
                         <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span> (Galaxy
                         Version {{ version }})
@@ -119,9 +118,8 @@ import Webhooks from "mvc/webhooks";
 import { addFavorite, removeFavorite } from "components/Tool/services";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSpinner, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faWrench } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faSpinner);
 library.add(faWrench);
 
 export default {
