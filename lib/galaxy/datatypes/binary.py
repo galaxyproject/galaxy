@@ -2366,7 +2366,7 @@ class RDS(Binary):
             with open(dataset.file_name) as fh:
                 mode, version, rversion, minrversion = self._sniff_rds(fh)
         except Exception as e:
-            log.error(f"A Exception {e} {dataset.file_name}") 
+            log.error(f"A Exception {e} {dataset.file_name}")
             try:
                 with gzip.open(dataset.file_name) as fh:
                     mode, version, rversion, minrversion = self._sniff_rds(fh)
