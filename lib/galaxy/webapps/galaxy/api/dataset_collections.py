@@ -42,7 +42,7 @@ class DatasetCollectionsController(
 
         :type   payload: dict
         :param  payload: (optional) dictionary structure containing:
-            * collection_type: dataset colltion type to create.
+            * collection_type: dataset collection type to create.
             * instance_type:   Instance type - 'history' or 'library'.
             * name:            the new dataset collections's name
             * datasets:        object describing datasets for collection
@@ -57,6 +57,7 @@ class DatasetCollectionsController(
             history_id = decode_id(self.app, history_id)
             history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
             create_params["parent"] = history
+            create_params["history"] = history
         elif instance_type == "library":
             folder_id = payload.get('folder_id')
             library_folder = self.get_library_folder(trans, folder_id, check_accessible=True)
