@@ -55,26 +55,14 @@ export default Backbone.View.extend({
             title: "Save as PDF",
             icon: "fa-file-o",
             onclick: () => {
-                app.modal.show({
-                    title: "Send visualization data for PDF creation",
-                    body: "Galaxy does not provide integrated PDF export scripts. You may click 'Continue' to create the PDF by using a 3rd party service (https://export.highcharts.com).",
-                    buttons: {
-                        Cancel: () => {
-                            app.modal.hide();
+                this._wait(app.chart, () => {
+                    Screenshot.createPDF({
+                        $el: app.viewer.$el,
+                        title: app.chart.get("title"),
+                        error: (err) => {
+                            app.message.update({ message: err, status: "danger" });
                         },
-                        Continue: () => {
-                            app.modal.hide();
-                            this._wait(app.chart, () => {
-                                Screenshot.createPDF({
-                                    $el: app.viewer.$el,
-                                    title: app.chart.get("title"),
-                                    error: (err) => {
-                                        app.message.update({ message: err, status: "danger" });
-                                    },
-                                });
-                            });
-                        },
-                    },
+                    });
                 });
             },
         });
