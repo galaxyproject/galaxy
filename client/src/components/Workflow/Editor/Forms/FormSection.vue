@@ -8,7 +8,7 @@
             title="Email notification"
             type="boolean"
             help="An email notification will be sent when the job has completed."
-            @change="onChange"
+            @input="onInput"
         />
         <FormElement
             :id="deleteActionId"
@@ -17,7 +17,7 @@
             title="Output cleanup"
             type="boolean"
             help="Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
-            @change="onChange"
+            @input="onInput"
         />
         <FormOutput
             v-for="(output, index) in outputs"
@@ -25,6 +25,8 @@
             :output="output"
             :get-node="getNode"
             :datatypes="datatypes"
+            :form-data="formData"
+            @onInput="onInput"
         />
     </div>
 </template>
@@ -51,6 +53,11 @@ export default {
             type: Array,
             required: true,
         },
+    },
+    data() {
+        return {
+            formData: {},
+        };
     },
     computed: {
         node() {
@@ -84,8 +91,10 @@ export default {
         },
     },
     methods: {
-        onChange(values) {
-            this.$emit("onChange", values);
+        onInput(value, identifier) {
+            this.formData[identifier] = value;
+            this.$emit("onChange", this.formData);
+            console.log(this.formData);
         },
         /*onLabel(outputName, newLabel) {
             /*

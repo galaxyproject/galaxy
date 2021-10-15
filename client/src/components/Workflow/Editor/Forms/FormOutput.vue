@@ -7,92 +7,92 @@
                 title="Label"
                 type="text"
                 help="This will provide a short name to describe the output - this must be unique across workflows."
-                @change="onChangeLabel"
+                @input="onInputLabel"
             />
             <FormElement
-                :id="actionNames.RenameDatasetAction_newname"
-                :v-model="formData[actionNames.RenameDatasetAction_newname]"
+                :id="actionNames.RenameDatasetAction__newname"
+                :value="formData[actionNames.RenameDatasetAction__newname]"
                 :help="renameHelp"
                 ignore=""
                 title="Rename dataset"
                 type="text"
-                @change="onChange"
+                @input="onInput"
             />
             <FormElement
-                :id="actionNames.ChangeDatatypeAction_newtype"
-                :v-model="formData[actionNames.ChangeDatatypeAction_newtype]"
+                :id="actionNames.ChangeDatatypeAction__newtype"
+                :value="formData[actionNames.ChangeDatatypeAction__newtype]"
                 :options="extensions"
                 ignore="__empty__"
                 title="Change datatype"
                 type="select"
                 backbonejs
                 help="This action will change the datatype of the output to the indicated datatype."
-                @change="onChangeDatatype"
+                @input="onInputDatatype"
             />
             <FormElement
-                :id="actionNames.TagDatasetAction_tags"
-                :v-model="formData[actionNames.TagDatasetAction_tags]"
+                :id="actionNames.TagDatasetAction__tags"
+                :value="formData[actionNames.TagDatasetAction__tags]"
                 ignore=""
                 title="Add Tags"
                 type="text"
                 help="This action will set tags for the dataset."
-                @change="onChange"
+                @input="onInput"
             />
             <FormElement
-                :id="actionNames.RemoveTagDatasetAction_tags"
-                :v-model="formData[actionNames.RemoveTagDatasetAction_tags]"
+                :id="actionNames.RemoveTagDatasetAction__tags"
+                :value="formData[actionNames.RemoveTagDatasetAction__tags]"
                 ignore=""
                 title="Remove Tags"
                 type="text"
                 help="This action will remove tags for the dataset."
-                @change="onChange"
+                @input="onInput"
             />
             <FormCard title="Assign columns" collapsible :expanded.sync="expandedColumns">
                 <template v-slot:body>
                     <FormElement
-                        :id="actionNames.ColumnSetAction_chromCol"
-                        :v-model="formData[actionNames.ColumnSetAction_chromCol]"
+                        :id="actionNames.ColumnSetAction__chromCol"
+                        :value="formData[actionNames.ColumnSetAction__chromCol]"
                         ignore=""
                         title="Chrom column"
                         type="text"
                         help="This action will set the chromosome column."
-                        @change="onChange"
+                        @input="onInput"
                     />
                     <FormElement
-                        :id="actionNames.ColumnSetAction_startCol"
-                        :v-model="formData[actionNames.ColumnSetAction_startCol]"
+                        :id="actionNames.ColumnSetAction__startCol"
+                        :value="formData[actionNames.ColumnSetAction__startCol]"
                         ignore=""
                         title="Start column"
                         type="text"
                         help="This action will set the start column."
-                        @change="onChange"
+                        @input="onInput"
                     />
                     <FormElement
-                        :id="actionNames.ColumnSetAction_endCol"
-                        :v-model="formData[actionNames.ColumnSetAction_endCol]"
+                        :id="actionNames.ColumnSetAction__endCol"
+                        :value="formData[actionNames.ColumnSetAction__endCol]"
                         ignore=""
                         title="End column"
                         type="text"
                         help="This action will set the end column."
-                        @change="onChange"
+                        @input="onInput"
                     />
                     <FormElement
-                        :id="actionNames.ColumnSetAction_strandCol"
-                        :v-model="formData[actionNames.ColumnSetAction_strandCol]"
+                        :id="actionNames.ColumnSetAction__strandCol"
+                        :value="formData[actionNames.ColumnSetAction__strandCol]"
                         ignore=""
                         title="Strand column"
                         type="text"
                         help="This action will set the strand column."
-                        @change="onChange"
+                        @input="onInput"
                     />
                     <FormElement
-                        :id="actionNames.ColumnSetAction_nameCol"
-                        :v-model="formData[actionNames.ColumnSetAction_nameCol]"
+                        :id="actionNames.ColumnSetAction__nameCol"
+                        :value="formData[actionNames.ColumnSetAction__nameCol]"
                         ignore=""
                         title="Name column"
                         type="text"
                         help="This action will set the name column."
-                        @change="onChange"
+                        @input="onInput"
                     />
                 </template>
             </FormCard>
@@ -103,6 +103,18 @@
 <script>
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
+
+const actions = [
+    "RenameDatasetAction__newname",
+    "ChangeDatatypeAction__newtype",
+    "TagDatasetAction__tags",
+    "RemoveTagDatasetAction__tags",
+    "ColumnSetAction__chromCol",
+    "ColumnSetAction__startCol",
+    "ColumnSetAction__endCol",
+    "ColumnSetAction__strandCol",
+    "ColumnSetAction__nameCol",
+];
 
 export default {
     components: {
@@ -122,12 +134,15 @@ export default {
             type: Array,
             default: null,
         },
+        formData: {
+            type: Object,
+            required: true,
+        },
     },
     data() {
         return {
             expanded: false,
             expandedColumns: false,
-            formData: {},
             renameHelpUrl: "https://galaxyproject.org/learn/advanced-workflow/variables/",
         };
     },
@@ -137,6 +152,29 @@ export default {
         },
         postJobActions() {
             return this.node.postJobActions;
+        },
+        activeOutput() {
+            return this.node.activeOutputs.get(this.output.name);
+        },
+        outputTitle() {
+            const title = this.output.label || this.output.name;
+            return `Configure Output: '${title}'`;
+        },
+        outputName() {
+            return this.output.name;
+        },
+        outputLabel() {
+            return this.activeOutput && this.activeOutput.label;
+        },
+        outputLabelId() {
+            return `__label__${this.output.name}`;
+        },
+        actionNames() {
+            const index = {};
+            actions.forEach((action) => {
+                index[action] = `pja__${this.outputName}__${action}`;
+            });
+            return index;
         },
         extensions() {
             const list = [];
@@ -169,51 +207,16 @@ export default {
             }
             return `${helpSection}<ul>${helpLabels}</ul>`;
         },
-        activeOutput() {
-            return this.node.activeOutputs.get(this.output.name);
-        },
-        outputTitle() {
-            const title = this.output.label || this.output.name;
-            return `Configure Output: '${title}'`;
-        },
-        outputName() {
-            return this.output.name;
-        },
-        outputLabel() {
-            return this.activeOutput && this.activeOutput.label;
-        },
-        outputLabelId() {
-            return `__label__${this.output.name}`;
-        },
-        actionNames() {
-            const actions = [
-                ["RenameDatasetAction", "newname"],
-                ["ChangeDatatypeAction", "newtype"],
-                ["TagDatasetAction", "tags"],
-                ["RemoveTagDatasetAction", "tags"],
-                ["ColumnSetAction", "chromCol"],
-                ["ColumnSetAction", "startCol"],
-                ["ColumnSetAction", "endCol"],
-                ["ColumnSetAction", "strandCol"],
-                ["ColumnSetAction", "nameCol"],
-            ];
-            const index = {};
-            actions.forEach(([action, arg]) => {
-                const name = `${action}_${arg}`;
-                index[name] = `pja__${this.outputName}__${action}__${arg}`;
-            });
-            return index;
-        },
     },
     methods: {
-        onChange(values) {
-            this.$emit("onChange", values);
+        onInput(id, value) {
+            this.$emit("onInput", id, value);
         },
-        onChangeLabel(newLabel) {
-            //onOutputLabel(node, output.name, newLabel);
+        onInputLabel(newLabel) {
+            this.$emit("onInputLabel", this.outputName, newLabel);
         },
-        onChangeDatatype() {
-            //onOutputDatatype;
+        onInputDatatype(newDatatype) {
+            this.$emit("onInputDatatype", this.outputName, newDatatype);
         },
     },
 };
