@@ -452,6 +452,7 @@ class SraManifest(Tabular):
 
 class Taxonomy(Tabular):
     file_ext = "taxonomy"
+
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
         super().__init__(**kwd)
