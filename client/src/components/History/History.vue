@@ -5,7 +5,7 @@
         :disable-poll="false"
         :debug="false"
         :debounce-period="500"
-        v-slot="{ loading, payload, manualReload, setScrollPos }">
+        v-slot="{ loading, payload, setScrollPos, resetHistoryContents, setResetHistoryContents }">
         <ExpandedItems
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
@@ -51,37 +51,28 @@
                             @update:show-selection="setShowSelection"
                             @resetSelection="resetSelection"
                             @selectAllContent="selectItems(payload.contents)"
-                            @manualReload="manualReload"
                             :expanded-count="expandedCount"
+                            :setResetHistoryContents="setResetHistoryContents"
                             @collapseAllContent="collapseAll" />
                     </template>
 
                     <template v-slot:listing>
                         <HistoryEmpty v-if="history.empty" class="m-2" />
                         <HistoryEmpty v-else-if="payload && payload.noResults" message="No Results." class="m-2" />
-                        <Scroller
-                            v-else-if="payload"
-                            :class="{ loadingBackground: loading }"
-                            key-field="hid"
-                            v-bind="payload"
-                            :debug="false"
-                            @scroll="setScrollPos">
-                            <template v-slot="{ item, index, rowKey }">
-                                <HistoryContentItem
-                                    :item="item"
-                                    :index="index"
-                                    :row-key="rowKey"
-                                    :show-selection="showSelection"
-                                    :expanded="isExpanded(item)"
-                                    @update:expanded="setExpanded(item, $event)"
-                                    :selected="isSelected(item)"
-                                    @update:selected="setSelected(item, $event)"
-                                    @viewCollection="$emit('viewCollection', item)"
-                                    :data-hid="item.hid"
-                                    :data-index="index"
-                                    :data-row-key="rowKey" />
-                            </template>
-                        </Scroller>
+                        <InfiniteHistory
+                            v-show="payload"
+                            :setScrollPos="setScrollPos"
+                            :payload="payload"
+                            :showSelection="showSelection"
+                            :isExpanded="isExpanded"
+                            :setExpanded="setExpanded"
+                            :isSelected="isSelected"
+                            :setSelected="setSelected"
+                            :loading="loading"
+                            :pageSize="params.pageSize"
+                            :historyId="history.id"
+                            :setResetHistoryContents="setResetHistoryContents"
+                            :resetHistoryContents="resetHistoryContents"/>
                     </template>
 
                     <template v-slot:modals>
@@ -105,10 +96,9 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
-import Scroller from "./Scroller";
-import { HistoryContentItem } from "./ContentItem";
 import { reportPayload } from "components/providers/History/ContentProvider/helpers";
 import HistoryMenu from "./HistoryMenu";
+import InfiniteHistory from "./InfiniteHistory.vue";
 
 export default {
     filters: {
@@ -122,11 +112,10 @@ export default {
         HistoryEmpty,
         ContentOperations,
         ToolHelpModal,
-        Scroller,
-        HistoryContentItem,
         ExpandedItems,
         SelectedItems,
         HistoryMenu,
+        InfiniteHistory,
     },
     props: {
         history: { type: History, required: true },

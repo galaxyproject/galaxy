@@ -194,6 +194,7 @@ export default {
         totalMatches: { type: Number, required: true },
         expandedCount: { type: Number, required: false, default: 0 },
         debug: { type: Boolean, default: false },
+        setResetHistoryContents: {required: true}
     },
     data() {
         return {
@@ -212,6 +213,9 @@ export default {
             },
             set(newVal) {
                 this.$emit("update:params", newVal.clone());
+                if (this.showContentFilters) {
+                    this.setResetHistoryContents(true);
+                }
             },
         },
 
@@ -242,15 +246,15 @@ export default {
 
         async unhideAll(evt) {
             await unhideAllHiddenContent(this.history);
-            this.$emit("manualReload");
+            this.setResetHistoryContents(true);
         },
         async deleteAllHidden(evt) {
             await deleteAllHiddenContent(this.history);
-            this.$emit("manualReload");
+            this.setResetHistoryContents(true);
         },
         async purgeAllDeleted(evt) {
             await purgeAllDeletedContent(this.history);
-            this.$emit("manualReload");
+            this.setResetHistoryContents(true);
         },
 
         // #endregion
@@ -280,7 +284,7 @@ export default {
                 console.log("operation results", results);
             }
             this.$emit("resetSelection");
-            this.$emit("manualReload");
+            this.setResetHistoryContents(true);
         },
 
         // #endregion
@@ -312,9 +316,9 @@ export default {
                     await cacheContent({ ...dataset, visible: false }, true);
                 });
                 this.$emit("resetSelection");
+                // Force relaod since the source items should now be hidden
+                this.setResetHistoryContents(true);
             }
-
-            // this.$emit("manualReload");
         },
 
         // #endregion

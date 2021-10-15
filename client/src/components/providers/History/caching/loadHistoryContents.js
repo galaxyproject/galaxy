@@ -70,17 +70,16 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
             }
 
             // header counts
+            const matches = headerInt("matches")
             const matchesUp = headerInt("matches_up");
             const matchesDown = headerInt("matches_down");
+            const totalMatches = headerInt("total_matches")
             const totalMatchesUp = headerInt("total_matches_up");
             const totalMatchesDown = headerInt("total_matches_down");
             const minHid = headerInt("min_hid");
             const maxHid = headerInt("max_hid");
             const historySize = headerInt("history_size");
             const historyEmpty = headerBool("history_empty");
-
-            const matches = areDefined(matchesUp, matchesDown) ? matchesUp + matchesDown : undefined;
-            const totalMatches = areDefined(totalMatchesUp, totalMatchesDown) ? totalMatchesUp + totalMatchesDown : undefined;
 
             return {
                 summary,

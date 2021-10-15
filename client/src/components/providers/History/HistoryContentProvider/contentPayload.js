@@ -79,7 +79,7 @@ export const contentPayload = (cfg = {}) => {
             show(debug, hid => console.log("estimatedHid", hid, history)),
         );
 
-        const hid$ = merge(knownHid$, estimatedHid$).pipe(
+        const hid$ = knownHid$.pipe(
             distinctUntilChanged(),
             filter(hid => !isNaN(hid)),
             share(),
@@ -90,7 +90,6 @@ export const contentPayload = (cfg = {}) => {
         // #region server loading
 
         const serverHid$ = hid$.pipe(
-            chunk({ chunkSize, debug, label: "serverHid" }),
             distinctUntilChanged(),
             debounceTime(debouncePeriod),
             show(debug, hid => console.log("serverHid", hid)),

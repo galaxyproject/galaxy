@@ -34,6 +34,7 @@ export default {
     methods: {
         async onDelete(opts = {}) {
             const ajaxResult = await deleteContent(this.item, opts);
+            this.$emit("deleted", this.item.hid);
             await cacheContent(ajaxResult);
         },
         async onUnhide() {

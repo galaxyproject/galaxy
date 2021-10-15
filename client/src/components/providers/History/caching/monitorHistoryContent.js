@@ -1,6 +1,7 @@
 import { merge } from "rxjs";
 import { map, distinctUntilChanged, publish, withLatestFrom, share } from "rxjs/operators";
 import { content$, dscContent$, buildContentId, buildCollectionId } from "./db/observables";
+import { show } from "utils/observable";
 import { monitorQuery } from "./db/monitorQuery";
 import { SearchParams } from "components/providers/History/SearchParams";
 import { deepEqual } from "deep-equal";
@@ -48,19 +49,19 @@ export const twoWayMonitor = (cfg = {}) => (src$) => {
     return src$.pipe(
         hydrate([undefined, SearchParams]), 
         publish(input$ => {
-
+        
             const upRequest$ = input$.pipe(
                 map(buildRequest({ seek: SEEK.ASC, pageSize })),
                 distinctUntilChanged(deepEqual),
                 share(),
             );
-        
+
             const downRequest$ = input$.pipe(
                 map(buildRequest({ seek: SEEK.DESC, pageSize })),
                 distinctUntilChanged(deepEqual),
                 share(),
             );
-        
+
             // one page up
             const up$ = upRequest$.pipe(
                 monitorQuery({ db$, inputDebounce, debug, label: "up" }),

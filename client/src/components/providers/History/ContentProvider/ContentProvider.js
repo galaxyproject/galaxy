@@ -35,6 +35,8 @@ export const ContentProvider = {
                 // local vars/settings/props passthrough
                 scrollPos: this.scrollPos,
                 loading: this.loading,
+                resetHistoryContents: this.resetHistoryContents,
+                setResetHistoryContents: this.setResetHistoryContents,
                 scrolling: this.scrolling,
                 busy: this.busy,
                 params: this.params,
@@ -42,7 +44,6 @@ export const ContentProvider = {
 
                 // update methods
                 setScrollPos: this.setScrollPos,
-                manualReload: this.manualReload,
             };
         },
     },
@@ -53,6 +54,7 @@ export const ContentProvider = {
             scrollPos: new ScrollPos(),
             loading: false,
             scrolling: false,
+            resetHistoryContents: false,
         };
     },
 
@@ -71,7 +73,6 @@ export const ContentProvider = {
 
         this.listenTo(scrolling$, (val) => (this.scrolling = val));
         this.listenTo(loading$, (val) => (this.loading = val));
-        this.listenTo(resetPos$, (pos) => this.setScrollPos(pos));
 
         // render output
         this.listenTo(payload$, {
@@ -82,6 +83,9 @@ export const ContentProvider = {
     },
 
     methods: {
+        setResetHistoryContents(value) {
+            this.resetHistoryContents = value;
+        },
         resetScrollPos() {
             this.setScrollPos();
         },
@@ -100,13 +104,6 @@ export const ContentProvider = {
             if (isValidNumber(cursor) || key !== null) {
                 this.scrollPos = ScrollPos.create({ cursor, key });
             }
-        },
-
-        /**
-         * After bulk operations there is a need to trigger a fresh load.
-         */
-        manualReload() {
-            this.setScrollPos(this.scrollPos$.value);
         },
 
         /**
