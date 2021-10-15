@@ -12,6 +12,7 @@ types-bleach==4.1.1
 types-boto==2.49.1
 types-contextvars==2.4.0
 types-cryptography==3.3.6
+types-dataclasses==0.6.1
 types-docutils==0.17.1
 types-enum34==1.1.1
 types-ipaddress==1.0.1

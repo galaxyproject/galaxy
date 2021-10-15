@@ -1,2 +1,3 @@
 SQLAlchemy>=1.4.25,<2
 galaxy-util
+dataclasses; python_version < "3.7"
