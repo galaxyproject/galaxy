@@ -1,7 +1,6 @@
 /** This class renders the chart menu options. */
 import Backbone from "backbone";
 import Ui from "mvc/ui/ui-misc";
-import Screenshot from "mvc/visualization/chart/components/screenshot";
 
 export default Backbone.View.extend({
     initialize: function (app) {
@@ -24,13 +23,7 @@ export default Backbone.View.extend({
             icon: "fa-file",
             onclick: () => {
                 this._wait(app.chart, () => {
-                    Screenshot.createPNG({
-                        $el: app.viewer.$el,
-                        title: app.chart.get("title"),
-                        error: (err) => {
-                            app.message.update({ message: err, status: "danger" });
-                        },
-                    });
+                    this.downloadAs("png");
                 });
             },
         });
@@ -40,13 +33,7 @@ export default Backbone.View.extend({
             icon: "fa-file-text-o",
             onclick: () => {
                 this._wait(app.chart, () => {
-                    Screenshot.createSVG({
-                        $el: app.viewer.$el,
-                        title: app.chart.get("title"),
-                        error: (err) => {
-                            app.message.update({ message: err, status: "danger" });
-                        },
-                    });
+                    this.downloadAs("svg");
                 });
             },
         });
@@ -56,13 +43,7 @@ export default Backbone.View.extend({
             icon: "fa-file-o",
             onclick: () => {
                 this._wait(app.chart, () => {
-                    Screenshot.createPDF({
-                        $el: app.viewer.$el,
-                        title: app.chart.get("title"),
-                        error: (err) => {
-                            app.message.update({ message: err, status: "danger" });
-                        },
-                    });
+                    this.downloadAs("pdf");
                 });
             },
         });
@@ -116,6 +97,40 @@ export default Backbone.View.extend({
         }
         this.listenTo(this.model, "change", () => this.render());
         this.render();
+    },
+
+    downloadAs: function (filetype) {
+        import(/* webpackChunkName: "Screenshot" */ "mvc/visualization/chart/components/screenshot").then(
+            (Screenshot) => {
+                if (filetype === "png") {
+                    Screenshot.createPNG({
+                        $el: this.app.viewer.$el,
+                        title: this.app.chart.get("title"),
+                        error: (err) => {
+                            this.app.message.update({ message: err, status: "danger" });
+                        },
+                    });
+                } else if (filetype === "svg") {
+                    Screenshot.createSVG({
+                        $el: this.app.viewer.$el,
+                        title: this.app.chart.get("title"),
+                        error: (err) => {
+                            this.app.message.update({ message: err, status: "danger" });
+                        },
+                    });
+                } else if (filetype === "pdf") {
+                    Screenshot.createPDF({
+                        $el: this.app.viewer.$el,
+                        title: this.app.chart.get("title"),
+                        error: (err) => {
+                            this.app.message.update({ message: err, status: "danger" });
+                        },
+                    });
+                } else {
+                    this.app.message.update({ message: "Unknown artifact type.", status: "danger" });
+                }
+            }
+        );
     },
 
     render: function () {
