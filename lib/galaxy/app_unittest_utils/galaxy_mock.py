@@ -26,6 +26,12 @@ from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.web.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageConfiguration,
+    ShortTermStorageManager,
+    ShortTermStorageMonitor,
+)
 from galaxy.web_stack import ApplicationStack
 from .celery_helper import rebind_container_to_task
 
@@ -73,6 +79,12 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.name = kwargs.get('name', 'galaxy')
         self[SharedModelMapping] = self.model
         self[GalaxyModelMapping] = self.model
+        sts_config = ShortTermStorageConfiguration(
+            short_term_storage_directory=os.path.join(config.data_dir, "sts")
+        )
+        sts_manager = ShortTermStorageManager(sts_config)
+        self[ShortTermStorageAllocator] = sts_manager
+        self[ShortTermStorageMonitor] = sts_manager
         self[scoped_session] = self.model.context
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)

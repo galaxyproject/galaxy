@@ -13,6 +13,7 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
+from galaxy.web.short_term_storage import ShortTermStorageMonitor
 from . import get_galaxy_app
 from ._serialization import schema_dumps, schema_loads
 
@@ -104,3 +105,11 @@ def prune_history_audit_table(sa_session: scoped_session):
     timer = ExecutionTimer()
     model.HistoryAudit.prune(sa_session)
     log.debug(f"Successfully pruned history_audit table {timer}")
+
+
+@galaxy_task
+def cleanup_short_term_storage(storage_monitor: ShortTermStorageMonitor):
+    """Cleanup short term storage."""
+    timer = ExecutionTimer()
+    storage_monitor.cleanup()
+    log.debug(f"Successfully cleaned up short term storage {timer}")

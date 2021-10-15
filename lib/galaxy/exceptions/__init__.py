@@ -17,8 +17,8 @@ and messages.
 """
 
 from ..exceptions.error_codes import (
-    ErrorCode,
     error_codes_by_name,
+    ErrorCode,
 )
 
 
@@ -55,6 +55,11 @@ class ObjectInvalid(Exception):
     """ Accessed object store ID is invalid """
 
 # Please keep the exceptions ordered by status code
+
+
+class NoContentException(MessageException):
+    status_code = 204
+    err_code = error_codes_by_name['NO_CONTENT_GENERIC']
 
 
 class ActionInputError(MessageException):
