@@ -237,6 +237,7 @@ class Registry:
                                             self.imported_modules.append(imported_module)
                                         if hasattr(imported_module, datatype_class_name):
                                             datatype_class = getattr(imported_module, datatype_class_name)
+                                            assert 'file_ext' in datatype_class.__dict__, f"file_ext undefined for {datatype_class}"
                                     except Exception as e:
                                         full_path = os.path.join(proprietary_path, proprietary_datatype_module)
                                         self.log.debug("Exception importing proprietary code file %s: %s", full_path, galaxy.util.unicodify(e))
@@ -250,6 +251,7 @@ class Registry:
                                         for mod in fields:
                                             module = getattr(module, mod)
                                         datatype_class = getattr(module, datatype_class_name)
+                                        assert 'file_ext' in datatype_class.__dict__, f"file_ext undefined for {datatype_class}"
                                         self.log.debug(f'Retrieved datatype module {str(datatype_module)}:{datatype_class_name} from the datatype registry for extension {extension}.')
                                     except Exception:
                                         self.log.exception('Error importing datatype module %s', str(datatype_module))
@@ -257,6 +259,7 @@ class Registry:
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[type_extension].__class__
+                                assert 'file_ext' in datatype_class.__dict__, f"file_ext undefined for {datatype_class}"
                                 self.log.debug(f'Retrieved datatype module {str(datatype_class.__name__)} from type_extension {type_extension} for extension {extension}.')
                             except Exception:
                                 self.log.exception('Error determining datatype_class for type_extension %s', str(type_extension))
@@ -902,7 +905,6 @@ class Registry:
         else:
             ext = dataset_or_ext
             dataset = None
-
         if self.get_datatype_by_extension(ext) is not None and self.get_datatype_by_extension(ext).matches_any(accepted_formats):
             return True, None, None
 
