@@ -53,6 +53,7 @@
     "jquery-ui": "^1.12.1",
     "jquery.complexify": "^0.5.2",
     "jquery.cookie": "^1.4.1",
+    "jspdf": "^2.4.0",
     "linkifyjs": "^2.1.9",
     "markdown-it": "^11.0.0",
     "markdown-it-regexp": "^0.4.0",
