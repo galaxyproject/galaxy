@@ -2419,10 +2419,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
     def stage_addition(self, items):
         history_id = self.id
         for item in listify(items):
+            item.history = self
             if history_id:
                 item.history_id = history_id
-            else:
-                item.history = self
             self._pending_additions.append(item)
 
     @property
