@@ -1,4 +1,5 @@
 import logging
+from zipfile import ZipFile
 
 from sqlalchemy.orm import joinedload, Query
 
@@ -16,14 +17,17 @@ from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_R
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.schema.tasks import PrepareDatasetCollectionDownload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     validation
 )
+from galaxy.web.short_term_storage import ShortTermStorageMonitor
 from .hdas import (
     HDAManager,
     HistoryDatasetAssociationNoHistoryException,
 )
+from .hdcas import write_dataset_collection
 from .histories import HistoryManager
 from .lddas import LDDAManager
 
@@ -49,11 +53,13 @@ class DatasetCollectionManager:
         history_manager: HistoryManager,
         tag_handler: GalaxyTagHandler,
         ldda_manager: LDDAManager,
+        short_term_storage_monitor: ShortTermStorageMonitor,
     ):
         self.type_registry = DATASET_COLLECTION_TYPES_REGISTRY
         self.collection_type_descriptions = COLLECTION_TYPE_DESCRIPTION_FACTORY
         self.model = model
         self.security = security
+        self.short_term_storage_monitor = short_term_storage_monitor
 
         self.hda_manager = hda_manager
         self.history_manager = history_manager
@@ -656,3 +662,20 @@ class DatasetCollectionManager:
         if offset is not None:
             qry = qry.offset(int(offset))
         return qry
+
+    def write_dataset_collection(self, request: PrepareDatasetCollectionDownload):
+        # TODO: wrap this whole try, except pattern up into a contextmanager for reuse...
+        short_term_storage_monitor = self.short_term_storage_monitor
+        target = short_term_storage_monitor.recover_target(request.short_term_storage_request_id)
+        instance_id = request.history_dataset_collection_association_id
+        try:
+            collection_instance = self.model.context.query(model.HistoryDatasetCollectionAssociation).get(instance_id)
+            with ZipFile(target.path, 'w') as zip_f:
+                write_dataset_collection(collection_instance, zip_f)
+        except MessageException as e:
+            short_term_storage_monitor.cancel(target, exception=e)
+            raise
+        except Exception as e:
+            short_term_storage_monitor.cancel(target, exception=MessageException(f"Unknown error: {e}"))
+            raise
+        short_term_storage_monitor.finalize(target)

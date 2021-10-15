@@ -203,6 +203,19 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         return self.service.download_dataset_collection(trans, id)
 
     @expose_api_anonymous
+    def prepare_collection_download(self, trans, id, history_id=None, **kwd):
+        """
+        GET /api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download
+        GET /api/dataset_collection/{id}/prepare_download
+
+        Return a short term storage token to monitor download of the collection.
+
+        :param id: encoded HistoryDatasetCollectionAssociation (HDCA) id
+        :param history_id: encoded id string of the HDCA's History
+        """
+        return self.service.prepare_collection_download(trans, id)
+
+    @expose_api_anonymous
     def create(self, trans, history_id, payload, **kwd):
         """
         POST /api/histories/{history_id}/contents/{type}s

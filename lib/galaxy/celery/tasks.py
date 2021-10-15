@@ -9,8 +9,12 @@ from sqlalchemy.orm.scoping import (
 from galaxy import model
 from galaxy.app import MinimalManagerApp
 from galaxy.jobs.manager import JobManager
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.schema.tasks import (
+    PrepareDatasetCollectionDownload,
+)
 from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from galaxy.web.short_term_storage import ShortTermStorageMonitor
@@ -97,6 +101,16 @@ def export_history(
     job.state = model.Job.states.NEW
     sa_session.flush()
     job_manager.enqueue(job)
+
+
+@galaxy_task
+def prepare_dataset_collection_download(
+    request: PrepareDatasetCollectionDownload,
+    collection_manager: DatasetCollectionManager,
+):
+    timer = ExecutionTimer()
+    collection_manager.write_dataset_collection(request)
+    log.info(f"Collection download file staged {timer}")
 
 
 @galaxy_task
