@@ -2310,6 +2310,8 @@ class Sra(Binary):
 
 class RData(CompressedArchive):
     """Generic R Data file datatype implementation, i.e. files generated with R's save or save.img function
+    see https://www.loc.gov/preservation/digital/formats/fdd/fdd000470.shtml
+    and https://cran.r-project.org/doc/manuals/r-patched/R-ints.html#Serialization-Formats
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.rdata')
