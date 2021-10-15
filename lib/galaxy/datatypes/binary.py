@@ -2338,7 +2338,7 @@ class RData(Binary):
         return False
 
 
-class RDS(Binary):
+class RDS(CompressedArchive):
     """
     File using a serialized R object generated with R's saveRDS function
     see https://cran.r-project.org/doc/manuals/r-patched/R-ints.html#Serialization-Formats
@@ -2353,12 +2353,26 @@ class RDS(Binary):
     >>> fname = get_test_fname('int-r3-version2.rds')
     >>> RDS().sniff(fname)
     True
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> from galaxy.util.bunch import Bunch
+    >>> dataset = Bunch()
+    >>> dataset.metadata = Bunch
+    >>> rds = RDS()
+    >>> dataset.file_name = get_test_fname('int-r4.rds')
+    >>> dataset.has_data = lambda: True
+    >>> rds.set_meta(dataset)
+    >>> dataset.metadata.version
+    '3'
+    >>> dataset.metadata.rversion
+    '4.1.1'
+    >>> dataset.metadata.minrversion
+    '3.5.0'
     """
     file_ext = 'rds'
 
-    MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=True, optional=False, no_value=None)
-    MetadataElement(name="rversion", default=None, desc="R version", param=MetadataParameter, readonly=True, visible=True, optional=False, no_value=None)
-    MetadataElement(name="minrversion", default=None, desc="minimum R version", param=MetadataParameter, readonly=True, visible=True, optional=False, no_value=None)
+    MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
+    MetadataElement(name="rversion", default=None, desc="R version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
+    MetadataElement(name="minrversion", default=None, desc="minimum R version", param=MetadataParameter, readonly=False, visible=True, optional=False, no_value=None)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         # super().set_meta(dataset, overwrite=overwrite, **kwd)
@@ -2366,14 +2380,11 @@ class RDS(Binary):
             with open(dataset.file_name) as fh:
                 mode, version, rversion, minrversion = self._sniff_rds(fh)
         except Exception as e:
-            log.error(f"A Exception {e} {dataset.file_name}")
             try:
                 with gzip.open(dataset.file_name) as fh:
                     mode, version, rversion, minrversion = self._sniff_rds(fh)
             except Exception as e:
-                log.error(f"B Exception {e} {dataset.file_name}")
                 return
-        log.error(f"{version} {rversion} {minrversion}")
         dataset.metadata.version = version
         dataset.metadata.rversion = rversion
         dataset.metadata.minrversion = minrversion
@@ -2403,7 +2414,7 @@ class RDS(Binary):
         """
         get the header info from a rds file
         - starts with b'X\n' or 'A\n'
-        - then 3 integers (each 4bytes)
+        - then 3 integers (each 4bytes) encoded with base 10, e.g. b"\x00\x03\x06\x03" for version "3.6.3"
           - the serialization version (2/3)
           - the r version used to generate the file
           - the minimum r version needed to read the file
@@ -2415,13 +2426,17 @@ class RDS(Binary):
             mode = "A"
         else:
             raise Exception()
-        version = int.from_bytes(fh.read(4), byteorder='big')
+        version = fh.read(4)
+        rversion = fh.read(4)
+        minrversion = fh.read(4)
+        version = int("".join([str(_) for _ in version]))
         if version not in [2, 3]:
             raise Exception()
-        rversion = int.from_bytes(fh.read(4), byteorder='big')
-        minrversion = int.from_bytes(fh.read(4), byteorder='big')
+        rversion = int("".join([str(_) for _ in rversion]))
+        minrversion = int("".join([str(_) for _ in minrversion]))
+        version = ".".join(str(version))
         rversion = ".".join(str(rversion))
-        minrversion = ".".join(str(rversion))
+        minrversion = ".".join(str(minrversion))
         return mode, version, rversion, minrversion
 
 
