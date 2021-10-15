@@ -4,7 +4,8 @@ from galaxy.tool_util.lint import LintContext
 from galaxy.tool_util.linters import (
     general,
     inputs,
-    outputs
+    outputs,
+    tests
 )
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
@@ -174,6 +175,36 @@ OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA = """
 </tool>
 """
 
+# check that linter does complain about tests wo assumptions
+TESTS_WO_EXPECTATIONS = """
+<tool>
+    <tests>
+        <test>
+        </test>
+    </tests>
+</tool>
+"""
+
+TESTS_PARAM = """
+<tool>
+    <inputs>
+        <param name="existent_test_name"/>
+        <conditional>
+            <when>
+                <param name="another_existent_test_name"/>
+            </when>
+        </conditional>
+    </inputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="existent_test_name"/>
+            <param name="cond_name|another_existent_test_name"/>
+            <param name="non_existent_test_name"/>
+        </test>
+    </tests>
+</tool>
+"""
+
 TESTS = [
     (
         WHITESPACE_IN_VERSIONS_AND_NAMES, general.lint_general,
@@ -260,6 +291,19 @@ TESTS = [
         lambda x:
             len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
+    (
+        TESTS_WO_EXPECTATIONS, tests.lint_tsts,
+        lambda x:
+            'No outputs or expectations defined for tests, this test is likely invalid.' in x.warn_messages
+            and 'No valid test(s) found.' in x.warn_messages
+            and len(x.warn_messages) == 2 and len(x.error_messages) == 0
+    ),
+    (
+        TESTS_PARAM, tests.lint_tsts,
+        lambda x:
+            "Test param non_existent_test_name not found in the inputs" in x.error_messages
+            and len(x.warn_messages) == 0 and len(x.error_messages) == 1
+    )
 ]
 
 TEST_IDS = [
@@ -273,7 +317,9 @@ TEST_IDS = [
     'select option definitions',
     'validator imcompatibilities',
     'outputs collection static elements with format_source',
-    'outputs discover datatsets with tool provided metadata'
+    'outputs discover datatsets with tool provided metadata',
+    'test without expectations',
+    'test param missing from inputs'
 ]
 
 
