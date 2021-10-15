@@ -18,6 +18,82 @@
                 help="renameHelp"
                 @change="onChange"
             />
+            <FormElement
+                :id="getActionId('ChangeDatatypeAction', 'newtype')"
+                :v-model="formData[getActionId('ChangeDatatypeAction', 'newtype')]"
+                ignore="__empty__"
+                title="Change datatype"
+                type="text"
+                help="This action will change the datatype of the output to the indicated datatype."
+                @change="onChangeDatatype"
+            />
+            <FormElement
+                :id="getActionId('TagDatasetAction', 'tags')"
+                :v-model="formData[getActionId('TagDatasetAction', 'tags')]"
+                ignore=""
+                title="Add Tags"
+                type="text"
+                help="This action will set tags for the dataset."
+                @change="onChange"
+            />
+            <FormElement
+                :id="getActionId('RemoveTagDatasetAction', 'tags')"
+                :v-model="formData[getActionId('RemoveTagDatasetAction', 'tags')]"
+                ignore=""
+                title="Remove Tags"
+                type="text"
+                help="This action will remove tags for the dataset."
+                @change="onChange"
+            />
+            <FormCard title="Assign columns" collapsible :expanded.sync="expandedColumns">
+                <template v-slot:body>
+                    <FormElement
+                        :id="getActionId('ColumnSetAction', 'chromCol')"
+                        :v-model="formData[getActionId('ColumnSetAction', 'chromCol')]"
+                        ignore=""
+                        title="Chrom column"
+                        type="text"
+                        help="This action will set the chromosome column."
+                        @change="onChange"
+                    />
+                    <FormElement
+                        :id="getActionId('ColumnSetAction', 'startCol')"
+                        :v-model="formData[getActionId('ColumnSetAction', 'startCol')]"
+                        ignore=""
+                        title="Start column"
+                        type="text"
+                        help="This action will set the start column."
+                        @change="onChange"
+                    />
+                    <FormElement
+                        :id="getActionId('ColumnSetAction', 'endCol')"
+                        :v-model="formData[getActionId('ColumnSetAction', 'endCol')]"
+                        ignore=""
+                        title="End column"
+                        type="text"
+                        help="This action will set the end column."
+                        @change="onChange"
+                    />
+                    <FormElement
+                        :id="getActionId('ColumnSetAction', 'strandCol')"
+                        :v-model="formData[getActionId('ColumnSetAction', 'strandCol')]"
+                        ignore=""
+                        title="Strand column"
+                        type="text"
+                        help="This action will set the strand column."
+                        @change="onChange"
+                    />
+                    <FormElement
+                        :id="getActionId('ColumnSetAction', 'nameCol')"
+                        :v-model="formData[getActionId('ColumnSetAction', 'nameCol')]"
+                        ignore=""
+                        title="Name column"
+                        type="text"
+                        help="This action will set the name column."
+                        @change="onChange"
+                    />
+                </template>
+            </FormCard>
         </template>
     </FormCard>
 </template>
@@ -48,6 +124,7 @@ export default {
     data() {
         return {
             expanded: false,
+            expandedColumns: false,
             formData: {},
         }
     },
@@ -114,6 +191,9 @@ export default {
         },
         onChangeLabel(newLabel) {
             //onOutputLabel(node, output.name, newLabel);
+        },
+        onChangeDatatype() {
+            //onOutputDatatype;
         },
     },
 };
