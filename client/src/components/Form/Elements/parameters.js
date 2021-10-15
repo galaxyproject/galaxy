@@ -78,7 +78,6 @@ export default Backbone.View.extend({
         if (input_def.is_workflow) {
             return this._fieldText(input_def);
         }
-
         // customize properties
         if (input_def.type == "data_column") {
             input_def.error_text = "Missing columns in referenced dataset.";

@@ -21,9 +21,11 @@
             <FormElement
                 :id="actionNames.ChangeDatatypeAction_newtype"
                 :v-model="formData[actionNames.ChangeDatatypeAction_newtype]"
+                :options="extensions"
                 ignore="__empty__"
                 title="Change datatype"
-                type="text"
+                type="select"
+                backbonejs
                 help="This action will change the datatype of the output to the indicated datatype."
                 @change="onChangeDatatype"
             />
@@ -153,6 +155,7 @@ export default {
                 0: "Leave unchanged",
                 1: "__empty__",
             });
+            return list;
         },
         labels() {
             const list = [];

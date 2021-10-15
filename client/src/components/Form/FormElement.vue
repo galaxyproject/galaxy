@@ -11,11 +11,11 @@
                 v-model="currentValue"
                 :id="id"
                 :type="type"
-                :attributes="attributes"
+                :attributes="attrs"
                 ref="params"
             />
             <FormBoolean v-else-if="type == 'boolean'" v-model="currentValue" :id="id" />
-            <FormInput v-else="type == 'text'" v-model="currentValue" :id="id" :area="$attrs['area']" />
+            <FormInput v-else="type == 'text'" v-model="currentValue" :id="id" :area="attrs['area']" />
             <span class="ui-form-info form-text text-muted mt-2">{{ help }}</span>
         </div>
     </div>
@@ -69,6 +69,9 @@ export default {
         },
     },
     computed: {
+        attrs() {
+            return this.attributes || this.$attrs;
+        },
         currentValue: {
             get() {
                 return this.value;
