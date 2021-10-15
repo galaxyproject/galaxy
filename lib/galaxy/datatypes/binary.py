@@ -2308,8 +2308,8 @@ class Sra(Binary):
             return 'Binary sra file (%s)' % (nice_size(dataset.get_size()))
 
 
-class RData(Binary):
-    """Generic R Data file datatype implementation
+class RData(CompressedArchive):
+    """Generic R Data file datatype implementation, i.e. files generated with R's save or save.img function
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.rdata')
