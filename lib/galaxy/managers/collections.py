@@ -201,6 +201,7 @@ class DatasetCollectionManager:
         has_subcollections = collection_type_description.has_subcollections()
         # If we have elements, this is an internal request, don't need to load
         # objects from identifiers.
+        history = history or trans.history
         if elements is None:
             elements = self._element_identifiers_to_elements(trans,
                                                              collection_type_description=collection_type_description,
@@ -208,6 +209,7 @@ class DatasetCollectionManager:
                                                              hide_source_items=hide_source_items,
                                                              copy_elements=copy_elements,
                                                              history=history)
+            history.add_pending_items()
         else:
             if has_subcollections:
                 # Nested collection - recursively create collections as needed.
@@ -493,7 +495,7 @@ class DatasetCollectionManager:
             decoded_id = int(trans.app.security.decode_id(encoded_id))
             hda = self.hda_manager.get_accessible(decoded_id, trans.user)
             if copy_elements:
-                element = self.hda_manager.copy(hda, history=history or trans.history, hide_copy=True)
+                element = self.hda_manager.copy(hda, history=history or trans.history, hide_copy=True, flush=False)
             else:
                 element = hda
             if hide_source_items and self.hda_manager.get_owned(hda.id, user=trans.user, current_history=history or trans.history):
