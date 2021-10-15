@@ -8,7 +8,7 @@
                 title="Label"
                 type="text"
                 help="This will provide a short name to describe the output - this must be unique across workflows."
-                @input="onInputLabel"
+                @input="onLabel"
             />
             <FormElement
                 :id="actionNames.RenameDatasetAction__newname"
@@ -26,7 +26,7 @@
                 type="select"
                 backbonejs
                 help="This action will change the datatype of the output to the indicated datatype."
-                @input="onInputDatatype"
+                @input="onDatatype"
             />
             <FormElement
                 :id="actionNames.TagDatasetAction__tags"
@@ -167,24 +167,24 @@ export default {
             return index;
         },
         datatypeExtensions() {
-            const list = [];
+            const extensions = [];
             for (const key in this.datatypes) {
-                list.push({ 0: this.datatypes[key], 1: this.datatypes[key] });
+                extensions.push({ 0: this.datatypes[key], 1: this.datatypes[key] });
             }
-            list.sort((a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0));
-            list.unshift({
+            extensions.sort((a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0));
+            extensions.unshift({
                 0: "Sequences",
                 1: "Sequences",
             });
-            list.unshift({
+            extensions.unshift({
                 0: "Roadmaps",
                 1: "Roadmaps",
             });
-            list.unshift({
+            extensions.unshift({
                 0: "Leave unchanged",
                 1: "",
             });
-            return list;
+            return extensions;
         },
         renameHelp() {
             /* TODO: FormElement should provide a slot for custom help templating instead. */
@@ -200,14 +200,14 @@ export default {
         },
     },
     methods: {
-        onInput(id, value) {
-            this.$emit("onInput", id, value);
+        onInput(identifer, value) {
+            this.$emit("onInput", identifer, value);
         },
-        onInputLabel(newLabel) {
-            this.$emit("onInputLabel", this.outputName, newLabel);
+        onLabel(newLabel) {
+            this.$emit("onLabel", this.outputName, newLabel);
         },
-        onInputDatatype(newDatatype) {
-            this.$emit("onInputDatatype", this.outputName, newDatatype);
+        onDatatype(newDatatype) {
+            this.$emit("onDatatype", this.outputName, newDatatype);
         },
     },
 };

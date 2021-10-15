@@ -1,10 +1,8 @@
 <template>
-    <div :id="id" v-if="firstOutput">
+    <div v-if="firstOutput">
         <FormElement
             :id="emailActionId"
             :value="emailActionValue"
-            :payload="emailActionPayload"
-            :ignore="false"
             title="Email notification"
             type="boolean"
             help="An email notification will be sent when the job has completed."
@@ -13,7 +11,6 @@
         <FormElement
             :id="deleteActionId"
             :value="deleteActionValue"
-            :ignore="false"
             title="Output cleanup"
             type="boolean"
             help="Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
@@ -28,6 +25,8 @@
             :datatypes="datatypes"
             :form-data="formData"
             @onInput="onInput"
+            @onLabel="onLabel"
+            @onDatatype="onDatatype"
         />
     </div>
 </template>
@@ -60,12 +59,23 @@ export default {
             formData: {},
         };
     },
+    watch: {
+        id() {
+            this.setFormData();
+        },
+    },
+    created() {
+        this.setFormData();
+    },
     computed: {
         node() {
             return this.getNode();
         },
         postJobActions() {
             return this.node.postJobActions;
+        },
+        activeOutputs() {
+            return this.node.activeOutputs;
         },
         outputs() {
             return this.node.outputs;
@@ -79,11 +89,6 @@ export default {
         emailActionValue() {
             return Boolean(this.postJobActions[`EmailAction${this.firstOutput.name}`]);
         },
-        emailActionPayload() {
-            return {
-                host: window.location.host,
-            };
-        },
         deleteActionId() {
             return `pja__${this.firstOutput.name}__DeleteIntermediatesAction`;
         },
@@ -92,35 +97,48 @@ export default {
         },
     },
     methods: {
+        setFormData() {
+            const pjas = {};
+            Object.values(this.postJobActions).forEach((pja) => {
+                Object.entries(pja.action_arguments).forEach(([name, value]) => {
+                    const key = `pja__${pja.output_name}__${pja.action_type}__${name}`;
+                    pjas[key] = value;
+                });
+            });
+            const emailPayloadKey = `${this.emailActionId()}__host`;
+            this.formData[emailPayloadKey] = window.location.host;
+            this.formData = pjas;
+        },
         getOutputLabel(output) {
-            const activeOutput = this.node.activeOutputs.get(output.name);
+            const activeOutput = this.activeOutputs.get(output.name);
             return activeOutput && activeOutput.label;
         },
         onInput(value, identifier) {
-            this.formData[identifier] = value;
-            this.$emit("onChange", this.formData);
-            console.log(this.formData);
-        },
-        /*onLabel(outputName, newLabel) {
-            /*
-                const oldLabel = node.labelOutput(outputName, newLabel);
-                const input_id = form.data.match(`__label__${outputName}`);
-                const input_element = form.element_list[input_id];
-                if (oldLabel) {
-                    input_element.field.model.set("value", oldLabel);
-                    input_element.model.set(
-                        "error_text",
-                        `Duplicate output label '${newLabel}' will be ignored.`
-                    );
-                } else {
-                    input_element.model.set("error_text", "");
-                }
-                form.trigger("change");
+            if (value) {
+                this.formData[identifier] = value;
+            } else if (identifier in this.formData) {
+                delete this.formData[identifier];
             }
+            this.$emit("onChange", this.formData);
         },
-        onChangeOutputDatatype(outputName, newDatatype) {
+        onLabel(outputName, newLabel) {
+            /*const oldLabel = node.labelOutput(outputName, newLabel);
+            const input_id = form.data.match(`__label__${outputName}`);
+            const input_element = form.element_list[input_id];
+            if (oldLabel) {
+                input_element.field.model.set("value", oldLabel);
+                input_element.model.set(
+                    "error_text",
+                    `Duplicate output label '${newLabel}' will be ignored.`
+                );
+            } else {
+                input_element.model.set("error_text", "");
+            }
+            form.trigger("change");*/
+        },
+        onDatatype(outputName, newDatatype) {
             this.$emit("onChangeOutputDatatype", outputName, newDatatype);
-        },*/
+        },
     },
 };
 </script>
