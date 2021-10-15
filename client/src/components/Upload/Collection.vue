@@ -202,6 +202,7 @@ export default {
             ondragleave: () => {
                 this.highlightBox = false;
             },
+            chunkSize: this.app.chunkUploadSize,
         });
         this.collection.on("remove", (model) => {
             this._eventRemove(model);

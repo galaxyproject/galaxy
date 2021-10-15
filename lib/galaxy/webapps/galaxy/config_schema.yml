@@ -225,6 +225,14 @@ mapping:
           Where temporary files are stored. It must be accessible at the same path on any cluster
           nodes that will run Galaxy jobs, unless using Pulsar.
 
+      maximum_upload_file_size:
+        type: int
+        default: 107374182400
+        required: false
+        desc: |
+          Maximum size of uploadable files, specified in bytes (default: 100GB).
+          This value is ignored if an external upload server is configured.
+
       tool_config_file:
         type: any
         default: tool_conf.xml
@@ -1697,12 +1705,12 @@ mapping:
 
       chunk_upload_size:
         type: int
-        default: 104857600
+        default: 10485760
         required: false
         desc: |
           Galaxy can upload user files in chunks without using nginx. Enable the chunk
           uploader by specifying a chunk size larger than 0. The chunk size is specified
-          in bytes (default: 100MB).
+          in bytes (default: 10MB).
 
       dynamic_proxy_manage:
         type: bool

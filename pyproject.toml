@@ -80,6 +80,7 @@ starlette = "*"
 starlette-context = {version = "*", python = ">=3.7"}
 svgwrite = "*"
 tifffile = "<=2020.9.3"  # Last version compatible with python 3.6
+tuswsgi = "*"
 uvicorn = "*"
 WebOb = "*"
 Whoosh = "*"
@@ -113,4 +114,5 @@ sphinx_rtd_theme = "*"
 statsd = "*"
 testfixtures = "*"
 twill = "*"
+tuspy = "*"
 watchdog = "*"

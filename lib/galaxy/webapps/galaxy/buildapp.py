@@ -8,6 +8,7 @@ import threading
 import traceback
 
 from paste import httpexceptions
+from tuswsgi import TusMiddleware
 
 import galaxy.app
 import galaxy.datatypes.registry
@@ -384,6 +385,9 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('form', 'forms', path_prefix='/api')
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
     webapp.mapper.resource('upload', 'uploads', path_prefix='/api')
+    webapp.mapper.connect('/api/upload/resumable_upload/{session_id}', controller="uploads", action="hooks", conditions=dict(method=['PATCH']))
+    webapp.mapper.connect('/api/upload/resumable_upload', controller="uploads", action="hooks")
+    webapp.mapper.connect('/api/upload/hooks', controller="uploads", action="hooks", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/ftp_files', controller='remote_files')
     webapp.mapper.connect('/api/remote_files', action='index', controller='remote_files', conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/remote_files/plugins', action='plugins', controller='remote_files', conditions=dict(method=["GET"]))
@@ -1394,6 +1398,12 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
     # Request ID middleware
     app = wrap_if_allowed(app, stack, RequestIDMiddleware)
+    # TUS upload middleware
+    app = wrap_if_allowed(app, stack, TusMiddleware, kwargs={
+        'upload_path': '/api/upload/resumable_upload',
+        'tmp_dir': application_stack.config.new_file_path,
+        'max_size': application_stack.config.maximum_upload_file_size
+    })
     # api batch call processing middleware
     app = wrap_if_allowed(app, stack, BatchMiddleware, args=(webapp, {}))
     if asbool(conf.get('enable_per_request_sql_debugging', False)):

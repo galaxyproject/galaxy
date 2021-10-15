@@ -1,6 +1,8 @@
 import json
+import os
 
 import pytest
+from tusclient import client
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.constants import (
@@ -906,3 +908,25 @@ class ToolsUploadTestCase(ApiTestCase):
             new_dataset = self.dataset_populator.fetch(payload, assert_ok=assert_ok).json()["outputs"][0]
         self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
         return history_id, new_dataset
+
+    def test_upload_dataset_resumable(self):
+
+        def upload_file(url, path, api_key, history_id):
+            filename = os.path.basename(path)
+            metadata = {
+                'filename': filename,
+                'history_id': history_id,
+            }
+            my_client = client.TusClient(url, headers={'x-api-key': api_key})
+
+            # Upload a file to a tus server.
+            uploader = my_client.uploader(path, metadata=metadata)
+            uploader.upload()
+            return uploader.url.rsplit('/', 1)[1]
+
+        with self.dataset_populator.test_history() as history_id:
+            session_id = upload_file(url=f"{self.url}/api/upload/resumable_upload", path=TestDataResolver().get_filename("1.fastqsanger.gz"), api_key=self.galaxy_interactor.api_key, history_id=history_id)
+            hda = self._upload_and_get_details(content=json.dumps({'session_id': session_id}), api='fetch', ext='fastqsanger.gz', name='1.fastqsanger.gz')
+            assert hda['name'] == '1.fastqsanger.gz'
+            assert hda['file_ext'] == 'fastqsanger.gz'
+            assert hda['state'] == 'ok'

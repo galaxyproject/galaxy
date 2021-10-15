@@ -287,6 +287,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``maximum_upload_file_size``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum size of uploadable files, specified in bytes (default:
+    100GB). This value is ignored if an external upload server is
+    configured.
+:Default: ``107374182400``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``tool_config_file``
 ~~~~~~~~~~~~~~~~~~~~
@@ -2327,8 +2339,8 @@
 :Description:
     Galaxy can upload user files in chunks without using nginx. Enable
     the chunk uploader by specifying a chunk size larger than 0. The
-    chunk size is specified in bytes (default: 100MB).
-:Default: ``104857600``
+    chunk size is specified in bytes (default: 10MB).
+:Default: ``10485760``
 :Type: int
 
 
