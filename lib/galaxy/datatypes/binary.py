@@ -2315,27 +2315,60 @@ class RData(Binary):
     >>> fname = get_test_fname('test.rdata')
     >>> RData().sniff(fname)
     True
-    >>> fname = get_test_fname('int-r4.rds')
-    >>> RData().sniff(fname)
-    False
+    >>> from galaxy.util.bunch import Bunch
+    >>> dataset = Bunch()
+    >>> dataset.metadata = Bunch
+    >>> dataset.file_name = fname
+    >>> dataset.has_data = lambda: True
+    >>> RData().set_meta(dataset)
+    >>> dataset.metadata.version
+    '3'
     """
     file_ext = 'rdata'
 
-    def sniff(self, filename):
-        rdata_header = [b'RDX2\nX\n', b'RDX3\nX\n']
-        try:
-            header = open(filename, 'rb').read(7)
-            # log.error(f"{filename} {rdata_header} {header}")
-            if header in rdata_header:
-                return True
+    MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
 
-            header = gzip.open(filename).read(7)
-            # log.error(f"{filename} {rdata_header} {header}")
-            if header in rdata_header:
-                return True
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            with open(dataset.file_name) as fh:
+                version = self._sniff_rdata(fh)
         except Exception:
-            return False
+            try:
+                with gzip.open(dataset.file_name) as fh:
+                    version = self._sniff_rdata(fh)
+            except Exception:
+                return
+        dataset.metadata.version = version
+
+    def sniff(self, filename):
+        # try to read plain file
+        try:
+            with open(filename, 'rb') as fh:
+                self._sniff_rdata(fh)
+        except Exception:
+            pass
+        else:
+            return True
+        # try to read compressed file
+        try:
+            with gzip.open(filename) as fh:
+                self._sniff_rdata(fh)
+        except Exception:
+            raise
+        else:
+            return True
+        # no rds if both fails
         return False
+
+    def _sniff_rdata(self, fh):
+        header = fh.read(7)
+        if header == b'RDX2\nX\n':
+            return "2"
+        elif header == b'RDX3\nX\n':
+            return "3"
+        else:
+            raise ValueError()
 
 
 class RDS(CompressedArchive):
@@ -2353,14 +2386,12 @@ class RDS(CompressedArchive):
     >>> fname = get_test_fname('int-r3-version2.rds')
     >>> RDS().sniff(fname)
     True
-    >>> from galaxy.datatypes.sniff import get_test_fname
     >>> from galaxy.util.bunch import Bunch
     >>> dataset = Bunch()
     >>> dataset.metadata = Bunch
-    >>> rds = RDS()
     >>> dataset.file_name = get_test_fname('int-r4.rds')
     >>> dataset.has_data = lambda: True
-    >>> rds.set_meta(dataset)
+    >>> RDS().set_meta(dataset)
     >>> dataset.metadata.version
     '3'
     >>> dataset.metadata.rversion
@@ -2375,15 +2406,15 @@ class RDS(CompressedArchive):
     MetadataElement(name="minrversion", default=None, desc="minimum R version", param=MetadataParameter, readonly=False, visible=True, optional=False, no_value=None)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        # super().set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with open(dataset.file_name) as fh:
                 mode, version, rversion, minrversion = self._sniff_rds(fh)
-        except Exception as e:
+        except Exception:
             try:
                 with gzip.open(dataset.file_name) as fh:
                     mode, version, rversion, minrversion = self._sniff_rds(fh)
-            except Exception as e:
+            except Exception:
                 return
         dataset.metadata.version = version
         dataset.metadata.rversion = rversion
@@ -2404,7 +2435,6 @@ class RDS(CompressedArchive):
                 self._sniff_rds(fh)
         except Exception:
             raise
-            pass
         else:
             return True
         # no rds if both fails
