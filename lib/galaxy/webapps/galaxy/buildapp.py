@@ -576,6 +576,10 @@ def populate_api_routes(webapp, app):
                           controller='history_contents',
                           action='download_dataset_collection',
                           conditions=dict(method=["GET"]))
+    webapp.mapper.connect("/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download",
+                          controller='history_contents',
+                          action='prepare_collection_download',
+                          conditions=dict(method=["GET"]))
     webapp.mapper.connect("/api/dataset_collections/{id}/download",
                           controller='history_contents',
                           action='download_dataset_collection',
