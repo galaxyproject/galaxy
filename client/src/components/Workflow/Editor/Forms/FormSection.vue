@@ -19,7 +19,8 @@
             help="Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
             @change="onChange"
         />
-        <FormOutput v-for="(output, index) in outputs"
+        <FormOutput
+            v-for="(output, index) in outputs"
             :key="index"
             :output="output"
             :get-node="getNode"

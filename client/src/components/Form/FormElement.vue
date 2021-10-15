@@ -16,7 +16,7 @@
             />
             <FormBoolean v-else-if="type == 'boolean'" v-model="currentValue" :id="id" />
             <FormInput v-else="type == 'text'" v-model="currentValue" :id="id" :area="attrs['area']" />
-            <span class="ui-form-info form-text text-muted mt-2">{{ help }}</span>
+            <span class="ui-form-info form-text text-muted mt-2" v-html="help" />
         </div>
     </div>
 </template>

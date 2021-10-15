@@ -12,10 +12,10 @@
             <FormElement
                 :id="actionNames.RenameDatasetAction_newname"
                 :v-model="formData[actionNames.RenameDatasetAction_newname]"
+                :help="renameHelp"
                 ignore=""
                 title="Rename dataset"
                 type="text"
-                help="renameHelp"
                 @change="onChange"
             />
             <FormElement
@@ -128,7 +128,8 @@ export default {
             expanded: false,
             expandedColumns: false,
             formData: {},
-        }
+            renameHelpUrl: "https://galaxyproject.org/learn/advanced-workflow/variables/",
+        };
     },
     computed: {
         node() {
@@ -157,12 +158,16 @@ export default {
             });
             return list;
         },
-        labels() {
-            const list = [];
+        renameHelp() {
+            const helpLink = `<a href="${this.renameHelpUrl}">here</a>`;
+            const helpSection = `This action will rename the output dataset. Click ${helpLink} for more information. Valid input variables are:`;
+            let helpLabels = "";
             for (const input of this.node.inputs) {
-                list.push({ name: input.name, label: input.label });
+                const name = input.name.replace(/\|/g, ".");
+                const label = input.label ? `(${input.label})` : "";
+                helpLabels += `<li><strong>${name}</strong>${label}</li>`;
             }
-            return list;
+            return `${helpSection}<ul>${helpLabels}</ul>`;
         },
         activeOutput() {
             return this.node.activeOutputs.get(this.output.name);
@@ -182,15 +187,15 @@ export default {
         },
         actionNames() {
             const actions = [
-                ['RenameDatasetAction', 'newname'],
-                ['ChangeDatatypeAction', 'newtype'],
-                ['TagDatasetAction', 'tags'],
-                ['RemoveTagDatasetAction', 'tags'],
-                ['ColumnSetAction', 'chromCol'],
-                ['ColumnSetAction', 'startCol'],
-                ['ColumnSetAction', 'endCol'],
-                ['ColumnSetAction', 'strandCol'],
-                ['ColumnSetAction', 'nameCol'],
+                ["RenameDatasetAction", "newname"],
+                ["ChangeDatatypeAction", "newtype"],
+                ["TagDatasetAction", "tags"],
+                ["RemoveTagDatasetAction", "tags"],
+                ["ColumnSetAction", "chromCol"],
+                ["ColumnSetAction", "startCol"],
+                ["ColumnSetAction", "endCol"],
+                ["ColumnSetAction", "strandCol"],
+                ["ColumnSetAction", "nameCol"],
             ];
             const index = {};
             actions.forEach(([action, arg]) => {
@@ -198,7 +203,7 @@ export default {
                 index[name] = `pja__${this.outputName}__${action}__${arg}`;
             });
             return index;
-        }
+        },
     },
     methods: {
         onChange(values) {
