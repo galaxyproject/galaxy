@@ -22,8 +22,9 @@
         <FormOutput
             v-for="(output, index) in outputs"
             :key="index"
-            :output="output"
-            :get-node="getNode"
+            :outputName="output.name"
+            :outputLabel="getOutputLabel(output)"
+            :inputs="node.inputs"
             :datatypes="datatypes"
             :form-data="formData"
             @onInput="onInput"
@@ -91,6 +92,10 @@ export default {
         },
     },
     methods: {
+        getOutputLabel(output) {
+            const activeOutput = this.node.activeOutputs.get(output.name);
+            return activeOutput && activeOutput.label;
+        },
         onInput(value, identifier) {
             this.formData[identifier] = value;
             this.$emit("onChange", this.formData);
@@ -98,11 +103,6 @@ export default {
         },
         /*onLabel(outputName, newLabel) {
             /*
-            // TODO: Switch to revised data structure!
-            const formVue = this.$refs["form"];
-            if (formVue && formVue.form) {
-                const form = formVue.form;
-                form.data.create();
                 const oldLabel = node.labelOutput(outputName, newLabel);
                 const input_id = form.data.match(`__label__${outputName}`);
                 const input_element = form.element_list[input_id];

@@ -4,6 +4,7 @@
             <FormElement
                 :id="outputLabelId"
                 :value="outputLabel"
+                :error="outputLabelError"
                 title="Label"
                 type="text"
                 help="This will provide a short name to describe the output - this must be unique across workflows."
@@ -13,7 +14,6 @@
                 :id="actionNames.RenameDatasetAction__newname"
                 :value="formData[actionNames.RenameDatasetAction__newname]"
                 :help="renameHelp"
-                ignore=""
                 title="Rename dataset"
                 type="text"
                 @input="onInput"
@@ -21,8 +21,7 @@
             <FormElement
                 :id="actionNames.ChangeDatatypeAction__newtype"
                 :value="formData[actionNames.ChangeDatatypeAction__newtype]"
-                :options="extensions"
-                ignore="__empty__"
+                :options="datatypeExtensions"
                 title="Change datatype"
                 type="select"
                 backbonejs
@@ -32,7 +31,6 @@
             <FormElement
                 :id="actionNames.TagDatasetAction__tags"
                 :value="formData[actionNames.TagDatasetAction__tags]"
-                ignore=""
                 title="Add Tags"
                 type="text"
                 help="This action will set tags for the dataset."
@@ -41,7 +39,6 @@
             <FormElement
                 :id="actionNames.RemoveTagDatasetAction__tags"
                 :value="formData[actionNames.RemoveTagDatasetAction__tags]"
-                ignore=""
                 title="Remove Tags"
                 type="text"
                 help="This action will remove tags for the dataset."
@@ -52,7 +49,6 @@
                     <FormElement
                         :id="actionNames.ColumnSetAction__chromCol"
                         :value="formData[actionNames.ColumnSetAction__chromCol]"
-                        ignore=""
                         title="Chrom column"
                         type="text"
                         help="This action will set the chromosome column."
@@ -61,7 +57,6 @@
                     <FormElement
                         :id="actionNames.ColumnSetAction__startCol"
                         :value="formData[actionNames.ColumnSetAction__startCol]"
-                        ignore=""
                         title="Start column"
                         type="text"
                         help="This action will set the start column."
@@ -70,7 +65,6 @@
                     <FormElement
                         :id="actionNames.ColumnSetAction__endCol"
                         :value="formData[actionNames.ColumnSetAction__endCol]"
-                        ignore=""
                         title="End column"
                         type="text"
                         help="This action will set the end column."
@@ -79,7 +73,6 @@
                     <FormElement
                         :id="actionNames.ColumnSetAction__strandCol"
                         :value="formData[actionNames.ColumnSetAction__strandCol]"
-                        ignore=""
                         title="Strand column"
                         type="text"
                         help="This action will set the strand column."
@@ -88,7 +81,6 @@
                     <FormElement
                         :id="actionNames.ColumnSetAction__nameCol"
                         :value="formData[actionNames.ColumnSetAction__nameCol]"
-                        ignore=""
                         title="Name column"
                         type="text"
                         help="This action will set the name column."
@@ -122,17 +114,25 @@ export default {
         FormElement,
     },
     props: {
-        output: {
-            type: Object,
+        outputName: {
+            type: String,
             required: true,
         },
-        getNode: {
-            type: Function,
+        outputLabel: {
+            type: String,
+            default: null,
+        },
+        outputLabelError: {
+            type: String,
+            required: null,
+        },
+        inputs: {
+            type: Array,
             required: true,
         },
         datatypes: {
             type: Array,
-            default: null,
+            required: true,
         },
         formData: {
             type: Object,
@@ -147,27 +147,12 @@ export default {
         };
     },
     computed: {
-        node() {
-            return this.getNode();
-        },
-        postJobActions() {
-            return this.node.postJobActions;
-        },
-        activeOutput() {
-            return this.node.activeOutputs.get(this.output.name);
-        },
         outputTitle() {
-            const title = this.output.label || this.output.name;
+            const title = this.outputLabel || this.outputName;
             return `Configure Output: '${title}'`;
         },
-        outputName() {
-            return this.output.name;
-        },
-        outputLabel() {
-            return this.activeOutput && this.activeOutput.label;
-        },
         outputLabelId() {
-            return `__label__${this.output.name}`;
+            return `__label__${this.outputName}`;
         },
         actionNames() {
             const index = {};
@@ -176,7 +161,7 @@ export default {
             });
             return index;
         },
-        extensions() {
+        datatypeExtensions() {
             const list = [];
             for (const key in this.datatypes) {
                 list.push({ 0: this.datatypes[key], 1: this.datatypes[key] });
@@ -192,7 +177,7 @@ export default {
             });
             list.unshift({
                 0: "Leave unchanged",
-                1: "__empty__",
+                1: "",
             });
             return list;
         },
@@ -200,7 +185,7 @@ export default {
             const helpLink = `<a href="${this.renameHelpUrl}">here</a>`;
             const helpSection = `This action will rename the output dataset. Click ${helpLink} for more information. Valid input variables are:`;
             let helpLabels = "";
-            for (const input of this.node.inputs) {
+            for (const input of this.inputs) {
                 const name = input.name.replace(/\|/g, ".");
                 const label = input.label ? `(${input.label})` : "";
                 helpLabels += `<li><strong>${name}</strong>${label}</li>`;
