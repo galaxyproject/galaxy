@@ -51,6 +51,7 @@ pysam.set_verbosity(0)
 class Binary(data.Data):
     """Binary data"""
     edam_format = "format_2333"
+    file_ext = "binary"
 
     @staticmethod
     def register_sniffable_binary_format(data_type, ext, type_class):
