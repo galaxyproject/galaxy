@@ -221,10 +221,9 @@ def test_import_export_edit_collection():
 
     sa_session.add(hc1)
     sa_session.add(h)
-    sa_session.flush()
-
     import_history = model.History(name="Test History for Import", user=u)
     sa_session.add(import_history)
+    sa_session.flush()
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, for_edit=True) as export_store:
@@ -404,6 +403,7 @@ def _setup_simple_export(export_kwds):
 
     import_history = model.History(name="Test History for Import", user=u)
     sa_session.add(import_history)
+    sa_session.flush()
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, **export_kwds) as export_store:

@@ -247,7 +247,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         setattr(hda, attribute, value)
 
                 handle_dataset_object_edit(hda)
-                self._flush()
             else:
                 metadata = dataset_attrs['metadata']
 
@@ -295,7 +294,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     dataset_instance.dataset.uuid = dataset_attrs["dataset_uuid"]
 
                 self._session_add(dataset_instance)
-                self._flush()
 
                 if model_class == "HistoryDatasetAssociation":
                     # don't use add_history to manage HID handling across full import to try to preserve
@@ -306,7 +304,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     else:
                         object_import_tracker.requires_hid.append(dataset_instance)
 
-                self._flush()
                 if 'dataset' in dataset_attrs:
                     handle_dataset_object_edit(dataset_instance)
                 else:
@@ -404,7 +401,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 library_folder.deleted = deleted
 
                 self._session_add(library_folder)
-                self._flush()
 
                 for sub_folder_attrs in folder_attrs.get("folders", []):
                     sub_folder = import_folder(sub_folder_attrs)
@@ -422,8 +418,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         ld.library_dataset_dataset_association = ldda
                     self._session_add(ld)
 
-                self._flush()
-
+                self.sa_session.flush()
                 return library_folder
 
             if 'root_folder' in library_attrs:
@@ -657,7 +652,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 assert not self.sessionless
                 job = self.sa_session.query(model.Job).get(job_attrs["id"])
                 self._connect_job_io(job, job_attrs, _find_hda, _find_hdca, _find_dce)
-                self._flush()
                 continue
 
             imported_job = model.Job()
@@ -691,7 +685,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             except Exception:
                 pass
             self._session_add(imported_job)
-            self._flush()
 
             # Connect jobs to input and output datasets.
             params = self._normalize_job_parameters(imported_job, job_attrs, _find_hda, _find_hdca, _find_dce)
@@ -700,7 +693,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 imported_job.add_parameter(name, dumps(value))
 
             self._connect_job_io(imported_job, job_attrs, _find_hda, _find_hdca, _find_dce)
-            self._flush()
 
             if object_key in job_attrs:
                 object_import_tracker.jobs_by_key[job_attrs[object_key]] = imported_job
@@ -722,7 +714,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 self._session_add(icja)
 
             self._session_add(icj)
-            self._flush()
 
     def _session_add(self, obj):
         self.sa_session.add(obj)
