@@ -116,7 +116,7 @@ class HDAManager(datasets.DatasetAssociationManager,
         """
         Copy hda, including annotation and tags, add to history and return the given HDA.
         """
-        copy = hda.copy(parent_id=kwargs.get('parent_id'), copy_hid=False, copy_tags=hda.tags)
+        copy = hda.copy(parent_id=kwargs.get('parent_id'), copy_hid=False, copy_tags=hda.tags, flush=flush)
         if hide_copy:
             copy.visible = False
         if history:
@@ -125,8 +125,10 @@ class HDAManager(datasets.DatasetAssociationManager,
         copy.set_size()
 
         original_annotation = self.annotation(hda)
-        self.annotate(copy, original_annotation, user=hda.history.user)
+        self.annotate(copy, original_annotation, user=hda.history.user, flush=False)
         if flush:
+            if history:
+                history.add_pending_items()
             object_session(copy).flush()
 
         return copy
