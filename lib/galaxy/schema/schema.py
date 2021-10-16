@@ -1,5 +1,6 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
+import re
 from datetime import datetime
 from enum import Enum
 from typing import (
@@ -15,6 +16,7 @@ from pydantic import (
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
+    ConstrainedStr,
     Extra,
     Field,
     FilePath,
@@ -241,9 +243,13 @@ class HistoryContentSource(str, Enum):
     new_collection = "new_collection"
 
 
+class TagItem(ConstrainedStr):
+    regex = re.compile(r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")
+
+
 class TagCollection(Model):
     """Represents the collection of tags associated with an item."""
-    __root__: List[str] = Field(
+    __root__: List[TagItem] = Field(
         default=...,
         title="Tags",
         description="The collection of tags associated with an item.",
