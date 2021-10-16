@@ -116,12 +116,21 @@ export default {
             return activeOutput && activeOutput.label;
         },
         onInput(value, identifier) {
+            let changed = false;
+            const exists = identifier in this.formData;
             if (value) {
-                this.formData[identifier] = value;
-            } else if (identifier in this.formData) {
+                const oldValue = this.formData[identifier];
+                if (value != oldValue) {
+                    this.formData[identifier] = value;
+                    changed = true;
+                }
+            } else if (exists) {
+                changed = true;
                 delete this.formData[identifier];
             }
-            this.$emit("onChange", this.formData);
+            if (changed) {
+                this.$emit("onChange", this.formData);
+            }
         },
         onLabel(pjaKey, outputName, newLabel) {
             const oldLabel = this.node.labelOutput(outputName, newLabel);
@@ -133,7 +142,6 @@ export default {
             this.onInput(newLabel, pjaKey);
         },
         onDatatype(pjaKey, outputName, newDatatype) {
-            //this.$emit("onChangeOutputDatatype", outputName, newDatatype);
             this.onInput(newDatatype, pjaKey);
         },
     },

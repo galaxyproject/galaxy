@@ -335,11 +335,6 @@ export default {
         labelOutput(outputName, label) {
             return this.activeOutputs.labelOutput(outputName, label);
         },
-        changeOutputDatatype(outputName) {
-            const outputTerminal = this.outputTerminals[outputName];
-            outputTerminal.destroyInvalidConnections();
-            this.$emit("onChange");
-        },
         onScrollTo() {
             this.scrolledTo = true;
             setTimeout(() => {

@@ -121,7 +121,6 @@
                                     :datatypes="datatypes"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
-                                    @onChangeOutputDatatype="onChangeOutputDatatype"
                                     @onSetData="onSetData"
                                 />
                                 <FormDefault
@@ -475,10 +474,6 @@ export default {
             this.lastQueue.enqueue(getModule, newData).then((data) => {
                 node.setData(data);
             });
-        },
-        onChangeOutputDatatype(nodeId, outputName, newDatatype) {
-            const node = this.nodes[nodeId];
-            node.changeOutputDatatype(outputName, newDatatype);
         },
         onLabel(nodeId, newLabel) {
             const node = this.nodes[nodeId];
