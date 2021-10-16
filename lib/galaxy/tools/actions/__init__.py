@@ -539,6 +539,7 @@ class DefaultToolAction:
         for name, data in out_data.items():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 history.stage_addition(data)
+        history.add_pending_items(set_output_hid=set_output_hid)
 
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
@@ -565,8 +566,6 @@ class DefaultToolAction:
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
             # We need a flush here and get hids in order to rewrite jobs parameter,
             # but remapping jobs should only affect single jobs anyway, so this is not too costly.
-            history.add_pending_items(set_output_hid=set_output_hid)
-            trans.sa_session.flush()
             self._remap_job_on_rerun(trans=trans,
                                      galaxy_session=galaxy_session,
                                      rerun_remap_job_id=rerun_remap_job_id,
@@ -597,7 +596,6 @@ class DefaultToolAction:
         else:
             if flush_job:
                 # Set HID and add to history.
-                history.add_pending_items(set_output_hid=set_output_hid)
                 job_flush_timer = ExecutionTimer()
                 trans.sa_session.flush()
                 log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
