@@ -5,7 +5,7 @@ import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
 
 export function createPNG(options) {
-    domtoimage.toBlob(options.$el[0]).then(function (blob) {
+    domtoimage.toBlob(options.$el[0], { bgcolor: "#fff" }).then(function (blob) {
         saveAs(blob, `${options.title || "my-chart"}.png`);
     });
 }
