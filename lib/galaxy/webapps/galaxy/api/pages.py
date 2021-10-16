@@ -102,19 +102,6 @@ class FastAPIPages:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
-        '/api/pages/{id}',
-        summary="Return a page summary and the content of the last revision.",
-        response_description="The page summary information.",
-    )
-    async def show(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = PageIdPathParam,
-    ) -> PageDetails:
-        """Return summary information about a specific Page and the content of the last revision."""
-        return self.service.show(trans, id)
-
-    @router.get(
         '/api/pages/{id}.pdf',
         summary="Return a PDF document of the last revision of the Page.",
         response_class=StreamingResponse,
@@ -123,7 +110,7 @@ class FastAPIPages:
                 "description": "PDF document with the last revision of the page.",
                 "content": {"application/pdf": {}},
             },
-            400: {
+            501: {
                 "description": "PDF conversion service not available."
             }
         },
@@ -139,6 +126,19 @@ class FastAPIPages:
         """
         pdf_bytes = self.service.show_pdf(trans, id)
         return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
+
+    @router.get(
+        '/api/pages/{id}',
+        summary="Return a page summary and the content of the last revision.",
+        response_description="The page summary information.",
+    )
+    async def show(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+    ) -> PageDetails:
+        """Return summary information about a specific Page and the content of the last revision."""
+        return self.service.show(trans, id)
 
     @router.get(
         '/api/pages/{id}/sharing',
@@ -309,6 +309,7 @@ class PagesController(BaseGalaxyAPIController):
         :rtype: dict
         :returns: Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
+        trans.response.set_content_type("application/pdf")
         return self.service.show_pdf(trans, id)
 
     @expose_api
