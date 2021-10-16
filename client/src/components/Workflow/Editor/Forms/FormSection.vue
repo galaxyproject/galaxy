@@ -123,19 +123,18 @@ export default {
             }
             this.$emit("onChange", this.formData);
         },
-        onLabel(outputName, newLabel) {
+        onLabel(pjaKey, outputName, newLabel) {
             const oldLabel = this.node.labelOutput(outputName, newLabel);
             if (oldLabel) {
                 this.outputLabelError = `Duplicate output label '${newLabel}' will be ignored.`;
             } else {
                 this.outputLabelError = null;
             }
-            const labelKey = `__label__${outputName}`;
-            this.formData[labelKey] = newLabel;
-            this.$emit("onChange", this.formData);
+            this.onInput(newLabel, pjaKey);
         },
-        onDatatype(outputName, newDatatype) {
-            this.$emit("onChangeOutputDatatype", outputName, newDatatype);
+        onDatatype(pjaKey, outputName, newDatatype) {
+            //this.$emit("onChangeOutputDatatype", outputName, newDatatype);
+            this.onInput(newDatatype, pjaKey);
         },
     },
 };

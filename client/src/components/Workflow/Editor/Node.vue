@@ -335,20 +335,8 @@ export default {
         labelOutput(outputName, label) {
             return this.activeOutputs.labelOutput(outputName, label);
         },
-        changeOutputDatatype(outputName, datatype) {
-            if (datatype === "__empty__") {
-                datatype = null;
-            }
+        changeOutputDatatype(outputName) {
             const outputTerminal = this.outputTerminals[outputName];
-            if (datatype) {
-                this.postJobActions["ChangeDatatypeAction" + outputName] = {
-                    action_arguments: { newtype: datatype },
-                    action_type: "ChangeDatatypeAction",
-                    output_name: outputName,
-                };
-            } else {
-                delete this.postJobActions["ChangeDatatypeAction" + outputName];
-            }
             outputTerminal.destroyInvalidConnections();
             this.$emit("onChange");
         },

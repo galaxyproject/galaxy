@@ -204,10 +204,10 @@ export default {
             this.$emit("onInput", identifer, value);
         },
         onLabel(newLabel) {
-            this.$emit("onLabel", this.outputName, newLabel);
+            this.$emit("onLabel", this.outputLabelId, this.outputName, newLabel);
         },
         onDatatype(newDatatype) {
-            this.$emit("onDatatype", this.outputName, newDatatype);
+            this.$emit("onDatatype", this.actionNames.ChangeDatatypeAction__newtype, this.outputName, newDatatype);
         },
     },
 };
