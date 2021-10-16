@@ -10,20 +10,32 @@ export function createPNG(options) {
     });
 }
 
-/** SVG export */
 export function createSVG(options) {
     domtoimage.toSvg(options.$el[0]).then(function (dataUrl) {
         saveAs(dataUrl, `${options.title || "my-chart"}.svg`);
     });
 }
 
-/** PDF export */
 export function createPDF(options) {
     domtoimage.toPng(options.$el[0]).then(function (dataUrl) {
         const doc = new jsPDF();
-        const w = doc.internal.pageSize.getWidth();
-        const h = doc.internal.pageSize.getHeight();
-        doc.addImage(dataUrl, "png", w * 0.1, h * 0.1, w * 0.8, h * 0.8);
+        // Calculate scaled image size.  We want to leave a small margin, but
+        // fill the page width otherwise.
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const elementWidth = options.$el.width();
+        const elementHeight = options.$el.height();
+        const scale = Math.min(pageWidth / elementWidth, pageHeight / elementHeight) * 0.95;
+
+        doc.addImage(
+            dataUrl,
+            "png",
+            pageWidth * 0.025,
+            pageHeight * 0.025,
+            scale * elementWidth,
+            scale * elementHeight
+        );
+
         doc.save(`${options.title || "my-chart"}.pdf`);
     });
 }
