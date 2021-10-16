@@ -215,13 +215,27 @@ steps:
         can_produce_markdown = configuration["markdown_to_pdf_available"]
         if can_produce_markdown:
             raise SkipTest("Skipping test because server does implement markdown conversion to PDF")
-        page_request = self._test_page_payload(slug="md-page-to-pdf", content_format="markdown")
+        page_request = self._test_page_payload(slug="md-page-to-pdf-not-implemented", content_format="markdown")
         page_response = self._post("pages", page_request, json=True)
         self._assert_status_code_is(page_response, 200)
         page_id = page_response.json()['id']
         pdf_response = self._get(f"pages/{page_id}.pdf")
         api_asserts.assert_status_code_is(pdf_response, 501)
         api_asserts.assert_error_code_is(pdf_response, error_codes.error_codes_by_name["SERVER_NOT_CONFIGURED_FOR_REQUEST"])
+
+    def test_pdf_when_service_available(self):
+        configuration = self.dataset_populator.get_configuration()
+        can_produce_markdown = configuration["markdown_to_pdf_available"]
+        if not can_produce_markdown:
+            raise SkipTest("Skipping test because server does not implement markdown conversion to PDF")
+        page_request = self._test_page_payload(slug="md-page-to-pdf", content_format="markdown")
+        page_response = self._post("pages", page_request, json=True)
+        self._assert_status_code_is(page_response, 200)
+        page_id = page_response.json()['id']
+        pdf_response = self._get(f"pages/{page_id}.pdf")
+        api_asserts.assert_status_code_is(pdf_response, 200)
+        assert "application/pdf" in pdf_response.headers['content-type']
+        assert pdf_response.content[0:4] == b"%PDF"
 
     def test_400_on_download_pdf_when_unsupported_content_format(self):
         page_request = self._test_page_payload(slug="html-page-to-pdf", content_format="html")

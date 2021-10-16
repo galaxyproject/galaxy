@@ -2,6 +2,7 @@
 Determine what optional dependencies are needed.
 """
 
+import os
 import sys
 from os.path import dirname, exists, join
 
@@ -258,6 +259,10 @@ class ConditionalDependencies:
 
     def check_tensorflow(self):
         return asbool(self.config["enable_tool_recommendations"])
+
+    def check_weasyprint(self):
+        # See notes in ./conditional-requirements.txt for more information.
+        return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
 
 
 def optional(config_file=None):
