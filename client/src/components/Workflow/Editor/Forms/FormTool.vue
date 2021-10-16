@@ -38,13 +38,7 @@
                     text-disable="Set at Runtime"
                     @onChange="onChange"
                 />
-                <FormSection
-                    :id="id"
-                    :get-node="getNode"
-                    :datatypes="datatypes"
-                    @onChange="onChangeSection"
-                    @onChangeOutputDatatype="onChangeOutputDatatype"
-                />
+                <FormSection :id="nodeId" :get-node="getNode" :datatypes="datatypes" @onChange="onChangeSection" />
             </template>
         </ToolCard>
     </CurrentUser>
@@ -145,9 +139,6 @@ export default {
         },
     },
     methods: {
-        onChangeOutputDatatype(outputName, newDatatype) {
-            this.$emit("onChangeOutputDatatype", this.node.id, outputName, newDatatype);
-        },
         onAnnotation(newAnnotation) {
             this.$emit("onAnnotation", this.node.id, newAnnotation);
         },
@@ -158,9 +149,11 @@ export default {
             this.mainValues = values;
             this.postChanges();
         },
-        onChangeSection(values) {
+        onChangeSection(values, refreshRequest = false) {
             this.sectionValues = values;
-            this.postChanges();
+            if (refreshRequest) {
+                this.postChanges();
+            }
         },
         onChangeVersion(newVersion) {
             this.messageText = `Now you are using '${this.node.config_form.name}' version ${newVersion}.`;
@@ -170,12 +163,14 @@ export default {
             user.preferences["favorites"] = newFavorites;
         },
         postChanges(newVersion) {
+            const payload = Object.assign({}, this.mainValues, this.sectionValues);
+            console.debug("FormTool - Posting changes.", payload);
             const options = this.node.config_form;
             this.$emit("onSetData", this.node.id, {
                 tool_id: options.id,
                 tool_version: newVersion || options.version,
                 type: "tool",
-                inputs: Object.assign({}, this.mainValues, this.sectionValues),
+                inputs: payload,
             });
         },
     },

@@ -313,16 +313,16 @@ export default {
             this.$emit("onChange");
         },
         setData(data) {
-            this.config_form = data.config_form;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.tooltip = data.tooltip || "";
-            this.postJobActions = data.post_job_actions || {};
             this.inputs = data.inputs ? data.inputs.slice() : [];
             this.outputs = data.outputs ? data.outputs.slice() : [];
             const outputNames = this.outputs.map((output) => output.name);
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             this.activeOutputs.filterOutputs(outputNames);
+            this.postJobActions = data.post_job_actions || {};
+            this.config_form = data.config_form;
         },
         initData(data) {
             this.uuid = data.uuid;

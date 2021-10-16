@@ -18,7 +18,7 @@
         />
         <FormOutput
             v-for="(output, index) in outputs"
-            :key="index"
+            :key="getOutputKey(index)"
             :outputName="output.name"
             :outputLabel="getOutputLabel(output)"
             :output-label-error="outputLabelError"
@@ -62,7 +62,7 @@ export default {
         };
     },
     watch: {
-        id() {
+        postJobActions() {
             this.setFormData();
         },
     },
@@ -89,27 +89,42 @@ export default {
             return `pja__${this.firstOutput.name}__EmailAction`;
         },
         emailActionValue() {
-            return Boolean(this.postJobActions[`EmailAction${this.firstOutput.name}`]);
+            return Boolean(this.formData[this.emailActionId]);
         },
         deleteActionId() {
             return `pja__${this.firstOutput.name}__DeleteIntermediatesAction`;
         },
         deleteActionValue() {
-            return Boolean(this.postJobActions[`DeleteIntermediatesAction${this.firstOutput.name}`]);
+            return Boolean(this.formData[this.deleteActionId]);
         },
     },
     methods: {
+        getOutputKey(index) {
+            return `${this.id}:${index}`;
+        },
         setFormData() {
             const pjas = {};
             Object.values(this.postJobActions).forEach((pja) => {
-                Object.entries(pja.action_arguments).forEach(([name, value]) => {
-                    const key = `pja__${pja.output_name}__${pja.action_type}__${name}`;
-                    pjas[key] = value;
-                });
+                if (Object.keys(pja.action_arguments).length > 0) {
+                    Object.entries(pja.action_arguments).forEach(([name, value]) => {
+                        const key = `pja__${pja.output_name}__${pja.action_type}__${name}`;
+                        pjas[key] = value;
+                    });
+                } else {
+                    const key = `pja__${pja.output_name}__${pja.action_type}`;
+                    pjas[key] = true;
+                }
             });
-            const emailPayloadKey = `${this.emailActionId}__host`;
-            pjas[emailPayloadKey] = window.location.host;
+            /*if (!this.emailActionValue) {
+                pjas[this.emailActionValue] = true;
+                const emailPayloadKey = `${this.emailActionId}__host`;
+                pjas[emailPayloadKey] = window.location.host;
+            } else {
+                pjas[this.emailActionValue] = false;
+            }*/
             this.formData = pjas;
+            console.debug("FormSection - Setting new data.", this.postJobActions, pjas);
+            this.$emit("onChange", Object.assign({}, this.formData));
         },
         getOutputLabel(output) {
             const activeOutput = this.activeOutputs.get(output.name);
@@ -129,7 +144,8 @@ export default {
                 delete this.formData[identifier];
             }
             if (changed) {
-                this.$emit("onChange", this.formData);
+                this.formData = Object.assign({}, this.formData);
+                this.$emit("onChange", Object.assign({}, this.formData), true);
             }
         },
         onLabel(pjaKey, outputName, newLabel) {
