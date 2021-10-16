@@ -112,8 +112,14 @@ def versioned_objects(iter):
 def versioned_objects_strict(iter):
     for obj in iter:
         if hasattr(obj, '__create_version__'):
-            if not obj.history and not obj.history_id and obj.extension != 'len':
-                raise Exception(f'HistoryDatsetAssociation {obj} without history detected, this is not valid')
+            if obj.extension != "len":
+                # TODO: Custom builds (with .len extension) do not get a history or a HID.
+                # These should get some other type of permanent storage, perhaps UserDatasetAssociation ?
+                # Everything else needs to have a hid and a history
+                if not obj.history and not obj.history_id:
+                    raise Exception(f'HistoryDatsetAssociation {obj} without history detected, this is not valid')
+                elif not obj.hid:
+                    raise Exception(f'HistoryDatsetAssociation {obj} without has no hid, this is not valid')
             yield obj
 
 
