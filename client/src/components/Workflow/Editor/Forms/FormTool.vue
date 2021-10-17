@@ -83,11 +83,6 @@ export default {
             messageVariant: "success",
         };
     },
-    watch: {
-        nodeId() {
-            this.messageText = "";
-        },
-    },
     computed: {
         node() {
             return this.getNode();
@@ -149,11 +144,9 @@ export default {
             this.mainValues = values;
             this.postChanges();
         },
-        onChangeSection(values, refreshRequest = false) {
+        onChangeSection(values) {
             this.sectionValues = values;
-            if (refreshRequest) {
-                this.postChanges();
-            }
+            this.postChanges();
         },
         onChangeVersion(newVersion) {
             this.messageText = `Now you are using '${this.node.config_form.name}' version ${newVersion}.`;

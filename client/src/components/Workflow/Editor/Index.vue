@@ -116,6 +116,7 @@
                             <div class="m-1">
                                 <FormTool
                                     v-if="hasActiveNodeTool"
+                                    :key="activeNodeId"
                                     :get-manager="getManager"
                                     :get-node="getNode"
                                     :datatypes="datatypes"
@@ -278,6 +279,9 @@ export default {
         },
         showLint() {
             return this.showInPanel == "lint";
+        },
+        activeNodeId() {
+            return this.activeNode && this.activeNode.id;
         },
         hasActiveNodeDefault() {
             return this.activeNode && this.activeNode.type != "tool";

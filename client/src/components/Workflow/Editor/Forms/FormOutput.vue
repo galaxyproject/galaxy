@@ -200,8 +200,8 @@ export default {
         },
     },
     methods: {
-        onInput(identifer, value) {
-            this.$emit("onInput", identifer, value);
+        onInput(value, pjaKey) {
+            this.$emit("onInput", value, pjaKey);
         },
         onLabel(newLabel) {
             this.$emit("onLabel", this.outputLabelId, this.outputName, newLabel);

@@ -18,7 +18,6 @@
         />
         <FormOutput
             v-for="(output, index) in outputs"
-            :key="getOutputKey(index)"
             :outputName="output.name"
             :outputLabel="getOutputLabel(output)"
             :output-label-error="outputLabelError"
@@ -61,11 +60,6 @@ export default {
             outputLabelError: null,
         };
     },
-    watch: {
-        postJobActions() {
-            this.setFormData();
-        },
-    },
     created() {
         this.setFormData();
     },
@@ -99,9 +93,6 @@ export default {
         },
     },
     methods: {
-        getOutputKey(index) {
-            return `${this.id}:${index}`;
-        },
         setFormData() {
             const pjas = {};
             Object.values(this.postJobActions).forEach((pja) => {
@@ -115,47 +106,49 @@ export default {
                     pjas[key] = true;
                 }
             });
-            /*if (!this.emailActionValue) {
-                pjas[this.emailActionValue] = true;
-                const emailPayloadKey = `${this.emailActionId}__host`;
-                pjas[emailPayloadKey] = window.location.host;
-            } else {
-                pjas[this.emailActionValue] = false;
-            }*/
+            this.setEmailAction(pjas);
             this.formData = pjas;
             console.debug("FormSection - Setting new data.", this.postJobActions, pjas);
-            this.$emit("onChange", Object.assign({}, this.formData));
+            this.$emit("onChange", this.formData);
+        },
+        setEmailAction(pjas) {
+            const emailPayloadKey = `${this.emailActionId}__host`;
+            if (pjas[this.emailActionId]) {
+                pjas[emailPayloadKey] = window.location.host;
+            } else if (emailPayloadKey in pjas) {
+                delete pjas[emailPayloadKey];
+            }
         },
         getOutputLabel(output) {
             const activeOutput = this.activeOutputs.get(output.name);
             return activeOutput && activeOutput.label;
         },
-        onInput(value, identifier) {
+        onInput(value, pjaKey) {
             let changed = false;
-            const exists = identifier in this.formData;
+            const exists = pjaKey in this.formData;
             if (value) {
-                const oldValue = this.formData[identifier];
+                const oldValue = this.formData[pjaKey];
                 if (value != oldValue) {
-                    this.formData[identifier] = value;
+                    this.formData[pjaKey] = value;
                     changed = true;
                 }
             } else if (exists) {
                 changed = true;
-                delete this.formData[identifier];
+                delete this.formData[pjaKey];
             }
+            this.setEmailAction(this.formData);
             if (changed) {
                 this.formData = Object.assign({}, this.formData);
-                this.$emit("onChange", Object.assign({}, this.formData), true);
+                this.$emit("onChange", this.formData);
             }
         },
         onLabel(pjaKey, outputName, newLabel) {
-            const oldLabel = this.node.labelOutput(outputName, newLabel);
-            if (oldLabel) {
-                this.outputLabelError = `Duplicate output label '${newLabel}' will be ignored.`;
-            } else {
+            if (this.node.labelOutput(outputName, newLabel)) {
                 this.outputLabelError = null;
+                this.onInput(newLabel, pjaKey);
+            } else {
+                this.outputLabelError = `Duplicate output label '${newLabel}' will be ignored.`;
             }
-            this.onInput(newLabel, pjaKey);
         },
         onDatatype(pjaKey, outputName, newDatatype) {
             this.onInput(newDatatype, pjaKey);
