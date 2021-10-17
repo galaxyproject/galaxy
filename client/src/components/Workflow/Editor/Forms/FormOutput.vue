@@ -44,7 +44,7 @@
                 help="This action will remove tags for the dataset."
                 @input="onInput"
             />
-            <FormCard title="Assign columns" collapsible :expanded.sync="expandedColumns">
+            <FormCard title="Assign columns" collapsible :expanded.sync="expandedColumn">
                 <template v-slot:body>
                     <FormElement
                         :id="actionNames.ColumnSetAction__chromCol"
@@ -106,6 +106,9 @@ const actions = [
     "ChangeDatatypeAction__newtype",
     "TagDatasetAction__tags",
     "RemoveTagDatasetAction__tags",
+];
+
+const actionsColumn = [
     "ColumnSetAction__chromCol",
     "ColumnSetAction__startCol",
     "ColumnSetAction__endCol",
@@ -147,9 +150,12 @@ export default {
     data() {
         return {
             expanded: false,
-            expandedColumns: false,
+            expandedColumn: false,
             renameHelpUrl: "https://galaxyproject.org/learn/advanced-workflow/variables/",
         };
+    },
+    created() {
+        this.setExpanded();
     },
     computed: {
         outputTitle() {
@@ -161,7 +167,7 @@ export default {
         },
         actionNames() {
             const index = {};
-            actions.forEach((action) => {
+            actions.concat(actionsColumn).forEach((action) => {
                 index[action] = `pja__${this.outputName}__${action}`;
             });
             return index;
@@ -200,6 +206,23 @@ export default {
         },
     },
     methods: {
+        setExpanded() {
+            this.expandedColumn = this.hasActions(actionsColumn);
+            if (this.expandedColumn) {
+                this.expanded = true;
+            } else {
+                this.expanded = this.hasActions(actions);
+            }
+        },
+        hasActions(actions) {
+            for (let key of actions) {
+                if (this.formData[this.actionNames[key]] != undefined) {
+                    console.log(this.formData[this.actionNames[key]]);
+                    return true;
+                }
+            }
+            return false;
+        },
         onInput(value, pjaKey) {
             this.$emit("onInput", value, pjaKey);
         },
