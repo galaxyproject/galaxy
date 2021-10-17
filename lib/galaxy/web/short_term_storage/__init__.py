@@ -1,4 +1,5 @@
 import abc
+import contextlib
 import json
 import os
 import shutil
@@ -9,9 +10,11 @@ from typing import Any, Dict, Optional, Union
 from uuid import uuid4
 
 from galaxy.exceptions import (
+    InternalServerError,
     MessageException,
     NoContentException,
 )
+from galaxy.exceptions.error_codes import error_codes_by_int_code
 from galaxy.util import (
     directory_hash_id,
     is_uuid,
@@ -80,7 +83,7 @@ class ShortTermStorageServeCancelledInformation:
             raise NoContentException()
         exception_obj = MessageException()
         exception_obj.status_code = self.status_code
-        exception_obj.err_code = serialized_exception["err_code"]
+        exception_obj.err_code = error_codes_by_int_code[serialized_exception["err_code"]]
         exception_obj.err_msg = serialized_exception["err_msg"]
         return exception_obj
 
@@ -259,3 +262,17 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
     @property
     def _root(self) -> Path:
         return Path(self._config.short_term_storage_directory)
+
+
+@contextlib.contextmanager
+def storage_context(short_term_storage_request_id: str, short_term_storage_monitor: ShortTermStorageMonitor):
+    target = short_term_storage_monitor.recover_target(short_term_storage_request_id)
+    try:
+        yield target
+    except MessageException as e:
+        short_term_storage_monitor.cancel(target, exception=e)
+        raise
+    except Exception as e:
+        short_term_storage_monitor.cancel(target, exception=InternalServerError(f"Unknown error: {e}"))
+        raise
+    short_term_storage_monitor.finalize(target)

@@ -7,6 +7,7 @@ from galaxy.web.short_term_storage import (
     ShortTermStorageServeCancelledInformation,
     ShortTermStorageServeCompletedInformation,
     ShortTermStorageTargetSecurity,
+    storage_context,
 )
 
 TEST_FILENAME = "moo.txt"
@@ -44,7 +45,7 @@ def test_typical_usage(tmpdir):
         assert f.read() == "Moo Cow!!!"
 
 
-def test_cancel_with_exception(tmpdir):
+def test_cancel_with_message_exception(tmpdir):
     config = ShortTermStorageConfiguration(
         short_term_storage_directory=tmpdir
     )
@@ -61,6 +62,36 @@ def test_cancel_with_exception(tmpdir):
     serve_info = manager.get_serve_info(short_term_storage_target)
     assert serve_info
     assert isinstance(serve_info, ShortTermStorageServeCancelledInformation)
+    exc = serve_info.message_exception
+    assert exc.err_code.code == 0
+
+
+def test_cancel_with_arbitrary_exception(tmpdir):
+    config = ShortTermStorageConfiguration(
+        short_term_storage_directory=tmpdir
+    )
+    manager = ShortTermStorageManager(config=config)
+    short_term_storage_target = manager.new_target(
+        TEST_FILENAME,
+        TEST_MIME_TYPE,
+    )
+    assert short_term_storage_target
+    assert not manager.is_ready(short_term_storage_target)
+    exception_raised = False
+    try:
+        with storage_context(short_term_storage_target.request_id, manager):
+            raise Exception("Moo Cow...")
+    except Exception:
+        exception_raised = True
+    assert exception_raised
+    assert manager.is_ready(short_term_storage_target)
+    serve_info = manager.get_serve_info(short_term_storage_target)
+    assert serve_info
+    assert isinstance(serve_info, ShortTermStorageServeCancelledInformation)
+    exc = serve_info.message_exception
+    assert exc.status_code == 500
+    assert exc.err_code.code == 500001
+    assert "Moo Cow..." in str(exc)
 
 
 def test_cleanup(tmpdir):

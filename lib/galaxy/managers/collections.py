@@ -22,7 +22,7 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     validation
 )
-from galaxy.web.short_term_storage import ShortTermStorageMonitor
+from galaxy.web.short_term_storage import ShortTermStorageMonitor, storage_context
 from .hdas import (
     HDAManager,
     HistoryDatasetAssociationNoHistoryException,
@@ -666,16 +666,8 @@ class DatasetCollectionManager:
     def write_dataset_collection(self, request: PrepareDatasetCollectionDownload):
         # TODO: wrap this whole try, except pattern up into a contextmanager for reuse...
         short_term_storage_monitor = self.short_term_storage_monitor
-        target = short_term_storage_monitor.recover_target(request.short_term_storage_request_id)
         instance_id = request.history_dataset_collection_association_id
-        try:
+        with storage_context(request.short_term_storage_request_id, short_term_storage_monitor) as target:
             collection_instance = self.model.context.query(model.HistoryDatasetCollectionAssociation).get(instance_id)
             with ZipFile(target.path, 'w') as zip_f:
                 write_dataset_collection(collection_instance, zip_f)
-        except MessageException as e:
-            short_term_storage_monitor.cancel(target, exception=e)
-            raise
-        except Exception as e:
-            short_term_storage_monitor.cancel(target, exception=MessageException(f"Unknown error: {e}"))
-            raise
-        short_term_storage_monitor.finalize(target)
