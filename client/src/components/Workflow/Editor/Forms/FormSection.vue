@@ -126,9 +126,9 @@ export default {
         onInput(value, pjaKey) {
             let changed = false;
             const exists = pjaKey in this.formData;
-            if (value) {
+            if (value !== null && value !== undefined) {
                 const oldValue = this.formData[pjaKey];
-                if (value != oldValue) {
+                if (value !== oldValue) {
                     this.formData[pjaKey] = value;
                     changed = true;
                 }
