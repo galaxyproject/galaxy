@@ -500,11 +500,11 @@ class DatasetCollectionManager:
                 element = hda
             if hide_source_items and self.hda_manager.get_owned(hda.id, user=trans.user, current_history=history or trans.history):
                 hda.visible = False
-            self.tag_handler.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
+            self.tag_handler.apply_item_tags(user=trans.user, item=element, tags_str=tag_str, flush=False)
         elif src_type == 'ldda':
             element = self.ldda_manager.get(trans, encoded_id, check_accessible=True)
             element = element.to_history_dataset_association(history or trans.history, add_to_history=True, visible=not hide_source_items)
-            self.tag_handler.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
+            self.tag_handler.apply_item_tags(user=trans.user, item=element, tags_str=tag_str, flush=False)
         elif src_type == 'hdca':
             # TODO: Option to copy? Force copy? Copy or allow if not owned?
             element = self.__get_history_collection_instance(trans, encoded_id).collection

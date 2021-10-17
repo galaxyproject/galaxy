@@ -818,6 +818,7 @@ class OutputCollections:
 
     def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags, hdca_tags):
         self.trans = trans
+        self.tag_handler = trans.app.tag_handler.create_tag_handler_session()
         self.history = history
         self.tool = tool
         self.tool_action = tool_action
