@@ -18,10 +18,10 @@ from typing import (
 from galaxy.app import MinimalManagerApp
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.types import SerializationParams
 from galaxy.web.framework.base import server_starttime
-
 log = logging.getLogger(__name__)
 
 VERSION_JSON_FILE = 'version.json'
@@ -167,6 +167,7 @@ class ConfigSerializer(base.ModelSerializer):
             'ga_code': _use_config,
             'plausible_server': _use_config,
             'plausible_domain': _use_config,
+            'markdown_to_pdf_available': lambda config, key, **context: weasyprint_available(),
             'matomo_server': _use_config,
             'matomo_site_id': _use_config,
             'enable_unique_workflow_defaults': _use_config,

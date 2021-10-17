@@ -28,7 +28,7 @@ except Exception:
 
 from galaxy.exceptions import (
     MalformedContents,
-    MessageException,
+    ServerNotConfiguredForRequest,
 )
 from galaxy.managers.hdcas import HDCASerializer
 from galaxy.managers.jobs import (
@@ -595,10 +595,14 @@ def to_pdf(trans, basic_markdown, css_paths=None) -> bytes:
         shutil.rmtree(directory)
 
 
+def weasyprint_available() -> bool:
+    return weasyprint is not None
+
+
 def _check_can_convert_to_pdf_or_raise():
     """Checks if the HTML to PDF converter is available."""
-    if not weasyprint:
-        raise MessageException("PDF conversion service not available.")
+    if not weasyprint_available():
+        raise ServerNotConfiguredForRequest("PDF conversion service not available.")
 
 
 def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, document_type) -> bytes:

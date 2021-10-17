@@ -586,6 +586,12 @@ class BaseDatasetPopulator(BasePopulator):
         assert roles_response.status_code == 200
         return roles_response.json()
 
+    def get_configuration(self, admin=False) -> Dict[str, Any]:
+        response = self._get("configuration", admin=admin)
+        api_asserts.assert_status_code_is_ok(response)
+        configuration = response.json()
+        return configuration
+
     def user_email(self) -> str:
         users_response = self._get("users")
         users = users_response.json()
