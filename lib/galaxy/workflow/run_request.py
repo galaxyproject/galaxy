@@ -326,11 +326,8 @@ def build_workflow_run_configs(trans, workflow, payload):
                 else:
                     raise exceptions.RequestParameterInvalidException(f"Unknown workflow input source '{input_source}' specified.")
                 if add_to_history and content.history != history:
-                    content = content.copy()
-                    if isinstance(content, app.model.HistoryDatasetAssociation):
-                        history.add_dataset(content)
-                    else:
-                        history.add_dataset_collection(content)
+                    content = content.copy(flush=False)
+                    history.stage_addition(content)
                 input_dict['content'] = content
             except AssertionError:
                 raise exceptions.ItemAccessibilityException(f"Invalid workflow input '{input_id}' specified")
@@ -368,7 +365,7 @@ def build_workflow_run_configs(trans, workflow, payload):
                                     valid_option = True
                         if not valid_option:
                             raise exceptions.RequestParameterInvalidException(f"Invalid value for parameter '{name}' found.")
-
+        history.add_pending_items()
         run_configs.append(WorkflowRunConfig(
             target_history=history,
             replacement_dict=payload.get('replacement_params', {}),

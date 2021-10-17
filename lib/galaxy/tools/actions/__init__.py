@@ -84,8 +84,6 @@ class DefaultToolAction:
                 if formats is None:
                     formats = input.formats
 
-                # Need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
-                trans.sa_session.refresh(data)
                 direct_match, target_ext, converted_dataset = data.find_conversion_destination(formats)
                 if not direct_match and target_ext:
                     if converted_dataset:
