@@ -207,6 +207,13 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         self.object_store = object_store
         self.final_job_state = final_job_state
         self.flush_per_n_datasets = flush_per_n_datasets
+        self._tag_handler = None
+
+    @property
+    def tag_handler(self):
+        if self._tag_handler is None:
+            self._tag_handler = self.app.tag_handler.create_tag_handler_session()
+        return self._tag_handler
 
     @property
     def work_context(self):
@@ -220,10 +227,6 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         else:
             user = None
         return user
-
-    @property
-    def tag_handler(self):
-        return self.app.tag_handler
 
     def persist_object(self, obj):
         self.sa_session.add(obj)

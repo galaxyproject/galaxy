@@ -129,13 +129,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         if created_from_basename is not None:
             primary_data.created_from_basename = created_from_basename
 
-        has_flushed = False
         if tag_list:
-            # If we have a tag we need a primary id, so need to flush here
-            # TODO: eliminate creating tag associations within create dataset
-            # We can do this incrementally by not passing in a tag list.
-            self.flush()
-            has_flushed = True
             self.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list)
 
         # Move data from temp location to dataset location
