@@ -1,11 +1,28 @@
 <template>
-    <div :id="elementId" :class="['ui-form-element section-row', cls]" :tour_id="id">
+    <div v-show="!hidden" :id="elementId" :class="['ui-form-element section-row', cls]" :tour_id="id">
         <div v-if="hasError" class="ui-form-error">
             <span class="fa fa-exclamation mr-1" />
             <span class="ui-form-error-text">{{ error }}</span>
         </div>
-        <div class="ui-form-title">{{ title }}</div>
-        <div class="ui-form-field">
+        <div class="ui-form-title">
+            <div v-if="collapsible || connectable">
+                <div class="ui-form-collapsible">
+                    <span v-if="collapsible && !connected" class="ui-form-collapsible-icon">
+                        <span v-if="collapsed" :class="collapsibleDisabled" />
+                        <span v-else :class="collapsibleEnabled" />
+                    </span>
+                    <span v-if="connectable" class="ui-form-connected-icon">
+                        <span v-if="connected" class="icon fa fa-times" :title="textConnectedDisable" />
+                        <span v-else class="icon fa fa-arrows-h" :title="textConnectedEnable" />
+                    </span>
+                    <span class="ui-form-collapsible-text ml-1">
+                        {{ this.title }}
+                    </span>
+                </div>
+            </div>
+            <span v-else class="ui-form-title-text">{{ title }}</span>
+        </div>
+        <div v-if="showField" class="ui-form-field">
             <FormParameter
                 v-if="backbonejs"
                 v-model="currentValue"
@@ -16,10 +33,14 @@
             />
             <FormBoolean v-else-if="type == 'boolean'" v-model="currentValue" :id="id" />
             <FormInput v-else="type == 'text'" v-model="currentValue" :id="id" :area="attrs['area']" />
-            <span class="ui-form-info form-text text-muted mt-2" v-html="help" />
         </div>
+        <div v-if="previewVisible" class="ui-form-preview">
+            {{ previewText }}
+        </div>
+        <span class="ui-form-info form-text text-muted" v-html="helpText" />
     </div>
 </template>
+
 <script>
 import FormBoolean from "./Elements/FormBoolean";
 import FormInput from "./Elements/FormInput";
@@ -67,10 +88,61 @@ export default {
             type: Object,
             default: null,
         },
+        textEnable: {
+            type: String,
+            default: "Enable",
+        },
+        textDisable: {
+            type: String,
+            default: "Disable",
+        },
+        textConnectedEnable: {
+            type: String,
+            default: "Add connection to module.",
+        },
+        textConnectedDisable: {
+            type: String,
+            default: "Remove connection from module.",
+        },
+        collapsibleEnabled: {
+            type: String,
+            default: "fa fa-caret-square-o-down",
+        },
+        collapsibleDisabled: {
+            type: String,
+            default: "fa fa-caret-square-o-up",
+        },
+    },
+    data() {
+        return {
+            collapsed: false,
+            connectedValue: JSON.stringify({ __class__: "ConnectedValue" }),
+        };
     },
     computed: {
+        argument() {
+            this.attrs["argument"];
+        },
         attrs() {
             return this.attributes || this.$attrs;
+        },
+        cls() {
+            return this.hasError && "alert alert-info";
+        },
+        connected() {
+            return this.value == this.connectedValue;
+        },
+        collapsible() {
+            return !this.disabled && this.collapsibleValue !== undefined;
+        },
+        collapsibleValue() {
+            return this.attrs["collapsible_value"];
+        },
+        collapsiblePreview() {
+            return this.attrs["collapsible_preview"];
+        },
+        connectable() {
+            return this.collapsible && this.attrs["connectable"];
         },
         currentValue: {
             get() {
@@ -81,14 +153,68 @@ export default {
                 this.$emit("change", this.refreshOnChange);
             },
         },
+        disabled() {
+            this.attrs["disabled"];
+        },
         elementId() {
             return `form-element-${this.id}`;
         },
         hasError() {
             return !!this.error;
         },
-        cls() {
-            return this.hasError && "alert alert-info";
+        helpText() {
+            let help = this.help;
+            const helpArgument = this.argument;
+            if (helpArgument && help.indexOf(`(${helpArgument})`) == -1) {
+                return `${help} (${helpArgument})`;
+            }
+            return help;
+        },
+        hidden() {
+            return this.attrs["hidden"];
+        },
+        previewVisible() {
+            return (this.collapsed && this.collapsiblePreview) || this.disabled;
+        },
+        previewText() {
+            return _.escape(this.textValue).replace(/\n/g, "<br />");
+        },
+        showField() {
+            return !this.collapsed && !this.disabled;
+        },
+        textValue() {
+            return this.attrs["text_value"];
+        },
+    },
+    created() {
+        this.initialState();
+    },
+    methods: {
+        /**
+         * Determines to wether expand or collapse the input.
+         */
+        initialState() {
+            const collapsibleValue = this.collapsibleValue;
+            const value = JSON.stringify(this.value);
+            this.collapsed =
+                this.connected ||
+                (collapsibleValue !== undefined && JSON.stringify(this.value) == JSON.stringify(collapsibleValue));
+        },
+        /**
+         * Handles collapsible toggle.
+         */
+        onCollapse() {
+            this.collapsed = !this.collapsed;
+            this.connected = false;
+            this.$emit("change", this.refreshOnChange);
+        },
+        /**
+         * Handles connected state.
+         */
+        onConnect() {
+            this.connected = !this.connected;
+            this.collapsed = this.connected;
+            this.$emit("change", this.refreshOnChange);
         },
     },
 };
