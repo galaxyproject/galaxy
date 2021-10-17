@@ -423,7 +423,7 @@ class TagDatasetAction(DefaultJobAction):
 
     @classmethod
     def _execute(cls, tag_handler, user, output, tags):
-        tag_handler.add_tags_from_list(user, output, tags)
+        tag_handler.add_tags_from_list(user, output, tags, flush=False)
 
     @classmethod
     def get_short_str(cls, pja):

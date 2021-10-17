@@ -308,9 +308,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             # that's not better or worse than what we previously did in create_datasets
             # TDOD: implement that or figure out why it is not implemented and find a better solution.
             # Could it be that SessionlessModelPersistenceContext doesn't support tags?
-            tag_session = self.tag_handler.create_tag_handler_session()
             for dataset, tags in zip(datasets, tag_lists):
-                tag_session.add_tags_from_list(self.job.user, dataset, tags, flush=False)
+                self.tag_handler.add_tags_from_list(self.job.user, dataset, tags, flush=False)
 
     def update_object_store_with_datasets(self, datasets, paths, extra_files):
         for dataset, path, extra_file in zip(datasets, paths, extra_files):

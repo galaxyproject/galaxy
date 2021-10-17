@@ -57,7 +57,7 @@ class DatasetCollectionManager:
 
         self.hda_manager = hda_manager
         self.history_manager = history_manager
-        self.tag_handler = tag_handler
+        self.tag_handler = tag_handler.create_tag_handler_session()
         self.ldda_manager = ldda_manager
 
     def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None, tags=None, completed_collection=None):
@@ -182,7 +182,7 @@ class DatasetCollectionManager:
         # values.
         if isinstance(tags, list):
             assert implicit_inputs is None, implicit_inputs
-            tags = self.tag_handler.add_tags_from_list(trans.user, dataset_collection_instance, tags)
+            tags = self.tag_handler.add_tags_from_list(trans.user, dataset_collection_instance, tags, flush=False)
         else:
             tags = self._append_tags(dataset_collection_instance, implicit_inputs, tags)
         return self.__persist(dataset_collection_instance, flush=flush)
