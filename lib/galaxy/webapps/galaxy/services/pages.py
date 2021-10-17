@@ -22,6 +22,7 @@ from galaxy.schema.schema import (
     PageSummary,
     PageSummaryList,
 )
+from galaxy.schema.tasks import PdfDocumentType
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
@@ -128,4 +129,4 @@ class PagesService(ServiceBase):
         if page.latest_revision.content_format != PageContentFormat.markdown.value:
             raise exceptions.RequestParameterInvalidException("PDF export only allowed for Markdown based pages")
         internal_galaxy_markdown = page.latest_revision.content
-        return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, 'page')
+        return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, PdfDocumentType.page)
