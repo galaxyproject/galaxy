@@ -1,6 +1,6 @@
 <template>
     <FormInputs
-        :id="id"
+        :key="id"
         :inputs="formInputs"
         :prefix="prefix"
         :sustain-repeats="sustainRepeats"
