@@ -561,11 +561,16 @@ class DefaultToolAction:
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)
-        # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
+        # Remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
-            # We need a flush here and get hids in order to rewrite jobs parameter,
-            # but remapping jobs should only affect single jobs anyway, so this is not too costly.
+            # Need to flush here so that referencing outputs by id works
+            session = trans.sa_session()
+            try:
+                session.expire_on_commit = False
+                session.flush()
+            finally:
+                session.expire_on_commit = True
             self._remap_job_on_rerun(trans=trans,
                                      galaxy_session=galaxy_session,
                                      rerun_remap_job_id=rerun_remap_job_id,
