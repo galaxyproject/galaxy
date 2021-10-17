@@ -2,12 +2,16 @@ import os
 import shutil
 import string
 import tempfile
+from typing import ClassVar
 
 import pytest
 
+from galaxy.app import UniverseApplication
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
 from galaxy.util import unicodify
+from galaxy_test.base.api_asserts import assert_status_code_is
 from galaxy_test.base.populators import DEFAULT_TIMEOUT
-from galaxy_test.driver.driver_util import FRAMEWORK_UPLOAD_TOOL_CONF
+from galaxy_test.driver.driver_util import FRAMEWORK_UPLOAD_TOOL_CONF, GalaxyTestDriver
 
 
 # Needs a longer timeout because of the conda_auto_install.
@@ -30,6 +34,14 @@ SHED_DATA_TABLES = """<?xml version="1.0"?>
 
 
 class UsesShed:
+    @property
+    def _app(self) -> UniverseApplication:
+        ...
+    shed_tools_dir: ClassVar[str]
+    shed_tool_data_dir: ClassVar[str]
+    conda_tmp_prefix: ClassVar[str]
+    galaxy_interactor: GalaxyInteractorApi
+    _test_driver: GalaxyTestDriver
 
     @classmethod
     def configure_shed(cls, config):
@@ -84,10 +96,10 @@ class UsesShed:
         model.context.flush()
 
     def delete_repo_request(self, payload):
-        return self._delete('/tool_shed_repositories', data=payload, admin=True)
+        return self.galaxy_interactor._delete('/tool_shed_repositories', data=payload, admin=True)
 
     def install_repo_request(self, payload):
-        return self._post('/tool_shed_repositories/new/install_repository_revision', data=payload, admin=True)
+        return self.galaxy_interactor._post('/tool_shed_repositories/new/install_repository_revision', data=payload, admin=True)
 
     def repository_operation(self, operation, owner, name, changeset, tool_shed_url='https://toolshed.g2.bx.psu.edu'):
         payload = {
@@ -97,7 +109,7 @@ class UsesShed:
             'changeset_revision': changeset
         }
         create_response = operation(payload)
-        self._assert_status_code_is(create_response, 200)
+        assert_status_code_is(create_response, 200)
         return create_response.json()
 
     def install_repository(self, owner, name, changeset, tool_shed_url='https://toolshed.g2.bx.psu.edu'):

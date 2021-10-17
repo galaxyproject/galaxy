@@ -15,6 +15,7 @@ def test_lazy_process():
     lazy_process.start_process()
     while not os.path.exists(t.name):
         time.sleep(.01)
+    assert lazy_process.process
     assert lazy_process.process.poll() is None
     lazy_process.shutdown()
     ret_val = None

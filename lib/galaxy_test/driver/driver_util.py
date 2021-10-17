@@ -621,7 +621,7 @@ def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_insta
         app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
 
 
-def build_galaxy_app(simple_kwargs):
+def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     """Build a Galaxy app object from a simple keyword arguments.
 
     Construct paste style complex dictionary and use load_app_properties so
