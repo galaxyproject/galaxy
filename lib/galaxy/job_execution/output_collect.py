@@ -17,7 +17,6 @@ from galaxy.model.store.discover import (
     ModelPersistenceContext,
     persist_elements_to_folder,
     persist_elements_to_hdca,
-    persist_extra_files,
     persist_hdas,
     RegexCollectedDatasetMatch,
     SessionlessModelPersistenceContext,
@@ -287,7 +286,8 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         sa_session = self.sa_session
-        self.job.history.add_datasets(sa_session, datasets)
+        self.job.history.stage_addition(datasets)
+        pending_histories = {self.job.history}
         if for_output_dataset is not None:
             # Need to update all associated output hdas, i.e. history was
             # shared with job running
@@ -296,9 +296,11 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
                     continue
                 for dataset in datasets:
                     new_data = dataset.copy()
-                    copied_dataset.history.add_dataset(new_data)
+                    copied_dataset.history.stage_addition(new_data)
+                    pending_histories.add(copied_dataset.history)
                     sa_session.add(new_data)
-                    sa_session.flush()
+        for history in pending_histories:
+            history.add_pending_items()
 
     def output_collection_def(self, name):
         tool = self.tool
@@ -391,6 +393,7 @@ def collect_primary_datasets(job_context, output, input_ext):
     primary_output_assigned = False
     new_outdata_name = None
     primary_datasets = {}
+    storage_callbacks = []
     for output_index, (name, outdata) in enumerate(output.items()):
         dataset_collectors = [DEFAULT_DATASET_COLLECTOR]
         output_def = job_context.output_def(name)
@@ -432,7 +435,11 @@ def collect_primary_datasets(job_context, output, input_ext):
             # TODO: should be able to disambiguate files in different directories...
             new_primary_filename = os.path.split(filename)[-1]
             new_primary_datasets_attributes = job_context.tool_provided_metadata.get_new_dataset_meta_by_basename(name, new_primary_filename)
-
+            extra_files = None
+            if new_primary_datasets_attributes:
+                extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
+                if extra_files_path:
+                    extra_files = os.path.join(job_working_directory, extra_files_path)
             primary_data = job_context.create_dataset(
                 ext,
                 designation,
@@ -440,19 +447,15 @@ def collect_primary_datasets(job_context, output, input_ext):
                 dbkey,
                 new_primary_name,
                 filename,
+                extra_files=extra_files,
                 info=info,
                 init_from=outdata,
                 dataset_attributes=new_primary_datasets_attributes,
-                creating_job_id=job_context.get_job_id() if job_context else None
+                creating_job_id=job_context.get_job_id() if job_context else None,
+                storage_callbacks=storage_callbacks
             )
             # Associate new dataset with job
             job_context.add_output_dataset_association(f'__new_primary_file_{name}|{designation}__', primary_data)
-
-            if new_primary_datasets_attributes:
-                extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
-                if extra_files_path:
-                    extra_files_path_joined = os.path.join(job_working_directory, extra_files_path)
-                    persist_extra_files(job_context.object_store, extra_files_path_joined, primary_data)
             job_context.add_datasets_to_history([primary_data], for_output_dataset=outdata)
             # Add dataset to return dict
             primary_datasets[name][designation] = primary_data
@@ -465,7 +468,9 @@ def collect_primary_datasets(job_context, output, input_ext):
             if sa_session:
                 sa_session.add(outdata)
 
-    job_context.flush()
+    # Move discovered outputs to storage and set metdata / peeks
+    for callback in storage_callbacks:
+        callback()
     return primary_datasets
 
 

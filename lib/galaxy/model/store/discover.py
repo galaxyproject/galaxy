@@ -59,6 +59,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         created_from_basename=None,
         final_job_state='ok',
         creating_job_id=None,
+        storage_callbacks=None,
     ):
         tag_list = tag_list or []
         sources = sources or []
@@ -130,24 +131,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             primary_data.created_from_basename = created_from_basename
 
         if tag_list:
-            self.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list)
-
-        # Move data from temp location to dataset location
-        if filename:
-            # TODO: eliminate this, should happen outside of create_dataset so that we don't need to flush
-            if not has_flushed:
-                self.flush()
-                has_flushed = True
-            if not link_data:
-                self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
-            else:
-                primary_data.link_to(filename)
-            if extra_files:
-                persist_extra_files(self.object_store, extra_files, primary_data)
-                primary_data.set_size()
-            else:
-                # We are sure there are no extra files, so optimize things that follow by settting total size also.
-                primary_data.set_size(no_extra_files=True)
+            self.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list, flush=False)
 
         # If match specified a name use otherwise generate one from
         # designation.
@@ -168,11 +152,27 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
         if info is not None:
             primary_data.info = info
-
         if filename:
-            self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
-
+            if storage_callbacks is None:
+                self.finalize_storage(primary_data=primary_data, dataset_attributes=dataset_attributes, extra_files=extra_files, filename=filename, link_data=link_data)
+            else:
+                storage_callbacks.append(lambda: self.finalize_storage(primary_data=primary_data, dataset_attributes=dataset_attributes, extra_files=extra_files, filename=filename, link_data=link_data))
         return primary_data
+
+    def finalize_storage(self, primary_data, dataset_attributes, extra_files, filename, link_data):
+        # Move data from temp location to dataset location
+        if not link_data:
+            self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
+        else:
+            primary_data.link_to(filename)
+        if extra_files:
+            persist_extra_files(self.object_store, extra_files, primary_data)
+            primary_data.set_size()
+        else:
+            # We are sure there are no extra files, so optimize things that follow by settting total size also.
+            primary_data.set_size(no_extra_files=True)
+        # TODO: this might run set_meta after copying the file to the object store, which could be inefficient if job working directory is closer to the node.
+        self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
 
     @staticmethod
     def set_datasets_metadata(datasets, datasets_attributes=None):
@@ -291,9 +291,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             association_name = f'__new_primary_file_{name}|{element_identifier_str}__'
             self.add_output_dataset_association(association_name, dataset)
 
-        self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'], extra_files=element_datasets['extra_files'])
         add_datasets_timer = ExecutionTimer()
         self.add_datasets_to_history(element_datasets['datasets'])
+        self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'], extra_files=element_datasets['extra_files'])
         log.debug(
             "(%s) Add dynamic collection datasets to history for output [%s] %s",
             self.job_id(),
@@ -596,6 +596,7 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
 def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
     # discover files as individual datasets for the target history
     datasets = []
+    storage_callbacks = []
 
     def collect_elements_for_history(elements):
         for element in elements:
@@ -641,12 +642,15 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                     hashes=hashes,
                     created_from_basename=created_from_basename,
                     final_job_state=state,
+                    storage_callbacks=storage_callbacks,
                 )
                 if not hda_id:
                     datasets.append(dataset)
 
     collect_elements_for_history(elements)
     model_persistence_context.add_datasets_to_history(datasets)
+    for callback in storage_callbacks:
+        callback()
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         if for_output_dataset is not None:
