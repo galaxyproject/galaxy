@@ -217,7 +217,6 @@ export default {
         hasActions(actions) {
             for (let key of actions) {
                 if (this.formData[this.actionNames[key]] != undefined) {
-                    console.log(this.formData[this.actionNames[key]]);
                     return true;
                 }
             }

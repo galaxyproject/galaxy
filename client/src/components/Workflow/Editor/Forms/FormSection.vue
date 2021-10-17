@@ -1,7 +1,7 @@
 <template>
     <div v-if="firstOutput">
         <FormElement
-            :id="emailActionId"
+            :id="emailActionKey"
             :value="emailActionValue"
             title="Email notification"
             type="boolean"
@@ -9,7 +9,7 @@
             @input="onInput"
         />
         <FormElement
-            :id="deleteActionId"
+            :id="deleteActionKey"
             :value="deleteActionValue"
             title="Output cleanup"
             type="boolean"
@@ -79,17 +79,20 @@ export default {
         firstOutput() {
             return this.outputs.length > 0 && this.outputs[0];
         },
-        emailActionId() {
+        emailActionKey() {
             return `pja__${this.firstOutput.name}__EmailAction`;
         },
-        emailActionValue() {
-            return Boolean(this.formData[this.emailActionId]);
+        emailPayloadKey() {
+            return `${this.emailActionKey}__host`;
         },
-        deleteActionId() {
+        emailActionValue() {
+            return Boolean(this.formData[this.emailActionKey]);
+        },
+        deleteActionKey() {
             return `pja__${this.firstOutput.name}__DeleteIntermediatesAction`;
         },
         deleteActionValue() {
-            return Boolean(this.formData[this.deleteActionId]);
+            return Boolean(this.formData[this.deleteActionKey]);
         },
     },
     methods: {
@@ -106,17 +109,18 @@ export default {
                     pjas[key] = true;
                 }
             });
-            this.setEmailAction(pjas);
+            if (pjas[this.emailPayloadKey]) {
+                pjas[this.emailActionKey] = true;
+            }
             this.formData = pjas;
             console.debug("FormSection - Setting new data.", this.postJobActions, pjas);
             this.$emit("onChange", this.formData);
         },
         setEmailAction(pjas) {
-            const emailPayloadKey = `${this.emailActionId}__host`;
-            if (pjas[this.emailActionId]) {
-                pjas[emailPayloadKey] = window.location.host;
-            } else if (emailPayloadKey in pjas) {
-                delete pjas[emailPayloadKey];
+            if (pjas[this.emailActionKey]) {
+                pjas[this.emailPayloadKey] = window.location.host;
+            } else if (this.emailPayloadKey in pjas) {
+                delete pjas[this.emailPayloadKey];
             }
         },
         getOutputLabel(output) {
