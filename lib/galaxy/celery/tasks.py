@@ -22,7 +22,6 @@ from . import get_galaxy_app
 from ._serialization import schema_dumps, schema_loads
 
 log = get_logger(__name__)
-CELERY_TASKS = []
 PYDANTIC_AWARE_SERIALIER_NAME = 'pydantic-aware-json'
 
 
@@ -39,7 +38,6 @@ def galaxy_task(*args, **celery_task_kwd):
         celery_task_kwd['serializer'] = PYDANTIC_AWARE_SERIALIER_NAME
 
     def decorate(func):
-        CELERY_TASKS.append(func.__name__)
 
         @shared_task(**celery_task_kwd)
         @wraps(func)

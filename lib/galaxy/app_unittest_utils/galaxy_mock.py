@@ -13,6 +13,7 @@ from galaxy import (
     quota,
 )
 from galaxy.auth import AuthManager
+from galaxy.celery import set_thread_app
 from galaxy.config import CommonConfigurationMixin
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.users import UserManager
@@ -33,7 +34,6 @@ from galaxy.web.short_term_storage import (
     ShortTermStorageMonitor,
 )
 from galaxy.web_stack import ApplicationStack
-from .celery_helper import rebind_container_to_task
 
 
 # =============================================================================
@@ -108,7 +108,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
         self.is_job_handler = False
-        rebind_container_to_task(self)
+        set_thread_app(self)
 
         def url_for(*args, **kwds):
             return "/mock/url"
