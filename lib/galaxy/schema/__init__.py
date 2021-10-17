@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import (
     Dict,
     List,
@@ -82,3 +83,8 @@ class SerializationParams(BaseModel):
         title='Default View',
         description='The item view that will be used in case none was specified.',
     )
+
+
+class PdfDocumentType(str, Enum):
+    invocation_report = "invocation_report"
+    page = "page"
