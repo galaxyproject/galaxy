@@ -41,7 +41,6 @@ RADIO_SELECT_INCOMPATIBILITIES = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
-    <command>$radio_select$radio_checkboxes</command>
     <inputs>
         <param name="radio_select" type="select" display="radio" optional="true" multiple="true">
             <option value="1">1</option>
@@ -59,7 +58,6 @@ SELECT_DUPLICATED_OPTIONS = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
-    <command>$select</command>
     <inputs>
         <param name="select" type="select" optional="true" multiple="true">
             <option value="v">x</option>
@@ -73,7 +71,6 @@ SELECT_DEPRECATIONS = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
-    <command>$select_do$select_ff$select_fp</command>
     <inputs>
         <param name="select_do" type="select" dynamic_options="blah()"/>
         <param name="select_ff" type="select">
@@ -90,7 +87,6 @@ SELECT_OPTION_DEFINITIONS = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
-    <command>$select_noopt$select_noopts$select_fd_op$select_fd_fdt</command>
     <inputs>
         <param name="select_noopt" type="select"/>
         <param name="select_noopts" type="select">
