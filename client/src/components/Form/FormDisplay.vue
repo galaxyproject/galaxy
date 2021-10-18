@@ -194,9 +194,9 @@ export default {
                 this.formIndex[name] = input;
             });
         },
-        onChangeForm(refreshOnChange) {
+        onChangeForm() {
             this.formInputs = JSON.parse(JSON.stringify(this.formInputs));
-            this.onChange(refreshOnChange);
+            this.onChange();
         },
         onCloneInputs() {
             this.formInputs = JSON.parse(JSON.stringify(this.inputs));
