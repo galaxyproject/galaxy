@@ -7,11 +7,11 @@
         <div class="ui-form-title">
             <div v-if="collapsible || connectable">
                 <div class="ui-form-collapsible">
-                    <span v-if="collapsible && !connected" class="ui-form-collapsible-icon">
+                    <span v-if="collapsible && !connected" class="ui-form-collapsible-icon" @click="onCollapse">
                         <span v-if="collapsed" :class="collapsibleDisabled" />
                         <span v-else :class="collapsibleEnabled" />
                     </span>
-                    <span v-if="connectable" class="ui-form-connected-icon">
+                    <span v-if="connectable" class="ui-form-connected-icon" @click="onConnect">
                         <span v-if="connected" class="icon fa fa-times" :title="textConnectedDisable" />
                         <span v-else class="icon fa fa-arrows-h" :title="textConnectedEnable" />
                     </span>
@@ -116,7 +116,8 @@ export default {
     data() {
         return {
             collapsed: false,
-            connectedValue: JSON.stringify({ __class__: "ConnectedValue" }),
+            connected: false,
+            connectedValue: { __class__: "ConnectedValue" },
         };
     },
     computed: {
@@ -128,9 +129,6 @@ export default {
         },
         cls() {
             return this.hasError && "alert alert-info";
-        },
-        connected() {
-            return this.value == this.connectedValue;
         },
         collapsible() {
             return !this.disabled && this.collapsibleValue !== undefined;
@@ -149,8 +147,7 @@ export default {
                 return this.value;
             },
             set(val) {
-                this.$emit("input", val, this.id);
-                this.$emit("change", this.refreshOnChange);
+                this.setValue(val);
             },
         },
         disabled() {
@@ -190,15 +187,20 @@ export default {
         this.initialState();
     },
     methods: {
+        /** Submits a changed value. */
+        setValue(value) {
+            this.$emit("input", value, this.id);
+            this.$emit("change", this.refreshOnChange);
+        },
         /**
          * Determines to wether expand or collapse the input.
          */
         initialState() {
             const collapsibleValue = this.collapsibleValue;
             const value = JSON.stringify(this.value);
+            this.connected = value == JSON.stringify(this.connectedValue);
             this.collapsed =
-                this.connected ||
-                (collapsibleValue !== undefined && JSON.stringify(this.value) == JSON.stringify(collapsibleValue));
+                this.connected || (collapsibleValue !== undefined && value == JSON.stringify(collapsibleValue));
         },
         /**
          * Handles collapsible toggle.
@@ -206,7 +208,9 @@ export default {
         onCollapse() {
             this.collapsed = !this.collapsed;
             this.connected = false;
-            this.$emit("change", this.refreshOnChange);
+            if (this.collapsed) {
+                this.setValue(this.collapsibleValue);
+            }
         },
         /**
          * Handles connected state.
@@ -214,7 +218,9 @@ export default {
         onConnect() {
             this.connected = !this.connected;
             this.collapsed = this.connected;
-            this.$emit("change", this.refreshOnChange);
+            if (this.connected) {
+                this.setValue(this.connectedValue);
+            }
         },
     },
 };
