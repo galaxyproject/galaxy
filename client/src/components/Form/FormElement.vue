@@ -232,6 +232,8 @@ export default {
             this.collapsed = this.connected;
             if (this.connected) {
                 this.setValue(this.connectedValue);
+            } else {
+                this.setValue(this.defaultValue);
             }
         },
     },
