@@ -254,8 +254,12 @@ export default {
             }
         },
         /** Create a new file */
-        _eventCreate: function () {
-            this.uploadbox.add([{ name: "New File", size: 0, mode: "new" }]);
+        _eventCreate: function (withNewFile) {
+            if (withNewFile == true) {
+                this.uploadbox.add([{ name: "New File", size: 0, mode: "new" }]);
+            } else if (withNewFile == false) {
+                this.uploadbox.add([{ size: 0, mode: "new" }]);
+            }
         },
         /** Pause upload process */
         _eventStop: function () {
