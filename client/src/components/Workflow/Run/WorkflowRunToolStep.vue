@@ -88,21 +88,21 @@ export default {
             this.replaceParams = {};
             _.each(params, (input, name) => {
                 if (input.wp_linked || input.step_linked) {
-                    let newValue;
+                    let newValue = null;
                     if (input.step_linked) {
-                        newValue = { values: [] };
                         _.each(input.step_linked, (sourceStep) => {
                             if (isDataStep(sourceStep)) {
                                 const sourceData = this.stepData[sourceStep.index];
                                 const value = sourceData && sourceData.input;
                                 if (value) {
+                                    newValue = { values: [] };
                                     _.each(value.values, (v) => {
                                         newValue.values.push(v);
                                     });
                                 }
                             }
                         });
-                        if (!input.multiple && newValue.values.length > 0) {
+                        if (!input.multiple && newValue && newValue.values.length > 0) {
                             newValue = {
                                 values: [newValue.values[0]],
                             };

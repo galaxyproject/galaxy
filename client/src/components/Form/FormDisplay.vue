@@ -178,13 +178,15 @@ export default {
     },
     methods: {
         onReplaceParams() {
+            let refreshOnChange = false;
             Object.entries(this.replaceParams).forEach(([key, value]) => {
                 const input = this.formIndex[key];
                 if (input) {
                     input.value = value;
+                    refreshOnChange = refreshOnChange || input.refresh_on_change;
                 }
             });
-            this.onChange();
+            this.onChange(refreshOnChange);
         },
         onCreateIndex() {
             this.formIndex = {};
@@ -192,9 +194,9 @@ export default {
                 this.formIndex[name] = input;
             });
         },
-        onChangeForm() {
+        onChangeForm(refreshOnChange) {
             this.formInputs = JSON.parse(JSON.stringify(this.formInputs));
-            this.onChange();
+            this.onChange(refreshOnChange);
         },
         onCloneInputs() {
             this.formInputs = JSON.parse(JSON.stringify(this.inputs));
