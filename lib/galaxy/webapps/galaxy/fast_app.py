@@ -13,6 +13,7 @@ from galaxy.webapps.base.api import (
     add_exception_handler,
     add_request_id_middleware,
     include_all_package_routers,
+    setup_reverse_url_lookup,
 )
 from galaxy.webapps.base.webapp import config_allows_origin
 
@@ -131,4 +132,5 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     include_all_package_routers(app, 'galaxy.webapps.galaxy.api')
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     app.mount('/', wsgi_handler)
+    setup_reverse_url_lookup(gx_app)
     return app
