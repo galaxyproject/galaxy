@@ -17,11 +17,10 @@
                 <FormNode
                     v-for="(caseDetails, caseId) in input.cases"
                     v-if="conditionalMatch(input, caseId)"
+                    v-bind="$props"
                     :key="caseId"
                     :inputs="caseDetails.inputs"
                     :prefix="getPrefix(input.name)"
-                    :onChange="onChange"
-                    :onChangeForm="onChangeForm"
                 />
             </div>
             <div v-else-if="input.type == 'repeat'">
@@ -45,12 +44,7 @@
                         </b-button>
                     </template>
                     <template v-slot:body>
-                        <FormNode
-                            :inputs="cache"
-                            :prefix="getPrefix(input.name, cacheId)"
-                            :onChange="onChange"
-                            :onChangeForm="onChangeForm"
-                        />
+                        <FormNode v-bind="$props" :inputs="cache" :prefix="getPrefix(input.name, cacheId)" />
                     </template>
                 </FormCard>
                 <b-button v-if="!sustainRepeats" @click="repeatInsert(input)">
@@ -61,12 +55,7 @@
             <div v-else-if="input.type == 'section'">
                 <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
                     <template v-slot:body>
-                        <FormNode
-                            :inputs="input.inputs"
-                            :prefix="getPrefix(input.name)"
-                            :onChange="onChange"
-                            :onChangeForm="onChangeForm"
-                        />
+                        <FormNode v-bind="$props" :inputs="input.inputs" :prefix="getPrefix(input.name)" />
                     </template>
                 </FormCard>
             </div>

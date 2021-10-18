@@ -108,11 +108,11 @@ export default {
         },
         connectedEnableText: {
             type: String,
-            default: "Add connection to module.",
+            default: "Remove connection from module.",
         },
         connectedDisableText: {
             type: String,
-            default: "Remove connection from module.",
+            default: "Add connection to module.",
         },
         connectedEnableIcon: {
             type: String,
