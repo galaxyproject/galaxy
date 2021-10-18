@@ -25,6 +25,10 @@ from galaxy.structured_app import MinimalManagerApp
 log = logging.getLogger(__name__)
 
 
+class HistoryDatasetAssociationNoHistoryException(Exception):
+    pass
+
+
 class HDAManager(datasets.DatasetAssociationManager,
                  secured.OwnableManagerMixin,
                  taggable.TaggableManagerMixin,
@@ -70,9 +74,11 @@ class HDAManager(datasets.DatasetAssociationManager,
         """
         Use history to see if current user owns HDA.
         """
-        history = hda.history
         if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
+        history = hda.history
+        if history is None:
+            raise HistoryDatasetAssociationNoHistoryException
         # allow anonymous user to access current history
         # TODO: some dup here with historyManager.is_owner but prevents circ import
         # TODO: awkward kwarg (which is my new band name); this may not belong here - move to controller?
