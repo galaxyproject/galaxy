@@ -32,7 +32,8 @@
                     :title="repeatTitle(cacheId, input.title)"
                 >
                     <template v-slot:operations>
-                        <b-button v-if="!sustainRepeats"
+                        <b-button
+                            v-if="!sustainRepeats"
                             role="button"
                             variant="link"
                             size="sm"

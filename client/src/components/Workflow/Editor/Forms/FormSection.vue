@@ -114,7 +114,6 @@ export default {
             }
             this.formData = pjas;
             console.debug("FormSection - Setting new data.", this.postJobActions, pjas);
-            this.$emit("onChange", this.formData);
         },
         setEmailAction(pjas) {
             if (pjas[this.emailActionKey]) {
