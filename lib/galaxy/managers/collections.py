@@ -20,7 +20,10 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     validation
 )
-from .hdas import HDAManager
+from .hdas import (
+    HDAManager,
+    HistoryDatasetAssociationNoHistoryException,
+)
 from .histories import HistoryManager
 from .lddas import LDDAManager
 
@@ -299,7 +302,7 @@ class DatasetCollectionManager:
             for dataset in dataset_collection_instance.collection.dataset_instances:
                 try:
                     self.hda_manager.error_unless_owner(dataset, user=trans.get_user(), current_history=trans.history)
-                except hdas.HistoryDatasetAssociationNoHistoryException:
+                except HistoryDatasetAssociationNoHistoryException:
                     log.info("Cannot delete HistoryDatasetAssociation {}, HistoryDatasetAssociation has no associated History, cannot verify owner".format(dataset.id))
                     continue
                 if not dataset.deleted:
