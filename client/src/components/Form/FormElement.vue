@@ -184,7 +184,7 @@ export default {
             return _.escape(this.textValue).replace(/\n/g, "<br />");
         },
         showField() {
-            return !this.collapsed && !this.disabled && !this.collapsiblePreview;
+            return !this.collapsed && !this.disabled;
         },
         showPreview() {
             return (this.collapsed && this.collapsiblePreview) || this.disabled;
