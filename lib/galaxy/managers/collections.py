@@ -268,7 +268,11 @@ class DatasetCollectionManager:
 
         if recursive:
             for dataset in dataset_collection_instance.collection.dataset_instances:
-                self.hda_manager.error_unless_owner(dataset, user=trans.get_user(), current_history=trans.history)
+                try:
+                    self.hda_manager.error_unless_owner(dataset, user=trans.get_user(), current_history=trans.history)
+                except hdas.HistoryDatasetAssociationNoHistoryException:
+                    log.info("Cannot delete HistoryDatasetAssociation {}, HistoryDatasetAssociation has no associated History, cannot verify owner".format(dataset.id))
+                    continue
                 if not dataset.deleted:
                     dataset.deleted = True
 
