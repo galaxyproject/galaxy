@@ -19,16 +19,16 @@ FILTER_TYPES = [
 
 ATTRIB_VALIDATOR_COMPATIBILITY = {
     "check": ["metadata"],
-    "expression": ["regex", "substitute_value_in_message"],
+    "expression": ["substitute_value_in_message"],
     "table_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table"],
     "filename": ["dataset_metadata_in_file"],
     "metadata_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "dataset_metadata_in_file"],
-    "metadata_column": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_file options"],
+    "metadata_column": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_file"],
     "line_startswith": ["dataset_metadata_in_file"],
-    "min": ["in_range", "length"],
-    "max": ["in_range", "length"],
-    "exclude_min": ["in_range"],
-    "exclude_max": ["in_range"],
+    "min": ["in_range", "length", "dataset_metadata_in_range"],
+    "max": ["in_range", "length", "dataset_metadata_in_range"],
+    "exclude_min": ["in_range", "dataset_metadata_in_range"],
+    "exclude_max": ["in_range", "dataset_metadata_in_range"],
     "split": ["dataset_metadata_in_file"],
     "skip": ["metadata"]
 }
@@ -161,7 +161,7 @@ def lint_inputs(tool_xml, lint_ctx):
                     lint_ctx.error(f"Parameter [{param_name}]: attribute '{attrib}' is incompatible with validator of type '{vtype}'")
             if vtype == "expression" and validator.text is None:
                 lint_ctx.error(f"Parameter [{param_name}]: expression validator without content")
-            if vtype != "expression" and validator.text is not None:
+            if vtype not in ["expression", "regex"] and validator.text is not None:
                 lint_ctx.warn(f"Parameter [{param_name}]: '{vtype}' validators are not expected to contain text (found '{validator.text}')")
             if vtype in ["in_range", "length", "dataset_metadata_in_range"] and ("min" not in validator.attrib or "max" not in validator.attrib):
                 lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'min' or 'max' attribute(s)")
