@@ -241,6 +241,13 @@ class ReferenceDataError(MessageException):
     err_code = error_codes_by_name['REFERENCE_DATA_ERROR']
 
 
+class ServerNotConfiguredForRequest(MessageException):
+    # A bit like ConfigDoesNotAllowException but it has nothing to do with the user of the
+    # request being "forbidden". It just isn't configured.
+    status_code = 501
+    err_code = error_codes_by_name['SERVER_NOT_CONFIGURED_FOR_REQUEST']
+
+
 # non-web exceptions
 
 class ContainerCLIError(Exception):
