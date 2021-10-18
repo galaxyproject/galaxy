@@ -1,7 +1,6 @@
 import _ from "underscore";
 
 import { visitInputs } from "components/Form/utilities";
-import WorkflowIcons from "components/Workflow/icons";
 import Utils from "utils/utils";
 
 export class WorkflowRunModel {
@@ -26,7 +25,6 @@ export class WorkflowRunModel {
         let hasReplacementParametersInToolForm = false;
 
         _.each(runData.steps, (step, i) => {
-            var icon = WorkflowIcons[step.step_type];
             var title = `${parseInt(i + 1)}: ${step.step_label || step.step_name}`;
             if (step.annotation) {
                 title += ` - ${step.annotation}`;
@@ -34,28 +32,18 @@ export class WorkflowRunModel {
             if (step.step_version) {
                 title += ` (Galaxy Version ${step.step_version})`;
             }
-
             step = Utils.merge(
                 {
                     index: i,
                     fixed_title: _.escape(title),
-                    icon: icon || "",
-                    help: null,
-                    citations: null,
                     expanded: i == 0 || isDataStep(step),
-                    text_enable: "Edit",
-                    text_disable: "Undo",
-                    cls_enable: "fa fa-edit",
-                    cls_disable: "fa fa-undo",
                     errors: step.messages,
                 },
                 step
             );
-
             this.steps[i] = step;
             this.links[i] = [];
             this.parms[i] = {};
-
             if (step.step_type == "parameter_input" && step.step_label) {
                 this.parameterInputLabels.push(step.step_label);
             }

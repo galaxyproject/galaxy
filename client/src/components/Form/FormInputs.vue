@@ -9,6 +9,7 @@
                     :type="input.test_param.type"
                     :help="input.test_param.help"
                     :refreshOnChange="false"
+                    :disabled="sustainConditionals"
                     :attributes="input.test_param"
                     :backbonejs="true"
                     @change="onChange"
@@ -31,7 +32,7 @@
                     :title="repeatTitle(cacheId, input.title)"
                 >
                     <template v-slot:operations>
-                        <b-button
+                        <b-button v-if="!sustainRepeats"
                             role="button"
                             variant="link"
                             size="sm"
@@ -51,7 +52,7 @@
                         />
                     </template>
                 </FormCard>
-                <b-button @click="repeatInsert(input)">
+                <b-button v-if="!sustainRepeats" @click="repeatInsert(input)">
                     <font-awesome-icon icon="plus" class="mr-1" />
                     <span>Insert {{ input.title || "Repeat" }}</span>
                 </b-button>
@@ -79,6 +80,10 @@
                 :refreshOnChange="input.refresh_on_change"
                 :attributes="input.attributes || input"
                 :backbonejs="true"
+                :collapsed-enable-text="collapsedEnableText"
+                :collapsed-enable-icon="collapsedEnableIcon"
+                :collapsed-disable-text="collapsedDisableText"
+                :collapsed-disable-icon="collapsedDisableIcon"
                 @change="onChange"
             />
         </div>
@@ -121,11 +126,19 @@ export default {
             type: Boolean,
             default: false,
         },
-        textEnable: {
+        collapsedEnableText: {
             type: String,
             default: null,
         },
-        textDisable: {
+        collapsedDisableText: {
+            type: String,
+            default: null,
+        },
+        collapsedEnableIcon: {
+            type: String,
+            default: null,
+        },
+        collapsedDisableIcon: {
             type: String,
             default: null,
         },

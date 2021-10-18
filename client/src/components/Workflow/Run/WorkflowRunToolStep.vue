@@ -9,6 +9,10 @@
                     :sustain-conditionals="true"
                     :replace-params="replaceParams"
                     :validation-scroll-to="validationScrollTo"
+                    collapsed-enable-text="Edit"
+                    collapsed-enable-icon="fa fa-edit"
+                    collapsed-disable-text="Undo"
+                    collapsed-disable-icon="fa fa-undo"
                     @onChange="onChange"
                     @onValidation="onValidation"
                 />

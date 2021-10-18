@@ -8,12 +8,12 @@
             <div v-if="collapsible || connectable">
                 <div class="ui-form-collapsible">
                     <span v-if="collapsible && !connected" class="ui-form-collapsible-icon" @click="onCollapse">
-                        <span v-if="collapsed" :class="collapsibleDisabled" />
-                        <span v-else :class="collapsibleEnabled" />
+                        <span v-if="collapsed" :class="collapsedEnableIcon" :title="collapsedEnableText" />
+                        <span v-else :class="collapsedDisableIcon" :title="collapsedDisableText" />
                     </span>
                     <span v-if="connectable" class="ui-form-connected-icon" @click="onConnect">
-                        <span v-if="connected" class="icon fa fa-times" :title="textConnectedDisable" />
-                        <span v-else class="icon fa fa-arrows-h" :title="textConnectedEnable" />
+                        <span v-if="connected" :class="connectedEnableIcon" :title="connectedEnableText" />
+                        <span v-else :class="connectedDisableIcon" :title="connectedDisableText" />
                     </span>
                     <span class="ui-form-collapsible-text ml-1">
                         {{ this.title }}
@@ -34,10 +34,8 @@
             <FormBoolean v-else-if="type == 'boolean'" v-model="currentValue" :id="id" />
             <FormInput v-else="type == 'text'" v-model="currentValue" :id="id" :area="attrs['area']" />
         </div>
-        <div v-if="previewVisible" class="ui-form-preview">
-            {{ previewText }}
-        </div>
-        <span class="ui-form-info form-text text-muted" v-html="helpText" />
+        <div v-if="showPreview" class="ui-form-preview" v-html="previewText" />
+        <span v-if="!!helpText" class="ui-form-info form-text text-muted" v-html="helpText" />
     </div>
 </template>
 
@@ -84,33 +82,45 @@ export default {
             type: Boolean,
             default: false,
         },
+        disabled: {
+            type: Boolean,
+            default: false,
+        },
         attributes: {
             type: Object,
             default: null,
         },
-        textEnable: {
+        collapsedEnableText: {
             type: String,
             default: "Enable",
         },
-        textDisable: {
+        collapsedDisableText: {
             type: String,
             default: "Disable",
         },
-        textConnectedEnable: {
-            type: String,
-            default: "Add connection to module.",
-        },
-        textConnectedDisable: {
-            type: String,
-            default: "Remove connection from module.",
-        },
-        collapsibleEnabled: {
+        collapsedEnableIcon: {
             type: String,
             default: "fa fa-caret-square-o-down",
         },
-        collapsibleDisabled: {
+        collapsedDisableIcon: {
             type: String,
             default: "fa fa-caret-square-o-up",
+        },
+        connectedEnableText: {
+            type: String,
+            default: "Add connection to module.",
+        },
+        connectedDisableText: {
+            type: String,
+            default: "Remove connection from module.",
+        },
+        connectedEnableIcon: {
+            type: String,
+            default: "fa fa fa-times",
+        },
+        connectedDisableIcon: {
+            type: String,
+            default: "fa fa-arrows-h",
         },
     },
     data() {
@@ -150,8 +160,8 @@ export default {
                 this.setValue(val);
             },
         },
-        disabled() {
-            this.attrs["disabled"];
+        defaultValue() {
+            return this.attrs["default_value"];
         },
         elementId() {
             return `form-element-${this.id}`;
@@ -170,14 +180,14 @@ export default {
         hidden() {
             return this.attrs["hidden"];
         },
-        previewVisible() {
-            return (this.collapsed && this.collapsiblePreview) || this.disabled;
-        },
         previewText() {
             return _.escape(this.textValue).replace(/\n/g, "<br />");
         },
         showField() {
-            return !this.collapsed && !this.disabled;
+            return !this.collapsed && !this.disabled && !this.collapsiblePreview;
+        },
+        showPreview() {
+            return (this.collapsed && this.collapsiblePreview) || this.disabled;
         },
         textValue() {
             return this.attrs["text_value"];
@@ -210,6 +220,8 @@ export default {
             this.connected = false;
             if (this.collapsed) {
                 this.setValue(this.collapsibleValue);
+            } else {
+                this.setValue(this.defaultValue);
             }
         },
         /**

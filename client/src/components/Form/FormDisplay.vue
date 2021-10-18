@@ -5,8 +5,10 @@
         :prefix="prefix"
         :sustain-repeats="sustainRepeats"
         :sustain-conditionals="sustainConditionals"
-        :text-enable="textEnable"
-        :text-disable="textDisable"
+        :collapsed-enable-text="collapsedEnableText"
+        :collapsed-enable-icon="collapsedEnableIcon"
+        :collapsed-disable-text="collapsedDisableText"
+        :collapsed-disable-icon="collapsedDisableIcon"
         :replace-params="replaceParams"
         :errors="errors"
         :onChange="onChange"
@@ -46,13 +48,21 @@ export default {
             type: Boolean,
             default: false,
         },
-        textEnable: {
+        collapsedEnableText: {
             type: String,
-            default: null,
+            default: "Enable",
         },
-        textDisable: {
+        collapsedDisableText: {
             type: String,
-            default: null,
+            default: "Disable",
+        },
+        collapsedEnableIcon: {
+            type: String,
+            default: "fa fa-caret-square-o-down",
+        },
+        collapsedDisableIcon: {
+            type: String,
+            default: "fa fa-caret-square-o-up",
         },
         validationScrollTo: {
             type: Array,
