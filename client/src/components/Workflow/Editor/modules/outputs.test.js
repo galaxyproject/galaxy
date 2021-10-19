@@ -56,10 +56,10 @@ describe("Workflow Outputs", () => {
 
         // Update output label
         const response = activeOutputs.labelOutput("output_0", "label_3");
-        expect(response).toBe(null);
+        expect(response).toBe(true);
         expect(activeOutputs.entries["output_0"].label).toBe("label_3");
         const response_1 = activeOutputs.labelOutput("output_0", "label_1");
-        expect(response_1).toBe("label_3");
+        expect(response_1).toBe(false);
         expect(activeOutputs.entries["output_0"].label).toBe("label_3");
 
         // Test output removal

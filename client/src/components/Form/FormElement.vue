@@ -55,7 +55,7 @@ export default {
     props: {
         id: {
             type: String,
-            default: null,
+            default: "identifer",
         },
         type: {
             type: String,

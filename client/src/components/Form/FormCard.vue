@@ -19,13 +19,13 @@
             </div>
             <b-link class="portlet-title" v-if="collapsible" @click="onCollapse" href="#">
                 <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
-                <b itemprop="name">{{ title }}</b>
-                <span itemprop="description">{{ description }}</span>
+                <b class="portlet-title-text" itemprop="name">{{ title }}</b>
+                <span class="portlet-title-description" itemprop="description">{{ description }}</span>
             </b-link>
             <span class="portlet-title" v-else>
                 <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
-                <b itemprop="name">{{ title }}</b>
-                <span itemprop="description">{{ description }}</span>
+                <b class="portlet-title-text" itemprop="name">{{ title }}</b>
+                <span class="portlet-title-description" itemprop="description">{{ description }}</span>
             </span>
         </div>
         <div v-show="expanded" class="portlet-content">
