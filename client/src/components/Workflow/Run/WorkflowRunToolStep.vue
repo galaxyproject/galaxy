@@ -4,7 +4,7 @@
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormDisplay
-                    :inputs="formConfig.inputs"
+                    :inputs="model.inputs"
                     :sustain-repeats="true"
                     :sustain-conditionals="true"
                     :replace-params="replaceParams"
@@ -61,9 +61,9 @@ export default {
     data() {
         return {
             expanded: this.model.expanded,
-            formConfig: this.model,
-            replaceParams: {},
             errorText: null,
+            modelIndex: {},
+            replaceParams: {},
         };
     },
     watch: {
@@ -80,6 +80,12 @@ export default {
         },
     },
     methods: {
+        onCreateIndex() {
+            this.modelIndex = {};
+            visitInputs(this.model.inputs, (input, name) => {
+                this.modelIndex[name] = input;
+            });
+        },
         onReplaceParams() {
             const params = {};
             visitInputs(this.model.inputs, (input, name) => {
@@ -128,8 +134,14 @@ export default {
         onChange(data, refreshRequest) {
             if (refreshRequest) {
                 getTool(this.model.id, this.model.version, data, this.historyId).then(
-                    (formConfig) => {
-                        this.formConfig = formConfig;
+                    (newModel) => {
+                        this.onCreateIndex();
+                        visitInputs(newModel.inputs, (newInput, name) => {
+                            const input = this.modelIndex[name];
+                            input.options = newInput.options;
+                        });
+                        this.model.inputs = JSON.parse(JSON.stringify(this.model.inputs));
+                        console.log(this.model.inputs);
                     },
                     (errorText) => {
                         this.errorText = errorText;
