@@ -576,8 +576,13 @@ def uvicorn_serve(app, port, host=None):
     server = Server(config=config)
 
     def run_in_loop(loop):
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(server.serve())
+        try:
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(server.serve())
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
+            log.info("Event loop for uvicorn closed")
 
     loop = asyncio.new_event_loop()
     t = threading.Thread(target=run_in_loop, args=(loop,))
@@ -736,6 +741,8 @@ class EmbeddedServerWrapper(ServerWrapper):
         return self._app
 
     def stop(self):
+        log.info(f"{threading.active_count()} threads were active before stopping embedded server")
+
         if self._server is not None and hasattr(self._server, "server_close"):
             log.info(f"Shutting down embedded {self.name} Paste server")
             self._server.server_close()
@@ -755,6 +762,8 @@ class EmbeddedServerWrapper(ServerWrapper):
             log.info(f"Stopping application {self.name}")
             self._app.shutdown()
             log.info(f"Application {self.name} stopped.")
+
+        log.info(f"{threading.active_count()} active after stopping embedded server")
 
 
 class UwsgiServerWrapper(ServerWrapper):
