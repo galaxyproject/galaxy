@@ -53,7 +53,7 @@ module.exports = (env = {}, argv = {}) => {
                     },
                     libs: {
                         name: "libs",
-                        test: /node_modules[\\/](?!(handsontable|pikaday|moment|elkjs)[\\/])|galaxy\/scripts\/libs/,
+                        test: /node_modules[\\/](?!(jspdf|canvg|html2canvas|handsontable|pikaday|moment|elkjs)[\\/])|galaxy\/scripts\/libs/,
                         chunks: "all",
                         priority: -10,
                     },
