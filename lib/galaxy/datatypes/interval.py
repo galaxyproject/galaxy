@@ -1466,6 +1466,16 @@ class ScIdx(Tabular):
     count (type int), Reverse strand peak count (type int) and value (type int).
     The value of the 5th 'value' column is the sum of the forward and reverse
     peak count values.
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'cntrl_hg19.scidx' )
+    >>> ScIdx().sniff( fname )
+    True
+    >>> Bed().sniff( fname )
+    False
+    >>> fname = get_test_fname( 'empty.txt' )
+    >>> ScIdx().sniff( fname )
+    False
     """
     file_ext = "scidx"
 
@@ -1486,49 +1496,30 @@ class ScIdx(Tabular):
         Checks for 'scidx-ness.'
         """
         count = 0
-        fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
-            if not line:
-                # EOF
-                if count > 1:
-                    # The second line is always the labels:
-                    # chrom index forward reverse value
-                    # We need at least the column labels and a data line.
-                    return True
-                return False
-            line = line.strip()
+        for count, line in enumerate(file_prefix.line_iterator()):
+            line = line.strip().split()
             # The first line is always a comment like this:
             # 2015-11-23 20:18:56.51;input.bam;READ1
             if count == 0:
-                if line.startswith('#'):
-                    count += 1
-                    continue
-                else:
+                if not line[0].startswith('#'):
                     return False
-            # Skip first line.
-            if count >= 1:
-                items = line.split('\t')
-                if len(items) != 5:
+            # The 2nd line is always a specific header
+            elif count == 1:
+                if line != ["chrom", "index", "forward", "reverse", "value"]:
                     return False
-                index = items[1]
-                if not index.isdigit():
+            # data line columns 2:5 need to be integers and
+            # the fwd and rev column need to sum to value
+            else:
+                if len(line) != 5:
                     return False
-                forward = items[2]
-                if not forward.isdigit():
+                if not line[1].isdigit():
                     return False
-                reverse = items[3]
-                if not reverse.isdigit():
+                if int(line[2]) + int(line[3]) != int(line[4]):
                     return False
-                value = items[4]
-                if not value.isdigit():
-                    return False
-                if int(forward) + int(reverse) != int(value):
-                    return False
-            if count == 100:
-                return True
-            count += 1
-        if count < 100 and count > 0:
+            # just check one data line
+            if count > 2:
+                break
+        if count == 3:
             return True
         return False
 
