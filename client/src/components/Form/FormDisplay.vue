@@ -11,8 +11,8 @@
         :collapsed-disable-icon="collapsedDisableIcon"
         :replace-params="replaceParams"
         :errors="errors"
-        :onChange="onChange"
-        :onChangeForm="onChangeForm"
+        :on-change="onChange"
+        :on-change-form="onChangeForm"
     />
 </template>
 
@@ -111,7 +111,7 @@ export default {
             this.resetError();
             if (this.errors) {
                 const errorMessages = matchErrors(this.errors, this.formIndex);
-                for (let inputId in errorMessages) {
+                for (const inputId in errorMessages) {
                     this.setError(inputId, errorMessages[inputId]);
                 }
             }

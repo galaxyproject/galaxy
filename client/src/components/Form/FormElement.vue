@@ -32,7 +32,7 @@
                 ref="params"
             />
             <FormBoolean v-else-if="type == 'boolean'" v-model="currentValue" :id="id" />
-            <FormInput v-else="type == 'text'" v-model="currentValue" :id="id" :area="attrs['area']" />
+            <FormInput v-else v-model="currentValue" :id="id" :area="attrs['area']" />
         </div>
         <div v-if="showPreview" class="ui-form-preview" v-html="previewText" />
         <span v-if="!!helpText" class="ui-form-info form-text text-muted" v-html="helpText" />
@@ -40,6 +40,7 @@
 </template>
 
 <script>
+import _ from "underscore";
 import FormBoolean from "./Elements/FormBoolean";
 import FormInput from "./Elements/FormInput";
 import FormParameter from "./Elements/FormParameter";
@@ -53,7 +54,7 @@ export default {
     props: {
         id: {
             type: String,
-            required: false,
+            default: null,
         },
         type: {
             type: String,
@@ -132,7 +133,7 @@ export default {
     },
     computed: {
         argument() {
-            this.attrs["argument"];
+            return this.attrs["argument"];
         },
         attrs() {
             return this.attributes || this.$attrs;
@@ -170,7 +171,7 @@ export default {
             return !!this.error;
         },
         helpText() {
-            let help = this.help;
+            const help = this.help;
             const helpArgument = this.argument;
             if (helpArgument && help.indexOf(`(${helpArgument})`) == -1) {
                 return `${help} (${helpArgument})`;

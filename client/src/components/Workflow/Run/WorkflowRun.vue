@@ -63,7 +63,10 @@ export default {
         WorkflowRunFormSimple,
     },
     props: {
-        workflowId: { type: String },
+        workflowId: {
+            type: String,
+            required: true,
+        },
         preferSimpleForm: {
             type: Boolean,
             default: false,

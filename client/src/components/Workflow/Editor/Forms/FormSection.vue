@@ -18,8 +18,9 @@
         />
         <FormOutput
             v-for="(output, index) in outputs"
-            :outputName="output.name"
-            :outputLabel="getOutputLabel(output)"
+            :key="index"
+            :output-name="output.name"
+            :output-label="getOutputLabel(output)"
             :output-label-error="outputLabelError"
             :inputs="node.inputs"
             :datatypes="datatypes"

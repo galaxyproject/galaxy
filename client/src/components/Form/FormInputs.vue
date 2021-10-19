@@ -8,20 +8,20 @@
                     :title="input.test_param.label"
                     :type="input.test_param.type"
                     :help="input.test_param.help"
-                    :refreshOnChange="false"
+                    :refresh-on-change="false"
                     :disabled="sustainConditionals"
                     :attributes="input.test_param"
                     :backbonejs="true"
                     @change="onChange"
                 />
-                <FormNode
-                    v-for="(caseDetails, caseId) in input.cases"
-                    v-if="conditionalMatch(input, caseId)"
-                    v-bind="$props"
-                    :key="caseId"
-                    :inputs="caseDetails.inputs"
-                    :prefix="getPrefix(input.name)"
-                />
+                <div v-for="(caseDetails, caseId) in input.cases" :key="caseId">
+                    <FormNode
+                        v-if="conditionalMatch(input, caseId)"
+                        v-bind="$props"
+                        :inputs="caseDetails.inputs"
+                        :prefix="getPrefix(input.name)"
+                    />
+                </div>
             </div>
             <div v-else-if="input.type == 'repeat'">
                 <p v-if="!sustainRepeats || (input.cache && input.cache.length > 0)" class="font-weight-bold mb-2">
@@ -69,7 +69,7 @@
                 :type="input.type"
                 :error="input.error"
                 :help="input.help"
-                :refreshOnChange="input.refresh_on_change"
+                :refresh-on-change="input.refresh_on_change"
                 :attributes="input.attributes || input"
                 :backbonejs="true"
                 :collapsed-enable-text="collapsedEnableText"
@@ -83,8 +83,6 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { visitInputs } from "components/Form/utilities";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";

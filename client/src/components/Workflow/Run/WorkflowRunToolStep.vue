@@ -4,7 +4,7 @@
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormDisplay
-                    :inputs="model.inputs"
+                    :inputs="modelInputs"
                     :sustain-repeats="true"
                     :sustain-conditionals="true"
                     :replace-params="replaceParams"
@@ -63,6 +63,7 @@ export default {
             expanded: this.model.expanded,
             errorText: null,
             modelIndex: {},
+            modelInputs: this.model.inputs,
             replaceParams: {},
         };
     },
@@ -82,7 +83,7 @@ export default {
     methods: {
         onCreateIndex() {
             this.modelIndex = {};
-            visitInputs(this.model.inputs, (input, name) => {
+            visitInputs(this.modelInputs, (input, name) => {
                 this.modelIndex[name] = input;
             });
         },
@@ -141,7 +142,7 @@ export default {
                             input.options = newInput.options;
                             input.textable = newInput.textable;
                         });
-                        this.model.inputs = JSON.parse(JSON.stringify(this.model.inputs));
+                        this.modelInputs = JSON.parse(JSON.stringify(this.modelInputs));
                     },
                     (errorText) => {
                         this.errorText = errorText;

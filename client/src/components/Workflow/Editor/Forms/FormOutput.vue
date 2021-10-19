@@ -215,7 +215,7 @@ export default {
             }
         },
         hasActions(actions) {
-            for (let key of actions) {
+            for (const key of actions) {
                 if (this.formData[this.actionNames[key]] != undefined) {
                     return true;
                 }
