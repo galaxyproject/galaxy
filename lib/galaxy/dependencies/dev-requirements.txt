@@ -6,6 +6,7 @@ alabaster==0.7.12; python_version >= "3.6" and python_full_version < "3.0.0" or 
 amqp==5.0.6; python_version >= "3.7"
 anyio==3.4.0; python_full_version >= "3.6.2" and python_version >= "3.6"
 appdirs==1.4.4
+alembic==1.7.4; python_version >= "3.6"
 argcomplete==1.12.3; python_version >= "3.6" and python_version < "4"
 asgiref==3.4.1; python_version >= "3.6"
 async-generator==1.10; python_version >= "3.7" and python_version < "4.0"

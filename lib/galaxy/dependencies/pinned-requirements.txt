@@ -4,6 +4,7 @@ adal==1.2.7
 aiofiles==0.8.0; python_version >= "3.6" and python_version < "4.0"
 amqp==5.0.6; python_version >= "3.7"
 appdirs==1.4.4
+alembic==1.7.4; python_version >= "3.6"
 argcomplete==1.12.3; python_version >= "3.6" and python_version < "4"
 asgiref==3.4.1; python_version >= "3.6"
 attmap==0.13.2
