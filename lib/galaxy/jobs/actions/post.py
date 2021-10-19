@@ -209,7 +209,7 @@ class RenameDatasetAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict, final_job_state=None):
         input_names = {}
-        #  Lookp through inputs find one with "to_be_replaced" input
+        #  Loop through inputs find one with "to_be_replaced" input
         #  variable name, and get the replacement name
         for input_assoc in job.input_datasets:
             if input_assoc.dataset:
@@ -399,31 +399,31 @@ class TagDatasetAction(DefaultJobAction):
 
     @classmethod
     def execute_on_mapped_over(cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict, final_job_state=None):
+        tag_handler = trans.app.tag_handler.create_tag_handler_session()
         if action.action_arguments:
             tags = [t.replace('#', 'name:') if t.startswith('#') else t for t in [t.strip() for t in action.action_arguments.get('tags', '').split(',') if t.strip()]]
             if tags:
                 for name, step_output in step_outputs.items():
                     if action.output_name == '' or name == action.output_name:
-                        cls._execute(trans.app, trans.user, step_output, tags)
+                        cls._execute(tag_handler, trans.user, step_output, tags)
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict, final_job_state=None):
         if action.action_arguments:
+            tag_handler = app.tag_handler.create_tag_handler_session()
             tags = [t.replace('#', 'name:') if t.startswith('#') else t for t in [t.strip() for t in action.action_arguments.get('tags', '').split(',') if t.strip()]]
             if tags:
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
-                        cls._execute(app, job.user, dataset_assoc.dataset, tags)
+                        cls._execute(tag_handler, job.user, dataset_assoc.dataset, tags)
 
                 for dataset_collection_assoc in job.output_dataset_collection_instances:
                     if action.output_name == '' or dataset_collection_assoc.name == action.output_name:
-                        cls._execute(app, job.user, dataset_collection_assoc.dataset_collection_instance, tags)
-
-            sa_session.flush()
+                        cls._execute(tag_handler, job.user, dataset_collection_assoc.dataset_collection_instance, tags)
 
     @classmethod
-    def _execute(cls, app, user, output, tags):
-        app.tag_handler.add_tags_from_list(user, output, tags)
+    def _execute(cls, tag_handler, user, output, tags):
+        tag_handler.add_tags_from_list(user, output, tags, flush=False)
 
     @classmethod
     def get_short_str(cls, pja):
@@ -443,8 +443,8 @@ class RemoveTagDatasetAction(TagDatasetAction):
     direction = "from"
 
     @classmethod
-    def _execute(cls, app, user, output, tags):
-        app.tag_handler.remove_tags_from_list(user, output, tags)
+    def _execute(cls, tag_handler, user, output, tags):
+        tag_handler.remove_tags_from_list(user, output, tags)
 
 
 class ActionBox:

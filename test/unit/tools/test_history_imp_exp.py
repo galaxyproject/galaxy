@@ -516,6 +516,7 @@ def test_export_copied_objects_copied_outside_history():
 
     other_h = model.History(name=h.name + "-other", user=h.user)
     sa_session.add(other_h)
+    sa_session.flush()
 
     hc3 = hc2.copy(element_destination=other_h)
     other_h.add_pending_items()

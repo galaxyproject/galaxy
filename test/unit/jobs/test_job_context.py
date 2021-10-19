@@ -55,6 +55,7 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     job = model.Job()
     job.history = h
     sa_session.add(job)
+    sa_session.flush()
     job_working_directory = tempfile.mkdtemp()
     setup_data(job_working_directory)
     permission_provider = PermissionProvider()
