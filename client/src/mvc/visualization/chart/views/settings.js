@@ -1,5 +1,4 @@
 /** This class renders the chart configuration form. */
-import _ from "underscore";
 import Backbone from "backbone";
 import Utils from "utils/utils";
 import { visitInputs } from "components/Form/utilities";
