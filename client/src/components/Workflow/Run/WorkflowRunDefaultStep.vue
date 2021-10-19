@@ -3,11 +3,13 @@
         <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :expanded.sync="expanded">
             <template v-slot:body>
                 <FormDisplay
+                    v-if="hasInputs"
                     :inputs="inputs"
                     :validation-scroll-to="validationScrollTo"
                     @onChange="onChange"
                     @onValidation="onValidation"
                 />
+                <div v-else class="py-2">No options available.</div>
             </template>
         </FormCard>
     </div>
@@ -62,15 +64,11 @@ export default {
             });
             if (this.model.inputs && this.model.inputs.length > 0) {
                 return this.model.inputs;
-            } else {
-                return [
-                    {
-                        type: "hidden",
-                        name: "No options available.",
-                        ignore: null,
-                    },
-                ];
             }
+            return [];
+        },
+        hasInputs() {
+            return this.inputs.length > 0;
         },
     },
     methods: {
