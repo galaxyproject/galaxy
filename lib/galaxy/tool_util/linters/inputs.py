@@ -132,7 +132,7 @@ def lint_inputs(tool_xml, lint_ctx):
             # lint statically defined options
             if any(['value' not in option.attrib for option in select_options]):
                 lint_ctx.error(f"Select parameter [{param_name}] has option without value")
-            if len(set([option.text.strip() for option in select_options])) != len(select_options):
+            if len(set([option.text.strip() for option in select_options if option.text is not None])) != len(select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same text content")
             if len(set([option.attrib.get("value") for option in select_options])) != len(select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value")
