@@ -1496,8 +1496,7 @@ class ScIdx(Tabular):
         Checks for 'scidx-ness.'
         """
         count = 0
-        for count, line in enumerate(file_prefix.line_iterator()):
-            line = line.strip().split()
+        for count, line in enumerate(iter_headers(file_prefix, '\t')):
             # The first line is always a comment like this:
             # 2015-11-23 20:18:56.51;input.bam;READ1
             if count == 0:
