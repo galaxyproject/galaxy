@@ -24,7 +24,9 @@
                 />
             </div>
             <div v-else-if="input.type == 'repeat'">
-                <p class="font-weight-bold mb-2">{{ input.title }}</p>
+                <p v-if="!sustainRepeats || (input.cache && input.cache.length > 0)" class="font-weight-bold mb-2">
+                    {{ input.title }}
+                </p>
                 <FormCard
                     v-for="(cache, cacheId) in input.cache"
                     :key="cacheId"

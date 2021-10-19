@@ -139,9 +139,9 @@ export default {
                         visitInputs(newModel.inputs, (newInput, name) => {
                             const input = this.modelIndex[name];
                             input.options = newInput.options;
+                            input.textable = newInput.textable;
                         });
                         this.model.inputs = JSON.parse(JSON.stringify(this.model.inputs));
-                        console.log(this.model.inputs);
                     },
                     (errorText) => {
                         this.errorText = errorText;
