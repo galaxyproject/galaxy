@@ -47,8 +47,10 @@ describe("ToolCard", () => {
         expect(dropdownHeader.attributes("title")).toBe("Options");
         const dropdownItems = wrapper.findAll(".dropdown-item");
         expect(dropdownItems.length).toBe(4);
+        const backdrop = wrapper.findAll(".portlet-backdrop");
+        expect(backdrop.length).toBe(0);
         await wrapper.setProps({ disabled: true });
-        const iconSpinner = wrapper.find(".portlet-title-icon");
-        expect(iconSpinner.classes()).toContain("fa-spin");
+        const backdropActive = wrapper.findAll(".portlet-backdrop");
+        expect(backdropActive.length).toBe(1);
     });
 });

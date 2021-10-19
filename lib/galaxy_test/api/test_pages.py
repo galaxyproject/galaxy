@@ -1,7 +1,10 @@
+from unittest import SkipTest
+
 from requests import delete
 
 from galaxy.exceptions import error_codes
 from galaxy_test.api.sharable import SharingApiTests
+from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator, skip_without_tool, WorkflowPopulator
 from ._framework import ApiTestCase
 
@@ -41,6 +44,11 @@ class PageApiTestCase(BasePageApiTestCase, SharingApiTests):
 
     api_name = "pages"
 
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+
     def create(self, name: str) -> str:
         response_json = self._create_valid_page_with_slug(name)
         return response_json["id"]
@@ -51,15 +59,13 @@ class PageApiTestCase(BasePageApiTestCase, SharingApiTests):
 
     @skip_without_tool("cat")
     def test_create_from_report(self):
-        dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         test_data = """
 input_1:
   value: 1.bed
   type: File
 """
-        with dataset_populator.test_history() as history_id:
-            summary = workflow_populator.run_workflow("""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow("""
 class: GalaxyWorkflow
 inputs:
   input_1: data
@@ -75,7 +81,7 @@ steps:
 
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            report_json = workflow_populator.workflow_report_json(workflow_id, invocation_id)
+            report_json = self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
             assert "markdown" in report_json
             self._assert_has_keys(report_json, "markdown", "render_format")
             assert report_json["render_format"] == "markdown"
@@ -172,8 +178,7 @@ steps:
         self._assert_error_code_is(page_response, error_codes.error_codes_by_name["MALFORMED_ID"])
 
     def test_400_on_invalid_embedded_content(self):
-        dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        valid_id = dataset_populator.new_history()
+        valid_id = self.dataset_populator.new_history()
         page_request = self._test_page_payload(slug="invalid-embed-content")
         page_request["content"] = f'''<p>Page!<div class="embedded-item" id="CoolObject-{valid_id}"></div></p>'''
         page_response = self._post("pages", page_request, json=True)
@@ -205,13 +210,18 @@ steps:
         self._assert_status_code_is(show_response, 403)
         self._assert_error_code_is(show_response, error_codes.error_codes_by_name["USER_CANNOT_ACCESS_ITEM"])
 
-    def test_400_on_download_pdf_when_service_unavailable(self):
+    def test_501_on_download_pdf_when_service_unavailable(self):
+        configuration = self.dataset_populator.get_configuration()
+        can_produce_markdown = configuration["markdown_to_pdf_available"]
+        if can_produce_markdown:
+            raise SkipTest("Skipping test because server does implement markdown conversion to PDF")
         page_request = self._test_page_payload(slug="md-page-to-pdf", content_format="markdown")
         page_response = self._post("pages", page_request, json=True)
         self._assert_status_code_is(page_response, 200)
         page_id = page_response.json()['id']
         pdf_response = self._get(f"pages/{page_id}.pdf")
-        self._assert_status_code_is(pdf_response, 400)
+        api_asserts.assert_status_code_is(pdf_response, 501)
+        api_asserts.assert_error_code_is(pdf_response, error_codes.error_codes_by_name["SERVER_NOT_CONFIGURED_FOR_REQUEST"])
 
     def test_400_on_download_pdf_when_unsupported_content_format(self):
         page_request = self._test_page_payload(slug="html-page-to-pdf", content_format="html")
