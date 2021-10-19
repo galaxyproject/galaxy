@@ -1519,7 +1519,8 @@ class ScIdx(Tabular):
             # just check one data line
             if count > 2:
                 break
-        if count == 3:
+        # at least the comment and header are required
+        if count >= 2:
             return True
         return False
 
