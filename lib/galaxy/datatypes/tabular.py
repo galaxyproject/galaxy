@@ -264,6 +264,7 @@ class TabularData(data.Text):
 @dataproviders.decorators.has_dataproviders
 class Tabular(TabularData):
     """Tab delimited data"""
+    file_ext = "tabular"
 
     def get_column_names(self, first_line=None):
         return None
@@ -438,7 +439,7 @@ class Tabular(TabularData):
 
 class SraManifest(Tabular):
     """A manifest received from the sra_source tool."""
-    ext = 'sra_manifest.tabular'
+    file_ext = 'sra_manifest.tabular'
     data_line_offset = 1
 
     def set_meta(self, dataset, **kwds):
@@ -450,6 +451,8 @@ class SraManifest(Tabular):
 
 
 class Taxonomy(Tabular):
+    file_ext = "taxonomy"
+
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
         super().__init__(**kwd)
