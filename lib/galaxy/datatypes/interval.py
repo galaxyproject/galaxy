@@ -1468,13 +1468,13 @@ class ScIdx(Tabular):
     peak count values.
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'cntrl_hg19.scidx' )
-    >>> ScIdx().sniff( fname )
+    >>> fname = get_test_fname('cntrl_hg19.scidx')
+    >>> ScIdx().sniff(fname)
     True
-    >>> Bed().sniff( fname )
+    >>> Bed().sniff(fname)
     False
-    >>> fname = get_test_fname( 'empty.txt' )
-    >>> ScIdx().sniff( fname )
+    >>> fname = get_test_fname('empty.txt')
+    >>> ScIdx().sniff(fname)
     False
     """
     file_ext = "scidx"
@@ -1516,8 +1516,7 @@ class ScIdx(Tabular):
                     return False
                 if int(line[2]) + int(line[3]) != int(line[4]):
                     return False
-            # just check one data line
-            if count > 2:
+                # just check one data line
                 break
         # at least the comment and header are required
         if count >= 2:
