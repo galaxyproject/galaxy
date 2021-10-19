@@ -85,6 +85,7 @@ class BaseJobRunner:
             log.debug('Loading %s with params: %s', self.runner_name, kwargs)
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
         self.runner_state_handlers = build_state_handlers()
+        self._should_stop = False
 
     def start(self):
         for start_method in self.start_methods:
@@ -116,8 +117,11 @@ class BaseJobRunner:
     def run_next(self):
         """Run the next item in the work queue (a job waiting to run)
         """
-        while True:
-            (method, arg) = self.work_queue.get()
+        while self._should_stop is False:
+            try:
+                (method, arg) = self.work_queue.get(timeout=1)
+            except Empty:
+                continue
             if method is STOP_SIGNAL:
                 return
             # id and name are collected first so that the call of method() is the last exception.
@@ -167,6 +171,7 @@ class BaseJobRunner:
         """Attempts to gracefully shut down the worker threads
         """
         log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
+        self._should_stop = True
         for _ in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
