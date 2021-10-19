@@ -165,7 +165,8 @@ export default {
             return this.attrs["default_value"];
         },
         elementId() {
-            return `form-element-${this.id}`;
+            const id = this.id.replaceAll("|", "-");
+            return `form-element-${id}`;
         },
         hasError() {
             return !!this.error;
