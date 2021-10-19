@@ -220,7 +220,7 @@ export default {
                 const message = validation[1];
                 this.setError(inputId, message);
                 if (!silent) {
-                    var element = document.querySelector(`#form-element-${inputId}`);
+                    const element = document.querySelector(`#form-element-${inputId}`);
                     if (element) {
                         document.querySelector(".center-panel").scrollTo(0, element.offsetTop);
                     }

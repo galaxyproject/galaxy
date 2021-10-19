@@ -143,7 +143,7 @@ export default {
     },
     methods: {
         getPrefix(name, index) {
-            if (index) {
+            if (index !== undefined) {
                 name = `${name}_${index}`;
             }
             if (this.prefix) {
