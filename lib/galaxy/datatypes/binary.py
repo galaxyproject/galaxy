@@ -36,7 +36,7 @@ from galaxy.datatypes.metadata import (
     MetadataParameter,
 )
 from galaxy.datatypes.sniff import build_sniff_from_prefix
-from galaxy.util import nice_size, sqlite
+from galaxy.util import compression_utils, nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
 
@@ -2332,38 +2332,26 @@ class RData(CompressedArchive):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
+        compressed, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
         try:
-            with open(dataset.file_name) as fh:
-                version = self._sniff_rdata(fh)
-        except Exception:
-            try:
-                with gzip.open(dataset.file_name) as fh:
-                    version = self._sniff_rdata(fh)
-            except Exception:
-                return
-        dataset.metadata.version = version
-
-    def sniff(self, filename):
-        # try to read plain file
-        try:
-            with open(filename, 'rb') as fh:
-                self._sniff_rdata(fh)
+            dataset.metadata.version = self._parse_rdata_header(fh)
         except Exception:
             pass
-        else:
-            return True
-        # try to read compressed file
-        try:
-            with gzip.open(filename) as fh:
-                self._sniff_rdata(fh)
-        except Exception:
-            raise
-        else:
-            return True
-        # no rds if both fails
-        return False
+        finally:
+            fh.close()
 
-    def _sniff_rdata(self, fh):
+    def sniff(self, filename):
+        compressed, fh = compression_utils.get_fileobj_raw(filename, "rb")
+        try:
+            self._parse_rdata_header(fh)
+        except Exception:
+            fh.close()
+            return False
+        finally:
+            fh.close()
+        return True
+
+    def _parse_rdata_header(self, fh):
         header = fh.read(7)
         if header == b'RDX2\nX\n':
             return "2"
@@ -2409,40 +2397,26 @@ class RDS(CompressedArchive):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
+        compressed, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
         try:
-            with open(dataset.file_name) as fh:
-                mode, version, rversion, minrversion = self._sniff_rds(fh)
-        except Exception:
-            try:
-                with gzip.open(dataset.file_name) as fh:
-                    mode, version, rversion, minrversion = self._sniff_rds(fh)
-            except Exception:
-                return
-        dataset.metadata.version = version
-        dataset.metadata.rversion = rversion
-        dataset.metadata.minrversion = minrversion
-
-    def sniff(self, filename):
-        # try to read plain file
-        try:
-            with open(filename, 'rb') as fh:
-                self._sniff_rds(fh)
+            mode, dataset.metadata.version, dataset.metadata.rversion, dataset.metadata.minrversion = self._parse_rds_header(fh)
         except Exception:
             pass
-        else:
-            return True
-        # try to read compressed file
-        try:
-            with gzip.open(filename) as fh:
-                self._sniff_rds(fh)
-        except Exception:
-            raise
-        else:
-            return True
-        # no rds if both fails
-        return False
+        finally:
+            fh.close()
 
-    def _sniff_rds(self, fh):
+    def sniff(self, filename):
+        compressed, fh = compression_utils.get_fileobj_raw(filename, "rb")
+        try:
+            self._parse_rds_header(fh)
+        except Exception:
+            fh.close()
+            return False
+        finally:
+            fh.close()
+        return True
+
+    def _parse_rds_header(self, fh):
         """
         get the header info from a rds file
         - starts with b'X\n' or 'A\n'
