@@ -736,6 +736,8 @@ class EmbeddedServerWrapper(ServerWrapper):
         return self._app
 
     def stop(self):
+        log.info(f"{threading.active_count()} threads were active before stopping embedded server")
+
         if self._server is not None and hasattr(self._server, "server_close"):
             log.info(f"Shutting down embedded {self.name} Paste server")
             self._server.server_close()
@@ -755,6 +757,8 @@ class EmbeddedServerWrapper(ServerWrapper):
             log.info(f"Stopping application {self.name}")
             self._app.shutdown()
             log.info(f"Application {self.name} stopped.")
+
+        log.info(f"{threading.active_count()} active after stopping embedded server")
 
 
 class UwsgiServerWrapper(ServerWrapper):
