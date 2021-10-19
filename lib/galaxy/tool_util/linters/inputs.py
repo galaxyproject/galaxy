@@ -165,8 +165,8 @@ def lint_inputs(tool_xml, lint_ctx):
                 lint_ctx.warn(f"Parameter [{param_name}]: '{vtype}' validators are not expected to contain text (found '{validator.text}')")
             if vtype in ["in_range", "length", "dataset_metadata_in_range"] and ("min" not in validator.attrib or "max" not in validator.attrib):
                 lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'min' or 'max' attribute(s)")
-            if vtype in ["metadata"] and ("check" not in validator.attrib or "skip" not in validator.attrib):
-                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'check' or 'skip' attribute(s)")
+            if vtype in ["metadata"] and ("check" not in validator.attrib and "skip" not in validator.attrib):
+                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'check' or 'skip' attribute(s) {validator.attrib}")
             if vtype in ["value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table"] and "table_name" not in validator.attrib:
                 lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'table_name' attribute")
 
