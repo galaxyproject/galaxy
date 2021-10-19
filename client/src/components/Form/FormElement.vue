@@ -27,6 +27,7 @@
                 v-if="backbonejs"
                 v-model="currentValue"
                 :id="id"
+                :data-label="title"
                 :type="type"
                 :attributes="attrs"
                 ref="params"
