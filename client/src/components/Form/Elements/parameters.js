@@ -168,6 +168,8 @@ export default Backbone.View.extend({
             type: input_def.type,
             area: input_def.area,
             readonly: input_def.readonly,
+            color: input_def.color,
+            style: input_def.style,
             placeholder: input_def.placeholder,
             datalist: input_def.datalist,
             onchange: input_def.onchange,
