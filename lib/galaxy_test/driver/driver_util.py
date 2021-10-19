@@ -576,8 +576,13 @@ def uvicorn_serve(app, port, host=None):
     server = Server(config=config)
 
     def run_in_loop(loop):
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(server.serve())
+        try:
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(server.serve())
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
+            log.info("Event loop for uvicorn closed")
 
     loop = asyncio.new_event_loop()
     t = threading.Thread(target=run_in_loop, args=(loop,))
