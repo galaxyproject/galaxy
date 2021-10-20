@@ -42,13 +42,6 @@ install_model.ToolShedRepository.table = Table("tool_shed_repository", metadata,
                                                Column("status", TrimmedString(255)),
                                                Column("error_message", TEXT))
 
-install_model.RepositoryRepositoryDependencyAssociation.table = Table('repository_repository_dependency_association', metadata,
-                                                                      Column("id", Integer, primary_key=True),
-                                                                      Column("create_time", DateTime, default=now),
-                                                                      Column("update_time", DateTime, default=now, onupdate=now),
-                                                                      Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True),
-                                                                      Column("repository_dependency_id", Integer, ForeignKey("repository_dependency.id"), index=True))
-
 install_model.RepositoryDependency.table = Table("repository_dependency", metadata,
                                                  Column("id", Integer, primary_key=True),
                                                  Column("create_time", DateTime, default=now),
@@ -87,13 +80,7 @@ mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model
                                                   order_by=install_model.ToolDependency.table.c.name,
                                                   backref='tool_shed_repository'),
                        required_repositories=relation(install_model.RepositoryRepositoryDependencyAssociation,
-                                                      primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id))))
-
-mapper_registry.map_imperatively(install_model.RepositoryRepositoryDependencyAssociation, install_model.RepositoryRepositoryDependencyAssociation.table,
-       properties=dict(repository=relation(install_model.ToolShedRepository,
-                                           primaryjoin=(install_model.RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id == install_model.ToolShedRepository.table.c.id)),
-                       repository_dependency=relation(install_model.RepositoryDependency,
-                                                      primaryjoin=(install_model.RepositoryRepositoryDependencyAssociation.table.c.repository_dependency_id == install_model.RepositoryDependency.table.c.id))))
+                                                      primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.RepositoryRepositoryDependencyAssociation.tool_shed_repository_id))))
 
 mapper_registry.map_imperatively(install_model.RepositoryDependency, install_model.RepositoryDependency.table,
        properties=dict(repository=relation(install_model.ToolShedRepository,

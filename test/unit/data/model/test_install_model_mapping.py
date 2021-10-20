@@ -111,8 +111,7 @@ class TestToolShedRepository(BaseTest):
 class TestRepositoryRepositoryDependencyAssociation(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'repository_repository_dependency_association'
-        # assert cls_.__tablename__ == 'repository_dependency'  # TODO
+        assert cls_.__tablename__ == 'repository_repository_dependency_association'
 
     def test_columns(self, session, cls_, repository, repository_dependency):
         create_time = datetime.now()

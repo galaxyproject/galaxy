@@ -3,8 +3,20 @@ import os
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy.orm import registry
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Table,
+)
+from sqlalchemy.orm import (
+    registry,
+    relationship,
+)
+from sqlalchemy.orm.decl_api import DeclarativeMeta
 
+from galaxy.model.orm.now import now
 from galaxy.util import asbool
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -15,12 +27,21 @@ log = logging.getLogger(__name__)
 mapper_registry = registry()
 
 if TYPE_CHECKING:
-    from sqlalchemy.schema import Table
-
     class _HasTable:
         table: Table
 else:
     _HasTable = object
+
+
+class Base(metaclass=DeclarativeMeta):
+    __abstract__ = True
+    registry = mapper_registry
+    metadata = mapper_registry.metadata
+    __init__ = mapper_registry.constructor
+
+    @classmethod
+    def __declare_last__(cls):
+        cls.table = cls.__table__
 
 
 class ToolShedRepository(_HasTable):
@@ -487,7 +508,16 @@ class ToolShedRepository(_HasTable):
         return False
 
 
-class RepositoryRepositoryDependencyAssociation(_HasTable):
+class RepositoryRepositoryDependencyAssociation(Base, _HasTable):
+    __tablename__ = 'repository_repository_dependency_association'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    tool_shed_repository_id = Column(Integer, ForeignKey('tool_shed_repository.id'), index=True)
+    repository_dependency_id = Column(Integer, ForeignKey('repository_dependency.id'), index=True)
+    repository = relationship('ToolShedRepository')
+    repository_dependency = relationship('RepositoryDependency')
 
     def __init__(self, tool_shed_repository_id=None, repository_dependency_id=None):
         self.tool_shed_repository_id = tool_shed_repository_id
