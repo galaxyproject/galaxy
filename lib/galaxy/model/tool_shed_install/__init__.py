@@ -642,12 +642,6 @@ class ToolVersion(Base, Dictifiable, _HasTable):
 
     dict_element_visible_keys = ['id', 'tool_shed_repository']
 
-    def __init__(self, id=None, create_time=None, tool_id=None, tool_shed_repository=None):
-        self.id = id
-        self.create_time = create_time
-        self.tool_id = tool_id
-        self.tool_shed_repository = tool_shed_repository
-
     def to_dict(self, view='element'):
         rval = super().to_dict(view=view)
         rval['tool_name'] = self.tool_id
@@ -664,8 +658,3 @@ class ToolVersionAssociation(Base, _HasTable):
     id = Column(Integer, primary_key=True)
     tool_id = Column(ForeignKey('tool_version.id'), index=True, nullable=False)
     parent_id = Column(ForeignKey('tool_version.id'), index=True, nullable=False)
-
-    def __init__(self, id=None, tool_id=None, parent_id=None):
-        self.id = id
-        self.tool_id = tool_id
-        self.parent_id = parent_id
