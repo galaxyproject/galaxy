@@ -596,11 +596,3 @@ class ToolVersionAssociation(_HasTable):
         self.id = id
         self.tool_id = tool_id
         self.parent_id = parent_id
-
-
-class MigrateTools(_HasTable):
-
-    def __init__(self, repository_id=None, repository_path=None, version=None):
-        self.repository_id = repository_id
-        self.repository_path = repository_path
-        self.version = version

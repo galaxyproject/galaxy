@@ -78,11 +78,6 @@ install_model.ToolVersionAssociation.table = Table("tool_version_association", m
                                                    Column("tool_id", Integer, ForeignKey("tool_version.id"), index=True, nullable=False),
                                                    Column("parent_id", Integer, ForeignKey("tool_version.id"), index=True, nullable=False))
 
-install_model.MigrateTools.table = Table("migrate_tools", metadata,
-                                         Column("repository_id", TrimmedString(255)),
-                                         Column("repository_path", TEXT),
-                                         Column("version", Integer))
-
 mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model.ToolShedRepository.table,
        properties=dict(tool_versions=relation(install_model.ToolVersion,
                                               primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.ToolVersion.table.c.tool_shed_repository_id),
