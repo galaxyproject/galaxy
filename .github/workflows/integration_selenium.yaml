@@ -11,6 +11,7 @@ env:
   GALAXY_SKIP_CLIENT_BUILD: '0'
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY: 'true'
   GALAXY_TEST_SELENIUM_RETRIES: 1
   YARN_INSTALL_OPTS: --frozen-lockfile
 concurrency:
