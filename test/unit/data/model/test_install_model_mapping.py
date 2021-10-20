@@ -238,16 +238,34 @@ class TestToolVersion(BaseTest):
             assert stored_obj.tool_id == tool_id
             assert stored_obj.tool_shed_repository_id == repository.id
 
-    def test_relationships(self, session, cls_, repository):
+    def test_relationships(self, session, cls_, repository, tool_version_association_factory, tool_version):
+        # This test is non-standard because we must test associations that do not have relationships set up.
+        # As a result, we need the object pkey in order to setup the test, which is why we have to manually
+        # add obj to the session and flush it.
         obj = cls_()
         obj.tool_shed_repository = repository
-        # TODO
-        # parent_tool_association
-        # child_tool_association
 
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.tool_shed_repository.id == repository.id
+        session.add(obj)
+        session.flush()
+
+        tool_version_assoc1 = tool_version_association_factory()
+        tool_version_assoc1.tool_id = obj.id  # tool_version under test
+        tool_version_assoc1.parent_id = tool_version.id  # some other tool_version
+
+        tool_version_assoc2 = tool_version_association_factory()
+        tool_version_assoc2.tool_id = tool_version.id  # some other tool_version
+        tool_version_assoc2.parent_id = obj.id  # tool_version under test
+
+        session.add(tool_version_assoc1)
+        session.add(tool_version_assoc2)
+        session.flush()
+
+        stored_obj = get_stored_obj(session, cls_, obj.id)
+        assert stored_obj.tool_shed_repository.id == repository.id
+        assert stored_obj.parent_tool_association == [tool_version_assoc1]
+        assert stored_obj.child_tool_association == [tool_version_assoc2]
+
+        delete_from_database(session, [obj, tool_version_assoc1, tool_version_assoc2])
 
 
 class TestToolVersionAssociation(BaseTest):
@@ -327,6 +345,13 @@ def tool_version(model, session):
 
 
 @pytest.fixture
+def tool_version_association_factory(model):
+    def make_instance(*args, **kwds):
+        return model.ToolVersionAssociation(*args, **kwds)
+    return make_instance
+
+
+@pytest.fixture
 def tool_version_factory(model):
     def make_instance(*args, **kwds):
         return model.ToolVersion(*args, **kwds)
@@ -392,3 +417,19 @@ def _get_default_where_clause(cls, obj_id):
     # where_clause = cls.__table__.c.id == obj_id  # TODO
     where_clause = cls.table.c.id == obj_id
     return where_clause
+
+
+def delete_from_database(session, objects):
+    """
+    Delete each object in objects from database.
+    May be called at the end of a test if use of a context manager is impractical.
+    (Assume all objects have the id field as their primary key.)
+    """
+    # Ensure we have a list of objects (check for list explicitly: a model can be iterable)
+    if not isinstance(objects, list):
+        objects = [objects]
+
+    for obj in objects:
+        table = obj.__table__
+        stmt = delete(table).where(table.c.id == obj.id)
+        session.execute(stmt)
