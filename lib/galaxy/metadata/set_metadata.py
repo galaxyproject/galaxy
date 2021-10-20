@@ -254,7 +254,8 @@ def set_metadata_portable():
         # Same block as below...
         set_meta_kwds = stringify_dictionary_keys(json.load(open(filename_kwds)))  # load kwds; need to ensure our keywords are not unicode
         try:
-            dataset.dataset.external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
+            external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
+            dataset.dataset.external_filename = external_filename
             store_by = output_dict.get("object_store_store_by", legacy_object_store_store_by)
             extra_files_dir_name = f"dataset_{getattr(dataset.dataset, store_by)}_files"
             files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
@@ -276,6 +277,10 @@ def set_metadata_portable():
                 set_meta(dataset, file_dict)
 
             if extended_metadata_collection:
+                if external_filename.startswith(tool_job_working_directory) and os.path.getsize(external_filename):
+                    # outputs to working directory, and not already pushed by pulsar + extended metadata,
+                    # move output to final destination.
+                    object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
                 collect_extra_files(object_store, dataset, ".")
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
