@@ -519,8 +519,8 @@ class RepositoryRepositoryDependencyAssociation(Base, _HasTable):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    tool_shed_repository_id = Column(Integer, ForeignKey('tool_shed_repository.id'), index=True)
-    repository_dependency_id = Column(Integer, ForeignKey('repository_dependency.id'), index=True)
+    tool_shed_repository_id = Column(ForeignKey('tool_shed_repository.id'), index=True)
+    repository_dependency_id = Column(ForeignKey('repository_dependency.id'), index=True)
     repository = relationship('ToolShedRepository', back_populates='required_repositories')
     repository_dependency = relationship('RepositoryDependency')
 
@@ -535,7 +535,7 @@ class RepositoryDependency(Base, _HasTable):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    tool_shed_repository_id = Column(Integer, ForeignKey('tool_shed_repository.id'), index=True, nullable=False)
+    tool_shed_repository_id = Column(ForeignKey('tool_shed_repository.id'), index=True, nullable=False)
     repository = relationship('ToolShedRepository')
 
     def __init__(self, tool_shed_repository_id=None):
@@ -548,7 +548,7 @@ class ToolDependency(Base, _HasTable):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    tool_shed_repository_id = Column(Integer, ForeignKey('tool_shed_repository.id'), index=True, nullable=False)
+    tool_shed_repository_id = Column(ForeignKey('tool_shed_repository.id'), index=True, nullable=False)
     name = Column(TrimmedString(255))
     version = Column(TEXT)
     type = Column(TrimmedString(40))
@@ -633,7 +633,7 @@ class ToolVersion(Base, Dictifiable, _HasTable):
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
     tool_id = Column(String(255))
-    tool_shed_repository_id = Column(Integer, ForeignKey('tool_shed_repository.id'), index=True, nullable=True)
+    tool_shed_repository_id = Column(ForeignKey('tool_shed_repository.id'), index=True, nullable=True)
     parent_tool_association = relationship('ToolVersionAssociation',
         primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.tool_id))  # type: ignore
     child_tool_association = relationship('ToolVersionAssociation',
@@ -662,8 +662,8 @@ class ToolVersionAssociation(Base, _HasTable):
     __tablename__ = 'tool_version_association'
 
     id = Column(Integer, primary_key=True)
-    tool_id = Column(Integer, ForeignKey('tool_version.id'), index=True, nullable=False)
-    parent_id = Column(Integer, ForeignKey('tool_version.id'), index=True, nullable=False)
+    tool_id = Column(ForeignKey('tool_version.id'), index=True, nullable=False)
+    parent_id = Column(ForeignKey('tool_version.id'), index=True, nullable=False)
 
     def __init__(self, id=None, tool_id=None, parent_id=None):
         self.id = id
