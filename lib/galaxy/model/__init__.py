@@ -2420,10 +2420,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     def stage_addition(self, items):
         history_id = self.id
         for item in listify(items):
+            item.history = self
             if history_id:
                 item.history_id = history_id
-            else:
-                item.history = self
             self._pending_additions.append(item)
 
     @property
@@ -2568,10 +2567,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         else:
             hdcas = self.active_dataset_collections
         for hdca in hdcas:
-            new_hdca = hdca.copy()
+            new_hdca = hdca.copy(flush=False)
             new_history.add_dataset_collection(new_hdca, set_hid=False)
             db_session.add(new_hdca)
-            db_session.flush()
 
             if target_user:
                 new_hdca.copy_item_annotation(db_session, self.user, hdca, target_user, new_hdca)
@@ -5666,7 +5664,7 @@ class HistoryDatasetCollectionAssociation(
                 break
         return matching_collection
 
-    def copy(self, element_destination=None, dataset_instance_attributes=None):
+    def copy(self, element_destination=None, dataset_instance_attributes=None, flush=True):
         """
         Create a copy of this history dataset collection association. Copy
         underlying collection.
@@ -5696,7 +5694,7 @@ class HistoryDatasetCollectionAssociation(
         if element_destination:
             element_destination.stage_addition(hdca)
             element_destination.add_pending_items()
-        else:
+        if flush:
             object_session(self).flush()
         return hdca
 

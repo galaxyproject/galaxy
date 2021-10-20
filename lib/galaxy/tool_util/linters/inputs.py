@@ -19,16 +19,16 @@ FILTER_TYPES = [
 
 ATTRIB_VALIDATOR_COMPATIBILITY = {
     "check": ["metadata"],
-    "expression": ["regex", "substitute_value_in_message"],
+    "expression": ["substitute_value_in_message"],
     "table_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table"],
     "filename": ["dataset_metadata_in_file"],
     "metadata_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "dataset_metadata_in_file"],
-    "metadata_column": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_file options"],
+    "metadata_column": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_file"],
     "line_startswith": ["dataset_metadata_in_file"],
-    "min": ["in_range", "length"],
-    "max": ["in_range", "length"],
-    "exclude_min": ["in_range"],
-    "exclude_max": ["in_range"],
+    "min": ["in_range", "length", "dataset_metadata_in_range"],
+    "max": ["in_range", "length", "dataset_metadata_in_range"],
+    "exclude_min": ["in_range", "dataset_metadata_in_range"],
+    "exclude_max": ["in_range", "dataset_metadata_in_range"],
     "split": ["dataset_metadata_in_file"],
     "skip": ["metadata"]
 }
@@ -132,7 +132,7 @@ def lint_inputs(tool_xml, lint_ctx):
             # lint statically defined options
             if any(['value' not in option.attrib for option in select_options]):
                 lint_ctx.error(f"Select parameter [{param_name}] has option without value")
-            if len(set([option.text.strip() for option in select_options])) != len(select_options):
+            if len(set([option.text.strip() for option in select_options if option.text is not None])) != len(select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same text content")
             if len(set([option.attrib.get("value") for option in select_options])) != len(select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value")
@@ -161,14 +161,12 @@ def lint_inputs(tool_xml, lint_ctx):
                     lint_ctx.error(f"Parameter [{param_name}]: attribute '{attrib}' is incompatible with validator of type '{vtype}'")
             if vtype == "expression" and validator.text is None:
                 lint_ctx.error(f"Parameter [{param_name}]: expression validator without content")
-            if vtype != "expression" and validator.text is not None:
+            if vtype not in ["expression", "regex"] and validator.text is not None:
                 lint_ctx.warn(f"Parameter [{param_name}]: '{vtype}' validators are not expected to contain text (found '{validator.text}')")
-            if vtype == "regex" and "expression" not in validator.attrib:
-                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define an 'expression' attribute")
-            if vtype in ["in_range", "length", "dataset_metadata_in_range"] and ("min" not in validator.attrib or "max" not in validator.attrib):
+            if vtype in ["in_range", "length", "dataset_metadata_in_range"] and ("min" not in validator.attrib and "max" not in validator.attrib):
                 lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'min' or 'max' attribute(s)")
-            if vtype in ["metadata"] and ("check" not in validator.attrib or "skip" not in validator.attrib):
-                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'check' or 'skip' attribute(s)")
+            if vtype in ["metadata"] and ("check" not in validator.attrib and "skip" not in validator.attrib):
+                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'check' or 'skip' attribute(s) {validator.attrib}")
             if vtype in ["value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table"] and "table_name" not in validator.attrib:
                 lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'table_name' attribute")
 

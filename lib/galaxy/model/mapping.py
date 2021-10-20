@@ -45,19 +45,13 @@ def db_next_hid(self, n=1):
     """
     session = object_session(self)
     table = self.table
-    trans = session.begin()
-    try:
-        if "postgres" not in session.bind.dialect.name:
-            next_hid = select([table.c.hid_counter], table.c.id == model.cached_id(self)).with_for_update().scalar()
-            table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
-        else:
-            stmt = table.update().where(table.c.id == model.cached_id(self)).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
-            next_hid = session.execute(stmt).scalar() - n
-        trans.commit()
-        return next_hid
-    except Exception:
-        trans.rollback()
-        raise
+    if "postgres" not in session.bind.dialect.name:
+        next_hid = select([table.c.hid_counter], table.c.id == model.cached_id(self)).with_for_update().scalar()
+        table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
+    else:
+        stmt = table.update().where(table.c.id == model.cached_id(self)).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
+        next_hid = session.execute(stmt).scalar() - n
+    return next_hid
 
 
 model.History._next_hid = db_next_hid  # type: ignore
