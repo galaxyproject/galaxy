@@ -5,6 +5,7 @@ import os
 import shutil
 import tarfile
 import tempfile
+from collections import defaultdict
 from json import (
     dump,
     dumps,
@@ -50,23 +51,20 @@ class ImportOptions:
 class SessionlessContext:
 
     def __init__(self):
-        self.objects = []
+        self.objects = defaultdict(dict)
 
     def flush(self):
         pass
 
     def add(self, obj):
-        self.objects.append(obj)
+        self.objects[obj.__class__][obj.id] = obj
 
     def query(self, model_class):
 
         def find(obj_id):
-            for obj in self.objects:
-                if isinstance(obj, model_class) and obj.id == obj_id:
-                    return obj
-            return None
+            return self.objects.get(model_class, {}).get(obj_id) or None
 
-        return Bunch(find=find)
+        return Bunch(find=find, get=find)
 
 
 class ModelImportStore(metaclass=abc.ABCMeta):
