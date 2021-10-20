@@ -8,6 +8,8 @@ import gettext
 import logging
 import os
 
+from sqlalchemy.orm.session import object_session
+
 from galaxy import (
     datatypes,
     exceptions,
@@ -110,26 +112,24 @@ class HDAManager(datasets.DatasetAssociationManager,
             self.session().flush()
         return hda
 
-    def copy(self, hda, history=None, hide_copy=False, **kwargs):
+    def copy(self, hda, history=None, hide_copy=False, flush=True, **kwargs):
         """
         Copy hda, including annotation and tags, add to history and return the given HDA.
         """
-        copy = hda.copy(parent_id=kwargs.get('parent_id'), copy_hid=False)
+        copy = hda.copy(parent_id=kwargs.get('parent_id'), copy_hid=False, copy_tags=hda.tags, flush=flush)
         if hide_copy:
             copy.visible = False
-        # add_dataset will update the hid to the next avail. in history
         if history:
-            history.add_dataset(copy)
+            history.stage_addition(copy)
 
-        copy.copied_from_history_dataset_association = hda
         copy.set_size()
 
         original_annotation = self.annotation(hda)
-        self.annotate(copy, original_annotation, user=hda.history.user)
-
-        # these use a session flush
-        original_tags = self.get_tags(hda)
-        self.set_tags(copy, original_tags, user=hda.history.user)
+        self.annotate(copy, original_annotation, user=hda.history.user, flush=False)
+        if flush:
+            if history:
+                history.add_pending_items()
+            object_session(copy).flush()
 
         return copy
 

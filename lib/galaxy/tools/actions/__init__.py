@@ -84,8 +84,6 @@ class DefaultToolAction:
                 if formats is None:
                     formats = input.formats
 
-                # Need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
-                trans.sa_session.refresh(data)
                 direct_match, target_ext, converted_dataset = data.find_conversion_destination(formats)
                 if not direct_match and target_ext:
                     if converted_dataset:
@@ -539,6 +537,7 @@ class DefaultToolAction:
         for name, data in out_data.items():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 history.stage_addition(data)
+        history.add_pending_items(set_output_hid=set_output_hid)
 
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
@@ -560,13 +559,16 @@ class DefaultToolAction:
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)
-        # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
+        # Remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
-            # We need a flush here and get hids in order to rewrite jobs parameter,
-            # but remapping jobs should only affect single jobs anyway, so this is not too costly.
-            history.add_pending_items(set_output_hid=set_output_hid)
-            trans.sa_session.flush()
+            # Need to flush here so that referencing outputs by id works
+            session = trans.sa_session()
+            try:
+                session.expire_on_commit = False
+                session.flush()
+            finally:
+                session.expire_on_commit = True
             self._remap_job_on_rerun(trans=trans,
                                      galaxy_session=galaxy_session,
                                      rerun_remap_job_id=rerun_remap_job_id,
@@ -597,7 +599,6 @@ class DefaultToolAction:
         else:
             if flush_job:
                 # Set HID and add to history.
-                history.add_pending_items(set_output_hid=set_output_hid)
                 job_flush_timer = ExecutionTimer()
                 trans.sa_session.flush()
                 log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
@@ -820,6 +821,7 @@ class OutputCollections:
 
     def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags, hdca_tags):
         self.trans = trans
+        self.tag_handler = trans.app.tag_handler.create_tag_handler_session()
         self.history = history
         self.tool = tool
         self.tool_action = tool_action

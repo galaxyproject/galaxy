@@ -232,12 +232,12 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
                                                             sa_session=trans.sa_session)
     if uploaded_dataset.get('tag_using_filenames', False):
         tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
-        tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
+        tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename, flush=False)
 
     tags_list = uploaded_dataset.get('tags', False)
     if tags_list:
         for tag in tags_list:
-            tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
+            tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag, flush=False)
 
     trans.sa_session.add(ldda)
     if state:
@@ -294,12 +294,12 @@ def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=No
         if library_bunch.tags and not uploaded_dataset.tags:
             new_tags = tag_handler.parse_tags_list(library_bunch.tags)
             for tag in new_tags:
-                tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name=tag[0], value=tag[1])
+                tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name=tag[0], value=tag[1], flush=False)
     else:
         upload_target_dataset_instance = __new_history_upload(trans, uploaded_dataset, history=history, state=state)
 
     if tag_list:
-        tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list)
+        tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list, flush=False)
 
     return upload_target_dataset_instance
 

@@ -146,6 +146,51 @@ VALIDATOR_INCOMPATIBILITIES = """
 </tool>
 """
 
+VALIDATOR_CORRECT = """
+<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <inputs>
+        <param name="data_param" type="data" format="data">
+            <validator type="metadata" check="md1,md2" skip="md3,md4" message="cutom validation message" negate="true"/>
+            <validator type="unspecified_build" message="cutom validation message" negate="true"/>
+            <validator type="dataset_ok_validator" message="cutom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="cutom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="cutom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message" negate="true"/>
+        </param>
+        <param name="collection_param" type="collection">
+            <validator type="metadata" check="md1,md2" skip="md3,md4" message="cutom validation message"/>
+            <validator type="unspecified_build" message="cutom validation message"/>
+            <validator type="dataset_ok_validator" message="cutom validation message"/>
+            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="cutom validation message"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="cutom validation message"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message"/>
+        </param>
+        <param name="text_param" type="text">
+            <validator type="regex">reg.xp</validator>
+            <validator type="length" min="0" max="100" message="cutom validation message"/>
+            <validator type="empty_field" message="cutom validation message"/>
+            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message"/>
+            <validator type="expression" message="cutom validation message">somepythonexpression</validator>
+        </param>
+        <param name="select_param" type="select">
+            <options from_data_table="bowtie2_indexes"/>
+            <validator type="no_options" negate="true"/>
+            <validator type="regex" negate="true">reg.xp</validator>
+            <validator type="length" min="0" max="100" message="cutom validation message" negate="true"/>
+            <validator type="empty_field" message="cutom validation message" negate="true"/>
+            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message" negate="true"/>
+            <validator type="expression" message="cutom validation message" negate="true">somepythonexpression</validator>
+        </param>
+        <param name="int_param" type="integer">
+            <validator type="in_range" min="0" max="100" exclude_min="true" exclude_max="true" negate="true"/>
+            <validator type="expression" message="cutom validation message">somepythonexpression</validator>
+        </param>
+    </inputs>
+</tool>
+"""
+
 # check that linter accepts format source for collection elements as means to specify format
 # and that the linter warns if format and format_source are used
 OUTPUTS_COLLECTION_FORMAT_SOURCE = """
@@ -246,8 +291,11 @@ TESTS = [
             and "Parameter [param_name]: validator with an incompatible type 'in_range'" in x.error_messages
             and "Parameter [param_name]: 'in_range' validators need to define the 'min' or 'max' attribute(s)" in x.error_messages
             and "Parameter [param_name]: attribute 'filename' is incompatible with validator of type 'regex'" in x.error_messages
-            and "Parameter [param_name]: 'regex' validators need to define an 'expression' attribute" in x.error_messages
-            and len(x.warn_messages) == 1 and len(x.error_messages) == 4
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 3
+    ),
+    (
+        VALIDATOR_CORRECT, inputs.lint_inputs,
+        lambda x: len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
         OUTPUTS_COLLECTION_FORMAT_SOURCE, outputs.lint_output,
@@ -272,6 +320,7 @@ TEST_IDS = [
     'select deprecations',
     'select option definitions',
     'validator imcompatibilities',
+    'validator all correct',
     'outputs collection static elements with format_source',
     'outputs discover datatsets with tool provided metadata'
 ]
