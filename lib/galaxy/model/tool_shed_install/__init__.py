@@ -638,6 +638,7 @@ class ToolVersion(Base, Dictifiable, _HasTable):
         primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.tool_id))  # type: ignore
     child_tool_association = relationship('ToolVersionAssociation',
         primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.parent_id))  # type: ignore
+    tool_shed_repository = relationship('ToolShedRepository', back_populates='tool_versions')
 
     dict_element_visible_keys = ['id', 'tool_shed_repository']
 
