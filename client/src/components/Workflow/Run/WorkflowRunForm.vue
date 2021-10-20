@@ -189,7 +189,7 @@ export default {
             Object.entries(this.stepData).forEach(([stepId, stepData]) => {
                 const stepDataFiltered = {};
                 Object.entries(stepData).forEach(([inputName, inputValue]) => {
-                    if (!inputValue || typeof inputValue !== "object" || inputValue.__class__ != "ConnectedValue") {
+                    if (!this.model.isConnected(stepId, inputName)) {
                         stepDataFiltered[inputName] = inputValue;
                     }
                 });

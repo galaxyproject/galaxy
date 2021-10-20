@@ -80,6 +80,7 @@ export class WorkflowRunModel {
                 _.each(this.parms[j], (input, name) => {
                     var connection = connections_by_name[name];
                     if (connection) {
+                        input.connected = true;
                         input.type = "hidden";
                         input.help = input.step_linked ? `${input.help}, ` : "";
                         input.help += `Connected to '${connection.output_name}' from Step ${parseInt(i) + 1}`;
@@ -173,6 +174,10 @@ export class WorkflowRunModel {
         });
         this.hasOpenToolSteps = hasOpenToolSteps;
         this.hasReplacementParametersInToolForm = hasReplacementParametersInToolForm;
+    }
+
+    isConnected(stepId, inputName) {
+        return this.parms[stepId][inputName].connected;
     }
 }
 

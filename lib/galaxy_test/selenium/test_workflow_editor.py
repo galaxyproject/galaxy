@@ -190,6 +190,7 @@ steps:
         column_names = self.components.tool_form.parameter_textarea(parameter='col_names')
         textarea_column_names = column_names.wait_for_visible()
         assert textarea_column_names.get_attribute('value') == 'a\nb\nc\n'
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.set_text_element(columns, '4\n5\n6\n')
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_has_changes_and_save()

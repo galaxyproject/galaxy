@@ -22,7 +22,7 @@
             </div>
             <span v-else class="ui-form-title-text">{{ title }}</span>
         </div>
-        <div v-if="showField" class="ui-form-field">
+        <div v-if="showField" class="ui-form-field" :data-label="title">
             <FormParameter
                 v-if="backbonejs"
                 v-model="currentValue"

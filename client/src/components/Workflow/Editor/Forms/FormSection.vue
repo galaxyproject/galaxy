@@ -115,6 +115,7 @@ export default {
             }
             this.formData = pjas;
             console.debug("FormSection - Setting new data.", this.postJobActions, pjas);
+            this.$emit("onChange", this.formData);
         },
         setEmailAction(pjas) {
             if (pjas[this.emailActionKey]) {
@@ -143,7 +144,7 @@ export default {
             this.setEmailAction(this.formData);
             if (changed) {
                 this.formData = Object.assign({}, this.formData);
-                this.$emit("onChange", this.formData);
+                this.$emit("onChange", this.formData, true);
             }
         },
         onLabel(pjaKey, outputName, newLabel) {

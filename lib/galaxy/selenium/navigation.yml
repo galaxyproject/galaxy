@@ -568,7 +568,7 @@ workflow_editor:
     configure_output:
       type: xpath
       selector: >
-        //span[text()="Configure Output: '${output}'" and not(ancestor::div[contains(@style,'display: none')])]
+        //b[text()="Configure Output: '${output}'"]
     label_output:
       type: xpath
       selector: >
@@ -576,7 +576,7 @@ workflow_editor:
     rename_output:
       type: xpath
       selector: >
-        //div[@data-label='Rename dataset' and not(ancestor::div[contains(@style,'display: none')])]//input
+        //div[@data-label='Rename dataset']//input
     change_datatype:
       type: xpath
       selector: >
