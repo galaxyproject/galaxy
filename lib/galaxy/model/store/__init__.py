@@ -468,16 +468,18 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 attributes = [
                     "collection_type",
                     "populated_state",
+                    "populated_state_message",
                     "element_count",
                 ]
                 for attribute in attributes:
                     if attribute in collection_attrs:
-                        setattr(dc, attribute, collection_attrs[attribute])
+                        setattr(dc, attribute, collection_attrs.get(attribute))
                 materialize_elements(dc)
             else:
                 # create collection
                 dc = model.DatasetCollection(collection_type=collection_attrs['type'])
                 dc.populated_state = collection_attrs["populated_state"]
+                dc.populated_state_message = collection_attrs.get('populated_state_message')
                 self._attach_raw_id_if_editing(dc, collection_attrs)
                 # TODO: element_count...
                 materialize_elements(dc)

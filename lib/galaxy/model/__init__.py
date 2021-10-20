@@ -5412,6 +5412,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
             self,
             type=self.collection_type,
             populated_state=self.populated_state,
+            populated_state_message=self.populated_state_message,
             elements=list(map(lambda e: e.serialize(id_encoder, serialization_options), self.elements))
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
