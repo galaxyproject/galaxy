@@ -129,5 +129,4 @@ class PagesService(ServiceBase):
         if page.latest_revision.content_format != PageContentFormat.markdown.value:
             raise exceptions.RequestParameterInvalidException("PDF export only allowed for Markdown based pages")
         internal_galaxy_markdown = page.latest_revision.content
-        trans.response.set_content_type("application/pdf")
         return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, 'page')
