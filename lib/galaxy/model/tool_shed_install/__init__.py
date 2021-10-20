@@ -521,7 +521,7 @@ class RepositoryRepositoryDependencyAssociation(Base, _HasTable):
     update_time = Column(DateTime, default=now, onupdate=now)
     tool_shed_repository_id = Column(Integer, ForeignKey('tool_shed_repository.id'), index=True)
     repository_dependency_id = Column(Integer, ForeignKey('repository_dependency.id'), index=True)
-    repository = relationship('ToolShedRepository')
+    repository = relationship('ToolShedRepository', back_populates='required_repositories')
     repository_dependency = relationship('RepositoryDependency')
 
     def __init__(self, tool_shed_repository_id=None, repository_dependency_id=None):
@@ -634,7 +634,6 @@ class ToolVersion(Base, Dictifiable, _HasTable):
     update_time = Column(DateTime, default=now, onupdate=now)
     tool_id = Column(String(255))
     tool_shed_repository_id = Column(Integer, ForeignKey('tool_shed_repository.id'), index=True, nullable=True)
-
     parent_tool_association = relationship('ToolVersionAssociation',
         primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.tool_id))  # type: ignore
     child_tool_association = relationship('ToolVersionAssociation',

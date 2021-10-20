@@ -44,7 +44,7 @@ mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model
     tool_versions=relation(install_model.ToolVersion, back_populates='tool_shed_repository'),
     tool_dependencies=relation(install_model.ToolDependency, order_by=install_model.ToolDependency.name,
         back_populates='tool_shed_repository'),
-    required_repositories=relation(install_model.RepositoryRepositoryDependencyAssociation)))
+    required_repositories=relation(install_model.RepositoryRepositoryDependencyAssociation, back_populates='repository')))
 
 
 def init(url, engine_options=None, create_tables=False):
