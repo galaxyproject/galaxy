@@ -19,7 +19,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException
 )
 from galaxy.model.dataset_collections import builder
-from galaxy.model.tags import GalaxyTagHandlerSession
+from galaxy.model.tags import GalaxySessionlessTagHandler
 from galaxy.util import (
     chunk_iterable,
     ExecutionTimer
@@ -305,12 +305,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     def add_tags_to_datasets(self, datasets, tag_lists):
         if any(tag_lists):
-            # This works around SessionlessModelPersistenceContext not implementing a tag handler ...
-            # that's not better or worse than what we previously did in create_datasets
-            # TDOD: implement that or figure out why it is not implemented and find a better solution.
-            # Could it be that SessionlessModelPersistenceContext doesn't support tags?
             for dataset, tags in zip(datasets, tag_lists):
-                return
                 self.tag_handler.add_tags_from_list(self.job.user, dataset, tags, flush=False)
 
     def update_object_store_with_datasets(self, datasets, paths, extra_files):
@@ -420,11 +415,17 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     @property
     def tag_handler(self):
-        return GalaxyTagHandlerSession(self.sa_session)
+        return GalaxySessionlessTagHandler(self.sa_session)
 
     @property
     def user(self):
         return None
+
+    def add_tags_to_datasets(self, datasets, tag_lists):
+        user = galaxy.model.User()
+        if any(tag_lists):
+            for dataset, tags in zip(datasets, tag_lists):
+                self.tag_handler.add_tags_from_list(user, dataset, tags, flush=False)
 
     def add_library_dataset_to_folder(self, library_folder, ld):
         library_folder.datasets.append(ld)
