@@ -1,50 +1,9 @@
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Integer,
-    Table,
-    TEXT
-)
-from sqlalchemy.orm import relation
-
 from galaxy.model import tool_shed_install as install_model
 from galaxy.model.base import ModelMapping
-from galaxy.model.custom_types import (
-    MutableJSONType,
-    TrimmedString
-)
 from galaxy.model.orm.engine_factory import build_engine
-from galaxy.model.orm.now import now
 from galaxy.model.tool_shed_install import mapper_registry
 
 metadata = mapper_registry.metadata
-
-install_model.ToolShedRepository.table = Table("tool_shed_repository", metadata,
-                                               Column("id", Integer, primary_key=True),
-                                               Column("create_time", DateTime, default=now),
-                                               Column("update_time", DateTime, default=now, onupdate=now),
-                                               Column("tool_shed", TrimmedString(255), index=True),
-                                               Column("name", TrimmedString(255), index=True),
-                                               Column("description", TEXT),
-                                               Column("owner", TrimmedString(255), index=True),
-                                               Column("installed_changeset_revision", TrimmedString(255)),
-                                               Column("changeset_revision", TrimmedString(255), index=True),
-                                               Column("ctx_rev", TrimmedString(10)),
-                                               Column("metadata", MutableJSONType, nullable=True),
-                                               Column("includes_datatypes", Boolean, index=True, default=False),
-                                               Column("tool_shed_status", MutableJSONType, nullable=True),
-                                               Column("deleted", Boolean, index=True, default=False),
-                                               Column("uninstalled", Boolean, default=False),
-                                               Column("dist_to_shed", Boolean, default=False),
-                                               Column("status", TrimmedString(255)),
-                                               Column("error_message", TEXT))
-
-mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model.ToolShedRepository.table, properties=dict(
-    tool_versions=relation(install_model.ToolVersion, back_populates='tool_shed_repository'),
-    tool_dependencies=relation(install_model.ToolDependency, order_by=install_model.ToolDependency.name,
-        back_populates='tool_shed_repository'),
-    required_repositories=relation(install_model.RepositoryRepositoryDependencyAssociation, back_populates='repository')))
 
 
 def init(url, engine_options=None, create_tables=False):

@@ -4,6 +4,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -19,6 +20,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 from galaxy.model.custom_types import (
+    MutableJSONType,
     TrimmedString
 )
 from galaxy.model.orm.now import now
@@ -49,7 +51,33 @@ class Base(metaclass=DeclarativeMeta):
         cls.table = cls.__table__
 
 
-class ToolShedRepository(_HasTable):
+class ToolShedRepository(Base, _HasTable):
+    __tablename__ = 'tool_shed_repository'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    tool_shed = Column(TrimmedString(255), index=True)
+    name = Column(TrimmedString(255), index=True)
+    description = Column(TEXT)
+    owner = Column(TrimmedString(255), index=True)
+    installed_changeset_revision = Column(TrimmedString(255))
+    changeset_revision = Column(TrimmedString(255), index=True)
+    ctx_rev = Column(TrimmedString(10))
+    metadata_ = Column('metadata', MutableJSONType, nullable=True)
+    includes_datatypes = Column(Boolean, index=True, default=False)
+    tool_shed_status = Column(MutableJSONType, nullable=True)
+    deleted = Column(Boolean, index=True, default=False)
+    uninstalled = Column(Boolean, default=False)
+    dist_to_shed = Column(Boolean, default=False)
+    status = Column(TrimmedString(255))
+    error_message = Column(TEXT)
+    tool_versions = relationship('ToolVersion', back_populates='tool_shed_repository')
+    tool_dependencies = relationship('ToolDependency', order_by='ToolDependency.name',
+        back_populates='tool_shed_repository')
+    required_repositories = relationship('RepositoryRepositoryDependencyAssociation',
+        back_populates='repository')
+
     dict_collection_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                     'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'description']
     dict_element_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
@@ -75,7 +103,7 @@ class ToolShedRepository(_HasTable):
         UNINSTALLED = 'deleted_new'
 
     def __init__(self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
-                 changeset_revision=None, ctx_rev=None, metadata=None, includes_datatypes=False, tool_shed_status=None, deleted=False,
+                 changeset_revision=None, ctx_rev=None, metadata_=None, includes_datatypes=False, tool_shed_status=None, deleted=False,
                  uninstalled=False, dist_to_shed=False, status=None, error_message=None):
         self.id = id
         self.create_time = create_time
@@ -86,7 +114,7 @@ class ToolShedRepository(_HasTable):
         self.installed_changeset_revision = installed_changeset_revision
         self.changeset_revision = changeset_revision
         self.ctx_rev = ctx_rev
-        self.metadata = metadata or {}
+        self.metadata_ = metadata_ or {}
         self.includes_datatypes = includes_datatypes
         self.tool_shed_status = tool_shed_status
         self.deleted = deleted
@@ -125,11 +153,11 @@ class ToolShedRepository(_HasTable):
 
     @property
     def shed_config_filename(self):
-        return self.metadata.get('shed_config_filename')
+        return self.metadata_.get('shed_config_filename')
 
     @shed_config_filename.setter
     def shed_config_filename(self, value):
-        self.metadata['shed_config_filename'] = os.path.abspath(value)
+        self.metadata_['shed_config_filename'] = os.path.abspath(value)
 
     def get_shed_config_dict(self, app):
         """
@@ -154,7 +182,7 @@ class ToolShedRepository(_HasTable):
 
     def guess_shed_config(self, app):
         tool_ids = []
-        for tool in self.metadata.get('tools', []):
+        for tool in self.metadata_.get('tools', []):
             tool_ids.append(tool.get('guid'))
         for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
             name = shed_tool_conf_dict['config_filename']
@@ -187,11 +215,11 @@ class ToolShedRepository(_HasTable):
 
     @property
     def has_readme_files(self):
-        return 'readme_files' in self.metadata
+        return 'readme_files' in self.metadata_
 
     @property
     def has_repository_dependencies(self):
-        repository_dependencies_dict = self.metadata.get('repository_dependencies', {})
+        repository_dependencies_dict = self.metadata_.get('repository_dependencies', {})
         repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
         # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
         for rd_tup in repository_dependencies:
@@ -203,7 +231,7 @@ class ToolShedRepository(_HasTable):
 
     @property
     def has_repository_dependencies_only_if_compiling_contained_td(self):
-        repository_dependencies_dict = self.metadata.get('repository_dependencies', {})
+        repository_dependencies_dict = self.metadata_.get('repository_dependencies', {})
         repository_dependencies = repository_dependencies_dict.get('repository_dependencies', [])
         # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
         for rd_tup in repository_dependencies:
@@ -219,16 +247,16 @@ class ToolShedRepository(_HasTable):
 
     @property
     def includes_data_managers(self):
-        return bool(len(self.metadata.get('data_manager', {}).get('data_managers', {})))
+        return bool(len(self.metadata_.get('data_manager', {}).get('data_managers', {})))
 
     @property
     def includes_tools(self):
-        return 'tools' in self.metadata
+        return 'tools' in self.metadata_
 
     @property
     def includes_tools_for_display_in_tool_panel(self):
         if self.includes_tools:
-            tool_dicts = self.metadata['tools']
+            tool_dicts = self.metadata_['tools']
             for tool_dict in tool_dicts:
                 if tool_dict.get('add_to_tool_panel', True):
                     return True
@@ -236,11 +264,11 @@ class ToolShedRepository(_HasTable):
 
     @property
     def includes_tool_dependencies(self):
-        return 'tool_dependencies' in self.metadata
+        return 'tool_dependencies' in self.metadata_
 
     @property
     def includes_workflows(self):
-        return 'workflows' in self.metadata
+        return 'workflows' in self.metadata_
 
     @property
     def installed_repository_dependencies(self):
@@ -379,7 +407,7 @@ class ToolShedRepository(_HasTable):
         """
         required_rd_tups_that_must_be_installed = []
         if self.has_repository_dependencies:
-            rd_tups = self.metadata['repository_dependencies']['repository_dependencies']
+            rd_tups = self.metadata_['repository_dependencies']['repository_dependencies']
             for rd_tup in rd_tups:
                 if len(rd_tup) == 5:
                     tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
@@ -476,7 +504,7 @@ class ToolShedRepository(_HasTable):
         dependencies.
         """
         rd_tups_of_repositories_needed_for_compiling_td = []
-        repository_dependencies = self.metadata.get('repository_dependencies', {})
+        repository_dependencies = self.metadata_.get('repository_dependencies', {})
         rd_tups = repository_dependencies.get('repository_dependencies', [])
         for rd_tup in rd_tups:
             if len(rd_tup) == 6:

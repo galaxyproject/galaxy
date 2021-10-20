@@ -26,8 +26,7 @@ class BaseTest:
 class TestToolShedRepository(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'tool_shed_repository'
-        # assert cls_.__tablename__ == 'tool_shed_repository'  # TODO
+        assert cls_.__tablename__ == 'tool_shed_repository'
 
     def test_columns(self, session, cls_, repository):
         create_time = datetime.now()
@@ -39,7 +38,7 @@ class TestToolShedRepository(BaseTest):
         installed_changeset_revision = 'e'
         changeset_revision = 'f'
         ctx_rev = 'g'
-        metadata = 'h'
+        metadata_ = 'h'
         includes_datatypes = True
         tool_shed_status = 'i'
         deleted = True
@@ -58,7 +57,7 @@ class TestToolShedRepository(BaseTest):
         obj.installed_changeset_revision = installed_changeset_revision
         obj.changeset_revision = changeset_revision
         obj.ctx_rev = ctx_rev
-        obj.metadata = metadata
+        obj.metadata_ = metadata_
         obj.includes_datatypes = includes_datatypes
         obj.tool_shed_status = tool_shed_status
         obj.deleted = deleted
@@ -79,7 +78,7 @@ class TestToolShedRepository(BaseTest):
             assert stored_obj.installed_changeset_revision == installed_changeset_revision
             assert stored_obj.changeset_revision == changeset_revision
             assert stored_obj.ctx_rev == ctx_rev
-            assert stored_obj.metadata == metadata
+            assert stored_obj.metadata_ == metadata_
             assert stored_obj.includes_datatypes == includes_datatypes
             assert stored_obj.tool_shed_status == tool_shed_status
             assert stored_obj.deleted == deleted
