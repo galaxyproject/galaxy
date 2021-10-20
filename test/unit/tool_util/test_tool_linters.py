@@ -547,6 +547,34 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
         </test>
     </tests>
 </tool>
+ASSERTS = """
+<tool>
+    <outputs>
+        <data name="outname"/>
+    </outputs>
+    <tests>
+        <test>
+            <assert_stdout>
+                <has_text text="blah" n="1"/>
+                <has_line line="blah"/>
+            </assert_stdout>
+            <assert_stderr>
+                <invalid/>
+            </assert_stderr>
+            <assert_command>
+                <has_text invalid_attrib="blah"/>
+            </assert_command>
+            <output name="outname">
+                <assert_contents>
+                    <has_size value="500k" delta="1O" delta_frac="10,0"/>
+                    <has_archive_member path=".*/my-file.txt">
+                        <not_has_text invalid_attrib_also_checked_in_nested_asserts="Blah" text="EDK72998.1" />
+                    </has_archive_member>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
 """
 
 # tool xml for xml_order linter
@@ -954,6 +982,20 @@ TESTS = [
             'Unknown tag [wrong_tag] encountered, this may result in a warning in the future.' in x.info_messages
             and 'Best practice violation [stdio] elements should come before [command]' in x.warn_messages
             and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+            "Test 1: Cannot specify outputs in a test expecting failure." in x.error_messages
+            and len(x.warn_messages) == 0 and len(x.error_messages) == 1
+    ),
+    (
+        ASSERTS, tests.lint_tsts,
+        lambda x:
+            'Test 0: unknown assertion invalid' in x.error_messages
+            and 'Test 0: unknown attribute invalid_attrib for has_text' in x.error_messages
+            and 'Test 0: missing attribute text for has_text' in x.error_messages
+            and 'Test 0: attribute value for has_size needs to be int got 500k' in x.error_messages
+            and 'Test 0: attribute delta for has_size needs to be int got 1O' in x.error_messages
+            and 'Test 0: attribute delta_frac for has_size needs to be float got 10,0' in x.error_messages
+            and 'Test 0: unknown attribute invalid_attrib_also_checked_in_nested_asserts for not_has_text' in x.error_messages
+            and len(x.warn_messages) == 0 and len(x.error_messages) == 4
     )
 ]
 
@@ -1008,6 +1050,7 @@ TEST_IDS = [
     'tests: param and output names',
     'tests: expecting failure with outputs',
     'xml_order'
+    'asserts'
 ]
 
 
