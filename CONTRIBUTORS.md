@@ -132,6 +132,7 @@ The following individuals have contributed code to Galaxy:
 * Michael Sauria <crockopotamus@gmail.com>
 * Andrea Sbardellati <andrea.sbardellati@crs4.it>
 * Ian Schenck <ian@bx.psu.edu>
+* Jelle Scholtalbers <j.scholtalbers@gmail.com>
 * Nick Semenkovich <semenko@alum.mit.edu>
 * Varun Shankar <varunshankar55@gmail.com>
 * Matthew Shirley <mdshw5@gmail.com>
