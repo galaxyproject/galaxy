@@ -48,7 +48,9 @@ export default {
                 value: this.value,
                 el: this.$refs["parameter"],
                 onchange: () => {
-                    this.$emit("input", this.parameter.field.value());
+                    if (this.parameter && this.parameter.field) {
+                        this.$emit("input", this.parameter.field.value());
+                    }
                 },
             });
             this.$emit("input", this.parameter.field.value());
