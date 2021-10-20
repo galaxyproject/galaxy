@@ -4,15 +4,11 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
-    MetaData,
     String,
     Table,
     TEXT
 )
-from sqlalchemy.orm import (
-    mapper,
-    relation
-)
+from sqlalchemy.orm import relation
 
 from galaxy.model import tool_shed_install as install_model
 from galaxy.model.base import ModelMapping
@@ -22,8 +18,9 @@ from galaxy.model.custom_types import (
 )
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
+from galaxy.model.tool_shed_install import mapper_registry
 
-metadata = MetaData()
+metadata = mapper_registry.metadata
 
 install_model.ToolShedRepository.table = Table("tool_shed_repository", metadata,
                                                Column("id", Integer, primary_key=True),
@@ -86,7 +83,7 @@ install_model.MigrateTools.table = Table("migrate_tools", metadata,
                                          Column("repository_path", TEXT),
                                          Column("version", Integer))
 
-mapper(install_model.ToolShedRepository, install_model.ToolShedRepository.table,
+mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model.ToolShedRepository.table,
        properties=dict(tool_versions=relation(install_model.ToolVersion,
                                               primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.ToolVersion.table.c.tool_shed_repository_id),
                                               backref='tool_shed_repository'),
@@ -97,26 +94,26 @@ mapper(install_model.ToolShedRepository, install_model.ToolShedRepository.table,
                        required_repositories=relation(install_model.RepositoryRepositoryDependencyAssociation,
                                                       primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id))))
 
-mapper(install_model.RepositoryRepositoryDependencyAssociation, install_model.RepositoryRepositoryDependencyAssociation.table,
+mapper_registry.map_imperatively(install_model.RepositoryRepositoryDependencyAssociation, install_model.RepositoryRepositoryDependencyAssociation.table,
        properties=dict(repository=relation(install_model.ToolShedRepository,
                                            primaryjoin=(install_model.RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id == install_model.ToolShedRepository.table.c.id)),
                        repository_dependency=relation(install_model.RepositoryDependency,
                                                       primaryjoin=(install_model.RepositoryRepositoryDependencyAssociation.table.c.repository_dependency_id == install_model.RepositoryDependency.table.c.id))))
 
-mapper(install_model.RepositoryDependency, install_model.RepositoryDependency.table,
+mapper_registry.map_imperatively(install_model.RepositoryDependency, install_model.RepositoryDependency.table,
        properties=dict(repository=relation(install_model.ToolShedRepository,
                                            primaryjoin=(install_model.RepositoryDependency.table.c.tool_shed_repository_id == install_model.ToolShedRepository.table.c.id))))
 
-mapper(install_model.ToolDependency, install_model.ToolDependency.table)
+mapper_registry.map_imperatively(install_model.ToolDependency, install_model.ToolDependency.table)
 
-mapper(install_model.ToolVersion, install_model.ToolVersion.table,
+mapper_registry.map_imperatively(install_model.ToolVersion, install_model.ToolVersion.table,
        properties=dict(
            parent_tool_association=relation(install_model.ToolVersionAssociation,
                                             primaryjoin=(install_model.ToolVersion.table.c.id == install_model.ToolVersionAssociation.table.c.tool_id)),
            child_tool_association=relation(install_model.ToolVersionAssociation,
                                            primaryjoin=(install_model.ToolVersion.table.c.id == install_model.ToolVersionAssociation.table.c.parent_id))))
 
-mapper(install_model.ToolVersionAssociation, install_model.ToolVersionAssociation.table)
+mapper_registry.map_imperatively(install_model.ToolVersionAssociation, install_model.ToolVersionAssociation.table)
 
 
 def init(url, engine_options=None, create_tables=False):

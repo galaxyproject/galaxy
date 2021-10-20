@@ -3,6 +3,8 @@ import os
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from sqlalchemy.orm import registry
+
 from galaxy.util import asbool
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -10,6 +12,7 @@ from galaxy.util.tool_shed import common_util
 
 log = logging.getLogger(__name__)
 
+mapper_registry = registry()
 
 if TYPE_CHECKING:
     from sqlalchemy.schema import Table
