@@ -554,6 +554,7 @@ class ToolDependency(Base, _HasTable):
     type = Column(TrimmedString(40))
     status = Column(TrimmedString(255), nullable=False)
     error_message = Column(TEXT)
+    tool_shed_repository = relationship('ToolShedRepository', back_populates='tool_dependencies')
 
     # converting this one to Enum breaks the tool shed tests,
     # don't know why though -John

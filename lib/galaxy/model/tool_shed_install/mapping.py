@@ -42,10 +42,8 @@ install_model.ToolShedRepository.table = Table("tool_shed_repository", metadata,
 
 mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model.ToolShedRepository.table, properties=dict(
     tool_versions=relation(install_model.ToolVersion, back_populates='tool_shed_repository'),
-    tool_dependencies=relation(install_model.ToolDependency,
-                               primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.ToolDependency.tool_shed_repository_id),
-                               order_by=install_model.ToolDependency.name,
-                               backref='tool_shed_repository'),
+    tool_dependencies=relation(install_model.ToolDependency, order_by=install_model.ToolDependency.name,
+        back_populates='tool_shed_repository'),
     required_repositories=relation(install_model.RepositoryRepositoryDependencyAssociation,
                                    primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.RepositoryRepositoryDependencyAssociation.tool_shed_repository_id))))
 
