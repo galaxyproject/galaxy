@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    String,
     Table,
     TEXT,
 )
@@ -624,7 +625,20 @@ class ToolDependency(Base, _HasTable):
         return self.status == self.installation_status.INSTALLED
 
 
-class ToolVersion(Dictifiable, _HasTable):
+class ToolVersion(Base, Dictifiable, _HasTable):
+    __tablename__ = 'tool_version'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    tool_id = Column(String(255))
+    tool_shed_repository_id = Column(Integer, ForeignKey('tool_shed_repository.id'), index=True, nullable=True)
+
+    parent_tool_association = relationship('ToolVersionAssociation',
+        primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.tool_id))  # type: ignore
+    child_tool_association = relationship('ToolVersionAssociation',
+        primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.parent_id))  # type: ignore
+
     dict_element_visible_keys = ['id', 'tool_shed_repository']
 
     def __init__(self, id=None, create_time=None, tool_id=None, tool_shed_repository=None):

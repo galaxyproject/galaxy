@@ -4,7 +4,6 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
-    String,
     Table,
     TEXT
 )
@@ -42,13 +41,6 @@ install_model.ToolShedRepository.table = Table("tool_shed_repository", metadata,
                                                Column("status", TrimmedString(255)),
                                                Column("error_message", TEXT))
 
-install_model.ToolVersion.table = Table("tool_version", metadata,
-                                        Column("id", Integer, primary_key=True),
-                                        Column("create_time", DateTime, default=now),
-                                        Column("update_time", DateTime, default=now, onupdate=now),
-                                        Column("tool_id", String(255)),
-                                        Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True, nullable=True))
-
 install_model.ToolVersionAssociation.table = Table("tool_version_association", metadata,
                                                    Column("id", Integer, primary_key=True),
                                                    Column("tool_id", Integer, ForeignKey("tool_version.id"), index=True, nullable=False),
@@ -56,7 +48,7 @@ install_model.ToolVersionAssociation.table = Table("tool_version_association", m
 
 mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model.ToolShedRepository.table,
        properties=dict(tool_versions=relation(install_model.ToolVersion,
-                                              primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.ToolVersion.table.c.tool_shed_repository_id),
+                                              primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.ToolVersion.tool_shed_repository_id),
                                               backref='tool_shed_repository'),
                        tool_dependencies=relation(install_model.ToolDependency,
                                                   primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.ToolDependency.tool_shed_repository_id),
@@ -64,13 +56,6 @@ mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model
                                                   backref='tool_shed_repository'),
                        required_repositories=relation(install_model.RepositoryRepositoryDependencyAssociation,
                                                       primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.RepositoryRepositoryDependencyAssociation.tool_shed_repository_id))))
-
-mapper_registry.map_imperatively(install_model.ToolVersion, install_model.ToolVersion.table,
-       properties=dict(
-           parent_tool_association=relation(install_model.ToolVersionAssociation,
-                                            primaryjoin=(install_model.ToolVersion.table.c.id == install_model.ToolVersionAssociation.table.c.tool_id)),
-           child_tool_association=relation(install_model.ToolVersionAssociation,
-                                           primaryjoin=(install_model.ToolVersion.table.c.id == install_model.ToolVersionAssociation.table.c.parent_id))))
 
 mapper_registry.map_imperatively(install_model.ToolVersionAssociation, install_model.ToolVersionAssociation.table)
 

@@ -214,8 +214,7 @@ class TestToolDependency(BaseTest):
 class TestToolVersion(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'tool_version'
-        # assert cls_.__tablename__ == 'tool_version'  # TODO
+        assert cls_.__tablename__ == 'tool_version'
 
     def test_columns(self, session, cls_, repository):
         create_time = datetime.now()
