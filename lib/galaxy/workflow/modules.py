@@ -953,10 +953,10 @@ class InputParameterModule(WorkflowModule):
                 if restrictions_list is None:
                     restrictions_list = []
                 restriction_values = self._parameter_option_def_to_tool_form_str(restrictions_list)
-                restrictions_source = dict(name="restrictions", label="Restriction Values", value=restriction_values, help="Comman-separated list of potential all values")
+                restrictions_source = dict(name="restrictions", label="Restricted Values", value=restriction_values, help="Comma-separated list of all permitted values")
                 restrictions = TextToolParameter(None, restrictions_source)
 
-                suggestions_source = dict(name="suggestions", label="Suggestion Values", value=restriction_values, help="Comman-separated list of some potential values")
+                suggestions_source = dict(name="suggestions", label="Suggested Values", value=restriction_values, help="Comma-separated list of some potential values")
                 suggestions = TextToolParameter(None, suggestions_source)
 
                 when_restrict_static_restrictions.inputs["restrictions"] = restrictions
