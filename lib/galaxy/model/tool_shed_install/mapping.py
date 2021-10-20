@@ -42,12 +42,6 @@ install_model.ToolShedRepository.table = Table("tool_shed_repository", metadata,
                                                Column("status", TrimmedString(255)),
                                                Column("error_message", TEXT))
 
-install_model.RepositoryDependency.table = Table("repository_dependency", metadata,
-                                                 Column("id", Integer, primary_key=True),
-                                                 Column("create_time", DateTime, default=now),
-                                                 Column("update_time", DateTime, default=now, onupdate=now),
-                                                 Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True, nullable=False))
-
 install_model.ToolDependency.table = Table("tool_dependency", metadata,
                                            Column("id", Integer, primary_key=True),
                                            Column("create_time", DateTime, default=now),
@@ -81,10 +75,6 @@ mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model
                                                   backref='tool_shed_repository'),
                        required_repositories=relation(install_model.RepositoryRepositoryDependencyAssociation,
                                                       primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.RepositoryRepositoryDependencyAssociation.tool_shed_repository_id))))
-
-mapper_registry.map_imperatively(install_model.RepositoryDependency, install_model.RepositoryDependency.table,
-       properties=dict(repository=relation(install_model.ToolShedRepository,
-                                           primaryjoin=(install_model.RepositoryDependency.table.c.tool_shed_repository_id == install_model.ToolShedRepository.table.c.id))))
 
 mapper_registry.map_imperatively(install_model.ToolDependency, install_model.ToolDependency.table)
 

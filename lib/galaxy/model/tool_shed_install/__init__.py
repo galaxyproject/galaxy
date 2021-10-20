@@ -524,7 +524,14 @@ class RepositoryRepositoryDependencyAssociation(Base, _HasTable):
         self.repository_dependency_id = repository_dependency_id
 
 
-class RepositoryDependency(_HasTable):
+class RepositoryDependency(Base, _HasTable):
+    __tablename__ = 'repository_dependency'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    tool_shed_repository_id = Column(Integer, ForeignKey('tool_shed_repository.id'), index=True, nullable=False)
+    repository = relationship('ToolShedRepository')
 
     def __init__(self, tool_shed_repository_id=None):
         self.tool_shed_repository_id = tool_shed_repository_id
