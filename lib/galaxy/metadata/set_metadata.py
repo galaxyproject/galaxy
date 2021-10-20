@@ -312,7 +312,7 @@ def set_metadata_portable():
             klass = getattr(galaxy.model, output.get('model_class', 'HistoryDatasetAssociation'))
             outputs[name] = import_model_store.sa_session.query(klass).find(output["id"])
 
-        input_ext = json.loads(metadata_params["job_params"].get("__input_ext", '"data"'))
+        input_ext = json.loads(metadata_params["job_params"].get("__input_ext") or '"data"')
         collect_primary_datasets(
             job_context,
             outputs,
