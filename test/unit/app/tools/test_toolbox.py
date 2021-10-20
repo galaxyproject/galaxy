@@ -111,7 +111,7 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
         }
         if config_filename:
             metadata['shed_config_filename'] = config_filename
-        repository = tool_shed_install.ToolShedRepository(metadata=metadata)
+        repository = tool_shed_install.ToolShedRepository(metadata_=metadata)
         repository.tool_shed = DEFAULT_TEST_REPO.tool_shed
         repository.owner = DEFAULT_TEST_REPO.owner
         repository.name = DEFAULT_TEST_REPO.name

@@ -442,7 +442,7 @@ class ToolMigrationManager:
                                                   persist=True)
         irmm.generate_metadata_for_changeset_revision()
         irmm_metadata_dict = irmm.get_metadata_dict()
-        tool_shed_repository.metadata = irmm_metadata_dict
+        tool_shed_repository.metadata_ = irmm_metadata_dict
         self.app.install_model.context.add(tool_shed_repository)
         self.app.install_model.context.flush()
         has_tool_dependencies = self.__has_tool_dependencies(irmm_metadata_dict)
