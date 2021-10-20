@@ -9,9 +9,10 @@ on:
       - 'client/**'
       - 'doc/**'
 env:
+  GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY: 'extended'
+  GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
-  GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
 concurrency:
   group: api-${{ github.ref }}
   cancel-in-progress: true
