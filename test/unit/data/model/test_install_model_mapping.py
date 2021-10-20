@@ -267,8 +267,7 @@ class TestToolVersion(BaseTest):
 class TestToolVersionAssociation(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'tool_version_association'
-        # assert cls_.__tablename__ == 'tool_version_association'  # TODO
+        assert cls_.__tablename__ == 'tool_version_association'
 
     def test_columns(self, session, cls_, tool_version_factory):
         tool_version = tool_version_factory()

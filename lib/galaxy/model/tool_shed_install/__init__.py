@@ -657,7 +657,12 @@ class ToolVersion(Base, Dictifiable, _HasTable):
         return rval
 
 
-class ToolVersionAssociation(_HasTable):
+class ToolVersionAssociation(Base, _HasTable):
+    __tablename__ = 'tool_version_association'
+
+    id = Column(Integer, primary_key=True)
+    tool_id = Column(Integer, ForeignKey('tool_version.id'), index=True, nullable=False)
+    parent_id = Column(Integer, ForeignKey('tool_version.id'), index=True, nullable=False)
 
     def __init__(self, id=None, tool_id=None, parent_id=None):
         self.id = id

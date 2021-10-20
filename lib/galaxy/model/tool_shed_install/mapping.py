@@ -2,7 +2,6 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
-    ForeignKey,
     Integer,
     Table,
     TEXT
@@ -41,11 +40,6 @@ install_model.ToolShedRepository.table = Table("tool_shed_repository", metadata,
                                                Column("status", TrimmedString(255)),
                                                Column("error_message", TEXT))
 
-install_model.ToolVersionAssociation.table = Table("tool_version_association", metadata,
-                                                   Column("id", Integer, primary_key=True),
-                                                   Column("tool_id", Integer, ForeignKey("tool_version.id"), index=True, nullable=False),
-                                                   Column("parent_id", Integer, ForeignKey("tool_version.id"), index=True, nullable=False))
-
 mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model.ToolShedRepository.table,
        properties=dict(tool_versions=relation(install_model.ToolVersion,
                                               primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.ToolVersion.tool_shed_repository_id),
@@ -56,8 +50,6 @@ mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model
                                                   backref='tool_shed_repository'),
                        required_repositories=relation(install_model.RepositoryRepositoryDependencyAssociation,
                                                       primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.RepositoryRepositoryDependencyAssociation.tool_shed_repository_id))))
-
-mapper_registry.map_imperatively(install_model.ToolVersionAssociation, install_model.ToolVersionAssociation.table)
 
 
 def init(url, engine_options=None, create_tables=False):
