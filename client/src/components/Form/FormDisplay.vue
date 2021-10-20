@@ -214,6 +214,14 @@ export default {
                 this.$emit("onChange", params, refreshOnChange);
             }
         },
+        getOffsetTop(element, padding = 100) {
+            let offsetTop = 0;
+            while (element) {
+                offsetTop += element.offsetTop;
+                element = element.offsetParent;
+            }
+            return offsetTop - padding;
+        },
         onHighlight(validation, silent = false) {
             if (validation && validation.length == 2) {
                 const inputId = validation[0];
@@ -221,9 +229,9 @@ export default {
                 this.setError(inputId, message);
                 if (!silent) {
                     const elementId = inputId.replaceAll("|", "-");
-                    const element = document.querySelector(`#form-element-${elementId}`);
+                    const element = this.$el.querySelector(`#form-element-${elementId}`);
                     if (element) {
-                        document.querySelector(".center-panel").scrollTo(0, element.offsetTop);
+                        document.querySelector(".center-panel").scrollTo(0, this.getOffsetTop(element));
                     }
                 }
             }

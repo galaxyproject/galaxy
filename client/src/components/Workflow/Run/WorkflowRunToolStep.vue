@@ -76,7 +76,7 @@ export default {
         },
         validationScrollTo() {
             if (this.validationScrollTo.length > 0) {
-                this.expanded = false;
+                this.expanded = true;
             }
         },
     },
