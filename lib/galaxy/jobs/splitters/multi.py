@@ -1,9 +1,9 @@
 import logging
 import os
 import shutil
+from inspect import getfullargspec
 
 from galaxy import model, util
-from galaxy.util.getargspec import getfullargspec
 
 
 log = logging.getLogger(__name__)

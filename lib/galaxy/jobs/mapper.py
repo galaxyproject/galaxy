@@ -1,11 +1,11 @@
 import importlib
 import logging
+from inspect import getfullargspec
 from types import ModuleType
 
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
 from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
-from galaxy.util.getargspec import getfullargspec
 from galaxy.util.submodules import import_submodules
 from .rule_helper import RuleHelper
 
