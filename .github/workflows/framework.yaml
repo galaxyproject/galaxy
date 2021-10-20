@@ -13,6 +13,7 @@ on:
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY: 'extended'
 concurrency:
   group: framework-${{ github.ref }}
   cancel-in-progress: true

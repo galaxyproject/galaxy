@@ -15,6 +15,8 @@ env:
   GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 1
   YARN_INSTALL_OPTS: --frozen-lockfile
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
+  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY: 'extended'
 concurrency:
   group: selenium-beta-${{ github.ref }}
   cancel-in-progress: true

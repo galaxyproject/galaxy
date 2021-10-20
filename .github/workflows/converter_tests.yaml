@@ -10,6 +10,7 @@ on:
       - 'doc/**'
 env:
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY: 'extended'
 concurrency:
   group: converter-${{ github.ref }}
   cancel-in-progress: true
