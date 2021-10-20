@@ -9,6 +9,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     Table,
+    TEXT,
 )
 from sqlalchemy.orm import (
     registry,
@@ -16,6 +17,9 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 
+from galaxy.model.custom_types import (
+    TrimmedString
+)
 from galaxy.model.orm.now import now
 from galaxy.util import asbool
 from galaxy.util.bunch import Bunch
@@ -537,7 +541,19 @@ class RepositoryDependency(Base, _HasTable):
         self.tool_shed_repository_id = tool_shed_repository_id
 
 
-class ToolDependency(_HasTable):
+class ToolDependency(Base, _HasTable):
+    __tablename__ = 'tool_dependency'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    tool_shed_repository_id = Column(Integer, ForeignKey('tool_shed_repository.id'), index=True, nullable=False)
+    name = Column(TrimmedString(255))
+    version = Column(TEXT)
+    type = Column(TrimmedString(40))
+    status = Column(TrimmedString(255), nullable=False)
+    error_message = Column(TEXT)
+
     # converting this one to Enum breaks the tool shed tests,
     # don't know why though -John
     installation_status = Bunch(NEVER_INSTALLED='Never installed',

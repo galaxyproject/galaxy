@@ -42,17 +42,6 @@ install_model.ToolShedRepository.table = Table("tool_shed_repository", metadata,
                                                Column("status", TrimmedString(255)),
                                                Column("error_message", TEXT))
 
-install_model.ToolDependency.table = Table("tool_dependency", metadata,
-                                           Column("id", Integer, primary_key=True),
-                                           Column("create_time", DateTime, default=now),
-                                           Column("update_time", DateTime, default=now, onupdate=now),
-                                           Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True, nullable=False),
-                                           Column("name", TrimmedString(255)),
-                                           Column("version", TEXT),
-                                           Column("type", TrimmedString(40)),
-                                           Column("status", TrimmedString(255), nullable=False),
-                                           Column("error_message", TEXT))
-
 install_model.ToolVersion.table = Table("tool_version", metadata,
                                         Column("id", Integer, primary_key=True),
                                         Column("create_time", DateTime, default=now),
@@ -70,13 +59,11 @@ mapper_registry.map_imperatively(install_model.ToolShedRepository, install_model
                                               primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.ToolVersion.table.c.tool_shed_repository_id),
                                               backref='tool_shed_repository'),
                        tool_dependencies=relation(install_model.ToolDependency,
-                                                  primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.ToolDependency.table.c.tool_shed_repository_id),
-                                                  order_by=install_model.ToolDependency.table.c.name,
+                                                  primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.ToolDependency.tool_shed_repository_id),
+                                                  order_by=install_model.ToolDependency.name,
                                                   backref='tool_shed_repository'),
                        required_repositories=relation(install_model.RepositoryRepositoryDependencyAssociation,
                                                       primaryjoin=(install_model.ToolShedRepository.table.c.id == install_model.RepositoryRepositoryDependencyAssociation.tool_shed_repository_id))))
-
-mapper_registry.map_imperatively(install_model.ToolDependency, install_model.ToolDependency.table)
 
 mapper_registry.map_imperatively(install_model.ToolVersion, install_model.ToolVersion.table,
        properties=dict(

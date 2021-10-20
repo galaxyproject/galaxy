@@ -173,8 +173,7 @@ class TestRepositoryDependency(BaseTest):
 class TestToolDependency(BaseTest):
 
     def test_table(self, cls_):
-        assert cls_.table.name == 'tool_dependency'
-        # assert cls_.__tablename__ == 'tool_dependency'  # TODO
+        assert cls_.__tablename__ == 'tool_dependency'
 
     def test_columns(self, session, cls_, repository):
         create_time = datetime.now()
