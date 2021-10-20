@@ -51,6 +51,7 @@ pysam.set_verbosity(0)
 class Binary(data.Data):
     """Binary data"""
     edam_format = "format_2333"
+    file_ext = "binary"
 
     @staticmethod
     def register_sniffable_binary_format(data_type, ext, type_class):
@@ -3152,6 +3153,7 @@ class Pretext(Binary):
     >>> Pretext().sniff(fname)
     True
     """
+    file_ext = "pretext"
 
     def sniff_prefix(self, sniff_prefix):
         # The first 4 bytes of any pretext file is 'pstm', and the rest of the

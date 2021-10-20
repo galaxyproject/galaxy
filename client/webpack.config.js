@@ -34,6 +34,7 @@ module.exports = (env = {}, argv = {}) => {
             fallback: {
                 timers: require.resolve("timers-browserify"),
                 stream: require.resolve("stream-browserify"),
+                "process/browser": require.resolve("process/browser"),
             },
             alias: {
                 jquery$: `${libsBase}/jquery.custom.js`,
@@ -58,7 +59,7 @@ module.exports = (env = {}, argv = {}) => {
                     },
                     libs: {
                         name: "libs",
-                        test: /node_modules[\\/](?!(handsontable|pikaday|moment|elkjs)[\\/])|galaxy\/scripts\/libs/,
+                        test: /node_modules[\\/](?!(jspdf|canvg|html2canvas|handsontable|pikaday|moment|elkjs)[\\/])|galaxy\/scripts\/libs/,
                         chunks: "all",
                         priority: -10,
                     },

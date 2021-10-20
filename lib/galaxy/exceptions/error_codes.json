@@ -173,5 +173,10 @@
       "name": "NOT_IMPLEMENTED",
       "code": 501001,
       "message": "Method is not implemented."
+   },
+   {
+      "name": "SERVER_NOT_CONFIGURED_FOR_REQUEST",
+      "code": 501002,
+      "message": "Server not configured for the request. The Galaxy admin may be able to resolve the problem by installing additional dependencies or setting up new infrastructure."
    }
 ]

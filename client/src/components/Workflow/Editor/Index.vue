@@ -175,6 +175,7 @@
 </template>
 
 <script>
+import { LastQueue } from "utils/promise-queue";
 import { getDatatypesMapper } from "components/Datatypes";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
@@ -287,6 +288,7 @@ export default {
         },
     },
     created() {
+        this.lastQueue = new LastQueue();
         getDatatypesMapper().then((mapper) => {
             this.datatypesMapper = mapper;
             this.datatypes = mapper.datatypes;
@@ -470,7 +472,7 @@ export default {
         },
         onSetData(nodeId, newData) {
             const node = this.nodes[nodeId];
-            getModule(newData).then((data) => {
+            this.lastQueue.enqueue(getModule, newData).then((data) => {
                 node.setData(data);
             });
         },
