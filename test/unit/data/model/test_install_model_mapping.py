@@ -288,6 +288,8 @@ class TestToolVersionAssociation(BaseTest):
             assert stored_obj.tool_id == tool_version.id
             assert stored_obj.parent_id == parent_tool_version.id
 
+        delete_from_database(session, [tool_version, parent_tool_version])
+
 
 # Misc. helper fixtures.
 
