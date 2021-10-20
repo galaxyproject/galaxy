@@ -69,7 +69,7 @@ class SessionlessContext:
 
 class ModelImportStore(metaclass=abc.ABCMeta):
 
-    def __init__(self, import_options=None, app=None, user=None, object_store=None):
+    def __init__(self, import_options=None, app=None, user=None, object_store=None, tag_handler=None):
         if object_store is None:
             if app is not None:
                 object_store = app.object_store
@@ -84,6 +84,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.user = user
         self.import_options = import_options or ImportOptions()
         self.dataset_state_serialized = True
+        self.tag_handler = tag_handler
 
     @abc.abstractmethod
     def defines_new_history(self):
@@ -353,8 +354,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     add_item_annotation(self.sa_session, self.user, dataset_instance, dataset_attrs['annotation'])
                     tag_list = dataset_attrs.get('tags')
                     if tag_list:
-                        tag_handler = model.tags.GalaxyTagHandler(sa_session=self.sa_session)
-                        tag_handler.set_tags_from_list(user=self.user, item=dataset_instance, new_tags_list=tag_list)
+                        self.tag_handler.set_tags_from_list(user=self.user, item=dataset_instance, new_tags_list=tag_list, flush=False)
 
                 if self.app:
                     self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
