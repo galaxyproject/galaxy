@@ -19,6 +19,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException
 )
 from galaxy.model.dataset_collections import builder
+from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.util import (
     chunk_iterable,
     ExecutionTimer
@@ -309,6 +310,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             # TDOD: implement that or figure out why it is not implemented and find a better solution.
             # Could it be that SessionlessModelPersistenceContext doesn't support tags?
             for dataset, tags in zip(datasets, tag_lists):
+                return
                 self.tag_handler.add_tags_from_list(self.job.user, dataset, tags, flush=False)
 
     def update_object_store_with_datasets(self, datasets, paths, extra_files):
@@ -418,7 +420,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     @property
     def tag_handler(self):
-        raise NotImplementedError()
+        return GalaxyTagHandlerSession(self.sa_session)
 
     @property
     def user(self):
@@ -435,8 +437,9 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
     def get_hdca(self, object_id):
         raise NotImplementedError()
 
-    def create_hdca(name, structure):
-        raise NotImplementedError()
+    def create_hdca(self, name, structure):
+        collection = galaxy.model.DatasetCollection(collection_type=structure.collection_type_description.collection_type, populated=False)
+        return galaxy.model.HistoryDatasetCollectionAssociation(name=name, collection=collection)
 
     def create_library_folder(self, parent_folder, name, description):
         nested_folder = galaxy.model.LibraryFolder(name=name, description=description, order_id=parent_folder.item_count)
