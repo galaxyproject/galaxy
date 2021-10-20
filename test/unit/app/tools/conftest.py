@@ -56,7 +56,7 @@ def create_repo(session, changeset, installed_changeset, config_filename=None):
     }
     if config_filename:
         metadata['shed_config_filename'] = config_filename
-    repository = tool_shed_install.ToolShedRepository(metadata=metadata)
+    repository = tool_shed_install.ToolShedRepository(metadata_=metadata)
     repository.tool_shed = "github.com"
     repository.owner = "galaxyproject"
     repository.name = "example"
