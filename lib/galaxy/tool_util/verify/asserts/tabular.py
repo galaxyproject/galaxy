@@ -15,7 +15,7 @@ def get_first_line(output, comment):
         return match.group(1)
 
 
-def assert_has_n_columns(output, n, sep='\t', comment=""):
+def assert_has_n_columns(output, n: int, sep='\t', comment=""):
     """ Asserts the tabular output contains n columns. The optional
     sep argument specifies the column seperator used to determine the
     number of columns. The optional comment argument specifies

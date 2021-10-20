@@ -1,7 +1,7 @@
 import re
 
 
-def assert_has_text(output, text, n=None):
+def assert_has_text(output, text, n: int = None):
     """ Asserts specified output contains the substring specified by
     the argument text. The exact number of occurrences can be
     optionally specified by the argument n"""
@@ -20,7 +20,7 @@ def assert_not_has_text(output, text):
     assert output.find(text) < 0, f"Output file contains unexpected text '{text}'"
 
 
-def assert_has_line(output, line, n=None):
+def assert_has_line(output, line, n: int = None):
     """ Asserts the specified output contains the line specified by the
     argument line. The exact number of occurrences can be optionally
     specified by the argument n"""
@@ -33,7 +33,7 @@ def assert_has_line(output, line, n=None):
         assert len(matches) == int(n), f"Expected {n} lines matching '{line}' in output file (output was '{output}'); found {len(matches)}"
 
 
-def assert_has_n_lines(output, n, delta=0, delta_frac=None):
+def assert_has_n_lines(output, n, delta: int = 0, delta_frac: float = None):
     """Asserts the specified output contains ``n`` lines allowing
     for a difference in the number of lines (delta)
     or relative differebce in the number of lines"""

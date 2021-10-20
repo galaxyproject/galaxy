@@ -1,4 +1,4 @@
-def assert_has_size(output_bytes, value, delta=0, delta_frac=None):
+def assert_has_size(output_bytes, value: int, delta: int = 0, delta_frac: float = None):
     """
     Asserts the specified output has a size of the specified value,
     allowing for absolute (delta) and relative (delta_frac) difference.
