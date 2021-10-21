@@ -106,7 +106,7 @@ export default {
             }
         },
         updateURL() {
-            const url = `${this.url.protocol}//${this.pathChunks.map((name) => name).join("/")}`;
+            const url = `${this.url.protocol}//${this.pathChunks.map(({name}) => name).join("/")}`;
             this.callback(url);
         },
     },
