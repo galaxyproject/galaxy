@@ -349,6 +349,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     def persist_object(self, obj):
         """Add the target to the persistence layer."""
 
+    def persist_library_folder(self, library_folder):
+        """Add library folder to sessionless export. Noop for session export."""
+
     def flush(self):
         """If database bound, flush the persisted objects to ensure IDs."""
 
@@ -433,7 +436,9 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         library_folder.item_count += 1
 
     def get_library_folder(self, destination):
-        raise NotImplementedError()
+        folder = galaxy.model.LibraryFolder()
+        folder.id = destination.get("library_folder_id")
+        return folder
 
     def get_hdca(self, object_id):
         raise NotImplementedError()
@@ -447,6 +452,9 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         parent_folder.item_count += 1
         parent_folder.folders.append(nested_folder)
         return nested_folder
+
+    def persist_library_folder(self, library_folder):
+        self.export_store.export_library(library_folder)
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         # Consider copying these datasets to for_output_dataset copied histories

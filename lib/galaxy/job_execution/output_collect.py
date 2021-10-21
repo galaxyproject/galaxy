@@ -103,9 +103,10 @@ def collect_dynamic_outputs(
         # "hdca" (place discovered files in a history dataset collection), and "hdas" (place discovered files in a history
         # as stand-alone datasets).
         if destination_type == "library_folder":
-            # populate a library folder (needs to be already have been created)
+            # populate a library folder (needs to have already been created)
             library_folder = job_context.get_library_folder(destination)
             persist_elements_to_folder(job_context, elements, library_folder)
+            job_context.persist_library_folder(library_folder)
         elif destination_type == "hdca":
             # create or populate a dataset collection in the history
             assert "collection_type" in unnamed_output_dict

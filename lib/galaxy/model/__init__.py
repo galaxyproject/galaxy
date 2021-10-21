@@ -4563,6 +4563,7 @@ class LibraryFolder(Base, Dictifiable, HasName, RepresentById):
     def serialize(self, id_encoder, serialization_options):
         rval = dict_for(
             self,
+            id=self.id,  # FIXME: serialize only in sessionless export mode
             name=self.name,
             description=self.description,
             genome_build=self.genome_build,
@@ -4697,7 +4698,7 @@ class LibraryDataset(Base, RepresentById):
                     name=ldda.name,
                     file_name=ldda.file_name,
                     created_from_basename=ldda.created_from_basename,
-                    uploaded_by=ldda.user.email,
+                    uploaded_by=ldda.user and ldda.user.email,
                     message=ldda.message,
                     date_uploaded=ldda.create_time.isoformat(),
                     update_time=ldda.update_time.isoformat(),

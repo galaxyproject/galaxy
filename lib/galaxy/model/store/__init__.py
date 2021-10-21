@@ -279,6 +279,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                               deleted=dataset_attrs.get('deleted', False),
                                                                               dbkey=metadata['dbkey'],
                                                                               tool_version=metadata.get('tool_version'),
+                                                                              user=self.user,
                                                                               metadata=metadata,
                                                                               create_dataset=True,
                                                                               flush=False,
@@ -378,16 +379,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
     def _import_libraries(self, object_import_tracker):
         object_key = self.object_key
 
-        libraries_attrs = self.library_properties()
-        for library_attrs in libraries_attrs:
-            assert self.import_options.allow_library_creation
-            name = library_attrs['name']
-            description = library_attrs['description']
-            synopsis = library_attrs['synopsis']
-            library = model.Library(name=name, description=description, synopsis=synopsis)
-            self._session_add(library)
-
-            def import_folder(folder_attrs):
+        def import_folder(folder_attrs, root_folder=None):
+            if root_folder:
+                library_folder = root_folder
+            else:
                 name = folder_attrs['name']
                 description = folder_attrs['description']
                 genome_build = folder_attrs['genome_build']
@@ -399,31 +394,43 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 )
                 library_folder.deleted = deleted
 
-                self._session_add(library_folder)
+            self._session_add(library_folder)
 
-                for sub_folder_attrs in folder_attrs.get("folders", []):
-                    sub_folder = import_folder(sub_folder_attrs)
-                    library_folder.add_folder(sub_folder)
+            for sub_folder_attrs in folder_attrs.get("folders", []):
+                sub_folder = import_folder(sub_folder_attrs)
+                library_folder.add_folder(sub_folder)
 
-                for ld_attrs in folder_attrs.get("datasets", []):
-                    ld = model.LibraryDataset(
-                        folder=library_folder,
-                        name=ld_attrs['name'],
-                        info=ld_attrs['info'],
-                        order_id=ld_attrs['order_id']
-                    )
-                    if 'ldda' in ld_attrs:
-                        ldda = object_import_tracker.lddas_by_key[ld_attrs["ldda"][object_key]]
-                        ld.library_dataset_dataset_association = ldda
-                    self._session_add(ld)
+            for ld_attrs in folder_attrs.get("datasets", []):
+                ld = model.LibraryDataset(
+                    folder=library_folder,
+                    name=ld_attrs['name'],
+                    info=ld_attrs['info'],
+                    order_id=ld_attrs['order_id']
+                )
+                if 'ldda' in ld_attrs:
+                    ldda = object_import_tracker.lddas_by_key[ld_attrs["ldda"][object_key]]
+                    ld.library_dataset_dataset_association = ldda
+                self._session_add(ld)
 
-                self.sa_session.flush()
-                return library_folder
+            self.sa_session.flush()
+            return library_folder
+
+        libraries_attrs = self.library_properties()
+        for library_attrs in libraries_attrs:
+            if library_attrs['model_class'] == 'LibraryFolder' and library_attrs.get('id') and not self.sessionless and self.import_options.allow_edit:
+                library_folder = self.sa_session.query(model.LibraryFolder).get(self.app.security.decode_id(library_attrs['id']))
+                import_folder(library_attrs, root_folder=library_folder)
+            else:
+                assert self.import_options.allow_library_creation
+                name = library_attrs['name']
+                description = library_attrs['description']
+                synopsis = library_attrs['synopsis']
+                library = model.Library(name=name, description=description, synopsis=synopsis)
+                self._session_add(library)
+                object_import_tracker.libraries_by_key[library_attrs[object_key]] = library
 
             if 'root_folder' in library_attrs:
                 library.root_folder = import_folder(library_attrs['root_folder'])
-
-            object_import_tracker.libraries_by_key[library_attrs[object_key]] = library
 
     def _import_collection_instances(self, object_import_tracker, collections_attrs, history, new_history):
         object_key = self.object_key
@@ -1181,18 +1188,18 @@ class DirectoryModelExportStore(ModelExportStore):
 
     def export_library(self, library, include_hidden=False, include_deleted=False):
         self.included_libraries.append(library)
-        self.included_library_folders.append(library.root_folder)
+        root_folder = getattr(library, 'root_folder', library)
+        self.included_library_folders.append(root_folder)
+        self.export_library_folder(root_folder, include_hidden=include_hidden, include_deleted=include_deleted)
 
-        def collect_datasets(library_folder):
-            for library_dataset in library_folder.datasets:
-                ldda = library_dataset.library_dataset_dataset_association
-                add_dataset = (not ldda.visible or not include_hidden) and (not ldda.deleted or include_deleted)
-                # TODO: competing IDs here between ldda and hdas - fix this!
-                self.included_datasets[ldda.id] = (ldda, add_dataset)
-            for folder in library_folder.folders:
-                collect_datasets(folder)
-
-        collect_datasets(library.root_folder)
+    def export_library_folder(self, library_folder, include_hidden=False, include_deleted=False):
+        for library_dataset in library_folder.datasets:
+            ldda = library_dataset.library_dataset_dataset_association
+            add_dataset = (not ldda.visible or not include_hidden) and (not ldda.deleted or include_deleted)
+            # TODO: competing IDs here between ldda and hdas - fix this!
+            self.add_dataset(ldda, add_dataset)
+        for folder in library_folder.folders:
+            self.export_library_folder(folder, include_hidden=include_hidden, include_deleted=include_deleted)
 
     def add_job_output_dataset_associations(self, job_id, name, dataset_instance):
         job_output_dataset_associations = self.job_output_dataset_associations
