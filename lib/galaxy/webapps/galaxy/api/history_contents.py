@@ -334,6 +334,7 @@ class FastAPIHistoryContents:
 
     @router.get(
         '/api/histories/{history_id}/contents',
+        name='history_contents',
         summary='Returns the contents of the given history.',
     )
     @router.get(
@@ -369,11 +370,13 @@ class FastAPIHistoryContents:
 
     @router.get(
         '/api/histories/{history_id}/contents/{id}',
+        name='history_content',
         summary='Return detailed information about an HDA within a history.',
         deprecated=True,
     )
     @router.get(
         '/api/histories/{history_id}/contents/{type}s/{id}',
+        name='history_content_typed',
         summary='Return detailed information about a specific HDA or HDCA with the given `ID` within a history.',
     )
     def show(
