@@ -1,4 +1,5 @@
 import { matchCase, visitInputs } from "./utilities";
+import toolModel from "./test-data/tool";
 
 function visitInputsString(inputs) {
     let results = "";
@@ -9,6 +10,15 @@ function visitInputsString(inputs) {
 }
 
 describe("form component utilities", () => {
+    it("tool model test", () => {
+        const visits = [];
+        visitInputs(toolModel.inputs, function (node, name) {
+            visits.push({ name: name, node: node });
+        });
+        const result =
+            '[{"name":"a","node":{"name":"a","type":"text"}},{"name":"b|c","node":{"name":"c","type":"select","value":"h","options":[["d","d",false],["h","h",false]]}},{"name":"b|i","node":{"name":"i","type":"text","value":"i"}},{"name":"b|j","node":{"name":"j","type":"text","value":"j"}},{"name":"k_0|l","node":{"name":"l","type":"text","value":"l"}},{"name":"k_0|m|n","node":{"name":"n","type":"select","value":"r","options":[["o","o",false],["r","r",false]]}},{"name":"k_0|m|s","node":{"name":"s","type":"text","value":"s"}},{"name":"k_0|m|t","node":{"name":"t","type":"text","value":"t"}}]';
+        expect(JSON.stringify(visits)).toEqual(result);
+    });
     it("conditional case matching", () => {
         const input = {
             name: "a",
