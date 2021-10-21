@@ -301,7 +301,7 @@ class ToolShedRepositoryCache:
 
     def rebuild(self):
         self.repositories = self.session.query(ToolShedRepository).options(
-            defer(ToolShedRepository.metadata), joinedload('tool_dependencies')
+            defer(ToolShedRepository.metadata_), joinedload('tool_dependencies')
         ).all()
         repos_by_tuple = defaultdict(list)
         for repository in self.repositories + self.local_repositories:

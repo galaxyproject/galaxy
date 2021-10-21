@@ -17,7 +17,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import registry, Session
 
 from galaxy.model import _HasTable
-from . test_mapping import (
+from . test_model_mapping import (
     are_same_entity_collections,
     dbcleanup,
     dbcleanup_wrapper,

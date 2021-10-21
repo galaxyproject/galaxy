@@ -212,7 +212,7 @@ class ToolPanelManager:
         tool_panel_dict = {}
         shed_tool_conf, tool_path, relative_install_dir = \
             get_tool_panel_config_tool_path_install_dir(self.app, repository)
-        metadata = repository.metadata
+        metadata = repository.metadata_
         # Create a dictionary of tool guid and tool config file name for each tool in the repository.
         guids_and_configs = {}
         if 'tools' in metadata:
@@ -467,7 +467,7 @@ class ToolPanelManager:
         # information so the tools can be displayed in the same way when the repository is
         # activated or reinstalled.
         tool_panel_dict = self.generate_tool_panel_dict_from_shed_tool_conf_entries(repository)
-        repository.metadata['tool_panel_section'] = tool_panel_dict
+        repository.metadata_['tool_panel_section'] = tool_panel_dict
         self.app.install_model.context.add(repository)
         self.app.install_model.context.flush()
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
@@ -481,7 +481,7 @@ class ToolPanelManager:
         shed_tool_conf_dict = self.get_shed_tool_conf_dict(shed_tool_conf)
         if uninstall:
             # Remove from the shed_tool_conf file on disk.
-            self.remove_from_shed_tool_config(shed_tool_conf_dict, repository.metadata)
+            self.remove_from_shed_tool_config(shed_tool_conf_dict, repository.metadata_)
 
     def update_tool_panel_dict(self, tool_panel_dict, tool_panel_section_mapping, repository_tools_tups):
         for tool_guid in tool_panel_dict:

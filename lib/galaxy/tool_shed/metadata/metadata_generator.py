@@ -317,7 +317,7 @@ class MetadataGenerator:
         if self.updating_installed_repository:
             # Keep the original tool shed repository metadata if setting metadata on a repository
             # installed into a local Galaxy instance for which we have pulled updates.
-            original_repository_metadata = self.repository.metadata
+            original_repository_metadata = self.repository.metadata_
         else:
             original_repository_metadata = None
         readme_file_names = _get_readme_file_names(str(self.repository.name))

@@ -175,7 +175,7 @@ def get_requirements_from_repository(repository):
     if not repository.includes_tools:
         return {}
     else:
-        return get_requirements_from_tools(repository.metadata.get('tools', []))
+        return get_requirements_from_tools(repository.metadata_.get('tools', []))
 
 
 def get_repository_categories(app, id):

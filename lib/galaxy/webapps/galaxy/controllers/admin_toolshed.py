@@ -177,7 +177,7 @@ class AdminToolshed(AdminGalaxy):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-        repository_metadata = repository.metadata
+        repository_metadata = repository.metadata_
         shed_config_dict = repository.get_shed_config_dict(trans.app)
         tool_metadata = {}
         tool_lineage = []
@@ -863,7 +863,7 @@ class AdminToolshed(AdminGalaxy):
         new_tool_panel_section_label = kwd.get('new_tool_panel_section_label', '')
         tool_panel_section_key = None
         tool_panel_section_keys = []
-        metadata = tool_shed_repository.metadata
+        metadata = tool_shed_repository.metadata_
         # Keep track of tool dependencies defined for the current repository or those defined for any of
         # its repository dependencies.
         includes_tool_dependencies = tool_shed_repository.includes_tool_dependencies
@@ -1024,7 +1024,7 @@ class AdminToolshed(AdminGalaxy):
         latest_ctx_rev = kwd.get('latest_ctx_rev', None)
         tool_shed_repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
         repository_clone_url = common_util.generate_clone_url_for_installed_repository(trans.app, tool_shed_repository)
-        metadata = tool_shed_repository.metadata
+        metadata = tool_shed_repository.metadata_
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, str(tool_shed_repository.tool_shed))
         tool_path = tool_shed_repository.get_tool_relative_path(trans.app)[0]
         if latest_changeset_revision and latest_ctx_rev:

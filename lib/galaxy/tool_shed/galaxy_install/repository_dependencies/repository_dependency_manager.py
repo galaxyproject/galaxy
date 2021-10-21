@@ -233,10 +233,10 @@ class RepositoryDependencyInstallManager:
                         # The database record for the tool shed repository currently being processed can be updated.
                         # Get the repository metadata to see where it was previously located in the tool panel.
                         tpm = tool_panel_manager.ToolPanelManager(self.app)
-                        if repository_db_record and repository_db_record.metadata:
+                        if repository_db_record and repository_db_record.metadata_:
                             _, tool_panel_section_key = \
                                 tpm.handle_tool_panel_selection(toolbox=self.app.toolbox,
-                                                                metadata=repository_db_record.metadata,
+                                                                metadata=repository_db_record.metadata_,
                                                                 no_changes_checked=no_changes_checked,
                                                                 tool_panel_section_id=tool_panel_section_id,
                                                                 new_tool_panel_section_label=new_tool_panel_section_label)
