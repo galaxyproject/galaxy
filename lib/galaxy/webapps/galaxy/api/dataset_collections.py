@@ -1,34 +1,16 @@
 from logging import getLogger
 
-import routes
-
 from galaxy import exceptions
-from galaxy.datatypes.registry import Registry
-from galaxy.managers.base import decode_id
-from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.collections_util import (
-    api_payload_to_create_params,
-    dictify_dataset_collection_instance,
-    dictify_element_reference,
-)
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.hdcas import HDCAManager
-from galaxy.managers.histories import HistoryManager
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import UsesLibraryMixinItems
+from galaxy.webapps.galaxy.services.dataset_collections import DatasetCollectionsService
 from . import BaseGalaxyAPIController, depends
 
 log = getLogger(__name__)
 
 
-class DatasetCollectionsController(
-    BaseGalaxyAPIController,
-    UsesLibraryMixinItems,
-):
-    history_manager: HistoryManager = depends(HistoryManager)
-    hdca_manager: HDCAManager = depends(HDCAManager)
-    collection_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
-    datatypes_registry: Registry = depends(Registry)
+class DatasetCollectionsController(BaseGalaxyAPIController):
+    service: DatasetCollectionsService = depends(DatasetCollectionsService)
 
     @expose_api
     def index(self, trans, **kwd):
@@ -49,26 +31,7 @@ class DatasetCollectionsController(
         :rtype:     dict
         :returns:   element view of new dataset collection
         """
-        # TODO: Error handling...
-        create_params = api_payload_to_create_params(payload)
-        instance_type = payload.pop("instance_type", "history")
-        if instance_type == "history":
-            history_id = payload.get('history_id')
-            history_id = decode_id(self.app, history_id)
-            history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
-            create_params["parent"] = history
-            create_params["history"] = history
-        elif instance_type == "library":
-            folder_id = payload.get('folder_id')
-            library_folder = self.get_library_folder(trans, folder_id, check_accessible=True)
-            self.check_user_can_add_to_library_item(trans, library_folder, check_accessible=False)
-            create_params["parent"] = library_folder
-        else:
-            raise exceptions.RequestParameterInvalidException()
-
-        dataset_collection_instance = self.__service.create(trans=trans, **create_params)
-        return dictify_dataset_collection_instance(dataset_collection_instance,
-                                                   security=trans.security, parent=create_params["parent"])
+        return self.service.create(trans, payload)
 
     @expose_api
     def update(self, trans: ProvidesHistoryContext, payload: dict, id):
@@ -79,14 +42,7 @@ class DatasetCollectionsController(
         * POST /api/dataset_collections/{hdca_id}/copy:
             create a new dataset collection instance.
         """
-
-        if len(payload) != 1:
-            raise exceptions.RequestParameterInvalidException("Update one attribute at a time.")
-        if 'dbkey' not in payload:
-            raise exceptions.RequestParameterInvalidException("This attribute cannot be modified.")
-
-        self.collection_manager.copy(trans, trans.history, "hdca", id, copy_elements=True, dataset_instance_attributes=payload)
-        trans.sa_session.flush()
+        return self.service.update(trans, payload, id)
 
     @expose_api
     def attributes(self, trans: ProvidesHistoryContext, id, instance_type='history'):
@@ -95,13 +51,7 @@ class DatasetCollectionsController(
 
         Returns dbkey/extension for collection elements
         """
-        dataset_collection_instance = self.__service.get_dataset_collection_instance(
-            trans,
-            id=id,
-            instance_type=instance_type,
-            check_ownership=True
-        )
-        return dataset_collection_instance.to_dict(view="dbkeysandextensions")
+        return self.service.attributes(trans, id, instance_type)
 
     @expose_api
     def suitable_converters(self, trans: ProvidesHistoryContext, id, instance_type='history', **kwds):
@@ -110,7 +60,7 @@ class DatasetCollectionsController(
 
         Returns suitable converters for all datatypes in collection
         """
-        return self.collection_manager.get_converters_for_collection(trans, id, self.datatypes_registry, instance_type)
+        return self.service.suitable_converters(trans, id, instance_type)
 
     @expose_api
     def show(self, trans: ProvidesHistoryContext, id, instance_type='history', **kwds):
@@ -118,24 +68,7 @@ class DatasetCollectionsController(
         GET /api/dataset_collections/{hdca_id}
         GET /api/dataset_collections/{ldca_id}?instance_type=library
         """
-        dataset_collection_instance = self.__service.get_dataset_collection_instance(
-            trans,
-            id=id,
-            instance_type=instance_type,
-        )
-        if instance_type == 'history':
-            parent = dataset_collection_instance.history
-        elif instance_type == 'library':
-            parent = dataset_collection_instance.folder
-        else:
-            raise exceptions.RequestParameterInvalidException()
-
-        return dictify_dataset_collection_instance(
-            dataset_collection_instance,
-            security=trans.security,
-            parent=parent,
-            view='element'
-        )
+        return self.service.show(trans, id, instance_type)
 
     @expose_api
     def contents(self, trans: ProvidesHistoryContext, hdca_id, parent_id, instance_type='history', limit=None, offset=None, **kwds):
@@ -155,38 +88,4 @@ class DatasetCollectionsController(
         :rtype:     list
         :returns:   list of dataset collection elements and contents
         """
-        svc = self.__service
-        encode_id = trans.app.security.encode_id
-
-        # validate HDCA for current user, will throw error if not permitted
-        # TODO: refactor get_dataset_collection_instance
-        hdca = svc.get_dataset_collection_instance(trans,
-            id=hdca_id, check_ownership=True,
-            instance_type=instance_type)
-
-        # check to make sure the dsc is part of the validated hdca
-        decoded_parent_id = decode_id(self.app, parent_id)
-        if parent_id != hdca_id and not hdca.contains_collection(decoded_parent_id):
-            errmsg = 'Requested dataset collection is not contained within indicated history content'
-            raise exceptions.ObjectNotFound(errmsg)
-
-        # retrieve contents
-        contents_qry = svc.get_collection_contents_qry(decoded_parent_id, limit=limit, offset=offset)
-
-        # dictify and tack on a collection_url for drilling down into nested collections
-        def process_element(dsc_element):
-            result = dictify_element_reference(dsc_element, recursive=False, security=trans.security)
-            if result["element_type"] == "dataset_collection":
-                result["object"]["contents_url"] = routes.url_for('contents_dataset_collection',
-                    hdca_id=encode_id(hdca.id),
-                    parent_id=encode_id(result["object"]["id"]))
-            trans.security.encode_all_ids(result, recursive=True)
-            return result
-
-        results = contents_qry.with_session(trans.sa_session()).all()
-        return [process_element(el) for el in results]
-
-    @property
-    def __service(self) -> DatasetCollectionManager:
-        service = self.app.dataset_collection_manager
-        return service
+        return self.service.contents(trans, hdca_id, parent_id, instance_type, limit, offset)
