@@ -1018,9 +1018,21 @@ class HistoriesContentsService(ServiceBase):
         if serializer is None:
             raise exceptions.UnknownContentsType(f'Unknown contents type: {content.content_type}')
 
-        return serializer.serialize_to_view(
+        rval = serializer.serialize_to_view(
             content, user=trans.user, trans=trans, view=view, **serialization_params_dict
         )
+        # Override URL generation to use UrlBuilder
+        if trans.url_builder:
+            if rval.get("url"):
+                rval["url"] = trans.url_builder('history_content_typed',
+                    history_id=rval["history_id"], id=rval["id"], type=rval["history_content_type"]
+                )
+            if rval.get("contents_url"):
+                rval["contents_url"] = trans.url_builder('contents_dataset_collection',
+                    hdca_id=rval["id"],
+                    parent_id=self.encode_id(content.collection_id)
+                )
+        return rval
 
     def __collection_dict(self, trans, dataset_collection_instance, **kwds):
         return dictify_dataset_collection_instance(dataset_collection_instance,
