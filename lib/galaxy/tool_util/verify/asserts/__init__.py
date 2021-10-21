@@ -23,7 +23,6 @@ for assertion_module_name in assertion_module_names:
         log.exception('Failed to load assertion module: %s', assertion_module_name)
         continue
     for member, value in getmembers(assertion_module):
-        print(member)
         if member.startswith("assert_"):
             assertion_functions[member] = value
 
@@ -41,7 +40,7 @@ def verify_assertion(data, assertion_description):
     assert_function = assertion_functions.get(assert_function_name, None)
 
     if assert_function is None:
-        errmsg = "Unable to find test function associated with XML tag '%s'. Check your tool file syntax." % tag
+        errmsg = f"Unable to find test function associated with XML tag {tag}. Check your tool file syntax."
         raise AssertionError(errmsg)
 
     assert_function_args = getfullargspec(assert_function).args

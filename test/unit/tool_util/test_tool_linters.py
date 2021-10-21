@@ -547,6 +547,8 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
         </test>
     </tests>
 </tool>
+"""
+
 ASSERTS = """
 <tool>
     <outputs>
@@ -995,8 +997,8 @@ TESTS = [
             and 'Test 0: attribute delta for has_size needs to be int got 1O' in x.error_messages
             and 'Test 0: attribute delta_frac for has_size needs to be float got 10,0' in x.error_messages
             and 'Test 0: unknown attribute invalid_attrib_also_checked_in_nested_asserts for not_has_text' in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 4
-    )
+            and len(x.warn_messages) == 0 and len(x.error_messages) == 7
+    ),
 ]
 
 TEST_IDS = [

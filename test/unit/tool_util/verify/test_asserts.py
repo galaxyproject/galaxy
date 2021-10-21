@@ -315,5 +315,5 @@ def test_assertions(assertion_xml, data, assert_func):
     except AssertionError as e:
         assert_list = e.args
     else:
-        assert_list = []
+        assert_list = ()
     assert assert_func(assert_list)
