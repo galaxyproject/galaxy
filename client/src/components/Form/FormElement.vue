@@ -2,7 +2,7 @@
     <div v-show="!hidden" :id="elementId" :class="['ui-form-element section-row', cls]" :tour_id="id">
         <div v-if="hasError" class="ui-form-error">
             <span class="fa fa-exclamation mr-1" />
-            <span class="ui-form-error-text">{{ error }}</span>
+            <span class="ui-form-error-text" v-html="error" />
         </div>
         <div class="ui-form-title">
             <div v-if="collapsible || connectable">
