@@ -243,6 +243,11 @@ class HistoryContentSource(str, Enum):
     new_collection = "new_collection"
 
 
+class DatasetCollectionInstanceType(str, Enum):
+    history = "history"
+    library = "library"
+
+
 class TagItem(ConstrainedStr):
     regex = re.compile(r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")
 
@@ -900,6 +905,83 @@ class CreateHistoryPayload(Model):
         default=None,
         title="Archive File",
         description="Uploaded file information when importing the history from a file.",
+    )
+
+
+class CollectionElementIdentifier(Model):
+    name: Optional[str] = Field(
+        None,
+        title="Name",
+        description="The name of the element.",
+    )
+    src: ColletionSourceType = Field(
+        ...,
+        title="Source",
+        description="The source of the element.",
+    )
+    id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        title="ID",
+        description="The encoded ID of the element.",
+    )
+    collection_type: Optional[str] = Field(
+        default=None,
+        title="Collection Type",
+        description="The type of the collection. For example, `list`, `paired`, `list:paired`.",
+    )
+    element_identifiers: Optional[List['CollectionElementIdentifier']] = Field(
+        default=None,
+        title="Element Identifiers",
+        description="List of elements that should be in the new sub-collection.",
+    )
+    tags: Optional[List[str]] = Field(
+        default=None,
+        title="Tags",
+        description="The list of tags associated with the element.",
+    )
+
+
+CollectionElementIdentifier.update_forward_refs()
+
+
+class CreateNewCollectionPayload(Model):
+    collection_type: str = Field(
+        ...,
+        title="Collection Type",
+        description="The type of the collection. For example, `list`, `paired`, `list:paired`.",
+    )
+    element_identifiers: List[CollectionElementIdentifier] = Field(
+        ...,
+        title="Element Identifiers",
+        description="List of elements that should be in the new collection.",
+    )
+    name: Optional[str] = Field(
+        default=None,
+        title="Name",
+        description="The name of the new collection.",
+    )
+    hide_source_items: Optional[bool] = Field(
+        default=False,
+        title="Hide Source Items",
+        description="Whether to mark the original HDAs as hidden.",
+    )
+    copy_elements: Optional[bool] = Field(
+        default=False,
+        title="Copy Elements",
+        description="Whether to create a copy of the source HDAs for the new collection.",
+    )
+    instance_type: Optional[DatasetCollectionInstanceType] = Field(
+        default=DatasetCollectionInstanceType.history,
+        title="Instance Type",
+        description="The type of the instance, either `history` (default) or `library`.",
+    )
+    history_id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        description="The ID of the history that will contain the collection. Required if `instance_type=history`.",
+    )
+    folder_id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        description="The ID of the history that will contain the collection. Required if `instance_type=library`.",
     )
 
 
