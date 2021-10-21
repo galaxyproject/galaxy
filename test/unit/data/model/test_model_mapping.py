@@ -527,8 +527,8 @@ class TestDataset(BaseTest):
             assert stored_obj.hashes == [dataset_hash]
             assert stored_obj.sources == [dataset_source]
             assert stored_obj.library_associations == [library_dataset_dataset_association]
-            assert are_same_entity_collections(
-                stored_obj.history_associations, [hda, history_dataset_association])
+            assert collection_consists_of_objects(
+                stored_obj.history_associations, hda, history_dataset_association)
 
         delete_from_database(session, hda)
 
@@ -4355,8 +4355,8 @@ class TestStoredWorkflow(BaseTest):
             assert stored_obj.ratings == [stored_workflow_rating_association]
             # This doesn't test the average amount, just the mapping.
             assert stored_obj.average_rating == stored_workflow_rating_association.rating
-            assert are_same_entity_collections(
-                stored_obj.tags, [stored_workflow_tag_association, tag_assoc2])
+            assert collection_consists_of_objects(
+                stored_obj.tags, stored_workflow_tag_association, tag_assoc2)
             assert stored_obj.owner_tags == [tag_assoc2]
             assert stored_obj.users_shared_with == [stored_workflow_user_share_association]
 
@@ -4822,7 +4822,7 @@ class TestUser(BaseTest):
             assert stored_obj.custos_auth == [custos_authnz_token]
             assert stored_obj.default_permissions == [default_user_permissions]
             assert stored_obj.groups == [user_group_association]
-            assert are_same_entity_collections(stored_obj.histories, [history1, history2])
+            assert collection_consists_of_objects(stored_obj.histories, history1, history2)
             assert stored_obj.active_histories == [history1]
             assert stored_obj.galaxy_sessions == [galaxy_session]
             assert stored_obj.quotas == [user_quota_association]
@@ -4831,7 +4831,7 @@ class TestUser(BaseTest):
             assert user_preference in stored_obj._preferences.values()
             assert stored_obj.api_keys == [api_keys]
             assert stored_obj.data_manager_histories == [data_manager_history_association]
-            assert are_same_entity_collections(stored_obj.roles, [private_user_role, non_private_user_role])
+            assert collection_consists_of_objects(stored_obj.roles, private_user_role, non_private_user_role)
             assert stored_obj.non_private_roles == [non_private_user_role]
             assert stored_obj.stored_workflows == [stored_workflow]
 
@@ -7481,26 +7481,6 @@ def has_index(table, fields):
 def get_unique_value():
     """Generate unique values to accommodate unique constraints."""
     return uuid4().hex
-
-
-def are_same_entity_collections(collection1, collection2):
-    """
-    The 2 arguments are collections of instances of models that have an `id`
-    attribute as their primary key.
-    Returns `True` if collections are the same size and contain the same
-    instances. Instance equality is determined by the object's `id` attribute,
-    not its Python object identifier.
-    """
-    if len(collection1) != len(collection2):
-        return False
-
-    collection1.sort(key=lambda item: item.id)
-    collection2.sort(key=lambda item: item.id)
-
-    for item1, item2 in zip(collection1, collection2):
-        if item1.id != item2.id:
-            return False
-    return True
 
 
 def collection_consists_of_objects(collection, *objects):
