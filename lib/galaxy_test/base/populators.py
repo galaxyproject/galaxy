@@ -55,6 +55,7 @@ from typing import (
     NamedTuple,
     Optional,
     Set,
+    Tuple,
 )
 
 import requests
@@ -913,12 +914,12 @@ class BaseWorkflowPopulator(BasePopulator):
         api_asserts.assert_status_code_is(import_response, 200)
         return import_response.json()["id"]
 
-    def create_workflow(self, workflow: dict, **create_kwds) -> str:
+    def create_workflow(self, workflow: Dict[str, Any], **create_kwds) -> str:
         upload_response = self.create_workflow_response(workflow, **create_kwds)
         uploaded_workflow_id = upload_response.json()["id"]
         return uploaded_workflow_id
 
-    def create_workflow_response(self, workflow: dict, **create_kwds) -> Response:
+    def create_workflow_response(self, workflow: Dict[str, Any], **create_kwds) -> Response:
         data = dict(
             workflow=json.dumps(workflow),
             **create_kwds
@@ -1153,6 +1154,62 @@ class BaseWorkflowPopulator(BasePopulator):
             print(raw_workflow["yaml_content"])
         else:
             print(json.dumps(raw_workflow, sort_keys=True, indent=2))
+
+    def workflow_inputs(self, workflow_id: str) -> Dict[str, Dict[str, Any]]:
+        workflow_show_resposne = self._get(f"workflows/{workflow_id}")
+        api_asserts.assert_status_code_is_ok(workflow_show_resposne)
+        workflow_inputs = workflow_show_resposne.json()["inputs"]
+        return workflow_inputs
+
+    def build_ds_map(self, workflow_id: str, label_map: Dict[str, Any]) -> str:
+        workflow_inputs = self.workflow_inputs(workflow_id)
+        ds_map = {}
+        for key, value in workflow_inputs.items():
+            label = value["label"]
+            if label in label_map:
+                ds_map[key] = label_map[label]
+        return json.dumps(ds_map)
+
+    def setup_workflow_run(self, workflow: Optional[Dict[str, Any]] = None, inputs_by: str = 'step_id', history_id: Optional[str] = None, workflow_id: Optional[str] = None) -> Tuple[Dict[str, Any], str, str]:
+        ds_entry = self.dataset_populator.ds_entry
+        if not workflow_id:
+            assert workflow, "If workflow_id not specified, must specify a workflow dictionary to load"
+            workflow_id = self.create_workflow(workflow)
+        if not history_id:
+            history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6")
+        workflow_request = dict(
+            history=f"hist_id={history_id}",
+        )
+        label_map = {
+            'WorkflowInput1': ds_entry(hda1),
+            'WorkflowInput2': ds_entry(hda2)
+        }
+        if inputs_by == 'step_id':
+            ds_map = self.build_ds_map(workflow_id, label_map)
+            workflow_request["ds_map"] = ds_map
+        elif inputs_by == "step_index":
+            index_map = {
+                '0': ds_entry(hda1),
+                '1': ds_entry(hda2)
+            }
+            workflow_request["inputs"] = json.dumps(index_map)
+            workflow_request["inputs_by"] = 'step_index'
+        elif inputs_by == "name":
+            workflow_request["inputs"] = json.dumps(label_map)
+            workflow_request["inputs_by"] = 'name'
+        elif inputs_by in ["step_uuid", "uuid_implicitly"]:
+            assert workflow, f"Must specify workflow for this inputs_by {inputs_by} parameter value"
+            uuid_map = {
+                workflow["steps"]["0"]["uuid"]: ds_entry(hda1),
+                workflow["steps"]["1"]["uuid"]: ds_entry(hda2),
+            }
+            workflow_request["inputs"] = json.dumps(uuid_map)
+            if inputs_by == "step_uuid":
+                workflow_request["inputs_by"] = "step_uuid"
+
+        return workflow_request, history_id, workflow_id
 
 
 class RunJobsSummary(NamedTuple):
