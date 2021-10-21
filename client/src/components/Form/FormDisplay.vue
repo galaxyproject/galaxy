@@ -227,8 +227,8 @@ export default {
                 const inputId = validation[0];
                 const message = validation[1];
                 this.setError(inputId, message);
-                if (!silent) {
-                    const elementId = inputId.replaceAll("|", "-");
+                if (!silent && this.inputId) {
+                    const elementId = this.inputId.replaceAll("|", "-");
                     const element = this.$el.querySelector(`#form-element-${elementId}`);
                     if (element) {
                         document.querySelector(".center-panel").scrollTo(0, this.getOffsetTop(element));

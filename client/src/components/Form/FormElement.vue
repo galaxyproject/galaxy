@@ -166,7 +166,7 @@ export default {
             return this.attrs["default_value"];
         },
         elementId() {
-            const id = this.id.replaceAll("|", "-");
+            const id = this.id ? this.id.replaceAll("|", "-") : "unavailable";
             return `form-element-${id}`;
         },
         hasError() {
