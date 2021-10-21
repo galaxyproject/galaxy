@@ -8,6 +8,7 @@ from sqlalchemy import (
 )
 
 import galaxy.model.tool_shed_install.mapping as mapping
+from .common import collection_consists_of_objects
 
 
 class BaseTest:
@@ -102,9 +103,10 @@ class TestToolShedRepository(BaseTest):
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.tool_versions == [tool_version]
-            assert stored_obj.tool_dependencies == [tool_dependency]
-            assert stored_obj.required_repositories == [repository_repository_dependency_association]
+            assert collection_consists_of_objects(stored_obj.tool_versions, tool_version)
+            assert collection_consists_of_objects(stored_obj.tool_dependencies, tool_dependency)
+            assert collection_consists_of_objects(
+                stored_obj.required_repositories, repository_repository_dependency_association)
 
 
 class TestRepositoryRepositoryDependencyAssociation(BaseTest):
@@ -257,8 +259,8 @@ class TestToolVersion(BaseTest):
 
         stored_obj = get_stored_obj(session, cls_, obj.id)
         assert stored_obj.tool_shed_repository.id == repository.id
-        assert stored_obj.parent_tool_association == [tool_version_assoc1]
-        assert stored_obj.child_tool_association == [tool_version_assoc2]
+        assert collection_consists_of_objects(stored_obj.parent_tool_association, tool_version_assoc1)
+        assert collection_consists_of_objects(stored_obj.child_tool_association, tool_version_assoc2)
 
         delete_from_database(session, [obj, tool_version_assoc1, tool_version_assoc2])
 
@@ -276,7 +278,6 @@ class TestToolVersionAssociation(BaseTest):
         session.add(parent_tool_version)
         session.flush()
 
-        # TODO: why are these not mapped as relationships?
         obj = cls_()
         obj.tool_id = tool_version.id
         obj.parent_id = parent_tool_version.id
