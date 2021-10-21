@@ -600,9 +600,6 @@ class DefaultToolAction:
                 trans.sa_session.flush()
                 log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
 
-                # Dispatch to a job handler. enqueue() is responsible for flushing the job
-                app.job_manager.enqueue(job, tool=tool)
-                trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
             return job, out_data, history
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):

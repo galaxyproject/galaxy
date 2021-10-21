@@ -395,6 +395,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     Create the upload job.
     """
     job = trans.app.model.Job()
+    trans.sa_session.add(job)
     job.galaxy_version = trans.app.config.version_major
     galaxy_session = trans.get_galaxy_session()
     if type(galaxy_session) == trans.model.GalaxySession:
@@ -410,16 +411,10 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     job.tool_id = tool.id
     job.tool_version = tool.version
     job.dynamic_tool = tool.dynamic_tool
-    job.set_state(job.states.UPLOAD)
-    trans.sa_session.add(job)
-    trans.sa_session.flush()
-    log.info('tool %s created job id %d' % (tool.id, job.id))
-    trans.log_event('created job id %d' % job.id, tool_id=tool.id)
 
     for name, value in tool.params_to_strings(params, trans.app).items():
         job.add_parameter(name, value)
     job.add_parameter('paramfile', dumps(json_file_path))
-    object_store_id = None
     for i, output_object in enumerate(outputs):
         output_name = "output%i" % i
         if hasattr(output_object, "collection"):
@@ -432,18 +427,11 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
             else:
                 job.add_output_dataset(output_name, dataset)
 
-        trans.sa_session.add(output_object)
-
-    job.object_store_id = object_store_id
     job.set_state(job.states.NEW)
     if job_params:
         for name, value in job_params.items():
             job.add_parameter(name, value)
-    trans.sa_session.add(job)
 
-    # Queue the job for execution
-    trans.app.job_manager.enqueue(job, tool=tool)
-    trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
     output = {}
     for i, v in enumerate(outputs):
         if not hasattr(output_object, "collection_type"):
