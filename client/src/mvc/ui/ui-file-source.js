@@ -8,21 +8,21 @@ var View = Backbone.View.extend({
     initialize: function (options) {
         this.model = new Backbone.Model();
         this.target = options.target;
-        const props = {
-            mode: "directory",
-            requireWritable: true,
-        };
-        // create insert edit button
-        this.browse_button = new Ui.Button({
-            title: _l("Select"),
-            icon: "fa fa-edit",
-            tooltip: _l("Select URI"),
-            onclick: () => {
-                filesDialog((uri) => {
-                    this._handleRemoteFilesUri(uri);
-                }, props);
-            },
-        });
+        // const props = {
+        //     mode: "directory",
+        //     requireWritable: true,
+        // };
+        // // create insert edit button
+        // this.browse_button = new Ui.Button({
+        //     title: _l("Select"),
+        //     icon: "fa fa-edit",
+        //     tooltip: _l("Select URI"),
+        //     onclick: () => {
+        //         filesDialog((uri) => {
+        //             this._handleRemoteFilesUri(uri);
+        //         }, props);
+        //     },
+        // });
 
         // add change event. fires on trigger
         this.on("change", () => {
@@ -34,7 +34,7 @@ var View = Backbone.View.extend({
         // create elements
         this.setElement(this._template(options));
         this.$text = this.$(".ui-uri-preview");
-        this.$(".ui-file-select-button").append(this.browse_button.$el);
+        // this.$(".ui-file-select-button").append(this.browse_button.$el);
         this.listenTo(this.model, "change", this.render, this);
         this.render();
     },
@@ -44,23 +44,21 @@ var View = Backbone.View.extend({
     },
 
     render: function () {
-        const value = this._value;
-        if (value) {
-            if (typeof value == "string") {
-                this.$text.text(value);
-            } else if (value.url !== this.$text.text()) {
-                this.$text.text(value.url);
-            }
-        } else {
-            breadcrump(
-                ".ui-uri-preview",
-                (uri) => {
-                    this._handleRemoteFilesUri(uri);
-                },
-
-                { test_props: true }
-            );
+        let value = this._value;
+        if (value && typeof value != "string") {
+            value = value.url;
         }
+        if (!value) {
+            value = "";
+        }
+        breadcrump(
+            ".ui-uri-preview",
+            (uri) => {
+                this._handleRemoteFilesUri(uri);
+            },
+
+            { url: value }
+        );
     },
 
     /** Main Template */
@@ -89,7 +87,7 @@ var View = Backbone.View.extend({
 
     /** Returns current value */
     _getValue: function () {
-        return this._value?.url;
+        return this._value;
     },
 
     /** Sets current value */

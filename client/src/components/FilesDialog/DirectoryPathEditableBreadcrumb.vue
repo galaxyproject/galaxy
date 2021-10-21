@@ -1,91 +1,113 @@
 <template>
-    <b-breadcrumb>
-        <b-breadcrumb-item>
-            <b-dropdown class="justify-content-md-center">
-                <template v-slot:button-content>
-                    <font-awesome-icon icon="plug" />
-                    {{ currentSource ? currentSource.doc : "Choose your remote" }}
-                </template>
-                <b-dropdown-item
-                    @click="currentSource = fileSource"
-                    v-for="(fileSource, index) in remoteFileSources"
-                    :key="index"
-                    >{{ fileSource.doc }}</b-dropdown-item
-                >
-            </b-dropdown>
-        </b-breadcrumb-item>
-        <b-breadcrumb-item v-for="(chunk, index) in pathChunks" :key="index" class="d-flex align-items-center">
-            {{ chunk }}
-        </b-breadcrumb-item>
-        <b-breadcrumb-item class="directory-input-field">
-            <b-input
-                aria-describedby="input-live-help input-live-feedback"
-                :state="isValidName"
-                @keyup.enter="addPath"
-                @keydown.191.capture.prevent.stop="addPath"
-                v-model="directoryName"
-                placeholder="Name your directory..."
-                trim
-            />
-            <b-form-invalid-feedback id="input-live-feedback">
-                Your directory name contains invalid characters
-            </b-form-invalid-feedback>
-            <b-form-text id="input-live-help"> Please enter directory name and press enter or "/" </b-form-text>
-        </b-breadcrumb-item>
-    </b-breadcrumb>
+    <div>
+        <div v-if="!url">
+            <b-button @click="reset"> <font-awesome-icon icon="folder-open" /> Select folder </b-button>
+            <FilesDialog :key="modalKey" mode="directory" :callback="setUrl" :require-writable="true" />
+        </div>
+        <b-breadcrumb v-if="url">
+            <b-breadcrumb-item title="Select another folder" @click="reset" class="align-items-center">
+                <b-button pill variant="primary"> <font-awesome-icon icon="folder-open" /> {{ url.protocol }}</b-button>
+            </b-breadcrumb-item>
+            <b-breadcrumb-item
+                v-for="({ name, editable }, index) in pathChunks"
+                :key="index"
+                class="existent-url-path align-items-center"
+            >
+                <b-button @click="removePath(index)" pill :disabled="!editable" variant="dark"> {{ name }}</b-button>
+            </b-breadcrumb-item>
+            <b-breadcrumb-item class="directory-input-field align-items-center">
+                <b-input
+                    aria-describedby="input-live-help input-live-feedback"
+                    :state="isValidName"
+                    @keyup.enter="addPath"
+                    @keydown.191.capture.prevent.stop="addPath"
+                    v-model="currentDirectoryName"
+                    placeholder="enter directory name"
+                    trim
+                />
+            </b-breadcrumb-item>
+        </b-breadcrumb>
+    </div>
 </template>
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faPlug } from "@fortawesome/free-solid-svg-icons";
-import { Services } from "./services";
+import { faFolder, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
+import { FilesDialog } from "components/FilesDialog";
 
-library.add(faPlug);
+library.add(faFolder, faFolderOpen);
+
+const getDefaultValues = () => ({
+    isModalShown: false,
+    url: "",
+    pathChunks: "",
+    currentDirectoryName: "",
+});
 
 export default {
     components: {
         FontAwesomeIcon,
+        FilesDialog,
     },
     data() {
-        return {
-            remoteFileSources: [],
-            pathChunks: [],
-            currentSource: undefined,
-            directoryName: "",
-        };
-    },
-    created() {
-        new Services().getFileSources().then((items) => {
-            this.remoteFileSources = items;
-        });
+        return { ...getDefaultValues(), modalKey: 0 };
+        // return {
+        // pathChunks: new URL("gxfiles://pdb-gzip/directory1").pathname.split("/").filter((path) => path),
+        // url: new URL("gxfiles://pdb-gzip/directory1"),
+        // };
     },
     props: {
         callback: {
             type: Function,
-            default: () => {},
-        },
-        title: {
-            type: String,
-            default: "copy to clipboard",
-            required: false,
+            required: true,
         },
     },
     computed: {
         isValidName() {
-            if (!this.directoryName) {
+            if (!this.currentDirectoryName) {
                 return null;
             }
             const regex = new RegExp("^(\\w+\\.?)*\\w+$", "g");
-            return regex.test(this.directoryName);
+            return regex.test(this.currentDirectoryName);
         },
     },
     methods: {
+        removePath(index) {
+            this.pathChunks = this.pathChunks.slice(0, index);
+        },
+        reset() {
+            const data = getDefaultValues();
+            Object.keys(data).forEach((k) => (this[k] = data[k]));
+            this.redrawModal();
+            console.log("reset");
+        },
+        // forcing modal to be redrawn
+        // https://michaelnthiessen.com/force-re-render/
+        redrawModal() {
+            this.modalKey += 1;
+        },
+        setUrl({ url }) {
+            console.log("!!!!!!!!!");
+            console.log(url);
+            this.url = new URL(url);
+            // split path and keep only valid entries
+            this.pathChunks = this.url.pathname
+                .split("/")
+                .filter((path) => path)
+                .map((x) => ({ name: x, editable: false }));
+        },
         addPath({ key }) {
             if (key === "Enter" || (key === "/" && this.isValidName)) {
-                this.pathChunks.push(this.directoryName.replaceAll("/", ""));
-                this.directoryName = "";
+                const newFolder = this.currentDirectoryName.replaceAll("/", "");
+                this.pathChunks.push({ name: newFolder, editable: true });
+                this.currentDirectoryName = "";
+                this.updateURL();
             }
+        },
+        updateURL() {
+            const url = `${this.url.protocol}//${this.pathChunks.map((name) => name).join("/")}`;
+            this.callback(url);
         },
     },
 };

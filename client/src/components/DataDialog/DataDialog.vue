@@ -87,6 +87,7 @@ export default {
             filter: null,
             items: [],
             modalShow: true,
+            url: undefined,
             optionsShow: false,
             undoShow: false,
             hasValue: false,
