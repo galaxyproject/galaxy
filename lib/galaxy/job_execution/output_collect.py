@@ -325,6 +325,9 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
     def get_job_id(self):
         return self.job.id
 
+    def get_implicit_collection_jobs_association_id(self):
+        return self.job.implicit_collection_jobs_association_id
+
 
 class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
 
@@ -386,6 +389,9 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
 
     def get_job_id(self):
         return self.metadata_params["job_id_tag"]
+
+    def get_implicit_collection_jobs_association_id(self):
+        return self.metadata_params.get("implicit_collection_jobs_association_id")
 
 
 def collect_primary_datasets(job_context, output, input_ext):

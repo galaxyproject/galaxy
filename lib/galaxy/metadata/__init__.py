@@ -183,6 +183,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             metadata_params["tool"] = tool_as_dict
             metadata_params["tool_path"] = tool.config_file
             metadata_params["job_id_tag"] = job.get_id_tag()
+            metadata_params["implicit_collection_jobs_association_id"] = job.implicit_collection_jobs_association and job.implicit_collection_jobs_association.id
             metadata_params["job_params"] = job.raw_param_dict()
             metadata_params["output_collections"] = output_collections
 

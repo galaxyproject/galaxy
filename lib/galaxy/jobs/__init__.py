@@ -1719,20 +1719,15 @@ class JobWrapper(HasResourceParameters):
                 self.version_string = collect_shrinked_content_from_path(version_filename)
 
         output_dataset_associations = job.output_datasets + job.output_library_datasets
-        for dataset_assoc in output_dataset_associations:
-            context = self.get_dataset_finish_context(job_context, dataset_assoc)
-            # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
-            # lets not allow this to occur
-            # need to update all associated output hdas, i.e. history was shared with job running
-            for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
-                output_name = dataset_assoc.name
-                standard_job_finish = not extended_metadata
-                if extended_metadata:
-                    if job.states.ERROR == final_job_state:
-                        dataset.blurb = "error"
-                        dataset.mark_unhidden()
+        if not extended_metadata:
+            for dataset_assoc in output_dataset_associations:
+                context = self.get_dataset_finish_context(job_context, dataset_assoc)
+                # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
+                # lets not allow this to occur
+                # need to update all associated output hdas, i.e. history was shared with job running
+                for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
+                    output_name = dataset_assoc.name
 
-                if standard_job_finish:
                     # Handles retry internally on error for instance...
                     self._finish_dataset(
                         output_name, dataset, job, context, final_job_state, remote_metadata_directory
