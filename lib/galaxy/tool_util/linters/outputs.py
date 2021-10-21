@@ -86,5 +86,7 @@ def __check_pattern(node):
         return False
     if node.attrib["pattern"] == "__default__":
         return True
-    if "ext" in node.attrib["pattern"] and node.attrib["pattern"].startswith("__") and node.attrib["pattern"].endswith("__"):
+    if node.attrib["pattern"] in ["__name_and_ext__", "__designation_and_ext__"]:
+        return True
+    if "(?P<ext>" in node.attrib["pattern"]:
         return True
