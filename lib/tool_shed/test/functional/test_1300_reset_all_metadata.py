@@ -441,7 +441,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
         repository_metadata = dict()
         repositories = self.test_db_util.get_all_installed_repositories(actually_installed=True)
         for repository in repositories:
-            repository_metadata[self.security.encode_id(repository.id)] = repository.metadata
+            repository_metadata[self.security.encode_id(repository.id)] = repository.metadata_
         self.reset_metadata_on_selected_installed_repositories(list(repository_metadata.keys()))
         for repository in repositories:
             self.test_db_util.ga_refresh(repository)
@@ -452,7 +452,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             # is normal and expected behavior, the functional tests assume that repository metadata will not change
             # in any way after a reset. A workaround is to remove the tool panel section from the stored repository
             # metadata dict, in order to eliminate the misleading detection of changed metadata.
-            if 'tool_panel_section' in old_metadata and 'tool_panel_section' not in repository.metadata:
+            if 'tool_panel_section' in old_metadata and 'tool_panel_section' not in repository.metadata_:
                 del old_metadata['tool_panel_section']
-            assert repository.metadata == old_metadata, 'Metadata for %s repository %s changed after reset. \nOld: %s\nNew: %s' % \
-                (repository.status, repository.name, old_metadata, repository.metadata)
+            assert repository.metadata_ == old_metadata, 'Metadata for %s repository %s changed after reset. \nOld: %s\nNew: %s' % \
+                (repository.status, repository.name, old_metadata, repository.metadata_)
