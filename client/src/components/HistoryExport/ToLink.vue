@@ -35,7 +35,7 @@
             <p>
                 <b
                     ><a class="export-link" href="#" @click.prevent="regenerateExport"
-                        >Click here to to generate a new archive for this history.</a
+                        >Click here to generate a new archive for this history.</a
                     ></b
                 >
             </p>
