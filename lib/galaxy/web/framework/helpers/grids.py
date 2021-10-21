@@ -76,9 +76,9 @@ class GridColumn:
         """Sort query using this column."""
         if column_name is None:
             column_name = self.key
-        column = self.model_class.table.c.get(column_name)
+        column = getattr(self.model_class, column_name)
         if column is None:
-            column = getattr(self.model_class, column_name)
+            column = self.model_class.table.c.get(column_name)
         if ascending:
             query = query.order_by(column.asc())
         else:
