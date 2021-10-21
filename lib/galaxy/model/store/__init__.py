@@ -220,7 +220,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dataset_instance.dataset.id = dataset_attrs["dataset"]['id']
 
             if 'id' in dataset_attrs and self.import_options.allow_edit and not self.sessionless:
-                hda = self.sa_session.query(model.HistoryDatasetAssociation).get(dataset_attrs["id"])
+                dataset_instance = self.sa_session.query(getattr(model, dataset_attrs['model_class'])).get(dataset_attrs["id"])
                 attributes = [
                     "name",
                     "extension",
@@ -238,14 +238,14 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         if attribute == "metadata":
                             def remap_objects(p, k, obj):
                                 if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
-                                    return (k, model.MetadataFile(dataset=hda, uuid=obj["uuid"]))
+                                    return (k, model.MetadataFile(dataset=dataset_instance, uuid=obj["uuid"]))
                                 return (k, obj)
 
                             value = remap(value, remap_objects)
 
-                        setattr(hda, attribute, value)
+                        setattr(dataset_instance, attribute, value)
 
-                handle_dataset_object_edit(hda)
+                handle_dataset_object_edit(dataset_instance)
             else:
                 metadata = dataset_attrs['metadata']
 
@@ -268,7 +268,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                        flush=False,
                                                                        sa_session=self.sa_session)
                 elif model_class == "LibraryDatasetDatasetAssociation":
-                    # Create dataset and HDA.
+                    # Create dataset and LDDA.
                     dataset_instance = model.LibraryDatasetDatasetAssociation(name=dataset_attrs['name'],
                                                                               extension=dataset_attrs['extension'],
                                                                               info=dataset_attrs['info'],
@@ -281,6 +281,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                               tool_version=metadata.get('tool_version'),
                                                                               metadata=metadata,
                                                                               create_dataset=True,
+                                                                              flush=False,
                                                                               sa_session=self.sa_session)
                 else:
                     raise Exception("Unknown dataset instance type encountered")
@@ -610,10 +611,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         requires_hid = object_import_tracker.requires_hid
         requires_hid_len = len(requires_hid)
         if requires_hid_len > 0 and not self.sessionless:
-            base = history._next_hid(n=requires_hid_len)
-            for i, obj in enumerate(requires_hid):
-                obj.hid = base + i
-        self._flush()
+            for obj in requires_hid:
+                history.stage_addition(obj)
+            history.add_pending_items()
 
     def _import_jobs(self, object_import_tracker, history):
         object_key = self.object_key
