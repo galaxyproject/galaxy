@@ -87,13 +87,13 @@ DatasetStateField: Dataset.states = Field(
     description="The current state of this dataset.",
 )
 
-CreateTimeField: datetime = Field(
+CreateTimeField = Field(
     ...,
     title="Create Time",
     description="The time and date this item was created.",
 )
 
-UpdateTimeField: datetime = Field(
+UpdateTimeField = Field(
     ...,
     title="Update Time",
     description="The last time and date this item was updated.",
@@ -140,7 +140,7 @@ PopulatedField: bool = Field(
     description="Whether the dataset collection elements (and any subcollections elements) were successfully populated.",
 )
 
-ElementsField: List['DCESummary'] = Field(
+ElementsField = Field(
     [],
     title="Elements",
     description="The summary information of each of the elements inside the dataset collection.",

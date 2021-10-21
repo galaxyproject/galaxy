@@ -13,6 +13,11 @@ from galaxy.managers.collections_util import (
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdcas import HDCAManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.schema.schema import (
+    CreateNewCollectionPayload,
+    DatasetCollectionInstanceType,
+    HDCADetailed,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.base.controller import UsesLibraryMixinItems
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -37,7 +42,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         self.collection_manager = collection_manager
         self.datatypes_registry = datatypes_registry
 
-    def create(self, trans: ProvidesHistoryContext, payload: dict):
+    def create(self, trans: ProvidesHistoryContext, payload: CreateNewCollectionPayload) -> HDCADetailed:
         """
         Create a new dataset collection instance.
 
@@ -51,25 +56,26 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         :returns:   element view of new dataset collection
         """
         # TODO: Error handling...
-        create_params = api_payload_to_create_params(payload)
-        instance_type = payload.pop("instance_type", "history")
-        if instance_type == "history":
-            encoded_history_id = payload.get('history_id')
-            history_id = self.decode_id(encoded_history_id)
+        create_params = api_payload_to_create_params(payload.dict(exclude_unset=True))
+        if payload.instance_type == DatasetCollectionInstanceType.history:
+            if payload.history_id is None:
+                raise exceptions.RequestParameterInvalidException("Parameter history_id is required.")
+            history_id = self.decode_id(payload.history_id)
             history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
             create_params["parent"] = history
             create_params["history"] = history
-        elif instance_type == "library":
-            folder_id = payload.get('folder_id')
-            library_folder = self.get_library_folder(trans, folder_id, check_accessible=True)
+        elif payload.instance_type == DatasetCollectionInstanceType.library:
+            library_folder = self.get_library_folder(trans, payload.folder_id, check_accessible=True)
             self.check_user_can_add_to_library_item(trans, library_folder, check_accessible=False)
             create_params["parent"] = library_folder
         else:
             raise exceptions.RequestParameterInvalidException()
 
         dataset_collection_instance = self.collection_manager.create(trans=trans, **create_params)
-        return dictify_dataset_collection_instance(dataset_collection_instance,
-                                                   security=trans.security, parent=create_params["parent"])
+        rval = dictify_dataset_collection_instance(
+            dataset_collection_instance, security=trans.security, parent=create_params["parent"]
+        )
+        return HDCADetailed.construct(**rval)
 
     def update(self, trans: ProvidesHistoryContext, payload: dict, id):
         """

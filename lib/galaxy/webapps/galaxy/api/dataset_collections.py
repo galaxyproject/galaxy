@@ -2,6 +2,7 @@ from logging import getLogger
 
 from galaxy import exceptions
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.schema.schema import CreateNewCollectionPayload
 from galaxy.web import expose_api
 from galaxy.webapps.galaxy.services.dataset_collections import DatasetCollectionsService
 from . import BaseGalaxyAPIController, depends
@@ -31,7 +32,8 @@ class DatasetCollectionsController(BaseGalaxyAPIController):
         :rtype:     dict
         :returns:   element view of new dataset collection
         """
-        return self.service.create(trans, payload)
+        create_payload = CreateNewCollectionPayload(**payload)
+        return self.service.create(trans, create_payload)
 
     @expose_api
     def update(self, trans: ProvidesHistoryContext, payload: dict, id):
