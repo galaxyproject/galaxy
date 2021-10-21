@@ -1,5 +1,6 @@
 import logging
 from functools import wraps
+from inspect import getfullargspec
 from json import loads
 from traceback import format_exc
 
@@ -17,7 +18,6 @@ from galaxy.util import (
     parse_non_hex_float,
     unicodify
 )
-from galaxy.util.getargspec import getfullargspec
 from galaxy.util.json import safe_dumps
 from galaxy.web.framework import url_for
 

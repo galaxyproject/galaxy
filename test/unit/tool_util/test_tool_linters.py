@@ -1,3 +1,5 @@
+from inspect import getfullargspec
+
 import pytest
 
 from galaxy.tool_util.lint import LintContext
@@ -8,7 +10,6 @@ from galaxy.tool_util.linters import (
 )
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
-from galaxy.util.getargspec import getfullargspec
 
 WHITESPACE_IN_VERSIONS_AND_NAMES = """
 <tool name=" BWA Mapper " id="bwa tool" version=" 1.0.1 " is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
