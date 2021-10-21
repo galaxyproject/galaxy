@@ -165,6 +165,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                 export_store.add_dataset_collection(dataset_collection)
                 output_collections[name] = {
                     'id': dataset_collection.id,
+                    'model_class': dataset_collection.__class__.__name__
                 }
 
         if self.write_object_store_conf:

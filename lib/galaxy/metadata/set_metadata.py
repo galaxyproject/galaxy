@@ -39,7 +39,6 @@ from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
 from galaxy.model import (
     Dataset,
     HistoryDatasetAssociation,
-    HistoryDatasetCollectionAssociation,
     Job,
     store,
 )
@@ -306,7 +305,10 @@ def set_metadata_portable():
         # discover extra outputs...
         output_collections = {}
         for name, output_collection in metadata_params["output_collections"].items():
-            output_collections[name] = import_model_store.sa_session.query(HistoryDatasetCollectionAssociation).find(output_collection["id"])
+            # TODO: remove HistoryDatasetCollectionAssociation fallback on 22.01, model_class used to not be serialized prior to 21.09
+            model_class = output_collection.get('model_class', 'HistoryDatasetCollectionAssociation')
+            collection = import_model_store.sa_session.query(getattr(galaxy.model, model_class)).find(output_collection["id"])
+            output_collections[name] = collection
         outputs = {}
         for name, output in metadata_params["outputs"].items():
             klass = getattr(galaxy.model, output.get('model_class', 'HistoryDatasetAssociation'))
