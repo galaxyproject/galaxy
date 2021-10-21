@@ -724,6 +724,9 @@ export default {
                     revName = revName.replace(extension, "");
                 }
             }
+            if (lcs.endsWith(".") || lcs.endsWith("_")) {
+                lcs = lcs.substring(0, lcs.length - 1);
+            }
             return lcs || `${fwdName} & ${revName}`;
         },
         clickAutopair: function () {
