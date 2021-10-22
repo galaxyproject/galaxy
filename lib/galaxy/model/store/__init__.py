@@ -231,6 +231,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     "visible",
                     "metadata",
                     "tool_version",
+                    "validated_state",
+                    "validated_state_message",
                 ]
                 for attribute in attributes:
                     if attribute in dataset_attrs:

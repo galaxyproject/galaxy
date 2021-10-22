@@ -3976,6 +3976,8 @@ class DatasetInstance:
             deleted=self.deleted,
             visible=self.visible,
             dataset_uuid=(lambda uuid: str(uuid) if uuid else None)(self.dataset.uuid),
+            validated_state=self.validated_state,
+            validated_state_message=self.validated_state_message,
         )
 
         serialization_options.attach_identifier(id_encoder, self, rval)
