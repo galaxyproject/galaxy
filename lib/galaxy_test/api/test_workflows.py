@@ -1762,6 +1762,16 @@ input_c:
         invocation_id = run_workflow_response.json()["id"]
         self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
 
+    def test_workflow_new_autocreated_history(self):
+        workflow = self.workflow_populator.load_workflow(name="test_for_new_autocreated_history")
+        workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow)
+        del workflow_request['history']  # Not passing a history param means asking for a new history to be automatically created
+        run_workflow_dict = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request, assert_ok=True).json()
+        new_history_id = run_workflow_dict["history_id"]
+        assert history_id != new_history_id
+        invocation_id = run_workflow_dict["id"]
+        self.wait_for_invocation_and_jobs(new_history_id, workflow_id, invocation_id)
+
     def test_workflow_output_dataset(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
