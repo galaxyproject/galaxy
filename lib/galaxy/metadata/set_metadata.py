@@ -281,16 +281,36 @@ def set_metadata_portable():
                     # move output to final destination.
                     object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
                 collect_extra_files(object_store, dataset, ".")
+                # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
                     context = ExpressionContext(meta, expression_context)
                 else:
                     context = expression_context
+                dataset.blurb = 'done'
+                dataset.peek = 'no peek'
+                dataset.info = (dataset.info or '')
+                if context['stdout'].strip():
+                    # Ensure white space between entries
+                    dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
+                if context['stderr'].strip():
+                    # Ensure white space between entries
+                    dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
+                dataset.tool_version = version_string
+                if 'uuid' in context:
+                    dataset.dataset.uuid = context['uuid']
+                if not final_job_state == Job.states.ERROR:
+                    line_count = context.get('line_count', None)
+                    try:
+                        # Certain datatype's set_peek methods contain a line_count argument
+                        dataset.set_peek(line_count=line_count)
+                    except TypeError:
+                        # ... and others don't
+                        dataset.set_peek()
                 for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
                     if context_key in context:
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
-                dataset.tool_version = version_string
                 # We never want to persist the external_filename.
                 dataset.dataset.external_filename = None
                 export_store.add_dataset(dataset)
