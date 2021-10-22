@@ -22,7 +22,6 @@
                     @keyup.enter="addPath"
                     @keydown.191.capture.prevent.stop="addPath"
                     @keydown.8.capture.prevent.stop="removeLastPath"
-                    @keyup="debug"
                     v-model="currentDirectoryName"
                     placeholder="enter directory name"
                     trim
