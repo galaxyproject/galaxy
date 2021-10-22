@@ -11,7 +11,6 @@ from json import (
     dumps,
     load,
 )
-from uuid import uuid4
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
@@ -1071,7 +1070,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         export_directory = self.export_directory
 
-        _, include_files = self.included_datasets[dataset.id]
+        _, include_files = self.included_datasets[dataset]
         if not include_files:
             return
 
@@ -1184,7 +1183,7 @@ class DirectoryModelExportStore(ModelExportStore):
             if dataset.id in self.collection_datasets:
                 add_dataset = True
 
-            if dataset.id not in self.included_datasets:
+            if dataset not in self.included_datasets:
                 self.add_dataset(dataset, include_files=add_dataset)
 
     def export_library(self, library, include_hidden=False, include_deleted=False):
@@ -1197,7 +1196,6 @@ class DirectoryModelExportStore(ModelExportStore):
         for library_dataset in library_folder.datasets:
             ldda = library_dataset.library_dataset_dataset_association
             add_dataset = (not ldda.visible or not include_hidden) and (not ldda.deleted or include_deleted)
-            # TODO: competing IDs here between ldda and hdas - fix this!
             self.add_dataset(ldda, add_dataset)
         for folder in library_folder.folders:
             self.export_library_folder(folder, include_hidden=include_hidden, include_deleted=include_deleted)
@@ -1213,16 +1211,7 @@ class DirectoryModelExportStore(ModelExportStore):
         self.included_collections.append(collection)
 
     def add_dataset(self, dataset, include_files=True):
-        dataset_id = dataset.id
-        if dataset_id is None:
-            # Better be a sessionless export, just assign a random ID
-            # won't be able to de-duplicate datasets. This could be fixed
-            # by using object identity or attaching something to the object
-            # like temp_id used in serialization.
-            assert self.sessionless
-            dataset_id = uuid4().hex
-
-        self.included_datasets[dataset_id] = (dataset, include_files)
+        self.included_datasets[dataset] = (dataset, include_files)
 
     def _finalize(self):
         export_directory = self.export_directory
