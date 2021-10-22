@@ -21,6 +21,8 @@
                     :state="isValidName"
                     @keyup.enter="addPath"
                     @keydown.191.capture.prevent.stop="addPath"
+                    @keydown.8.capture.prevent.stop="removeLastPath"
+                    @keyup="debug"
                     v-model="currentDirectoryName"
                     placeholder="enter directory name"
                     trim
@@ -77,13 +79,18 @@ export default {
             Object.keys(data).forEach((k) => (this[k] = data[k]));
             this.redrawModal();
             console.debug("reset");
-            this.updateURL(true)
-
+            this.updateURL(true);
         },
         // forcing modal to be redrawn
         // https://michaelnthiessen.com/force-re-render/
         redrawModal() {
             this.modalKey += 1;
+        },
+        removeLastPath() {
+            // check whether the last item is editable
+            if (this.pathChunks.length > 0 && this.pathChunks.at(-1).editable) {
+                this.pathChunks.pop();
+            }
         },
         setUrl({ url }) {
             this.url = new URL(url);
