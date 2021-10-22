@@ -7054,12 +7054,6 @@ def history_annotation_association(session):
 
 
 @pytest.fixture
-def history_dataset_annotation_association(session):
-    instance = model.HistoryDatasetAnnotationAssociation()
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
 def history_dataset_association(session, dataset):
     instance = model.HistoryDatasetAssociation(dataset=dataset)
     yield from dbcleanup_wrapper(session, instance)
@@ -7300,12 +7294,6 @@ def library(session):
 @pytest.fixture
 def library_dataset(session):
     instance = model.LibraryDataset()
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
-def library_dataset_annotation_association(session):
-    instance = model.LibraryDatasetAnnotationAssociation()
     yield from dbcleanup_wrapper(session, instance)
 
 
