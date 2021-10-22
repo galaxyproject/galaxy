@@ -468,8 +468,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dce.child_collection = import_collection(element_attrs['child_collection'])
                     else:
                         raise Exception("Unknown collection element type encountered.")
-
-                    self._session_add(dce)
+                dc.element_count = len(elements_attrs)
 
             if "id" in collection_attrs and self.import_options.allow_edit and not self.sessionless:
                 dc = self.sa_session.query(model.DatasetCollection).get(collection_attrs["id"])
@@ -489,7 +488,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 dc.populated_state = collection_attrs["populated_state"]
                 dc.populated_state_message = collection_attrs.get('populated_state_message')
                 self._attach_raw_id_if_editing(dc, collection_attrs)
-                # TODO: element_count...
                 materialize_elements(dc)
 
             self._session_add(dc)
