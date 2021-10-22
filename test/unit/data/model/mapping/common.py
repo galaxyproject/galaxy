@@ -1,11 +1,30 @@
+from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from uuid import uuid4
 
+import pytest
 from sqlalchemy import (
     delete,
     select,
     UniqueConstraint,
 )
+
+
+class AbstractBaseTest(ABC):
+    @pytest.fixture
+    def cls_(self):
+        """
+        Return class under test.
+        Assumptions: if the class under test is Foo, then the class grouping
+        the tests should be a subclass of BaseTest, named TestFoo.
+        """
+        prefix = len("Test")
+        class_name = self.__class__.__name__[prefix:]
+        return getattr(self.get_model(), class_name)
+
+    @abstractmethod
+    def get_model(self):
+        pass
 
 
 def dbcleanup_wrapper(session, obj, where_clause=None):

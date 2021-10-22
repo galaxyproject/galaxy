@@ -1,9 +1,14 @@
+"""
+See documentation + annotated examples for these tests in test_model_mapping.py.
+"""
+
 from datetime import datetime, timedelta
 
 import pytest
 
 from galaxy.model import tool_shed_install as model
 from .common import (
+    AbstractBaseTest,
     collection_consists_of_objects,
     dbcleanup,
     dbcleanup_wrapper,
@@ -12,17 +17,10 @@ from .common import (
 )
 
 
-class BaseTest:
-    @pytest.fixture
-    def cls_(self):
-        """
-        Return class under test.
-        Assumptions: if the class under test is Foo, then the class grouping
-        the tests should be a subclass of BaseTest, named TestFoo.
-        """
-        prefix = len('Test')
-        class_name = self.__class__.__name__[prefix:]
-        return getattr(model, class_name)
+class BaseTest(AbstractBaseTest):
+
+    def get_model(self):
+        return model
 
 
 class TestToolShedRepository(BaseTest):
