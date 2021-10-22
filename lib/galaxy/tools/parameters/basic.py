@@ -2419,7 +2419,10 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
         super().validate(value, trans=trans)
         if not value:
             return  # value is not set yet, do not validate
-        file_source = trans.app.file_sources.get_file_source_path(value).file_source
+        file_source_path = trans.app.file_sources.get_file_source_path(value)
+        file_source = file_source_path.file_source
+        if file_source is None:
+            raise ParameterValueError(f"'{value}' is not a valid file source uri.", self.name)
         user_context = ProvidesUserFileSourcesUserContext(trans)
         user_has_access = file_source.user_has_access(user_context)
         if not user_has_access:

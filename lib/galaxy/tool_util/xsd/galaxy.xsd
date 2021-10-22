@@ -5520,7 +5520,7 @@ Examples are included in the test tools directory including:
       <xs:extension base="xs:string">
         <xs:attribute name="interpreter" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en"><![CDATA[*Deprecated*. This will prefix the version command with the value of this attribute (e.g. ``python`` or ``perl``) and the tool directory, in order to to run an executable file shipped with the tool. It is recommended to instead use ``<interpreter> '$__tool_directory__/<executable_name>'`` in the tag content. If this attribute is not specified, the tag should contain a Bash command calling executable(s) available in the ``$PATH``, as modified after loading the requirements.]]></xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[*Deprecated*. This will prefix the version command with the value of this attribute (e.g. ``python`` or ``perl``) and the tool directory, in order to run an executable file shipped with the tool. It is recommended to instead use ``<interpreter> '$__tool_directory__/<executable_name>'`` in the tag content. If this attribute is not specified, the tag should contain a Bash command calling executable(s) available in the ``$PATH``, as modified after loading the requirements.]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>

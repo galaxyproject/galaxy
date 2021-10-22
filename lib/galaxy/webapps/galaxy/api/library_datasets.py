@@ -520,8 +520,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         job_params['link_data_only'] = dumps(kwd.get('link_data_only', 'copy_files'))
         job_params['uuid'] = dumps(kwd.get('uuid', None))
         job, output = upload_common.create_job(trans, tool_params, tool, json_file_path, data_list, folder=folder, job_params=job_params)
-        trans.sa_session.add(job)
-        trans.sa_session.flush()
+        trans.app.job_manager.enqueue(job, tool=tool)
         job_dict = job.to_dict()
         job_dict['id'] = trans.security.encode_id(job_dict['id'])
         return job_dict
