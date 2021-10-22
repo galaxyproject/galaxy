@@ -64,6 +64,7 @@ from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 
 import pytest
+from sqlalchemy import func, select
 
 import galaxy.model.mapping as mapping
 from .common import (
@@ -4884,6 +4885,8 @@ class TestTag(BaseTest):
             assert stored_obj.parent_id == parent_tag.id
             assert stored_obj.name == name
 
+        delete_from_database(session, parent_tag)
+
     def test_relationships(
         self,
         session,
@@ -4903,6 +4906,8 @@ class TestTag(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.parent.id == parent_tag.id
             assert collection_consists_of_objects(stored_obj.children, child_tag)
+
+        delete_from_database(session, [parent_tag, child_tag])
 
 
 class TestTask(BaseTest):
@@ -5123,8 +5128,12 @@ class TestUser(BaseTest):
         stored_workflow,
         stored_workflow_menu_entry_factory,
     ):
+        cleanup = []
+
         history1 = history_factory(deleted=False)
+        cleanup.append(history1)
         history2 = history_factory(deleted=True)
+        cleanup.append(history2)
 
         obj = cls_()
 
@@ -5144,14 +5153,24 @@ class TestUser(BaseTest):
         obj.social_auth.append(user_authnz_token)
 
         _private_role = role_factory(name=obj.email)
+        cleanup.append(_private_role)
+
         private_user_role = user_role_association_factory(obj, _private_role)
+        cleanup.append(private_user_role)
+
         obj.roles.append(private_user_role)
 
-        _non_private_role = role_factory(name="a")
+        _non_private_role = role_factory(name='a')
+        cleanup.append(_non_private_role)
+
         non_private_user_role = user_role_association_factory(obj, _non_private_role)
+        cleanup.append(non_private_user_role)
+
         obj.roles.append(non_private_user_role)
 
         swme = stored_workflow_menu_entry_factory()
+        cleanup.append(swme)
+
         swme.stored_workflow = stored_workflow
         swme.user = obj
 
@@ -5207,10 +5226,7 @@ class TestUser(BaseTest):
                 stored_obj.stored_workflows, stored_workflow
             )
 
-        delete_from_database(
-            session,
-            [history1, history2, swme, private_user_role, non_private_user_role],
-        )
+        delete_from_database(session, cleanup)
 
 
 class TestUserAction(BaseTest):
@@ -6824,6 +6840,37 @@ class TestWorkflowStepTagAssociation(BaseTest):
 
 
 # Misc. helper fixtures.
+
+# When enabled, this fixture auto-runs before each test and any unscoped fixtures
+# (except session and model on which it depends) and verifies that all model
+# tables in the database are empty. Thus, it ensures that a test is not affected
+# by data leftover from a previous test run.
+# It is expensive: it executes N statements of the form `SELECT count(*) FROM Foo`
+# where N = |models under test| * |tests| = approx. 68K. This increases test
+# execution time by approx. 350% (on my desktop 4 sec. vs. 14 sec.). It only
+# verifies that the tests are written correctly, so it can be disabled by
+# default. To enable it (which may be useful for debugging a test), add
+# `autouse=True` to its decorator (see commented out line)
+#
+# @pytest.fixture(autouse=True)
+@pytest.fixture()
+def ensure_database_is_empty(session, model):
+    """
+    Auto-runs before each test and any unscoped fixtures, except session and model on
+    which it depends. Verifies that all model tables in the database are empty. This
+    ensures that a test is not affected by data leftover from a previous test run.
+    For fixture instantiation order, see:
+    https://docs.pytest.org/en/6.2.x/fixture.html#fixture-instantiation-order
+    """
+    # Created indirectrly (via db trigger and at Job instantiation): can't cleanup up automatically
+    exclude = ['HistoryAudit', 'JobStateHistory']
+    models = (cls_ for cls_ in model.__dict__.values()
+        if hasattr(cls_, '__mapper__') and cls_.__name__ not in exclude)
+    # For each mapped class, check that the database table to which it is mapped is empty
+    for m in models:
+        stmt = select(func.count()).select_from(m)
+        result = session.execute(stmt).scalar()
+        assert result == 0
 
 
 @pytest.fixture(scope="module")
