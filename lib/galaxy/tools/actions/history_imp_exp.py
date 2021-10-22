@@ -67,11 +67,6 @@ class ImportHistoryToolAction(ToolAction):
             job.add_parameter(name, value)
 
         job.state = start_job_state  # job inputs have been configured, restore initial job state
-
-        # Queue the job for execution
-        trans.app.job_manager.enqueue(job, tool=tool)
-        trans.log_event(f"Added import history job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
-
         return job, {}
 
 

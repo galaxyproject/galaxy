@@ -650,14 +650,15 @@ class Data(metaclass=DataMeta):
         # Make the target datatype available to the converter
         params['__target_datatype__'] = target_type
         # Run converter, job is dispatched through Queue
-        converted_dataset = converter.execute(trans, incoming=params, set_output_hid=visible, history=history)[1]
+        job, converted_datasets, *_ = converter.execute(trans, incoming=params, set_output_hid=visible, history=history)
+        trans.app.job_manager.enqueue(job, tool=converter)
         if len(params) > 0:
             trans.log_event(f"Converter params: {str(params)}", tool_id=converter.id)
         if not visible:
-            for value in converted_dataset.values():
+            for value in converted_datasets.values():
                 value.visible = False
         if return_output:
-            return converted_dataset
+            return converted_datasets
         return f"The file conversion of {converter.name} on data {original_dataset.hid} has been added to the Queue."
 
     # We need to clear associated files before we set metadata

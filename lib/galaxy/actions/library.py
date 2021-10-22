@@ -128,8 +128,7 @@ class LibraryActions:
         job_params['link_data_only'] = json.dumps(kwd.get('link_data_only', 'copy_files'))
         job_params['uuid'] = json.dumps(kwd.get('uuid', None))
         job, output = upload_common.create_job(trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder, job_params=job_params)
-        trans.sa_session.add(job)
-        trans.sa_session.flush()
+        trans.app.job_manager.enqueue(job, tool=tool)
         return output
 
     def _get_server_dir_uploaded_datasets(self, trans, params, full_dir, import_dir_desc, library_bunch, response_code, message):
