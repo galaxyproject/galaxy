@@ -436,7 +436,8 @@ class ExportsHistoryMixin:
 
         # Run job to do export.
         history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
-        job, _ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        job, *_ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        trans.app.job_manager.enqueue(job, tool=history_exp_tool)
         return job
 
 
@@ -446,7 +447,8 @@ class ImportsHistoryMixin:
         # Run job to do import.
         history_imp_tool = trans.app.toolbox.get_tool('__IMPORT_HISTORY__')
         incoming = {'__ARCHIVE_SOURCE__': archive_source, '__ARCHIVE_TYPE__': archive_type}
-        job, _ = history_imp_tool.execute(trans, incoming=incoming)
+        job, *_ = history_imp_tool.execute(trans, incoming=incoming)
+        trans.app.job_manager.enqueue(job, tool=history_imp_tool)
         return job
 
 

@@ -374,9 +374,10 @@ class DatasetAssociationManager(base.ModelManager,
                         if spec.get('default'):
                             setattr(data.metadata, name, spec.unwrap(spec.get('default')))
 
-            self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+            job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
                 self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data, 'validate': validate},
                 overwrite=overwrite)
+            self.app.job_manager.enqueue(job, tool=self.app.datatypes_registry.set_external_metadata_tool)
 
     def update_permissions(self, trans, dataset_assoc, **kwd):
         action = kwd.get('action', 'set_permissions')
@@ -691,7 +692,8 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         sa_session = self.app.model.context
         sa_session.flush()
         trans = context.get("trans")
-        self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
+        job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
+        trans.app.job_manager.enqueue(job, tool=trans.app.datatypes_registry.set_external_metadata_tool)
         return item.datatype
 
 

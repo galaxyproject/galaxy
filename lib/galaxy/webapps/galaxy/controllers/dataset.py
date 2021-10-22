@@ -377,9 +377,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order, is_binary=is_binary)
                     trans.app.datatypes_registry.change_datatype(data, datatype)
                     trans.sa_session.flush()
-                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                    job, *_ = trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
                         trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data},
                         overwrite=False)  # overwrite is False as per existing behavior
+                    trans.app.job_manager.enqueue(job, tool=trans.app.datatypes_registry.set_external_metadata_tool)
                     message = 'Detection was finished and changed the datatype to %s.' % datatype
             else:
                 return self.message_exception(trans, 'Changing datatype "%s" is not allowed.' % (data.extension))
