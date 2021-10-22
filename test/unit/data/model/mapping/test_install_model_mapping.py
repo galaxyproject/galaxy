@@ -1,25 +1,20 @@
-from contextlib import contextmanager
 from datetime import datetime, timedelta
 
 import pytest
-from sqlalchemy import (
-    delete,
-    select,
-)
 
-import galaxy.model.tool_shed_install.mapping as mapping
+from galaxy.model import tool_shed_install as model
 from .common import (
     collection_consists_of_objects,
     dbcleanup,
     dbcleanup_wrapper,
     delete_from_database,
     get_stored_obj,
-    persist,
 )
+
 
 class BaseTest:
     @pytest.fixture
-    def cls_(self, model):
+    def cls_(self):
         """
         Return class under test.
         Assumptions: if the class under test is Foo, then the class grouping
@@ -300,41 +295,33 @@ class TestToolVersionAssociation(BaseTest):
 # Misc. helper fixtures.
 
 @pytest.fixture(scope='module')
-def model():
-    db_uri = 'sqlite:///:memory:'
-    return mapping.init(db_uri, create_tables=True)
-
-
-@pytest.fixture
-def session(model):
-    Session = model.session
-    yield Session()
-    Session.remove()  # Ensures we get a new session for each test
+def init_model(engine):
+    model.mapper_registry.metadata.create_all(engine)
 
 
 # Fixtures yielding persisted instances of models, deleted from the database on test exit.
 
 @pytest.fixture
-def repository(model, session):
+def repository(session):
     instance = model.ToolShedRepository()
     yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
-def repository_repository_dependency_association(model, session):
+def repository_repository_dependency_association(session):
     instance = model.RepositoryRepositoryDependencyAssociation()
     yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
-def repository_dependency(model, session, repository):
+def repository_dependency(session, repository):
     instance = model.RepositoryDependency()
     instance.repository = repository
     yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
-def tool_dependency(model, session, repository):
+def tool_dependency(session, repository):
     instance = model.ToolDependency()
     instance.tool_shed_repository = repository
     instance.status = 'a'
@@ -342,20 +329,22 @@ def tool_dependency(model, session, repository):
 
 
 @pytest.fixture
-def tool_version(model, session):
+def tool_version(session):
     instance = model.ToolVersion()
     yield from dbcleanup_wrapper(session, instance)
 
 
+# Fixtures yielding factory functions.
+
 @pytest.fixture
-def tool_version_association_factory(model):
+def tool_version_association_factory():
     def make_instance(*args, **kwds):
         return model.ToolVersionAssociation(*args, **kwds)
     return make_instance
 
 
 @pytest.fixture
-def tool_version_factory(model):
+def tool_version_factory():
     def make_instance(*args, **kwds):
         return model.ToolVersion(*args, **kwds)
     return make_instance
