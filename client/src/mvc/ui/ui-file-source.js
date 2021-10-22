@@ -1,28 +1,10 @@
 import Backbone from "backbone";
-import { filesDialog } from "utils/data";
 import { breadcrump } from "utils/mountBreadcrump";
-import _l from "utils/localization";
-import Ui from "mvc/ui/ui-misc";
 
 var View = Backbone.View.extend({
     initialize: function (options) {
         this.model = new Backbone.Model();
         this.target = options.target;
-        // const props = {
-        //     mode: "directory",
-        //     requireWritable: true,
-        // };
-        // // create insert edit button
-        // this.browse_button = new Ui.Button({
-        //     title: _l("Select"),
-        //     icon: "fa fa-edit",
-        //     tooltip: _l("Select URI"),
-        //     onclick: () => {
-        //         filesDialog((uri) => {
-        //             this._handleRemoteFilesUri(uri);
-        //         }, props);
-        //     },
-        // });
 
         // add change event. fires on trigger
         this.on("change", () => {
@@ -33,8 +15,6 @@ var View = Backbone.View.extend({
 
         // create elements
         this.setElement(this._template(options));
-        this.$text = this.$(".ui-uri-preview");
-        // this.$(".ui-file-select-button").append(this.browse_button.$el);
         this.listenTo(this.model, "change", this.render, this);
         this.render();
     },
@@ -92,23 +72,10 @@ var View = Backbone.View.extend({
 
     /** Sets current value */
     _setValue: function (new_value) {
-        if (new_value) {
-            if (typeof new_value == "string") {
-                let parsed_value;
-                // if new_value is not a JSON, set it as String
-                try {
-                    parsed_value = JSON.parse(new_value);
-                } catch (e) {
-                    parsed_value = new_value;
-                } finally {
-                    new_value = parsed_value;
-                }
-            }
-            this._value = new_value;
-            this.model.trigger("error", null);
-            this.model.trigger("change");
-            this.trigger("change");
-        }
+        this._value = new_value;
+        this.model.trigger("error", null);
+        this.model.trigger("change");
+        this.trigger("change");
     },
 });
 
