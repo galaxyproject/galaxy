@@ -28,6 +28,7 @@ from galaxy.datatypes import sniff
 from galaxy.datatypes.data import validate
 from galaxy.job_execution.output_collect import (
     collect_dynamic_outputs,
+    collect_extra_files,
     collect_primary_datasets,
     collect_shrinked_content_from_path,
     default_exit_code_file,
@@ -273,6 +274,8 @@ def set_metadata_portable():
                 # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                 # so skip set_meta here.
                 set_meta(dataset, file_dict)
+                if extended_metadata_collection:
+                    collect_extra_files(object_store, dataset, ".")
 
             if extended_metadata_collection:
                 if external_filename.startswith(tool_job_working_directory) and os.path.getsize(external_filename):
