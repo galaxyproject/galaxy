@@ -1,12 +1,12 @@
 name: Integration
 on: [push, pull_request]
+env:
+  GALAXY_TEST_AMQP_URL: 'amqp://localhost:5672//'
+  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
 concurrency:
   group: integration-${{ github.ref }}
   cancel-in-progress: true
-env:
-  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-  GALAXY_TEST_AMQP_URL: 'amqp://localhost:5672//'
-  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
 jobs:
   test:
     name: Test
