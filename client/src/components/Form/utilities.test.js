@@ -98,10 +98,12 @@ describe("form component utilities", () => {
         const index = {
             input_a: {},
             input_b: {},
+            input_c: {},
         };
         const values = {
             input_a: "1",
             input_b: "2",
+            input_c: { values: [{ id: 0 }] },
         };
         let result = validateInputs(index, values);
         expect(result).toEqual(null);
@@ -111,5 +113,8 @@ describe("form component utilities", () => {
         index.input_a.optional = true;
         result = validateInputs(index, values);
         expect(result).toEqual(null);
+        values.input_c.values = [];
+        result = validateInputs(index, values);
+        expect(JSON.stringify(result)).toEqual('["input_c","Please provide data for this input."]');
     });
 });

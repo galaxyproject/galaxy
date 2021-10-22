@@ -107,11 +107,11 @@ export default {
             Utils.deepeach(inputs, (input) => {
                 if (input.type) {
                     if (["data", "data_collection"].indexOf(input.type) != -1) {
-                        input.hiddenInWorkflow = true;
+                        input.titleonly = true;
                         input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
                         input.value = { __class__: "RuntimeValue" };
-                    } else if (!input.fixed) {
-                        input.connectable = true;
+                    } else {
+                        input.connectable = ["rules"].indexOf(input.type) == -1;
                         input.collapsible_value = {
                             __class__: "RuntimeValue",
                         };

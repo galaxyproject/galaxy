@@ -65,7 +65,7 @@
                 v-else
                 v-model="input.value"
                 :id="getPrefix(input.name)"
-                :title="input.label"
+                :title="input.label || input.name"
                 :type="input.type"
                 :error="input.error"
                 :help="input.help"

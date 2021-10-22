@@ -1,6 +1,6 @@
 import _ from "underscore";
 
-/** Visits tool inputs
+/** Visits tool inputs.
  * @param{dict}   inputs    - Nested dictionary of input elements
  * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
  */
@@ -43,7 +43,7 @@ export function visitInputs(inputs, callback, prefix, context) {
     }
 }
 
-/** Match conditional values to selected cases
+/** Matches conditional values to selected cases.
  * @param{dict}   input     - Definition of conditional input parameter
  * @param{dict}   value     - Current value
  */
@@ -101,7 +101,7 @@ export function matchErrors(response, index) {
     return result;
 }
 
-/** Parameter validation
+/** Validates input parameters to identify issues before submitting a server request, where comprehensive validation is performed.
  * @param{dict}   index     - Index of input elements
  * @param{dict}   values    - Dictionary of parameter values
  */
@@ -114,14 +114,14 @@ export function validateInputs(index, values) {
         if (!inputDef || inputDef.step_linked) {
             continue;
         }
-        if (inputValue && Array.isArray(inputValue.values) && inputValue.values.length == 0 && !inputDef.optional) {
-            return [inputId, "Please provide data for this input."];
-        }
         if (inputValue == null && !inputDef.optional && inputDef.type != "hidden") {
             return [inputId, "Please provide a value for this option."];
         }
         if (inputDef.wp_linked && inputDef.text_value == inputValue) {
             return [inputId, "Please provide a value for this workflow parameter."];
+        }
+        if (inputValue && Array.isArray(inputValue.values) && inputValue.values.length == 0 && !inputDef.optional) {
+            return [inputId, "Please provide data for this input."];
         }
         if (inputValue) {
             if (inputValue.rules && inputValue.rules.length == 0) {
@@ -159,4 +159,17 @@ export function validateInputs(index, values) {
         }
     }
     return null;
+}
+
+/** Input element DOM identifiers are required to uniquely tag input elements for tours, testing and error highlighting.
+ * DOM identifiers are not allowed to contain any other characters than [a-zA-Z0-9], hyphen(-) and underscore(_). This
+ * is function applies a naive approach to sanitize input identifiers and might require to be revisited for a more resilient
+ * approach and to cover corner cases.
+ * @param{string}   id      - Input identifier e.g. "repeat_0|name"
+ */
+export function getElementId(id) {
+    if (id) {
+        const clearId = id.replace(/\|/g, "-");
+        return `form-element-${clearId}`;
+    }
 }

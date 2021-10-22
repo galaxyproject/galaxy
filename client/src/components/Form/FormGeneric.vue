@@ -64,7 +64,7 @@ export default {
         },
         redirect: {
             type: String,
-            required: true,
+            default: null,
         },
     },
     components: {

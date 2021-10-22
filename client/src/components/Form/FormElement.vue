@@ -16,7 +16,7 @@
                         <span v-else :class="connectedDisableIcon" :title="connectedDisableText" />
                     </span>
                     <span class="ui-form-collapsible-text ml-1">
-                        {{ this.title }}
+                        {{ title }}
                     </span>
                 </div>
             </div>
@@ -42,6 +42,7 @@
 
 <script>
 import _ from "underscore";
+import { getElementId } from "./utilities";
 import FormBoolean from "./Elements/FormBoolean";
 import FormInput from "./Elements/FormInput";
 import FormParameter from "./Elements/FormParameter";
@@ -166,8 +167,7 @@ export default {
             return this.attrs["default_value"];
         },
         elementId() {
-            const id = this.id && this.id.replaceAll ? this.id.replaceAll("|", "-") : "unavailable";
-            return `form-element-${id}`;
+            return getElementId(this.id);
         },
         hasError() {
             return !!this.error;
