@@ -13,32 +13,20 @@ var View = Backbone.View.extend({
             }
         });
 
-        // create elements
-        this.setElement(this._template(options));
-        this.listenTo(this.model, "change", this.render, this);
-        this.render();
-    },
-
-    _handleRemoteFilesUri: function (uri) {
-        this._setValue(uri);
-    },
-
-    render: function () {
-        let value = this._value;
-        if (value && typeof value != "string") {
-            value = value.url;
-        }
-        if (!value) {
-            value = "";
-        }
         breadcrump(
             ".ui-uri-preview",
             (uri) => {
                 this._handleRemoteFilesUri(uri);
             },
 
-            { url: value }
+            { url: this._value }
         );
+        // create elements
+        this.setElement(this._template(options));
+    },
+
+    _handleRemoteFilesUri: function (uri) {
+        this._setValue(uri);
     },
 
     /** Main Template */
@@ -46,14 +34,13 @@ var View = Backbone.View.extend({
         return `
             <div class="ui-rules-edit clearfix">
                 <span class="ui-uri-preview" />
-                <span class="ui-file-select-button float-left" />
             </div>
         `;
     },
 
     /** Return/Set current value */
     value: function (new_value) {
-        if (new_value !== undefined) {
+        if (new_value) {
             this._setValue(new_value);
         } else {
             return this._getValue();
@@ -72,10 +59,12 @@ var View = Backbone.View.extend({
 
     /** Sets current value */
     _setValue: function (new_value) {
-        this._value = new_value;
-        this.model.trigger("error", null);
-        this.model.trigger("change");
-        this.trigger("change");
+        if (this._value !== new_value) {
+            this._value = new_value;
+            this.model.trigger("error", null);
+            this.model.trigger("change");
+            this.trigger("change");
+        }
     },
 });
 

@@ -9,11 +9,13 @@
                 <b-button pill variant="primary"> <font-awesome-icon icon="folder-open" /> {{ url.protocol }}</b-button>
             </b-breadcrumb-item>
             <b-breadcrumb-item
-                v-for="({ name, editable }, index) in pathChunks"
+                v-for="({ pathChunk, editable }, index) in pathChunks"
                 :key="index"
                 class="existent-url-path align-items-center"
             >
-                <b-button @click="removePath(index)" pill :disabled="!editable" variant="dark"> {{ name }}</b-button>
+                <b-button @click="removePath(index)" pill :disabled="!editable" variant="dark">
+                    {{ pathChunk }}</b-button
+                >
             </b-breadcrumb-item>
             <b-breadcrumb-item class="directory-input-field align-items-center">
                 <b-input
@@ -21,7 +23,7 @@
                     :state="isValidName"
                     @keyup.enter="addPath"
                     @keydown.191.capture.prevent.stop="addPath"
-                    @keydown.8.capture.prevent.stop="removeLastPath"
+                    @keydown.8.capture="removeLastPath"
                     v-model="currentDirectoryName"
                     placeholder="enter directory name"
                     trim
@@ -77,7 +79,6 @@ export default {
             const data = getDefaultValues();
             Object.keys(data).forEach((k) => (this[k] = data[k]));
             this.redrawModal();
-            console.debug("reset");
             this.updateURL(true);
         },
         // forcing modal to be redrawn
@@ -85,10 +86,12 @@ export default {
         redrawModal() {
             this.modalKey += 1;
         },
-        removeLastPath() {
+        removeLastPath(event) {
             // check whether the last item is editable
-            if (this.pathChunks.length > 0 && this.pathChunks.at(-1).editable) {
-                this.pathChunks.pop();
+            if (this.currentDirectoryName === "" && this.pathChunks.length > 0 && this.pathChunks.at(-1).editable) {
+                // prevent deleting last character on 'currentDirectoryName'
+                event.preventDefault();
+                this.currentDirectoryName = this.pathChunks.pop().pathChunk;
             }
         },
         setUrl({ url }) {
@@ -96,14 +99,17 @@ export default {
             // split path and keep only valid entries
             this.pathChunks = this.url.pathname
                 .split("/")
-                .filter((path) => path)
-                .map((x) => ({ name: x, editable: false }));
-            this.updateURL();
+                .filter((pathChunk) => pathChunk)
+                .map((x) => ({ pathChunk: x, editable: false }));
+
+            if (url) {
+                this.updateURL();
+            }
         },
         addPath({ key }) {
-            if (key === "Enter" || (key === "/" && this.isValidName)) {
-                const newFolder = this.currentDirectoryName.replaceAll("/", "");
-                this.pathChunks.push({ name: newFolder, editable: true });
+            if ((key === "Enter" || key === "/") && this.isValidName) {
+                const newFolder = this.currentDirectoryName;
+                this.pathChunks.push({ pathChunk: newFolder, editable: true });
                 this.currentDirectoryName = "";
                 this.updateURL();
             }
@@ -111,7 +117,8 @@ export default {
         updateURL(isReset = false) {
             let url = undefined;
             if (!isReset) {
-                url = `${this.url.protocol}//${this.pathChunks.map(({ name }) => name).join("/")}`;
+                // create an string of path chunks separated by `/`
+                url = encodeURI(`${this.url.protocol}//${this.pathChunks.map(({ pathChunk }) => pathChunk).join("/")}`);
             }
             this.callback(url);
         },
