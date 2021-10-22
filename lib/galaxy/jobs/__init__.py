@@ -1732,17 +1732,17 @@ class JobWrapper(HasResourceParameters):
                     self._finish_dataset(
                         output_name, dataset, job, context, final_job_state, remote_metadata_directory
                     )
+                if not final_job_state == job.states.ERROR:
+                    dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
 
-        for dataset_assoc in output_dataset_associations:
-            if job.states.ERROR == final_job_state:
+        if job.states.ERROR == final_job_state:
+            for dataset_assoc in output_dataset_associations:
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
                 # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset_assoc.dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
-            else:
-                dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
 
         # If any of the rest of the finish method below raises an
         # exception, the fail method will run and set the datasets to

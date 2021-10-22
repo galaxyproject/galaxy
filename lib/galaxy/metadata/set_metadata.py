@@ -276,6 +276,7 @@ def set_metadata_portable():
                 set_meta(dataset, file_dict)
                 if extended_metadata_collection:
                     collect_extra_files(object_store, dataset, ".")
+                    dataset.dataset.state = final_job_state
 
             if extended_metadata_collection:
                 if external_filename.startswith(tool_job_working_directory) and os.path.getsize(external_filename):
