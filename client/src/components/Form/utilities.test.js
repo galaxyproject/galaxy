@@ -1,4 +1,4 @@
-import { matchCase, visitInputs } from "./utilities";
+import { visitInputs, validateInputs, matchCase } from "./utilities";
 import toolModel from "./test-data/tool";
 
 function visitInputsString(inputs) {
@@ -92,5 +92,24 @@ describe("form component utilities", () => {
         expect(matchCase(input, "")).toEqual(0);
         expect(matchCase(input, "unavailable")).toEqual(-1);
         expect(matchCase(input, "falsevalue")).toEqual(1);
+    });
+
+    it("test basic value validation", () => {
+        const index = {
+            input_a: {},
+            input_b: {},
+        };
+        const values = {
+            input_a: "1",
+            input_b: "2",
+        };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+        values.input_a = undefined;
+        result = validateInputs(index, values);
+        expect(JSON.stringify(result)).toEqual('["input_a","Please provide a value for this option."]');
+        index.input_a.optional = true;
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
     });
 });

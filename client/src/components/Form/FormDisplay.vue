@@ -18,7 +18,7 @@
 
 <script>
 import FormInputs from "./FormInputs";
-import { visitInputs, matchErrors, validate } from "./utilities";
+import { visitInputs, validateInputs, matchErrors } from "./utilities";
 export default {
     components: {
         FormInputs,
@@ -122,7 +122,7 @@ export default {
     },
     computed: {
         validation() {
-            return validate(this.formIndex, this.formData);
+            return validateInputs(this.formIndex, this.formData);
         },
     },
     methods: {

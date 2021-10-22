@@ -105,7 +105,7 @@ export function matchErrors(response, index) {
  * @param{dict}   index     - Index of input elements
  * @param{dict}   values    - Dictionary of parameter values
  */
-export function validate(index, values) {
+export function validateInputs(index, values) {
     let batchN = -1;
     let batchSrc = null;
     for (const inputId in values) {
