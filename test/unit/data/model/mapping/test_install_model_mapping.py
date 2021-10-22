@@ -1,26 +1,26 @@
-from contextlib import contextmanager
+"""
+See documentation + annotated examples for these tests in test_model_mapping.py.
+"""
+
 from datetime import datetime, timedelta
 
 import pytest
-from sqlalchemy import (
-    delete,
-    select,
+
+from galaxy.model import tool_shed_install as model
+from .common import (
+    AbstractBaseTest,
+    collection_consists_of_objects,
+    dbcleanup,
+    dbcleanup_wrapper,
+    delete_from_database,
+    get_stored_obj,
 )
 
-import galaxy.model.tool_shed_install.mapping as mapping
 
+class BaseTest(AbstractBaseTest):
 
-class BaseTest:
-    @pytest.fixture
-    def cls_(self, model):
-        """
-        Return class under test.
-        Assumptions: if the class under test is Foo, then the class grouping
-        the tests should be a subclass of BaseTest, named TestFoo.
-        """
-        prefix = len('Test')
-        class_name = self.__class__.__name__[prefix:]
-        return getattr(model, class_name)
+    def get_model(self):
+        return model
 
 
 class TestToolShedRepository(BaseTest):
@@ -102,9 +102,10 @@ class TestToolShedRepository(BaseTest):
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.tool_versions == [tool_version]
-            assert stored_obj.tool_dependencies == [tool_dependency]
-            assert stored_obj.required_repositories == [repository_repository_dependency_association]
+            assert collection_consists_of_objects(stored_obj.tool_versions, tool_version)
+            assert collection_consists_of_objects(stored_obj.tool_dependencies, tool_dependency)
+            assert collection_consists_of_objects(
+                stored_obj.required_repositories, repository_repository_dependency_association)
 
 
 class TestRepositoryRepositoryDependencyAssociation(BaseTest):
@@ -257,8 +258,8 @@ class TestToolVersion(BaseTest):
 
         stored_obj = get_stored_obj(session, cls_, obj.id)
         assert stored_obj.tool_shed_repository.id == repository.id
-        assert stored_obj.parent_tool_association == [tool_version_assoc1]
-        assert stored_obj.child_tool_association == [tool_version_assoc2]
+        assert collection_consists_of_objects(stored_obj.parent_tool_association, tool_version_assoc1)
+        assert collection_consists_of_objects(stored_obj.child_tool_association, tool_version_assoc2)
 
         delete_from_database(session, [obj, tool_version_assoc1, tool_version_assoc2])
 
@@ -276,7 +277,6 @@ class TestToolVersionAssociation(BaseTest):
         session.add(parent_tool_version)
         session.flush()
 
-        # TODO: why are these not mapped as relationships?
         obj = cls_()
         obj.tool_id = tool_version.id
         obj.parent_id = parent_tool_version.id
@@ -293,41 +293,33 @@ class TestToolVersionAssociation(BaseTest):
 # Misc. helper fixtures.
 
 @pytest.fixture(scope='module')
-def model():
-    db_uri = 'sqlite:///:memory:'
-    return mapping.init(db_uri, create_tables=True)
-
-
-@pytest.fixture
-def session(model):
-    Session = model.session
-    yield Session()
-    Session.remove()  # Ensures we get a new session for each test
+def init_model(engine):
+    model.mapper_registry.metadata.create_all(engine)
 
 
 # Fixtures yielding persisted instances of models, deleted from the database on test exit.
 
 @pytest.fixture
-def repository(model, session):
+def repository(session):
     instance = model.ToolShedRepository()
     yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
-def repository_repository_dependency_association(model, session):
+def repository_repository_dependency_association(session):
     instance = model.RepositoryRepositoryDependencyAssociation()
     yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
-def repository_dependency(model, session, repository):
+def repository_dependency(session, repository):
     instance = model.RepositoryDependency()
     instance.repository = repository
     yield from dbcleanup_wrapper(session, instance)
 
 
 @pytest.fixture
-def tool_dependency(model, session, repository):
+def tool_dependency(session, repository):
     instance = model.ToolDependency()
     instance.tool_shed_repository = repository
     instance.status = 'a'
@@ -335,97 +327,22 @@ def tool_dependency(model, session, repository):
 
 
 @pytest.fixture
-def tool_version(model, session):
+def tool_version(session):
     instance = model.ToolVersion()
     yield from dbcleanup_wrapper(session, instance)
 
 
+# Fixtures yielding factory functions.
+
 @pytest.fixture
-def tool_version_association_factory(model):
+def tool_version_association_factory():
     def make_instance(*args, **kwds):
         return model.ToolVersionAssociation(*args, **kwds)
     return make_instance
 
 
 @pytest.fixture
-def tool_version_factory(model):
+def tool_version_factory():
     def make_instance(*args, **kwds):
         return model.ToolVersion(*args, **kwds)
     return make_instance
-
-
-# Test utilities
-
-def dbcleanup_wrapper(session, obj, where_clause=None):
-    with dbcleanup(session, obj, where_clause):
-        yield obj
-
-
-@contextmanager
-def dbcleanup(session, obj, where_clause=None):
-    """
-    Use the session to store obj in database; delete from database on exit, bypassing the session.
-
-    If obj does not have an id field, a SQLAlchemy WHERE clause should be provided to construct
-    a custom select statement.
-    """
-    return_id = where_clause is None
-
-    try:
-        obj_id = persist(session, obj, return_id)
-        yield obj_id
-    finally:
-        # table = obj.__table__  # TODO
-        table = obj.table
-        if where_clause is None:
-            where_clause = _get_default_where_clause(type(obj), obj_id)
-        stmt = delete(table).where(where_clause)
-        session.execute(stmt)
-
-
-def persist(session, obj, return_id=True):
-    """
-    Use the session to store obj in database, then remove obj from session,
-    so that on a subsequent load from the database we get a clean instance.
-    """
-    session.add(obj)
-    session.flush()
-    obj_id = obj.id if return_id else None  # save this before obj is expunged
-    session.expunge(obj)
-    return obj_id
-
-
-def get_stored_obj(session, cls, obj_id=None, where_clause=None, unique=False):
-    # Either obj_id or where_clause must be provided, but not both
-    assert bool(obj_id) ^ (where_clause is not None)
-    if where_clause is None:
-        where_clause = _get_default_where_clause(cls, obj_id)
-    stmt = select(cls).where(where_clause)
-    result = session.execute(stmt)
-    # unique() is required if result contains joint eager loads against collections
-    # https://gerrit.sqlalchemy.org/c/sqlalchemy/sqlalchemy/+/2253
-    if unique:
-        result = result.unique()
-    return result.scalar_one()
-
-
-def _get_default_where_clause(cls, obj_id):
-    # where_clause = cls.__table__.c.id == obj_id  # TODO
-    where_clause = cls.table.c.id == obj_id
-    return where_clause
-
-
-def delete_from_database(session, objects):
-    """
-    Delete each object in objects from database.
-    May be called at the end of a test if use of a context manager is impractical.
-    (Assume all objects have the id field as their primary key.)
-    """
-    # Ensure we have a list of objects (check for list explicitly: a model can be iterable)
-    if not isinstance(objects, list):
-        objects = [objects]
-
-    for obj in objects:
-        table = obj.__table__
-        stmt = delete(table).where(table.c.id == obj.id)
-        session.execute(stmt)
