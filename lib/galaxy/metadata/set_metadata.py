@@ -28,7 +28,6 @@ from galaxy.datatypes import sniff
 from galaxy.datatypes.data import validate
 from galaxy.job_execution.output_collect import (
     collect_dynamic_outputs,
-    collect_extra_files,
     collect_primary_datasets,
     collect_shrinked_content_from_path,
     default_exit_code_file,
@@ -280,7 +279,6 @@ def set_metadata_portable():
                     # outputs to working directory, and not already pushed by pulsar + extended metadata,
                     # move output to final destination.
                     object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
-                collect_extra_files(object_store, dataset, ".")
                 # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
@@ -313,6 +311,7 @@ def set_metadata_portable():
                         setattr(dataset, context_key, context_value)
                 # We never want to persist the external_filename.
                 dataset.dataset.external_filename = None
+                dataset.dataset.extra_files_path = None
                 export_store.add_dataset(dataset)
             else:
                 dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
