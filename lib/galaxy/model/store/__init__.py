@@ -621,6 +621,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             history.add_pending_items()
 
     def _import_jobs(self, object_import_tracker, history):
+        self._flush()
         object_key = self.object_key
 
         def _find_hda(input_key):
