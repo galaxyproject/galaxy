@@ -18,7 +18,7 @@
 
 <script>
 import FormInputs from "./FormInputs";
-import { visitInputs, matchErrors } from "./utilities";
+import { visitInputs, matchErrors, validate } from "./utilities";
 export default {
     components: {
         FormInputs,
@@ -122,58 +122,7 @@ export default {
     },
     computed: {
         validation() {
-            let batchN = -1;
-            let batchSrc = null;
-            for (const inputId in this.formData) {
-                const inputValue = this.formData[inputId];
-                const inputDef = this.formIndex[inputId];
-                if (!inputDef || inputDef.step_linked) {
-                    continue;
-                }
-                if (
-                    inputValue &&
-                    Array.isArray(inputValue.values) &&
-                    inputValue.values.length == 0 &&
-                    !inputDef.optional
-                ) {
-                    return [inputId, "Please provide data for this input."];
-                }
-                if (inputValue == null && !inputDef.optional && inputDef.type != "hidden") {
-                    return [inputId, "Please provide a value for this option."];
-                }
-                if (inputDef.wp_linked && inputDef.text_value == inputValue) {
-                    return [inputId, "Please provide a value for this workflow parameter."];
-                }
-                /*if (input_field.validate) {
-                    const message = input_field.validate();
-                    if (message) {
-                        return [inputId, message];
-                    }
-                }*/
-                if (inputValue && inputValue.batch) {
-                    const n = inputValue.values.length;
-                    const src = n > 0 && inputValue.values[0] && inputValue.values[0].src;
-                    if (src) {
-                        if (batchSrc === null) {
-                            batchSrc = src;
-                        } else if (batchSrc !== src) {
-                            return [
-                                inputId,
-                                "Please select either dataset or dataset list fields for all batch mode fields.",
-                            ];
-                        }
-                    }
-                    if (batchN === -1) {
-                        batchN = n;
-                    } else if (batchN !== n) {
-                        return [
-                            inputId,
-                            `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batchN}</b>.`,
-                        ];
-                    }
-                }
-            }
-            return null;
+            return validate(this.formIndex, this.formData);
         },
     },
     methods: {

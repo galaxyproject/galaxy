@@ -100,3 +100,63 @@ export function matchErrors(response, index) {
     search("", response);
     return result;
 }
+
+/** Parameter validation
+ * @param{dict}   index     - Index of input elements
+ * @param{dict}   values    - Dictionary of parameter values
+ */
+export function validate(index, values) {
+    let batchN = -1;
+    let batchSrc = null;
+    for (const inputId in values) {
+        const inputValue = values[inputId];
+        const inputDef = index[inputId];
+        if (!inputDef || inputDef.step_linked) {
+            continue;
+        }
+        if (inputValue && Array.isArray(inputValue.values) && inputValue.values.length == 0 && !inputDef.optional) {
+            return [inputId, "Please provide data for this input."];
+        }
+        if (inputValue == null && !inputDef.optional && inputDef.type != "hidden") {
+            return [inputId, "Please provide a value for this option."];
+        }
+        if (inputDef.wp_linked && inputDef.text_value == inputValue) {
+            return [inputId, "Please provide a value for this workflow parameter."];
+        }
+        if (inputValue) {
+            if (inputValue.rules && inputValue.rules.length == 0) {
+                return [inputId, "No rules defined, define at least one rule."];
+            }
+            if (inputValue.mapping && inputValue.mapping.length == 0) {
+                return [inputId, "No collection identifiers defined, specify at least one collection identifier."];
+            }
+            if (inputValue.rules && inputValue.rules.length > 0) {
+                for (const rule of inputValue.rules) {
+                    if (rule.error) {
+                        return [inputId, "Error detected in one or more rules."];
+                    }
+                }
+            }
+        }
+        if (inputValue && inputValue.batch) {
+            const n = inputValue.values.length;
+            const src = n > 0 && inputValue.values[0] && inputValue.values[0].src;
+            if (src) {
+                if (batchSrc === null) {
+                    batchSrc = src;
+                } else if (batchSrc !== src) {
+                    return [inputId, "Please select either dataset or dataset list fields for all batch mode fields."];
+                }
+            }
+            if (batchN === -1) {
+                batchN = n;
+            } else if (batchN !== n) {
+                return [
+                    inputId,
+                    `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batchN}</b>.`,
+                ];
+            }
+        }
+    }
+    return null;
+}
