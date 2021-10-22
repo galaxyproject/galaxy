@@ -11,6 +11,16 @@ def engine():
 
 @pytest.fixture
 def session(init_model, engine):
+    """
+    init_model is a fixture that must be defined in the test module using the
+    session fixture (or in any other discoverable location). Ideally, it will
+    have module scope and will initialize the models in the database. It must
+    use the same engine as this fixture. For example:
+
+    @pytest.fixture(scope='module')
+    def init_model(engine):
+        model.mapper_registry.metadata.create_all(engine)
+    """
     session_factory = sessionmaker(bind=engine)
     Session = scoped_session(session_factory)
     yield Session()
