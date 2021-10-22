@@ -52,10 +52,6 @@ export default {
     },
     data() {
         return { ...getDefaultValues(), modalKey: 0 };
-        // return {
-        // pathChunks: new URL("gxfiles://pdb-gzip/directory1").pathname.split("/").filter((path) => path),
-        // url: new URL("gxfiles://pdb-gzip/directory1"),
-        // };
     },
     props: {
         callback: {
@@ -80,7 +76,9 @@ export default {
             const data = getDefaultValues();
             Object.keys(data).forEach((k) => (this[k] = data[k]));
             this.redrawModal();
-            console.log("reset");
+            console.debug("reset");
+            this.updateURL(true)
+
         },
         // forcing modal to be redrawn
         // https://michaelnthiessen.com/force-re-render/
@@ -88,14 +86,13 @@ export default {
             this.modalKey += 1;
         },
         setUrl({ url }) {
-            console.log("!!!!!!!!!");
-            console.log(url);
             this.url = new URL(url);
             // split path and keep only valid entries
             this.pathChunks = this.url.pathname
                 .split("/")
                 .filter((path) => path)
                 .map((x) => ({ name: x, editable: false }));
+            this.updateURL();
         },
         addPath({ key }) {
             if (key === "Enter" || (key === "/" && this.isValidName)) {
@@ -105,8 +102,11 @@ export default {
                 this.updateURL();
             }
         },
-        updateURL() {
-            const url = `${this.url.protocol}//${this.pathChunks.map(({name}) => name).join("/")}`;
+        updateURL(isReset = false) {
+            let url = undefined;
+            if (!isReset) {
+                url = `${this.url.protocol}//${this.pathChunks.map(({ name }) => name).join("/")}`;
+            }
             this.callback(url);
         },
     },
