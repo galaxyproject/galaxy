@@ -851,17 +851,6 @@ class JobHandlerQueue(Monitors):
                             return JOB_WAIT
         return JOB_READY
 
-    def _handle_setup_msg(self, job_id=None):
-        job = self.sa_session.query(model.Job).get(job_id)
-        if job.handler is None:
-            job.handler = self.app.config.server_name
-            self.sa_session.add(job)
-            self.sa_session.flush()
-            # If not tracking jobs in the database
-            self.put(job.id, job.tool_id)
-        else:
-            log.warning("(%s) Handler '%s' received setup message but handler '%s' is already assigned, ignoring", job.id, self.app.config.server_name, job.handler)
-
     def put(self, job_id, tool_id):
         """Add a job to the queue (by job identifier)"""
         if not self.track_jobs_in_database:

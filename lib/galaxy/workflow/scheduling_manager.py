@@ -86,18 +86,6 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             workflow_invocation = sa_session.query(model.WorkflowInvocation).get(invocation_id)
             self._assign_handler(workflow_invocation)
 
-    def _handle_setup_msg(self, workflow_invocation_id=None):
-        sa_session = self.app.model.context
-        workflow_invocation = sa_session.query(model.WorkflowInvocation).get(workflow_invocation_id)
-        if workflow_invocation.handler is None:
-            workflow_invocation.handler = self.app.config.server_name
-            sa_session.add(workflow_invocation)
-            sa_session.flush()
-        else:
-            log.warning("(%s) Handler '%s' received setup message for workflow invocation but handler '%s' is"
-                        " already assigned, ignoring", workflow_invocation.id, self.app.config.server_name,
-                        workflow_invocation.handler)
-
     def _is_workflow_handler(self):
         # If we have explicitly configured handlers, check them.
         # Else just make sure we are a job handler.
