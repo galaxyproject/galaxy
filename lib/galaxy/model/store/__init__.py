@@ -217,6 +217,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
                     if 'id' in dataset_attrs["dataset"] and self.import_options.allow_edit:
                         dataset_instance.dataset.id = dataset_attrs["dataset"]['id']
+                    if job:
+                        dataset_instance.dataset.job_id = job.id
 
             if 'id' in dataset_attrs and self.import_options.allow_edit and not self.sessionless:
                 dataset_instance = self.sa_session.query(getattr(model, dataset_attrs['model_class'])).get(dataset_attrs["id"])

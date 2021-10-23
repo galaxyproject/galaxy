@@ -1709,7 +1709,7 @@ class JobWrapper(HasResourceParameters):
                     user=job.user,
                     tag_handler=self.app.tag_handler.create_tag_handler_session(),
                 )
-                import_model_store.perform_import(history=job.history)
+                import_model_store.perform_import(history=job.history, job=job)
             except Exception:
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
                 raise
