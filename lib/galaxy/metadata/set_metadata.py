@@ -226,8 +226,9 @@ def set_metadata_portable():
         if destination_type == 'hdas':
             for element in elements:
                 filename = element.get('filename')
-                if filename:
-                    unnamed_id_to_path[element['object_id']] = os.path.join(job_context.job_working_directory, filename)
+                object_id = element.get('object_id')
+                if filename and object_id:
+                    unnamed_id_to_path[object_id] = os.path.join(job_context.job_working_directory, filename)
 
     for output_name, output_dict in outputs.items():
         dataset_instance_id = output_dict["id"]
