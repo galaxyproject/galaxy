@@ -1,10 +1,10 @@
 name: first startup
 on: [push, pull_request]
+env:
+  YARN_INSTALL_OPTS: --frozen-lockfile
 concurrency:
   group: first-startup-${{ github.ref }}
   cancel-in-progress: true
-env:
-  YARN_INSTALL_OPTS: --frozen-lockfile
 jobs:
 
   test:
