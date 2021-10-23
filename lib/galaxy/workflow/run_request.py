@@ -218,6 +218,7 @@ def _get_target_history(trans, workflow, payload, param_keys=None, index=0):
             nh_name = f"{nh_name} on {', '.join(ids[0:-1])} and {ids[-1]}"
         new_history = trans.app.model.History(user=trans.user, name=nh_name)
         trans.sa_session.add(new_history)
+        trans.sa_session.flush()
         target_history = new_history
     return target_history
 

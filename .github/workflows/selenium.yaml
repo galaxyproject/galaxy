@@ -1,14 +1,14 @@
 name: Selenium tests
 on: [push, pull_request]
+env:
+  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  GALAXY_TEST_SELENIUM_RETRIES: 1
+  GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 'true'
+  YARN_INSTALL_OPTS: --frozen-lockfile
 concurrency:
   group: selenium-${{ github.ref }}
   cancel-in-progress: true
-env:
-  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-  GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 'true'
-  GALAXY_TEST_SELENIUM_RETRIES: 1
-  YARN_INSTALL_OPTS: --frozen-lockfile
-  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
 jobs:
   test:
     name: Test
