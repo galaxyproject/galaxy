@@ -255,11 +255,15 @@ def set_metadata_portable():
         set_meta_kwds = stringify_dictionary_keys(json.load(open(filename_kwds)))  # load kwds; need to ensure our keywords are not unicode
         try:
             external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
-            dataset.dataset.external_filename = external_filename
-            store_by = output_dict.get("object_store_store_by", legacy_object_store_store_by)
-            extra_files_dir_name = f"dataset_{getattr(dataset.dataset, store_by)}_files"
-            files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
-            dataset.dataset.external_extra_files_path = files_path
+            override_filenames = external_filename.startswith(tool_job_working_directory) and os.path.getsize(external_filename)
+            if override_filenames:
+                # Only set external filename if we're dealing with files in job working directory.
+                # Fixes link_data_only uploads
+                dataset.dataset.external_filename = external_filename
+                store_by = output_dict.get("object_store_store_by", legacy_object_store_store_by)
+                extra_files_dir_name = f"dataset_{getattr(dataset.dataset, store_by)}_files"
+                files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
+                dataset.dataset.external_extra_files_path = files_path
             file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
             if 'ext' in file_dict:
                 dataset.extension = file_dict['ext']
@@ -277,10 +281,10 @@ def set_metadata_portable():
                 set_meta(dataset, file_dict)
                 if extended_metadata_collection:
                     collect_extra_files(object_store, dataset, ".")
-                    dataset.dataset.state = final_job_state
+                    dataset.state = dataset.dataset.state = final_job_state
 
             if extended_metadata_collection:
-                if external_filename.startswith(tool_job_working_directory) and os.path.getsize(external_filename):
+                if override_filenames:
                     # outputs to working directory, and not already pushed by pulsar + extended metadata,
                     # move output to final destination.
                     object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
@@ -314,9 +318,10 @@ def set_metadata_portable():
                     if context_key in context:
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
-                # We never want to persist the external_filename.
-                dataset.dataset.external_filename = None
-                dataset.dataset.extra_files_path = None
+                # We only want to persist the external_filename if the dataset has been linked in.
+                if override_filenames:
+                    dataset.dataset.external_filename = None
+                    dataset.dataset.extra_files_path = None
                 export_store.add_dataset(dataset)
             else:
                 dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
