@@ -15,6 +15,7 @@ import logging
 import os
 import sys
 import traceback
+from pathlib import Path
 
 try:
     from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -176,6 +177,20 @@ def set_metadata_portable():
 
             with open(os.path.join(outputs_directory, "stderr"), "rb") as f:
                 tool_stderr = f.read()
+        elif os.path.exists(os.path.join(tool_job_working_directory, 'task_0')):
+            # We have a task splitting job
+            tool_stdout = b''
+            tool_stderr = b''
+            paths = Path(tool_job_working_directory).glob('task_*')
+            for path in paths:
+                with open(path / 'outputs' / 'tool_stdout', 'rb') as f:
+                    task_stdout = f.read()
+                    if task_stdout:
+                        tool_stdout = b"%s[%s stdout]\n%s\n" % (tool_stdout, path.name.encode(), task_stdout)
+                with open(path / 'outputs' / 'tool_stderr', 'rb') as f:
+                    task_stderr = f.read()
+                    if task_stderr:
+                        tool_stderr = b"%s[%s stdout]\n%s\n" % (tool_stderr, path.name.encode(), task_stderr)
         else:
             wdc = os.listdir(tool_job_working_directory)
             odc = os.listdir(outputs_directory)
