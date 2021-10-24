@@ -41,7 +41,7 @@ describe("FormElement", () => {
         await wrapper.setProps({ disabled: false });
         expect(wrapper.findAll(".ui-form-field").length).toEqual(1);
         await wrapper.setProps({ default_value: "default_value", collapsible_value: "collapsible_value" });
-        expect(wrapper.find(".ui-form-collapsible-text").text()).toEqual("title_text");
+        expect(wrapper.find(".ui-form-title-text").text()).toEqual("title_text");
         expect(wrapper.findAll("span[title='Disable']").length).toEqual(1);
         wrapper.find(".ui-form-collapsible-icon").trigger("click");
         expect(wrapper.emitted().input[0][0]).toEqual("collapsible_value");

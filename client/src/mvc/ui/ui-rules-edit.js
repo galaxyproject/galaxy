@@ -52,7 +52,6 @@ var View = Backbone.View.extend({
             },
         });
         this.instance.$mount(vm);
-        this.collapsible_disabled = true;
     },
 
     _fetchCollectionAndEdit: function () {

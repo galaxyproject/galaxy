@@ -1835,6 +1835,7 @@ export default {
 .rules {
     flex-grow: 1;
     overflow-y: scroll;
+    padding: 0px;
 }
 .rule-source {
     height: 400px;

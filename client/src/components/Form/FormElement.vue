@@ -6,19 +6,17 @@
         </div>
         <div class="ui-form-title">
             <div v-if="collapsible || connectable">
-                <div class="ui-form-collapsible">
-                    <span v-if="collapsible && !connected" class="ui-form-collapsible-icon" @click="onCollapse">
-                        <span v-if="collapsed" :class="collapsedEnableIcon" :title="collapsedEnableText" />
-                        <span v-else :class="collapsedDisableIcon" :title="collapsedDisableText" />
-                    </span>
-                    <span v-if="connectable" class="ui-form-connected-icon" @click="onConnect">
-                        <span v-if="connected" :class="connectedEnableIcon" :title="connectedEnableText" />
-                        <span v-else :class="connectedDisableIcon" :title="connectedDisableText" />
-                    </span>
-                    <span class="ui-form-collapsible-text ml-1">
-                        {{ title }}
-                    </span>
-                </div>
+                <span v-if="collapsible && !connected" class="ui-form-collapsible-icon icon" @click="onCollapse">
+                    <span v-if="collapsed" :class="collapsedEnableIcon" :title="collapsedEnableText" />
+                    <span v-else :class="collapsedDisableIcon" :title="collapsedDisableText" />
+                </span>
+                <span v-if="connectable" class="ui-form-connected-icon icon" @click="onConnect">
+                    <span v-if="connected" :class="connectedEnableIcon" :title="connectedEnableText" />
+                    <span v-else :class="connectedDisableIcon" :title="connectedDisableText" />
+                </span>
+                <span class="ui-form-title-text ml-1">
+                    {{ title }}
+                </span>
             </div>
             <span v-else class="ui-form-title-text">{{ title }}</span>
         </div>
@@ -184,7 +182,7 @@ export default {
             return this.attrs["hidden"];
         },
         previewText() {
-            return _.escape(this.textValue).replace(/\n/g, "<br />");
+            return _.escape(this.textValue).replace(/\n/g, "<br>");
         },
         showField() {
             return !this.collapsed && !this.disabled;
