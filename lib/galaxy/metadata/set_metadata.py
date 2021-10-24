@@ -255,8 +255,9 @@ def set_metadata_portable():
         set_meta_kwds = stringify_dictionary_keys(json.load(open(filename_kwds)))  # load kwds; need to ensure our keywords are not unicode
         try:
             external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
-            override_filenames = external_filename.startswith(tool_job_working_directory) and os.path.getsize(external_filename)
-            if override_filenames:
+            # override filename if we're dealing with outputs to working directory and dataset is not linked to
+            link_data_only = metadata_params.get("link_data_only")
+            if not link_data_only:
                 # Only set external filename if we're dealing with files in job working directory.
                 # Fixes link_data_only uploads
                 dataset.dataset.external_filename = external_filename
@@ -284,7 +285,8 @@ def set_metadata_portable():
                     dataset.state = dataset.dataset.state = final_job_state
 
             if extended_metadata_collection:
-                if override_filenames:
+                outputs_to_working = external_filename.startswith(tool_job_working_directory) and os.path.getsize(external_filename)
+                if not link_data_only and outputs_to_working:
                     # outputs to working directory, and not already pushed by pulsar + extended metadata,
                     # move output to final destination.
                     object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
@@ -319,7 +321,7 @@ def set_metadata_portable():
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
                 # We only want to persist the external_filename if the dataset has been linked in.
-                if override_filenames:
+                if not link_data_only:
                     dataset.dataset.external_filename = None
                     dataset.dataset.extra_files_path = None
                 export_store.add_dataset(dataset)

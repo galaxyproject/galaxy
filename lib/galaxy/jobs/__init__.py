@@ -2152,6 +2152,7 @@ class JobWrapper(HasResourceParameters):
                                                                         job=job,
                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                         validate_outputs=self.validate_outputs,
+                                                                        link_data_only=self.__link_file_check(),
                                                                         **kwds)
         if resolve_metadata_dependencies:
             metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")
