@@ -92,6 +92,7 @@ class DatasetCollectionDescription:
             'assign_primary_output': self.assign_primary_output,
             'directory': self.directory,
             'recurse': self.recurse,
+            'match_relative_path': self.match_relative_path,
         }
 
     @property
