@@ -531,7 +531,7 @@ class AdvancedFtpUploadFetchTestCase(BaseFtpUploadConfigurationTestCase):
             "collection_type": "list:list",
         }
         self.fetch_target(target, assert_ok=True)
-        hdca = self.dataset_populator.get_history_collection_details(self.history_id, hid=1)
+        hdca = self.dataset_populator.get_history_collection_details(self.history_id)
         assert len(hdca["elements"]) == 2, hdca
         element0 = hdca["elements"][0]
         assert element0["element_identifier"] == "subdirel1"
