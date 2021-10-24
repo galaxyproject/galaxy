@@ -1,4 +1,3 @@
-
 import logging
 
 from galaxy.managers.visualizations import (

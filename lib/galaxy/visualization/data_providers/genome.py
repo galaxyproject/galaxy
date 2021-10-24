@@ -987,7 +987,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
             seq = read.seq
             strand = decode_strand(read.flag, 0x0010)
             if read.cigar is not None:
-                read_len = sum([cig[1] for cig in read.cigar])  # Use cigar to determine length
+                read_len = sum(cig[1] for cig in read.cigar)  # Use cigar to determine length
             else:
                 read_len = len(seq)  # If no cigar, just use sequence length
 

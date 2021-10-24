@@ -217,12 +217,12 @@ def singularity_search(search_string):
 def readable_output(json, organization='biocontainers', channel='bioconda'):
 
     # if json is empty:
-    if sum([len(json[destination][results]) for destination in json for results in json[destination]]) == 0:
+    if sum(len(json[destination][results]) for destination in json for results in json[destination]) == 0:
         sys.stdout.write('No results found for that query.\n')
         return
 
     # return results for quay, conda and singularity together
-    if sum([len(json[destination][results]) for destination in ['quay', 'conda', 'singularity', ] for results in json.get(destination, [])]) > 0:
+    if sum(len(json[destination][results]) for destination in ['quay', 'conda', 'singularity', ] for results in json.get(destination, [])) > 0:
         sys.stdout.write("The query returned the following result(s).\n")
         # put quay, conda etc results as lists in lines
         lines = [['LOCATION', 'NAME', 'VERSION', 'COMMAND\n']]
@@ -262,7 +262,7 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
             sys.stdout.write(
                 "".join((line[0].ljust(col_width0), line[1])))  # output
 
-    if sum([len(json['github'][results]) for results in json.get('github', [])]) > 0:
+    if sum(len(json['github'][results]) for results in json.get('github', [])) > 0:
         sys.stdout.write('\n' if 'lines' in locals() else '')
         sys.stdout.write(
             "Other result(s) on the bioconda-recipes GitHub repository:\n")

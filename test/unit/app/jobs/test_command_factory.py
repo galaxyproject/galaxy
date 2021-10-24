@@ -43,7 +43,7 @@ class TestCommandFactory(TestCase):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is(_surround_command("{}; {}; return_code=$?".format(dep_commands[0], MOCK_COMMAND_LINE)))
+        self.__assert_command_is(_surround_command(f"{dep_commands[0]}; {MOCK_COMMAND_LINE}; return_code=$?"))
 
     def test_shell_commands_external(self):
         self.job_wrapper.commands_in_new_shell = True
@@ -55,7 +55,7 @@ class TestCommandFactory(TestCase):
                 self.job_wrapper.shell,
                 self.job_wrapper.working_directory,
             )))
-        self.__assert_tool_script_is("#!/bin/sh\n{}; {}".format(dep_commands[0], MOCK_COMMAND_LINE))
+        self.__assert_tool_script_is(f"#!/bin/sh\n{dep_commands[0]}; {MOCK_COMMAND_LINE}")
 
     def test_remote_dependency_resolution(self):
         self.include_work_dir_outputs = False
@@ -67,7 +67,7 @@ class TestCommandFactory(TestCase):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is(_surround_command("{}; {}; return_code=$?".format(dep_commands[0], MOCK_COMMAND_LINE)),
+        self.__assert_command_is(_surround_command(f"{dep_commands[0]}; {MOCK_COMMAND_LINE}; return_code=$?"),
                                  remote_command_params=dict(dependency_resolution="local"))
 
     def test_task_prepare_inputs(self):

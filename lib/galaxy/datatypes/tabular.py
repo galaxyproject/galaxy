@@ -103,7 +103,7 @@ class TabularData(data.Text):
             else:
                 trans.response.set_content_type("text/html")
                 return trans.stream_template_mako("/dataset/large_file.mako",
-                                                  truncated_data=open(dataset.file_name, mode='r').read(max_peek_size),
+                                                  truncated_data=open(dataset.file_name).read(max_peek_size),
                                                   data=dataset)
         else:
             column_names = 'null'

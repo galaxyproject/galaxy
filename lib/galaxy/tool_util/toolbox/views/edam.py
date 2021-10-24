@@ -142,8 +142,7 @@ class EdamToolPanelView(ToolPanelView):
         if self.include_topics:
             edam.extend(tool.edam_topics)
         if len(edam) > 0:
-            for term in edam:
-                yield term
+            yield from edam
         else:
             yield 'uncategorized'
 

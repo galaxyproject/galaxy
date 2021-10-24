@@ -97,7 +97,7 @@ def display(api_key, url, return_formatted=True):
                     print('  name: %s' % i.pop('name'))
                 try:
                     for k, v in i.items():
-                        print('  %s: %s' % (k, v))
+                        print(f'  {k}: {v}')
                 except AttributeError:
                     for item in i:
                         print(item)

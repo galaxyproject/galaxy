@@ -110,7 +110,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             volume_claims = dict(volume.split(":") for volume in self.runner_params['k8s_persistent_volume_claims'].split(','))
         else:
             volume_claims = {}
-        mountable_volumes = list(set([claim_name if "/" not in claim_name else claim_name.split("/")[0] for claim_name in volume_claims]))
+        mountable_volumes = list({claim_name if "/" not in claim_name else claim_name.split("/")[0] for claim_name in volume_claims})
         mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}} for claim_name in mountable_volumes]
         self.runner_params['k8s_mountable_volumes'] = mountable_volumes
         volume_mounts = [{'name': claim_name, 'mountPath': mount_path} for claim_name, mount_path in volume_claims.items()]
@@ -366,7 +366,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 }
             },
             "spec": {
-                "ports": [{"name": "job-{}-{}".format(self.__force_label_conformity(ajs.job_wrapper.get_id_tag()), p),
+                "ports": [{"name": f"job-{self.__force_label_conformity(ajs.job_wrapper.get_id_tag())}-{p}",
                            "port": int(p),
                            "protocol": "TCP",
                            "targetPort": int(p)} for p in guest_ports],
@@ -426,7 +426,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             }
         }
         if self.runner_params.get("k8s_interactivetools_use_ssl"):
-            domains = list(set([e["domain"] for e in entry_points]))
+            domains = list({e["domain"] for e in entry_points})
             k8s_spec_template["spec"]["tls"] = [{"hosts": [domain],
                                                  "secretName": re.sub("[^a-z0-9-]", "-", domain)} for domain in domains]
         if self.runner_params.get("k8s_interactivetools_ingress_annotations"):
@@ -809,7 +809,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __cleanup_k8s_guest_ports(self, job_wrapper, k8s_job):
         k8s_job_prefix = self.__produce_k8s_job_prefix()
-        k8s_job_name = "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
+        k8s_job_name = f"{k8s_job_prefix}-{self.__force_label_conformity(job_wrapper.get_id_tag())}"
         log.debug(f'Deleting service/ingress for job with ID {job_wrapper.get_id_tag()}')
         job_failed = (k8s_job.obj['status']['failed'] > 0
                       if 'failed' in k8s_job.obj['status'] else False)

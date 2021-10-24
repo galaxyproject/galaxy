@@ -2488,7 +2488,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         if optimize:
             self.__add_datasets_optimized(datasets, genome_build=genome_build)
             if quota and self.user:
-                disk_usage = sum([d.get_total_size() for d in datasets if is_hda(d)])
+                disk_usage = sum(d.get_total_size() for d in datasets if is_hda(d))
                 self.user.adjust_total_disk_usage(disk_usage)
             sa_session.add_all(datasets)
             if flush:
@@ -3305,7 +3305,7 @@ class Dataset(StorableObject, Serializable, _HasTable):
         if rel_path is not None:
             if self.object_store.exists(self, extra_dir=rel_path, dir_only=True):
                 for root, _, files in os.walk(self.extra_files_path):
-                    self.total_size += sum([os.path.getsize(os.path.join(root, file)) for file in files if os.path.exists(os.path.join(root, file))])
+                    self.total_size += sum(os.path.getsize(os.path.join(root, file)) for file in files if os.path.exists(os.path.join(root, file)))
         return self.total_size
 
     def has_data(self):

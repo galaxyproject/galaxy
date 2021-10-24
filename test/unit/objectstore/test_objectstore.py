@@ -796,4 +796,4 @@ def _assert_has_keys(the_dict, keys):
 
 def _assert_key_has_value(the_dict, key, value):
     assert key in the_dict, f"dict [{key}] doesn't container expected key [{the_dict}]"
-    assert the_dict[key] == value, "{} != {}".format(the_dict[key], value)
+    assert the_dict[key] == value, f"{the_dict[key]} != {value}"

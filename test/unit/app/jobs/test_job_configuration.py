@@ -327,7 +327,7 @@ class AdvancedJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
 
     def test_destination_tags(self):
         self._with_advanced_config()
-        longjob_dests_ids = sorted([j.id for j in self.job_config.destinations["longjobs"]])
+        longjob_dests_ids = sorted(j.id for j in self.job_config.destinations["longjobs"])
         assert len(longjob_dests_ids) == 2
         assert longjob_dests_ids[0] == "pbs_longjobs"
         assert longjob_dests_ids[1] == "remote_cluster"
