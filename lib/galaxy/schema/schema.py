@@ -2455,6 +2455,7 @@ class DeleteHDCAResult(Model):
 
 
 AnyHDA = Union[HDASummary, HDADetailed, HDABeta]
+AnyHDCA = Union[HDCABeta, HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Union[AnyHDA, HDCASummary, HDCADetailed, HDCABeta]
 
 AnyJobStateSummary = Union[

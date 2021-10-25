@@ -17,6 +17,7 @@ from galaxy.managers.hdcas import HDCAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.schema.fields import EncodedDatabaseIdField, ModelClassField
 from galaxy.schema.schema import (
+    AnyHDCA,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
     HDCADetailed,
@@ -169,7 +170,12 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         rval = self.collection_manager.get_converters_for_collection(trans, id, self.datatypes_registry, instance_type)
         return SuitableConverters.parse_obj(rval)
 
-    def show(self, trans: ProvidesHistoryContext, id, instance_type='history'):
+    def show(
+        self,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+        instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
+    ) -> AnyHDCA:
         """
         Returns information about a particular dataset collection.
         """
@@ -178,19 +184,20 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             id=id,
             instance_type=instance_type,
         )
-        if instance_type == 'history':
+        if instance_type == DatasetCollectionInstanceType.history:
             parent = dataset_collection_instance.history
-        elif instance_type == 'library':
+        elif instance_type == DatasetCollectionInstanceType.library:
             parent = dataset_collection_instance.folder
         else:
             raise exceptions.RequestParameterInvalidException()
 
-        return dictify_dataset_collection_instance(
+        rval = dictify_dataset_collection_instance(
             dataset_collection_instance,
             security=trans.security,
             parent=parent,
             view='element'
         )
+        return rval
 
     def contents(self, trans: ProvidesHistoryContext, hdca_id, parent_id, instance_type='history', limit=None, offset=None):
         """
