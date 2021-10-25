@@ -20,6 +20,8 @@ from galaxy.schema.schema import (
     AnyHDCA,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
+    DCESummary,
+    DCEType,
     HDCADetailed,
     TagCollection,
 )
@@ -78,6 +80,11 @@ class SuitableConverter(BaseModel):
 class SuitableConverters(BaseModel):
     """Collection of converters that can be used on a particular dataset collection."""
     __root__: List[SuitableConverter]
+
+
+class DatasetCollectionContentElements(BaseModel):
+    """Represents a collection of elements contained in the dataset collection."""
+    __root__: List[DCESummary]
 
 
 class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
@@ -199,7 +206,15 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         )
         return rval
 
-    def contents(self, trans: ProvidesHistoryContext, hdca_id, parent_id, instance_type='history', limit=None, offset=None):
+    def contents(
+        self,
+        trans: ProvidesHistoryContext,
+        hdca_id: EncodedDatabaseIdField,
+        parent_id: EncodedDatabaseIdField,
+        instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> DatasetCollectionContentElements:
         """
         Shows direct child contents of indicated dataset collection parent id
 
@@ -216,28 +231,27 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         """
         # validate HDCA for current user, will throw error if not permitted
         # TODO: refactor get_dataset_collection_instance
-        hdca = self.collection_manager.get_dataset_collection_instance(trans,
-            id=hdca_id, check_ownership=True,
-            instance_type=instance_type)
+        hdca = self.collection_manager.get_dataset_collection_instance(
+            trans, id=hdca_id, check_ownership=True, instance_type=instance_type
+        )
 
         # check to make sure the dsc is part of the validated hdca
         decoded_parent_id = self.decode_id(parent_id)
         if parent_id != hdca_id and not hdca.contains_collection(decoded_parent_id):
-            errmsg = 'Requested dataset collection is not contained within indicated history content'
-            raise exceptions.ObjectNotFound(errmsg)
+            raise exceptions.ObjectNotFound('Requested dataset collection is not contained within indicated history content')
 
         # retrieve contents
-        contents_qry = self.collection_manager.get_collection_contents_qry(decoded_parent_id, limit=limit, offset=offset)
+        contents = self.collection_manager.get_collection_contents(trans, decoded_parent_id, limit=limit, offset=offset)
 
         # dictify and tack on a collection_url for drilling down into nested collections
-        def process_element(dsc_element):
+        def serialize_element(dsc_element) -> DCESummary:
             result = dictify_element_reference(dsc_element, recursive=False, security=trans.security)
-            if result["element_type"] == "dataset_collection":
+            if result["element_type"] == DCEType.dataset_collection:
                 result["object"]["contents_url"] = routes.url_for('contents_dataset_collection',
                     hdca_id=self.encode_id(hdca.id),
                     parent_id=self.encode_id(result["object"]["id"]))
             trans.security.encode_all_ids(result, recursive=True)
             return result
 
-        results = contents_qry.with_session(trans.sa_session()).all()
-        return [process_element(el) for el in results]
+        rval = [serialize_element(el) for el in contents]
+        return DatasetCollectionContentElements.parse_obj(rval)
