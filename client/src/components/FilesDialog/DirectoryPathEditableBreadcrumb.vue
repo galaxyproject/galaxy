@@ -15,7 +15,13 @@
                 :key="index"
                 class="existent-url-path align-items-center"
             >
-                <b-button class="regular-path-chunk" @click="removePath(index)" pill :disabled="!editable" variant="dark">
+                <b-button
+                    class="regular-path-chunk"
+                    @click="removePath(index)"
+                    pill
+                    :disabled="!editable"
+                    variant="dark"
+                >
                     {{ pathChunk }}</b-button
                 >
             </b-breadcrumb-item>
