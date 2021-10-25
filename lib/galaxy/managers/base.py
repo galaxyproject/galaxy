@@ -42,6 +42,7 @@ from typing import (
 
 import sqlalchemy
 from sqlalchemy.orm.scoping import scoped_session
+from typing_extensions import Protocol
 
 from galaxy import exceptions
 from galaxy import model
@@ -727,6 +728,12 @@ class ModelSerializer(HasAModelManager):
         return self.views[view][:]
 
 
+class Deserializer(Protocol):
+
+    def __call__(self, item: Any, key: Any, val: Any, **kwargs) -> Any:
+        ...
+
+
 class ModelDeserializer(HasAModelManager):
     """
     An object that converts an incoming serialized dict into values that can be
@@ -741,7 +748,7 @@ class ModelDeserializer(HasAModelManager):
         super().__init__(app, **kwargs)
         self.app = app
 
-        self.deserializers: Dict[str, Callable] = {}
+        self.deserializers: Dict[str, Deserializer] = {}
         self.deserializable_keyset: Set[str] = set()
         self.add_deserializers()
         # a sub object that can validate incoming values

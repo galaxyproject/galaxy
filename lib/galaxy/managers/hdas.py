@@ -7,6 +7,7 @@ history.
 import gettext
 import logging
 import os
+from typing import Any, Dict, List
 
 from sqlalchemy.orm.session import object_session
 
@@ -22,7 +23,7 @@ from galaxy.managers import (
     taggable,
     users,
 )
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.structured_app import MinimalManagerApp, StructuredApp
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ class HDAManager(datasets.DatasetAssociationManager,
     def get_owned_ids(self, object_ids, history=None):
         """Get owned IDs.
         """
-        filters = [self.model_class.id.in_(object_ids), self.model_class.history_id == history.id]
+        filters = [self.model_class.table.c.id.in_(object_ids), self.model_class.table.c.history_id == history.id]
         return self.list(filters=filters)
 
     # .... security and permissions
@@ -260,8 +261,9 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         taggable.TaggableSerializerMixin,
         annotatable.AnnotatableSerializerMixin):
     model_manager_class = HDAManager
+    app: StructuredApp
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.hda_manager = self.manager
 
@@ -446,7 +448,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         """
         Return dictionary containing new-style display app urls.
         """
-        display_apps = []
+        display_apps: List[Dict[str, Any]] = []
         for display_app in hda.get_display_applications(trans).values():
 
             app_links = []
@@ -465,7 +467,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         """
         Return dictionary containing old-style display app urls.
         """
-        display_apps = []
+        display_apps: List[Dict[str, Any]] = []
         if not self.app.config.enable_old_display_applications:
             return display_apps
 
@@ -541,9 +543,9 @@ class HDADeserializer(datasets.DatasetAssociationDeserializer,
         self.deserializers.update({
             'visible': self.deserialize_bool,
             # remapped
-            'genome_build': lambda i, k, v, **c: self.deserialize_genome_build(i, 'dbkey', v),
-            'misc_info': lambda i, k, v, **c: self.deserialize_basestring(i, 'info', v,
-                                                                          convert_none_to_empty=True),
+            'genome_build': lambda item, key, val, **c: self.deserialize_genome_build(item, 'dbkey', val),
+            'misc_info': lambda item, key, val, **c: self.deserialize_basestring(item, 'info', val,
+                                                                                 convert_none_to_empty=True),
         })
         self.deserializable_keyset.update(self.deserializers.keys())
 
