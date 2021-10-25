@@ -8,11 +8,14 @@ from sqlalchemy.orm.scoping import (
 
 from galaxy import model
 from galaxy.app import MinimalManagerApp
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.schema.tasks import (
+    GeneratePdfDownload,
     PrepareDatasetCollectionDownload,
 )
 from galaxy.util import ExecutionTimer
@@ -109,6 +112,17 @@ def prepare_dataset_collection_download(
     timer = ExecutionTimer()
     collection_manager.write_dataset_collection(request)
     log.info(f"Collection download file staged {timer}")
+
+
+@galaxy_task
+def prepare_pdf_download(
+    request: GeneratePdfDownload,
+    config: GalaxyAppConfiguration,
+    short_term_storage_monitor: ShortTermStorageMonitor
+):
+    timer = ExecutionTimer()
+    generate_branded_pdf(request, config, short_term_storage_monitor)
+    log.debug(f"Successfully generated PDF for download {timer}")
 
 
 @galaxy_task

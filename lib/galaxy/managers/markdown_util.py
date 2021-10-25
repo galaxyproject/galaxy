@@ -46,9 +46,9 @@ from galaxy.managers.jobs import (
 )
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
-from galaxy.schema.tasks import PdfDocumentType
+from galaxy.schema.tasks import GeneratePdfDownload, PdfDocumentType
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.short_term_storage import storage_context, ShortTermStorageMonitor
+from galaxy.web.short_term_storage import ShortTermStorageMonitor, storage_context
 from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_markdown
 
 log = logging.getLogger(__name__)
@@ -623,6 +623,17 @@ def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown: str, docume
     basic_markdown = to_basic_markdown(trans, internal_galaxy_markdown)
     config = trans.app.config
     return to_branded_pdf(basic_markdown, document_type, config)
+
+
+def generate_branded_pdf(request: GeneratePdfDownload, config: GalaxyAppConfiguration, short_term_storage_monitor: ShortTermStorageMonitor):
+    with storage_context(request.short_term_storage_request_id, short_term_storage_monitor) as target:
+        raw_contents = to_branded_pdf(
+            request.basic_markdown,
+            request.document_type,
+            config,
+        )
+        with open(target.path, 'wb') as f:
+            f.write(raw_contents)
 
 
 def to_branded_pdf(basic_markdown: str, document_type: PdfDocumentType, config: GalaxyAppConfiguration) -> bytes:
