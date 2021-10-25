@@ -754,7 +754,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return job_state
 
     def __client_outputs(self, client, job_wrapper):
-        work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
         metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
         metadata_strategy = job_wrapper.get_destination_configuration('metadata_strategy', None)
         tool = job_wrapper.tool
@@ -767,6 +766,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # we only need to recover the final model store.
             dynamic_outputs = EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN
             output_files = []
+            work_dir_outputs = []
         else:
             # otherwise collect everything we might need
             dynamic_outputs = DEFAULT_DYNAMIC_COLLECTION_PATTERN[:]
@@ -775,6 +775,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # grab tool provided metadata (galaxy.json) also...
             dynamic_outputs.append(re.escape(tool_provided_metadata_file_path))
             output_files = self.get_output_files(job_wrapper)
+            work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
         dynamic_file_sources = [
             {"path": tool_provided_metadata_file_path, "type": "galaxy" if tool_provided_metadata_style == "default" else "legacy_galaxy"}
         ]
