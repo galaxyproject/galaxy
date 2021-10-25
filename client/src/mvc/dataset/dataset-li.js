@@ -581,7 +581,7 @@ DatasetListItemView.prototype.templates = (() => {
         resubmitted: BASE_MVC.wrapTemplate([
             // deleted not purged
             "<% if( model.resubmitted ){ %>",
-            '<div class="resubmitted-msg infomessagesmall">',
+            '<div class="resubmitted-msg alert alert-info">',
             _l("The job creating this dataset has been resubmitted"),
             "</div>",
             "<% } %>",
