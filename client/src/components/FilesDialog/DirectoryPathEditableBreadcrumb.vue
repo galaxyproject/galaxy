@@ -1,24 +1,27 @@
 <template>
     <div>
         <div v-if="!url">
-            <b-button @click="reset"> <font-awesome-icon icon="folder-open" /> Select folder </b-button>
+            <b-button id="select-btn" @click="reset"> <font-awesome-icon icon="folder-open" /> Select folder </b-button>
             <FilesDialog :key="modalKey" mode="directory" :callback="setUrl" :require-writable="true" />
         </div>
         <b-breadcrumb v-if="url">
             <b-breadcrumb-item title="Select another folder" @click="reset" class="align-items-center">
-                <b-button pill variant="primary"> <font-awesome-icon icon="folder-open" /> {{ url.protocol }}</b-button>
+                <b-button class="pathname" pill variant="primary">
+                    <font-awesome-icon icon="folder-open" /> {{ url.protocol }}</b-button
+                >
             </b-breadcrumb-item>
             <b-breadcrumb-item
                 v-for="({ pathChunk, editable }, index) in pathChunks"
                 :key="index"
                 class="existent-url-path align-items-center"
             >
-                <b-button @click="removePath(index)" pill :disabled="!editable" variant="dark">
+                <b-button class="regular-path-chunk" @click="removePath(index)" pill :disabled="!editable" variant="dark">
                     {{ pathChunk }}</b-button
                 >
             </b-breadcrumb-item>
             <b-breadcrumb-item class="directory-input-field align-items-center">
                 <b-input
+                    id="path-input-breadcrumb"
                     aria-describedby="input-live-help input-live-feedback"
                     :state="isValidName"
                     @keyup.enter="addPath"
