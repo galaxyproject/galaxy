@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Optional, Set
+from typing import List, Optional, Set
 
 import routes
 from pydantic import BaseModel, Field
@@ -53,6 +53,30 @@ class DatasetCollectionAttributesResult(BaseModel):
     dbkeys: Optional[Set[str]]
     extensions: Optional[Set[str]]
     tags: TagCollection
+
+
+class SuitableConverter(BaseModel):
+    tool_id: str = Field(
+        ...,
+        description="The ID of the tool that can perform the type conversion."
+    )
+    name: str = Field(
+        ...,
+        description="The name of the converter."
+    )
+    target_type: str = Field(
+        ...,
+        description="The type to convert to."
+    )
+    original_type: str = Field(
+        ...,
+        description="The type to convert from."
+    )
+
+
+class SuitableConverters(BaseModel):
+    """Collection of converters that can be used on a particular dataset collection."""
+    __root__: List[SuitableConverter]
 
 
 class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
@@ -133,11 +157,17 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         rval = dataset_collection_instance.to_dict(view="dbkeysandextensions")
         return DatasetCollectionAttributesResult.construct(**rval)
 
-    def suitable_converters(self, trans: ProvidesHistoryContext, id, instance_type='history'):
+    def suitable_converters(
+        self,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+        instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
+    ) -> SuitableConverters:
         """
         Returns suitable converters for all datatypes in collection
         """
-        return self.collection_manager.get_converters_for_collection(trans, id, self.datatypes_registry, instance_type)
+        rval = self.collection_manager.get_converters_for_collection(trans, id, self.datatypes_registry, instance_type)
+        return SuitableConverters.parse_obj(rval)
 
     def show(self, trans: ProvidesHistoryContext, id, instance_type='history'):
         """
