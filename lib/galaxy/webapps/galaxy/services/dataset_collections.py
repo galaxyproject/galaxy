@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import Optional, Set
 
 import routes
 from pydantic import BaseModel, Field
@@ -14,11 +15,12 @@ from galaxy.managers.collections_util import (
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdcas import HDCAManager
 from galaxy.managers.histories import HistoryManager
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import EncodedDatabaseIdField, ModelClassField
 from galaxy.schema.schema import (
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
     HDCADetailed,
+    TagCollection,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.base.controller import UsesLibraryMixinItems
@@ -34,6 +36,23 @@ class UpdateCollectionAttributePayload(BaseModel):
         ...,
         description="TODO"
     )
+
+
+class DatasetCollectionAttributesResult(BaseModel):
+    dbkey: str = Field(
+        ...,
+        description="TODO"
+    )
+    # Are the following fields really used/needed?
+    extension: str = Field(
+        ...,
+        description="The dataset file extension.",
+        example="txt"
+    )
+    model_class: str = ModelClassField("HistoryDatasetCollectionAssociation")
+    dbkeys: Optional[Set[str]]
+    extensions: Optional[Set[str]]
+    tags: TagCollection
 
 
 class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
@@ -96,7 +115,12 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             trans, trans.history, "hdca", id, copy_elements=True, dataset_instance_attributes=payload.dict()
         )
 
-    def attributes(self, trans: ProvidesHistoryContext, id, instance_type='history'):
+    def attributes(
+        self,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+        instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
+    ) -> DatasetCollectionAttributesResult:
         """
         Returns dbkey/extension for collection elements
         """
@@ -106,7 +130,8 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             instance_type=instance_type,
             check_ownership=True
         )
-        return dataset_collection_instance.to_dict(view="dbkeysandextensions")
+        rval = dataset_collection_instance.to_dict(view="dbkeysandextensions")
+        return DatasetCollectionAttributesResult.construct(**rval)
 
     def suitable_converters(self, trans: ProvidesHistoryContext, id, instance_type='history'):
         """
