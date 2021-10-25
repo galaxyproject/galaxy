@@ -13,6 +13,7 @@ from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.security import HostAgent
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.objectstore import ObjectStore
 from galaxy.quota import QuotaAgent
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -49,6 +50,7 @@ class MinimalApp(BasicApp):
     install_model: ModelMapping
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
+    object_store: ObjectStore
 
 
 class MinimalManagerApp(MinimalApp):
@@ -64,6 +66,7 @@ class MinimalManagerApp(MinimalApp):
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     user_manager: Any
+    job_manager: Any  # galaxy.jobs.manager.JobManager
 
     @property
     def is_job_handler(self) -> bool:

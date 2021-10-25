@@ -43,6 +43,7 @@ class HDAManager(datasets.DatasetAssociationManager,
 
     tag_assoc = model.HistoryDatasetAssociationTagAssociation
     annotation_assoc = model.HistoryDatasetAssociationAnnotationAssociation
+    app: MinimalManagerApp
 
     # TODO: move what makes sense into DatasetManager
     # TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?

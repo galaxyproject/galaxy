@@ -4,7 +4,7 @@ Manager and Serializer for Datasets.
 import glob
 import logging
 import os
-from typing import Type
+from typing import List, Type
 
 from galaxy import (
     exceptions,
@@ -30,6 +30,7 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
     """
     model_class = model.Dataset
     foreign_key_name = 'dataset'
+    app: MinimalManagerApp
 
     # TODO:?? get + error_if_uploading is common pattern, should upload check be worked into access/owed?
 
@@ -235,6 +236,7 @@ class DatasetAssociationManager(base.ModelManager,
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
     model_class: Type[model.DatasetInstance] = model.DatasetInstance
+    app: MinimalManagerApp
 
     # NOTE: model_manager_class should be set in HDA/LDA subclasses
 
@@ -692,6 +694,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         sa_session = self.app.model.context
         sa_session.flush()
         trans = context.get("trans")
+        assert trans, "Logic error in Galaxy, deserialize_datatype not send a transation object"  # TODO: restructure this for stronger typing
         job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
         trans.app.job_manager.enqueue(job, tool=trans.app.datatypes_registry.set_external_metadata_tool)
         return item.datatype
@@ -731,9 +734,9 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
         datatypes in the comma separated string `class_strs`?
         """
         parse_datatype_fn = self.app.datatypes_registry.get_datatype_class_by_name
-        comparison_classes = []
+        comparison_classes: List[Type] = []
         for class_str in class_strs.split(','):
             datatype_class = parse_datatype_fn(class_str)
             if datatype_class:
                 comparison_classes.append(datatype_class)
-        return comparison_classes and isinstance(dataset_assoc.datatype, comparison_classes)
+        return comparison_classes and isinstance(dataset_assoc.datatype, tuple(comparison_classes))
