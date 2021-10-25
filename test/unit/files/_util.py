@@ -67,7 +67,7 @@ def assert_realizes_as(file_sources, uri, expected, user_context=None):
     file_source_path = file_sources.get_file_source_path(uri)
     with tempfile.NamedTemporaryFile(mode='r') as temp:
         file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
-        with open(temp.name, "r") as f:
+        with open(temp.name) as f:
             realized_contents = f.read()
         if realized_contents != expected:
             message = "Expected to realize contents at [{}] as [{}], instead found [{}]".format(

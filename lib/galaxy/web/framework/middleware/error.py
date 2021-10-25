@@ -308,10 +308,11 @@ class Supplement:
                 wsgi_vars[name] = value
         if self.environ['wsgi.version'] != (1, 0):
             wsgi_vars['wsgi.version'] = self.environ['wsgi.version']
-        proc_desc = tuple([int(bool(self.environ[key]))
-                           for key in ('wsgi.multiprocess',
-                                       'wsgi.multithread',
-                                       'wsgi.run_once')])
+        proc_desc = tuple(int(bool(self.environ[key])) for key in (
+            'wsgi.multiprocess',
+            'wsgi.multithread',
+            'wsgi.run_once'
+        ))
         wsgi_vars['wsgi process'] = self.process_combos[proc_desc]
         wsgi_vars['application'] = self.middleware.application
         if 'paste.config' in self.environ:

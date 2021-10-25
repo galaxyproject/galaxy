@@ -79,16 +79,16 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
         return
 
     # read object_store_info file
-    with open(object_store_info_file, mode="r") as osi:
+    with open(object_store_info_file) as osi:
         object_store_info = json.load(osi)
     osi_keys = tuple(object_store_info.keys())
 
     # read irods_info_file
-    with open(irods_info_file, mode="r") as ii:
+    with open(irods_info_file) as ii:
         irods_info = json.load(ii)
 
     # read db_connectin_info file
-    with open(db_connection_info_file, mode="r") as dci:
+    with open(db_connection_info_file) as dci:
         db_connection_info = json.load(dci)
 
     try:

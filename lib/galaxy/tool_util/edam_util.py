@@ -1,4 +1,3 @@
-import io
 import os
 from typing import Dict, Optional, TextIO
 
@@ -16,7 +15,7 @@ ROOT_TOPIC = 'topic_0003'
 def load_edam_tree(path: Optional[str] = None):
     if path is not None:
         assert os.path.exists(path), f"Failed to load EDAM tabular data at [{path}] path does not exist."
-        handle = io.open(path, "r")
+        handle = open(path)
     else:
         assert tabular_stream is not None, "Failed to load optional import from edam-onotology package, install using [pip install edam-ontology]."
         handle = tabular_stream()

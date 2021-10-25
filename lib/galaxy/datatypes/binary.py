@@ -1600,7 +1600,7 @@ class H5MLM(H5):
 
         repr_ = self.get_repr(dataset.file_name)
 
-        return "<pre>{}</pre><pre>{}</pre>".format(repr_, rval)
+        return f"<pre>{repr_}</pre><pre>{rval}</pre>"
 
 
 class HexrdMaterials(H5):

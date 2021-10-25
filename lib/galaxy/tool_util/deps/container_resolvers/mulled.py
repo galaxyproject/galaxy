@@ -88,7 +88,7 @@ class CacheDirectory(metaclass=ABCMeta):
         contents = os.listdir(self.path)
         sorted_images = version_sorted(contents)
         raw_images = map(lambda name: identifier_to_cached_target(name, self.hash_func), sorted_images)
-        return list([i for i in raw_images if i is not None])
+        return list(i for i in raw_images if i is not None)
 
     @abstractmethod
     def list_cached_mulled_images_from_path(self):

@@ -539,12 +539,12 @@ class JobConfiguration(ConfiguresHandlers):
                 self.limits.__dict__[limit_type] = types.get(limit_type, str)(limit_value)
 
         if self.limits.walltime is not None:
-            h, m, s = [int(v) for v in self.limits.walltime.split(':')]
+            h, m, s = (int(v) for v in self.limits.walltime.split(':'))
             self.limits.walltime_delta = datetime.timedelta(0, s, 0, 0, m, h)
 
         if "raw" in self.limits.total_walltime:
-            h, m, s = [int(v) for v in
-                       self.limits.total_walltime["raw"].split(':')]
+            h, m, s = (int(v) for v in
+                       self.limits.total_walltime["raw"].split(':'))
             self.limits.total_walltime["delta"] = datetime.timedelta(
                 0, s, 0, 0, m, h
             )

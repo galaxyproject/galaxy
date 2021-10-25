@@ -127,7 +127,7 @@ def __assert_mapper_errors_with_message(mapper, message):
     except Exception as e:
         exception = e
     assert exception
-    assert str(exception) == message, "{} != {}".format(str(exception), message)
+    assert str(exception) == message, f"{str(exception)} != {message}"
 
 
 def __mapper(tool_job_destination=TOOL_JOB_DESTINATION):

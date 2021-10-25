@@ -376,7 +376,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             remote_pulsar_app_config = dest_params.get("pulsar_app_config", {}).copy()
             if "pulsar_app_config_path" in dest_params:
                 pulsar_app_config_path = dest_params["pulsar_app_config_path"]
-                with open(pulsar_app_config_path, "r") as fh:
+                with open(pulsar_app_config_path) as fh:
                     remote_pulsar_app_config.update(yaml.safe_load(fh))
             job_directory_files = []
             config_files = job_wrapper.extra_filenames

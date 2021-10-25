@@ -201,7 +201,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
         current_tags_size = len(close_tag_buttons)
 
-        errmsg = "there are more tags than expected! current {}, expected {}".format(current_tags_size, expected_tags_size)
+        errmsg = f"there are more tags than expected! current {current_tags_size}, expected {expected_tags_size}"
         assert expected_tags_size == current_tags_size, errmsg
 
         for close_btn in reversed(close_tag_buttons):

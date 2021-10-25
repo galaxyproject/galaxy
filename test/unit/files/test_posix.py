@@ -257,7 +257,7 @@ def test_posix_user_access_requires_role():
     user_context = user_context_fixture()
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(role_names=set([allowed_role_name]))
+    user_context = user_context_fixture(role_names={allowed_role_name})
     _assert_user_access_granted(file_sources, user_context)
 
 
@@ -271,7 +271,7 @@ def test_posix_user_access_requires_group():
     user_context = user_context_fixture()
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(group_names=set([allowed_group_name]))
+    user_context = user_context_fixture(group_names={allowed_group_name})
     _assert_user_access_granted(file_sources, user_context)
 
 
@@ -298,13 +298,13 @@ def test_posix_user_access_requires_role_and_group():
     }
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
 
-    user_context = user_context_fixture(group_names=set([allowed_group_name]))
+    user_context = user_context_fixture(group_names={allowed_group_name})
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(role_names=set([allowed_role_name]))
+    user_context = user_context_fixture(role_names={allowed_role_name})
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(role_names=set([allowed_role_name]), group_names=set([allowed_group_name]))
+    user_context = user_context_fixture(role_names={allowed_role_name}, group_names={allowed_group_name})
     _assert_user_access_granted(file_sources, user_context)
 
 
@@ -316,32 +316,32 @@ def test_posix_user_access_using_boolean_rules():
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
 
     user_context = user_context_fixture(
-        role_names=set([]),
-        group_names=set([])
+        role_names=set(),
+        group_names=set()
     )
     _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(
-        role_names=set(["role1"]),
-        group_names=set(["group1", "group2"])
+        role_names={"role1"},
+        group_names={"group1", "group2"}
     )
     _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(
-        role_names=set(["role1", "role3"]),
-        group_names=set(["group1", "group2", "group3"])
+        role_names={"role1", "role3"},
+        group_names={"group1", "group2", "group3"}
     )
     _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(
-        role_names=set(["role1", "role2"]),
-        group_names=set(["group3", "group5"])
+        role_names={"role1", "role2"},
+        group_names={"group3", "group5"}
     )
     _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(
-        role_names=set(["role1", "role3"]),
-        group_names=set(["group1", "group2"])
+        role_names={"role1", "role3"},
+        group_names={"group1", "group2"}
     )
     _assert_user_access_granted(file_sources, user_context)
 

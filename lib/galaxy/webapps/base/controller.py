@@ -1471,7 +1471,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True
-            yield prefix, (f"{meta}").encode("utf8", errors='replace')
+            yield prefix, (f"{meta}").encode()
 
 
 def sort_by_attr(seq, attr):

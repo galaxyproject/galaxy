@@ -1,4 +1,3 @@
-
 """This module contains a linting functions for tool inputs."""
 from galaxy.util import string_as_bool
 from ._util import is_datasource, is_valid_cheetah_placeholder
@@ -132,9 +131,9 @@ def lint_inputs(tool_xml, lint_ctx):
             # lint statically defined options
             if any(['value' not in option.attrib for option in select_options]):
                 lint_ctx.error(f"Select parameter [{param_name}] has option without value")
-            if len(set([option.text.strip() for option in select_options if option.text is not None])) != len(select_options):
+            if len({option.text.strip() for option in select_options if option.text is not None}) != len(select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same text content")
-            if len(set([option.attrib.get("value") for option in select_options])) != len(select_options):
+            if len({option.attrib.get("value") for option in select_options}) != len(select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value")
 
             if param_attrib.get("display") == "checkboxes":

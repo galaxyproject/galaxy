@@ -262,7 +262,7 @@ def gen_rank_fuzzy_counts(collection_type, fuzzy_count=None):
         return [None for rt in rank_collection_types]
     else:
         # This is a list...
-        paired_count = sum([1 if rt == "paired" else 0 for rt in rank_collection_types])
+        paired_count = sum(1 if rt == "paired" else 0 for rt in rank_collection_types)
         list_count = len(rank_collection_types) - paired_count
         paired_fuzzy_count_mult = 1 if paired_count == 0 else 2 << (paired_count - 1)
         list_fuzzy_count_mult = math.floor((fuzzy_count * 1.0) / paired_fuzzy_count_mult)

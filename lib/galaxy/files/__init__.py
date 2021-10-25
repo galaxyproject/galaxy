@@ -250,13 +250,13 @@ class ProvidesUserFileSourcesUserContext:
     def role_names(self) -> Set[str]:
         """The set of role names of this user."""
         user = self.trans.user
-        return set(ura.role.name for ura in user.roles) if user else set()
+        return {ura.role.name for ura in user.roles} if user else set()
 
     @property
     def group_names(self) -> Set[str]:
         """The set of group names to which this user belongs."""
         user = self.trans.user
-        return set(ugr.group.name for ugr in user.groups) if user else set()
+        return {ugr.group.name for ugr in user.groups} if user else set()
 
     @property
     def is_admin(self):

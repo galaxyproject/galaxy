@@ -358,16 +358,16 @@ class SwarmState:
             # there are no cpu constraints, so no calculation can be done
             return 0, 0
         for node in nodes:
-            used += sum([t.cpus for t in node.non_terminal_tasks]) / self._cpus
+            used += sum(t.cpus for t in node.non_terminal_tasks) / self._cpus
             total += node.cpus / self._cpus
         # need at least this many slots
         needed = used + self.get_limit(constraints, 'slots_min_spare')
         if (len(services) > self._conf.service_wait_count_limit
                 and time.time() - self._waiting_since.get(constraints, time.time()) > self._conf.service_wait_time_limit):
             # add slots for waiting services that have exceeded limits
-            needed += sum([s.cpus for s in services]) / self._cpus
+            needed += sum(s.cpus for s in services) / self._cpus
         # subtract slots for spawning nodes
-        needed -= sum([n.get('slots', 0) for n in self._spawning_nodes.get(constraints, {})])
+        needed -= sum(n.get('slots', 0) for n in self._spawning_nodes.get(constraints, {}))
         # ensure no less than slots_min_limit slots will exist (free or used)
         needed = max(needed, self.get_limit(constraints, 'slots_min_limit'))
         # ensure no more than slots_max_limit slots will exist

@@ -305,7 +305,7 @@ class DatasetCollectionManager:
                 try:
                     self.hda_manager.error_unless_owner(dataset, user=trans.get_user(), current_history=trans.history)
                 except HistoryDatasetAssociationNoHistoryException:
-                    log.info("Cannot delete HistoryDatasetAssociation {}, HistoryDatasetAssociation has no associated History, cannot verify owner".format(dataset.id))
+                    log.info(f"Cannot delete HistoryDatasetAssociation {dataset.id}, HistoryDatasetAssociation has no associated History, cannot verify owner")
                     continue
                 if not dataset.deleted:
                     dataset.deleted = True

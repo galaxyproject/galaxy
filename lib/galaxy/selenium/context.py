@@ -64,7 +64,7 @@ class GalaxySeleniumContextImpl(GalaxySeleniumContext):
 
 def init(config=None, clazz=GalaxySeleniumContextImpl) -> GalaxySeleniumContext:
     if os.path.exists("galaxy_selenium_context.yml"):
-        with open("galaxy_selenium_context.yml", "r") as f:
+        with open("galaxy_selenium_context.yml") as f:
             as_dict = yaml.safe_load(f)
         context = clazz(as_dict)
     else:

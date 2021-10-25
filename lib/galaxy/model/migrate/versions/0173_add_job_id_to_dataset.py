@@ -1,7 +1,6 @@
 """
 Migration script for adding job_id column to dataset table.
 """
-from __future__ import print_function
 
 import logging
 
