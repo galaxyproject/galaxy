@@ -4,7 +4,7 @@ from galaxy import exceptions
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.schema import CreateNewCollectionPayload
 from galaxy.web import expose_api
-from galaxy.webapps.galaxy.services.dataset_collections import DatasetCollectionsService
+from galaxy.webapps.galaxy.services.dataset_collections import DatasetCollectionsService, UpdateCollectionAttributePayload
 from . import BaseGalaxyAPIController, depends
 
 log = getLogger(__name__)
@@ -44,7 +44,8 @@ class DatasetCollectionsController(BaseGalaxyAPIController):
         * POST /api/dataset_collections/{hdca_id}/copy:
             create a new dataset collection instance.
         """
-        return self.service.update(trans, payload, id)
+        update_payload = UpdateCollectionAttributePayload(**payload)
+        return self.service.update(trans, id, update_payload)
 
     @expose_api
     def attributes(self, trans: ProvidesHistoryContext, id, instance_type='history'):

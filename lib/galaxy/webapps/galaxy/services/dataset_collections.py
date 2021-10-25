@@ -1,6 +1,7 @@
 from logging import getLogger
 
 import routes
+from pydantic import BaseModel, Field
 
 from galaxy import exceptions
 from galaxy.datatypes.registry import Registry
@@ -13,6 +14,7 @@ from galaxy.managers.collections_util import (
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdcas import HDCAManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
@@ -24,6 +26,14 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 
 
 log = getLogger(__name__)
+
+
+class UpdateCollectionAttributePayload(BaseModel):
+    """Contains attributes that can be updated for all elements in a dataset collection."""
+    dbkey: str = Field(
+        ...,
+        description="TODO"
+    )
 
 
 class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
@@ -77,19 +87,14 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         )
         return HDCADetailed.construct(**rval)
 
-    def update(self, trans: ProvidesHistoryContext, payload: dict, id):
+    def update(self, trans: ProvidesHistoryContext, id: EncodedDatabaseIdField, payload: UpdateCollectionAttributePayload):
         """
         Iterate over all datasets of a collection and copy datasets with new attributes to a new collection.
         e.g attributes = {'dbkey': 'dm3'}
         """
-
-        if len(payload) != 1:
-            raise exceptions.RequestParameterInvalidException("Update one attribute at a time.")
-        if 'dbkey' not in payload:
-            raise exceptions.RequestParameterInvalidException("This attribute cannot be modified.")
-
-        self.collection_manager.copy(trans, trans.history, "hdca", id, copy_elements=True, dataset_instance_attributes=payload)
-        trans.sa_session.flush()
+        self.collection_manager.copy(
+            trans, trans.history, "hdca", id, copy_elements=True, dataset_instance_attributes=payload.dict()
+        )
 
     def attributes(self, trans: ProvidesHistoryContext, id, instance_type='history'):
         """
