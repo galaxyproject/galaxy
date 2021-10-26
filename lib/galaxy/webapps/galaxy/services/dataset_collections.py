@@ -136,7 +136,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         rval = dictify_dataset_collection_instance(
             dataset_collection_instance, security=trans.security, parent=create_params["parent"]
         )
-        return HDCADetailed.construct(**rval)
+        return rval
 
     def update(self, trans: ProvidesHistoryContext, id: EncodedDatabaseIdField, payload: UpdateCollectionAttributePayload):
         """

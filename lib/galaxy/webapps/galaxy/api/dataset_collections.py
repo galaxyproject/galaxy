@@ -1,13 +1,44 @@
 from logging import getLogger
 
+from fastapi import Body
+
 from galaxy import exceptions
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.schema.schema import CreateNewCollectionPayload
+from galaxy.schema.schema import (
+    CreateNewCollectionPayload,
+    HDCADetailed,
+)
 from galaxy.web import expose_api
-from galaxy.webapps.galaxy.services.dataset_collections import DatasetCollectionsService, UpdateCollectionAttributePayload
-from . import BaseGalaxyAPIController, depends
+from galaxy.webapps.galaxy.services.dataset_collections import (
+    DatasetCollectionsService,
+    UpdateCollectionAttributePayload,
+)
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router
+)
 
 log = getLogger(__name__)
+
+router = Router(tags=['dataset collections'])
+
+
+@router.cbv
+class FastAPIDatasetCollections:
+    service: DatasetCollectionsService = depends(DatasetCollectionsService)
+
+    @router.post(
+        '/api/dataset_collections',
+        summary="Create a new dataset collection instance.",
+    )
+    def create(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: CreateNewCollectionPayload = Body(...),
+    ) -> HDCADetailed:
+        return self.service.create(trans, payload)
 
 
 class DatasetCollectionsController(BaseGalaxyAPIController):
