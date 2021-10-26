@@ -859,7 +859,7 @@ ListPanel.prototype.templates = (() => {
         "<div>",
         '<div class="controls"></div>',
         '<div class="list-items"></div>',
-        '<div class="empty-message infomessagesmall"></div>',
+        '<div class="empty-message alert alert-info"></div>',
         "</div>",
     ]);
 
