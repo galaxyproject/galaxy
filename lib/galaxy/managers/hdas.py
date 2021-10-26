@@ -23,6 +23,7 @@ from galaxy.managers import (
     taggable,
     users,
 )
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.structured_app import MinimalManagerApp, StructuredApp
 
 log = logging.getLogger(__name__)
@@ -49,12 +50,13 @@ class HDAManager(datasets.DatasetAssociationManager,
     # TODO: move what makes sense into DatasetManager
     # TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?
 
-    def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager):
+    def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager, tag_handler: GalaxyTagHandler):
         """
         Set up and initialize other managers needed by hdas.
         """
         super().__init__(app)
         self.user_manager = user_manager
+        self.tag_handler = tag_handler
 
     def get_owned_ids(self, object_ids, history=None):
         """Get owned IDs.
@@ -534,6 +536,7 @@ class HDADeserializer(datasets.DatasetAssociationDeserializer,
     def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.hda_manager = self.manager
+        self.tag_handler = app.tag_handler
 
     def add_deserializers(self):
         super().add_deserializers()

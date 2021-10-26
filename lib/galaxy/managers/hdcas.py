@@ -17,7 +17,8 @@ from galaxy.managers import (
     taggable
 )
 from galaxy.managers.collections_util import get_hda_and_element_identifiers
-from galaxy.structured_app import StructuredApp
+from galaxy.model.tags import GalaxyTagHandler
+from galaxy.structured_app import MinimalManagerApp, StructuredApp
 from galaxy.util.zipstream import ZipstreamWrapper
 
 
@@ -61,6 +62,13 @@ class HDCAManager(
 
     tag_assoc = model.HistoryDatasetCollectionTagAssociation
     annotation_assoc = model.HistoryDatasetCollectionAssociationAnnotationAssociation
+
+    def __init__(self, app: MinimalManagerApp):
+        """
+        Set up and initialize other managers needed by hdas.
+        """
+        super().__init__(app)
+        self.tag_handler = app[GalaxyTagHandler]
 
     def map_datasets(self, content, fn, *parents):
         """

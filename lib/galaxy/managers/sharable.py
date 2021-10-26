@@ -35,6 +35,7 @@ from galaxy.model import (
     User,
     UserShareAssociation,
 )
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.schema.schema import (
     ShareWithExtra,
     SharingOptions,
@@ -60,6 +61,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         super().__init__(app)
         # user manager is needed to check access/ownership/admin
         self.user_manager = users.UserManager(app)
+        self.tag_handler = app[GalaxyTagHandler]
 
     # .... has a user
     def by_user(self, user, filters=None, **kwargs):
@@ -416,6 +418,10 @@ class SharableModelSerializer(base.ModelSerializer,
 
 class SharableModelDeserializer(base.ModelDeserializer,
         taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin, ratable.RatableDeserializerMixin):
+
+    def __init__(self, app: MinimalManagerApp, **kwargs):
+        super().__init__(app, **kwargs)
+        self.tag_handler = app.tag_handler
 
     def add_deserializers(self):
         super().add_deserializers()
