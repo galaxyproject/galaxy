@@ -10,7 +10,7 @@ import re
 import sys
 from contextlib import contextmanager
 from json import loads
-from typing import Dict, Union
+from typing import Any, Dict, IO, Iterator, List, Optional, Tuple, Union
 
 import pysam
 from bx.bbi.bigbed_file import BigBedFile
@@ -19,6 +19,7 @@ from bx.interval_index_file import Indexes
 
 from galaxy.datatypes.interval import Bed, Gff, Gtf
 from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFFeature, GFFInterval, GFFReaderWrapper, parse_gff_attributes
+from galaxy.model import DatasetInstance
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
 
@@ -29,6 +30,8 @@ from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and
 # pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
 # Can be be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
 pysam.set_verbosity(0)
+
+PAYLOAD_LIST_TYPE = List[Optional[Union[str, int, float, List[Tuple[int, int]]]]]
 
 
 def float_nan(n):
@@ -89,9 +92,9 @@ class FeatureLocationIndexDataProvider(BaseDataProvider):
 
         # Find query in file using binary search.
         low = 0
-        high = file_len / line_len
+        high = int(file_len / line_len)
         while low < high:
-            mid = (low + high) // 2
+            mid: int = (low + high) // 2
             position = mid * line_len
             textloc_file.seek(position)
 
@@ -171,7 +174,7 @@ class GenomeDataProvider(BaseDataProvider):
         """
         raise Exception("Unimplemented Function")
 
-    def get_iterator(self, data_file, chrom, start, end, **kwargs):
+    def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
         """
         Returns an iterator that provides data in the region chrom:start-end
         """
@@ -272,6 +275,8 @@ class GenomeDataProvider(BaseDataProvider):
 
 
 class FilterableMixin:
+    original_dataset: DatasetInstance
+
     def get_filters(self):
         """ Returns a dataset's filters. """
         # Get filters.
@@ -329,7 +334,7 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
         with pysam.TabixFile(self.dependencies['bgzip'].file_name, index=index_path) as f:
             yield f
 
-    def get_iterator(self, data_file, chrom, start, end, **kwargs):
+    def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
         # chrom must be a string, start/end integers.
         # in previous versions of pysam, unicode was accepted for chrom, but not in 8.4
         chrom = str(chrom)
@@ -338,7 +343,7 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
         if end >= (2 << 29):
             end = (2 << 29 - 1)  # Tabix-enforced maximum
         # Get iterator using either naming scheme.
-        iterator = iter([])
+        iterator: Iterator[str] = iter([])
         if chrom in data_file.contigs:
             iterator = data_file.fetch(reference=chrom, start=start, end=end)
         else:
@@ -406,7 +411,7 @@ class IntervalDataProvider(GenomeDataProvider):
             feature = line.split()
             length = len(feature)
             # Unique id is just a hash of the line
-            payload = [hash(line), int(feature[start_col]), int(feature[end_col])]
+            payload: PAYLOAD_LIST_TYPE = [hash(line), int(feature[start_col]), int(feature[end_col])]
 
             if no_detail:
                 rval.append(payload)
@@ -484,7 +489,7 @@ class BedDataProvider(GenomeDataProvider):
             feature = line.split()
             length = len(feature)
             # Unique id is just a hash of the line
-            payload = [hash(line), int(feature[1]), int(feature[2])]
+            payload: PAYLOAD_LIST_TYPE = [hash(line), int(feature[1]), int(feature[2])]
 
             if no_detail:
                 rval.append(payload)
@@ -549,7 +554,7 @@ class RawBedDataProvider(BedDataProvider):
     for large datasets.
     """
 
-    def get_iterator(self, data_file, chrom=None, start=None, end=None, **kwargs):
+    def get_iterator(self, data_file, chrom, start, end, **kwargs):
         # Read first line in order to match chrom naming format.
         line = data_file.readline()
         dataset_chrom = line.split()[0]
@@ -677,7 +682,7 @@ class VcfDataProvider(GenomeDataProvider):
 
             if samples_data:
                 # Process and pack samples' genotype and count alleles across samples.
-                alleles_seen = {}
+                alleles_seen: Dict[int, bool] = {}
                 has_alleles = False
 
                 for sample in samples_data:
@@ -685,10 +690,10 @@ class VcfDataProvider(GenomeDataProvider):
                     genotype = sample.split(':')[0]
                     has_alleles = False
                     alleles_seen.clear()
-                    for allele in genotype_re.split(genotype):
+                    for allele_str in genotype_re.split(genotype):
                         try:
                             # This may throw a ValueError if allele is missing.
-                            allele = int(allele)
+                            allele = int(allele_str)
 
                             # Only count allele if it hasn't been seen yet.
                             if allele != 0 and allele not in alleles_seen:
@@ -856,7 +861,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                                  index_filename=self.converted_dataset.file_name) as f:
             yield f
 
-    def get_iterator(self, data_file, chrom, start, end, **kwargs):
+    def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
         """
         Returns an iterator that provides data in the region chrom:start-end
         """
@@ -873,7 +878,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
             try:
                 data = data_file.fetch(start=start, end=end, reference=chrom)
             except ValueError:
-                return None
+                return iter([])
         return data
 
     def process_data(self, iterator, start_val=0, max_vals=None, ref_seq=None,
@@ -966,7 +971,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         # Encode reads as list of lists.
         #
         results = []
-        paired_pending = {}
+        paired_pending: Dict[str, Dict[str, Any]] = {}
         unmapped = 0
         message = None
         count = 0
@@ -1110,6 +1115,9 @@ class BBIDataProvider(GenomeDataProvider):
 
     dataset_type = 'bigwig'
 
+    def _get_dataset(self) -> Tuple[IO[bytes], Union[BigBedFile, BigWigFile]]:
+        ...
+
     def valid_chroms(self):
         # No way to return this info as of now
         return None
@@ -1146,7 +1154,7 @@ class BBIDataProvider(GenomeDataProvider):
             min_val = 0
             max_val = 0
             mean = 0
-            sd = 0
+            sd = 0.0
             if summary is not None:
                 # Does the summary contain any defined values?
                 valid_count = summary.valid_count[0]
@@ -1288,7 +1296,7 @@ class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
         i = Indexes(self.converted_dataset.file_name)
         yield i
 
-    def get_iterator(self, data_file, chrom, start, end, **kwargs):
+    def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
         """
         Returns an iterator for data in data_file in chrom:start-end
         """
@@ -1406,16 +1414,18 @@ class GtfTabixDataProvider(TabixDataProvider):
         # TODO: extend this code or use code in gff_util to process GFF/3 as well
         # and then create a generic GFFDataProvider that can be used with both
         # raw and tabix datasets.
-        features = {}
+        features: Dict[str, List[GFFInterval]] = {}
+
         for line in iterator:
             line_attrs = parse_gff_attributes(line.split('\t')[8])
             transcript_id = line_attrs['transcript_id']
+            feature_list: List[GFFInterval]
             if transcript_id in features:
-                feature = features[transcript_id]
+                feature_list = features[transcript_id]
             else:
-                feature = []
-                features[transcript_id] = feature
-            feature.append(GFFInterval(None, line.split('\t')))
+                feature_list = []
+                features[transcript_id] = feature_list
+            feature_list.append(GFFInterval(None, line.split('\t')))
 
         # Process data.
         filter_cols = loads(kwargs.get("filter_cols", "[]"))
@@ -1480,7 +1490,7 @@ class ENCODEPeakDataProvider(GenomeDataProvider):
             feature = line.split()
 
             # Feature initialization.
-            payload = [
+            payload: PAYLOAD_LIST_TYPE = [
                 # GUID is just a hash of the line
                 hash(line),
                 # Add start, end.
@@ -1597,7 +1607,7 @@ class ChromatinInteractionsDataProvider(GenomeDataProvider):
 
 
 class ChromatinInteractionsTabixDataProvider(TabixDataProvider, ChromatinInteractionsDataProvider):
-    def get_iterator(self, data_file, chrom, start=0, end=sys.maxsize, interchromosomal=False, **kwargs):
+    def get_iterator(self, data_file, chrom, start=0, end=sys.maxsize, interchromosomal=False, **kwargs) -> Iterator[str]:
         """
         """
         # Modify start as needed to get earlier interactions with start region.
@@ -1625,7 +1635,7 @@ class ChromatinInteractionsTabixDataProvider(TabixDataProvider, ChromatinInterac
 #
 
 
-def package_gff_feature(feature, no_detail=False, filter_cols=None):
+def package_gff_feature(feature, no_detail=False, filter_cols=None) -> PAYLOAD_LIST_TYPE:
     """ Package a GFF feature in an array for data providers. """
     filter_cols = filter_cols or []
     feature = convert_gff_coords_to_bed(feature)
