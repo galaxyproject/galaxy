@@ -11,6 +11,7 @@ from sqlalchemy import sql
 
 from galaxy import model
 from galaxy.util import unicodify
+from .base import ModelValidator, raise_filter_err
 
 log = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ class TaggableFilterMixin:
 
         def _create_tag_filter(model_class=None):
             if op not in TaggableFilterMixin.valid_ops:
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
             if model_class is None:
                 return True
             class_name = model_class.__name__

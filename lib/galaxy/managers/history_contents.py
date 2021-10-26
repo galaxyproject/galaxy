@@ -33,6 +33,7 @@ from galaxy.managers import (
     tools
 )
 from galaxy.structured_app import MinimalManagerApp
+from .base import raise_filter_err
 
 log = logging.getLogger(__name__)
 
@@ -483,14 +484,14 @@ class HistoryContentsFilters(base.ModelFilterParser,
             if attr == 'history_content_type' and op == 'eq':
                 if val in ('dataset', 'dataset_collection'):
                     return sql.column('history_content_type') == val
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
 
             if attr == 'type_id':
                 if op == 'eq':
                     return sql.column('type_id') == val
                 if op == 'in':
                     return sql.column('type_id').in_(self.parse_type_id_list(val))
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
 
             if attr in ('update_time', 'create_time'):
                 if op == 'ge':
@@ -501,21 +502,21 @@ class HistoryContentsFilters(base.ModelFilterParser,
                     return sql.column(attr) > self.parse_date(val)
                 if op == 'lt':
                     return sql.column(attr) < self.parse_date(val)
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
 
             if attr == 'state':
                 valid_states = model.Dataset.states.values()
                 if op == 'eq':
                     if val not in valid_states:
-                        self.raise_filter_err(attr, op, val, 'invalid state in filter')
+                        raise_filter_err(attr, op, val, 'invalid state in filter')
                     return sql.column('state') == val
                 if op == 'in':
                     states = [s for s in val.split(',') if s]
                     for state in states:
                         if state not in valid_states:
-                            self.raise_filter_err(attr, op, state, 'invalid state in filter')
+                            raise_filter_err(attr, op, state, 'invalid state in filter')
                     return sql.column('state').in_(states)
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
 
         column_filter = get_filter(attr, op, val)
         if column_filter is not None:

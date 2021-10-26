@@ -739,9 +739,11 @@ class ModelDeserializer(HasAModelManager):
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.
     """
+    validate: ModelValidator
+
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__(self, app: MinimalManagerApp, validator=None, **kwargs):
+    def __init__(self, app: MinimalManagerApp, validator: Optional[ModelValidator] = None, **kwargs):
         """
         Set up deserializers and validator.
         """
@@ -1198,8 +1200,9 @@ class ModelFilterParser(HasAModelManager):
             return date_string
         raise ValueError('datetime strings must be in the ISO 8601 format and in the UTC')
 
-    def raise_filter_err(self, attr, op, val, msg):
-        raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
+
+def raise_filter_err(attr, op, val, msg):
+    raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
 
 
 def is_valid_slug(slug):
