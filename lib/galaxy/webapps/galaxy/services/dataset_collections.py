@@ -166,7 +166,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             check_ownership=True
         )
         rval = dataset_collection_instance.to_dict(view="dbkeysandextensions")
-        return DatasetCollectionAttributesResult.construct(**rval)
+        return rval
 
     def suitable_converters(
         self,

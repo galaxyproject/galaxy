@@ -1,16 +1,18 @@
 from logging import getLogger
 
-from fastapi import Body, Path
+from fastapi import Body, Path, Query
 
 from galaxy import exceptions
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateNewCollectionPayload,
+    DatasetCollectionInstanceType,
     HDCADetailed,
 )
 from galaxy.web import expose_api
 from galaxy.webapps.galaxy.services.dataset_collections import (
+    DatasetCollectionAttributesResult,
     DatasetCollectionsService,
     UpdateCollectionAttributePayload,
 )
@@ -24,6 +26,16 @@ from . import (
 log = getLogger(__name__)
 
 router = Router(tags=['dataset collections'])
+
+DatasetCollectionIdPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    description="The encoded identifier of the dataset collection."
+)
+
+InstanceTypeQueryParam: DatasetCollectionInstanceType = Query(
+    default=DatasetCollectionInstanceType.history,
+    description="The type of collection instance. Either `history` (default) or `library."
+)
 
 
 @router.cbv
@@ -52,6 +64,18 @@ class FastAPIDatasetCollections:
         payload: UpdateCollectionAttributePayload = Body(...),
     ):
         self.service.update(trans, id, payload)
+
+    @router.get(
+        '/api/dataset_collections/{id}/attributes',
+        summary="Returns `dbkey`/`extension` attributes for all the collection elements.",
+    )
+    def attributes(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = DatasetCollectionIdPathParam,
+        instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
+    ) -> DatasetCollectionAttributesResult:
+        return self.service.attributes(trans, id, instance_type)
 
 
 class DatasetCollectionsController(BaseGalaxyAPIController):
