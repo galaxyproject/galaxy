@@ -2,7 +2,7 @@ from logging import getLogger
 from typing import List, Optional, Set
 
 import routes
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Extra, Field
 
 from galaxy import exceptions
 from galaxy.datatypes.registry import Registry
@@ -39,6 +39,9 @@ class UpdateCollectionAttributePayload(BaseModel):
         ...,
         description="TODO"
     )
+
+    class Config:
+        extra = Extra.forbid  # will cause validation to fail if extra attributes are included,
 
 
 class DatasetCollectionAttributesResult(BaseModel):
