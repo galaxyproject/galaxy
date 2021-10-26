@@ -3,6 +3,7 @@ Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
 import logging
+from typing import Any, Dict, List
 
 from sqlalchemy import (
     asc,
@@ -25,7 +26,6 @@ from galaxy import (
 from galaxy.managers import (
     annotatable,
     base,
-    containers,
     deletable,
     hdas,
     hdcas,
@@ -33,14 +33,14 @@ from galaxy.managers import (
     tools
 )
 from galaxy.structured_app import MinimalManagerApp
-from .base import raise_filter_err
+from .base import raise_filter_err, Serializer
 
 log = logging.getLogger(__name__)
 
 
 # into its own class to have it's own filters, etc.
 # TODO: but can't inherit from model manager (which assumes only one model)
-class HistoryContentsManager(containers.ContainerManagerMixin, base.SortableManager):
+class HistoryContentsManager(base.SortableManager):
 
     root_container_class = model.History
 
@@ -225,7 +225,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin, base.SortableMana
             return contents_results
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
-        id_map = dict(((self.contained_class_type_name, []), (self.subcontainer_class_type_name, [])))
+        id_map: Dict[str, List[int]] = dict([(self.contained_class_type_name, []), (self.subcontainer_class_type_name, [])])
         for result in contents_results:
             result_type = self._get_union_type(result)
             contents_id = self._get_union_id(result)
@@ -344,14 +344,14 @@ class HistoryContentsManager(containers.ContainerManagerMixin, base.SortableMana
         )
         subquery = self._session().query(*columns)
         # for the HDA's we need to join the Dataset since it has an actual state column
-        subquery = subquery.join(model.Dataset, model.Dataset.id == component_class.dataset_id)
+        subquery = subquery.join(model.Dataset, model.Dataset.id == component_class.table.c.dataset_id)
         if history_id:
-            subquery = subquery.filter(component_class.history_id == history_id)
+            subquery = subquery.filter(component_class.table.c.history_id == history_id)
         else:
             # Make sure we only return items that are user-accessible by checking that they are in a history
             # owned by the current user.
             # TODO: move into filter mixin, and implement accessible logic as SQL query
-            subquery = subquery.filter(component_class.history_id == model.History.table.c.id,
+            subquery = subquery.filter(component_class.table.c.history_id == model.History.table.c.id,
                                        model.History.table.c.user_id == user_id)
         return subquery
 
