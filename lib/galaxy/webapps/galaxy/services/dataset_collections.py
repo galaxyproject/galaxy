@@ -178,7 +178,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         Returns suitable converters for all datatypes in collection
         """
         rval = self.collection_manager.get_converters_for_collection(trans, id, self.datatypes_registry, instance_type)
-        return SuitableConverters.parse_obj(rval)
+        return rval
 
     def show(
         self,

@@ -14,6 +14,7 @@ from galaxy.web import expose_api
 from galaxy.webapps.galaxy.services.dataset_collections import (
     DatasetCollectionAttributesResult,
     DatasetCollectionsService,
+    SuitableConverters,
     UpdateCollectionAttributePayload,
 )
 from . import (
@@ -76,6 +77,18 @@ class FastAPIDatasetCollections:
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
     ) -> DatasetCollectionAttributesResult:
         return self.service.attributes(trans, id, instance_type)
+
+    @router.get(
+        '/api/dataset_collections/{id}/suitable_converters',
+        summary="Returns a list of applicable converters for all datatypes in the given collection.",
+    )
+    def suitable_converters(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = DatasetCollectionIdPathParam,
+        instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
+    ) -> SuitableConverters:
+        return self.service.suitable_converters(trans, id, instance_type)
 
 
 class DatasetCollectionsController(BaseGalaxyAPIController):
