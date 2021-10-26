@@ -450,19 +450,19 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
     def add_serializers(self):
         super().add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
-
-        self.serializers.update({
+        serializers: Dict[str, Serializer] = {
             'type_id': self.serialize_type_id,
             'history_id': self.serialize_id,
             'dataset_id': self.serialize_id_or_skip,
             'collection_id': self.serialize_id_or_skip,
-        })
+        }
+        self.serializers.update(serializers)
 
-    def serialize_id_or_skip(self, content, key, **context):
+    def serialize_id_or_skip(self, item: Any, key: str, **context):
         """Serialize id or skip if attribute with `key` is not present."""
-        if not hasattr(content, key):
+        if not hasattr(item, key):
             raise base.SkipAttribute('no such attribute')
-        return self.serialize_id(content, key, **context)
+        return self.serialize_id(item, key, **context)
 
 
 class HistoryContentsFilters(base.ModelFilterParser,

@@ -116,18 +116,18 @@ class ConfigSerializer(base.ModelSerializer):
 
     def add_serializers(self):
 
-        def _defaults_to(default):
-            return lambda config, key, **context: getattr(config, key, default)
+        def _defaults_to(default) -> base.Serializer:
+            return lambda item, key, **context: getattr(item, key, default)
 
-        def _use_config(config, key, **context):
+        def _use_config(item, key: str, **context):
             """Let config object determine the value for key"""
-            assert hasattr(config, key)
-            return config.config_value_for_host(key, context.get("host"))
+            assert hasattr(item, key)
+            return item.config_value_for_host(key, context.get("host"))
 
-        def _config_is_truthy(config, key, **context):
-            return True if config.get(key) else False
+        def _config_is_truthy(item, key, **context):
+            return True if item.get(key) else False
 
-        self.serializers = {
+        self.serializers: Dict[str, base.Serializer] = {
             # TODO: this is available from user data, remove
             'is_admin_user': lambda *a, **c: False,
             'brand': _use_config,
@@ -167,7 +167,7 @@ class ConfigSerializer(base.ModelSerializer):
             'ga_code': _use_config,
             'plausible_server': _use_config,
             'plausible_domain': _use_config,
-            'markdown_to_pdf_available': lambda config, key, **context: weasyprint_available(),
+            'markdown_to_pdf_available': lambda item, key, **context: weasyprint_available(),
             'matomo_server': _use_config,
             'matomo_site_id': _use_config,
             'enable_unique_workflow_defaults': _use_config,
@@ -180,7 +180,7 @@ class ConfigSerializer(base.ModelSerializer):
             # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
             # at any rate: the following works with path_prefix but is still brittle
             # TODO: change this to (more generic) upload_path and incorporate config.nginx_upload_path into building it
-            'nginx_upload_path': lambda config, key, **context: getattr(config, key, False),
+            'nginx_upload_path': lambda item, key, **context: getattr(item, key, False),
             'chunk_upload_size': _use_config,
             'ftp_upload_site': _use_config,
             'version_major': _defaults_to(None),
@@ -193,22 +193,22 @@ class ConfigSerializer(base.ModelSerializer):
             'message_box_content': _use_config,
             'message_box_visible': _use_config,
             'message_box_class': _use_config,
-            'server_startttime': lambda config, key, **context: server_starttime,
+            'server_startttime': lambda item, key, **context: server_starttime,
             'mailing_join_addr': _defaults_to('galaxy-announce-join@bx.psu.edu'),  # should this be the schema default?
-            'server_mail_configured': lambda config, key, **context: bool(config.smtp_server),
+            'server_mail_configured': lambda item, key, **context: bool(item.smtp_server),
             'registration_warning_message': _use_config,
             'welcome_url': _use_config,
             'show_welcome_with_login': _defaults_to(True),  # schema default is False
             'cookie_domain': _use_config,
             'python': _defaults_to((sys.version_info.major, sys.version_info.minor)),
             'select_type_workflow_threshold': _use_config,
-            'file_sources_configured': lambda config, key, **context: self.app.file_sources.custom_sources_configured,
-            'panel_views': lambda config, key, **content: self.app.toolbox.panel_view_dicts(),
+            'file_sources_configured': lambda item, key, **context: self.app.file_sources.custom_sources_configured,
+            'panel_views': lambda item, key, **context: self.app.toolbox.panel_view_dicts(),
             'default_panel_view': _use_config,
             'upload_from_form_button': _use_config,
             'release_doc_base_url': _use_config,
             'expose_user_email': _use_config,
-            'user_library_import_dir_available': lambda config, key, **context: bool(config.get('user_library_import_dir')),
+            'user_library_import_dir_available': lambda item, key, **context: bool(item.get('user_library_import_dir')),
             'welcome_directory': _use_config,
         }
 

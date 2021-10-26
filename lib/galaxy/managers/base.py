@@ -30,7 +30,6 @@ import logging
 import re
 from typing import (
     Any,
-    Callable,
     Dict,
     List,
     NamedTuple,
@@ -547,6 +546,12 @@ class SkipAttribute(Exception):
     """
 
 
+class Serializer(Protocol):
+
+    def __call__(self, item: Any, key: str, **context) -> Any:
+        ...
+
+
 class ModelSerializer(HasAModelManager):
     """
     Turns models into JSONable dicts.
@@ -581,7 +586,7 @@ class ModelSerializer(HasAModelManager):
         #   that is in neither serializable_keyset or serializers
         self.serializable_keyset: Set[str] = set()
         # a map of dictionary keys to the functions (often lambdas) that create the values for those keys
-        self.serializers: Dict[str, Callable] = {}
+        self.serializers: Dict[str, Serializer] = {}
         # add subclass serializers defined there
         self.add_serializers()
         # update the keyset by the serializers (removing the responsibility from subclasses)
@@ -662,14 +667,14 @@ class ModelSerializer(HasAModelManager):
         return getattr(item, key)
 
     # serializers for common galaxy objects
-    def serialize_date(self, item, key, **context):
+    def serialize_date(self, item: Any, key: str, **context):
         """
         Serialize a date attribute of `item`.
         """
         date = getattr(item, key)
         return date.isoformat() if date is not None else None
 
-    def serialize_id(self, item, key, **context):
+    def serialize_id(self, item: Any, key: str, **context):
         """
         Serialize an id attribute of `item`.
         """
@@ -677,7 +682,7 @@ class ModelSerializer(HasAModelManager):
         # Note: it may not be best to encode the id at this layer
         return self.app.security.encode_id(id) if id is not None else None
 
-    def serialize_type_id(self, item, key, **context):
+    def serialize_type_id(self, item: Any, key: str, **context):
         """
         Serialize an type-id for `item`.
         """
