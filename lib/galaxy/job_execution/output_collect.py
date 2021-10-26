@@ -326,7 +326,7 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         return self.job.id
 
     def get_implicit_collection_jobs_association_id(self):
-        return self.job.implicit_collection_jobs_association_id
+        return self.job.implicit_collection_jobs_association and self.job.implicit_collection_jobs_association.id
 
 
 class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
