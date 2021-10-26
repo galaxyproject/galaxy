@@ -38,6 +38,7 @@ from typing import (
     Set,
     Tuple,
     Type,
+    Union,
 )
 
 import sqlalchemy
@@ -731,14 +732,15 @@ class ModelSerializer(HasAModelManager):
         return self.views[view][:]
 
 
-class ModelValidator(HasAModelManager):
+class ModelValidator:
     """
     An object that inspects a dictionary (generally meant to be a set of
     new/updated values for the model) and raises an error if a value is
     not acceptable.
     """
 
-    def type(self, key, val, types):
+    @staticmethod
+    def matches_type(key: str, val: Any, types: Union[type, Tuple[Union[type, Tuple[Any, ...]], ...]]):
         """
         Check `val` against the type (or tuple of types) in `types`.
 
@@ -750,43 +752,46 @@ class ModelValidator(HasAModelManager):
         return val
 
     # validators for primitives and compounds of primitives
-    def basestring(self, key, val):
-        return self.type(key, val, (str,))
+    @staticmethod
+    def basestring(key: str, val: Any) -> str:
+        return ModelValidator.matches_type(key, val, (str,))
 
-    def bool(self, key, val):
-        return self.type(key, val, bool)
+    @staticmethod
+    def bool(key: str, val: Any) -> bool:
+        return ModelValidator.matches_type(key, val, bool)
 
-    def int(self, key, val):
-        return self.type(key, val, int)
-
-    def nullable_basestring(self, key, val):
+    @staticmethod
+    def nullable_basestring(key: str, val: Any) -> str:
         """
         Must be a basestring or None.
         """
-        return self.type(key, val, ((str,), type(None)))
+        return ModelValidator.matches_type(key, val, ((str,), type(None)))
 
-    def int_range(self, key, val, min=None, max=None):
+    @staticmethod
+    def int_range(key: str, val: Any, min: Optional[int] = None, max: Optional[int] = None) -> int:
         """
         Must be a int between min and max.
         """
-        val = self.type(key, val, int)
-        if min is not None and val < min:
-            raise exceptions.RequestParameterInvalidException("less than minimum", key=key, val=val, min=min)
-        if max is not None and val > max:
-            raise exceptions.RequestParameterInvalidException("greater than maximum", key=key, val=val, max=max)
-        return val
+        val_ = ModelValidator.matches_type(key, val, int)
+        if min is not None and val_ < min:
+            raise exceptions.RequestParameterInvalidException("less than minimum", key=key, val=val_, min=min)
+        if max is not None and val_ > max:
+            raise exceptions.RequestParameterInvalidException("greater than maximum", key=key, val=val_, max=max)
+        return val_
 
-    def basestring_list(self, key, val):
+    @staticmethod
+    def basestring_list(key: str, val: Any) -> List[str]:
         """
         Must be a list of basestrings.
         """
         # TODO: Here's where compound types start becoming a nightmare. Any more or more complex
         #   and should find a different way.
-        val = self.type(key, val, list)
-        return [self.basestring(key, elem) for elem in val]
+        val_ = ModelValidator.matches_type(key, val, list)
+        return [ModelValidator.basestring(key, elem) for elem in val_]
 
     # validators for Galaxy
-    def genome_build(self, key, val):
+    @staticmethod
+    def genome_build(key: str, val: Any) -> str:
         """
         Must be a valid base_string.
 
@@ -803,7 +808,7 @@ class ModelValidator(HasAModelManager):
         #         return val
         # raise exceptions.RequestParameterInvalidException( "invalid reference", key=key, val=val )
         # IOW: fallback to string validation
-        return self.basestring(key, val)
+        return ModelValidator.basestring(key, val)
 
     # def slug( self, item, key, val ):
     #    """validate slug"""
@@ -821,12 +826,12 @@ class ModelDeserializer(HasAModelManager):
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.
     """
-    validate: ModelValidator
+    validate = ModelValidator()
     app: MinimalManagerApp
 
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__(self, app: MinimalManagerApp, validator: Optional[ModelValidator] = None, **kwargs):
+    def __init__(self, app: MinimalManagerApp, **kwargs):
         """
         Set up deserializers and validator.
         """
@@ -835,8 +840,6 @@ class ModelDeserializer(HasAModelManager):
         self.deserializers: Dict[str, Deserializer] = {}
         self.deserializable_keyset: Set[str] = set()
         self.add_deserializers()
-        # a sub object that can validate incoming values
-        self.validate = validator or ModelValidator(self.app)
 
     def add_deserializers(self):
         """

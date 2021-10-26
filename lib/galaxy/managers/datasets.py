@@ -661,7 +661,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
     def deserialize_metadata(self, dataset_assoc, metadata_key, metadata_dict, **context):
         """
         """
-        self.validate.type(metadata_key, metadata_dict, dict)
+        self.validate.matches_type(metadata_key, metadata_dict, dict)
         returned = {}
         for key, val in metadata_dict.items():
             returned[key] = self.deserialize_metadatum(dataset_assoc, key, val, **context)
