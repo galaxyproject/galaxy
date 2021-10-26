@@ -6,7 +6,7 @@
         </div>
         <b-breadcrumb v-if="url">
             <b-breadcrumb-item title="Select another folder" @click="reset" class="align-items-center">
-                <b-button class="pathname" pill variant="primary">
+                <b-button class="pathname" variant="primary">
                     <font-awesome-icon icon="folder-open" /> {{ url.protocol }}</b-button
                 >
             </b-breadcrumb-item>
@@ -15,13 +15,7 @@
                 :key="index"
                 class="existent-url-path align-items-center"
             >
-                <b-button
-                    class="regular-path-chunk"
-                    @click="removePath(index)"
-                    pill
-                    :disabled="!editable"
-                    variant="dark"
-                >
+                <b-button class="regular-path-chunk" @click="removePath(index)" :disabled="!editable" variant="dark">
                     {{ pathChunk }}</b-button
                 >
             </b-breadcrumb-item>
