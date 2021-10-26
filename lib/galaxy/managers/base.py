@@ -41,6 +41,7 @@ from typing import (
 )
 
 import sqlalchemy
+from sqlalchemy.orm import Query
 from sqlalchemy.orm.scoping import scoped_session
 from typing_extensions import Protocol
 
@@ -202,7 +203,7 @@ class ModelManager:
         return item
 
     # .... query foundation wrapper
-    def query(self, eagerloads=True, **kwargs):
+    def query(self, eagerloads: bool = True, filters=None, order_by=None, limit: Optional[int] = None, offset: Optional[int] = None) -> Query:
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
 
@@ -212,9 +213,9 @@ class ModelManager:
         # joined table loading
         if eagerloads is False:
             query = query.enable_eagerloads(False)
-        return self._filter_and_order_query(query, **kwargs)
+        return self._filter_and_order_query(query, filters=filters, order_by=order_by, limit=limit, offset=offset)
 
-    def _filter_and_order_query(self, query, filters=None, order_by=None, limit=None, offset=None, **kwargs):
+    def _filter_and_order_query(self, query: Query, filters=None, order_by=None, limit: Optional[int] = None, offset: Optional[int] = None) -> Query:
         # TODO: not a lot of functional cohesion here
         query = self._apply_orm_filters(query, filters)
         query = self._apply_order_by(query, order_by)
@@ -222,7 +223,7 @@ class ModelManager:
         return query
 
     # .... filters
-    def _apply_orm_filters(self, query, filters):
+    def _apply_orm_filters(self, query: Query, filters) -> Query:
         """
         Add any filters to the given query.
         """
@@ -245,7 +246,7 @@ class ModelManager:
         return munge_lists(filtersA, filtersB)
 
     # .... order, limit, and offset
-    def _apply_order_by(self, query, order_by):
+    def _apply_order_by(self, query: Query, order_by) -> Query:
         """
         Return the query after adding the order_by clauses.
 
@@ -262,9 +263,9 @@ class ModelManager:
         """
         Returns a tuple of columns for the default order when getting multiple models.
         """
-        return (self.model_class.create_time, )
+        return (self.model_class.table.c.create_time, )
 
-    def _apply_orm_limit_offset(self, query, limit, offset):
+    def _apply_orm_limit_offset(self, query: Query, limit: Optional[int], offset: Optional[int]) -> Query:
         """
         Return the query after applying the given limit and offset (if not None).
         """
@@ -345,7 +346,8 @@ class ModelManager:
             a list of filters to be added to the SQL query
         and a list of functional filters to be applied after the SQL query.
         """
-        orm_filters, fn_filters = ([], [])
+        orm_filters: list = []
+        fn_filters: list = []
         if filters is None:
             return (orm_filters, fn_filters)
         if not isinstance(filters, list):
@@ -406,7 +408,7 @@ class ModelManager:
         """
         if not ids:
             return []
-        ids_filter = parsed_filter("orm", self.model_class.id.in_(ids))
+        ids_filter = parsed_filter("orm", self.model_class.table.c.id.in_(ids))
         found = self.list(filters=self._munge_filters(ids_filter, filters), **kwargs)
         # TODO: this does not order by the original 'ids' array
 
@@ -506,12 +508,14 @@ class HasAModelManager:
     """
 
     #: the class used to create this serializer's generically accessible model_manager
-    model_manager_class: Type[object]
+    model_manager_class: Type[object]  # ideally this would be Type[ModelManager] but HistoryContentsManager cannot be a ModelManager
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
+    app: MinimalManagerApp
 
     def __init__(self, app: MinimalManagerApp, manager=None, **kwargs):
         self._manager = manager
+        self.app = app
 
     @property
     def manager(self):
@@ -569,7 +573,6 @@ class ModelSerializer(HasAModelManager):
         Set up serializer map, any additional serializable keys, and views here.
         """
         super().__init__(app, **kwargs)
-        self.app = app
 
         # a list of valid serializable keys that can use the default (string) serializer
         #   this allows us to: 'mention' the key without adding the default serializer
@@ -728,108 +731,12 @@ class ModelSerializer(HasAModelManager):
         return self.views[view][:]
 
 
-class Deserializer(Protocol):
-
-    def __call__(self, item: Any, key: Any, val: Any, **kwargs) -> Any:
-        ...
-
-
-class ModelDeserializer(HasAModelManager):
-    """
-    An object that converts an incoming serialized dict into values that can be
-    directly assigned to an item's attributes and assigns them.
-    """
-    validate: ModelValidator
-
-    # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
-
-    def __init__(self, app: MinimalManagerApp, validator: Optional[ModelValidator] = None, **kwargs):
-        """
-        Set up deserializers and validator.
-        """
-        super().__init__(app, **kwargs)
-        self.app = app
-
-        self.deserializers: Dict[str, Deserializer] = {}
-        self.deserializable_keyset: Set[str] = set()
-        self.add_deserializers()
-        # a sub object that can validate incoming values
-        self.validate = validator or ModelValidator(self.app)
-
-    def add_deserializers(self):
-        """
-        Register a map of attribute keys -> functions that will deserialize data
-        into attributes to be assigned to the item.
-        """
-        # to be overridden in subclasses
-
-    def deserialize(self, item, data, flush=True, **context):
-        """
-        Convert an incoming serialized dict into values that can be
-        directly assigned to an item's attributes and assign them
-        """
-        # TODO: constrain context to current_user/whos_asking when that's all we need (trans)
-        sa_session = self.app.model.context
-        new_dict = {}
-        for key, val in data.items():
-            if key in self.deserializers:
-                new_dict[key] = self.deserializers[key](item, key, val, **context)
-            # !important: don't error on unreg. keys -- many clients will add weird ass keys onto the model
-
-        # TODO:?? add and flush here or in manager?
-        if flush and len(new_dict):
-            sa_session.add(item)
-            sa_session.flush()
-
-        return new_dict
-
-    # ... common deserializers for primitives
-    def default_deserializer(self, item, key, val, **context):
-        """
-        If the incoming `val` is different than the `item` value change it
-        and, in either case, return the value.
-        """
-        # TODO: sets the item attribute to value (this may not work in all instances)
-
-        # only do the following if val == getattr( item, key )
-        if hasattr(item, key) and getattr(item, key) != val:
-            setattr(item, key, val)
-        return val
-
-    def deserialize_basestring(self, item, key, val, convert_none_to_empty=False, **context):
-        val = '' if (convert_none_to_empty and val is None) else self.validate.basestring(key, val)
-        return self.default_deserializer(item, key, val, **context)
-
-    def deserialize_bool(self, item, key, val, **context):
-        val = self.validate.bool(key, val)
-        return self.default_deserializer(item, key, val, **context)
-
-    def deserialize_int(self, item, key, val, min=None, max=None, **context):
-        val = self.validate.int_range(key, val, min, max)
-        return self.default_deserializer(item, key, val, **context)
-
-    # def deserialize_date( self, item, key, val ):
-    #    #TODO: parse isoformat date into date object
-
-    # ... common deserializers for Galaxy
-    def deserialize_genome_build(self, item, key, val, **context):
-        """
-        Make sure `val` is a valid dbkey and assign it.
-        """
-        val = self.validate.genome_build(key, val)
-        return self.default_deserializer(item, key, val, **context)
-
-
 class ModelValidator(HasAModelManager):
     """
     An object that inspects a dictionary (generally meant to be a set of
     new/updated values for the model) and raises an error if a value is
     not acceptable.
     """
-
-    def __init__(self, app, *args, **kwargs):
-        super().__init__(app, **kwargs)
-        self.app = app
 
     def type(self, key, val, types):
         """
@@ -903,6 +810,98 @@ class ModelValidator(HasAModelManager):
     #    pass
 
 
+class Deserializer(Protocol):
+
+    def __call__(self, item: Any, key: Any, val: Any, **kwargs) -> Any:
+        ...
+
+
+class ModelDeserializer(HasAModelManager):
+    """
+    An object that converts an incoming serialized dict into values that can be
+    directly assigned to an item's attributes and assigns them.
+    """
+    validate: ModelValidator
+    app: MinimalManagerApp
+
+    # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
+
+    def __init__(self, app: MinimalManagerApp, validator: Optional[ModelValidator] = None, **kwargs):
+        """
+        Set up deserializers and validator.
+        """
+        super().__init__(app, **kwargs)
+
+        self.deserializers: Dict[str, Deserializer] = {}
+        self.deserializable_keyset: Set[str] = set()
+        self.add_deserializers()
+        # a sub object that can validate incoming values
+        self.validate = validator or ModelValidator(self.app)
+
+    def add_deserializers(self):
+        """
+        Register a map of attribute keys -> functions that will deserialize data
+        into attributes to be assigned to the item.
+        """
+        # to be overridden in subclasses
+
+    def deserialize(self, item, data, flush=True, **context):
+        """
+        Convert an incoming serialized dict into values that can be
+        directly assigned to an item's attributes and assign them
+        """
+        # TODO: constrain context to current_user/whos_asking when that's all we need (trans)
+        sa_session = self.app.model.context
+        new_dict = {}
+        for key, val in data.items():
+            if key in self.deserializers:
+                new_dict[key] = self.deserializers[key](item, key, val, **context)
+            # !important: don't error on unreg. keys -- many clients will add weird ass keys onto the model
+
+        # TODO:?? add and flush here or in manager?
+        if flush and len(new_dict):
+            sa_session.add(item)
+            sa_session.flush()
+
+        return new_dict
+
+    # ... common deserializers for primitives
+    def default_deserializer(self, item, key, val, **context):
+        """
+        If the incoming `val` is different than the `item` value change it
+        and, in either case, return the value.
+        """
+        # TODO: sets the item attribute to value (this may not work in all instances)
+
+        # only do the following if val == getattr( item, key )
+        if hasattr(item, key) and getattr(item, key) != val:
+            setattr(item, key, val)
+        return val
+
+    def deserialize_basestring(self, item, key, val, convert_none_to_empty=False, **context):
+        val = '' if (convert_none_to_empty and val is None) else self.validate.basestring(key, val)
+        return self.default_deserializer(item, key, val, **context)
+
+    def deserialize_bool(self, item, key, val, **context):
+        val = self.validate.bool(key, val)
+        return self.default_deserializer(item, key, val, **context)
+
+    def deserialize_int(self, item, key, val, min=None, max=None, **context):
+        val = self.validate.int_range(key, val, min, max)
+        return self.default_deserializer(item, key, val, **context)
+
+    # def deserialize_date( self, item, key, val ):
+    #    #TODO: parse isoformat date into date object
+
+    # ... common deserializers for Galaxy
+    def deserialize_genome_build(self, item, key, val, **context):
+        """
+        Make sure `val` is a valid dbkey and assign it.
+        """
+        val = self.validate.genome_build(key, val)
+        return self.default_deserializer(item, key, val, **context)
+
+
 # ==== Building query filters based on model data
 class ModelFilterParser(HasAModelManager):
     """
@@ -929,7 +928,7 @@ class ModelFilterParser(HasAModelManager):
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
 
-    model_class: type
+    model_class: Type[model._HasTable]
     parsed_filter = parsed_filter
     orm_filter_parsers: Dict[str, Dict]
     fn_filter_parsers: Dict[str, Dict]
@@ -939,7 +938,6 @@ class ModelFilterParser(HasAModelManager):
         Set up serializer map, any additional serializable keys, and views here.
         """
         super().__init__(app, **kwargs)
-        self.app = app
 
         #: regex for testing/dicing iso8601 date strings, with optional time and ms, but allowing only UTC timezone
         self.date_string_re = re.compile(r'^(\d{4}\-\d{2}\-\d{2})[T| ]{0,1}(\d{2}:\d{2}:\d{2}(?:\.\d{1,6}){0,1}){0,1}Z{0,1}$')
@@ -1064,7 +1062,7 @@ class ModelFilterParser(HasAModelManager):
         attr_map = self.fn_filter_parsers.get(attr, None)
         if not attr_map:
             return None
-        allowed_ops = attr_map.get('op')
+        allowed_ops = attr_map['op']
         # allowed ops is a map here, op => fn
         filter_fn = allowed_ops.get(op, None)
         if not filter_fn:
@@ -1104,7 +1102,7 @@ class ModelFilterParser(HasAModelManager):
             return None
 
         # op must be allowlisted: contained in the list orm_filter_list[ attr ][ 'op' ]
-        allowed_ops = column_map.get('op')
+        allowed_ops = column_map['op']
         if op not in allowed_ops:
             return None
         op = self._convert_op_string_to_fn(column, op)
