@@ -1,9 +1,10 @@
 from logging import getLogger
 
-from fastapi import Body
+from fastapi import Body, Path
 
 from galaxy import exceptions
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateNewCollectionPayload,
     HDCADetailed,
@@ -39,6 +40,18 @@ class FastAPIDatasetCollections:
         payload: CreateNewCollectionPayload = Body(...),
     ) -> HDCADetailed:
         return self.service.create(trans, payload)
+
+    @router.put(
+        '/api/dataset_collections/{id}',
+        summary="Copy the given collection datasets to a new collection using a new `dbkey` attribute.",
+    )
+    def update(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = Path(..., description="The ID of the dataset collection to copy."),
+        payload: UpdateCollectionAttributePayload = Body(...),
+    ):
+        self.service.update(trans, id, payload)
 
 
 class DatasetCollectionsController(BaseGalaxyAPIController):
@@ -76,7 +89,7 @@ class DatasetCollectionsController(BaseGalaxyAPIController):
             create a new dataset collection instance.
         """
         update_payload = UpdateCollectionAttributePayload(**payload)
-        return self.service.update(trans, id, update_payload)
+        self.service.update(trans, id, update_payload)
 
     @expose_api
     def attributes(self, trans: ProvidesHistoryContext, id, instance_type='history'):
