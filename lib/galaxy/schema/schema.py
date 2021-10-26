@@ -88,13 +88,11 @@ DatasetStateField: Dataset.states = Field(
 )
 
 CreateTimeField = Field(
-    ...,
     title="Create Time",
     description="The time and date this item was created.",
 )
 
 UpdateTimeField = Field(
-    ...,
     title="Update Time",
     description="The last time and date this item was updated.",
 )
@@ -137,7 +135,6 @@ ElementCountField: Optional[int] = Field(
 )
 
 PopulatedField: bool = Field(
-    ...,
     title="Populated",
     description="Whether the dataset collection elements (and any subcollections elements) were successfully populated.",
 )
@@ -167,7 +164,6 @@ GenomeBuildField: Optional[str] = Field(
 )
 
 ContentsUrlField = Field(
-    ...,
     title="Contents URL",
     description="The relative URL to access the contents of this History.",
 )
@@ -335,8 +331,7 @@ class Visualization(Model):  # TODO annotate this model
 class HistoryItemBase(Model):
     """Basic information provided by items contained in a History."""
     id: EncodedDatabaseIdField = EncodedEntityIdField
-    name: str = Field(
-        ...,
+    name: Optional[str] = Field(
         title="Name",
         description="The name of the item.",
     )
@@ -365,8 +360,8 @@ class HistoryItemBase(Model):
 
 class HistoryItemCommon(HistoryItemBase):
     """Common information provided by items contained in a History."""
-    type_id: str = Field(
-        ...,
+    type_id: Optional[str] = Field(
+        default=None,
         title="Type - ID",
         description="The type and the encoded ID of this item. Used for caching.",
         example="dataset-616e371b2cc6c62e",
@@ -376,8 +371,8 @@ class HistoryItemCommon(HistoryItemBase):
         title="Type",
         description="The type of this item.",
     )
-    create_time: datetime = CreateTimeField
-    update_time: datetime = UpdateTimeField
+    create_time: Optional[datetime] = CreateTimeField
+    update_time: Optional[datetime] = UpdateTimeField
     url: RelativeUrl = RelativeUrlField
     tags: TagCollection
 
@@ -596,7 +591,10 @@ class DCObject(Model):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
     collection_type: CollectionType = CollectionTypeField
-    contents_url: RelativeUrl = ContentsUrlField
+    populated: Optional[bool] = PopulatedField
+    element_count: Optional[int] = ElementCountField
+    contents_url: Optional[RelativeUrl] = ContentsUrlField
+    elements: List['DCESummary'] = ElementsField
 
 
 class DCESummary(Model):
@@ -618,11 +616,14 @@ class DCESummary(Model):
         title="Element Type",
         description="The type of the element. Used to interpret the `object` field.",
     )
-    object: Union[HDAObject, DCObject] = Field(
+    object: Union[HDAObject, HDADetailed, DCObject] = Field(
         ...,
         title="Object",
         description="The element's specific data depending on the value of `element_type`.",
     )
+
+
+DCObject.update_forward_refs()
 
 
 class DCDetailed(DCSummary):
