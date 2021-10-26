@@ -6,6 +6,7 @@ from galaxy import exceptions
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyHDCA,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
     HDCADetailed,
@@ -89,6 +90,18 @@ class FastAPIDatasetCollections:
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
     ) -> SuitableConverters:
         return self.service.suitable_converters(trans, id, instance_type)
+
+    @router.get(
+        '/api/dataset_collections/{id}',
+        summary="Returns detailed information about the given collection.",
+    )
+    def show(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = DatasetCollectionIdPathParam,
+        instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
+    ) -> AnyHDCA:
+        return self.service.show(trans, id, instance_type)
 
 
 class DatasetCollectionsController(BaseGalaxyAPIController):
