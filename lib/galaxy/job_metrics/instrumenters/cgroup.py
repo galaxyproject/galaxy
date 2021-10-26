@@ -28,6 +28,9 @@ CONVERSION = {
 CPU_USAGE_TEMPLATE = r"""
 if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then
     cgroup_path=$(cat "/proc/$$/cgroup" | awk -F':' '($2=="cpuacct,cpu") || ($2=="cpu,cpuacct") {{print $3}}');
+    if [ ! -e "{cgroup_mount}/cpu$cgroup_path/cpuacct.usage" ]; then
+        cgroup_path="";
+    fi;
     for f in {cgroup_mount}/{{cpu\,cpuacct,cpuacct\,cpu}}$cgroup_path/{{cpu,cpuacct}}.*; do
         if [ -f "$f" ]; then
             echo "__$(basename $f)__" >> {metrics}; cat "$f" >> {metrics} 2>/dev/null;
@@ -38,6 +41,9 @@ fi
 MEMORY_USAGE_TEMPLATE = """
 if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then
     cgroup_path=$(cat "/proc/$$/cgroup" | awk -F':' '$2=="memory"{{print $3}}');
+    if [ ! -e "{cgroup_mount}/memory$cgroup_path/memory.max_usage_in_bytes" ]; then
+        cgroup_path="";
+    fi;
     for f in {cgroup_mount}/memory$cgroup_path/memory.*; do
         echo "__$(basename $f)__" >> {metrics}; cat "$f" >> {metrics} 2>/dev/null;
     done;
