@@ -123,3 +123,4 @@ class StructuredApp(MinimalManagerApp):
     job_manager: Any  # galaxy.jobs.manager.JobManager
     user_manager: Any
     api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'
+    visualizations_registry: Any  # 'galaxy.visualization.plugins.registry.VisualizationsRegistry'

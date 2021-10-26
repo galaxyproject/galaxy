@@ -17,7 +17,7 @@ from galaxy.managers import (
     taggable
 )
 from galaxy.managers.collections_util import get_hda_and_element_identifiers
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.structured_app import StructuredApp
 from galaxy.util.zipstream import ZipstreamWrapper
 
 
@@ -95,7 +95,7 @@ class DCESerializer(base.ModelSerializer):
     Serializer for DatasetCollectionElements.
     """
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.hda_serializer = hdas.HDASerializer(app)
         self.dc_serializer = DCSerializer(app, dce_serializer=self)
@@ -129,7 +129,7 @@ class DCSerializer(base.ModelSerializer):
     Serializer for DatasetCollections.
     """
 
-    def __init__(self, app: MinimalManagerApp, dce_serializer=None):
+    def __init__(self, app: StructuredApp, dce_serializer=None):
         super().__init__(app)
         self.dce_serializer = dce_serializer or DCESerializer(app)
 
@@ -167,8 +167,9 @@ class DCASerializer(base.ModelSerializer):
     """
     Base (abstract) Serializer class for HDCAs and LDCAs.
     """
+    app: StructuredApp
 
-    def __init__(self, app: MinimalManagerApp, dce_serializer=None):
+    def __init__(self, app: StructuredApp, dce_serializer=None):
         super().__init__(app)
         self.dce_serializer = dce_serializer or DCESerializer(app)
 
@@ -223,7 +224,7 @@ class HDCASerializer(
     Serializer for HistoryDatasetCollectionAssociations.
     """
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.hdca_manager = HDCAManager(app)
 
