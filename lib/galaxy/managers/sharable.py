@@ -18,6 +18,7 @@ from typing import (
 )
 
 from sqlalchemy import (
+    func,
     true,
 )
 
@@ -66,7 +67,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         Return list for all items (of model_class type) associated with the given
         `user`.
         """
-        user_filter = self.model_class.user_id == user.id
+        user_filter = self.model_class.table.c.user_id == user.id
         filters = self._munge_filters(user_filter, filters)
         return self.list(filters=filters, **kwargs)
 
@@ -137,7 +138,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         """
         Return a query for all published items.
         """
-        published_filter = self.model_class.published == true()
+        published_filter = self.model_class.table.c.published == true()
         filters = self._munge_filters(published_filter, filters)
         return self.query(filters=filters, **kwargs)
 
@@ -145,7 +146,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         """
         Return a list of all published items.
         """
-        published_filter = self.model_class.published == true()
+        published_filter = self.model_class.table.c.published == true()
         filters = self._munge_filters(published_filter, filters)
         return self.list(filters=filters, **kwargs)
 
@@ -289,15 +290,11 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
         return VALID_SLUG_RE.match(slug)
 
-    def _existing_set_of_slugs(self, user):
-        query = (self.session().query(self.model_class.slug)
-                 .filter_by(user=user))
-        return list(set(query.all()))
-
     def _slug_exists(self, user, slug):
-        query = (self.session().query(self.model_class.slug)
-                 .filter_by(user=user, slug=slug))
-        return query.count() != 0
+        query = (self.session().query(self.model_class)
+                 .filter_by(user_id=user.id, slug=slug)
+                 .with_entities(func.count()))
+        return query.scalar() != 0
 
     def _slugify(self, start_with):
         # Replace whitespace with '-'

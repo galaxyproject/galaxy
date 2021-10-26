@@ -3463,7 +3463,7 @@ def datatype_for_extension(extension, datatypes_registry=None):
     return ret
 
 
-class DatasetInstance:
+class DatasetInstance(_HasTable):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
     states = Dataset.states
     conversion_messages = Dataset.conversion_messages

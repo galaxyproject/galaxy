@@ -180,7 +180,7 @@ class ModelManager:
     Provides common queries and CRUD operations as a (hopefully) light layer
     over the ORM.
     """
-    model_class: type = object
+    model_class: Type[model._HasTable]
     foreign_key_name: str
     app: BasicApp
 
@@ -309,12 +309,12 @@ class ModelManager:
             return None
 
     # NOTE: at this layer, all ids are expected to be decoded and in int form
-    def by_id(self, id, **kwargs):
+    def by_id(self, id: int):
         """
         Gets a model by primary id.
         """
-        id_filter = self.model_class.id == id
-        return self.one(filters=id_filter, **kwargs)
+        id_filter = self.model_class.table.c.id == id
+        return self.one(filters=id_filter)
 
     # .... multirow queries
     def list(self, filters=None, order_by=None, limit=None, offset=None, **kwargs):
