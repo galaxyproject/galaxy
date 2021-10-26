@@ -8116,6 +8116,7 @@ class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ['id', 'user_tname', 'user_value']
     dict_element_visible_keys = dict_collection_visible_keys
     associated_item_names: List[str] = []
+    user_tname: Column
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
