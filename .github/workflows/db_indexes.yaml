@@ -1,5 +1,13 @@
 name: Database indexes
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
 concurrency:
   group: database-${{ github.ref }}
   cancel-in-progress: true

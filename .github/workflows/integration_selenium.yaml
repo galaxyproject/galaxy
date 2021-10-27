@@ -1,5 +1,11 @@
 name: Integration Selenium
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
 env:
   GALAXY_SKIP_CLIENT_BUILD: '0'
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'

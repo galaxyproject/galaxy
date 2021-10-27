@@ -1,5 +1,11 @@
 name: Client Unit Testing
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'client/**'
+  pull_request:
+    paths:
+      - 'client/**'
 concurrency:
   group: client-${{ github.ref }}
   cancel-in-progress: true

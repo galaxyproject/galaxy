@@ -1,5 +1,11 @@
 name: first startup
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
 env:
   YARN_INSTALL_OPTS: --frozen-lockfile
 concurrency:

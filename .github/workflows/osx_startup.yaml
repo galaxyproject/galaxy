@@ -1,5 +1,11 @@
 name: macOS startup
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
 concurrency:
   group: osx-first-startup-${{ github.ref }}
   cancel-in-progress: true
