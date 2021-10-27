@@ -734,8 +734,8 @@ class GalaxyInteractorApi:
     def get_api_url(self, path: str) -> str:
         if path.startswith("http"):
             return path
-        elif path.startswith("/api"):
-            path = path[len("/api"):]
+        elif path.startswith("/api/"):
+            path = path[len("/api/"):]
         return f"{self.api_url}/{path}"
 
     def _prepare_request_params(self, data=None, files=None, as_json: bool = False, params: dict = None, headers: dict = None):
