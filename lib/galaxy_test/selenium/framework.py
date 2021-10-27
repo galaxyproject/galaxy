@@ -644,7 +644,7 @@ class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, pop
         self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_context)
 
     def _create_collection(self, payload: dict) -> Response:
-        create_response = self._post("dataset_collections", data=payload)
+        create_response = self._post("dataset_collections", data=payload, json=True)
         return create_response
 
 

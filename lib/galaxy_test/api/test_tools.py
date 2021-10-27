@@ -1941,11 +1941,11 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         payload = dict(
             instance_type="history",
             history_id=history_id,
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=element_identifiers,
             collection_type="list",
         )
 
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = create_response.json()
 
         inputs = {
@@ -1972,11 +1972,11 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         payload = dict(
             instance_type="history",
             history_id=history_id,
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=element_identifiers,
             collection_type="list",
         )
 
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = create_response.json()
 
         inputs = {
