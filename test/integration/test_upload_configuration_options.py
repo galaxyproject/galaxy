@@ -56,7 +56,7 @@ class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstanc
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
-    def fetch_target(self, target, assert_ok=False, attach_test_file=False):
+    def fetch_target(self, target, assert_ok=False, attach_test_file=False, wait=False):
         payload = {
             "history_id": self.history_id,
             "targets": json.dumps([target]),
@@ -64,7 +64,7 @@ class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstanc
         if attach_test_file:
             payload["__files"] = {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))}
 
-        response = self.dataset_populator.fetch(payload, assert_ok=assert_ok)
+        response = self.dataset_populator.fetch(payload, assert_ok=assert_ok, wait=wait)
         return response
 
     def _write_file(self, dir_path, content, filename="test"):
@@ -530,8 +530,8 @@ class AdvancedFtpUploadFetchTestCase(BaseFtpUploadConfigurationTestCase):
             "elements": elements,
             "collection_type": "list:list",
         }
-        self.fetch_target(target, assert_ok=True)
-        hdca = self.dataset_populator.get_history_collection_details(self.history_id)
+        self.fetch_target(target, assert_ok=True, wait=True)
+        hdca = self.dataset_populator.get_history_collection_details(self.history_id, history_content_type='dataset_collection')
         assert len(hdca["elements"]) == 2, hdca
         element0 = hdca["elements"][0]
         assert element0["element_identifier"] == "subdirel1"
