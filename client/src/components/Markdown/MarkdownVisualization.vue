@@ -2,10 +2,8 @@
     <span>
         <MarkdownSelector
             v-if="labelShow"
-            :initial-value="argumentType"
             :argument-name="argumentName"
             :labels="labels"
-            :label-title="selectedLabelTitle"
             @onOk="onLabel"
             @onCancel="onCancel"
         />
