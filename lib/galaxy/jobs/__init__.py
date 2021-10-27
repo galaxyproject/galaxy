@@ -1719,7 +1719,10 @@ class JobWrapper(HasResourceParameters):
                 self.version_string = collect_shrinked_content_from_path(version_filename)
 
         output_dataset_associations = job.output_datasets + job.output_library_datasets
+        inp_data, out_data, out_collections = job.io_dicts()
+
         if not extended_metadata:
+            # importing metadata will discover outputs if extended metadata
             for dataset_assoc in output_dataset_associations:
                 context = self.get_dataset_finish_context(job_context, dataset_assoc)
                 # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
@@ -1734,6 +1737,7 @@ class JobWrapper(HasResourceParameters):
                     )
                 if not final_job_state == job.states.ERROR:
                     dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
+            self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:
@@ -1744,19 +1748,8 @@ class JobWrapper(HasResourceParameters):
                 for dep_job_assoc in dataset_assoc.dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
 
-        # If any of the rest of the finish method below raises an
-        # exception, the fail method will run and set the datasets to
-        # ERROR.  The user will never see that the datasets are in error if
-        # they were flushed as OK here, since upon doing so, the history
-        # panel stops checking for updates.  So allow the
-        # self.sa_session.flush() at the bottom of this method set
-        # the state instead.
-
         for pja in job.post_job_actions:
             ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job, final_job_state=final_job_state)
-        # Flush all the dataset and job changes above.  Dataset state changes
-        # will now be seen by the user.
-        self.sa_session.flush()
 
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
@@ -1764,11 +1757,15 @@ class JobWrapper(HasResourceParameters):
         if tool_exit_code is not None:
             job.exit_code = tool_exit_code
         # custom post process setup
-        inp_data, out_data, out_collections = job.io_dicts()
-        if not extended_metadata:
-            # importing metadata will discover outputs if extended metadata
-            # is enabled.
-            self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
+
+        collected_bytes = 0
+        # Once datasets are collected, set the total dataset size (includes extra files)
+        for dataset_assoc in job.output_datasets:
+            if not dataset_assoc.dataset.dataset.purged:
+                collected_bytes += dataset_assoc.dataset.set_total_size()
+
+        if job.user:
+            job.user.adjust_total_disk_usage(collected_bytes)
 
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
@@ -1784,14 +1781,7 @@ class JobWrapper(HasResourceParameters):
                             out_data=out_data, param_dict=param_dict,
                             tool=self.tool, stdout=job.stdout, stderr=job.stderr)
 
-        collected_bytes = 0
-        # Once datasets are collected, set the total dataset size (includes extra files)
-        for dataset_assoc in job.output_datasets:
-            if not dataset_assoc.dataset.dataset.purged:
-                collected_bytes += dataset_assoc.dataset.set_total_size()
-
-        if job.user:
-            job.user.adjust_total_disk_usage(collected_bytes)
+        self._fix_output_permissions()
 
         # Empirically, we need to update job.user and
         # job.workflow_invocation_step.workflow_invocation in separate
@@ -1802,8 +1792,6 @@ class JobWrapper(HasResourceParameters):
         # waits on invocation and the other updates invocation and waits on
         # user).
         self.sa_session.flush()
-
-        self._fix_output_permissions()
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
