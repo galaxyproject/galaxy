@@ -8,7 +8,7 @@
             data-description="history menu"
         >
             <template v-slot:button-content>
-                <Icon icon="wrench" />
+                <Icon icon="cog" />
                 <span class="sr-only">Operations on the current history</span>
             </template>
 
