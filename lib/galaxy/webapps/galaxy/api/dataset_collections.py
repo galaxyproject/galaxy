@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import Optional
 
 from fastapi import Body, Path, Query
 
@@ -14,6 +15,7 @@ from galaxy.schema.schema import (
 from galaxy.web import expose_api
 from galaxy.webapps.galaxy.services.dataset_collections import (
     DatasetCollectionAttributesResult,
+    DatasetCollectionContentElements,
     DatasetCollectionsService,
     SuitableConverters,
     UpdateCollectionAttributePayload,
@@ -36,7 +38,7 @@ DatasetCollectionIdPathParam: EncodedDatabaseIdField = Path(
 
 InstanceTypeQueryParam: DatasetCollectionInstanceType = Query(
     default=DatasetCollectionInstanceType.history,
-    description="The type of collection instance. Either `history` (default) or `library."
+    description="The type of collection instance. Either `history` (default) or `library`."
 )
 
 
@@ -102,6 +104,31 @@ class FastAPIDatasetCollections:
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
     ) -> AnyHDCA:
         return self.service.show(trans, id, instance_type)
+
+    @router.get(
+        '/api/dataset_collections/{hdca_id}/contents/{parent_id}',
+        name="contents_dataset_collection",
+        summary="Returns direct child contents of indicated dataset collection parent ID.",
+    )
+    def contents(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        hdca_id: EncodedDatabaseIdField = DatasetCollectionIdPathParam,
+        parent_id: EncodedDatabaseIdField = Path(
+            ...,
+            description="Parent collection ID describing what collection the contents belongs to.",
+        ),
+        instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
+        limit: Optional[int] = Query(
+            default=None,
+            description="The maximum number of content elements to return.",
+        ),
+        offset: Optional[int] = Query(
+            default=None,
+            description="The number of content elements that will be skipped before returning.",
+        ),
+    ) -> DatasetCollectionContentElements:
+        return self.service.contents(trans, hdca_id, parent_id, instance_type, limit, offset)
 
 
 class DatasetCollectionsController(BaseGalaxyAPIController):

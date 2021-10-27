@@ -1,7 +1,6 @@
 from logging import getLogger
 from typing import List, Optional, Set
 
-import routes
 from pydantic import BaseModel, Extra, Field
 
 from galaxy import exceptions
@@ -250,7 +249,8 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         def serialize_element(dsc_element) -> DCESummary:
             result = dictify_element_reference(dsc_element, recursive=False, security=trans.security)
             if result["element_type"] == DCEType.dataset_collection:
-                result["object"]["contents_url"] = routes.url_for('contents_dataset_collection',
+                assert trans.url_builder
+                result["object"]["contents_url"] = trans.url_builder('contents_dataset_collection',
                     hdca_id=self.encode_id(hdca.id),
                     parent_id=self.encode_id(result["object"]["id"]))
             trans.security.encode_all_ids(result, recursive=True)
