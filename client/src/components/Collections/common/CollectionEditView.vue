@@ -101,8 +101,10 @@ export default {
             const data = {};
             if (attribute == "dbkey") {
                 data["dbkey"] = newValue.id;
-            } else if (attribute == "file_ext") {
-                data["file_ext"] = newValue.id;
+            } else {
+                // TODO: extend this to other attributes that could be changed
+                console.error(`Changing ${attribute} not implemented`);
+                return;
             }
             axios.post(url, data).catch(this.handleError);
         },
