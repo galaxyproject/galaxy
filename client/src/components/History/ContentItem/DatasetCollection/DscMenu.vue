@@ -27,7 +27,7 @@
                 </template>
 
                 <b-dropdown-item @click.stop="$emit('delete')">
-                    <span v-localize>Delete Collection Only </span>
+                    <span v-localize>Delete Collection Only</span>
                 </b-dropdown-item>
 
                 <b-dropdown-item @click.stop="$emit('delete', { recursive: true })">
