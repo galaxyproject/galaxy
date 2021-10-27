@@ -62,54 +62,6 @@
                         <span v-if="numSelected">{{ numSelected }} items</span>
                         <span v-else>(Disabled)</span>
                     </b-dropdown-item>
-                </b-dropdown>
-
-                <b-dropdown
-                    class="history-contents-list-action-menu-btn"
-                    size="sm"
-                    text="History"
-                    :disabled="!totalMatches"
-                >
-                    <b-dropdown-text id="history-op-all-content">
-                        <span v-localize>With entire history...</span>
-                    </b-dropdown-text>
-
-                    <b-dropdown-item v-b-modal:show-all-hidden-content aria-describedby="history-op-all-content">
-                        <span v-localize>Unhide All Hidden Content</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item v-b-modal:delete-all-hidden-content aria-describedby="history-op-all-content">
-                        <span v-localize>Delete All Hidden Content</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item v-b-modal:purge-all-deleted-content aria-describedby="history-op-all-content">
-                        <span v-localize>Purge All Hidden Content</span>
-                    </b-dropdown-item>
-                </b-dropdown>
-
-                <b-dropdown
-                    class="history-contents-list-action-menu-btn"
-                    size="sm"
-                    text="Create New Content"
-                    :disabled="!totalMatches"
-                    data-description="new content menu"
-                >
-                    <template v-slot:button-content>
-                        <Icon icon="plus" />
-                        <span class="sr-only" v-localize>Create New Content</span>
-                    </template>
-
-                    <b-dropdown-text id="history-op-new-content">
-                        <span>Create new content</span>
-                    </b-dropdown-text>
-
-                    <b-dropdown-item
-                        aria-describedby="history-op-new-content"
-                        @click="iframeRedirect('/dataset/copy_datasets')"
-                        data-description="copy datasets"
-                    >
-                        <span v-localize>Copy Datasets</span>
-                    </b-dropdown-item>
 
                     <b-dropdown-item
                         aria-describedby="history-op-new-content"
@@ -141,6 +93,37 @@
                         data-description="build collection from rules"
                     >
                         <span v-localize>Build Collection from Rules</span>
+                    </b-dropdown-item>
+                </b-dropdown>
+
+                <b-dropdown
+                    class="history-contents-list-action-menu-btn"
+                    size="sm"
+                    text="History"
+                    :disabled="!totalMatches"
+                >
+                    <b-dropdown-text id="history-op-all-content">
+                        <span v-localize>With entire history...</span>
+                    </b-dropdown-text>
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-new-content"
+                        @click="iframeRedirect('/dataset/copy_datasets')"
+                        data-description="copy datasets"
+                    >
+                        <span v-localize>Copy Datasets</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item v-b-modal:show-all-hidden-content aria-describedby="history-op-all-content">
+                        <span v-localize>Unhide All Hidden Content</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item v-b-modal:delete-all-hidden-content aria-describedby="history-op-all-content">
+                        <span v-localize>Delete All Hidden Content</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item v-b-modal:purge-all-deleted-content aria-describedby="history-op-all-content">
+                        <span v-localize>Purge All Hidden Content</span>
                     </b-dropdown-item>
                 </b-dropdown>
             </b-button-group>
