@@ -116,12 +116,12 @@
                             <div class="m-1">
                                 <FormTool
                                     v-if="hasActiveNodeTool"
+                                    :key="activeNodeId"
                                     :get-manager="getManager"
                                     :get-node="getNode"
                                     :datatypes="datatypes"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
-                                    @onChangeOutputDatatype="onChangeOutputDatatype"
                                     @onSetData="onSetData"
                                 />
                                 <FormDefault
@@ -279,6 +279,9 @@ export default {
         },
         showLint() {
             return this.showInPanel == "lint";
+        },
+        activeNodeId() {
+            return this.activeNode && this.activeNode.id;
         },
         hasActiveNodeDefault() {
             return this.activeNode && this.activeNode.type != "tool";
@@ -475,10 +478,6 @@ export default {
             this.lastQueue.enqueue(getModule, newData).then((data) => {
                 node.setData(data);
             });
-        },
-        onChangeOutputDatatype(nodeId, outputName, newDatatype) {
-            const node = this.nodes[nodeId];
-            node.changeOutputDatatype(outputName, newDatatype);
         },
         onLabel(nodeId, newLabel) {
             const node = this.nodes[nodeId];

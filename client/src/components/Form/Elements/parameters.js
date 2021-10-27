@@ -14,7 +14,7 @@ import ColorPicker from "mvc/ui/ui-color-picker";
 import DataPicker from "mvc/ui/ui-data-picker";
 
 // create form view
-export default Backbone.Model.extend({
+export default Backbone.View.extend({
     /** Available parameter types */
     types: {
         text: "_fieldText",
@@ -44,17 +44,18 @@ export default Backbone.Model.extend({
     /** Returns an input field for a given field type */
     create: function (input_def) {
         const Galaxy = getGalaxyInstance();
-        var fieldClass = this.types[input_def.hiddenInWorkflow ? "hidden" : input_def.type];
-        var field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
-        if (!field) {
-            field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
+        var fieldClass = this.types[input_def.titleonly ? "hidden" : input_def.type];
+        this.field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
+        if (!this.field) {
+            this.field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
             Galaxy.emit.debug("form-parameters::_addRow()", `Auto matched field type (${input_def.type}).`);
         }
         if (input_def.value === undefined) {
             input_def.value = null;
         }
-        field.value(input_def.value);
-        return field;
+        this.field.value(input_def.value);
+        this.setElement(input_def.el || "<div/>");
+        this.$el.append(this.field.$el);
     },
 
     /** Data input field */
@@ -77,7 +78,6 @@ export default Backbone.Model.extend({
         if (input_def.is_workflow) {
             return this._fieldText(input_def);
         }
-
         // customize properties
         if (input_def.type == "data_column") {
             input_def.error_text = "Missing columns in referenced dataset.";
@@ -168,6 +168,8 @@ export default Backbone.Model.extend({
             type: input_def.type,
             area: input_def.area,
             readonly: input_def.readonly,
+            color: input_def.color,
+            style: input_def.style,
             placeholder: input_def.placeholder,
             datalist: input_def.datalist,
             onchange: input_def.onchange,

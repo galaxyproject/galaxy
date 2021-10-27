@@ -85,7 +85,7 @@ toolbox_filters:
   selectors:
     input:
       type: xpath
-      selector: "//span[contains(. ,'${description}')]/../div/div/div[@class=\"custom-control\"]"
+      selector: "//span[contains(. ,'${description}')]/../div/div/div/div[@class=\"custom-control\"]"
     submit: '#submit'
 
 change_user_email:
@@ -522,7 +522,7 @@ workflow_run:
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .select2-container"
     # TODO: put step labels in the DOM ideally
-    subworkflow_step_icon: ".portlet-title-icon.fa-sitemap + span"
+    subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
 
 workflow_editor:
 
@@ -568,7 +568,7 @@ workflow_editor:
     configure_output:
       type: xpath
       selector: >
-        //span[text()="Configure Output: '${output}'" and not(ancestor::div[contains(@style,'display: none')])]
+        //b[text()="Configure Output: '${output}'"]
     label_output:
       type: xpath
       selector: >
@@ -576,7 +576,7 @@ workflow_editor:
     rename_output:
       type: xpath
       selector: >
-        //div[@data-label='Rename dataset' and not(ancestor::div[contains(@style,'display: none')])]//input
+        //div[@data-label='Rename dataset']//input
     change_datatype:
       type: xpath
       selector: >

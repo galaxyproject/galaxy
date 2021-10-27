@@ -5,7 +5,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
-import Repeat from "mvc/form/form-repeat";
+import Repeat from "./repeat";
 import { visitInputs } from "components/Form/utilities";
 import FormDisplay from "components/Form/FormDisplay";
 import { appendVueComponent } from "utils/mountVueComponent";
@@ -54,6 +54,9 @@ var GroupView = Backbone.View.extend({
                                     }
                                 }
                                 input.data = columns;
+                                if (columns.length > 0) {
+                                    input.value = columns[0].value;
+                                }
                             }
                             var model_value = self.group.get(prefixed);
                             if (model_value !== undefined && !input.hidden) {

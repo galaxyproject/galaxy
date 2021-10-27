@@ -677,14 +677,14 @@ QUnit.test("nullableText", function (assert) {
     // Start with null value, optional button should be off
     var input = new Ui.NullableText({ area: false, value: null });
     $("body").prepend(input.$el);
-    assert.ok(input.tagName === "input", "input tag");
+    assert.ok(input.text_input.tagName === "input", "input tag");
     assert.ok(input.value() === null, "null value");
     assert.ok(input.optional_button.model.get("value") === "false");
     // toggle button, will set value to `""`
     input.optional_button.model.set("value", "true");
     assert.ok(input.value() === "", "Correct new value.");
     // set value
-    input.model.set("value", "_value");
+    input.text_input.model.set("value", "_value");
     assert.ok(input.value() === "_value", "Correct new value.");
     assert.ok(input.optional_button.model.get("value") === "true");
     // toggle button to false, will reset value to null

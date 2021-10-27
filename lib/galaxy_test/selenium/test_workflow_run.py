@@ -212,12 +212,9 @@ steps:
         self.open_in_workflow_run(WORKFLOW_WITH_CUSTOM_REPORT_1)
         self.workflow_run_specify_inputs(inputs)
         self.workflow_run_submit()
-
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("workflow_run_invocation_report")
-
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
-
         invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
         self.get(f"workflows/invocations/report?id={invocation_0['id']}")
         self.wait_for_selector_visible(".embedded-dataset")

@@ -1,4 +1,5 @@
-import { matchCase, visitInputs } from "./utilities";
+import { visitInputs, validateInputs, matchCase } from "./utilities";
+import toolModel from "./test-data/tool";
 
 function visitInputsString(inputs) {
     let results = "";
@@ -9,6 +10,15 @@ function visitInputsString(inputs) {
 }
 
 describe("form component utilities", () => {
+    it("tool model test", () => {
+        const visits = [];
+        visitInputs(toolModel.inputs, function (node, name) {
+            visits.push({ name: name, node: node });
+        });
+        const result =
+            '[{"name":"a","node":{"name":"a","type":"text"}},{"name":"b|c","node":{"name":"c","type":"select","value":"h","options":[["d","d",false],["h","h",false]]}},{"name":"b|i","node":{"name":"i","type":"text","value":"i"}},{"name":"b|j","node":{"name":"j","type":"text","value":"j"}},{"name":"k_0|l","node":{"name":"l","type":"text","value":"l"}},{"name":"k_0|m|n","node":{"name":"n","type":"select","value":"r","options":[["o","o",false],["r","r",false]]}},{"name":"k_0|m|s","node":{"name":"s","type":"text","value":"s"}},{"name":"k_0|m|t","node":{"name":"t","type":"text","value":"t"}}]';
+        expect(JSON.stringify(visits)).toEqual(result);
+    });
     it("conditional case matching", () => {
         const input = {
             name: "a",
@@ -82,5 +92,29 @@ describe("form component utilities", () => {
         expect(matchCase(input, "")).toEqual(0);
         expect(matchCase(input, "unavailable")).toEqual(-1);
         expect(matchCase(input, "falsevalue")).toEqual(1);
+    });
+
+    it("test basic value validation", () => {
+        const index = {
+            input_a: {},
+            input_b: {},
+            input_c: {},
+        };
+        const values = {
+            input_a: "1",
+            input_b: "2",
+            input_c: { values: [{ id: 0 }] },
+        };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+        values.input_a = undefined;
+        result = validateInputs(index, values);
+        expect(JSON.stringify(result)).toEqual('["input_a","Please provide a value for this option."]');
+        index.input_a.optional = true;
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+        values.input_c.values = [];
+        result = validateInputs(index, values);
+        expect(JSON.stringify(result)).toEqual('["input_c","Please provide data for this input."]');
     });
 });
