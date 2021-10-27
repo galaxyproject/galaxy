@@ -2887,6 +2887,12 @@ outer_input:
         run_workflow_response = self._post("workflows", data=workflow_request)
         self._assert_status_code_is(run_workflow_response, 403)
 
+    def test_cannot_run_bootstrap_admin_workflow(self):
+        workflow = self.workflow_populator.load_workflow(name="test_bootstrap_admin_cannot_run")
+        workflow_request, _ = self._setup_workflow_run(workflow)
+        run_workflow_response = self._post("workflows", data=workflow_request, key=self.master_api_key, json=True)
+        self._assert_status_code_is(run_workflow_response, 400)
+
     @skip_without_tool("cat")
     @skip_without_tool("cat_list")
     def test_workflow_run_with_matching_lists(self):
