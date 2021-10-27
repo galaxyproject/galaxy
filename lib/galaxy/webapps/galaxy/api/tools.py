@@ -499,6 +499,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return self._create(trans, payload, **kwd)
 
     def _create(self, trans: GalaxyWebTransaction, payload, **kwd):
+        if trans.user_is_bootstrap_admin:
+            raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
         action = payload.get('action')
         if action == 'rerun':
             raise Exception("'rerun' action has been deprecated")
