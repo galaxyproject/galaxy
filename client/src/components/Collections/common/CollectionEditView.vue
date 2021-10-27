@@ -97,14 +97,14 @@ export default {
             this.attributes_data = attributesGet;
         },
         clickedSave: function (attribute, newValue) {
-            const url = prependPath("/api/dataset_collections/" + this.collection_id);
+            const url = prependPath(`/api/dataset_collections/${this.collection_id}/copy`);
             const data = {};
             if (attribute == "dbkey") {
                 data["dbkey"] = newValue.id;
             } else if (attribute == "file_ext") {
                 data["file_ext"] = newValue.id;
             }
-            axios.put(url, data).catch(this.handleError);
+            axios.post(url, data).catch(this.handleError);
         },
         clickedConvert: function (selectedConverter) {
             const url = prependPath(`/api/tools/${selectedConverter.tool_id}/convert`);

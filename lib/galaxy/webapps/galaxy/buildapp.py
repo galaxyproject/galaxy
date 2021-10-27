@@ -577,10 +577,10 @@ def populate_api_routes(webapp, app):
                           action='download_dataset_collection',
                           conditions=dict(method=["GET"]))
 
-    webapp.mapper.connect("/api/dataset_collections/{id}",
+    webapp.mapper.connect("/api/dataset_collections/{id}/copy",
                           controller='dataset_collections',
                           action='update',
-                          conditions=dict(method=["PUT"]))
+                          conditions=dict(method=["POST"]))
 
     webapp.mapper.connect("/api/dataset_collections/{id}/attributes",
                           controller='dataset_collections',
