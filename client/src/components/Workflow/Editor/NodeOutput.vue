@@ -59,7 +59,7 @@ export default {
         },
         showCallout() {
             const node = this.getNode();
-            return node.type == "tool";
+            return ["tool", "subworkflow"].includes(node.type);
         },
         terminalClass() {
             const cls = "terminal output-terminal";
