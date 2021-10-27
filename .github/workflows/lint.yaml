@@ -1,5 +1,11 @@
 name: Python linting
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - '**.py'
+  pull_request:
+    paths:
+      - '**.py'
 concurrency:
   group: py-lint-${{ github.ref }}
   cancel-in-progress: true

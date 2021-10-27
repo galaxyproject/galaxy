@@ -1,5 +1,11 @@
 name: Selenium tests (beta history panel)
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 1
