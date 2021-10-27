@@ -8,7 +8,6 @@
             variant="link"
             :text="title | l"
             toggle-class="text-decoration-none"
-            no-caret
             class="histories-operation-menu"
             data-description="histories operation menu"
         >
