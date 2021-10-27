@@ -59,8 +59,6 @@
                         :disabled="!hasSelection"
                     >
                         <span v-localize>Permanently Delete</span>
-                        <span v-if="numSelected">{{ numSelected }} items</span>
-                        <span v-else>(Disabled)</span>
                     </b-dropdown-item>
 
                     <b-dropdown-item
