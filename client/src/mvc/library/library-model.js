@@ -1,7 +1,37 @@
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import mod_util from "mvc/library/library-util";
+
+// ============================================================================
+// HELPER FUNCTIONS
+
+var generateComparator = (sort_key, sort_order) => (itemA, itemB) => {
+    if (!itemA.has(sort_key) && !itemB.has(sort_key)) {
+        return 0;
+    } else if (!itemA.has(sort_key)) {
+        return 1;
+    } else if (!itemB.has(sort_key)) {
+        return -1;
+    }
+    var comparable_itemA_key;
+    var comparable_itemB_key;
+    if (typeof itemA.get(sort_key) === "number") {
+        comparable_itemA_key = itemA.get(sort_key);
+        comparable_itemB_key = itemB.get(sort_key);
+    } else {
+        comparable_itemA_key = itemA.get(sort_key).toLowerCase();
+        comparable_itemB_key = itemB.get(sort_key).toLowerCase();
+    }
+
+    if (comparable_itemA_key > comparable_itemB_key) {
+        return sort_order === "asc" ? 1 : -1;
+    }
+    if (comparable_itemB_key > comparable_itemA_key) {
+        return sort_order === "asc" ? -1 : 1;
+    }
+
+    return 0; // equal
+};
 
 // ============================================================================
 // LIBRARY RELATED MODELS
@@ -57,7 +87,7 @@ var Libraries = Backbone.Collection.extend({
     },
 
     sortLibraries: function (sort_key, sort_order) {
-        this.comparator = mod_util.generateComparator(sort_key, sort_order);
+        this.comparator = generateComparator(sort_key, sort_order);
         this.sort();
     },
 });
@@ -104,7 +134,7 @@ var FolderContainer = Backbone.Model.extend({
     },
 
     sortFolder: function (sort_key, sort_order) {
-        this.get("folder").comparator = mod_util.generateComparator(sort_key, sort_order);
+        this.get("folder").comparator = generateComparator(sort_key, sort_order);
         this.get("folder").sort();
         return this.get("folder");
     },
