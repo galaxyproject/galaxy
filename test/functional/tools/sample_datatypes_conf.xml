@@ -5,6 +5,9 @@
     <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
     <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
     <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true" />
+    <datatype extension="tsv" type="galaxy.datatypes.tabular:TSV" display_in_upload="true">
+      <converter file="tabular_to_csv.xml" target_datatype="csv"/>
+    </datatype>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true" description="File must start with definition line in the following format (columns may be in any order)." >
     </datatype>
     <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" auto_compressed_types="gz" display_in_upload="true">

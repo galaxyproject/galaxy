@@ -5,12 +5,12 @@ import os
 import shutil
 import tarfile
 import tempfile
+from collections import defaultdict
 from json import (
     dump,
     dumps,
     load,
 )
-from uuid import uuid4
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
@@ -50,28 +50,25 @@ class ImportOptions:
 class SessionlessContext:
 
     def __init__(self):
-        self.objects = []
+        self.objects = defaultdict(dict)
 
     def flush(self):
         pass
 
     def add(self, obj):
-        self.objects.append(obj)
+        self.objects[obj.__class__][obj.id] = obj
 
     def query(self, model_class):
 
         def find(obj_id):
-            for obj in self.objects:
-                if isinstance(obj, model_class) and obj.id == obj_id:
-                    return obj
-            return None
+            return self.objects.get(model_class, {}).get(obj_id) or None
 
-        return Bunch(find=find)
+        return Bunch(find=find, get=find)
 
 
 class ModelImportStore(metaclass=abc.ABCMeta):
 
-    def __init__(self, import_options=None, app=None, user=None, object_store=None):
+    def __init__(self, import_options=None, app=None, user=None, object_store=None, tag_handler=None):
         if object_store is None:
             if app is not None:
                 object_store = app.object_store
@@ -86,6 +83,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.user = user
         self.import_options = import_options or ImportOptions()
         self.dataset_state_serialized = True
+        self.tag_handler = tag_handler
 
     @abc.abstractmethod
     def defines_new_history(self):
@@ -219,9 +217,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
                     if 'id' in dataset_attrs["dataset"] and self.import_options.allow_edit:
                         dataset_instance.dataset.id = dataset_attrs["dataset"]['id']
+                    if job:
+                        dataset_instance.dataset.job_id = job.id
 
             if 'id' in dataset_attrs and self.import_options.allow_edit and not self.sessionless:
-                hda = self.sa_session.query(model.HistoryDatasetAssociation).get(dataset_attrs["id"])
+                dataset_instance = self.sa_session.query(getattr(model, dataset_attrs['model_class'])).get(dataset_attrs["id"])
                 attributes = [
                     "name",
                     "extension",
@@ -232,6 +232,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     "visible",
                     "metadata",
                     "tool_version",
+                    "validated_state",
+                    "validated_state_message",
                 ]
                 for attribute in attributes:
                     if attribute in dataset_attrs:
@@ -239,14 +241,14 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         if attribute == "metadata":
                             def remap_objects(p, k, obj):
                                 if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
-                                    return (k, model.MetadataFile(dataset=hda, uuid=obj["uuid"]))
+                                    return (k, model.MetadataFile(dataset=dataset_instance, uuid=obj["uuid"]))
                                 return (k, obj)
 
                             value = remap(value, remap_objects)
 
-                        setattr(hda, attribute, value)
+                        setattr(dataset_instance, attribute, value)
 
-                handle_dataset_object_edit(hda)
+                handle_dataset_object_edit(dataset_instance)
             else:
                 metadata = dataset_attrs['metadata']
 
@@ -269,7 +271,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                        flush=False,
                                                                        sa_session=self.sa_session)
                 elif model_class == "LibraryDatasetDatasetAssociation":
-                    # Create dataset and HDA.
+                    # Create dataset and LDDA.
                     dataset_instance = model.LibraryDatasetDatasetAssociation(name=dataset_attrs['name'],
                                                                               extension=dataset_attrs['extension'],
                                                                               info=dataset_attrs['info'],
@@ -280,8 +282,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                               deleted=dataset_attrs.get('deleted', False),
                                                                               dbkey=metadata['dbkey'],
                                                                               tool_version=metadata.get('tool_version'),
+                                                                              user=self.user,
                                                                               metadata=metadata,
                                                                               create_dataset=True,
+                                                                              flush=False,
                                                                               sa_session=self.sa_session)
                 else:
                     raise Exception("Unknown dataset instance type encountered")
@@ -355,8 +359,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     add_item_annotation(self.sa_session, self.user, dataset_instance, dataset_attrs['annotation'])
                     tag_list = dataset_attrs.get('tags')
                     if tag_list:
-                        tag_handler = model.tags.GalaxyTagHandler(sa_session=self.sa_session)
-                        tag_handler.set_tags_from_list(user=self.user, item=dataset_instance, new_tags_list=tag_list)
+                        self.tag_handler.set_tags_from_list(user=self.user, item=dataset_instance, new_tags_list=tag_list, flush=False)
 
                 if self.app:
                     self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
@@ -379,16 +382,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
     def _import_libraries(self, object_import_tracker):
         object_key = self.object_key
 
-        libraries_attrs = self.library_properties()
-        for library_attrs in libraries_attrs:
-            assert self.import_options.allow_library_creation
-            name = library_attrs['name']
-            description = library_attrs['description']
-            synopsis = library_attrs['synopsis']
-            library = model.Library(name=name, description=description, synopsis=synopsis)
-            self._session_add(library)
-
-            def import_folder(folder_attrs):
+        def import_folder(folder_attrs, root_folder=None):
+            if root_folder:
+                library_folder = root_folder
+            else:
                 name = folder_attrs['name']
                 description = folder_attrs['description']
                 genome_build = folder_attrs['genome_build']
@@ -400,31 +397,43 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 )
                 library_folder.deleted = deleted
 
-                self._session_add(library_folder)
+            self._session_add(library_folder)
 
-                for sub_folder_attrs in folder_attrs.get("folders", []):
-                    sub_folder = import_folder(sub_folder_attrs)
-                    library_folder.add_folder(sub_folder)
+            for sub_folder_attrs in folder_attrs.get("folders", []):
+                sub_folder = import_folder(sub_folder_attrs)
+                library_folder.add_folder(sub_folder)
 
-                for ld_attrs in folder_attrs.get("datasets", []):
-                    ld = model.LibraryDataset(
-                        folder=library_folder,
-                        name=ld_attrs['name'],
-                        info=ld_attrs['info'],
-                        order_id=ld_attrs['order_id']
-                    )
-                    if 'ldda' in ld_attrs:
-                        ldda = object_import_tracker.lddas_by_key[ld_attrs["ldda"][object_key]]
-                        ld.library_dataset_dataset_association = ldda
-                    self._session_add(ld)
+            for ld_attrs in folder_attrs.get("datasets", []):
+                ld = model.LibraryDataset(
+                    folder=library_folder,
+                    name=ld_attrs['name'],
+                    info=ld_attrs['info'],
+                    order_id=ld_attrs['order_id']
+                )
+                if 'ldda' in ld_attrs:
+                    ldda = object_import_tracker.lddas_by_key[ld_attrs["ldda"][object_key]]
+                    ld.library_dataset_dataset_association = ldda
+                self._session_add(ld)
 
-                self.sa_session.flush()
-                return library_folder
+            self.sa_session.flush()
+            return library_folder
+
+        libraries_attrs = self.library_properties()
+        for library_attrs in libraries_attrs:
+            if library_attrs['model_class'] == 'LibraryFolder' and library_attrs.get('id') and not self.sessionless and self.import_options.allow_edit:
+                library_folder = self.sa_session.query(model.LibraryFolder).get(self.app.security.decode_id(library_attrs['id']))
+                import_folder(library_attrs, root_folder=library_folder)
+            else:
+                assert self.import_options.allow_library_creation
+                name = library_attrs['name']
+                description = library_attrs['description']
+                synopsis = library_attrs['synopsis']
+                library = model.Library(name=name, description=description, synopsis=synopsis)
+                self._session_add(library)
+                object_import_tracker.libraries_by_key[library_attrs[object_key]] = library
 
             if 'root_folder' in library_attrs:
                 library.root_folder = import_folder(library_attrs['root_folder'])
-
-            object_import_tracker.libraries_by_key[library_attrs[object_key]] = library
 
     def _import_collection_instances(self, object_import_tracker, collections_attrs, history, new_history):
         object_key = self.object_key
@@ -462,26 +471,26 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dce.child_collection = import_collection(element_attrs['child_collection'])
                     else:
                         raise Exception("Unknown collection element type encountered.")
-
-                    self._session_add(dce)
+                dc.element_count = len(elements_attrs)
 
             if "id" in collection_attrs and self.import_options.allow_edit and not self.sessionless:
                 dc = self.sa_session.query(model.DatasetCollection).get(collection_attrs["id"])
                 attributes = [
                     "collection_type",
                     "populated_state",
+                    "populated_state_message",
                     "element_count",
                 ]
                 for attribute in attributes:
                     if attribute in collection_attrs:
-                        setattr(dc, attribute, collection_attrs[attribute])
+                        setattr(dc, attribute, collection_attrs.get(attribute))
                 materialize_elements(dc)
             else:
                 # create collection
                 dc = model.DatasetCollection(collection_type=collection_attrs['type'])
                 dc.populated_state = collection_attrs["populated_state"]
+                dc.populated_state_message = collection_attrs.get('populated_state_message')
                 self._attach_raw_id_if_editing(dc, collection_attrs)
-                # TODO: element_count...
                 materialize_elements(dc)
 
             self._session_add(dc)
@@ -610,12 +619,12 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         requires_hid = object_import_tracker.requires_hid
         requires_hid_len = len(requires_hid)
         if requires_hid_len > 0 and not self.sessionless:
-            base = history._next_hid(n=requires_hid_len)
-            for i, obj in enumerate(requires_hid):
-                obj.hid = base + i
-        self._flush()
+            for obj in requires_hid:
+                history.stage_addition(obj)
+            history.add_pending_items()
 
     def _import_jobs(self, object_import_tracker, history):
+        self._flush()
         object_key = self.object_key
 
         def _find_hda(input_key):
@@ -1063,7 +1072,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         export_directory = self.export_directory
 
-        _, include_files = self.included_datasets[dataset.id]
+        _, include_files = self.included_datasets[dataset]
         if not include_files:
             return
 
@@ -1176,23 +1185,22 @@ class DirectoryModelExportStore(ModelExportStore):
             if dataset.id in self.collection_datasets:
                 add_dataset = True
 
-            if dataset.id not in self.included_datasets:
+            if dataset not in self.included_datasets:
                 self.add_dataset(dataset, include_files=add_dataset)
 
     def export_library(self, library, include_hidden=False, include_deleted=False):
         self.included_libraries.append(library)
-        self.included_library_folders.append(library.root_folder)
+        root_folder = getattr(library, 'root_folder', library)
+        self.included_library_folders.append(root_folder)
+        self.export_library_folder(root_folder, include_hidden=include_hidden, include_deleted=include_deleted)
 
-        def collect_datasets(library_folder):
-            for library_dataset in library_folder.datasets:
-                ldda = library_dataset.library_dataset_dataset_association
-                add_dataset = (not ldda.visible or not include_hidden) and (not ldda.deleted or include_deleted)
-                # TODO: competing IDs here between ldda and hdas - fix this!
-                self.included_datasets[ldda.id] = (ldda, add_dataset)
-            for folder in library_folder.folders:
-                collect_datasets(folder)
-
-        collect_datasets(library.root_folder)
+    def export_library_folder(self, library_folder, include_hidden=False, include_deleted=False):
+        for library_dataset in library_folder.datasets:
+            ldda = library_dataset.library_dataset_dataset_association
+            add_dataset = (not ldda.visible or not include_hidden) and (not ldda.deleted or include_deleted)
+            self.add_dataset(ldda, add_dataset)
+        for folder in library_folder.folders:
+            self.export_library_folder(folder, include_hidden=include_hidden, include_deleted=include_deleted)
 
     def add_job_output_dataset_associations(self, job_id, name, dataset_instance):
         job_output_dataset_associations = self.job_output_dataset_associations
@@ -1205,16 +1213,7 @@ class DirectoryModelExportStore(ModelExportStore):
         self.included_collections.append(collection)
 
     def add_dataset(self, dataset, include_files=True):
-        dataset_id = dataset.id
-        if dataset_id is None:
-            # Better be a sessionless export, just assign a random ID
-            # won't be able to de-duplicate datasets. This could be fixed
-            # by using object identity or attaching something to the object
-            # like temp_id used in serialization.
-            assert self.sessionless
-            dataset_id = uuid4().hex
-
-        self.included_datasets[dataset_id] = (dataset, include_files)
+        self.included_datasets[dataset] = (dataset, include_files)
 
     def _finalize(self):
         export_directory = self.export_directory

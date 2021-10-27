@@ -19,6 +19,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException
 )
 from galaxy.model.dataset_collections import builder
+from galaxy.model.tags import GalaxySessionlessTagHandler
 from galaxy.util import (
     chunk_iterable,
     ExecutionTimer
@@ -115,6 +116,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 self.add_library_dataset_to_folder(library_folder, ld)
                 primary_data = ldda
         primary_data.raw_set_dataset_state(final_job_state)
+        if final_job_state == galaxy.model.Job.states.ERROR and not self.get_implicit_collection_jobs_association_id():
+            primary_data.visible = True
 
         for source_dict in sources:
             source = galaxy.model.DatasetSource()
@@ -304,10 +307,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     def add_tags_to_datasets(self, datasets, tag_lists):
         if any(tag_lists):
-            # This works around SessionlessModelPersistenceContext not implementing a tag handler ...
-            # that's not better or worse than what we previously did in create_datasets
-            # TDOD: implement that or figure out why it is not implemented and find a better solution.
-            # Could it be that SessionlessModelPersistenceContext doesn't support tags?
             for dataset, tags in zip(datasets, tag_lists):
                 self.tag_handler.add_tags_from_list(self.job.user, dataset, tags, flush=False)
 
@@ -351,6 +350,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     def persist_object(self, obj):
         """Add the target to the persistence layer."""
+
+    def persist_library_folder(self, library_folder):
+        """Add library folder to sessionless export. Noop for session export."""
 
     def flush(self):
         """If database bound, flush the persisted objects to ensure IDs."""
@@ -418,11 +420,17 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     @property
     def tag_handler(self):
-        raise NotImplementedError()
+        return GalaxySessionlessTagHandler(self.sa_session)
 
     @property
     def user(self):
         return None
+
+    def add_tags_to_datasets(self, datasets, tag_lists):
+        user = galaxy.model.User()
+        if any(tag_lists):
+            for dataset, tags in zip(datasets, tag_lists):
+                self.tag_handler.add_tags_from_list(user, dataset, tags, flush=False)
 
     def add_library_dataset_to_folder(self, library_folder, ld):
         library_folder.datasets.append(ld)
@@ -430,19 +438,25 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         library_folder.item_count += 1
 
     def get_library_folder(self, destination):
-        raise NotImplementedError()
+        folder = galaxy.model.LibraryFolder()
+        folder.id = destination.get("library_folder_id")
+        return folder
 
     def get_hdca(self, object_id):
         raise NotImplementedError()
 
-    def create_hdca(name, structure):
-        raise NotImplementedError()
+    def create_hdca(self, name, structure):
+        collection = galaxy.model.DatasetCollection(collection_type=structure.collection_type_description.collection_type, populated=False)
+        return galaxy.model.HistoryDatasetCollectionAssociation(name=name, collection=collection)
 
     def create_library_folder(self, parent_folder, name, description):
         nested_folder = galaxy.model.LibraryFolder(name=name, description=description, order_id=parent_folder.item_count)
         parent_folder.item_count += 1
         parent_folder.folders.append(nested_folder)
         return nested_folder
+
+    def persist_library_folder(self, library_folder):
+        self.export_store.export_library(library_folder)
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         # Consider copying these datasets to for_output_dataset copied histories
@@ -462,6 +476,9 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     def add_output_dataset_association(self, name, dataset):
         """No-op, no job context to persist this association for."""
+
+    def get_implicit_collection_jobs_association_id(self):
+        """No-op, no job context."""
 
 
 def persist_extra_files(object_store, src_extra_files_path, primary_data):
@@ -617,7 +634,8 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                 hda_id = discovered_file.match.object_id
                 primary_dataset = None
                 if hda_id:
-                    primary_dataset = model_persistence_context.sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
+                    sa_session = model_persistence_context.sa_session or model_persistence_context.import_store.sa_session
+                    primary_dataset = sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
 
                 sources = fields_match.sources
                 hashes = fields_match.hashes

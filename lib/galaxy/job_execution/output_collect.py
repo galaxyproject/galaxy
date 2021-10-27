@@ -103,9 +103,10 @@ def collect_dynamic_outputs(
         # "hdca" (place discovered files in a history dataset collection), and "hdas" (place discovered files in a history
         # as stand-alone datasets).
         if destination_type == "library_folder":
-            # populate a library folder (needs to be already have been created)
+            # populate a library folder (needs to have already been created)
             library_folder = job_context.get_library_folder(destination)
             persist_elements_to_folder(job_context, elements, library_folder)
+            job_context.persist_library_folder(library_folder)
         elif destination_type == "hdca":
             # create or populate a dataset collection in the history
             assert "collection_type" in unnamed_output_dict
@@ -118,6 +119,8 @@ def collect_dynamic_outputs(
                 collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
                 structure = UninitializedTree(collection_type_description)
                 hdca = job_context.create_hdca(name, structure)
+                output_collections[name] = hdca
+                job_context.add_dataset_collection(hdca)
             error_message = unnamed_output_dict.get("error_message")
             if error_message:
                 hdca.collection.handle_population_failed(error_message)
@@ -322,6 +325,9 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
     def get_job_id(self):
         return self.job.id
 
+    def get_implicit_collection_jobs_association_id(self):
+        return self.job.implicit_collection_jobs_association and self.job.implicit_collection_jobs_association.id
+
 
 class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
 
@@ -383,6 +389,9 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
 
     def get_job_id(self):
         return self.metadata_params["job_id_tag"]
+
+    def get_implicit_collection_jobs_association_id(self):
+        return self.metadata_params.get("implicit_collection_jobs_association_id")
 
 
 def collect_primary_datasets(job_context, output, input_ext):

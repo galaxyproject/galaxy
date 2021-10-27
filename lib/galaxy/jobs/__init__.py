@@ -1660,7 +1660,7 @@ class JobWrapper(HasResourceParameters):
             # the tasks failed. So include the stderr, stdout, and exit code:
             return fail()
 
-        extended_metadata = self.external_output_metadata.extended
+        extended_metadata = self.external_output_metadata.extended and not self.tool.tool_type == 'interactive'
 
         # We collect the stderr from tools that write their stderr to galaxy.json
         tool_provided_metadata = self.get_tool_provided_job_metadata()
@@ -1702,8 +1702,14 @@ class JobWrapper(HasResourceParameters):
         if extended_metadata:
             try:
                 import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
-                import_model_store = store.get_import_model_store_for_directory(os.path.join(self.working_directory, 'metadata', 'outputs_populated'), app=self.app, import_options=import_options)
-                import_model_store.perform_import(history=job.history)
+                import_model_store = store.get_import_model_store_for_directory(
+                    os.path.join(self.working_directory, 'metadata', 'outputs_populated'),
+                    app=self.app,
+                    import_options=import_options,
+                    user=job.user,
+                    tag_handler=self.app.tag_handler.create_tag_handler_session(),
+                )
+                import_model_store.perform_import(history=job.history, job=job)
             except Exception:
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
                 raise
@@ -1713,49 +1719,37 @@ class JobWrapper(HasResourceParameters):
                 self.version_string = collect_shrinked_content_from_path(version_filename)
 
         output_dataset_associations = job.output_datasets + job.output_library_datasets
-        for dataset_assoc in output_dataset_associations:
-            context = self.get_dataset_finish_context(job_context, dataset_assoc)
-            # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
-            # lets not allow this to occur
-            # need to update all associated output hdas, i.e. history was shared with job running
-            for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
-                output_name = dataset_assoc.name
-                standard_job_finish = not extended_metadata
-                if extended_metadata:
-                    if job.states.ERROR == final_job_state:
-                        dataset.blurb = "error"
-                        dataset.mark_unhidden()
+        inp_data, out_data, out_collections = job.io_dicts()
 
-                if standard_job_finish:
+        if not extended_metadata:
+            # importing metadata will discover outputs if extended metadata
+            for dataset_assoc in output_dataset_associations:
+                context = self.get_dataset_finish_context(job_context, dataset_assoc)
+                # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
+                # lets not allow this to occur
+                # need to update all associated output hdas, i.e. history was shared with job running
+                for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
+                    output_name = dataset_assoc.name
+
                     # Handles retry internally on error for instance...
                     self._finish_dataset(
                         output_name, dataset, job, context, final_job_state, remote_metadata_directory
                     )
+                if not final_job_state == job.states.ERROR:
+                    dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
+            self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
 
-        for dataset_assoc in output_dataset_associations:
-            if job.states.ERROR == final_job_state:
+        if job.states.ERROR == final_job_state:
+            for dataset_assoc in output_dataset_associations:
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
                 # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset_assoc.dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
-            else:
-                dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
-
-        # If any of the rest of the finish method below raises an
-        # exception, the fail method will run and set the datasets to
-        # ERROR.  The user will never see that the datasets are in error if
-        # they were flushed as OK here, since upon doing so, the history
-        # panel stops checking for updates.  So allow the
-        # self.sa_session.flush() at the bottom of this method set
-        # the state instead.
 
         for pja in job.post_job_actions:
             ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job, final_job_state=final_job_state)
-        # Flush all the dataset and job changes above.  Dataset state changes
-        # will now be seen by the user.
-        self.sa_session.flush()
 
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
@@ -1763,11 +1757,15 @@ class JobWrapper(HasResourceParameters):
         if tool_exit_code is not None:
             job.exit_code = tool_exit_code
         # custom post process setup
-        inp_data, out_data, out_collections = job.io_dicts()
-        if not extended_metadata:
-            # importing metadata will discover outputs if extended metadata
-            # is enabled.
-            self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
+
+        collected_bytes = 0
+        # Once datasets are collected, set the total dataset size (includes extra files)
+        for dataset_assoc in job.output_datasets:
+            if not dataset_assoc.dataset.dataset.purged:
+                collected_bytes += dataset_assoc.dataset.set_total_size()
+
+        if job.user:
+            job.user.adjust_total_disk_usage(collected_bytes)
 
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
@@ -1783,14 +1781,7 @@ class JobWrapper(HasResourceParameters):
                             out_data=out_data, param_dict=param_dict,
                             tool=self.tool, stdout=job.stdout, stderr=job.stderr)
 
-        collected_bytes = 0
-        # Once datasets are collected, set the total dataset size (includes extra files)
-        for dataset_assoc in job.output_datasets:
-            if not dataset_assoc.dataset.dataset.purged:
-                collected_bytes += dataset_assoc.dataset.set_total_size()
-
-        if job.user:
-            job.user.adjust_total_disk_usage(collected_bytes)
+        self._fix_output_permissions()
 
         # Empirically, we need to update job.user and
         # job.workflow_invocation_step.workflow_invocation in separate
@@ -1801,8 +1792,6 @@ class JobWrapper(HasResourceParameters):
         # waits on invocation and the other updates invocation and waits on
         # user).
         self.sa_session.flush()
-
-        self._fix_output_permissions()
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
@@ -2151,6 +2140,7 @@ class JobWrapper(HasResourceParameters):
                                                                         job=job,
                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                         validate_outputs=self.validate_outputs,
+                                                                        link_data_only=self.__link_file_check(),
                                                                         **kwds)
         if resolve_metadata_dependencies:
             metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")
