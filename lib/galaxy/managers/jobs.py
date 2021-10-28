@@ -667,13 +667,15 @@ def summarize_job_parameters(trans, job):
                     value = []
                     for element in listify(param_values[input.name]):
                         encoded_id = trans.security.encode_id(element.id)
-                        if isinstance(element, model.DatasetInstance):
+                        if isinstance(element, model.HistoryDatasetAssociation):
                             hda = element
                             value.append({"src": "hda", "id": encoded_id, "hid": hda.hid, "name": hda.name})
                         elif isinstance(element, model.DatasetCollectionElement):
                             value.append({'src': "dce", "id": encoded_id, "name": element.element_identifier})
-                        else:
+                        elif isinstance(element, model.HistoryDatasetCollectionAssociation):
                             value.append({"src": "hdca", "id": encoded_id, "hid": element.hid, "name": element.name})
+                        else:
+                            raise Exception(f"Unhandled data input parameter type encountered {element.__class__.__name__}")
                     rval.append(dict(text=input.label, depth=depth, value=value))
                 elif input.visible:
                     if hasattr(input, "label") and input.label:
