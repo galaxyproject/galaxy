@@ -2966,7 +2966,7 @@ outer_input:
 
     def test_cannot_run_bootstrap_admin_workflow(self):
         workflow = self.workflow_populator.load_workflow(name="test_bootstrap_admin_cannot_run")
-        workflow_request, _ = self._setup_workflow_run(workflow)
+        workflow_request, *_ = self._setup_workflow_run(workflow)
         run_workflow_response = self._post("workflows", data=workflow_request, key=self.master_api_key, json=True)
         self._assert_status_code_is(run_workflow_response, 400)
 
