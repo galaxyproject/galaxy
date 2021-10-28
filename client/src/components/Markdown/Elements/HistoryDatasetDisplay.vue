@@ -25,6 +25,32 @@
                 >
                     <span class="fa fa-file-import" />
                 </b-button>
+                <b-button
+                    v-if="expanded"
+                    href="#"
+                    role="button"
+                    variant="link"
+                    title="Collapse"
+                    type="button"
+                    class="py-0 px-1"
+                    v-b-tooltip.hover
+                    @click="onExpand"
+                >
+                    <span class="fa fa-angle-double-up" />
+                </b-button>
+                <b-button
+                    v-else
+                    href="#"
+                    role="button"
+                    variant="link"
+                    title="Expand"
+                    type="button"
+                    class="py-0 px-1"
+                    v-b-tooltip.hover
+                    @click="onExpand"
+                >
+                    <span class="fa fa-angle-double-down" />
+                </b-button>
             </span>
             <span>
                 <span>Dataset:</span>
@@ -35,7 +61,7 @@
             <UrlDataProvider :url="itemUrl" v-slot="{ result: itemContent, loading, error }">
                 <LoadingSpan v-if="loading" message="Loading Dataset" />
                 <div v-else-if="error">{{ error }}</div>
-                <div v-else class="embedded-dataset content-height">
+                <div v-else :class="contentClass">
                     <UrlDataProvider :url="datatypesUrl" v-slot="{ result: datatypesModel, loading: datatypesLoading }">
                         <LoadingSpan v-if="datatypesLoading" message="Loading Datatypes" />
                         <div v-else>
@@ -101,7 +127,19 @@ export default {
             default: false,
         },
     },
+    data() {
+        return {
+            expanded: false,
+        };
+    },
     computed: {
+        contentClass() {
+            if (this.expanded) {
+                return "embedded-dataset-expanded";
+            } else {
+                return "embedded-dataset";
+            }
+        },
         datasetType() {
             const dataset = this.datasets[this.args.history_dataset_id];
             return dataset.ext;
@@ -171,12 +209,19 @@ export default {
             });
             return tableData;
         },
+        onExpand() {
+            this.expanded = !this.expanded;
+        },
     },
 };
 </script>
 <style scoped>
-.content-height {
+.embedded-dataset {
     max-height: 20rem;
+    overflow-y: auto;
+}
+.embedded-dataset-expanded {
+    max-height: 40rem;
     overflow-y: auto;
 }
 </style>
