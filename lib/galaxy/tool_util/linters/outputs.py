@@ -1,6 +1,7 @@
 """This module contains a linting functions for tool outputs."""
 from galaxy.util import string_as_bool
 from ._util import is_valid_cheetah_placeholder
+from ..parser.output_collection_def import NAMED_PATTERNS
 
 
 def lint_output(tool_xml, lint_ctx):
@@ -84,9 +85,7 @@ def __check_pattern(node):
         return True
     if "pattern" not in node.attrib:
         return False
-    if node.attrib["pattern"] == "__default__":
-        return True
-    if node.attrib["pattern"] in ["__name_and_ext__", "__designation_and_ext__"]:
-        return True
-    if "(?P<ext>" in node.attrib["pattern"]:
+    pattern = node.attrib["pattern"]
+    regex_pattern = NAMED_PATTERNS.get(pattern, pattern)
+    if "(?P<ext>" in regex_pattern:
         return True
