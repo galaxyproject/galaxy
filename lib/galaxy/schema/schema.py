@@ -585,6 +585,9 @@ class HDAObject(Model):
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: EncodedDatabaseIdField = HistoryIdField
 
+    class Config:
+        extra = Extra.allow  # Can contain more fields like metadata_*
+
 
 class DCObject(Model):
     """Dataset Collection Object"""
