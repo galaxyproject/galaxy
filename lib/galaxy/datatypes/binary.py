@@ -2308,6 +2308,7 @@ class Sra(Binary):
             return 'Binary sra file (%s)' % (nice_size(dataset.get_size()))
 
 
+@build_sniff_from_prefix
 class RData(CompressedArchive):
     """Generic R Data file datatype implementation, i.e. files generated with R's save or save.img function
     see https://www.loc.gov/preservation/digital/formats/fdd/fdd000470.shtml
@@ -2326,13 +2327,15 @@ class RData(CompressedArchive):
     >>> dataset.metadata.version
     '3'
     """
+    VERSION_2_PREFIX = b'RDX2\nX\n'
+    VERSION_3_PREFIX = b'RDX3\nX\n'
     file_ext = 'rdata'
 
     MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
-        compressed, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
+        _, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
         try:
             dataset.metadata.version = self._parse_rdata_header(fh)
         except Exception:
@@ -2340,27 +2343,20 @@ class RData(CompressedArchive):
         finally:
             fh.close()
 
-    def sniff(self, filename):
-        compressed, fh = compression_utils.get_fileobj_raw(filename, "rb")
-        try:
-            self._parse_rdata_header(fh)
-        except Exception:
-            fh.close()
-            return False
-        finally:
-            fh.close()
-        return True
+    def sniff_prefix(self, sniff_prefix):
+        return sniff_prefix.startswith_bytes((self.VERSION_2_PREFIX, self.VERSION_3_PREFIX))
 
     def _parse_rdata_header(self, fh):
         header = fh.read(7)
-        if header == b'RDX2\nX\n':
+        if header == self.VERSION_2_PREFIX:
             return "2"
-        elif header == b'RDX3\nX\n':
+        elif header == self.VERSION_3_PREFIX:
             return "3"
         else:
             raise ValueError()
 
 
+@build_sniff_from_prefix
 class RDS(CompressedArchive):
     """
     File using a serialized R object generated with R's saveRDS function
@@ -2397,26 +2393,22 @@ class RDS(CompressedArchive):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
-        compressed, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
+        _, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
         try:
-            mode, dataset.metadata.version, dataset.metadata.rversion, dataset.metadata.minrversion = self._parse_rds_header(fh)
+            _, dataset.metadata.version, dataset.metadata.rversion, dataset.metadata.minrversion = self._parse_rds_header(fh.read(14))
         except Exception:
             pass
         finally:
             fh.close()
 
-    def sniff(self, filename):
-        compressed, fh = compression_utils.get_fileobj_raw(filename, "rb")
+    def sniff_prefix(self, sniff_prefix):
         try:
-            self._parse_rds_header(fh)
+            self._parse_rds_header(sniff_prefix.contents_header_bytes[:14])
         except Exception:
-            fh.close()
             return False
-        finally:
-            fh.close()
         return True
 
-    def _parse_rds_header(self, fh):
+    def _parse_rds_header(self, header_bytes):
         """
         get the header info from a rds file
         - starts with b'X\n' or 'A\n'
@@ -2425,16 +2417,16 @@ class RDS(CompressedArchive):
           - the r version used to generate the file
           - the minimum r version needed to read the file
         """
-        header = fh.read(2)
+        header = header_bytes[:2]
         if header == b'X\n':
             mode = "X"
         elif header == b'A\n':
             mode = "A"
         else:
             raise Exception()
-        version = fh.read(4)
-        rversion = fh.read(4)
-        minrversion = fh.read(4)
+        version = header_bytes[2:6]
+        rversion = header_bytes[6:10]
+        minrversion = header_bytes[10:14]
         version = int("".join([str(_) for _ in version]))
         if version not in [2, 3]:
             raise Exception()
