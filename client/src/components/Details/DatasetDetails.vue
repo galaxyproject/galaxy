@@ -9,7 +9,7 @@
                 <Alert v-else-if="datasetLoadingError" :message="datasetLoadingError" variant="error" />
                 <CurrentUser v-else v-slot="{ user }">
                     <JobDetailsProvider
-                        v-if="!isDatasetLoading"
+                        v-if="!isDatasetLoading && dataset.creating_job !== null"
                         :jobid="dataset.creating_job"
                         v-slot="{ result: job, loading: isJobLoading }"
                         :use-cache="false"
@@ -38,6 +38,17 @@
                             </div>
                         </div>
                     </JobDetailsProvider>
+                    <div v-else-if="!isDatasetLoading">
+                        <dataset-information class="detail" :hda_id="datasetId" />
+                        <dataset-storage class="detail" :dataset-id="datasetId" />
+                        <div>
+                            <h3>Job Not Found</h3>
+                            <p>
+                                No job associated with this dataset is recorded in Galaxy. Galaxy cannot determine full
+                                dataset provenance and history for this dataset.
+                            </p>
+                        </div>
+                    </div>
                 </CurrentUser>
             </div>
         </DatasetProvider>
