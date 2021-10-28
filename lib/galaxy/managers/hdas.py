@@ -18,11 +18,13 @@ from galaxy import (
 )
 from galaxy.managers import (
     annotatable,
+    base,
     datasets,
     secured,
     taggable,
     users,
 )
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.structured_app import MinimalManagerApp, StructuredApp
 
 log = logging.getLogger(__name__)
@@ -49,12 +51,13 @@ class HDAManager(datasets.DatasetAssociationManager,
     # TODO: move what makes sense into DatasetManager
     # TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?
 
-    def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager):
+    def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager, tag_handler: GalaxyTagHandler):
         """
         Set up and initialize other managers needed by hdas.
         """
         super().__init__(app)
         self.user_manager = user_manager
+        self.tag_handler = tag_handler
 
     def get_owned_ids(self, object_ids, history=None):
         """Get owned IDs.
@@ -396,10 +399,10 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
 
-        self.serializers.update({
-            'model_class': lambda *a, **c: 'HistoryDatasetAssociation',
-            'history_content_type': lambda *a, **c: 'dataset',
-            'hda_ldda': lambda *a, **c: 'hda',
+        serializers: Dict[str, base.Serializer] = {
+            'model_class': lambda item, key, **context: 'HistoryDatasetAssociation',
+            'history_content_type': lambda item, key, **context: 'dataset',
+            'hda_ldda': lambda item, key, **context: 'hda',
             'type_id': self.serialize_type_id,
             'copied_from_ldda_id': self.serialize_copied_from_ldda_id,
             'history_id': self.serialize_id,
@@ -409,7 +412,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'misc_blurb': self._remap_from('blurb'),
             'file_ext': self._remap_from('extension'),
             'file_path': self._remap_from('file_name'),
-            'resubmitted': lambda i, k, **c: self.hda_manager.has_been_resubmitted(i),
+            'resubmitted': lambda item, key, **context: self.hda_manager.has_been_resubmitted(item),
             'display_apps': self.serialize_display_apps,
             'display_types': self.serialize_old_display_applications,
             'visualizations': self.serialize_visualization_links,
@@ -418,22 +421,23 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             # TODO: this intermittently causes a routes.GenerationException - temp use the legacy route to prevent this
             #   see also: https://trello.com/c/5d6j4X5y
             #   see also: https://sentry.galaxyproject.org/galaxy/galaxy-main/group/20769/events/9352883/
-            'url': lambda i, k, **c: self.url_for('history_content',
-                                                  history_id=self.app.security.encode_id(i.history_id),
-                                                  id=self.app.security.encode_id(i.id)),
+            'url': lambda item, key, **context: self.url_for('history_content',
+                                                             history_id=self.app.security.encode_id(item.history_id),
+                                                             id=self.app.security.encode_id(item.id)),
             'urls': self.serialize_urls,
 
             # TODO: backwards compat: need to go away
-            'download_url': lambda i, k, **c: self.url_for('history_contents_display',
-                                                           history_id=self.app.security.encode_id(i.history.id),
-                                                           history_content_id=self.app.security.encode_id(i.id)),
+            'download_url': lambda item, key, **context: self.url_for('history_contents_display',
+                                                                      history_id=self.app.security.encode_id(item.history.id),
+                                                                      history_content_id=self.app.security.encode_id(item.id)),
             'parent_id': self.serialize_id,
             # TODO: to DatasetAssociationSerializer
-            'accessible': lambda i, k, user=None, **c: self.manager.is_accessible(i, user, **c),
-            'api_type': lambda *a, **c: 'file',
-            'type': lambda *a, **c: 'file',
-            'created_from_basename': lambda i, k, **c: i.created_from_basename,
-        })
+            'accessible': lambda item, key, user=None, **c: self.manager.is_accessible(item, user, **c),
+            'api_type': lambda item, key, **context: 'file',
+            'type': lambda item, key, **context: 'file',
+            'created_from_basename': lambda item, key, **context: item.created_from_basename,
+        }
+        self.serializers.update(serializers)
 
     def serialize(self, hda, keys, user=None, **context):
         """
@@ -444,10 +448,11 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             keys = self._view_to_keys('inaccessible')
         return super().serialize(hda, keys, user=user, **context)
 
-    def serialize_display_apps(self, hda, key, trans=None, **context):
+    def serialize_display_apps(self, item, key, trans=None, **context):
         """
         Return dictionary containing new-style display app urls.
         """
+        hda = item
         display_apps: List[Dict[str, Any]] = []
         for display_app in hda.get_display_applications(trans).values():
 
@@ -463,10 +468,11 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
         return display_apps
 
-    def serialize_old_display_applications(self, hda, key, trans=None, **context):
+    def serialize_old_display_applications(self, item, key, trans=None, **context):
         """
         Return dictionary containing old-style display app urls.
         """
+        hda = item
         display_apps: List[Dict[str, Any]] = []
         if not self.app.config.enable_old_display_applications:
             return display_apps
@@ -490,20 +496,22 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
         return display_apps
 
-    def serialize_visualization_links(self, hda, key, trans=None, **context):
+    def serialize_visualization_links(self, item, key, trans=None, **context):
         """
         Return a list of dictionaries with links to visualization pages
         for those visualizations that apply to this hda.
         """
+        hda = item
         # use older system if registry is off in the config
         if not self.app.visualizations_registry:
             return hda.get_visualizations()
         return self.app.visualizations_registry.get_visualizations(trans, hda)
 
-    def serialize_urls(self, hda, key, **context):
+    def serialize_urls(self, item, key, **context):
         """
         Return web controller urls useful for this HDA.
         """
+        hda = item
         url_for = self.url_for
         encoded_id = self.app.security.encode_id(hda.id)
         urls = {
@@ -534,6 +542,7 @@ class HDADeserializer(datasets.DatasetAssociationDeserializer,
     def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.hda_manager = self.manager
+        self.tag_handler = app.tag_handler
 
     def add_deserializers(self):
         super().add_deserializers()

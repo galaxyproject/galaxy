@@ -6,7 +6,7 @@ from sqlalchemy import sql
 from galaxy import exceptions
 from galaxy import model
 from galaxy.exceptions import DuplicatedIdentifierException
-from .base import ModelManager
+from .base import ModelManager, raise_filter_err
 from .executables import artifact_class
 
 log = logging.getLogger(__name__)
@@ -112,7 +112,7 @@ class ToolFilterMixin:
             elif op == 'contains':
                 cond = model.Job.table.c.tool_id.contains(val, autoescape=True)
             else:
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
             if model_class is model.HistoryDatasetAssociation:
                 return sql.expression.and_(
                     model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,

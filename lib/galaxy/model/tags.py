@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Dict
+from typing import Dict, List, Optional
 
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
@@ -341,13 +341,13 @@ class TagHandler:
             scrubbed_tag_list.append(self._scrub_tag_name(tag))
         return scrubbed_tag_list
 
-    def _get_name_value_pair(self, tag_str):
+    def _get_name_value_pair(self, tag_str) -> List[Optional[str]]:
         """Get name, value pair from a tag string."""
         # Use regular expression to parse name, value.
         if tag_str.startswith('#'):
             tag_str = f"name:{tag_str[1:]}"
         reg_exp = re.compile(f"[{self.key_value_separators}]")
-        name_value_pair = reg_exp.split(tag_str, 1)
+        name_value_pair: List[Optional[str]] = list(reg_exp.split(tag_str, 1))
         # Add empty slot if tag does not have value.
         if len(name_value_pair) < 2:
             name_value_pair.append(None)

@@ -3463,7 +3463,7 @@ def datatype_for_extension(extension, datatypes_registry=None):
     return ret
 
 
-class DatasetInstance:
+class DatasetInstance(_HasTable):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
     states = Dataset.states
     conversion_messages = Dataset.conversion_messages
@@ -8116,6 +8116,7 @@ class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ['id', 'user_tname', 'user_value']
     dict_element_visible_keys = dict_collection_visible_keys
     associated_item_names: List[str] = []
+    user_tname: Column
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
