@@ -1443,8 +1443,8 @@ Values for these parameters are simply given by the desired value.
 #### ``boolean``
 
 The value of the test parameter should be set to `true` or `false` corresponding
-to the cases that the parameter is checked or not. Alternatively the value
-specified as `truevalue` or `falsevalue` can be given.
+to the cases that the parameter is checked or not. It is also possible, but
+discouraged, to use the value specified as `truevalue` or `falsevalue`.
 
 #### ``data``
 
