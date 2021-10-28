@@ -52,17 +52,17 @@ class Newick_Parser(Base_Parser):
             if len(childString) == 0:
                 continue
             nodeInfo = childString.split(":")
-            name, length, bootstrap = "", None, -1
+            name, length, bootstrap = "", None, -1.0
             if len(nodeInfo) == 2:  # has length info
                 length = nodeInfo[1]
                 # checking for bootstap values
                 name = nodeInfo[0]
                 try:    # Nexus may bootstrap in names position
-                    name = float(name)
-                    if 0 <= name <= 1:
-                        bootstrap = name
-                    elif 1 <= name <= 100:
-                        bootstrap = name / 100
+                    name_as_float = float(name)
+                    if 0 <= name_as_float <= 1:
+                        bootstrap = name_as_float
+                    elif 1 <= name_as_float <= 100:
+                        bootstrap = name_as_float / 100
                     name = ""
                 except ValueError:
                     name = nodeInfo[0]

@@ -18,14 +18,12 @@ from sqlalchemy import (
 from sqlalchemy.orm import eagerload, undefer
 
 from galaxy import model, util, web
-from galaxy.datatypes.interval import Bed
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.structured_app import StructuredApp
 from galaxy.util import sanitize_text, unicodify
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.visualization.data_providers.genome import RawBedDataProvider
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genomes import GenomeRegion
@@ -879,26 +877,3 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         if len(args) > 0:
             nargs += args
         return os.path.join(*nargs)
-
-    @web.json
-    def bookmarks_from_dataset(self, trans, hda_id=None, ldda_id=None):
-        if hda_id:
-            hda_ldda = "hda"
-            dataset_id = hda_id
-        elif ldda_id:
-            hda_ldda = "ldda"
-            dataset_id = ldda_id
-        dataset = self.get_hda_or_ldda(trans, hda_ldda, dataset_id)
-
-        rows = []
-        if isinstance(dataset.datatype, Bed):
-            data = RawBedDataProvider(original_dataset=dataset).get_iterator()
-            for i, line in enumerate(data):
-                if (i > 500):
-                    break
-                fields = line.split()
-                location = name = f"{fields[0]}:{fields[1]}-{fields[2]}"
-                if len(fields) > 3:
-                    name = fields[4]
-                rows.append([location, name])
-        return {'data': rows}
