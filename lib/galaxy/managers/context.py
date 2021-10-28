@@ -215,6 +215,11 @@ class ProvidesUserContext(ProvidesAppContext):
         return self.app.config.is_admin_user(self.user)
 
     @property
+    def user_is_bootstrap_admin(self) -> bool:
+        """Master key provided so there is no real user"""
+        return not self.anonymous and self.user.bootstrap_admin_user
+
+    @property
     def user_can_do_run_as(self) -> bool:
         return self.app.user_manager.user_can_do_run_as(self.user)
 

@@ -124,7 +124,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         )
         return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view=view) for content in contents]
 
-    @web.legacy_expose_api_anonymous
+    @web.expose_api_anonymous
     def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):
         """
         GET /api/datasets/{encoded_dataset_id}
@@ -420,7 +420,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         return data
 
-    @web.legacy_expose_api_anonymous
+    @web.expose_api_anonymous
     def extra_files(self, trans, history_content_id, history_id, **kwd):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/extra_files
@@ -495,26 +495,18 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             "item_url": item_url,
         }
 
-    @web.legacy_expose_api_raw_anonymous
+    @web.expose_api_raw_anonymous
     def get_metadata_file(self, trans, history_content_id, history_id, metadata_file=None, **kwd):
         """
         GET /api/histories/{history_id}/contents/{history_content_id}/metadata_file
         """
         decoded_content_id = self.decode_id(history_content_id)
-        rval = ''
-        try:
-            hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
-            file_ext = hda.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
-            fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in hda.name)[0:150]
-            trans.response.headers["Content-Type"] = "application/octet-stream"
-            trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'
-            return open(hda.metadata.get(metadata_file).file_name, 'rb')
-        except Exception as e:
-            log.exception("Error getting metadata_file (%s) for dataset (%s) from history (%s)",
-                          metadata_file, history_content_id, history_id)
-            trans.response.status = 500
-            rval = f"Could not get metadata for dataset: {util.unicodify(e)}"
-        return rval
+        hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
+        file_ext = hda.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
+        fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in hda.name)[0:150]
+        trans.response.headers["Content-Type"] = "application/octet-stream"
+        trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'
+        return open(hda.metadata.get(metadata_file).file_name, 'rb')
 
     @web.expose_api_anonymous
     def converted(self, trans, dataset_id, ext, **kwargs):

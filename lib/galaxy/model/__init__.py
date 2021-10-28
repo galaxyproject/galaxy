@@ -3973,6 +3973,8 @@ class DatasetInstance:
             deleted=self.deleted,
             visible=self.visible,
             dataset_uuid=(lambda uuid: str(uuid) if uuid else None)(self.dataset.uuid),
+            validated_state=self.validated_state,
+            validated_state_message=self.validated_state_message,
         )
 
         serialization_options.attach_identifier(id_encoder, self, rval)
@@ -4562,6 +4564,7 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
             self,
+            id=self.id,  # FIXME: serialize only in sessionless export mode
             name=self.name,
             description=self.description,
             genome_build=self.genome_build,
@@ -4696,7 +4699,7 @@ class LibraryDataset(Base, Serializable):
                     name=ldda.name,
                     file_name=ldda.file_name,
                     created_from_basename=ldda.created_from_basename,
-                    uploaded_by=ldda.user.email,
+                    uploaded_by=ldda.user and ldda.user.email,
                     message=ldda.message,
                     date_uploaded=ldda.create_time.isoformat(),
                     update_time=ldda.update_time.isoformat(),
@@ -5398,6 +5401,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             self,
             type=self.collection_type,
             populated_state=self.populated_state,
+            populated_state_message=self.populated_state_message,
             elements=list(map(lambda e: e.serialize(id_encoder, serialization_options), self.elements))
         )
         serialization_options.attach_identifier(id_encoder, self, rval)

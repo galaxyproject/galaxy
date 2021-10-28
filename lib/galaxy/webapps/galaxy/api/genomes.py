@@ -12,8 +12,8 @@ from fastapi.responses import Response
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.genomes import GenomesManager
 from galaxy.web import (
-    expose_api_anonymous,
-    expose_api_raw_anonymous,
+    expose_api_anonymous_and_sessionless,
+    expose_api_raw_anonymous_and_sessionless,
 )
 from galaxy.web.framework.helpers import is_true
 from . import (
@@ -163,7 +163,7 @@ class GenomesController(BaseGalaxyAPIController):
     """
     manager: GenomesManager = depends(GenomesManager)
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
         """
         GET /api/genomes: returns a list of installed genomes
@@ -171,7 +171,7 @@ class GenomesController(BaseGalaxyAPIController):
         chrom_info = kwd.get('chrom_info')
         return self.manager.get_dbkeys(trans.user, chrom_info)
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def show(self, trans, id, num=None, chrom=None, low=None, high=None, **kwd):
         """
         GET /api/genomes/{id}
@@ -182,7 +182,7 @@ class GenomesController(BaseGalaxyAPIController):
         reference = is_true(kwd.get('reference', False))
         return self.manager.get_genome(trans, id, num, chrom, low, high, reference)
 
-    @expose_api_raw_anonymous
+    @expose_api_raw_anonymous_and_sessionless
     def indexes(self, trans, id, **kwd):
         """
         GET /api/genomes/{id}/indexes?type={table name}
@@ -194,7 +194,7 @@ class GenomesController(BaseGalaxyAPIController):
         index_type = kwd.get('type')
         return self.manager.get_indexes(id, index_type)
 
-    @expose_api_raw_anonymous
+    @expose_api_raw_anonymous_and_sessionless
     def sequences(self, trans, id, chrom=None, low=None, high=None, **kwd):
         """
         GET /api/genomes/{id}/sequences

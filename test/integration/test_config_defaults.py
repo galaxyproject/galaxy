@@ -276,6 +276,8 @@ def get_config_data():
     for key, data in DRIVER.app.config.schema.app_schema.items():
         if key in DO_NOT_TEST:
             continue
+        elif f"GALAXY_CONFIG_OVERRIDE_{str(key).upper()}" in os.environ:
+            continue
         expected_value = get_expected(key, data, parent_dirs)
         loaded_value = getattr(DRIVER.app.config, key)
         data = OptionData(key=key, expected=expected_value, loaded=loaded_value)  # passed to test

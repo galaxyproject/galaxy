@@ -19,6 +19,7 @@ execution:
       docker_sudo: false
       docker_required: true
       container_monitor_result: callback
+      remote_metadata: true
 
 tools:
 - id: upload1
