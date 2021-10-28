@@ -627,8 +627,9 @@
     <datatype extension="cel" type="galaxy.datatypes.microarrays:Cel" display_in_upload="true"/>
     <datatype extension="gpr" type="galaxy.datatypes.microarrays:Gpr" display_in_upload="true"/>
     <datatype extension="gal" type="galaxy.datatypes.microarrays:Gal" display_in_upload="true"/>
-    <datatype extension="rdata" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" display_in_upload="true" description="Stored data from an R session"/>
-    <datatype extension="rdata.sce" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true" description="Stored RDS from a SingleCellObject"/>
+    <datatype extension="rds" type="galaxy.datatypes.binary:RDS" display_in_upload="true" description="Serialized R object generated with saveRDS"/>
+    <datatype extension="rdata" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" display_in_upload="true" description="Stored data from an R session genearted with save or save.img"/>
+    <datatype extension="rdata.sce" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true" description="Stored RData from a SingleCellObject"/>
     <datatype extension="rdata.xcms.raw" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
     <datatype extension="rdata.msnbase.raw" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
     <datatype extension="rdata.xcms.findchrompeaks" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
@@ -842,9 +843,9 @@
     <datatype extension="sbml" type="galaxy.datatypes.xml:Sbml" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="spalndbnp" type="galaxy.datatypes.spaln:SpalnNuclDb" display_in_upload="true" />
     <datatype extension="spalndba" type="galaxy.datatypes.spaln:SpalnProtDb" display_in_upload="true" />
-    <datatype extension="dada2_dada" type="galaxy.datatypes.binary:RData" subclass="true" display_in_upload="true" />
-    <datatype extension="dada2_errorrates" type="galaxy.datatypes.binary:RData" subclass="true" display_in_upload="true" />
-    <datatype extension="dada2_mergepairs" type="galaxy.datatypes.binary:RData" subclass="true" display_in_upload="true" />
+    <datatype extension="dada2_dada" type="galaxy.datatypes.binary:RDS" subclass="true" display_in_upload="true" />
+    <datatype extension="dada2_errorrates" type="galaxy.datatypes.binary:RDS" subclass="true" display_in_upload="true" />
+    <datatype extension="dada2_mergepairs" type="galaxy.datatypes.binary:RDS" subclass="true" display_in_upload="true" />
     <datatype extension="dada2_sequencetable" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
     <datatype extension="dada2_uniques" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
     <datatype extension="ckpt" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
@@ -1063,6 +1064,7 @@
     <sniffer type="galaxy.datatypes.microarrays:Gpr"/>
     <sniffer type="galaxy.datatypes.microarrays:Gal"/>
     <sniffer type="galaxy.datatypes.binary:RData"/>
+    <sniffer type="galaxy.datatypes.binary:RDS"/>
     <sniffer type="galaxy.datatypes.images:Mrc2014"/>
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>
