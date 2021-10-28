@@ -325,6 +325,9 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             'workflow',
         }
 
+        if trans.user_is_bootstrap_admin:
+            raise exceptions.RealUserRequiredException("Only real users can create or run workflows.")
+
         if payload is None or len(ways_to_create.intersection(payload)) == 0:
             message = f"One parameter among - {', '.join(ways_to_create)} - must be specified"
             raise exceptions.RequestParameterMissingException(message)
