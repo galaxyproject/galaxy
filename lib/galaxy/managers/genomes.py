@@ -67,8 +67,8 @@ class GenomesManager:
             paths = [x[-1] for x in tbl_entries if id in x]
             file_name = paths.pop()
         except TypeError:
-            raise ReferenceDataError('Data tables not found for {index_type}')
+            raise ReferenceDataError(f'Data tables not found for {index_type}')
         except IndexError:
-            raise ReferenceDataError('Data tables not found for {index_type} for {id}')
+            raise ReferenceDataError(f'Data tables not found for {index_type} for {id}')
         else:
             return f"{file_name}{ext}"
