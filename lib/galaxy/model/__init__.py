@@ -6290,6 +6290,9 @@ class Workflow(Base, Dictifiable, RepresentById):
         return "Workflow[id=%d%s]" % (self.id, extra)
 
 
+InputConnDictType = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
+
+
 class WorkflowStep(Base, RepresentById):
     """
     WorkflowStep represents a tool or subworkflow, its inputs, annotations, and any outputs that are flagged as workflow outputs.
@@ -6314,6 +6317,7 @@ class WorkflowStep(Base, RepresentById):
     order_index = Column(Integer)
     uuid = Column(UUIDType)
     label = Column(Unicode(255))
+    temp_input_connections: Optional[InputConnDictType]
 
     subworkflow = relationship('Workflow',
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),  # type: ignore
