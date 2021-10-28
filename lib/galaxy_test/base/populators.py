@@ -564,7 +564,9 @@ class BaseDatasetPopulator(BasePopulator):
                 if history_content_id is None:
                     raise Exception(f"Could not find content with HID [{hid}] in [{history_contents}]")
             else:
-                # No hid specified - just grab most recent element.
+                # No hid specified - just grab most recent element of correct content type
+                if kwds.get('history_content_type'):
+                    history_contents = [c for c in history_contents if c['history_content_type'] == kwds['history_content_type']]
                 history_content_id = history_contents[-1]["id"]
         return history_content_id
 

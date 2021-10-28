@@ -348,6 +348,17 @@ steps:
                                  timeout=DEFAULT_SOCKET_TIMEOUT)
         assert response.status_code == 200, response.text
 
+    @skip_without_tool('detect_errors_aggressive')
+    def test_report_error_bootstrap_admin(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.run_tool_payload(
+                tool_id='detect_errors_aggressive',
+                inputs={'error_bool': 'true'},
+                history_id=history_id,
+            )
+            run_response = self._post("tools", data=payload, key=self.master_api_key)
+            self._assert_status_code_is(run_response, 400)
+
     @skip_without_tool("create_2")
     @uses_test_history(require_new=True)
     def test_deleting_output_keep_running_until_all_deleted(self, history_id):

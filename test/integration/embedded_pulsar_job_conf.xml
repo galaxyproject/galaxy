@@ -10,6 +10,7 @@
         <destination id="local" runner="local">
         </destination>
         <destination id="pulsar_embed" runner="pulsar_embed">
+            <param id="remote_metadata">true</param>
         </destination>
     </destinations>
     <tools>

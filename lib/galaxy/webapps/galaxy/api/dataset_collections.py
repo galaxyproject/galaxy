@@ -76,7 +76,7 @@ class DatasetCollectionsController(
         Iterate over all datasets of a collection and copy datasets with new attributes to a new collection.
         e.g attributes = {'dbkey': 'dm3'}
 
-        * PUT /api/dataset_collections/{hdca_id}:
+        * POST /api/dataset_collections/{hdca_id}/copy:
             create a new dataset collection instance.
         """
 

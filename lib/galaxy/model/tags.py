@@ -403,6 +403,17 @@ class GalaxyTagHandlerSession(GalaxyTagHandler):
         return tag
 
 
+class GalaxySessionlessTagHandler(GalaxyTagHandlerSession):
+
+    def _get_tag(self, tag_name):
+        """Get tag from cache or database."""
+        # Short-circuit session access
+        return self.created_tags.get(tag_name)
+
+    def get_tag_by_name(self, tag_name):
+        self.created_tags.get(tag_name)
+
+
 class CommunityTagHandler(TagHandler):
     def __init__(self, sa_session):
         TagHandler.__init__(self, sa_session)
