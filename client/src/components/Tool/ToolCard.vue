@@ -26,6 +26,9 @@
                         <b-dropdown-item v-if="showDownload" @click="onDownload"
                             ><span class="fa fa-download" /><span v-localize>Download</span>
                         </b-dropdown-item>
+                        <b-dropdown-item v-b-modal.tool-source-viewer
+                            ><span class="fa fa-eye" /><span v-localize>Preview tool source</span>
+                        </b-dropdown-item>
                         <b-dropdown-item v-if="showLink" @click="onLink"
                             ><span class="fa fa-external-link" /><span v-localize
                                 >See in Tool Shed</span
@@ -87,6 +90,16 @@
                     </span>
                 </div>
             </div>
+            <b-modal id="tool-source-viewer" :title="`Tool Source for ${id}`" size="lg">
+                <ToolSourceProvider :id="id" v-slot="{ result }">
+                    <prism
+                        v-if="result"
+                        language="xml"
+                        :code="prettyPrint(result)"
+                        :plugins="['normalize-whitespace']"
+                    ></prism>
+                </ToolSourceProvider>
+            </b-modal>
             <div class="portlet-content">
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormMessage :message="messageText" :variant="messageVariant" />
@@ -119,6 +132,11 @@ import { addFavorite, removeFavorite } from "components/Tool/services";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faWrench } from "@fortawesome/free-solid-svg-icons";
+import { ToolSourceProvider } from "components/providers/ToolSourceProvider";
+import beautify from "xml-beautifier";
+import Prism from "vue-prismjs";
+import "prismjs/themes/prism.css";
+import "prismjs/plugins/normalize-whitespace/prism-normalize-whitespace.js";
 
 library.add(faWrench);
 
@@ -128,6 +146,8 @@ export default {
         FormMessage,
         ToolFooter,
         ToolHelp,
+        Prism,
+        ToolSourceProvider,
     },
     props: {
         id: {
@@ -253,6 +273,9 @@ export default {
                     ariaAlert("failed to remove from favorites");
                 }
             );
+        },
+        prettyPrint(code) {
+            return beautify(code);
         },
         onCopyLink() {
             copyLink(this.id, "Link was copied to your clipboard");
