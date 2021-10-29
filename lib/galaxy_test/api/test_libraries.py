@@ -136,17 +136,32 @@ class LibrariesApiTestCase(ApiTestCase):
         assert available["total"] == 1
         assert available_role_emails[0] == email
 
+    def test_create_library_dataset_bootstrap_user(self, library_name="private_dataset", wait=True):
+        library = self.library_populator.new_private_library(library_name)
+        payload, files = self.library_populator.create_dataset_request(library, file_type="txt", contents="create_test")
+        create_response = self.galaxy_interactor.post("libraries/%s/contents" % library["id"], payload, files=files, key=self.master_api_key)
+        self._assert_status_code_is(create_response, 400)
+
     def test_create_dataset_denied(self):
+        url, payload = self._create_dataset_kwargs()
+        with self._different_user():
+            create_response = self._post(url, payload)
+            self._assert_status_code_is(create_response, 403)
+
+    def test_create_dataset_bootstrap_admin_user(self):
+        url, payload = self._create_dataset_kwargs()
+        with self._different_user():
+            create_response = self._post(url, payload, key=self.master_api_key)
+            self._assert_status_code_is(create_response, 400)
+
+    def _create_dataset_kwargs(self):
         library = self.library_populator.new_private_library("ForCreateDatasets")
         folder_response = self._create_folder(library)
         self._assert_status_code_is(folder_response, 200)
         folder_id = folder_response.json()[0]['id']
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
-        with self._different_user():
-            payload = {'from_hda_id': hda_id}
-            create_response = self._post(f"folders/{folder_id}/contents", payload)
-            self._assert_status_code_is(create_response, 403)
+        return f"folders/{folder_id}/contents", {"from_hda_id": hda_id}
 
     def test_show_private_dataset_permissions(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library("ForCreateDatasets", wait=True)

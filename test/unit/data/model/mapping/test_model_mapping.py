@@ -7292,8 +7292,8 @@ def library(session):
 
 
 @pytest.fixture
-def library_dataset(session):
-    instance = model.LibraryDataset()
+def library_dataset(session, library_dataset_dataset_association):
+    instance = model.LibraryDataset(library_dataset_dataset_association=library_dataset_dataset_association)
     yield from dbcleanup_wrapper(session, instance)
 
 

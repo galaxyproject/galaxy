@@ -194,6 +194,8 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             InsufficientPermissionsException, ItemAccessibilityException,
             InternalServerError
         """
+        if trans.user_is_bootstrap_admin:
+            raise exceptions.RealUserRequiredException("Only real users can create a new library file.")
         encoded_folder_id_16 = self.__decode_library_content_id(trans, encoded_folder_id)
         from_hda_id = payload.pop('from_hda_id', None)
         from_hdca_id = payload.pop('from_hdca_id', None)

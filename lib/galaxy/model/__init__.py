@@ -4520,14 +4520,14 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
         viewonly=True)
 
     datasets = relationship('LibraryDataset',
-        primaryjoin=(lambda: LibraryDataset.folder_id == LibraryFolder.id),  # type: ignore
+        primaryjoin=(lambda: LibraryDataset.folder_id == LibraryFolder.id and LibraryDataset.library_dataset_dataset_association_id.isnot(None)),  # type: ignore
         order_by=(lambda: asc(LibraryDataset._name)),  # type: ignore
         lazy=True,
         viewonly=True)
 
     active_datasets = relationship('LibraryDataset',
         primaryjoin=(
-            'and_(LibraryDataset.folder_id == LibraryFolder.id, not_(LibraryDataset.deleted))'),
+            'and_(LibraryDataset.folder_id == LibraryFolder.id, not_(LibraryDataset.deleted), LibraryDataset.library_dataset_dataset_association_id.isnot(None))'),
         order_by=(lambda: asc(LibraryDataset._name)),  # type: ignore
         lazy=True,
         viewonly=True)
