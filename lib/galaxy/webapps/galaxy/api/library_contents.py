@@ -222,7 +222,7 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         if create_type not in ('file', 'folder', 'collection'):
             raise exceptions.RequestParameterInvalidException(f"Invalid value for 'create_type' parameter ( {create_type} ) specified.")
         if 'upload_option' in payload and payload['upload_option'] not in ('upload_file', 'upload_directory', 'upload_paths'):
-            raise exceptions.RequestParameterInvalidException(f"Invalid value for 'create_type' parameter ( {payload['upload_option']} ) specified.")
+            raise exceptions.RequestParameterInvalidException(f"Invalid value for 'upload_option' parameter ( {payload['upload_option']} ) specified.")
         if 'folder_id' not in payload:
             raise exceptions.RequestParameterMissingException("Missing required 'folder_id' parameter.")
         folder_id = payload.pop('folder_id')
