@@ -57,17 +57,17 @@ class FastAPIDatasetCollections:
     ) -> HDCADetailed:
         return self.service.create(trans, payload)
 
-    @router.put(
-        '/api/dataset_collections/{id}',
+    @router.post(
+        '/api/dataset_collections/{id}/copy',
         summary="Copy the given collection datasets to a new collection using a new `dbkey` attribute.",
     )
-    def update(
+    def copy(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         id: EncodedDatabaseIdField = Path(..., description="The ID of the dataset collection to copy."),
         payload: UpdateCollectionAttributePayload = Body(...),
     ):
-        self.service.update(trans, id, payload)
+        self.service.copy(trans, id, payload)
 
     @router.get(
         '/api/dataset_collections/{id}/attributes',
@@ -166,7 +166,7 @@ class DatasetCollectionsController(BaseGalaxyAPIController):
             create a new dataset collection instance.
         """
         update_payload = UpdateCollectionAttributePayload(**payload)
-        self.service.update(trans, id, update_payload)
+        self.service.copy(trans, id, update_payload)
 
     @expose_api
     def attributes(self, trans: ProvidesHistoryContext, id, instance_type='history'):

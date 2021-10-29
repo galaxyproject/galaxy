@@ -140,7 +140,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         )
         return rval
 
-    def update(self, trans: ProvidesHistoryContext, id: EncodedDatabaseIdField, payload: UpdateCollectionAttributePayload):
+    def copy(self, trans: ProvidesHistoryContext, id: EncodedDatabaseIdField, payload: UpdateCollectionAttributePayload):
         """
         Iterate over all datasets of a collection and copy datasets with new attributes to a new collection.
         e.g attributes = {'dbkey': 'dm3'}
