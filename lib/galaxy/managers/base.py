@@ -65,6 +65,8 @@ class ParsedFilter(NamedTuple):
 parsed_filter = ParsedFilter
 OrmFilterParserType = Union[None, Dict[str, Any], Callable]
 OrmFilterParsersType = Dict[str, OrmFilterParserType]
+FunctionFilterParserType = Dict[str, Any]
+FunctionFilterParsersType = Dict[str, Any]
 
 
 # ==== accessors from base/controller.py
@@ -939,7 +941,7 @@ class ModelFilterParser(HasAModelManager):
     model_class: Type[model._HasTable]
     parsed_filter = parsed_filter
     orm_filter_parsers: OrmFilterParsersType
-    fn_filter_parsers: Dict[str, Dict]
+    fn_filter_parsers: FunctionFilterParsersType
 
     def __init__(self, app: MinimalManagerApp, **kwargs):
         """
