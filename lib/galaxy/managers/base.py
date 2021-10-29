@@ -32,12 +32,14 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generic,
     List,
     NamedTuple,
     Optional,
     Set,
     Tuple,
     Type,
+    TypeVar,
     Union,
 )
 
@@ -500,9 +502,12 @@ class ModelManager:
     #    return item
 
 
+T = TypeVar('T')
+
+
 # ---- code for classes that use one *main* model manager
 # TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
-class HasAModelManager:
+class HasAModelManager(Generic[T]):
     """
     Mixin used where serializers, deserializers, filter parsers, etc.
     need some functionality around the model they're mainly concerned with
@@ -510,7 +515,7 @@ class HasAModelManager:
     """
 
     #: the class used to create this serializer's generically accessible model_manager
-    model_manager_class: Type[object]  # ideally this would be Type[ModelManager] but HistoryContentsManager cannot be a ModelManager
+    model_manager_class: Type[T]  # ideally this would be Type[ModelManager] but HistoryContentsManager cannot be a ModelManager
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
     app: MinimalManagerApp
@@ -520,7 +525,7 @@ class HasAModelManager:
         self.app = app
 
     @property
-    def manager(self):
+    def manager(self) -> T:
         """Return an appropriate manager if it exists, instantiate if not."""
         # PRECONDITION: assumes self.app is assigned elsewhere
         if not self._manager:
@@ -554,7 +559,7 @@ class Serializer(Protocol):
         ...
 
 
-class ModelSerializer(HasAModelManager):
+class ModelSerializer(HasAModelManager[T]):
     """
     Turns models into JSONable dicts.
 
@@ -828,7 +833,7 @@ class Deserializer(Protocol):
         ...
 
 
-class ModelDeserializer(HasAModelManager):
+class ModelDeserializer(HasAModelManager[T]):
     """
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.

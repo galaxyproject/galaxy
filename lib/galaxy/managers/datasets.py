@@ -4,7 +4,7 @@ Manager and Serializer for Datasets.
 import glob
 import logging
 import os
-from typing import Dict, List, Type
+from typing import Dict, List, Type, TypeVar
 
 from galaxy import (
     exceptions,
@@ -22,6 +22,8 @@ from galaxy.structured_app import MinimalManagerApp
 from galaxy.util.checkers import check_binary
 
 log = logging.getLogger(__name__)
+
+T = TypeVar('T')
 
 
 class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
@@ -141,7 +143,7 @@ class DatasetRBACPermissions:
         return ([manage], access)
 
 
-class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
+class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.PurgableSerializerMixin):
     model_manager_class = DatasetManager
 
     def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager):
@@ -443,7 +445,7 @@ class DatasetAssociationManager(base.ModelManager,
         raise exceptions.NotImplemented()
 
 
-class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
+class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T],
                                                        deletable.PurgableSerializerMixin):
 
     def __init__(self, app):
@@ -599,7 +601,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         return id_map
 
 
-class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSerializer):
+class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSerializer[T]):
     # TODO: remove this class - metadata should be a sub-object instead as in the superclass
 
     def add_serializers(self):
