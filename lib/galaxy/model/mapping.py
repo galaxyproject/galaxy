@@ -2092,14 +2092,17 @@ mapper(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
         lazy=True,
         viewonly=True),
     datasets=relation(model.LibraryDataset,
-        primaryjoin=(model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id),
+        primaryjoin=(
+            (model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id)
+            & model.LibraryDataset.table.c.library_dataset_dataset_association_id.isnot(None)),
         order_by=asc(model.LibraryDataset.table.c._name),
         lazy=True,
         viewonly=True),
     active_datasets=relation(model.LibraryDataset,
         primaryjoin=(
             (model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id)
-            & (not_(model.LibraryDataset.table.c.deleted))
+            & (not_(model.LibraryDataset.table.c.deleted)
+            & model.LibraryDataset.table.c.library_dataset_dataset_association_id.isnot(None))
         ),
         order_by=asc(model.LibraryDataset.table.c._name),
         lazy=True,
