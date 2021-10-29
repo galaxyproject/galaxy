@@ -22,7 +22,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             self.history_id,
             instance_type="history",
         )
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = self._check_create_response(create_response)
         returned_datasets = dataset_collection["elements"]
         assert len(returned_datasets) == 2, dataset_collection
@@ -33,11 +33,11 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         payload = dict(
             instance_type="history",
             history_id=self.history_id,
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=element_identifiers,
             collection_type="list",
         )
 
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = self._check_create_response(create_response)
         returned_datasets = dataset_collection["elements"]
         assert len(returned_datasets) == 3, dataset_collection
@@ -47,7 +47,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             self.history_id,
             instance_type="history",
         )
-        pair_create_response = self._post("dataset_collections", pair_payload)
+        pair_create_response = self._post("dataset_collections", pair_payload, json=True)
         dataset_collection = self._check_create_response(pair_create_response)
         hdca_id = dataset_collection["id"]
 
@@ -58,10 +58,10 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         payload = dict(
             instance_type="history",
             history_id=self.history_id,
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=element_identifiers,
             collection_type="list",
         )
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = self._check_create_response(create_response)
         returned_collections = dataset_collection["elements"]
         assert len(returned_collections) == 1, dataset_collection
@@ -73,9 +73,9 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             instance_type="history",
             history_id=self.history_id,
             name="a nested collection",
-            element_identifiers=json.dumps(identifiers),
+            element_identifiers=identifiers,
         )
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = self._check_create_response(create_response)
         assert dataset_collection["collection_type"] == "list:paired"
         assert dataset_collection["name"] == "a nested collection"
@@ -169,10 +169,10 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             payload = dict(
                 instance_type="history",
                 history_id=history_id,
-                element_identifiers=json.dumps(element_identifiers),
+                element_identifiers=element_identifiers,
                 collection_type="paired",
             )
-            create_response = self._post("dataset_collections", payload)
+            create_response = self._post("dataset_collections", payload, json=True)
             self._assert_status_code_is(create_response, 403)
 
     def test_enforces_unique_names(self):
@@ -181,11 +181,11 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         payload = dict(
             instance_type="history",
             history_id=self.history_id,
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=element_identifiers,
             collection_type="list",
         )
 
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         self._assert_status_code_is(create_response, 400)
 
     def test_upload_collection(self):
@@ -488,7 +488,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
     def _create_collection_contents_pair(self):
         # Create a simple collection, return hdca and contents_url
         payload = self.dataset_collection_populator.create_pair_payload(self.history_id, instance_type="history")
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         hdca = self._check_create_response(create_response)
         root_contents_url = self._get_contents_url_for_hdca(hdca)
         return hdca, root_contents_url

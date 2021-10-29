@@ -480,11 +480,11 @@ class GalaxyInteractorApi:
     def _create_collection(self, history_id, collection_def):
         create_payload = dict(
             name=collection_def.name,
-            element_identifiers=dumps(self._element_identifiers(collection_def)),
+            element_identifiers=self._element_identifiers(collection_def),
             collection_type=collection_def.collection_type,
             history_id=history_id,
         )
-        return self._post("dataset_collections", data=create_payload).json()["id"]
+        return self._post("dataset_collections", data=create_payload, json=True).json()["id"]
 
     def _element_identifiers(self, collection_def):
         element_identifiers = []

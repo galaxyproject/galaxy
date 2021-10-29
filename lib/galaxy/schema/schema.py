@@ -87,19 +87,19 @@ DatasetStateField: Dataset.states = Field(
     description="The current state of this dataset.",
 )
 
-CreateTimeField: datetime = Field(
-    ...,
+CreateTimeField = Field(
     title="Create Time",
     description="The time and date this item was created.",
 )
 
-UpdateTimeField: datetime = Field(
-    ...,
+UpdateTimeField = Field(
     title="Update Time",
     description="The last time and date this item was updated.",
 )
 
-CollectionTypeField: str = Field(
+CollectionType = str  # str alias for now
+
+CollectionTypeField = Field(
     ...,
     title="Collection Type",
     description=(
@@ -135,12 +135,11 @@ ElementCountField: Optional[int] = Field(
 )
 
 PopulatedField: bool = Field(
-    ...,
     title="Populated",
     description="Whether the dataset collection elements (and any subcollections elements) were successfully populated.",
 )
 
-ElementsField: List['DCESummary'] = Field(
+ElementsField = Field(
     [],
     title="Elements",
     description="The summary information of each of the elements inside the dataset collection.",
@@ -162,6 +161,11 @@ GenomeBuildField: Optional[str] = Field(
     "?",
     title="Genome Build",
     description="TODO",
+)
+
+ContentsUrlField = Field(
+    title="Contents URL",
+    description="The relative URL to access the contents of this History.",
 )
 
 
@@ -243,6 +247,11 @@ class HistoryContentSource(str, Enum):
     new_collection = "new_collection"
 
 
+class DatasetCollectionInstanceType(str, Enum):
+    history = "history"
+    library = "library"
+
+
 class TagItem(ConstrainedStr):
     regex = re.compile(r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")
 
@@ -322,8 +331,7 @@ class Visualization(Model):  # TODO annotate this model
 class HistoryItemBase(Model):
     """Basic information provided by items contained in a History."""
     id: EncodedDatabaseIdField = EncodedEntityIdField
-    name: str = Field(
-        ...,
+    name: Optional[str] = Field(
         title="Name",
         description="The name of the item.",
     )
@@ -352,8 +360,8 @@ class HistoryItemBase(Model):
 
 class HistoryItemCommon(HistoryItemBase):
     """Common information provided by items contained in a History."""
-    type_id: str = Field(
-        ...,
+    type_id: Optional[str] = Field(
+        default=None,
         title="Type - ID",
         description="The type and the encoded ID of this item. Used for caching.",
         example="dataset-616e371b2cc6c62e",
@@ -363,8 +371,8 @@ class HistoryItemCommon(HistoryItemBase):
         title="Type",
         description="The type of this item.",
     )
-    create_time: datetime = CreateTimeField
-    update_time: datetime = UpdateTimeField
+    create_time: Optional[datetime] = CreateTimeField
+    update_time: Optional[datetime] = UpdateTimeField
     url: RelativeUrl = RelativeUrlField
     tags: TagCollection
 
@@ -396,16 +404,19 @@ class HDAInaccessible(HistoryItemBase):
     state: Dataset.states = DatasetStateField
 
 
+HdaLddaField = Field(
+    DatasetSourceType.hda,
+    const=True,
+    title="HDA or LDDA",
+    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
+    deprecated=False  # TODO Should this field be deprecated in favor of model_class?
+)
+
+
 class HDADetailed(HDASummary):
     """History Dataset Association detailed information."""
     model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
-    hda_ldda: DatasetSourceType = Field(
-        DatasetSourceType.hda,
-        const=True,
-        title="HDA or LDDA",
-        description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
-        deprecated=False  # TODO Should this field be deprecated in favor of model_class?
-    )
+    hda_ldda: DatasetSourceType = HdaLddaField
     accessible: bool = AccessibleField
     genome_build: Optional[str] = GenomeBuildField
     misc_info: str = Field(
@@ -560,10 +571,33 @@ class DCSummary(Model):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
-    collection_type: str = CollectionTypeField
+    collection_type: CollectionType = CollectionTypeField
     populated_state: DatasetCollection.populated_states = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
     element_count: Optional[int] = ElementCountField
+
+
+class HDAObject(Model):
+    """History Dataset Association Object"""
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
+    state: Dataset.states = DatasetStateField
+    hda_ldda: DatasetSourceType = HdaLddaField
+    history_id: EncodedDatabaseIdField = HistoryIdField
+
+    class Config:
+        extra = Extra.allow  # Can contain more fields like metadata_*
+
+
+class DCObject(Model):
+    """Dataset Collection Object"""
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
+    collection_type: CollectionType = CollectionTypeField
+    populated: Optional[bool] = PopulatedField
+    element_count: Optional[int] = ElementCountField
+    contents_url: Optional[RelativeUrl] = ContentsUrlField
+    elements: List['DCESummary'] = ElementsField
 
 
 class DCESummary(Model):
@@ -585,11 +619,14 @@ class DCESummary(Model):
         title="Element Type",
         description="The type of the element. Used to interpret the `object` field.",
     )
-    object: Union[HDASummary, DCSummary] = Field(
+    object: Union[HDAObject, HDADetailed, DCObject] = Field(
         ...,
         title="Object",
         description="The element's specific data depending on the value of `element_type`.",
     )
+
+
+DCObject.update_forward_refs()
 
 
 class DCDetailed(DCSummary):
@@ -607,7 +644,7 @@ class HDCASummary(HistoryItemCommon):
         title="Type",
         description="This is always `collection` for dataset collections.",
     )
-    collection_type: str = CollectionTypeField
+    collection_type: CollectionType = CollectionTypeField
     populated_state: DatasetCollection.populated_states = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
     element_count: Optional[int] = ElementCountField
@@ -621,11 +658,7 @@ class HDCASummary(HistoryItemCommon):
         title="Job Source Type",
         description="The type of job (model class) that produced this dataset collection. Used to track the state of the job.",
     )
-    contents_url: RelativeUrl = Field(
-        ...,
-        title="Contents URL",
-        description="The relative URL to access the contents of this dataset collection.",
-    )
+    contents_url: RelativeUrl = ContentsUrlField
 
 
 class HDCADetailed(HDCASummary):
@@ -729,11 +762,7 @@ HistoryStateIds = Dict[Dataset.states, List[EncodedDatabaseIdField]]
 
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
     """History detailed information."""
-    contents_url: RelativeUrl = Field(
-        ...,
-        title="Contents URL",
-        description="The relative URL to access the contents of this History.",
-    )
+    contents_url: RelativeUrl = ContentsUrlField
     size: int = Field(
         ...,
         title="Size",
@@ -900,6 +929,75 @@ class CreateHistoryPayload(Model):
         default=None,
         title="Archive File",
         description="Uploaded file information when importing the history from a file.",
+    )
+
+
+class CollectionElementIdentifier(Model):
+    name: Optional[str] = Field(
+        None,
+        title="Name",
+        description="The name of the element.",
+    )
+    src: ColletionSourceType = Field(
+        ...,
+        title="Source",
+        description="The source of the element.",
+    )
+    id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        title="ID",
+        description="The encoded ID of the element.",
+    )
+    collection_type: Optional[CollectionType]
+    element_identifiers: Optional[List['CollectionElementIdentifier']] = Field(
+        default=None,
+        title="Element Identifiers",
+        description="List of elements that should be in the new sub-collection.",
+    )
+    tags: Optional[List[str]] = Field(
+        default=None,
+        title="Tags",
+        description="The list of tags associated with the element.",
+    )
+
+
+CollectionElementIdentifier.update_forward_refs()
+
+
+class CreateNewCollectionPayload(Model):
+    collection_type: CollectionType = CollectionTypeField
+    element_identifiers: List[CollectionElementIdentifier] = Field(
+        ...,
+        title="Element Identifiers",
+        description="List of elements that should be in the new collection.",
+    )
+    name: Optional[str] = Field(
+        default=None,
+        title="Name",
+        description="The name of the new collection.",
+    )
+    hide_source_items: Optional[bool] = Field(
+        default=False,
+        title="Hide Source Items",
+        description="Whether to mark the original HDAs as hidden.",
+    )
+    copy_elements: Optional[bool] = Field(
+        default=False,
+        title="Copy Elements",
+        description="Whether to create a copy of the source HDAs for the new collection.",
+    )
+    instance_type: Optional[DatasetCollectionInstanceType] = Field(
+        default=DatasetCollectionInstanceType.history,
+        title="Instance Type",
+        description="The type of the instance, either `history` (default) or `library`.",
+    )
+    history_id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        description="The ID of the history that will contain the collection. Required if `instance_type=history`.",
+    )
+    folder_id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        description="The ID of the history that will contain the collection. Required if `instance_type=library`.",
     )
 
 
@@ -2373,6 +2471,7 @@ class DeleteHDCAResult(Model):
 
 
 AnyHDA = Union[HDASummary, HDADetailed, HDABeta]
+AnyHDCA = Union[HDCABeta, HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Union[AnyHDA, HDCASummary, HDCADetailed, HDCABeta]
 
 AnyJobStateSummary = Union[

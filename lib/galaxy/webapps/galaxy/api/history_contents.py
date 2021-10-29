@@ -284,6 +284,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         """
         serialization_params = parse_serialization_params(**kwd)
         create_payload = CreateHistoryContentPayload(**payload)
+        create_payload.type = kwd.get("type") or create_payload.type
         return self.service.create(trans, history_id, create_payload, serialization_params)
 
     @expose_api
