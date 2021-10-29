@@ -361,8 +361,8 @@ class HistoryItemCommon(HistoryItemBase):
     class Config:
         extra = Extra.allow
 
-    type_id: str = Field(
-        ...,
+    type_id: Optional[str] = Field(
+        default=None,
         title="Type - ID",
         description="The type and the encoded ID of this item. Used for caching.",
         example="dataset-616e371b2cc6c62e",
