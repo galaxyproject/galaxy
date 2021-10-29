@@ -718,7 +718,7 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
         self.orm_filter_parsers.update({
             'name': {'op': ('eq', 'contains', 'like')},
             'state': {'column': '_state', 'op': ('eq', 'in')},
-            'visible': {'op': ('eq'), 'val': self.parse_bool},
+            'visible': {'op': ('eq'), 'val': base.parse_bool},
         })
         self.fn_filter_parsers.update({
             'genome_build': self.string_standard_ops('dbkey'),

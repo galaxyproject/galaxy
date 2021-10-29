@@ -30,6 +30,7 @@ import logging
 import re
 from typing import (
     Any,
+    Callable,
     Dict,
     List,
     NamedTuple,
@@ -62,6 +63,8 @@ class ParsedFilter(NamedTuple):
 
 
 parsed_filter = ParsedFilter
+OrmFilterParserType = Union[None, Dict[str, Any], Callable]
+OrmFilterParsersType = Dict[str, OrmFilterParserType]
 
 
 # ==== accessors from base/controller.py
@@ -191,11 +194,8 @@ class ModelManager:
     def session(self) -> scoped_session:
         return self.app.model.context
 
-    def _session_setattr(self, item, attr, val, fn=None, flush=True):
-        if fn:
-            fn(item, attr, val)
-        else:
-            setattr(item, attr, val)
+    def _session_setattr(self, item: model._HasTable, attr: str, val: Any, flush: bool = True):
+        setattr(item, attr, val)
 
         self.session().add(item)
         if flush:
@@ -938,7 +938,7 @@ class ModelFilterParser(HasAModelManager):
 
     model_class: Type[model._HasTable]
     parsed_filter = parsed_filter
-    orm_filter_parsers: Dict[str, Dict]
+    orm_filter_parsers: OrmFilterParsersType
     fn_filter_parsers: Dict[str, Dict]
 
     def __init__(self, app: MinimalManagerApp, **kwargs):
@@ -1158,17 +1158,6 @@ class ModelFilterParser(HasAModelManager):
 
     # --- more parsers! yay!
     # TODO: These should go somewhere central - we've got ~6 parser modules/sections now
-    def parse_bool(self, bool_string):
-        """
-        Parse a boolean from a string.
-        """
-        # Be strict here to remove complexity of options (but allow already parsed).
-        if bool_string in ('True', True):
-            return True
-        if bool_string in ('False', False):
-            return False
-        raise ValueError(f"invalid boolean: {str(bool_string)}")
-
     def parse_id_list(self, id_list_string, sep=','):
         """
         Split `id_list_string` at `sep`.
@@ -1205,6 +1194,18 @@ class ModelFilterParser(HasAModelManager):
             date_string = ' '.join(group for group in match.groups() if group)
             return date_string
         raise ValueError('datetime strings must be in the ISO 8601 format and in the UTC')
+
+
+def parse_bool(bool_string: Union[str, bool]) -> bool:
+    """
+    Parse a boolean from a string.
+    """
+    # Be strict here to remove complexity of options (but allow already parsed).
+    if bool_string in ('True', True):
+        return True
+    if bool_string in ('False', False):
+        return False
+    raise ValueError(f"invalid boolean: {str(bool_string)}")
 
 
 def raise_filter_err(attr, op, val, msg):
