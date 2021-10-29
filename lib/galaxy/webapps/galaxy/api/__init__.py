@@ -16,6 +16,7 @@ from fastapi import (
     Form,
     Header,
     Query,
+    Request,
     Response,
 )
 from fastapi.params import Depends
@@ -27,7 +28,6 @@ try:
     from starlette_context import context as request_context
 except ImportError:
     request_context = None
-from starlette.requests import Request
 
 from galaxy import (
     app as galaxy_app,

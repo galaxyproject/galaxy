@@ -320,7 +320,9 @@ class HDCASerializer(
 
     def generate_contents_url(self, item, key, **context):
         encode_id = self.app.security.encode_id
-        contents_url = self.url_for('contents_dataset_collection',
+        trans = context.get("trans")
+        url_for = trans.url_builder if trans and trans.url_builder else self.url_for
+        contents_url = url_for('contents_dataset_collection',
             hdca_id=encode_id(item.id),
             parent_id=encode_id(item.collection_id))
         return contents_url
