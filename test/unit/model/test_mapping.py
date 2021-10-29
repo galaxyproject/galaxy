@@ -7005,12 +7005,6 @@ def library(model, session):
 
 
 @pytest.fixture
-def library_dataset(model, session):
-    instance = model.LibraryDataset()
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
 def library_dataset_annotation_association(model, session):
     instance = model.LibraryDatasetAnnotationAssociation()
     yield from dbcleanup_wrapper(session, instance)
@@ -7080,6 +7074,12 @@ def library_dataset_dataset_info_association(
 @pytest.fixture
 def library_dataset_permission(model, session, library_dataset, role):
     instance = model.LibraryDatasetPermissions('a', library_dataset, role)
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
+def library_dataset(model, session, library_dataset_dataset_association):
+    instance = model.LibraryDataset(library_dataset_dataset_association=library_dataset_dataset_association)
     yield from dbcleanup_wrapper(session, instance)
 
 
