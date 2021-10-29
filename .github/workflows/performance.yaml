@@ -1,5 +1,4 @@
 name: Performance tests
-on: [push, pull_request]
 on:
   push:
     paths-ignore:
