@@ -36,7 +36,7 @@ from galaxy.datatypes.metadata import (
     MetadataParameter,
 )
 from galaxy.datatypes.sniff import build_sniff_from_prefix
-from galaxy.util import nice_size, sqlite
+from galaxy.util import compression_utils, nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
 
@@ -2410,22 +2410,134 @@ class Sra(Binary):
             return f'Binary sra file ({nice_size(dataset.get_size())})'
 
 
-class RData(Binary):
-    """Generic R Data file datatype implementation"""
+@build_sniff_from_prefix
+class RData(CompressedArchive):
+    """Generic R Data file datatype implementation, i.e. files generated with R's save or save.img function
+    see https://www.loc.gov/preservation/digital/formats/fdd/fdd000470.shtml
+    and https://cran.r-project.org/doc/manuals/r-patched/R-ints.html#Serialization-Formats
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.rdata')
+    >>> RData().sniff(fname)
+    True
+    >>> from galaxy.util.bunch import Bunch
+    >>> dataset = Bunch()
+    >>> dataset.metadata = Bunch
+    >>> dataset.file_name = fname
+    >>> dataset.has_data = lambda: True
+    >>> RData().set_meta(dataset)
+    >>> dataset.metadata.version
+    '3'
+    """
+    VERSION_2_PREFIX = b'RDX2\nX\n'
+    VERSION_3_PREFIX = b'RDX3\nX\n'
     file_ext = 'rdata'
 
-    def sniff(self, filename):
-        rdata_header = b'RDX2\nX\n'
-        try:
-            header = open(filename, 'rb').read(7)
-            if header == rdata_header:
-                return True
+    MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
 
-            header = gzip.open(filename).read(7)
-            if header == rdata_header:
-                return True
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        _, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
+        try:
+            dataset.metadata.version = self._parse_rdata_header(fh)
+        except Exception:
+            pass
+        finally:
+            fh.close()
+
+    def sniff_prefix(self, sniff_prefix):
+        return sniff_prefix.startswith_bytes((self.VERSION_2_PREFIX, self.VERSION_3_PREFIX))
+
+    def _parse_rdata_header(self, fh):
+        header = fh.read(7)
+        if header == self.VERSION_2_PREFIX:
+            return "2"
+        elif header == self.VERSION_3_PREFIX:
+            return "3"
+        else:
+            raise ValueError()
+
+
+@build_sniff_from_prefix
+class RDS(CompressedArchive):
+    """
+    File using a serialized R object generated with R's saveRDS function
+    see https://cran.r-project.org/doc/manuals/r-patched/R-ints.html#Serialization-Formats
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('int-r3.rds')
+    >>> RDS().sniff(fname)
+    True
+    >>> fname = get_test_fname('int-r4.rds')
+    >>> RDS().sniff(fname)
+    True
+    >>> fname = get_test_fname('int-r3-version2.rds')
+    >>> RDS().sniff(fname)
+    True
+    >>> from galaxy.util.bunch import Bunch
+    >>> dataset = Bunch()
+    >>> dataset.metadata = Bunch
+    >>> dataset.file_name = get_test_fname('int-r4.rds')
+    >>> dataset.has_data = lambda: True
+    >>> RDS().set_meta(dataset)
+    >>> dataset.metadata.version
+    '3'
+    >>> dataset.metadata.rversion
+    '4.1.1'
+    >>> dataset.metadata.minrversion
+    '3.5.0'
+    """
+    file_ext = 'rds'
+
+    MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
+    MetadataElement(name="rversion", default=None, desc="R version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
+    MetadataElement(name="minrversion", default=None, desc="minimum R version", param=MetadataParameter, readonly=False, visible=True, optional=False, no_value=None)
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        _, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
+        try:
+            _, dataset.metadata.version, dataset.metadata.rversion, dataset.metadata.minrversion = self._parse_rds_header(fh.read(14))
+        except Exception:
+            pass
+        finally:
+            fh.close()
+
+    def sniff_prefix(self, sniff_prefix):
+        try:
+            self._parse_rds_header(sniff_prefix.contents_header_bytes[:14])
         except Exception:
             return False
+        return True
+
+    def _parse_rds_header(self, header_bytes):
+        """
+        get the header info from a rds file
+        - starts with b'X\n' or 'A\n'
+        - then 3 integers (each 4bytes) encoded with base 10, e.g. b"\x00\x03\x06\x03" for version "3.6.3"
+          - the serialization version (2/3)
+          - the r version used to generate the file
+          - the minimum r version needed to read the file
+        """
+        header = header_bytes[:2]
+        if header == b'X\n':
+            mode = "X"
+        elif header == b'A\n':
+            mode = "A"
+        else:
+            raise Exception()
+        version = header_bytes[2:6]
+        rversion = header_bytes[6:10]
+        minrversion = header_bytes[10:14]
+        version = int("".join([str(_) for _ in version]))
+        if version not in [2, 3]:
+            raise Exception()
+        rversion = int("".join([str(_) for _ in rversion]))
+        minrversion = int("".join([str(_) for _ in minrversion]))
+        version = ".".join(str(version))
+        rversion = ".".join(str(rversion))
+        minrversion = ".".join(str(minrversion))
+        return mode, version, rversion, minrversion
 
 
 class OxliBinary(Binary):

@@ -214,26 +214,21 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
                     in that case a list of such dictionaries is returned.
         :rtype:     object
         """
+        if trans.user_is_bootstrap_admin:
+            raise exceptions.RealUserRequiredException("Only real users can create a new library file or folder.")
         if 'create_type' not in payload:
-            trans.response.status = 400
-            return "Missing required 'create_type' parameter."
-        else:
-            create_type = payload.pop('create_type')
+            raise exceptions.RequestParameterMissingException("Missing required 'create_type' parameter.")
+        create_type = payload.pop('create_type')
         if create_type not in ('file', 'folder', 'collection'):
-            trans.response.status = 400
-            return f"Invalid value for 'create_type' parameter ( {create_type} ) specified."
-
+            raise exceptions.RequestParameterInvalidException(f"Invalid value for 'create_type' parameter ( {create_type} ) specified.")
+        if 'upload_option' in payload and payload['upload_option'] not in ('upload_file', 'upload_directory', 'upload_paths'):
+            raise exceptions.RequestParameterInvalidException(f"Invalid value for 'upload_option' parameter ( {payload['upload_option']} ) specified.")
         if 'folder_id' not in payload:
-            trans.response.status = 400
-            return "Missing required 'folder_id' parameter."
-        else:
-            folder_id = payload.pop('folder_id')
-            class_name, folder_id = self._decode_library_content_id(folder_id)
-        try:
-            # security is checked in the downstream controller
-            parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
-        except Exception as e:
-            return util.unicodify(e)
+            raise exceptions.RequestParameterMissingException("Missing required 'folder_id' parameter.")
+        folder_id = payload.pop('folder_id')
+        _, folder_id = self._decode_library_content_id(folder_id)
+        # security is checked in the downstream controller
+        parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
         # The rest of the security happens in the library_common controller.
         real_folder_id = trans.security.encode_id(parent.id)
 
@@ -326,9 +321,6 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         error = False
         if upload_option == 'upload_paths':
             validate_path_upload(trans)  # Duplicate check made in _upload_dataset.
-        elif upload_option not in ('upload_file', 'upload_directory', 'upload_paths'):
-            error = True
-            message = 'Invalid upload_option'
         elif roles:
             # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
             # on the dataset that would cause accessibility issues.

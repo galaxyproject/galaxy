@@ -403,7 +403,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         this check.
         """
         if not trans.user:
-            return False
+            raise exceptions.ItemAccessibilityException("Anonymous users cannot add to library items")
 
         current_user_roles = trans.get_current_user_roles()
         if trans.user_is_admin:
