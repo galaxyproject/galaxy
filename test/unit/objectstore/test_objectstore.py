@@ -13,7 +13,7 @@ from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
 from galaxy.objectstore.unittest_utils import (
-      Config as TestConfig,
+    Config as TestConfig,
     DISK_TEST_CONFIG,
     DISK_TEST_CONFIG_YAML,
 )

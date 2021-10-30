@@ -300,10 +300,9 @@ def set_metadata_portable():
                     dataset.state = dataset.dataset.state = final_job_state
 
             if extended_metadata_collection:
-                outputs_to_working = external_filename.startswith(tool_job_working_directory) and os.path.getsize(external_filename)
-                if not link_data_only and outputs_to_working:
-                    # outputs to working directory, and not already pushed by pulsar + extended metadata,
-                    # move output to final destination.
+                if not link_data_only and os.path.getsize(external_filename):
+                    # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
+                    # or a remote object store from its cache path.
                     object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
                 # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
