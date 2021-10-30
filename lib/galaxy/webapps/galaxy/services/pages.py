@@ -14,6 +14,7 @@ from galaxy.managers.pages import (
     PageManager,
     PageSerializer,
 )
+from galaxy.schema import PdfDocumentType
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     CreatePagePayload,
@@ -128,4 +129,4 @@ class PagesService(ServiceBase):
         if page.latest_revision.content_format != PageContentFormat.markdown.value:
             raise exceptions.RequestParameterInvalidException("PDF export only allowed for Markdown based pages")
         internal_galaxy_markdown = page.latest_revision.content
-        return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, 'page')
+        return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, PdfDocumentType.page)
