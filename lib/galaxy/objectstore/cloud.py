@@ -17,6 +17,7 @@ from galaxy.util import (
     directory_hash_id,
     safe_relpath,
     umask_fix_perms,
+    unlink,
 )
 from galaxy.util.sleeper import Sleeper
 from .s3 import parse_config_xml
@@ -608,7 +609,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path))
+                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
                 results = self.bucket.objects.list(prefix=rel_path)
                 for key in results:
                     log.debug("Deleting key %s", key.name)
@@ -616,7 +617,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 return True
             else:
                 # Delete from cache first
-                os.unlink(self._get_cache_path(rel_path))
+                unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
                 if self._key_exists(rel_path):
                     key = self.bucket.objects.get(rel_path)
