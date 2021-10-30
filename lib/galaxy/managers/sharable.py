@@ -486,8 +486,8 @@ class SharableModelFilters(base.ModelFilterParser,
         ratable.RatableFilterMixin._add_parsers(self)
 
         self.orm_filter_parsers.update({
-            'importable': {'op': ('eq'), 'val': self.parse_bool},
-            'published': {'op': ('eq'), 'val': self.parse_bool},
+            'importable': {'op': ('eq'), 'val': base.parse_bool},
+            'published': {'op': ('eq'), 'val': base.parse_bool},
             'slug': {'op': ('eq', 'contains', 'like')},
             # chose by user should prob. only be available for admin? (most often we'll only need trans.user)
             # 'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },

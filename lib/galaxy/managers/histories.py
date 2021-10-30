@@ -7,6 +7,8 @@ created (or copied) by users over the course of an analysis.
 import logging
 from typing import (
     cast,
+    Dict,
+    List,
     Optional,
     Set,
 )
@@ -28,6 +30,7 @@ from galaxy.managers import (
     sharable
 )
 from galaxy.managers.base import (
+    Serializer,
     SortableManager,
 )
 from galaxy.schema.schema import (
@@ -445,39 +448,41 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         super().add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
 
-        self.serializers.update({
-            'model_class': lambda *a, **c: 'History',
-            'size': lambda i, k, **c: int(i.disk_size),
-            'nice_size': lambda i, k, **c: i.disk_nice_size,
+        serializers: Dict[str, Serializer] = {
+            'model_class': lambda item, key, **context: 'History',
+            'size': lambda item, key, **context: int(item.disk_size),
+            'nice_size': lambda item, key, **context: item.disk_nice_size,
             'state': self.serialize_history_state,
 
-            'url': lambda i, k, **c: self.url_for('history', id=self.app.security.encode_id(i.id)),
-            'contents_url': lambda i, k, **c: self.url_for('history_contents',
-                                                           history_id=self.app.security.encode_id(i.id)),
+            'url': lambda item, key, **context: self.url_for('history', id=self.app.security.encode_id(item.id)),
+            'contents_url': lambda item, key, **context: self.url_for('history_contents',
+                                                           history_id=self.app.security.encode_id(item.id)),
 
-            'empty': lambda i, k, **c: (len(i.datasets) + len(i.dataset_collections)) <= 0,
-            'count': lambda i, k, **c: len(i.datasets),
-            'hdas': lambda i, k, **c: [self.app.security.encode_id(hda.id) for hda in i.datasets],
+            'empty': lambda item, key, **context: (len(item.datasets) + len(item.dataset_collections)) <= 0,
+            'count': lambda item, key, **context: len(item.datasets),
+            'hdas': lambda item, key, **context: [self.app.security.encode_id(hda.id) for hda in item.datasets],
             'state_details': self.serialize_state_counts,
             'state_ids': self.serialize_state_ids,
             'contents': self.serialize_contents,
-            'non_ready_jobs': lambda i, k, **c: [self.app.security.encode_id(job.id) for job
-                                                 in self.manager.non_ready_jobs(i)],
+            'non_ready_jobs': lambda item, key, **context: [self.app.security.encode_id(job.id) for job
+                                                 in self.manager.non_ready_jobs(item)],
 
             'contents_states': self.serialize_contents_states,
             'contents_active': self.serialize_contents_active,
             #  TODO: Use base manager's serialize_id for user_id (and others)
             #  after refactoring hierarchy here?
-            'user_id': lambda i, k, **c: self.app.security.encode_id(i.user_id) if i.user_id is not None else None
-        })
+            'user_id': lambda item, key, **context: self.app.security.encode_id(item.user_id) if item.user_id is not None else None
+        }
+        self.serializers.update(serializers)
 
     # remove this
-    def serialize_state_ids(self, history, key, **context):
+    def serialize_state_ids(self, item, key, **context):
         """
         Return a dictionary keyed to possible dataset states and valued with lists
         containing the ids of each HDA in that state.
         """
-        state_ids = {}
+        history = item
+        state_ids: Dict[str, List[str]] = {}
         for state in model.Dataset.states.values():
             state_ids[state] = []
 
@@ -489,11 +494,12 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         return state_ids
 
     # remove this
-    def serialize_state_counts(self, history, key, exclude_deleted=True, exclude_hidden=False, **context):
+    def serialize_state_counts(self, item, key, exclude_deleted=True, exclude_hidden=False, **context):
         """
         Return a dictionary keyed to possible dataset states and valued with the number
         of datasets in this history that have those states.
         """
+        history = item
         # TODO: the default flags above may not make a lot of sense (T,T?)
         state_counts = {}
         for state in model.Dataset.states.values():
@@ -509,10 +515,11 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         return state_counts
 
     # TODO: remove this (is state used/useful?)
-    def serialize_history_state(self, history, key, **context):
+    def serialize_history_state(self, item, key, **context):
         """
         Returns the history state based on the states of the HDAs it contains.
         """
+        history = item
         states = model.Dataset.states
         # (default to ERROR)
         state = states.ERROR
@@ -540,7 +547,8 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
 
         return state
 
-    def serialize_contents(self, history, key, trans=None, user=None, **context):
+    def serialize_contents(self, item, key, trans=None, user=None, **context):
+        history = item
         returned = []
         for content in self.manager.contents_manager._union_of_contents_query(history).all():
             serialized = self.history_contents_serializer.serialize_to_view(content,
@@ -548,16 +556,17 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             returned.append(serialized)
         return returned
 
-    def serialize_contents_states(self, history, key, trans=None, **context):
+    def serialize_contents_states(self, item, key, trans=None, **context):
         """
         Return a dictionary containing the counts of all contents in each state
         keyed by the distinct states.
 
         Note: does not include deleted/hidden contents.
         """
+        history = item
         return self.manager.contents_manager.state_counts(history)
 
-    def serialize_contents_active(self, history, key, **context):
+    def serialize_contents_active(self, item, key, **context):
         """
         Return a dictionary keyed with 'deleted', 'hidden', and 'active' with values
         for each representing the count of contents in each state.
@@ -565,6 +574,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         Note: counts for deleted and hidden overlap; In other words, a dataset that's
         both deleted and hidden will be added to both totals.
         """
+        history = item
         return self.manager.contents_manager.active_counts(history)
 
 

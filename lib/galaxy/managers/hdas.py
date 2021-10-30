@@ -260,7 +260,7 @@ class HDAManager(datasets.DatasetAssociationManager,
 
 
 class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,
-        datasets.DatasetAssociationSerializer,
+        datasets.DatasetAssociationSerializer[HDAManager],
         taggable.TaggableSerializerMixin,
         annotatable.AnnotatableSerializerMixin):
     model_manager_class = HDAManager

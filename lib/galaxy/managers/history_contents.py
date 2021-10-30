@@ -33,7 +33,11 @@ from galaxy.managers import (
     tools
 )
 from galaxy.structured_app import MinimalManagerApp
-from .base import raise_filter_err, Serializer
+from .base import (
+    parse_bool,
+    raise_filter_err,
+    Serializer,
+)
 
 log = logging.getLogger(__name__)
 
@@ -548,7 +552,7 @@ class HistoryContentsFilters(base.ModelFilterParser,
             # 'hid-in'        : { 'op': ( 'in' ), 'val': self.parse_int_list },
             'name': {'op': ('eq', 'contains', 'like')},
             'state': {'op': ('eq', 'in')},
-            'visible': {'op': ('eq'), 'val': self.parse_bool},
+            'visible': {'op': ('eq'), 'val': parse_bool},
             'create_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
             'update_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
         })

@@ -30,13 +30,16 @@ import logging
 import re
 from typing import (
     Any,
+    Callable,
     Dict,
+    Generic,
     List,
     NamedTuple,
     Optional,
     Set,
     Tuple,
     Type,
+    TypeVar,
     Union,
 )
 
@@ -62,6 +65,10 @@ class ParsedFilter(NamedTuple):
 
 
 parsed_filter = ParsedFilter
+OrmFilterParserType = Union[None, Dict[str, Any], Callable]
+OrmFilterParsersType = Dict[str, OrmFilterParserType]
+FunctionFilterParserType = Dict[str, Any]
+FunctionFilterParsersType = Dict[str, Any]
 
 
 # ==== accessors from base/controller.py
@@ -191,11 +198,8 @@ class ModelManager:
     def session(self) -> scoped_session:
         return self.app.model.context
 
-    def _session_setattr(self, item, attr, val, fn=None, flush=True):
-        if fn:
-            fn(item, attr, val)
-        else:
-            setattr(item, attr, val)
+    def _session_setattr(self, item: model._HasTable, attr: str, val: Any, flush: bool = True):
+        setattr(item, attr, val)
 
         self.session().add(item)
         if flush:
@@ -498,9 +502,12 @@ class ModelManager:
     #    return item
 
 
+T = TypeVar('T')
+
+
 # ---- code for classes that use one *main* model manager
 # TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
-class HasAModelManager:
+class HasAModelManager(Generic[T]):
     """
     Mixin used where serializers, deserializers, filter parsers, etc.
     need some functionality around the model they're mainly concerned with
@@ -508,7 +515,7 @@ class HasAModelManager:
     """
 
     #: the class used to create this serializer's generically accessible model_manager
-    model_manager_class: Type[object]  # ideally this would be Type[ModelManager] but HistoryContentsManager cannot be a ModelManager
+    model_manager_class: Type[T]  # ideally this would be Type[ModelManager] but HistoryContentsManager cannot be a ModelManager
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
     app: MinimalManagerApp
@@ -518,7 +525,7 @@ class HasAModelManager:
         self.app = app
 
     @property
-    def manager(self):
+    def manager(self) -> T:
         """Return an appropriate manager if it exists, instantiate if not."""
         # PRECONDITION: assumes self.app is assigned elsewhere
         if not self._manager:
@@ -552,7 +559,7 @@ class Serializer(Protocol):
         ...
 
 
-class ModelSerializer(HasAModelManager):
+class ModelSerializer(HasAModelManager[T]):
     """
     Turns models into JSONable dicts.
 
@@ -826,7 +833,7 @@ class Deserializer(Protocol):
         ...
 
 
-class ModelDeserializer(HasAModelManager):
+class ModelDeserializer(HasAModelManager[T]):
     """
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.
@@ -938,8 +945,8 @@ class ModelFilterParser(HasAModelManager):
 
     model_class: Type[model._HasTable]
     parsed_filter = parsed_filter
-    orm_filter_parsers: Dict[str, Dict]
-    fn_filter_parsers: Dict[str, Dict]
+    orm_filter_parsers: OrmFilterParsersType
+    fn_filter_parsers: FunctionFilterParsersType
 
     def __init__(self, app: MinimalManagerApp, **kwargs):
         """
@@ -1158,17 +1165,6 @@ class ModelFilterParser(HasAModelManager):
 
     # --- more parsers! yay!
     # TODO: These should go somewhere central - we've got ~6 parser modules/sections now
-    def parse_bool(self, bool_string):
-        """
-        Parse a boolean from a string.
-        """
-        # Be strict here to remove complexity of options (but allow already parsed).
-        if bool_string in ('True', True):
-            return True
-        if bool_string in ('False', False):
-            return False
-        raise ValueError(f"invalid boolean: {str(bool_string)}")
-
     def parse_id_list(self, id_list_string, sep=','):
         """
         Split `id_list_string` at `sep`.
@@ -1205,6 +1201,18 @@ class ModelFilterParser(HasAModelManager):
             date_string = ' '.join(group for group in match.groups() if group)
             return date_string
         raise ValueError('datetime strings must be in the ISO 8601 format and in the UTC')
+
+
+def parse_bool(bool_string: Union[str, bool]) -> bool:
+    """
+    Parse a boolean from a string.
+    """
+    # Be strict here to remove complexity of options (but allow already parsed).
+    if bool_string in ('True', True):
+        return True
+    if bool_string in ('False', False):
+        return False
+    raise ValueError(f"invalid boolean: {str(bool_string)}")
 
 
 def raise_filter_err(attr, op, val, msg):
