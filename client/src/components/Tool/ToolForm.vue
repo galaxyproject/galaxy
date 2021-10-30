@@ -102,6 +102,7 @@ import ConfigProvider from "components/providers/ConfigProvider";
 import LoadingSpan from "components/LoadingSpan";
 import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
+import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import ToolSuccess from "./ToolSuccess";
 import UserHistories from "components/History/providers/UserHistories";
 import Webhook from "components/Common/Webhook";
@@ -115,6 +116,7 @@ export default {
         FormDisplay,
         ToolCard,
         FormElement,
+        ToolEntryPoints,
         ToolSuccess,
         UserHistories,
         Webhook,
