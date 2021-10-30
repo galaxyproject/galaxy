@@ -23,7 +23,8 @@ from galaxy.exceptions import (
 )
 from galaxy.util import (
     directory_hash_id,
-    umask_fix_perms
+    umask_fix_perms,
+    unlink,
 )
 from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
@@ -428,7 +429,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual blob in Azure and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path))
+                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
                 blobs = self.service.list_blobs(self.container_name, prefix=rel_path)
                 for blob in blobs:
                     log.debug("Deleting from Azure: %s", blob)
@@ -436,7 +437,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
                 return True
             else:
                 # Delete from cache first
-                os.unlink(self._get_cache_path(rel_path))
+                unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
                 if self._in_azure(rel_path):
                     log.debug("Deleting from Azure: %s", rel_path)
