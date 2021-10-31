@@ -55,32 +55,87 @@ News Webhook
 
 You might be reading this in the recently added "News" feature! This is the very first iteration of this component, hopefully in the future we will expand it to bring you all of your news and Galaxy notifications. The idea with the current iteration is that whenever your server admin updates Galaxy to a new version, everyone using the server will get a small, non-intrusive notification with these release notes! There you can find out all of the new features in Galaxy and quick videos on their use. (`Pull Request 12396`_)
 
+.. visualizations
+* Fix _get_reference_data method signature
+  `Pull Request 12562`_
+* Fix new user welcome plugin build status storage/detection
+  `Pull Request 12779`_
+* Fix msa visualization
+  `Pull Request 12782`_
 
 New Datatypes
 ===========================================================
 
 .. datatypes
+* Convert/standardize to fstrings across `lib`
+  `Pull Request 11338`_
+* Added documentation for FASTQ datatypes and implemented quality check
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11931`_
 * Make dataset preview for h5mlm datatype
   (thanks to `@qiagu <https://github.com/qiagu>`__).
   `Pull Request 11935`_
 * Add datatypes for Structural Materials Hexrd application
   (thanks to `@jj-umn <https://github.com/jj-umn>`__).
   `Pull Request 11957`_
+* Adding new subclass types
+  (thanks to `@maikenp <https://github.com/maikenp>`__).
+  `Pull Request 12097`_
+* Converters: use target datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12185`_
 * Add bref3 datatype
   (thanks to `@gallardoalba <https://github.com/gallardoalba>`__).
   `Pull Request 12199`_
+* Converters: add missing tests and add linting to converter tests
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12202`_
+* Converters: Unify converters to tabix and bgzip
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12213`_
+* Converters: Unify molecules converters
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12214`_
+* Converters: Unify dcd, trr, xtc
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12224`_
+* converters: Unify bcf converters
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12225`_
+* Fix edta metadata setting
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12273`_
 * mothur datatype: PairwiseDistanceMatrix sniffer may be too unspecific
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12280`_
 * Add "ExpressionSet RData object" Datatype
   (thanks to `@mtekman <https://github.com/mtekman>`__).
   `Pull Request 12336`_
+* Small fix in binary.py
+  (thanks to `@melibleq <https://github.com/melibleq>`__).
+  `Pull Request 12384`_
+* also parse sam metadata from sam files
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12392`_
 * Add ONNX datatype
   (thanks to `@anuprulez <https://github.com/anuprulez>`__).
   `Pull Request 12429`_
+* Drop bcftools requirement from set_metadata tool
+  `Pull Request 12472`_
 * Fix cmap sniffer
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 12509`_
+* Add support for RDS files and improvements for RData
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12712`_
+* Add file_ext property to Pretext and others datatypes
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12713`_
+* Make vg a subclass of CompressedArchive
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12718`_
+* Yaml datatype backport
+  `Pull Request 12745`_
 
 Builtin Tool Updates
 ===========================================================
@@ -125,6 +180,11 @@ Builtin Tool Updates
   `Pull Request 12372`_
 * Lock location file before adding values
   `Pull Request 12446`_
+* Modernize sorter (sort1) tool
+  `Pull Request 12619`_
+* Improve error handling in DirectoryUriToolParameter validation
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12760`_
 
 Release Testing Team
 ===========================================================
