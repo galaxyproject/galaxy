@@ -156,7 +156,7 @@ Builtin Tool Updates
   `Pull Request 12166`_
 * Remove unused legacy controller things
   `Pull Request 12172`_
-* add <creator> to the tool schema template, use live links in xsd
+* Add <creator> to the tool schema template, use live links in xsd
   `Pull Request 12242`_
 * Systematic handling of remotely required tool files.
   `Pull Request 12250`_
