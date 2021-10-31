@@ -6,7 +6,6 @@ from operator import itemgetter
 
 import requests
 
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
 from galaxy_test.base.populators import (
@@ -322,32 +321,26 @@ steps:
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error(self):
         with self.dataset_populator.test_history() as history_id:
-            payload = self.dataset_populator.run_tool_payload(
-                tool_id='detect_errors_aggressive',
-                inputs={'error_bool': 'true'},
-                history_id=history_id,
-            )
-            run_response = self._post("tools", data=payload).json()
-            job_id = run_response['jobs'][0]["id"]
-            self.dataset_populator.wait_for_job(job_id)
-            dataset_id = run_response['outputs'][0]['id']
-            response = self._post(f'jobs/{job_id}/error',
-                                  data={'dataset_id': dataset_id})
-            assert response.status_code == 200, response.text
+            self._run_error_report(history_id)
 
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error_anon(self):
-        # Need to get a cookie and use that for anonymous tool runs
-        cookies = requests.get(self.url, timeout=DEFAULT_SOCKET_TIMEOUT).cookies
-        payload = json.dumps({"tool_id": "detect_errors_aggressive",
-                              "inputs": {"error_bool": "true"}})
-        run_response = requests.post(f"{self.galaxy_interactor.api_url}/tools", data=payload, cookies=cookies, timeout=DEFAULT_SOCKET_TIMEOUT).json()
+        with self._different_user(anon=True):
+            history_id = self.dataset_populator.new_history()
+            self._run_error_report(history_id)
+
+    def _run_error_report(self, history_id):
+        payload = self.dataset_populator.run_tool_payload(
+            tool_id='detect_errors_aggressive',
+            inputs={'error_bool': 'true'},
+            history_id=history_id,
+        )
+        run_response = self._post("tools", data=payload).json()
         job_id = run_response['jobs'][0]["id"]
+        self.dataset_populator.wait_for_job(job_id)
         dataset_id = run_response['outputs'][0]['id']
-        response = requests.post(f'{self.galaxy_interactor.api_url}/jobs/{job_id}/error',
-                                 data={'email': 'someone@domain.com', 'dataset_id': dataset_id},
-                                 cookies=cookies,
-                                 timeout=DEFAULT_SOCKET_TIMEOUT)
+        response = self._post(f'jobs/{job_id}/error',
+                              data={'dataset_id': dataset_id})
         assert response.status_code == 200, response.text
 
     @skip_without_tool('detect_errors_aggressive')
