@@ -6,19 +6,8 @@
 
 .. announce_start
 
-Please note that the release is still being tested and finalized, and that these
-are pre-release notes.
-
-Check back here for the official and comprehensive notes soon!
-
-
 Enhancements
 -------------------------------
-
-.. major_feature
-
-
-.. feature
 
 * New User Welcome page
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
@@ -42,10 +31,6 @@ Enhancements
   `Pull Request 12396`_
 * Various fixes and enhancements for metadata_strategy: extended
   `Pull Request 12785`_
-.. enhancement_tag_viz
-
-.. enhancement_tag_datatypes
-
 * Convert/standardize to fstrings across `lib`
   `Pull Request 11338`_
 * Added documentation for FASTQ datatypes and implemented quality check
@@ -90,8 +75,6 @@ Enhancements
 * Add support for RDS files and improvements for RData
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12712`_
-.. enhancement_tag_tools
-
 * Changes to Collection Operation Help sections and parameter names
   `Pull Request 11068`_
 * Update bam.iobio interactive tool wrapper
@@ -115,10 +98,6 @@ Enhancements
 * Improve error handling in DirectoryUriToolParameter validation
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 12760`_
-.. enhancement_tag_workflows
-
-.. enhancement_tag_ui
-
 * Beta history selenium updates and assorted bug fixes
   `Pull Request 12351`_
 * webpack dev server on remote galaxy server
@@ -126,8 +105,6 @@ Enhancements
   `Pull Request 12356`_
 * Charts downloads fixes and enhancements.
   `Pull Request 12726`_
-.. enhancement_tag_jobs
-
 * SGE DRMAA example for queue, RAM and CPUs request
   (thanks to `@pcm32 <https://github.com/pcm32>`__).
   `Pull Request 12059`_
@@ -142,8 +119,6 @@ Enhancements
   `Pull Request 12350`_
 * Add config options for controlling handler and runner monitor thread sleep.
   `Pull Request 12473`_
-.. enhancement_tag_admin
-
 * Make conda_auto_init option overrridable
   (thanks to `@rhpvorderman <https://github.com/rhpvorderman>`__).
   `Pull Request 12200`_
@@ -159,8 +134,6 @@ Enhancements
   `Pull Request 12484`_
 * Don't change panel view after installing repositories, clean up provider
   `Pull Request 12677`_
-.. enhancement
-
 * Test configuration for running Selenium tests against beta history panel.
   `Pull Request 10965`_
 * Add `negate` attribute to validators .. and tests for all
@@ -354,8 +327,6 @@ Enhancements
   `Pull Request 12798`_
 * If datatype is unknown display warning when trying to connect nodes
   `Pull Request 12807`_
-.. small_enhancement
-
 * Refactor Sharing
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 11701`_
@@ -468,19 +439,12 @@ Enhancements
 Fixes
 -------------------------------
 
-.. major_bug
-
-
-.. bug_tag_viz
-
 * Fix _get_reference_data method signature
   `Pull Request 12562`_
 * Fix new user welcome plugin build status storage/detection
   `Pull Request 12779`_
 * Fix msa visualization
   `Pull Request 12782`_
-.. bug_tag_datatypes
-
 * Fix edta metadata setting
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12273`_
@@ -499,8 +463,6 @@ Fixes
 * Make vg a subclass of CompressedArchive
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12718`_
-.. bug_tag_tools
-
 * Fix typo in `interactivetool_jupyter_notebook.xml` help section
   (thanks to `@maximskorik <https://github.com/maximskorik>`__).
   `Pull Request 12077`_
@@ -511,8 +473,6 @@ Fixes
   `Pull Request 12166`_
 * Restore Grep1 version 1.0.1
   `Pull Request 12252`_
-.. bug_tag_workflows
-
 * Add switch for optional select in workflow editor
   `Pull Request 12138`_
 * Do not persist tool state when invoking workflow
@@ -529,16 +489,12 @@ Fixes
   `Pull Request 12640`_
 * Flush new history before adding items
   `Pull Request 12771`_
-.. bug_tag_ui
-
 * Swap to galaxy fork of bootstrap-tour
   `Pull Request 12210`_
 * Beta history annotation, title, and tag editor
   `Pull Request 12299`_
 * Fix typo in docs
   `Pull Request 12450`_
-.. bug_tag_jobs
-
 * Handle k8s job creation failures
   (thanks to `@brinkmanlab <https://github.com/brinkmanlab>`__).
   `Pull Request 11715`_
@@ -580,13 +536,9 @@ Fixes
 * Use correct path for cgroup metrics when running within containers
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 12792`_
-.. bug_tag_admin
-
 * change doc for ftp_upload_dir/site
   (thanks to `@lldelisle <https://github.com/lldelisle>`__).
   `Pull Request 12164`_
-.. bug
-
 * Fix non-closing masthread downdown
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 11962`_

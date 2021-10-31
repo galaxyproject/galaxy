@@ -66,7 +66,6 @@ You might be reading this in the recently added "News" feature! This is the very
 New Datatypes
 ===========================================================
 
-.. datatypes
 * Convert/standardize to fstrings across `lib`
   `Pull Request 11338`_
 * Added documentation for FASTQ datatypes and implemented quality check
@@ -140,7 +139,6 @@ New Datatypes
 Builtin Tool Updates
 ===========================================================
 
-.. tools
 * Changes to Collection Operation Help sections and parameter names
   `Pull Request 11068`_
 * GPU enabled jupyter notebook for machine learning powered by Jupyter lab and Tensorflow
