@@ -966,6 +966,15 @@ class JobWrapper(HasResourceParameters):
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
         self.__working_directory = None
+        self.__outputs_to_working_directory = None
+
+    def disable_outputs_to_working_directory(self):
+        self.__outputs_to_working_directory = False
+
+    @property
+    def outputs_to_working_directory(self):
+        if self.__outputs_to_working_directory is None:
+            self.__outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
 
     @property
     def external_output_metadata(self):
@@ -982,8 +991,7 @@ class JobWrapper(HasResourceParameters):
     @property
     def _job_dataset_path_rewriter(self):
         if self._dataset_path_rewriter is None:
-            outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-            if outputs_to_working_directory:
+            if self.outputs_to_working_directory:
                 output_directory = self.outputs_directory
                 self._dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(self.working_directory, output_directory)
             else:

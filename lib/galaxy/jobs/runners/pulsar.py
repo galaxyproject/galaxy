@@ -1008,6 +1008,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def __init__(self, pulsar_client, job_wrapper, remote_job_config):
         self.pulsar_client = pulsar_client
+        job_wrapper.disable_outputs_to_working_directory()
         self.job_wrapper = job_wrapper
         self.local_path_config = job_wrapper.default_compute_environment()
 
