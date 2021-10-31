@@ -463,11 +463,11 @@ class FastAPIHistoryContents:
         summary='Download the content of a dataset collection as a `zip` archive.',
         response_class=StreamingResponse,
     )
-    @router.get(  # TODO: Move to dataset_collections API?
+    @router.get(
         '/api/dataset_collection/{id}/download',
         summary='Download the content of a dataset collection as a `zip` archive.',
         response_class=StreamingResponse,
-        tags=["dataset_collections"],
+        tags=["dataset collections"],
     )
     def download_dataset_collection(
         self,
@@ -546,8 +546,13 @@ class FastAPIHistoryContents:
         return HistoryContentsResult.parse_obj(result)
 
     @router.put(
+        '/api/histories/{history_id}/contents/{type}s/{id}',
+        summary='Updates the values for the history content item with the given ``ID``.',
+    )
+    @router.put(
         '/api/histories/{history_id}/contents/{id}',
         summary='Updates the values for the history content item with the given ``ID``.',
+        deprecated=True,
     )
     def update(
         self,
