@@ -55,14 +55,6 @@ News Webhook
 
 You might be reading this in the recently added "News" feature! This is the very first iteration of this component, hopefully in the future we will expand it to bring you all of your news and Galaxy notifications. The idea with the current iteration is that whenever your server admin updates Galaxy to a new version, everyone using the server will get a small, non-intrusive notification with these release notes! There you can find out all of the new features in Galaxy and quick videos on their use. (`Pull Request 12396`_)
 
-.. visualizations
-* Fix _get_reference_data method signature
-  `Pull Request 12562`_
-* Fix new user welcome plugin build status storage/detection
-  `Pull Request 12779`_
-* Fix msa visualization
-  `Pull Request 12782`_
-
 New Datatypes
 ===========================================================
 
@@ -189,7 +181,13 @@ Release Testing Team
 
 A special thanks to the release testing team for testing many of the new features and reporting many bugs:
 
-<team members go here>
+- `Keith Suderman <https://github.com/ksuderman>`_
+- `David López <https://github.com/davelopez>`_
+- `Dave Bouvier <https://github.com/davebx>`_
+- `Wolfgang Maier <https://github.com/wm75>`_
+- `Cristóbal Gallardo <https://github.com/gallardoalba>`
+- `Jennifer Hillman-Jackson <https://github.com/jennaj>`_
+- `Alex Ostrovsky <https://github.com/astrovsky01>`_
 
 Release Notes
 ===========================================================

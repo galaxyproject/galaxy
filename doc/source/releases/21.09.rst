@@ -376,7 +376,7 @@ Enhancements
 * Improve `GitHubSearch` class
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 12276`_
-*  Some refactoring of interactive tool handling in k8s
+* Some refactoring of interactive tool handling in k8s
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 12285`_
 * Replace form-view imports in Visualizations with Vue component layer
