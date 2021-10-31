@@ -625,6 +625,10 @@ class DiskObjectStore(ConcreteObjectStore):
                     path = self._get_filename(obj, **kwargs)
                     shutil.copy(file_name, path)
                     umask_fix_perms(path, self.config.umask, 0o666)
+            except shutil.SameFileError:
+                # That's ok, we need to ignore this so that remote object stores can update
+                # the remote object from the cache file path
+                pass
             except OSError as ex:
                 log.critical(f'Error copying {file_name} to {self.__get_filename(obj, **kwargs)}: {ex}')
                 raise ex
