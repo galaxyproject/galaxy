@@ -1,5 +1,7 @@
 <template>
-    <b-form-checkbox v-model="currentValue" size="lg" switch />
+    <b-form-checkbox v-model="currentValue" class="no-highlight" switch>
+        <span>{{ label }}</span>
+    </b-form-checkbox>
 </template>
 
 <script>
@@ -18,6 +20,9 @@ export default {
             set(val) {
                 this.$emit("input", val);
             },
+        },
+        label() {
+            return this.value ? "Yes" : "No";
         },
     },
 };
