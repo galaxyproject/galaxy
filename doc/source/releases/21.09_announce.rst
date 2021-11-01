@@ -8,17 +8,101 @@ September 2021 Galaxy Release (v 21.09)
 Highlights
 ===========================================================
 
+**Tool Panel Views**
 
-**Feature1**
-  Feature description.
+  With many thousands of Tools available on public Galaxy instances it is often
+  difficult to organize and find Tools in the Tool Panel. To address this
+  problem we are introducing Tool Panel Views.  Administrators can configure an
+  arbitrary number of Tool Panel Views. These views can be constructed
+  automatically for Tools annotated with `EDAM <https://edamontology.github.io/edam-browser>`_ terms,
+  or they can be constructed manually by referring to existing Sections, Tools
+  or Workflows.  Users can then select the Tool Panel View most appropriate to
+  their current activity.  The default Tool Panel View corresponds uses the
+  sections as they are traditionally configured.  It is also possible to
+  configure the default Tool Panel View using the domain name of the server, so
+  "flavors" of Galaxy can be created based on the URL that users use to interact
+  with a server, while behind the scenes these flavors are served by the same
+  Galaxy process.  For more details see the `21.09 user release notes <21.09_announce_user.html>`__
+  and `<Pull Request 12327>`_.
+  (`Pull Request 12327`_, `Pull Request 12677`_, `Pull Request 12328`_, `Pull Request 12379`_).
 
-**Feature2**
-  Feature description.
+**Enhancements for working with remote data and distributed computing resources**
 
-**Feature3**
-  Feature description.
+  Many fixes and enhancements were made to improve how Galaxy can import and
+  write to remote data using the configured file source plugins.  In addition to
+  the History Export functionality, which can write to remote locations we have
+  added a ``Export datasets`` Tool for exporting individual Datasets and Dataset
+  collections to configured remote locations. The Tool will automatically
+  maintain the name and structure of Datasets and Dataset Collections.  We have
+  added the possibility to import entire folders of remote data and made the
+  data selection dialog more intuitive.  We also added numerous improvements and
+  fixes to the extended metadata collection strategy and `Pulsar <https://github.com/galaxyproject/pulsar>`_,
+  so that many more Tools are able to run in `Pulsar <https://github.com/galaxyproject/pulsar>`_
+  and write data back to storage without passing through Galaxy first.
+  (`Pull Request 12785`_,
+  `Pull Request 11613`_, `Pull Request 12250`_, `Pull Request 12372`_, `Pull Request 12760`_,
+  `Pull Request 12267`_, `Pull Request 11949`_, `Pull Request 12310`_,
+  `Pull Request 12388`_, `Pull Request 12641`_).
+
+**Migration to FastAPI and extended Documentation of API routes**
+  We have modernized and migrated many more API routes to FastAPI and have
+  extended the documentation and validation of these routes.
+  (`Pull Request 11315`_, `Pull Request 11827`_, `Pull Request 11983`_,
+  `Pull Request 12131`_, `Pull Request 12337`_, `Pull Request 12195`_,
+  `Pull Request 12370`_, `Pull Request 12391`_, `Pull Request 12417`_, `Pull Request 12505`_).
+
+**Migration to SQLAlchemy 1.4 and Declarative Mapping**
+  Galaxy is now using `SQLAlchemy <https://www.sqlalchemy.org/>`_ version 1.4,
+  which is a prerequisite for asynchronously interacting with the Database.  We
+  also modernized the way our Database models are defined to the more commonly
+  used Declarative Mapping approach, which is more concise and better
+  documented.
+  (`Pull Request 12042`_, `Pull Request 12045`_, `Pull Request 12064`_,
+  `Pull Request 12438`_, `Pull Request 12060`_, `Pull Request 12424`_,
+  `Pull Request 12461`_).
+
+**Modernization of Tool Form interface**
+  The Tool Form interface has been almost completed migrated from
+  `backbone <https://backbonejs.org/>`_ to `Vue <https://vuejs.org/>`_.
+  This improves reactivity of parameter validation and enables the migration of
+  Tool parameters to Vue, which will also allows us to add many more types of
+  Tool parameters. We further migrated the Tool Form variant for the Workflow
+  Editor, the Workflow Run Form and the Show Dataset Parameter page to Vue.
+  (`Pull Request 12300`_, `Pull Request 12031`_,  `Pull Request 12227`_, `Pull
+  Request 12296`_, `Pull Request 12323`_, `Pull Request 12329`_, `Pull Request
+  12374`_, `Pull Request 12432`_, `Pull Request 12702`_, `Pull Request 12261`_).
+
+**New User Welcome Page**
+  We have added a Page that new users will be directed to after signing up to Galaxy.
+  (`Pull Request 11085`_, `Pull Request 12639`_)
+
 
 Also check out the `21.09 user release notes <21.09_announce_user.html>`__
+
+Deprecation Notices
+===========================================================
+Galaxy Interactive Environments (GIEs) are not visible anymore in the User Interface and will be completely removed in the next Galaxy release (22.01).
+All GIEs have been ported to Interactive Tools, which are much easier to develop, run and configure.
+
+Upcoming Deprecation Notices
+===========================================================
+
+We have postponed the following deprecations to the next Galaxy release in order
+to prepare a smoother experience for our users and administrators.
+
+**Deprecation of support for Python 3.6 in Galaxy release 22.01**
+  This Galaxy release (21.09) will be the last release that supports Python 3.6 or newer.
+  We encourage updating to a newer Python if possible.
+
+**Deprecation of uwsgi and paste**
+  This Galaxy release (21.09) will be the last release that supports the WSGI standard,
+  and with it uwsgi and paste. From release 22.01 Galaxy will be an ASGI application.
+  We will update documentation and playbooks during the upcoming development cycle to
+  enable a smooth transition.
+
+Configuration Changes
+=====================
+
 
 Get Galaxy
 ==========

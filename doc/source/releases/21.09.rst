@@ -437,7 +437,7 @@ Enhancements
 Fixes
 -------------------------------
 
-* Fix _get_reference_data method signature
+* Fix ``_get_reference_data`` method signature
   `Pull Request 12562`_
 * Fix new user welcome plugin build status storage/detection
   `Pull Request 12779`_
