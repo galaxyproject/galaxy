@@ -112,7 +112,7 @@ Enhancements
   `Pull Request 12258`_
 * Fix galaxy.json dynamic file collection in Pulsar.
   `Pull Request 12267`_
-* Default k8s_unschedulable_walltime_limit to None and allow for unlimi…
+* Default ``k8s_unschedulable_walltime_limit`` to ``None`` and allow for unlimited queue wait time
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 12317`_
 * Support setting per-job-environment container resolvers using the `container_resolvers` key in the environment config
@@ -699,7 +699,7 @@ Fixes
   `Pull Request 12536`_
 * Respect tool version in verify_tool
   `Pull Request 12539`_
-* Catch datatype converion exception and return proper error
+* Catch datatype conversion exception and return proper error
   `Pull Request 12561`_
 * Fix async controller
   `Pull Request 12565`_
