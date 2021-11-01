@@ -333,13 +333,13 @@ class FastAPIHistoryContents:
     service: HistoriesContentsService = depends(HistoriesContentsService)
 
     @router.get(
+        '/api/histories/{history_id}/contents/{type}s',
+        summary='Returns the contents of the given history filtered by type.',
+    )
+    @router.get(
         '/api/histories/{history_id}/contents',
         name='history_contents',
         summary='Returns the contents of the given history.',
-    )
-    @router.get(
-        '/api/histories/{history_id}/contents/{type}s',
-        summary='Returns the contents of the given history filtered by type.',
     )
     def index(
         self,
@@ -369,15 +369,35 @@ class FastAPIHistoryContents:
         return items
 
     @router.get(
-        '/api/histories/{history_id}/contents/{id}',
-        name='history_content',
-        summary='Return detailed information about an HDA within a history.',
-        deprecated=True,
+        '/api/histories/{history_id}/contents/{type}s/{id}/jobs_summary',
+        summary='Return detailed information about an `HDA` or `HDCAs` jobs.',
     )
+    def show_jobs_summary(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        type: HistoryContentType = ContentTypeQueryParam,
+    ) -> AnyJobStateSummary:
+        """Return detailed information about an `HDA` or `HDCAs` jobs.
+
+        **Warning**: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+        """
+        return self.service.show_jobs_summary(trans, id, contents_type=type)
+
     @router.get(
         '/api/histories/{history_id}/contents/{type}s/{id}',
         name='history_content_typed',
         summary='Return detailed information about a specific HDA or HDCA with the given `ID` within a history.',
+    )
+    @router.get(
+        '/api/histories/{history_id}/contents/{id}',
+        name='history_content',
+        summary='Return detailed information about an HDA within a history.',
+        deprecated=True,
     )
     def show(
         self,
@@ -437,26 +457,6 @@ class FastAPIHistoryContents:
         efficient as possible.
         """
         return self.service.index_jobs_summary(trans, params)
-
-    @router.get(
-        '/api/histories/{history_id}/contents/{type}s/{id}/jobs_summary',
-        summary='Return detailed information about an `HDA` or `HDCAs` jobs.',
-    )
-    def show_jobs_summary(
-        self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
-        type: HistoryContentType = ContentTypeQueryParam,
-    ) -> AnyJobStateSummary:
-        """Return detailed information about an `HDA` or `HDCAs` jobs.
-
-        **Warning**: We allow anyone to fetch job state information about any object they
-        can guess an encoded ID for - it isn't considered protected data. This keeps
-        polling IDs as part of state calculation for large histories and collections as
-        efficient as possible.
-        """
-        return self.service.show_jobs_summary(trans, id, contents_type=type)
 
     @router.get(
         '/api/histories/{history_id}/contents/dataset_collections/{id}/download',
@@ -546,6 +546,19 @@ class FastAPIHistoryContents:
         return HistoryContentsResult.parse_obj(result)
 
     @router.put(
+        '/api/histories/{history_id}/contents/{id}/validate',
+        summary='Validates the metadata associated with a dataset within a History.',
+    )
+    def validate(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+    ) -> dict:  # TODO: define a response?
+        """Validates the metadata associated with a dataset within a History."""
+        return self.service.validate(trans, history_id, id)
+
+    @router.put(
         '/api/histories/{history_id}/contents/{type}s/{id}',
         summary='Updates the values for the history content item with the given ``ID``.',
     )
@@ -566,26 +579,13 @@ class FastAPIHistoryContents:
         """Updates the values for the history content item with the given ``ID``."""
         return self.service.update(trans, history_id, id, payload.dict(), serialization_params, contents_type=type)
 
-    @router.put(
-        '/api/histories/{history_id}/contents/{id}/validate',
-        summary='Validates the metadata associated with a dataset within a History.',
-    )
-    def validate(
-        self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
-    ) -> dict:  # TODO: define a response?
-        """Validates the metadata associated with a dataset within a History."""
-        return self.service.validate(trans, history_id, id)
-
-    @router.delete(
-        '/api/histories/{history_id}/contents/{id}',
-        summary='Delete the history dataset with the given ``ID``.',
-    )
     @router.delete(
         '/api/histories/{history_id}/contents/{type}s/{id}',
         summary='Delete the history content with the given ``ID`` and specified type.',
+    )
+    @router.delete(
+        '/api/histories/{history_id}/contents/{id}',
+        summary='Delete the history dataset with the given ``ID``.',
     )
     def delete(
         self,
@@ -628,11 +628,11 @@ class FastAPIHistoryContents:
         return rval
 
     @router.get(
-        '/api/histories/{history_id}/contents/archive/{id}',
+        '/api/histories/{history_id}/contents/archive/{filename}.{format}',
         summary='Build and return a compressed archive of the selected history contents.',
     )
     @router.get(
-        '/api/histories/{history_id}/contents/archive/{filename}.{format}',
+        '/api/histories/{history_id}/contents/archive/{id}',
         summary='Build and return a compressed archive of the selected history contents.',
     )
     def archive(
