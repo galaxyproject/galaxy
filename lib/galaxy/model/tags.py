@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
@@ -290,7 +290,7 @@ class TagHandler:
         raw_tags = reg_exp.split(tag_str)
         return self.parse_tags_list(raw_tags)
 
-    def parse_tags_list(self, tags_list):
+    def parse_tags_list(self, tags_list: List[str]) -> List[Tuple[str, Optional[str]]]:
         """
         Return a list of tag tuples (name, value) pairs derived from a list.
         Method scrubs tag names and values as well.
