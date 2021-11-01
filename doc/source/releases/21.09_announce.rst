@@ -63,7 +63,7 @@ Highlights
 
 **Modernization of Tool Form interface**
   The Tool Form interface has been almost completed migrated from
-  `backbone <https://backbonejs.org/>`_ to `Vue <https://vuejs.org/>`_.
+  `Backbone <https://backbonejs.org/>`_ to `Vue <https://vuejs.org/>`_.
   This improves reactivity of parameter validation and enables the migration of
   Tool parameters to Vue, which will also allows us to add many more types of
   Tool parameters. We further migrated the Tool Form variant for the Workflow
