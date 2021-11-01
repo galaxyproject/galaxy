@@ -1035,8 +1035,13 @@ class HistoriesContentsService(ServiceBase):
         return rval
 
     def __collection_dict(self, trans, dataset_collection_instance, **kwds):
-        return dictify_dataset_collection_instance(dataset_collection_instance,
-            security=trans.security, parent=dataset_collection_instance.history, **kwds)
+        return dictify_dataset_collection_instance(
+            dataset_collection_instance,
+            security=trans.security,
+            url_builder=trans.url_builder,
+            parent=dataset_collection_instance.history,
+            **kwds
+        )
 
     def _get_history(self, trans, history_id: EncodedDatabaseIdField) -> History:
         """Retrieves the History with the given ID or raises an error if the current user cannot access it."""
