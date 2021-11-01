@@ -66,7 +66,7 @@ class CollectionEditTestCase(SeleniumTestCase):
             row.send_keys(" ")
 
     def _collection_dropdown(self, option_description):
-        return self.use_bootstrap_dropdown(option=option_description, menu="new content menu")
+        return self.use_bootstrap_dropdown(option=option_description, menu="selected content menu")
 
     def _wait_for_hid_visible(self, hid, state="ok"):
         timeout = self.wait_length(self.wait_types.JOB_COMPLETION)

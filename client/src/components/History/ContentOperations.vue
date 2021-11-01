@@ -31,6 +31,7 @@
                     size="sm"
                     text="Selection"
                     :disabled="!hasSelection"
+                    data-description="selected content menu"
                 >
                     <b-dropdown-text id="history-op-selected-content">
                         <span v-localize v-if="hasSelection">With {{ numSelected }} selected items...</span>
@@ -99,6 +100,7 @@
                     size="sm"
                     text="History"
                     :disabled="!totalMatches"
+                    data-description="history action menu"
                 >
                     <b-dropdown-text id="history-op-all-content">
                         <span v-localize>With entire history...</span>
