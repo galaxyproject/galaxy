@@ -273,5 +273,6 @@
   <tool file="${model_tools_path}/build_list.xml" />
   <tool file="${model_tools_path}/build_list_1.2.0.xml" />
   <tool file="${model_tools_path}/extract_dataset.xml" />
+  <tool file="${model_tools_path}/duplicate_file_to_collection.xml" />
 
 </toolbox>

@@ -3510,6 +3510,20 @@ class FilterFromFileTool(DatabaseOperationTool):
         )
 
 
+class DuplicateFileToCollectionTool(DatabaseOperationTool):
+    tool_type = 'duplicate_file_to_collection'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        hda = incoming["input"]
+        number = incoming["number"]
+        element_identifier = incoming["element_identifier"]
+        elements = {f"{element_identifier} {n}": hda.copy(copy_tags=hda.tags, flush=False) for n in range(number)}
+
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=elements, propagate_hda_tags=False
+        )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 TOOL_CLASSES: List[Type[Tool]] = [
@@ -3526,6 +3540,7 @@ TOOL_CLASSES: List[Type[Tool]] = [
     MergeCollectionTool,
     RelabelFromFileTool,
     FilterFromFileTool,
+    DuplicateFileToCollectionTool,
     BuildListCollectionTool,
     ExtractDatasetCollectionTool,
     DataDestinationTool
