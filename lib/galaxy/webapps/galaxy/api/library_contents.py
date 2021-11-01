@@ -2,6 +2,7 @@
 API operations on the contents of a data library.
 """
 import logging
+from typing import Optional
 
 from sqlalchemy.orm.exc import (
     MultipleResultsFound,
@@ -21,6 +22,7 @@ from galaxy.managers.collections_util import (
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
+    LibraryDataset,
     tags
 )
 from galaxy.structured_app import StructuredApp
@@ -291,7 +293,7 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
 
     def _upload_library_dataset(self, trans, library_id, folder_id, **kwd):
         replace_id = kwd.get('replace_id', None)
-        replace_dataset = None
+        replace_dataset: Optional[LibraryDataset] = None
         upload_option = kwd.get('upload_option', 'upload_file')
         dbkey = kwd.get('dbkey', '?')
         if isinstance(dbkey, list):
@@ -302,7 +304,7 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         if replace_id not in ['', None, 'None']:
-            replace_dataset = trans.sa_session.query(trans.app.model.LibraryDataset).get(trans.security.decode_id(replace_id))
+            replace_dataset = trans.sa_session.query(LibraryDataset).get(trans.security.decode_id(replace_id))
             self._check_access(trans, is_admin, replace_dataset, current_user_roles)
             self._check_modify(trans, is_admin, replace_dataset, current_user_roles)
             library = replace_dataset.folder.parent_library

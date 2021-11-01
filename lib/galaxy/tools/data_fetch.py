@@ -6,6 +6,7 @@ import shutil
 import sys
 import tempfile
 from io import StringIO
+from typing import Any, Dict, List, Tuple
 
 import bdbag.bdbag_api
 
@@ -138,13 +139,14 @@ def _fetch_target(upload_config, target):
             # get_composite_dataset_name finds dataset name from basename of contents
             # and such but we're not implementing that here yet. yagni?
             # also need name...
-            dataset_bunch = Bunch()
             name = item.get("name") or 'Composite Dataset'
-            dataset_bunch.name = name
+            dataset_bunch = Bunch(
+                name=name,
+            )
             primary_file = sniff.stream_to_file(StringIO(datatype.generate_primary_file(dataset_bunch)), prefix='upload_auto_primary_file', dir=".")
             extra_files_path = f"{primary_file}_extra"
             os.mkdir(extra_files_path)
-            rval = {
+            rval: Dict[str, Any] = {
                 "name": name,
                 "filename": primary_file,
                 "ext": requested_ext,
@@ -276,13 +278,13 @@ def _fetch_target(upload_config, target):
                                 item_prefix = os.path.join(prefix, name)
                             walk_extra_files(item.get("elements"), prefix=item_prefix)
                         else:
-                            name, src_path = _has_src_to_path(upload_config, item)
+                            src_name, src_path = _has_src_to_path(upload_config, item)
                             if prefix:
-                                rel_path = os.path.join(prefix, name)
+                                rel_path = os.path.join(prefix, src_name)
                             else:
-                                rel_path = name
+                                rel_path = src_name
 
-                            file_output_path = os.path.join(staged_extra_files, rel_path)
+                            file_output_path = os.path.join(extra_files_path, rel_path)
                             parent_dir = os.path.dirname(file_output_path)
                             if not os.path.exists(parent_dir):
                                 safe_makedirs(parent_dir)
@@ -358,8 +360,8 @@ def elements_tree_map(f, items):
 
 
 def _directory_to_items(directory):
-    items = []
-    dir_elements = {}
+    items: List[Dict[str, Any]] = []
+    dir_elements: Dict[str, Any] = {}
     for root, dirs, files in os.walk(directory):
         if root in dir_elements:
             target = dir_elements[root]
@@ -375,7 +377,7 @@ def _directory_to_items(directory):
     return items
 
 
-def _has_src_to_path(upload_config, item, is_dataset=False):
+def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
     assert "src" in item, item
     src = item.get("src")
     name = item.get("name")
