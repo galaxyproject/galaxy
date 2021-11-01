@@ -1292,7 +1292,7 @@ class AdminGalaxy(controller.JSAppLauncher):
             }
         else:
             name = util.restore_text(payload.get('name', ''))
-            auto_create_checked = util.string_as_bool(payload.get('auto_create'))
+            auto_create_checked = payload.get('auto_create')
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_roles'))]
             if not name:
