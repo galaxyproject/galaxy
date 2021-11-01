@@ -1,9 +1,17 @@
-name: Build Image
-on: push
+name: Build Container Image
+on:
+  push:
+    branches:
+      - 'release*'
+      - anvil
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  test:
-    name: Build image
+  build:
+    name: Build container image
     runs-on: ubuntu-latest
+    if: github.repository_owner == 'galaxyproject'
     steps:
       - uses: actions/checkout@v2
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
