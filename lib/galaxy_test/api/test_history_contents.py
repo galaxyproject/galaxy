@@ -290,6 +290,23 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert delete_response.status_code < 300  # Something in the 200s :).
         assert str(self.__show(hda1).json()["deleted"]).lower() == "true"
 
+    def test_delete_anon(self):
+        with self._different_user(anon=True):
+            history_id = self.dataset_populator.new_history()
+            hda1 = self.dataset_populator.new_dataset(history_id)
+            self.dataset_populator.wait_for_history(history_id)
+            assert str(self.__show(hda1).json()["deleted"]).lower() == "false"
+            delete_response = self._delete(f"histories/{history_id}/contents/{hda1['id']}")
+            assert delete_response.status_code < 300  # Something in the 200s :).
+            assert str(self.__show(hda1).json()["deleted"]).lower() == "true"
+
+    def test_delete_permission_denied(self):
+        hda1 = self.dataset_populator.new_dataset(self.history_id)
+        with self._different_user(anon=True):
+            delete_response = self._delete(f"histories/{self.history_id}/contents/{hda1['id']}")
+            assert delete_response.status_code == 403
+            assert delete_response.json()['err_msg'] == 'HistoryDatasetAssociation is not owned by user'
+
     def test_purge(self):
         hda1 = self.dataset_populator.new_dataset(self.history_id)
         self.dataset_populator.wait_for_history(self.history_id)
