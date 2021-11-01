@@ -502,6 +502,13 @@ mapping:
         desc: |
           Configured FileSource plugins.
 
+      file_sources:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          FileSource plugins described embedded into Galaxy's config.
+
       enable_mulled_containers:
         type: bool
         default: true

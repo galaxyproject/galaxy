@@ -176,10 +176,14 @@ class ConfiguredFileSources:
     @staticmethod
     def from_app_config(config):
         config_file = config.file_sources_config_file
-        if not os.path.exists(config_file):
+        config_dict = None
+        if not config_file or not os.path.exists(config_file):
             config_file = None
+            config_dict = config.file_sources
         file_sources_config = ConfiguredFileSourcesConfig.from_app_config(config)
-        return ConfiguredFileSources(file_sources_config, config_file, load_stock_plugins=True)
+        return ConfiguredFileSources(
+            file_sources_config, conf_file=config_file, conf_dict=config_dict, load_stock_plugins=True
+        )
 
     @staticmethod
     def from_dict(as_dict):
