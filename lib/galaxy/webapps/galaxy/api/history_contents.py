@@ -421,8 +421,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         """
         return self.service.validate(trans, history_id, history_content_id)
 
-    # TODO: allow anonymous del/purge and test security on this
-    @expose_api
+    @expose_api_anonymous
     def delete(self, trans, history_id, id, purge=False, recursive=False, **kwd):
         """
         DELETE /api/histories/{history_id}/contents/{id}

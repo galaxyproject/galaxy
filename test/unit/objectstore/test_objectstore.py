@@ -1,6 +1,11 @@
 import os
-from tempfile import mkdtemp
+from tempfile import (
+    mkdtemp,
+    mkstemp,
+)
 from uuid import uuid4
+
+import pytest
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
@@ -12,7 +17,21 @@ from galaxy.objectstore.unittest_utils import (
     DISK_TEST_CONFIG,
     DISK_TEST_CONFIG_YAML,
 )
-from galaxy.util import directory_hash_id
+from galaxy.util import (
+    directory_hash_id,
+    unlink,
+)
+
+
+def test_unlink_path():
+    with pytest.raises(FileNotFoundError):
+        unlink(uuid4().hex)
+    unlink(uuid4().hex, ignore_errors=True)
+    fd, path = mkstemp()
+    os.close(fd)
+    assert os.path.exists(path)
+    unlink(path)
+    assert not os.path.exists(path)
 
 
 def test_disk_store():

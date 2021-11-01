@@ -10,6 +10,7 @@ set to the path of the dataset on which metadata is being set
 (output_filename_override could previously be left empty and the path would be
 constructed automatically).
 """
+import glob
 import json
 import logging
 import os
@@ -55,7 +56,10 @@ from galaxy.tool_util.parser.stdio import (
     ToolStdioRegex,
 )
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
-from galaxy.util import stringify_dictionary_keys
+from galaxy.util import (
+    safe_contains,
+    stringify_dictionary_keys,
+)
 from galaxy.util.expressions import ExpressionContext
 
 logging.basicConfig()
@@ -270,6 +274,13 @@ def set_metadata_portable():
         set_meta_kwds = stringify_dictionary_keys(json.load(open(filename_kwds)))  # load kwds; need to ensure our keywords are not unicode
         try:
             external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
+            if not os.path.exists(external_filename):
+                matches = glob.glob(external_filename)
+                assert len(matches) == 1, f"More than one file matched by output glob '{external_filename}'"
+                external_filename = matches[0]
+                assert safe_contains(tool_job_working_directory, external_filename), f"Cannot collect output '{external_filename}' from outside of working directory"
+                created_from_basename = os.path.relpath(external_filename, os.path.join(tool_job_working_directory, 'working'))
+                dataset.dataset.created_from_basename = created_from_basename
             # override filename if we're dealing with outputs to working directory and dataset is not linked to
             link_data_only = metadata_params.get("link_data_only")
             if not link_data_only:
@@ -300,10 +311,9 @@ def set_metadata_portable():
                     dataset.state = dataset.dataset.state = final_job_state
 
             if extended_metadata_collection:
-                outputs_to_working = external_filename.startswith(tool_job_working_directory) and os.path.getsize(external_filename)
-                if not link_data_only and outputs_to_working:
-                    # outputs to working directory, and not already pushed by pulsar + extended metadata,
-                    # move output to final destination.
+                if not link_data_only and os.path.getsize(external_filename):
+                    # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
+                    # or a remote object store from its cache path.
                     object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
                 # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)

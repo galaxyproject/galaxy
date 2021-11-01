@@ -90,6 +90,7 @@ class GalaxyInteractorApi:
 
     def __init__(self, **kwds):
         self.api_url = f"{kwds['galaxy_url'].rstrip('/')}/api"
+        self.cookies = None
         self.master_api_key = kwds["master_api_key"]
         self.api_key = self.__get_user_key(kwds.get("api_key"), kwds.get("master_api_key"), test_user=kwds.get("test_user"))
         if kwds.get('user_api_key_is_admin_key', False):
@@ -728,8 +729,11 @@ class GalaxyInteractorApi:
     def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
+        kwargs = {}
+        if self.cookies:
+            kwargs['cookies'] = self.cookies
         # no data for GET
-        return requests.get(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT)
+        return requests.get(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT, **kwargs)
 
     def get_api_url(self, path: str) -> str:
         if path.startswith("http"):
@@ -782,6 +786,8 @@ class GalaxyInteractorApi:
         else:
             data.update(params)
             kwd['data'] = data
+        if self.cookies:
+            kwd['cookies'] = self.cookies
 
         return kwd
 

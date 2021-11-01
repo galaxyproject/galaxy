@@ -1503,6 +1503,17 @@ def force_symlink(source, link_name):
             raise e
 
 
+def unlink(path_or_fd, ignore_errors=False):
+    """Calls os.unlink on `path_or_fd`, and ignore FileNoteFoundError if ignore_errors is True."""
+    try:
+        os.unlink(path_or_fd)
+    except FileNotFoundError:
+        if ignore_errors:
+            pass
+        else:
+            raise
+
+
 def move_merge(source, target):
     # when using shutil and moving a directory, if the target exists,
     # then the directory is placed inside of it

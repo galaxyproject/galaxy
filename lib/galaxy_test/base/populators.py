@@ -343,8 +343,8 @@ class BaseDatasetPopulator(BasePopulator):
         delete_response = self._delete(f"histories/{history_id}")
         delete_response.raise_for_status()
 
-    def delete_dataset(self, history_id: str, content_id: str) -> Response:
-        delete_response = self._delete(f"histories/{history_id}/contents/{content_id}")
+    def delete_dataset(self, history_id: str, content_id: str, purge: bool = False) -> Response:
+        delete_response = self._delete(f"histories/{history_id}/contents/{content_id}", {'purge': purge})
         return delete_response
 
     def create_tool_from_path(self, tool_path: str) -> Dict[str, Any]:

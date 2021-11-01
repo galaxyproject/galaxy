@@ -1,4 +1,4 @@
-<tool name="NCBI Datasets Genomes" id="ncbi_datasets_source" tool_type="data_source" version="1.0" profile="21.01">
+<tool name="NCBI Datasets Genomes" id="ncbi_datasets_source" tool_type="data_source" version="1.0" profile="21.09">
     <description>import data from the NCBI Datasets Genomes page</description>
     <edam_operations>
         <edam_operation>operation_0224</edam_operation>
