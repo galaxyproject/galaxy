@@ -11,7 +11,7 @@ Highlights
 Tool Panel
 ----------
 
-We now have "Tool Panel Views"! These are different views into the same toolbox and might help it make it easier to find the tools you want. In the future there are plans to create user-customisable toolboxes, but until then go explore the new EDAM Ontology based toolboxes which organise tools around their scientific area, or based on the scientific process they do. For example a category like "Filtering" might have tools like "select lines" or "filter bam by quality", both doing the same process of filtering, despite their different filetypes and formats.
+We now have "Tool Panel Views"! These are different views into the same toolbox and might help make it easier to find the tools you want. In the future there are plans to create user-customisable toolboxes, but until then go explore the new EDAM Ontology based toolboxes which organise tools around their scientific area, or based on the scientific process they do. For example a category like "Filtering" might have tools like "select lines" or "filter bam by quality", both doing the same process of filtering, despite their different filetypes and formats.
 
 .. raw:: html
 
@@ -24,7 +24,7 @@ More details can be found in `Pull Request 12327`_, `Pull Request 12365`_, and `
 Collections (Beta History Updates)
 ----------------------------------
 
-Did you ever create *a collection with the wrong dbkey or datatype*? Well in the Beta History you can now **change collections' datatypes and dbkeys**! This should save a lot of time for everyone working with large datasets (`Pull Request 11799`).
+Did you ever create *a collection with the wrong dbkey or datatype*? Well, in the Beta History you can now **change collections' datatypes and dbkeys**! This should save a lot of time for everyone working with large datasets (`Pull Request 11799`).
 
 .. raw:: html
 
@@ -35,7 +35,7 @@ Additionally, did a *collection ever fail* for you? And you wondered why? Now yo
 Importing Data
 --------------
 
-Selecting datasets from the Remote Files view has gotten easier! Now you can select folders and files, and it will import all of the datasets recursively in those folders. Previously you could only select files within a folder so this is a huge improvement in usability of such a key new feature of Galaxy. (`Pull Request 12310`_) But with great power comes great responsibility, be careful not to import the entirety of NCBI!
+Selecting datasets from the Remote Files view has gotten easier! Now you can select folders and files, and it will import all of the datasets recursively in those folders. Previously you could only select files within a folder so this is a huge improvement in usability of such a key new feature of Galaxy (`Pull Request 12310`_). But with great power comes great responsibility, be careful not to import the entirety of NCBI!
 
 .. raw:: html
 
@@ -45,7 +45,7 @@ Selecting datasets from the Remote Files view has gotten easier! Now you can sel
 Reports
 -------
 
-Report components used to try and arrange themselves in a smart way, but due to some issues with the floating of report components these will now be full width until we can figure out a good way to provide a similar feature allowing you to control the layout of the report. (`Pull Request 12085`_)
+Report components used to try and arrange themselves in a smart way, but due to some issues with the floating of report components these will now be full width until we can figure out a good way to provide a similar feature allowing you to control the layout of the report (`Pull Request 12085`_).
 
 .. figure:: images/21.09-reports.png
    :alt: A screenshot of the reports interface is shown, there are a number of 'report components' like table previews embedded and these are full width across the report.

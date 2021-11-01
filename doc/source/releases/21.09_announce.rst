@@ -29,9 +29,9 @@ Highlights
 **Enhancements for working with remote data and distributed computing resources**
 
   Many fixes and enhancements were made to improve how Galaxy can import and
-  write to remote data using the configured file source plugins. In addition to
+  write to remote data locations using the configured file source plugins. In addition to
   the History Export functionality, which can write to remote locations we have
-  added a ``Export datasets`` Tool for exporting individual Datasets and Dataset
+  added an ``Export datasets`` Tool for exporting individual Datasets and Dataset
   collections to configured remote locations. The Tool will automatically
   maintain the name and structure of Datasets and Dataset Collections. We have
   added the possibility to import entire folders of remote data and made the
@@ -64,7 +64,7 @@ Highlights
 **Modernization of Tool Form interface**
   The Tool Form interface has been almost completed migrated from
   `Backbone <https://backbonejs.org/>`_ to `Vue <https://vuejs.org/>`_.
-  This improves reactivity of parameter validation and enables the migration of
+  This improves the reactivity of parameter validation and enables the migration of
   Tool parameters to Vue, which will also allows us to add many more types of
   Tool parameters. We further migrated the Tool Form variant for the Workflow
   Editor, the Workflow Run Form and the Show Dataset Parameter page to Vue.
@@ -73,7 +73,7 @@ Highlights
   12374`_, `Pull Request 12432`_, `Pull Request 12702`_, `Pull Request 12261`_).
 
 **New User Welcome Page**
-  We have added a Page that new users will be directed to after signing up to Galaxy.
+  We have added a Page that new users will be directed to after creating a new Galaxy account.
   (`Pull Request 11085`_, `Pull Request 12639`_)
 
 
