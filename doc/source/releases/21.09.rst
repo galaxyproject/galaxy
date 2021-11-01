@@ -435,6 +435,9 @@ Enhancements
 * Add missing tool_ids to workflow invocation failure message
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 12823`_
+* Add docker image auto-building in github workflow
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 12520`_
 
 
 Fixes
