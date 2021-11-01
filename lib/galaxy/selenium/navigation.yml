@@ -85,7 +85,7 @@ toolbox_filters:
   selectors:
     input:
       type: xpath
-      selector: "//span[contains(., '${description}')]/../div/div[contains(@class, 'custom-control')]"
+      selector: "//span[contains(., '${description}')]/../div/div/label[@class='custom-control-label']"
     submit: '#submit'
 
 change_user_email:
