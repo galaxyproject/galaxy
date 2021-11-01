@@ -676,7 +676,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
             assert history_contents.status_code == 204
 
             # test parsing for other standard is08601 formats
-            sample_formats = ['2021-08-26T15:53:02+00:00', '2021-08-26T15:53:02Z', '20210826T155302Z', '2002-10-10T12:00:00-05:00']
+            sample_formats = ['2021-08-26T15:53:02+00:00', '2021-08-26T15:53:02Z', '2002-10-10T12:00:00-05:00']
             for date_str in sample_formats:
                 encoded_date = urllib.parse.quote_plus(date_str)  # handles pluses, minuses
                 history_contents = self._get(f"/api/histories/{history_id}/contents/near/100/100?since={encoded_date}")
