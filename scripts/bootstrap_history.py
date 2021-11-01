@@ -421,16 +421,12 @@ def check_blocking_issues(argv):
     release_name = argv[2]
     block = 0
     github = _github_client()
-    issues = github.issues.list_by_repo(
-        user='galaxyproject',
-        repo='galaxy',
-        state="open"
-    )
-    for page in issues:
-        for issue in page:
-            if issue.milestone and issue.milestone.title == release_name and "Publication of Galaxy Release" not in issue.title:
-                print("WARN: Blocking issue| %s" % _issue_to_str(issue))
-                block = 1
+    repo = github.get_repo('galaxyproject/galaxy')
+    issues = repo.get_issues(state='open')
+    for issue in issues:
+        if issue.milestone and issue.milestone.title == release_name and "Publication of Galaxy Release" not in issue.title:
+            print("WARN: Blocking issue| %s" % _issue_to_str(issue))
+            block = 1
 
     sys.exit(block)
 
