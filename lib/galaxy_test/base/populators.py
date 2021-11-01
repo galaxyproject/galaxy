@@ -276,6 +276,26 @@ class BaseDatasetPopulator(BasePopulator):
 
         return tool_response
 
+    def fetch_hdas(self, history_id: str, items: List[Dict[str, Any]], wait: bool = True) -> List[Dict[str, Any]]:
+        destination = {"type": "hdas"}
+        targets = [{
+            "destination": destination,
+            "items": items,
+        }]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.fetch(payload, wait=wait)
+        api_asserts.assert_status_code_is(fetch_response, 200)
+        outputs = fetch_response.json()["outputs"]
+        return outputs
+
+    def fetch_hda(self, history_id, item: Dict[str, Any], wait: bool = True) -> Dict[str, Any]:
+        hdas = self.fetch_hdas(history_id, [item], wait=wait)
+        assert len(hdas) == 1
+        return hdas[0]
+
     def wait_for_tool_run(self, history_id: str, run_response: requests.Response, timeout: timeout_type = DEFAULT_TIMEOUT, assert_ok: bool = True):
         job = self.check_run(run_response)
         self.wait_for_job(job["id"], timeout=timeout)
