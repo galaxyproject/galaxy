@@ -123,14 +123,6 @@ def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] =
 def convert_newlines_sep2tabs(fname: str, in_place: bool = True, patt: bytes = br"[^\S\n]+", tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"):
     """
     Converts newlines in a file to posix newlines and replaces spaces with tabs.
-
-    >>> fname = get_test_fname('temp.txt')
-    >>> with open(fname, 'wt') as fh:
-    ...     _ = fh.write(u"1 2\\r3 4")
-    >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
-    (2, None)
-    >>> open(fname).read()
-    '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile(patt)
     return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
