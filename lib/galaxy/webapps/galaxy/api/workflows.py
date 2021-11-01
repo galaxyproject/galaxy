@@ -838,8 +838,9 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
 
         tool_ids = self.workflow_contents_manager.get_all_tool_ids(workflow)
-        if not all([self.app.toolbox.has_tool(tool_id) for tool_id in tool_ids]):
-            raise exceptions.MessageException("Workflow was not invoked; some required tools are not installed.")
+        missing_tool_ids = [tool_id for tool_id in tool_ids if not self.app.toolbox.has_tool(tool_id)]
+        if missing_tool_ids:
+            raise exceptions.MessageException(f"Workflow was not invoked; the following required tools are not installed: {', '.join(missing_tool_ids)}")
 
         invocations = []
         for run_config in run_configs:
