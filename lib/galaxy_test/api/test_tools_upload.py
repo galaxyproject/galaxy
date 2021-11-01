@@ -286,7 +286,7 @@ class ToolsUploadTestCase(ApiTestCase):
             history_id=history_id,
             dataset=dataset
         )
-        # By default this appends the newline.
+        # By default this appends the newline, but we disabled with 'to_posix_lines=False' above.
         self.assertEqual(content, "This is a line of text.")
         details = self.dataset_populator.get_history_dataset_details(
             history_id=history_id,
