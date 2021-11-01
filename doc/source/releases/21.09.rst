@@ -432,6 +432,9 @@ Enhancements
 * Rephrase and fix typos
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 12750`_
+* Add missing tool_ids to workflow invocation failure message
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 12823`_
 
 
 Fixes
@@ -793,6 +796,15 @@ Fixes
   `Pull Request 12805`_
 * Disable library uploads using master API key
   `Pull Request 12806`_
+* Add missing tool_ids to workflow invocation failure message
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 12823`_
+* Allow dataset and dataset collection deletion for anonymous users
+  `Pull Request 12817`_
+* Fix ``from_work_dir`` glob with extended metadata and pulsar
+  `Pull Request 12816`_
+* Fix remote object store datasets not purged
+  `Pull Request 12815`_
 
 .. include:: 21.09_prs.rst
 
