@@ -18,7 +18,12 @@ except ImportError:
     irods = None
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util import directory_hash_id, ExecutionTimer, umask_fix_perms
+from galaxy.util import (
+    directory_hash_id,
+    ExecutionTimer,
+    umask_fix_perms,
+    unlink,
+)
 from galaxy.util.path import safe_relpath
 from ..objectstore import DiskObjectStore
 
@@ -544,7 +549,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual key in irods and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path))
+                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
 
                 col_path = f"{self.home}/{str(rel_path)}"
                 col = None
@@ -568,11 +573,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
             else:
                 # Delete from cache first
-                try:
-                    os.unlink(self._get_cache_path(rel_path))
-                except FileNotFoundError:
-                    # File was not in cache. Ok to ignore the exception and move on
-                    pass
+                unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from irods as well
                 p = Path(rel_path)
                 data_object_name = p.stem + p.suffix
