@@ -180,7 +180,6 @@ Release Testing Team
 A special thanks to the release testing team for testing many of the new features and reporting many bugs:
 
 - `Keith Suderman <https://github.com/ksuderman>`_
-- `David López <https://github.com/davelopez>`_
 - `Wolfgang Maier <https://github.com/wm75>`_
 - `Cristóbal Gallardo <https://github.com/gallardoalba>`_
 - `Jennifer Hillman-Jackson <https://github.com/jennaj>`_
