@@ -58,8 +58,6 @@ You might be reading this in the recently added "News" feature! This is the very
 New Datatypes
 ===========================================================
 
-* Convert/standardize to fstrings across `lib`
-  `Pull Request 11338`_
 * Added documentation for FASTQ datatypes and implemented quality check
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11931`_
@@ -96,7 +94,7 @@ New Datatypes
 * Fix edta metadata setting
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12273`_
-* mothur datatype: PairwiseDistanceMatrix sniffer may be too unspecific
+* Increase specificity of mothur.pair.dist sniffer
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12280`_
 * Add "ExpressionSet RData object" Datatype
@@ -105,7 +103,7 @@ New Datatypes
 * Small fix in binary.py
   (thanks to `@melibleq <https://github.com/melibleq>`__).
   `Pull Request 12384`_
-* also parse sam metadata from sam files
+* Parse sam metadata from sam files
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12392`_
 * Add ONNX datatype
@@ -156,7 +154,7 @@ Builtin Tool Updates
   `Pull Request 12166`_
 * Remove unused legacy controller things
   `Pull Request 12172`_
-* Add <creator> to the tool schema template, use live links in xsd
+* Add ``<creator>`` to the tool schema template, use live links in xsd
   `Pull Request 12242`_
 * Systematic handling of remotely required tool files.
   `Pull Request 12250`_
@@ -183,11 +181,11 @@ A special thanks to the release testing team for testing many of the new feature
 
 - `Keith Suderman <https://github.com/ksuderman>`_
 - `David López <https://github.com/davelopez>`_
-- `Dave Bouvier <https://github.com/davebx>`_
 - `Wolfgang Maier <https://github.com/wm75>`_
-- `Cristóbal Gallardo <https://github.com/gallardoalba>`
+- `Cristóbal Gallardo <https://github.com/gallardoalba>`_
 - `Jennifer Hillman-Jackson <https://github.com/jennaj>`_
 - `Alex Ostrovsky <https://github.com/astrovsky01>`_
+- `Kaivan Kamali <https://github.com/kxk302>`_
 
 Release Notes
 ===========================================================
