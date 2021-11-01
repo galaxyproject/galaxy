@@ -324,7 +324,7 @@ steps:
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error_anon(self):
         with self._different_user(anon=True):
-            history_id = self.dataset_populator.new_history()
+            history_id = self._get(f"{self.url}/history/current_history_json").json()['id']
             self._run_error_report(history_id)
 
     def _run_error_report(self, history_id):

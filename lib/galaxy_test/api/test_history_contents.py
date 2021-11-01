@@ -292,7 +292,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
 
     def test_delete_anon(self):
         with self._different_user(anon=True):
-            history_id = self.dataset_populator.new_history()
+            history_id = self._get(f"{self.url}/history/current_history_json").json()['id']
             hda1 = self.dataset_populator.new_dataset(history_id)
             self.dataset_populator.wait_for_history(history_id)
             assert str(self.__show(hda1).json()["deleted"]).lower() == "false"
