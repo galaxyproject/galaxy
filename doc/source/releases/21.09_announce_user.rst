@@ -30,7 +30,7 @@ Did you ever create *a collection with the wrong dbkey or datatype*? Well in the
 
    <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/aPgMcTuzEJ4" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-Additionally did a *collection ever fail* for you? And you wondered why? Now you can find out with the **view details button for collections** (`Pull Request 12261`_)!
+Additionally, did a *collection ever fail* for you? And you wondered why? Now you can find out with the **view details button for collections** (`Pull Request 12261`_)!
 
 Importing Data
 --------------

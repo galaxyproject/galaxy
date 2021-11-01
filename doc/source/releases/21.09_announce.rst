@@ -12,30 +12,30 @@ Highlights
 
   With many thousands of Tools available on public Galaxy instances it is often
   difficult to organize and find Tools in the Tool Panel. To address this
-  problem we are introducing Tool Panel Views.  Administrators can configure an
+  problem we are introducing Tool Panel Views. Administrators can configure an
   arbitrary number of Tool Panel Views. These views can be constructed
   automatically for Tools annotated with `EDAM <https://edamontology.github.io/edam-browser>`_ terms,
   or they can be constructed manually by referring to existing Sections, Tools
-  or Workflows.  Users can then select the Tool Panel View most appropriate to
-  their current activity.  The default Tool Panel View corresponds uses the
-  sections as they are traditionally configured.  It is also possible to
+  or Workflows. Users can then select the Tool Panel View most appropriate to
+  their current activity. The default Tool Panel View corresponds uses the
+  sections as they are traditionally configured. It is also possible to
   configure the default Tool Panel View using the domain name of the server, so
   "flavors" of Galaxy can be created based on the URL that users use to interact
   with a server, while behind the scenes these flavors are served by the same
-  Galaxy process.  For more details see the `21.09 user release notes <21.09_announce_user.html>`__
+  Galaxy process. For more details see the `21.09 user release notes <21.09_announce_user.html>`__
   and `<Pull Request 12327>`_.
   (`Pull Request 12327`_, `Pull Request 12677`_, `Pull Request 12328`_, `Pull Request 12379`_).
 
 **Enhancements for working with remote data and distributed computing resources**
 
   Many fixes and enhancements were made to improve how Galaxy can import and
-  write to remote data using the configured file source plugins.  In addition to
+  write to remote data using the configured file source plugins. In addition to
   the History Export functionality, which can write to remote locations we have
   added a ``Export datasets`` Tool for exporting individual Datasets and Dataset
   collections to configured remote locations. The Tool will automatically
-  maintain the name and structure of Datasets and Dataset Collections.  We have
+  maintain the name and structure of Datasets and Dataset Collections. We have
   added the possibility to import entire folders of remote data and made the
-  data selection dialog more intuitive.  We also added numerous improvements and
+  data selection dialog more intuitive. We also added numerous improvements and
   fixes to the extended metadata collection strategy and `Pulsar <https://github.com/galaxyproject/pulsar>`_,
   so that many more Tools are able to run in `Pulsar <https://github.com/galaxyproject/pulsar>`_
   and write data back to storage without passing through Galaxy first.
@@ -53,7 +53,7 @@ Highlights
 
 **Migration to SQLAlchemy 1.4 and Declarative Mapping**
   Galaxy is now using `SQLAlchemy <https://www.sqlalchemy.org/>`_ version 1.4,
-  which is a prerequisite for asynchronously interacting with the Database.  We
+  which is a prerequisite for asynchronously interacting with the Database. We
   also modernized the way our Database models are defined to the more commonly
   used Declarative Mapping approach, which is more concise and better
   documented.
@@ -68,7 +68,7 @@ Highlights
   Tool parameters to Vue, which will also allows us to add many more types of
   Tool parameters. We further migrated the Tool Form variant for the Workflow
   Editor, the Workflow Run Form and the Show Dataset Parameter page to Vue.
-  (`Pull Request 12300`_, `Pull Request 12031`_,  `Pull Request 12227`_, `Pull
+  (`Pull Request 12300`_, `Pull Request 12031`_, `Pull Request 12227`_, `Pull
   Request 12296`_, `Pull Request 12323`_, `Pull Request 12329`_, `Pull Request
   12374`_, `Pull Request 12432`_, `Pull Request 12702`_, `Pull Request 12261`_).
 
