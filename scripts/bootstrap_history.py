@@ -250,6 +250,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
           make release-bootstrap-history RELEASE_CURR=${version}
     - [ ] Open newly created files and manually curate major topics and release notes.
+    - [ ] Run python scripts/scripts/release-diff.py release_${previous_version} and add configuration changes to release notes.
     - [ ] Add new release to doc/source/releases/index.rst
     - [ ] Commit release notes.
 
