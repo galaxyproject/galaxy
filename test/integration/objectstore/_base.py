@@ -81,6 +81,8 @@ def files_count(directory):
 @integration_util.skip_unless_docker()
 class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
 
+    object_store_cache_path: str
+
     @classmethod
     def setUpClass(cls):
         cls.container_name = "%s_container" % cls.__name__
