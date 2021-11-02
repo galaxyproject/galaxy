@@ -5,6 +5,7 @@ import pytest
 from galaxy.datatypes.sniff import (
     convert_newlines,
     convert_newlines_sep2tabs,
+    convert_sep2tabs,
     get_test_fname,
 )
 
@@ -24,6 +25,13 @@ def assert_converts_to_1234_convert(content, block_size=1024):
     actual_contents = open(tf.name).read()
     assert '1 2\n3 4\n' == actual_contents, actual_contents
     assert rval == (2, None), f"rval != {rval} for {content}"
+
+
+def assert_converts_to_1234_convert_sep2tabs_only(content: bytes, expected: bytes):
+    with tempfile.NamedTemporaryFile(delete=False, mode='wb') as tf:
+        tf.write(content)
+    convert_sep2tabs(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
+    assert expected == open(tf.name, "rb").read()
 
 
 @pytest.mark.parametrize('source,block_size', [
@@ -77,3 +85,9 @@ def test_convert_sep2tabs(source, expected):
         assert_converts_to_1234_convert_sep2tabs(source, expected=expected)
     else:
         assert_converts_to_1234_convert_sep2tabs(source)
+
+
+def test_convert_sep2tabs_only():
+    assert_converts_to_1234_convert_sep2tabs_only(b"1 2\r3 4", b"1\t2\r3\t4")
+    assert_converts_to_1234_convert_sep2tabs_only(b"1 2\n3 4", b"1\t2\n3\t4")
+    assert_converts_to_1234_convert_sep2tabs_only(b"1    2\n3    4", b"1\t2\n3\t4")
