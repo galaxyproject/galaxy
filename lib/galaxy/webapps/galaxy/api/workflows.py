@@ -539,9 +539,11 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
 
             if 'menu_entry' in workflow_dict or 'show_in_tool_panel' in workflow_dict:
                 if workflow_dict.get('menu_entry') or workflow_dict.get('show_in_tool_panel'):
-                    menuEntry = model.StoredWorkflowMenuEntry()
-                    menuEntry.stored_workflow = stored_workflow
-                    trans.user.stored_workflow_menu_entries.append(menuEntry)
+                    workflow_ids = [wf.stored_workflow_id for wf in trans.user.stored_workflow_menu_entries]
+                    if trans.security.decode_id(id) not in workflow_ids:
+                        menuEntry = model.StoredWorkflowMenuEntry()
+                        menuEntry.stored_workflow = stored_workflow
+                        trans.user.stored_workflow_menu_entries.append(menuEntry)
                 else:
                     # remove if in list
                     entries = {x.stored_workflow_id: x for x in trans.user.stored_workflow_menu_entries}
