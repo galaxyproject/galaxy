@@ -26,7 +26,7 @@ Highlights
   and `<Pull Request 12327>`_.
   (`Pull Request 12327`_, `Pull Request 12677`_, `Pull Request 12328`_, `Pull Request 12379`_).
 
-**Enhancements for working with remote data and distributed computing resources**
+**Enhancements for Working with Remote Data and Distributed Computing Resources**
 
   Many fixes and enhancements were made to improve how Galaxy can import and
   write to remote data locations using the configured file source plugins. In addition to
@@ -44,7 +44,7 @@ Highlights
   `Pull Request 12267`_, `Pull Request 11949`_, `Pull Request 12310`_,
   `Pull Request 12388`_, `Pull Request 12641`_).
 
-**Migration to FastAPI and extended Documentation of API routes**
+**Migration to FastAPI and Extended Documentation of API Routes**
   We have modernized and migrated many more API routes to FastAPI and have
   extended the documentation and validation of these routes.
   (`Pull Request 11315`_, `Pull Request 11827`_, `Pull Request 11983`_,
@@ -53,15 +53,15 @@ Highlights
 
 **Migration to SQLAlchemy 1.4 and Declarative Mapping**
   Galaxy is now using `SQLAlchemy <https://www.sqlalchemy.org/>`_ version 1.4,
-  which is a prerequisite for asynchronously interacting with the Database. We
-  also modernized the way our Database models are defined to the more commonly
-  used Declarative Mapping approach, which is more concise and better
+  which is a prerequisite for asynchronously interacting with the database. We
+  also modernized the way our database models are defined to the more commonly
+  used declarative mapping approach, which is more concise and better
   documented.
   (`Pull Request 12042`_, `Pull Request 12045`_, `Pull Request 12064`_,
   `Pull Request 12438`_, `Pull Request 12060`_, `Pull Request 12424`_,
   `Pull Request 12461`_).
 
-**Modernization of Tool Form interface**
+**Modernization of Tool Form Interface**
   The Tool Form interface has been almost completed migrated from
   `Backbone <https://backbonejs.org/>`_ to `Vue <https://vuejs.org/>`_.
   This improves the reactivity of parameter validation and enables the migration of
@@ -73,7 +73,7 @@ Highlights
   12374`_, `Pull Request 12432`_, `Pull Request 12702`_, `Pull Request 12261`_).
 
 **New User Welcome Page**
-  We have added a Page that new users will be directed to after creating a new Galaxy account.
+  We have added a page that new users will be directed to after creating a new Galaxy account.
   (`Pull Request 11085`_, `Pull Request 12639`_)
 
 

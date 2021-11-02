@@ -11,13 +11,13 @@ Highlights
 Tool Panel
 ----------
 
-We now have "Tool Panel Views"! These are different views into the same toolbox and might help make it easier to find the tools you want. In the future there are plans to create user-customisable toolboxes, but until then go explore the new EDAM Ontology based toolboxes which organise tools around their scientific area, or based on the scientific process they do. For example a category like "Filtering" might have tools like "select lines" or "filter bam by quality", both doing the same process of filtering, despite their different filetypes and formats.
+We now have "Tool Panel Views"! These are different views into the same toolbox and might help it make it easier to find the tools you want. In the future, there are plans to create user-customisable toolboxes, but until then go explore the new EDAM Ontology-based toolboxes which organise tools around scientific areas or processes, or based on the scientific process they do. For example, a category like "Filtering" might have tools like "select lines" or "filter bam by quality", both doing the same process of filtering, despite their different file types and formats.
 
 .. raw:: html
 
    <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/vCapB1xHjZg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-Unfortunately not all tools are well annotated yet, and while we also pull terms from `bio.tools <https://bio.tools/>`__, this still doesn't get us full coverage and many tools will still appear under a large section "Uncategorized". Hopefully this will improve as users and tool developers annotate these tools with their terms to help everyone find them.
+Unfortunately not all tools are fully annotated yet, and while we also pull terms from `bio.tools <https://bio.tools/>`__, this still doesn't get us full coverage and many tools will still appear under a large section "Uncategorized". Hopefully this will improve as users and tool developers annotate these tools with the appropriate terms that help everyone find them.
 
 More details can be found in `Pull Request 12327`_, `Pull Request 12365`_, and `Pull Request 12291`_
 
@@ -35,7 +35,7 @@ Additionally, did a *collection ever fail* for you? And you wondered why? Now yo
 Importing Data
 --------------
 
-Selecting datasets from the Remote Files view has gotten easier! Now you can select folders and files, and it will import all of the datasets recursively in those folders. Previously you could only select files within a folder so this is a huge improvement in usability of such a key new feature of Galaxy (`Pull Request 12310`_). But with great power comes great responsibility, be careful not to import the entirety of NCBI!
+Selecting datasets from the Remote Files view has gotten easier! Now you can select folders and files, and import at once all of the datasets recursively in those folders. Previously you could only select files within a folder, so this is a huge improvement in the usability of such a key new feature of Galaxy (`Pull Request 12310`_). But with great power comes great responsibility, be careful not to import the entirety of NCBI!
 
 .. raw:: html
 
@@ -45,7 +45,7 @@ Selecting datasets from the Remote Files view has gotten easier! Now you can sel
 Reports
 -------
 
-Report components used to try and arrange themselves in a smart way, but due to some issues with the floating of report components these will now be full width until we can figure out a good way to provide a similar feature allowing you to control the layout of the report (`Pull Request 12085`_).
+Report components used to automatically arrange themselves in a smart way, but due to some issues with the floating of report components these will now be full width until we can figure out a good way to provide a similar feature allowing you to control the layout of the report (`Pull Request 12085`_).
 
 .. figure:: images/21.09-reports.png
    :alt: A screenshot of the reports interface is shown, there are a number of 'report components' like table previews embedded and these are full width across the report.
