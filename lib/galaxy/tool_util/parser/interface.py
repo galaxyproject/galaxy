@@ -19,6 +19,7 @@ class ToolSource(metaclass=ABCMeta):
     information from.
     """
     default_is_multi_byte = False
+    language: str
 
     @abstractmethod
     def parse_id(self):

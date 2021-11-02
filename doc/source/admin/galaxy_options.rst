@@ -3908,6 +3908,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``allow_tool_source_display``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This option allows users to view the tool wrapper source code.
+    This is safe to enable if you have not hardcoded any secrets in
+    any of the tool wrappers installed on this Galaxy server. If you
+    have only installed tool wrappers from  public tool sheds and
+    tools shipped with Galaxy there you can enable this option.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``job_metrics_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
