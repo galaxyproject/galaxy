@@ -22,6 +22,7 @@
         </div>
         <div v-if="showField" class="ui-form-field" :data-label="title">
             <FormBoolean v-if="type == 'boolean'" v-model="currentValue" :id="id" />
+            <FormHidden v-else-if="type == 'hidden'" v-model="currentValue" :id="id" />
             <FormParameter
                 v-else-if="backbonejs"
                 v-model="currentValue"
@@ -42,12 +43,14 @@
 import _ from "underscore";
 import { getElementId } from "./utilities";
 import FormBoolean from "./Elements/FormBoolean";
+import FormHidden from "./Elements/FormHidden";
 import FormInput from "./Elements/FormInput";
 import FormParameter from "./Elements/FormParameter";
 
 export default {
     components: {
         FormBoolean,
+        FormHidden,
         FormInput,
         FormParameter,
     },
