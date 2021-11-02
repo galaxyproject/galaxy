@@ -399,6 +399,12 @@ export default {
                 _: "true",
             }).then((response) => {
                 const newData = Object.assign({}, response, node.step);
+                newData.workflow_outputs = newData.outputs.map((o) => {
+                    return {
+                        output_name: o.name,
+                        label: o.label,
+                    };
+                });
                 node.setNode(newData);
             });
         },
