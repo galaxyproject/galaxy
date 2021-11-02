@@ -757,6 +757,17 @@ class HandleUploadedDatasetFileInternalResponse(NamedTuple):
     converted_spaces: bool
 
 
+def convert_function(convert_to_posix_lines, convert_spaces_to_tabs) -> ConvertFunction:
+    assert convert_to_posix_lines or convert_spaces_to_tabs
+    if convert_spaces_to_tabs and convert_to_posix_lines:
+        convert_fxn = convert_newlines_sep2tabs
+    elif convert_to_posix_lines:
+        convert_fxn = convert_newlines
+    else:
+        convert_fxn = convert_sep2tabs
+    return convert_fxn
+
+
 def handle_uploaded_dataset_file_internal(
         filename: str,
         datatypes_registry,
@@ -802,13 +813,7 @@ def handle_uploaded_dataset_file_internal(
 
         if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
-            convert_fxn: ConvertFunction
-            if convert_spaces_to_tabs and convert_to_posix_lines:
-                convert_fxn = convert_newlines_sep2tabs
-            elif convert_to_posix_lines:
-                convert_fxn = convert_newlines
-            else:
-                convert_fxn = convert_sep2tabs
+            convert_fxn = convert_function(convert_to_posix_lines, convert_spaces_to_tabs)
             line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(converted_path, in_place=in_place, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
             if not in_place:
                 if converted_path and filename != converted_path:
