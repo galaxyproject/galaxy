@@ -26,7 +26,6 @@ export async function fromSimple(workflow, data, appendData = false) {
         }
         Vue.set(workflow.steps, workflow.nodeIndex++, {
             ...step,
-            _complete: true,
         });
     });
     await Vue.nextTick();

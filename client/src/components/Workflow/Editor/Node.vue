@@ -202,7 +202,7 @@ export default {
 
         // initialize node data
         this.$emit("onAdd", this);
-        if (this.step._complete) {
+        if (this.step.config_form) {
             this.initData(this.step);
         } else {
             this.$emit("onUpdate", this);
