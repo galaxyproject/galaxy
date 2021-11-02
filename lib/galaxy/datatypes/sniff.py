@@ -83,7 +83,12 @@ def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_
         datatype.groom_dataset_content(file_output_path)
 
 
-def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024, regexp=None):
+class ConvertResult(NamedTuple):
+    line_count: int
+    converted_path: Optional[str]
+
+
+def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024, regexp=None) -> ConvertResult:
     """
     Converts in place a file from universal line endings
     to Posix line endings.
@@ -115,12 +120,35 @@ def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] =
     if in_place:
         shutil.move(fp.name, fname)
         # Return number of lines in file.
-        return (i, None)
+        return ConvertResult(i, None)
     else:
-        return (i, fp.name)
+        return ConvertResult(i, fp.name)
 
 
-def convert_newlines_sep2tabs(fname: str, in_place: bool = True, patt: bytes = br"[^\S\n]+", tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"):
+def convert_sep2tabs(fname: str, in_place: bool = True, patt: bytes = br"[^\S\r\n]+", tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024):
+    """
+    Transforms in place a 'sep' separated file to a tab separated one
+    """
+    regexp = re.compile(patt)
+    i = 0
+    with tempfile.NamedTemporaryFile(mode='wb', prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(fname, mode='rb') as fi:
+        block = fi.read(block_size)
+        while block:
+            if block:
+                split_block = regexp.split(block)
+                block = b"\t".join(split_block)
+                fp.write(block)
+                i += block.count(b"\n") or block.count(b"\r")
+                block = fi.read(block_size)
+    if in_place:
+        shutil.move(fp.name, fname)
+        # Return number of lines in file.
+        return ConvertResult(i, None)
+    else:
+        return ConvertResult(i, fp.name)
+
+
+def convert_newlines_sep2tabs(fname: str, in_place: bool = True, patt: bytes = br"[^\S\n]+", tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload") -> ConvertResult:
     """
     Converts newlines in a file to posix newlines and replaces spaces with tabs.
     """
@@ -749,10 +777,12 @@ def handle_uploaded_dataset_file_internal(
         if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             convert_fxn: Callable
-            if convert_spaces_to_tabs:
+            if convert_spaces_to_tabs and convert_to_posix_lines:
                 convert_fxn = convert_newlines_sep2tabs
-            else:
+            elif convert_to_posix_lines:
                 convert_fxn = convert_newlines
+            else:
+                convert_fxn = convert_sep2tabs
             line_count, _converted_path = convert_fxn(converted_path, in_place=in_place, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
             if not in_place:
                 if converted_path and filename != converted_path:

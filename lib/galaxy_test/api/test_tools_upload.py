@@ -8,6 +8,7 @@ from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
+    ONE_TO_SIX_WITH_SPACES_ON_WINDOWS,
     ONE_TO_SIX_WITH_TABS,
     ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE,
 )
@@ -110,6 +111,11 @@ class ToolsUploadTestCase(ApiTestCase):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
         self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+
+    def test_fetch_tab_to_space_doesnt_swap_newlines(self):
+        table = ONE_TO_SIX_WITH_SPACES_ON_WINDOWS
+        result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
+        self.assertEqual(result_content, ONE_TO_SIX_ON_WINDOWS)
 
     def test_fetch_compressed_with_explicit_type(self):
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
