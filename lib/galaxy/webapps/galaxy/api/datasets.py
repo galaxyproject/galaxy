@@ -124,7 +124,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         )
         return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view=view) for content in contents]
 
-    @web.expose_api_anonymous
+    @web.expose_api_anonymous_and_sessionless
     def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):
         """
         GET /api/datasets/{encoded_dataset_id}
@@ -420,7 +420,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         return data
 
-    @web.expose_api_anonymous
+    @web.expose_api_anonymous_and_sessionless
     def extra_files(self, trans, history_content_id, history_id, **kwd):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/extra_files
@@ -495,7 +495,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             "item_url": item_url,
         }
 
-    @web.expose_api_raw_anonymous
+    @web.expose_api_raw_anonymous_and_sessionless
     def get_metadata_file(self, trans, history_content_id, history_id, metadata_file=None, **kwd):
         """
         GET /api/histories/{history_id}/contents/{history_content_id}/metadata_file
