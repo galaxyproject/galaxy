@@ -59,10 +59,10 @@
                         <font-awesome-icon v-if="row.item.shared" v-b-tooltip.hover title="Shared" icon="share-alt" />
                     </template>
                     <template v-slot:cell(show_in_tool_panel)="row">
-                        <b-link @click="bookmarkWorkflow(row.item, true)" v-if="row.item.show_in_tool_panel">
+                        <b-link @click="bookmarkWorkflow(row.item, false)" v-if="row.item.show_in_tool_panel">
                             <font-awesome-icon :icon="['fas', 'star']" />
                         </b-link>
-                        <b-link @click="bookmarkWorkflow(row.item, false)" v-else>
+                        <b-link @click="bookmarkWorkflow(row.item, true)" v-else>
                             <font-awesome-icon :icon="['far', 'star']" />
                         </b-link>
                     </template>
@@ -202,24 +202,24 @@ export default {
             const id = workflow.id;
             const tags = workflow.tags;
             const data = {
-                show_in_tool_panel: !checked,
+                show_in_tool_panel: checked,
                 tags: tags,
             };
             this.services
                 .updateWorkflow(id, data)
                 .then(({ id, name }) => {
                     if (checked) {
+                        getGalaxyInstance().config.stored_workflow_menu_entries.push({ id: id, name: name });
+                    } else {
                         const indexToRemove = getGalaxyInstance().config.stored_workflow_menu_entries.findIndex(
                             (workflow) => workflow.id === id
                         );
                         getGalaxyInstance().config.stored_workflow_menu_entries.splice(indexToRemove, 1);
-                    } else {
-                        getGalaxyInstance().config.stored_workflow_menu_entries.push({ id: id, name: name });
                     }
 
                     this.workflows.find((workflow) => {
                         if (workflow.id === id) {
-                            workflow.show_in_tool_panel = !checked;
+                            workflow.show_in_tool_panel = checked;
                             return true;
                         }
                     });
