@@ -26,13 +26,9 @@ export default Backbone.View.extend({
         data_collection: "_fieldData",
         integer: "_fieldSlider",
         float: "_fieldSlider",
-        boolean: "_fieldBoolean",
         drill_down: "_fieldDrilldown",
         color: "_fieldColor",
         group_tag: "_fieldSelect",
-        hidden: "_fieldHidden",
-        hidden_data: "_fieldHidden",
-        baseurl: "_fieldHidden",
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
         upload: "_fieldUpload",
@@ -185,22 +181,6 @@ export default Backbone.View.extend({
             is_workflow: input_def.is_workflow,
             min: input_def.min,
             max: input_def.max,
-            onchange: input_def.onchange,
-        });
-    },
-
-    /** Hidden field */
-    _fieldHidden: function (input_def) {
-        return new Ui.Hidden({
-            id: `field-${input_def.id}`,
-            info: input_def.info,
-        });
-    },
-
-    /** Boolean field */
-    _fieldBoolean: function (input_def) {
-        return new Ui.Switch({
-            id: `field-${input_def.id}`,
             onchange: input_def.onchange,
         });
     },

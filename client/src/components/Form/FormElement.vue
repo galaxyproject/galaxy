@@ -22,7 +22,12 @@
         </div>
         <div v-if="showField" class="ui-form-field" :data-label="title">
             <FormBoolean v-if="type == 'boolean'" v-model="currentValue" :id="id" />
-            <FormHidden v-else-if="type == 'hidden'" v-model="currentValue" :id="id" />
+            <FormHidden
+                v-else-if="['hidden', 'hidden_data', 'baseurl'].includes(type)"
+                v-model="currentValue"
+                :id="id"
+                :info="attrs['info']"
+            />
             <FormParameter
                 v-else-if="backbonejs"
                 v-model="currentValue"
