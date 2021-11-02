@@ -202,7 +202,7 @@ export default {
             const id = workflow.id;
             const tags = workflow.tags;
             const data = {
-                show_in_tool_panel: checked,
+                show_in_tool_panel: !checked,
                 tags: tags,
             };
             this.services
