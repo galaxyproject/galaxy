@@ -14,7 +14,7 @@ import sys
 import tempfile
 import urllib.request
 import zipfile
-from typing import Callable, Dict, IO, NamedTuple, Optional
+from typing import Dict, IO, NamedTuple, Optional
 
 from typing_extensions import Protocol
 
@@ -88,6 +88,12 @@ class ConvertResult(NamedTuple):
     converted_path: Optional[str]
 
 
+class ConvertFunction(Protocol):
+
+    def __call__(self, fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload") -> ConvertResult:
+        ...
+
+
 def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024, regexp=None) -> ConvertResult:
     """
     Converts in place a file from universal line endings
@@ -125,10 +131,11 @@ def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] =
         return ConvertResult(i, fp.name)
 
 
-def convert_sep2tabs(fname: str, in_place: bool = True, patt: bytes = br"[^\S\r\n]+", tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024):
+def convert_sep2tabs(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024):
     """
     Transforms in place a 'sep' separated file to a tab separated one
     """
+    patt: bytes = br"[^\S\r\n]+"
     regexp = re.compile(patt)
     i = 0
     with tempfile.NamedTemporaryFile(mode='wb', prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(fname, mode='rb') as fi:
@@ -148,10 +155,11 @@ def convert_sep2tabs(fname: str, in_place: bool = True, patt: bytes = br"[^\S\r\
         return ConvertResult(i, fp.name)
 
 
-def convert_newlines_sep2tabs(fname: str, in_place: bool = True, patt: bytes = br"[^\S\n]+", tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload") -> ConvertResult:
+def convert_newlines_sep2tabs(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload") -> ConvertResult:
     """
     Converts newlines in a file to posix newlines and replaces spaces with tabs.
     """
+    patt: bytes = br"[^\S\n]+"
     regexp = re.compile(patt)
     return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
 
@@ -776,7 +784,7 @@ def handle_uploaded_dataset_file_internal(
 
         if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
-            convert_fxn: Callable
+            convert_fxn: ConvertFunction
             if convert_spaces_to_tabs and convert_to_posix_lines:
                 convert_fxn = convert_newlines_sep2tabs
             elif convert_to_posix_lines:
@@ -787,6 +795,7 @@ def handle_uploaded_dataset_file_internal(
             if not in_place:
                 if converted_path and filename != converted_path:
                     os.unlink(converted_path)
+                assert _converted_path
                 converted_path = _converted_path
             if ext in AUTO_DETECT_EXTENSIONS:
                 ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order, is_binary=is_binary)
