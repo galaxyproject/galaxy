@@ -416,10 +416,10 @@ export default {
             const editUrl = `${getAppRoot()}workflow/editor?workflow_id=${contentId}`;
             this.onNavigate(editUrl);
         },
-        onClone(node) {
+        async onClone(node) {
             const newId = this.nodeIndex++;
             const stepCopy = JSON.parse(JSON.stringify(node.step));
-            Vue.set(this.steps, newId, {
+            await Vue.set(this.steps, newId, {
                 ...stepCopy,
                 id: newId,
                 uuid: null,
@@ -429,11 +429,9 @@ export default {
                 tool_state: JSON.parse(JSON.stringify(node.tool_state)),
                 post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
             });
-            Vue.nextTick().then(() => {
-                this.canvasManager.drawOverview();
-                node = this.nodes[newId];
-                this.onActivate(node);
-            });
+            this.canvasManager.drawOverview();
+            node = this.nodes[newId];
+            this.onActivate(node);
         },
         onInsertTool(tool_id, tool_name) {
             this._insertStep(tool_id, tool_name, "tool");
