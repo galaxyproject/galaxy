@@ -250,6 +250,8 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
           make release-bootstrap-history RELEASE_CURR=${version}
     - [ ] Open newly created files and manually curate major topics and release notes.
+    - [ ] Run python scripts/scripts/release-diff.py release_${previous_version} and add configuration changes to release notes.
+    - [ ] Add new release to doc/source/releases/index.rst
     - [ ] Commit release notes.
 
           git add docs/; git commit -m "Release notes for $version"; git push upstream ${version}_release_notes
@@ -264,7 +266,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged or closed.
 
           make release-check-blocking-prs RELEASE_CURR=${version}
-    - [ ] Ensure all PRs merged into the pre-release branch during the freeze have [milestones attached](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Aclosed+base%3Arelease_{version}+is%3Amerged+no%3Amilestone) and that they are the not [${next_version} milestones](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Aclosed+base%3Arelease_{version}+is%3Amerged+milestone%3A{next_version})
+    - [ ] Ensure all PRs merged into the pre-release branch during the freeze have [milestones attached](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Aclosed+base%3Arelease_${version}+is%3Amerged+no%3Amilestone) and that they are the not [${next_version} milestones](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Aclosed+base%3Arelease_${version}+is%3Amerged+milestone%3A${next_version})
     - [ ] Ensure release notes include all PRs added during the freeze by re-running the release note bootstrapping:
 
           make release-bootstrap-history
@@ -419,16 +421,12 @@ def check_blocking_issues(argv):
     release_name = argv[2]
     block = 0
     github = _github_client()
-    issues = github.issues.list_by_repo(
-        user='galaxyproject',
-        repo='galaxy',
-        state="open"
-    )
-    for page in issues:
-        for issue in page:
-            if issue.milestone and issue.milestone.title == release_name and "Publication of Galaxy Release" not in issue.title:
-                print("WARN: Blocking issue| %s" % _issue_to_str(issue))
-                block = 1
+    repo = github.get_repo('galaxyproject/galaxy')
+    issues = repo.get_issues(state='open')
+    for issue in issues:
+        if issue.milestone and issue.milestone.title == release_name and "Publication of Galaxy Release" not in issue.title:
+            print("WARN: Blocking issue| %s" % _issue_to_str(issue))
+            block = 1
 
     sys.exit(block)
 

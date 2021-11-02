@@ -84,6 +84,12 @@ def _report_dict(title, subheading, data, mapper):
     print()
 
 
+def _indent(s, by=4):
+    whitespace = ' ' * by
+    s = s if isinstance(s, list) else s.splitlines()
+    return "\n".join((f"{whitespace}{line}" for line in s))
+
+
 def report_diff(added, changed, removed, new_files):
     # Print out report
     if added or changed or removed:
@@ -104,7 +110,7 @@ def report_diff(added, changed, removed, new_files):
             "Changed",
             "The following configuration options have been changed",
             changed,
-            lambda x: f"-  {x[0]} has changed from ``{x[1]}`` to ``{x[2]}``"
+            lambda x: f"-  {x[0]} has changed from\n\n   ::\n\n{_indent(x[1])}\n\n   to\n\n   ::\n\n{_indent(x[2])}\n\n"
         )
 
     if removed:

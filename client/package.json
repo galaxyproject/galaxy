@@ -11,7 +11,8 @@
   },
   "license": "AFL-3.0",
   "resolutions": {
-    "**/chokidar": "3.5.2"
+    "**/chokidar": "3.5.2",
+    "**/ua-parser-js": "0.7.30"
   },
   "dependencies": {
     "@babel/polyfill": "^7.10.1",

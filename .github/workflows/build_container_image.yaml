@@ -21,23 +21,9 @@ jobs:
       - name: Set branch name
         id: branch
         run: echo "::set-output name=name::$(BRANCH_NAME=${GITHUB_REF##*/}; echo ${BRANCH_NAME/release_/}-auto)"
-      - name: Login to docker hub
-        uses: actions-hub/docker/login@master
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       - run: docker build . -t galaxy/galaxy-min:${{ steps.vars.outputs.sha_short }} -f .k8s_ci.Dockerfile
-      - name: Push to docker hub with commit ID
-        uses: actions-hub/docker@master
-        with:
-          args: push galaxy/galaxy-min:${{ steps.vars.outputs.sha_short }}
-      - run: docker tag galaxy/galaxy-min:${{ steps.vars.outputs.sha_short }} galaxy/galaxy-min:${{ steps.branch.outputs.name }}
-      - name: Push to docker hub with branch name
-        uses: actions-hub/docker@master
-        with:
-          args: push galaxy/galaxy-min:${{ steps.branch.outputs.name }}
       - run: docker tag galaxy/galaxy-min:${{ steps.vars.outputs.sha_short }} quay.io/galaxy-k8s/galaxy:${{ steps.branch.outputs.name }} && docker tag galaxy/galaxy-min:${{ steps.vars.outputs.sha_short }} quay.io/galaxy-k8s/galaxy:${{ steps.vars.outputs.sha_short }}
-      - name: Login to docker hub
+      - name: Login to quay.io
         uses: actions-hub/docker/login@master
         env:
           DOCKER_USERNAME: ${{ secrets.QUAY_USERNAME }}
