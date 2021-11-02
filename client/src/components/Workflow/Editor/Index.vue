@@ -580,7 +580,7 @@ export default {
                 type: type,
             });
         },
-        _loadEditorData(data) {
+        async _loadEditorData(data) {
             const report = data.report || {};
             const markdown = report.markdown || reportDefault;
             this.markdownText = markdown;
@@ -593,11 +593,10 @@ export default {
             getVersions(this.id).then((versions) => {
                 this.versions = versions;
             });
-            Vue.nextTick(() => {
-                this.canvasManager.drawOverview();
-                this.canvasManager.scrollToNodes();
-                this.hasChanges = has_changes;
-            });
+            await Vue.nextTick();
+            this.canvasManager.drawOverview();
+            this.canvasManager.scrollToNodes();
+            this.hasChanges = has_changes;
         },
         _loadCurrent(id, version) {
             this.onWorkflowMessage("Loading workflow...", "progress");
