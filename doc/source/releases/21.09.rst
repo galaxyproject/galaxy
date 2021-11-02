@@ -808,6 +808,11 @@ Fixes
   `Pull Request 12816`_
 * Fix remote object store datasets not purged
   `Pull Request 12815`_
+* Pin a resolution for ua-parser-js to 0.7.30
+  `Pull Request 12827`_
+* Allow sessionless access to some datasets API endpoints
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12830`_
 
 .. include:: 21.09_prs.rst
 

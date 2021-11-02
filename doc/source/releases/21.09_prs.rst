@@ -351,3 +351,5 @@
 .. _Pull Request 12816: https://github.com/galaxyproject/galaxy/pull/12816
 .. _Pull Request 12815: https://github.com/galaxyproject/galaxy/pull/12815
 .. _Pull Request 12520: https://github.com/galaxyproject/galaxy/pull/12520
+.. _Pull Request 12830: https://github.com/galaxyproject/galaxy/pull/12830
+.. _Pull Request 12827: https://github.com/galaxyproject/galaxy/pull/12827
