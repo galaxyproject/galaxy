@@ -19,6 +19,8 @@ class HandleUploadResponse(NamedTuple):
     datatype: data.Data
     is_binary: bool
     converted_path: Optional[str]
+    converted_newlines: bool
+    converted_spaces: bool
 
 
 def handle_upload(
@@ -42,13 +44,15 @@ def handle_upload(
     # Does the first 1K contain a null?
     is_binary = check_binary(path)
 
+    converted_newlines, converted_spaces = False, False
+
     # Decompress if needed/desired and determine/validate filetype. If a keep-compressed datatype is explicitly selected
     # or if autodetection is selected and the file sniffs as a keep-compressed datatype, it will not be decompressed.
     if not link_data_only:
         if auto_decompress and is_zip(path) and not is_single_file_zip(path):
             multi_file_zip = True
         try:
-            ext, converted_path, compression_type = sniff.handle_uploaded_dataset_file_internal(
+            ext, converted_path, compression_type, converted_newlines, converted_spaces = sniff.handle_uploaded_dataset_file_internal(
                 path,
                 registry,
                 ext=requested_ext,
@@ -96,4 +100,4 @@ def handle_upload(
     if multi_file_zip and not getattr(datatype, 'compressed', False):
         stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
 
-    return HandleUploadResponse(stdout, ext, datatype, is_binary, converted_path)
+    return HandleUploadResponse(stdout, ext, datatype, is_binary, converted_path, converted_newlines, converted_spaces)

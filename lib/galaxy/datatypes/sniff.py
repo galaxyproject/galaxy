@@ -86,6 +86,8 @@ def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_
 class ConvertResult(NamedTuple):
     line_count: int
     converted_path: Optional[str]
+    converted_newlines: bool
+    converted_regex: bool
 
 
 class ConvertFunction(Protocol):
@@ -100,6 +102,8 @@ def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] =
     to Posix line endings.
     """
     i = 0
+    converted_newlines = False
+    converted_regex = False
     NEWLINE_BYTE = 10
     CR_BYTE = 13
     with tempfile.NamedTemporaryFile(mode='wb', prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(fname, mode='rb') as fi:
@@ -113,22 +117,28 @@ def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] =
                 block = block[1:]
             if block:
                 last_char = block[-1]
-                block = block.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                if b"\r" in block:
+                    block = block.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                    converted_newlines = True
                 if regexp:
-                    block = b"\t".join(regexp.split(block))
+                    split_block = regexp.split(block)
+                    if len(split_block) > 1:
+                        converted_regex = True
+                    block = b"\t".join(split_block)
                 fp.write(block)
                 i += block.count(b"\n")
                 last_block = block
                 block = fi.read(block_size)
         if last_block and last_block[-1] != NEWLINE_BYTE:
+            converted_newlines = True
             i += 1
             fp.write(b"\n")
     if in_place:
         shutil.move(fp.name, fname)
         # Return number of lines in file.
-        return ConvertResult(i, None)
+        return ConvertResult(i, None, converted_newlines, converted_regex)
     else:
-        return ConvertResult(i, fp.name)
+        return ConvertResult(i, fp.name, converted_newlines, converted_regex)
 
 
 def convert_sep2tabs(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024):
@@ -138,11 +148,15 @@ def convert_sep2tabs(fname: str, in_place: bool = True, tmp_dir: Optional[str] =
     patt: bytes = br"[^\S\r\n]+"
     regexp = re.compile(patt)
     i = 0
+    converted_newlines = False
+    converted_regex = False
     with tempfile.NamedTemporaryFile(mode='wb', prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(fname, mode='rb') as fi:
         block = fi.read(block_size)
         while block:
             if block:
                 split_block = regexp.split(block)
+                if len(split_block) > 1:
+                    converted_regex = True
                 block = b"\t".join(split_block)
                 fp.write(block)
                 i += block.count(b"\n") or block.count(b"\r")
@@ -150,9 +164,9 @@ def convert_sep2tabs(fname: str, in_place: bool = True, tmp_dir: Optional[str] =
     if in_place:
         shutil.move(fp.name, fname)
         # Return number of lines in file.
-        return ConvertResult(i, None)
+        return ConvertResult(i, None, converted_newlines, converted_regex)
     else:
-        return ConvertResult(i, fp.name)
+        return ConvertResult(i, fp.name, converted_newlines, converted_regex)
 
 
 def convert_newlines_sep2tabs(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload") -> ConvertResult:
@@ -739,6 +753,8 @@ class HandleUploadedDatasetFileInternalResponse(NamedTuple):
     ext: str
     converted_path: str
     compressed_type: Optional[str]
+    converted_newlines: bool
+    converted_spaces: bool
 
 
 def handle_uploaded_dataset_file_internal(
@@ -765,6 +781,8 @@ def handle_uploaded_dataset_file_internal(
         check_content=check_content,
         auto_decompress=auto_decompress,
     )
+    converted_newlines = False
+    converted_spaces = False
     try:
         if not is_valid:
             if is_tar(converted_path):
@@ -791,7 +809,7 @@ def handle_uploaded_dataset_file_internal(
                 convert_fxn = convert_newlines
             else:
                 convert_fxn = convert_sep2tabs
-            line_count, _converted_path = convert_fxn(converted_path, in_place=in_place, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
+            line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(converted_path, in_place=in_place, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
             if not in_place:
                 if converted_path and filename != converted_path:
                     os.unlink(converted_path)
@@ -808,7 +826,7 @@ def handle_uploaded_dataset_file_internal(
         if filename != converted_path:
             os.unlink(converted_path)
         raise
-    return HandleUploadedDatasetFileInternalResponse(ext, converted_path, compressed_type)
+    return HandleUploadedDatasetFileInternalResponse(ext, converted_path, compressed_type, converted_newlines, converted_spaces)
 
 
 AUTO_DETECT_EXTENSIONS = ['auto']  # should 'data' also cause auto detect?
