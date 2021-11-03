@@ -165,7 +165,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
             self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=1)
 
     def _collection_dropdown(self, option_description):
-        return self.use_bootstrap_dropdown(option=option_description, menu="new content menu")
+        return self.use_bootstrap_dropdown(option=option_description, menu="selected content menu")
 
     def _wait_for_and_select(self, hids):
         """

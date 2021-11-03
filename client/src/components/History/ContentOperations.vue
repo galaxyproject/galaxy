@@ -31,6 +31,7 @@
                     size="sm"
                     text="Selection"
                     :disabled="!hasSelection"
+                    data-description="selected content menu"
                 >
                     <b-dropdown-text id="history-op-selected-content">
                         <span v-localize v-if="hasSelection">With {{ numSelected }} selected items...</span>
@@ -59,8 +60,38 @@
                         :disabled="!hasSelection"
                     >
                         <span v-localize>Permanently Delete</span>
-                        <span v-if="numSelected">{{ numSelected }} items</span>
-                        <span v-else>(Disabled)</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-selected-content"
+                        @click="buildDatasetList"
+                        data-description="build list"
+                    >
+                        <span v-localize>Build Dataset List</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-selected-content"
+                        @click="buildDatasetPair"
+                        data-description="build pair"
+                    >
+                        <span v-localize>Build Dataset Pair</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-selected-content"
+                        @click="buildListOfPairs"
+                        data-description="build list of pairs"
+                    >
+                        <span v-localize>Build List of Dataset Pairs</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-selected-content"
+                        @click="buildCollectionFromRules"
+                        data-description="build collection from rules"
+                    >
+                        <span v-localize>Build Collection from Rules</span>
                     </b-dropdown-item>
                 </b-dropdown>
 
@@ -69,10 +100,19 @@
                     size="sm"
                     text="History"
                     :disabled="!totalMatches"
+                    data-description="history action menu"
                 >
                     <b-dropdown-text id="history-op-all-content">
                         <span v-localize>With entire history...</span>
                     </b-dropdown-text>
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-all-content"
+                        @click="iframeRedirect('/dataset/copy_datasets')"
+                        data-description="copy datasets"
+                    >
+                        <span v-localize>Copy Datasets</span>
+                    </b-dropdown-item>
 
                     <b-dropdown-item v-b-modal:show-all-hidden-content aria-describedby="history-op-all-content">
                         <span v-localize>Unhide All Hidden Content</span>
@@ -84,63 +124,6 @@
 
                     <b-dropdown-item v-b-modal:purge-all-deleted-content aria-describedby="history-op-all-content">
                         <span v-localize>Purge All Hidden Content</span>
-                    </b-dropdown-item>
-                </b-dropdown>
-
-                <b-dropdown
-                    class="history-contents-list-action-menu-btn"
-                    size="sm"
-                    text="Create New Content"
-                    :disabled="!totalMatches"
-                    data-description="new content menu"
-                >
-                    <template v-slot:button-content>
-                        <Icon icon="plus" />
-                        <span class="sr-only" v-localize>Create New Content</span>
-                    </template>
-
-                    <b-dropdown-text id="history-op-new-content">
-                        <span>Create new content</span>
-                    </b-dropdown-text>
-
-                    <b-dropdown-item
-                        aria-describedby="history-op-new-content"
-                        @click="iframeRedirect('/dataset/copy_datasets')"
-                        data-description="copy datasets"
-                    >
-                        <span v-localize>Copy Datasets</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item
-                        aria-describedby="history-op-new-content"
-                        @click="buildDatasetList"
-                        data-description="build list"
-                    >
-                        <span v-localize>Build Dataset List</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item
-                        aria-describedby="history-op-new-content"
-                        @click="buildDatasetPair"
-                        data-description="build pair"
-                    >
-                        <span v-localize>Build Dataset Pair</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item
-                        aria-describedby="history-op-new-content"
-                        @click="buildListOfPairs"
-                        data-description="build list of pairs"
-                    >
-                        <span v-localize>Build List of Dataset Pairs</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item
-                        aria-describedby="history-op-new-content"
-                        @click="buildCollectionFromRules"
-                        data-description="build collection from rules"
-                    >
-                        <span v-localize>Build Collection from Rules</span>
                     </b-dropdown-item>
                 </b-dropdown>
             </b-button-group>
