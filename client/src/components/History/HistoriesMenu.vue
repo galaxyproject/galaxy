@@ -24,7 +24,7 @@
 
             <b-dropdown-item v-b-modal.history-selector-modal>
                 <Icon fixed-width class="mr-1" icon="exchange-alt" />
-                <span v-localize>Change the Current History</span>
+                <span v-localize>Change History</span>
             </b-dropdown-item>
 
             <b-dropdown-item data-description="create new history" @click="$emit('createNewHistory')">
