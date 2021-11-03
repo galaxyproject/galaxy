@@ -532,7 +532,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         #   pulling from the original providers if possible, then the new providers
         if provider:
             if provider in registry.dataset_type_name_to_data_provider:
-                data_provider = registry.dataset_type_name_to_data_provider[provider](dataset)
+                data_provider = registry.get_data_provider(trans, name=provider, original_dataset=dataset)
 
             elif dataset.datatype.has_dataprovider(provider):
                 kwargs = dataset.datatype.dataproviders[provider].parse_query_string_settings(kwargs)
