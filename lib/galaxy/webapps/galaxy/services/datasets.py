@@ -3,7 +3,8 @@ API operations on the contents of a history dataset.
 """
 import logging
 import os
-from typing import Any
+from enum import Enum
+from typing import Any, Optional
 
 
 from galaxy import (
@@ -20,6 +21,11 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.managers.history_contents import HistoryContentsFilters, HistoryContentsManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.schema import FilterQueryParams, SerializationParams
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import (
+    DatasetSourceType,
+    UpdateDatasetPermissionsPayload,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.path import (
     safe_walk
@@ -29,11 +35,24 @@ from galaxy.visualization.data_providers.genome import (
     FeatureLocationIndexDataProvider,
     SamDataProvider
 )
+from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.web.framework.helpers import is_true
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
+
+
+class RequestDataType(str, Enum):
+    """Particular pieces of information that can be requested for a dataset."""
+    state = "state"
+    converted_datasets_state = "converted_datasets_state"
+    data = "data"
+    features = "features"
+    raw_data = "raw_data"
+    track_config = "track_config"
+    genome_data = "genome_data"
+    in_use_state = "in_use_state"
 
 
 class DatasetsService(ServiceBase, UsesVisualizationMixin):
@@ -48,6 +67,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         ldda_manager: LDDAManager,
         history_contents_manager: HistoryContentsManager,
         history_contents_filters: HistoryContentsFilters,
+        data_provider_registry: DataProviderRegistry
     ):
         super().__init__(security)
         self.history_manager = history_manager
@@ -57,6 +77,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self.ldda_manager = ldda_manager
         self.history_contents_manager = history_contents_manager
         self.history_contents_filters = history_contents_filters
+        self.data_provider_registry = data_provider_registry
 
     @property
     def serializer_by_type(self):
@@ -64,10 +85,10 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def index(
         self,
-        trans,
-        limit,
-        offset,
-        history_id,
+        trans: ProvidesHistoryContext,
+        limit: Optional[int],
+        offset: Optional[int],
+        history_id: EncodedDatabaseIdField,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
     ):
@@ -88,11 +109,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def show(
         self,
-        trans,
-        id,
-        hda_ldda,
-        data_type,
-        provider,
+        trans: ProvidesHistoryContext,
+        id: EncodedDatabaseIdField,
+        hda_ldda: DatasetSourceType,
+        data_type: Optional[RequestDataType],
+        provider: Optional[str],
         serialization_params: SerializationParams,
         **kwd,
     ):
@@ -103,22 +124,23 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
 
         # Use data type to return particular type of data.
-        if data_type == 'state':
+        if data_type == RequestDataType.state:
             rval = self._dataset_state(trans, dataset)
-        elif data_type == 'converted_datasets_state':
-            rval = self._converted_datasets_state(trans, dataset, kwd.get('chrom', None),
-                                                  is_true(kwd.get('retry', False)))
-        elif data_type == 'data':
+        elif data_type == RequestDataType.converted_datasets_state:
+            rval = self._converted_datasets_state(
+                trans, dataset, kwd.get('chrom', None), is_true(kwd.get('retry', False))
+            )
+        elif data_type == RequestDataType.data:
             rval = self._data(trans, dataset, **kwd)
-        elif data_type == 'features':
+        elif data_type == RequestDataType.features:
             rval = self._search_features(trans, dataset, kwd.get('query'))
-        elif data_type == 'raw_data':
+        elif data_type == RequestDataType.raw_data:
             rval = self._raw_data(trans, dataset, provider, **kwd)
-        elif data_type == 'track_config':
+        elif data_type == RequestDataType.track_config:
             rval = self.get_new_track_config(trans, dataset)
-        elif data_type == 'genome_data':
+        elif data_type == RequestDataType.genome_data:
             rval = self._get_genome_data(trans, dataset, kwd.get('dbkey', None))
-        elif data_type == 'in_use_state':
+        elif data_type == RequestDataType.in_use_state:
             rval = self._dataset_in_use_state(dataset)
         else:
             # Default: return dataset as dict.
@@ -134,7 +156,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 rval = self.encode_all_ids(dataset_dict)
         return rval
 
-    def show_storage(self, trans: ProvidesHistoryContext, dataset_id, hda_ldda='hda'):
+    def show_storage(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: EncodedDatabaseIdField,
+        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+    ):
         """
         Display user-facing storage details related to the objectstore a
         dataset resides in.
@@ -159,7 +186,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             'percent_used': percent_used,
         }
 
-    def show_inheritance_chain(self, trans, dataset_id, hda_ldda='hda'):
+    def show_inheritance_chain(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: EncodedDatabaseIdField,
+        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+    ):
         """
         Display inheritance chain for the given dataset.
         """
@@ -171,27 +203,34 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         return result
 
-    def update_permissions(self, trans, dataset_id, payload, **kwd):
+    def update_permissions(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: EncodedDatabaseIdField,
+        payload: UpdateDatasetPermissionsPayload,
+        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+    ):
         """
         Updates permissions of a dataset.
         """
-        if payload:
-            kwd.update(payload)
-        hda_ldda = kwd.get('hda_ldda', 'hda')
+        payload_dict = payload.dict(by_alias=True)
         dataset_assoc = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
         if hda_ldda == "hda":
-            self.hda_manager.update_permissions(trans, dataset_assoc, **kwd)
+            self.hda_manager.update_permissions(trans, dataset_assoc, **payload_dict)
             return self.hda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
         else:
-            self.ldda_manager.update_permissions(trans, dataset_assoc, **kwd)
+            self.ldda_manager.update_permissions(trans, dataset_assoc, **payload_dict)
             return self.ldda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
 
-    def extra_files(self, trans, history_content_id):
+    def extra_files(
+        self,
+        trans: ProvidesHistoryContext,
+        history_content_id: EncodedDatabaseIdField,
+    ):
         """
         Generate list of extra files.
         """
         decoded_content_id = self.decode_id(history_content_id)
-
         hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
         extra_files_path = hda.extra_files_path
         rval = []
@@ -203,8 +242,17 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         return rval
 
-    def display(self, trans, history_content_id, history_id,
-                preview=False, filename=None, to_ext=None, raw=False, **kwd):
+    def display(
+        self,
+        trans: ProvidesHistoryContext,
+        history_content_id: EncodedDatabaseIdField,
+        history_id: EncodedDatabaseIdField,
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        raw: bool = False,
+        **kwd,
+    ):
         """
         Displays history content (dataset).
 
@@ -213,8 +261,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
         decoded_content_id = self.decode_id(history_content_id)
-        raw = util.string_as_bool_or_none(raw)
-
         rval: Any = ''
         try:
             hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
@@ -241,7 +287,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             raise galaxy_exceptions.InternalServerError(f"Could not get display data for dataset: {util.unicodify(e)}")
         return rval
 
-    def get_content_as_text(self, trans, dataset_id):
+    def get_content_as_text(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: EncodedDatabaseIdField,
+    ):
         """ Returns item content as Text. """
         decoded_id = self.decode_id(dataset_id)
         dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
@@ -258,7 +308,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             "item_url": item_url,
         }
 
-    def get_metadata_file(self, trans, history_content_id, metadata_file=None):
+    def get_metadata_file(
+        self,
+        trans: ProvidesHistoryContext,
+        history_content_id: EncodedDatabaseIdField,
+        metadata_file: Optional[str] = None,
+    ):
         """
         Gets the associated metadata file.
         """
@@ -266,15 +321,16 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
         file_ext = hda.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
         fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in hda.name)[0:150]
-        trans.response.headers["Content-Type"] = "application/octet-stream"
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'
-        return open(hda.metadata.get(metadata_file).file_name, 'rb')
+        headers = {}
+        headers["Content-Type"] = "application/octet-stream"
+        headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'
+        return open(hda.metadata.get(metadata_file).file_name, 'rb'), headers
 
     def converted(
         self,
-        trans,
-        dataset_id,
-        ext,
+        trans: ProvidesHistoryContext,
+        dataset_id: EncodedDatabaseIdField,
+        ext: Optional[str],
         serialization_params: SerializationParams,
     ):
         """
@@ -343,8 +399,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         # If there is a chrom, check for data on the chrom.
         if chrom:
-            data_provider = trans.app.data_provider_registry.get_data_provider(trans,
-                                                                               original_dataset=dataset, source='index')
+            data_provider = self.data_provider_registry.get_data_provider(trans,
+                                                                          original_dataset=dataset, source='index')
             if not data_provider.has_data(chrom):
                 return dataset.conversion_messages.NO_DATA
 
@@ -387,13 +443,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         extra_info = None
         mode = kwargs.get("mode", "Auto")
-        data_provider_registry = trans.app.data_provider_registry
         indexer = None
 
         # Coverage mode uses index data.
         if mode == "Coverage":
             # Get summary using minimal cutoffs.
-            indexer = data_provider_registry.get_data_provider(trans, original_dataset=dataset, source='index')
+            indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source='index')
             return indexer.get_data(chrom, low, high, **kwargs)
 
         # TODO:
@@ -403,7 +458,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         # If mode is Auto, need to determine what type of data to return.
         if mode == "Auto":
             # Get stats from indexer.
-            indexer = data_provider_registry.get_data_provider(trans, original_dataset=dataset, source='index')
+            indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source='index')
             stats = indexer.get_data(chrom, low, high, stats=True)
 
             # If stats were requested, return them.
@@ -429,7 +484,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         #
 
         # Get data provider.
-        data_provider = data_provider_registry.get_data_provider(trans, original_dataset=dataset, source='data')
+        data_provider = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source='data')
 
         # Allow max_vals top be data provider set if not passed
         if max_vals is None:
@@ -450,7 +505,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
             # Get mean depth.
             if not indexer:
-                indexer = data_provider_registry.get_data_provider(trans, original_dataset=dataset, source='index')
+                indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source='index')
             stats = indexer.get_data(chrom, low, high, stats=True)
             mean_depth = stats['data']['mean']
 
@@ -471,7 +526,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         if msg:
             return msg
 
-        registry = trans.app.data_provider_registry
+        registry = self.data_provider_registry
 
         # allow the caller to specify which provider is used
         #   pulling from the original providers if possible, then the new providers

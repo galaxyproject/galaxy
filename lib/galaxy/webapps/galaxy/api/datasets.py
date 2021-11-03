@@ -4,11 +4,15 @@ API operations on the contents of a history dataset.
 import logging
 
 from galaxy import (
+    util,
     web
 )
 from galaxy.schema import FilterQueryParams
 from galaxy.webapps.base.controller import UsesVisualizationMixin
-from galaxy.webapps.galaxy.api.common import parse_serialization_params
+from galaxy.webapps.galaxy.api.common import (
+    get_update_permission_payload,
+    parse_serialization_params,
+)
 from galaxy.webapps.galaxy.services.datasets import DatasetsService
 from . import BaseGalaxyAPIController, depends
 
@@ -120,7 +124,11 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :rtype:     dict
         :returns:   dictionary containing new permissions
         """
-        return self.service.update_permissions(trans, dataset_id, payload, **kwd)
+        hda_ldda = kwd.pop('hda_ldda', 'hda')
+        if payload:
+            kwd.update(payload)
+        update_payload = get_update_permission_payload(kwd)
+        return self.service.update_permissions(trans, dataset_id, update_payload, hda_ldda)
 
     @web.expose_api_anonymous_and_sessionless
     def extra_files(self, trans, history_content_id, history_id, **kwd):
@@ -141,6 +149,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         some point in the future without warning. Generally, data should be processed by its
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
+        raw = util.string_as_bool_or_none(raw)
         return self.service.display(
             trans, history_content_id, history_id, preview, filename, to_ext, raw, **kwd
         )
@@ -155,7 +164,9 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         GET /api/histories/{history_id}/contents/{history_content_id}/metadata_file
         """
-        return self.service.get_metadata_file(trans, history_content_id, metadata_file)
+        metadata_file, headers = self.service.get_metadata_file(trans, history_content_id, metadata_file)
+        trans.response.headers.update(headers)
+        return metadata_file
 
     @web.expose_api_anonymous
     def converted(self, trans, dataset_id, ext, **kwargs):
