@@ -1,8 +1,8 @@
-<tool id="CONVERTER_fasta_to_bowtie_base_index" name="Convert FASTA to Bowtie base space Index" version="1.0.0">
+<tool id="CONVERTER_fasta_to_bowtie_base_index" name="Convert FASTA to Bowtie base space Index" version="1.3.1">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <!-- Used on the metadata edit page. -->
     <requirements>
-        <requirement type="package">bowtie</requirement>
+        <requirement type="package" version="1.3.1">bowtie</requirement>
     </requirements>
     <command>
 <![CDATA[
