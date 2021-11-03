@@ -63,7 +63,7 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        aria-describedby="history-op-new-content"
+                        aria-describedby="history-op-selected-content"
                         @click="buildDatasetList"
                         data-description="build list"
                     >
@@ -71,7 +71,7 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        aria-describedby="history-op-new-content"
+                        aria-describedby="history-op-selected-content"
                         @click="buildDatasetPair"
                         data-description="build pair"
                     >
@@ -79,7 +79,7 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        aria-describedby="history-op-new-content"
+                        aria-describedby="history-op-selected-content"
                         @click="buildListOfPairs"
                         data-description="build list of pairs"
                     >
@@ -87,7 +87,7 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        aria-describedby="history-op-new-content"
+                        aria-describedby="history-op-selected-content"
                         @click="buildCollectionFromRules"
                         data-description="build collection from rules"
                     >
@@ -107,7 +107,7 @@
                     </b-dropdown-text>
 
                     <b-dropdown-item
-                        aria-describedby="history-op-new-content"
+                        aria-describedby="history-op-all-content"
                         @click="iframeRedirect('/dataset/copy_datasets')"
                         data-description="copy datasets"
                     >
