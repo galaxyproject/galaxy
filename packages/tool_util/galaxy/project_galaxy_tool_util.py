@@ -1,4 +1,4 @@
-__version__ = "21.9.0"
+__version__ = "21.9.1"
 
 PROJECT_NAME = "galaxy-tool-util"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"
