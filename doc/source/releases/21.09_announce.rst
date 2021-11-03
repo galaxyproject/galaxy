@@ -108,7 +108,7 @@ Added
 
 The following configuration options are new
 
-config/galaxy.yml.sample:galaxy
+config/galaxy.yml.sample
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  biotools_content_directory
