@@ -4,7 +4,7 @@ API operations on the contents of a history dataset.
 import logging
 import os
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 
 from galaxy import (
@@ -14,6 +14,7 @@ from galaxy import (
     web,
 )
 from galaxy.datatypes import dataproviders
+from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdas import HDAManager, HDASerializer
 from galaxy.managers.hdcas import HDCASerializer
@@ -80,7 +81,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self.data_provider_registry = data_provider_registry
 
     @property
-    def serializer_by_type(self):
+    def serializer_by_type(self) -> Dict[str, ModelSerializer]:
         return {'dataset': self.hda_serializer, 'dataset_collection': self.hdca_serializer}
 
     def index(
@@ -96,16 +97,20 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Search datasets or collections using a query system and returns a list
         containing summary of dataset or dataset_collection information.
         """
+        user = self.get_authenticated_user(trans)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
         view = serialization_params.view or 'summary'
         order_by = self.build_order_by(self.history_contents_manager, filter_query_params.order or "create_time-dsc")
         container = None
         if history_id:
-            container = self.history_manager.get_accessible(self.decode_id(history_id), trans.user)
+            container = self.history_manager.get_accessible(self.decode_id(history_id), user)
         contents = self.history_contents_manager.contents(
-            container=container, filters=filters, limit=limit, offset=offset, order_by=order_by, user_id=trans.user.id,
+            container=container, filters=filters, limit=limit, offset=offset, order_by=order_by, user_id=user.id,
         )
-        return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view=view) for content in contents]
+        return [
+            self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=user, trans=trans, view=view)
+            for content in contents
+        ]
 
     def show(
         self,
@@ -213,6 +218,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         """
         Updates permissions of a dataset.
         """
+        self.check_user_is_authenticated(trans)
         payload_dict = payload.dict(by_alias=True)
         dataset_assoc = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
         if hda_ldda == "hda":
@@ -293,8 +299,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_id: EncodedDatabaseIdField,
     ):
         """ Returns item content as Text. """
+        user = self.get_authenticated_user(trans)
         decoded_id = self.decode_id(dataset_id)
-        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
+        dataset = self.hda_manager.get_accessible(decoded_id, user)
         dataset = self.hda_manager.error_if_uploading(dataset)
         if dataset is None:
             raise galaxy_exceptions.MessageException("Dataset not found.")

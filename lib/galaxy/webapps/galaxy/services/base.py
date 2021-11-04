@@ -1,8 +1,10 @@
 from typing import (
+    cast,
     List,
     Optional,
 )
 
+from galaxy.exceptions import AuthenticationRequired
 from galaxy.managers.base import (
     decode_with_security,
     encode_with_security,
@@ -10,6 +12,8 @@ from galaxy.managers.base import (
     get_object,
     SortableManager,
 )
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import User
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 
@@ -20,7 +24,7 @@ class ServiceBase:
     A service class:
      - Provides top level operations (`Index`, `Show`, `Delete`...) that are usually
        consumed directly by the API controllers or other services.
-     - Uses of a combination of managers to perform the operations and
+     - Uses a combination of managers to perform the operations and
        avoids accessing the database layer directly.
      - Can speak 'pydantic' and has rich type annotations to be explicit about
        the required parameters and outputs of each operation.
@@ -71,3 +75,13 @@ class ServiceBase:
         Convenience method to get a model object with the specified checks.
         """
         return get_object(trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
+
+    def check_user_is_authenticated(self, trans: ProvidesUserContext):
+        """Raises an exception if the request is anonymous."""
+        if trans.anonymous:
+            raise AuthenticationRequired("API authentication required for this request")
+
+    def get_authenticated_user(self, trans: ProvidesUserContext) -> User:
+        """Gets the authenticated user and prevents access from anonymous users."""
+        self.check_user_is_authenticated(trans)
+        return cast(User, trans.user)
