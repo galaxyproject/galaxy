@@ -5,6 +5,7 @@ mypy==0.910
 types-bleach
 types-boto
 types-contextvars
+types-dataclasses
 types-docutils
 types-Markdown
 types-paramiko
