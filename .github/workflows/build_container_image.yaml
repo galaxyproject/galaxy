@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - 'release*'
-      - anvil
+      - dev
 concurrency:
   group: docker-build-${{ github.ref }}
   cancel-in-progress: true
