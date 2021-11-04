@@ -281,9 +281,12 @@ class JobHandlerQueue(Monitors):
     def __recover_job_wrapper(self, job):
         # Already dispatched and running
         job_wrapper = self.job_wrapper(job)
+        destination = job_wrapper.job_destination or {}
+        envs = destination.get("env", [])
+        tags = destination.get("tags", [])
         # Use the persisted destination as its params may differ from
         # what's in the job_conf xml
-        job_destination = JobDestination(id=job.destination_id, runner=job.job_runner_name, params=job.destination_params)
+        job_destination = JobDestination(id=job.destination_id, tags=tags, runner=job.job_runner_name, params=job.destination_params, env=envs)
         # resubmits are not persisted (it's a good thing) so they
         # should be added back to the in-memory destination on startup
         try:
