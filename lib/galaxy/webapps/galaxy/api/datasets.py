@@ -149,7 +149,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         some point in the future without warning. Generally, data should be processed by its
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
-        raw = util.string_as_bool_or_none(raw)
+        raw = util.string_as_bool(raw)
         return self.service.display(
             trans, history_content_id, history_id, preview, filename, to_ext, raw, **kwd
         )

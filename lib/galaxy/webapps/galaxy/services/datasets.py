@@ -4,8 +4,15 @@ API operations on the contents of a history dataset.
 import logging
 import os
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Union,
+)
 
+from pydantic import Field
 
 from galaxy import (
     exceptions as galaxy_exceptions,
@@ -24,9 +31,14 @@ from galaxy.managers.lddas import LDDAManager
 from galaxy.schema import FilterQueryParams, SerializationParams
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyHDA,
+    AnyHistoryContentItem,
+    DatasetAssociationRoles,
     DatasetSourceType,
+    Model,
     UpdateDatasetPermissionsPayload,
 )
+from galaxy.schema.types import RelativeUrl
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.path import (
     safe_walk
@@ -54,6 +66,60 @@ class RequestDataType(str, Enum):
     track_config = "track_config"
     genome_data = "genome_data"
     in_use_state = "in_use_state"
+
+
+class DatasetStorageDetails(Model):
+    object_store_id: Optional[str] = Field(
+        description="The identifier of the destination ObjectStore for this dataset.",
+    )
+    name: Optional[str] = Field(
+        description="The display name of the destination ObjectStore for this dataset.",
+    )
+    description: Optional[str] = Field(
+        description="A description of how this dataset is stored.",
+    )
+    percent_used: Optional[float] = Field(
+        description="The percentage indicating how full the store is.",
+    )
+
+
+class DatasetInheritanceChainEntry(Model):
+    name: str = Field(
+        description="Name of the referenced dataset",
+    )
+    dep: str = Field(
+        description="Name of the source of the referenced dataset at this point of the inheritance chain.",
+    )
+
+
+class ExtraFilesEntryClass(str, Enum):
+    Directory = "Directory"
+    File = "File"
+
+
+class ExtraFileEntry(Model):
+    class_: ExtraFilesEntryClass = Field(
+        alias="class",  # Is a reserved word so cannot be directly used as field
+        description="The class of this entry, either File or Directory.",
+    )
+    path: str = Field(
+        description="Relative path to the file or directory.",
+    )
+
+
+class DatasetTextContentDetails(Model):
+    item_data: Optional[str] = Field(
+        description="First chunk of text content (maximum 1MB) of the dataset.",
+    )
+    truncated: bool = Field(
+        description="Whether the text in `item_data` has been truncated or contains the whole contents.",
+    )
+    item_url: RelativeUrl = Field(
+        description="URL to access this dataset.",
+    )
+
+
+ConvertedDatasetsMap = Dict[str, EncodedDatabaseIdField]  # extension -> dataset ID
 
 
 class DatasetsService(ServiceBase, UsesVisualizationMixin):
@@ -92,7 +158,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         history_id: EncodedDatabaseIdField,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
-    ):
+    ) -> List[AnyHistoryContentItem]:
         """
         Search datasets or collections using a query system and returns a list
         containing summary of dataset or dataset_collection information.
@@ -166,7 +232,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         trans: ProvidesHistoryContext,
         dataset_id: EncodedDatabaseIdField,
         hda_ldda: DatasetSourceType = DatasetSourceType.hda,
-    ):
+    ) -> DatasetStorageDetails:
         """
         Display user-facing storage details related to the objectstore a
         dataset resides in.
@@ -184,19 +250,19 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             # not implemented on nestedobjectstores yet.
             percent_used = None
 
-        return {
-            'object_store_id': object_store_id,
-            'name': name,
-            'description': description,
-            'percent_used': percent_used,
-        }
+        return DatasetStorageDetails(
+            object_store_id=object_store_id,
+            name=name,
+            description=description,
+            percent_used=percent_used,
+        )
 
     def show_inheritance_chain(
         self,
         trans: ProvidesHistoryContext,
         dataset_id: EncodedDatabaseIdField,
         hda_ldda: DatasetSourceType = DatasetSourceType.hda,
-    ):
+    ) -> List[DatasetInheritanceChainEntry]:
         """
         Display inheritance chain for the given dataset.
         """
@@ -204,7 +270,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         inherit_chain = dataset_instance.source_dataset_chain
         result = []
         for dep in inherit_chain:
-            result.append({"name": f"{dep[0].name}", "dep": dep[1]})
+            result.append(DatasetInheritanceChainEntry(name=f"{dep[0].name}", dep=dep[1]))
 
         return result
 
@@ -214,7 +280,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_id: EncodedDatabaseIdField,
         payload: UpdateDatasetPermissionsPayload,
         hda_ldda: DatasetSourceType = DatasetSourceType.hda,
-    ):
+    ) -> DatasetAssociationRoles:
         """
         Updates permissions of a dataset.
         """
@@ -297,23 +363,21 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         dataset_id: EncodedDatabaseIdField,
-    ):
+    ) -> DatasetTextContentDetails:
         """ Returns item content as Text. """
         user = self.get_authenticated_user(trans)
         decoded_id = self.decode_id(dataset_id)
-        dataset = self.hda_manager.get_accessible(decoded_id, user)
-        dataset = self.hda_manager.error_if_uploading(dataset)
-        if dataset is None:
-            raise galaxy_exceptions.MessageException("Dataset not found.")
-        truncated, dataset_data = self.hda_manager.text_data(dataset, preview=True)
+        hda = self.hda_manager.get_accessible(decoded_id, user)
+        hda = self.hda_manager.error_if_uploading(hda)
+        truncated, dataset_data = self.hda_manager.text_data(hda, preview=True)
         item_url = web.url_for(
-            controller='dataset', action='display_by_username_and_slug', username=dataset.history.user.username, slug=self.encode_id(dataset.id), preview=False
+            controller='dataset', action='display_by_username_and_slug', username=hda.history.user.username, slug=self.encode_id(hda.id), preview=False
         )
-        return {
-            "item_data": dataset_data,
-            "truncated": truncated,
-            "item_url": item_url,
-        }
+        return DatasetTextContentDetails(
+            item_data=dataset_data,
+            truncated=truncated,
+            item_url=item_url,
+        )
 
     def get_metadata_file(
         self,
@@ -339,7 +403,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_id: EncodedDatabaseIdField,
         ext: Optional[str],
         serialization_params: SerializationParams,
-    ):
+    ) -> Union[AnyHDA, ConvertedDatasetsMap]:
         """
         Return information about datasets made by converting this dataset to a new format
         """
