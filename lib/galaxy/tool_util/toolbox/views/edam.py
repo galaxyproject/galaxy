@@ -71,8 +71,8 @@ class EdamToolPanelView(ToolPanelView):
                     for path in self.edam[term]['path']:
                         if len(path) == 1:
                             t = term
-       	       	       	elif len(path) == 0:
-      	      	       	    continue
+                        elif len(path) == 0:
+                            continue
                         else:
                             t = path[0]
 
