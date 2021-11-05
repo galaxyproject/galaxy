@@ -146,6 +146,18 @@ class DatasetShowParams(BaseModel):
         extra = Extra.allow
 
 
+class DataResult(BaseModel):
+    data: List[Any]
+    dataset_type: Optional[str]
+    message: Optional[str]
+    extra_info: Optional[Any]  # Seems to be always None, deprecate?
+
+
+class BamDataResult(DataResult):
+    max_low: int
+    max_high: int
+
+
 class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def __init__(
@@ -218,6 +230,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         # Use data type to return particular type of data.
         data_type = params.data_type
+        rval: Any
         if data_type == RequestDataType.state:
             rval = self._dataset_state(dataset)
         elif data_type == RequestDataType.converted_datasets_state:
@@ -449,16 +462,20 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             return converted
 
         except model.NoConverterException:
-            exc_data = dict(source=original.ext, target=target_ext, available=list(original.get_converter_types().keys()))
+            exc_data = dict(
+                source=original.ext,
+                target=target_ext,
+                available=list(original.get_converter_types().keys())
+            )
             raise galaxy_exceptions.RequestParameterInvalidException('Conversion not possible', **exc_data)
 
-    def _dataset_in_use_state(self, dataset: model.DatasetInstance):
+    def _dataset_in_use_state(self, dataset: model.DatasetInstance) -> bool:
         """
         Return True if dataset is currently used as an input or output. False otherwise.
         """
         return not dataset.ok_to_edit_metadata()
 
-    def _dataset_state(self, dataset: model.DatasetInstance) -> Optional[model.Dataset.conversion_messages]:
+    def _dataset_state(self, dataset: model.DatasetInstance) -> model.Dataset.conversion_messages:
         """
         Returns state of dataset.
         """
@@ -474,7 +491,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset: model.DatasetInstance,
         chrom: Optional[str] = None,
         retry: bool = False,
-    ):
+    ) -> Union[model.Dataset.conversion_messages, dict]:
         """
         Init-like method that returns state of dataset's converted datasets.
         Returns valid chroms for that dataset as well.
@@ -505,7 +522,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         # Have data if we get here
         return {"status": dataset.conversion_messages.DATA, "valid_chroms": None}
 
-    def _search_features(self, trans, dataset: model.DatasetInstance, query: Optional[str]):
+    def _search_features(
+        self, trans, dataset: model.DatasetInstance, query: Optional[str],
+    ) -> List[List[str]]:
         """
         Returns features, locations in dataset that match query. Format is a
         list of features; each feature is a list itself: [name, location]
@@ -533,7 +552,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         start_val: int = 0,
         max_vals: Optional[int] = None,
         **kwargs,
-    ):
+    ) -> Union[model.Dataset.conversion_messages, BamDataResult, DataResult]:
         """
         Provides a block of data from a dataset.
         """
@@ -576,7 +595,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             # If stats were requested, return them.
             if 'stats' in kwargs:
                 if stats['data']['max'] == 0:
-                    return {'dataset_type': indexer.dataset_type, 'data': None}
+                    return DataResult(dataset_type=indexer.dataset_type, data=None)
                 else:
                     return stats
 
@@ -627,7 +646,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         result.update({'dataset_type': data_provider.dataset_type, 'extra_info': extra_info})
         return result
 
-    def _raw_data(self, trans, dataset, provider=None, **kwargs):
+    def _raw_data(
+        self, trans, dataset, provider=None, **kwargs,
+    ) -> Union[model.Dataset.conversion_messages, BamDataResult, DataResult]:
         """
         Uses original (raw) dataset to return data. This method is useful
         when the dataset is not yet indexed and hence using data would
@@ -649,9 +670,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             elif dataset.datatype.has_dataprovider(provider):
                 kwargs = dataset.datatype.dataproviders[provider].parse_query_string_settings(kwargs)
                 # use dictionary to allow more than the data itself to be returned (data totals, other meta, etc.)
-                return {
-                    'data': list(dataset.datatype.dataprovider(dataset, provider, **kwargs))
-                }
+                return DataResult(
+                    data=list(dataset.datatype.dataprovider(dataset, provider, **kwargs))
+                )
 
             else:
                 raise dataproviders.exceptions.NoProviderAvailable(dataset.datatype, provider)
