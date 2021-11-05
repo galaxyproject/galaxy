@@ -121,6 +121,7 @@ import _ from "underscore";
 import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/collection/collection-row";
 import UploadBoxMixin from "./UploadBoxMixin";
+import { uploadModelsToPayload } from "./helpers";
 import { BButton } from "bootstrap-vue";
 
 export default {
@@ -178,7 +179,7 @@ export default {
                 this._eventAnnounce(index, file);
             },
             initialize: (index) => {
-                return this.app.toData([this.collection.get(index)], this.history_id);
+                return uploadModelsToPayload([this.collection.get(index)], this.history_id);
             },
             progress: (index, percentage) => {
                 this._eventProgress(index, percentage);

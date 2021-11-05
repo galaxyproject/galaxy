@@ -5,6 +5,7 @@ import DataDialog from "components/DataDialog/DataDialog.vue";
 import { FilesDialog } from "components/FilesDialog";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
 import { mountUploadModal } from "components/Upload";
+import { uploadModelsToPayload } from "components/Upload/helpers";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 
@@ -92,8 +93,8 @@ export function create(options) {
         return options.history_id;
     }
     getHistory().then((history_id) => {
-        $.uploadpost({
-            url: `${getAppRoot()}api/tools`,
+        $.uploadchunk({
+            url: `${getAppRoot()}api/tools/fetch`,
             success: (response) => {
                 if (history_panel) {
                     history_panel.refreshContents();
@@ -104,19 +105,7 @@ export function create(options) {
             },
             error: options.error,
             data: {
-                payload: {
-                    tool_id: "upload1",
-                    history_id: history_id,
-                    inputs: JSON.stringify({
-                        "files_0|type": "upload_dataset",
-                        "files_0|NAME": options.file_name,
-                        "files_0|space_to_tab": options.space_to_tab ? "Yes" : null,
-                        "files_0|to_posix_lines": options.to_posix_lines ? "Yes" : null,
-                        "files_0|dbkey": options.genome || "?",
-                        "files_0|file_type": options.extension || "auto",
-                        "files_0|url_paste": options.url_paste,
-                    }),
-                },
+                payload: uploadModelsToPayload([options], history_id),
             },
         });
     });

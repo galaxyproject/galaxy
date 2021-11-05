@@ -114,6 +114,7 @@ import _l from "utils/localization";
 import _ from "underscore";
 import UploadRow from "mvc/upload/default/default-row";
 import UploadBoxMixin from "./UploadBoxMixin";
+import { uploadModelsToPayload } from "./helpers";
 import { BButton } from "bootstrap-vue";
 
 export default {
@@ -175,7 +176,7 @@ export default {
                 this._eventAnnounce(index, file);
             },
             initialize: (index) => {
-                return this.app.toData([this.collection.get(index)], this.history_id);
+                return uploadModelsToPayload([this.collection.get(index)], this.history_id);
             },
             progress: (index, percentage) => {
                 this._eventProgress(index, percentage);

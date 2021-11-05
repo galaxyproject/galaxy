@@ -5,6 +5,7 @@ import Popover from "mvc/ui/ui-popover";
 import UploadExtension from "mvc/upload/upload-extension";
 import UploadModel from "mvc/upload/upload-model";
 import UploadWrapper from "./UploadWrapper";
+import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
 import { getGalaxyInstance } from "app";
 import UploadFtp from "mvc/upload/upload-ftp";
 import LazyLimited from "mvc/lazy/lazy-limited";
@@ -14,7 +15,6 @@ import { getAppRoot } from "onload";
 import axios from "axios";
 
 const localize = _l;
-export const defaultNewFileName = "New File";
 
 export default {
     components: {
@@ -118,7 +118,7 @@ export default {
                 }
             });
             if (list.length > 0) {
-                const data = this.app.toFetchData(list, this.history_id);
+                const data = uploadModelsToPayload(list, this.history_id);
                 axios
                     .post(`${getAppRoot()}api/tools/fetch`, data)
                     .then((message) => {
