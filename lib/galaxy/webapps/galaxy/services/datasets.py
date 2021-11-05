@@ -12,7 +12,7 @@ from typing import (
     Union,
 )
 
-from pydantic import Field
+from pydantic import BaseModel, Extra, Field
 
 from galaxy import (
     exceptions as galaxy_exceptions,
@@ -49,7 +49,6 @@ from galaxy.visualization.data_providers.genome import (
     SamDataProvider
 )
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
-from galaxy.web.framework.helpers import is_true
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
@@ -122,6 +121,31 @@ class DatasetTextContentDetails(Model):
 ConvertedDatasetsMap = Dict[str, EncodedDatabaseIdField]  # extension -> dataset ID
 
 
+class DataMode(str, Enum):
+    Coverage = "Coverage"
+    Auto = "Auto"
+
+
+class DatasetShowParams(BaseModel):
+    hda_ldda: DatasetSourceType = Field(default=DatasetSourceType.hda)
+    data_type: Optional[RequestDataType] = Field(default=None)
+    provider: Optional[str] = Field(default=None)
+    # Converted
+    chrom: Optional[str] = Field(default=None)
+    retry: bool = Field(default=False)
+    # Data
+    low: Optional[int] = Field(default=None)
+    high: Optional[int] = Field(default=None)
+    start_val: int = Field(default=0)
+    max_vals: Optional[int] = Field(default=None)
+    mode: Optional[DataMode] = Field(default=DataMode.Auto)
+    query: Optional[str] = Field(default=None)
+    dbkey: Optional[str] = Field(default=None)
+
+    class Config:
+        extra = Extra.allow
+
+
 class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def __init__(
@@ -182,40 +206,37 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         id: EncodedDatabaseIdField,
-        hda_ldda: DatasetSourceType,
-        data_type: Optional[RequestDataType],
-        provider: Optional[str],
+        params: DatasetShowParams,
         serialization_params: SerializationParams,
-        **kwd,
     ):
         """
         Displays information about and/or content of a dataset.
         """
         # Get dataset.
-        dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
+        dataset = self.get_hda_or_ldda(trans, hda_ldda=params.hda_ldda, dataset_id=id)
+        params_dict = params.dict(exclude_unset=True)
 
         # Use data type to return particular type of data.
+        data_type = params.data_type
         if data_type == RequestDataType.state:
-            rval = self._dataset_state(trans, dataset)
+            rval = self._dataset_state(dataset)
         elif data_type == RequestDataType.converted_datasets_state:
-            rval = self._converted_datasets_state(
-                trans, dataset, kwd.get('chrom', None), is_true(kwd.get('retry', False))
-            )
+            rval = self._converted_datasets_state(trans, dataset, params.chrom, params.retry)
         elif data_type == RequestDataType.data:
-            rval = self._data(trans, dataset, **kwd)
+            rval = self._data(trans, dataset, **params_dict)
         elif data_type == RequestDataType.features:
-            rval = self._search_features(trans, dataset, kwd.get('query'))
+            rval = self._search_features(trans, dataset, params.query)
         elif data_type == RequestDataType.raw_data:
-            rval = self._raw_data(trans, dataset, provider, **kwd)
+            rval = self._raw_data(trans, dataset, **params_dict)
         elif data_type == RequestDataType.track_config:
             rval = self.get_new_track_config(trans, dataset)
         elif data_type == RequestDataType.genome_data:
-            rval = self._get_genome_data(trans, dataset, kwd.get('dbkey', None))
+            rval = self._get_genome_data(trans, dataset, params.dbkey)
         elif data_type == RequestDataType.in_use_state:
             rval = self._dataset_in_use_state(dataset)
         else:
             # Default: return dataset as dict.
-            if hda_ldda == 'hda':
+            if params.hda_ldda == DatasetSourceType.hda:
                 return self.hda_serializer.serialize_to_view(
                     dataset,
                     view=serialization_params.view or 'detailed',
@@ -421,7 +442,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         return self.hda_serializer.serialize_converted_datasets(hda, 'converted')
 
-    def _get_or_create_converted(self, trans, original, target_ext):
+    def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
         try:
             original.get_converted_dataset(trans, target_ext)
             converted = original.get_converted_files_by_type(target_ext)
@@ -431,13 +452,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             exc_data = dict(source=original.ext, target=target_ext, available=list(original.get_converter_types().keys()))
             raise galaxy_exceptions.RequestParameterInvalidException('Conversion not possible', **exc_data)
 
-    def _dataset_in_use_state(self, dataset):
+    def _dataset_in_use_state(self, dataset: model.DatasetInstance):
         """
         Return True if dataset is currently used as an input or output. False otherwise.
         """
         return not dataset.ok_to_edit_metadata()
 
-    def _dataset_state(self, trans, dataset, **kwargs):
+    def _dataset_state(self, dataset: model.DatasetInstance) -> Optional[model.Dataset.conversion_messages]:
         """
         Returns state of dataset.
         """
@@ -447,7 +468,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         return msg
 
-    def _converted_datasets_state(self, trans, dataset, chrom=None, retry=False):
+    def _converted_datasets_state(
+        self,
+        trans,
+        dataset: model.DatasetInstance,
+        chrom: Optional[str] = None,
+        retry: bool = False,
+    ):
         """
         Init-like method that returns state of dataset's converted datasets.
         Returns valid chroms for that dataset as well.
@@ -478,11 +505,15 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         # Have data if we get here
         return {"status": dataset.conversion_messages.DATA, "valid_chroms": None}
 
-    def _search_features(self, trans, dataset, query):
+    def _search_features(self, trans, dataset: model.DatasetInstance, query: Optional[str]):
         """
         Returns features, locations in dataset that match query. Format is a
         list of features; each feature is a list itself: [name, location]
         """
+        if query is None:
+            raise galaxy_exceptions.RequestParameterMissingException(
+                "Parameter `query` is required when searching features."
+            )
         if dataset.can_convert_to("fli"):
             converted_dataset = dataset.get_converted_dataset(trans, "fli")
             if converted_dataset:
@@ -492,7 +523,17 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         return []
 
-    def _data(self, trans: ProvidesHistoryContext, dataset, chrom, low, high, start_val=0, max_vals=None, **kwargs):
+    def _data(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset: model.DatasetInstance,
+        chrom: str,
+        low: int,
+        high: int,
+        start_val: int = 0,
+        max_vals: Optional[int] = None,
+        **kwargs,
+    ):
         """
         Provides a block of data from a dataset.
         """

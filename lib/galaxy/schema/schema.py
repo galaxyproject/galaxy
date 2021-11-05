@@ -2433,7 +2433,7 @@ class DatasetAssociationRoles(Model):
 
 class UpdateDatasetPermissionsPayload(Model):
     action: Optional[DatasetPermissionAction] = Field(
-        DatasetPermissionAction.set_permissions,
+        ...,
         title="Action",
         description="Indicates what action should be performed on the dataset.",
     )

@@ -13,7 +13,10 @@ from galaxy.webapps.galaxy.api.common import (
     get_update_permission_payload,
     parse_serialization_params,
 )
-from galaxy.webapps.galaxy.services.datasets import DatasetsService
+from galaxy.webapps.galaxy.services.datasets import (
+    DatasetShowParams,
+    DatasetsService,
+)
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
@@ -89,9 +92,13 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Displays information about and/or content of a dataset.
         """
         serialization_params = parse_serialization_params(**kwd)
-        rval = self.service.show(
-            trans, id, hda_ldda, data_type, provider, serialization_params, **kwd
-        )
+        kwd.update({
+            "hda_ldda": hda_ldda,
+            "data_type": data_type,
+            "provider": provider,
+        })
+        params = DatasetShowParams(**kwd)
+        rval = self.service.show(trans, id, params, serialization_params)
         return rval
 
     @web.expose_api_anonymous
