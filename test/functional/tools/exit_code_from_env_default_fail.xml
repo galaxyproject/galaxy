@@ -1,0 +1,22 @@
+<tool id="exit_code_from_env_default_fail" name="exit_code_from_env_default_fail" version="1.0.0">
+    <!-- tool fails except if env variable GX_TARGET_EXIT_CODE is set
+         e.g. in job destination  -->
+    <command detect_errors="exit_code"><![CDATA[
+echo 'Hello' > '$out_file1' &&
+: \${GX_TARGET_EXIT_CODE:=2} &&
+exit \${GX_TARGET_EXIT_CODE}
+    ]]></command>
+    <inputs>
+        <param name="input" type="integer" label="Dummy" value="6" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" />
+    </outputs>
+    <tests>
+        <test expect_failure="true" expect_exit_code="2">
+            <param name="input" value="5" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

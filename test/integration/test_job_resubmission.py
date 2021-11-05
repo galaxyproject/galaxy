@@ -21,6 +21,9 @@ JOB_RESUBMISSION_TOOL_DETECTED_ALWAYS_ERROR_JOB_CONFIG_FILE = os.path.join(
 JOB_RESUBMISSION_TOOL_DETECTED_RESUBMIT_JOB_CONFIG_FILE = os.path.join(
     SCRIPT_DIRECTORY, "resubmission_tool_detected_resubmit_job_conf.xml"
 )
+JOB_RESUBMISSION_TOOL_DETECTED_RESUBMIT_TWICE_JOB_CONFIG_FILE = os.path.join(
+    SCRIPT_DIRECTORY, "resubmission_tool_detected_resubmit_twice_job_conf.xml"
+)
 JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE = os.path.join(
     SCRIPT_DIRECTORY, "resubmission_job_resource_parameters_conf.xml"
 )
@@ -250,6 +253,17 @@ class JobResubmissionToolDetectedErrorResubmitsIntegrationTestCase(_BaseResubmis
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = JOB_RESUBMISSION_TOOL_DETECTED_RESUBMIT_JOB_CONFIG_FILE
+
+    def test_dynamic_resubmission(self):
+        self._assert_job_passes(tool_id="exit_code_from_env")
+
+
+# Verify the test tool will resubmit on failure tested above and will then pass in
+# an environment without a tool indicated error.
+class JobResubmissionToolDetectedErrorResubmitsTwiceIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["job_config_file"] = JOB_RESUBMISSION_TOOL_DETECTED_RESUBMIT_TWICE_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
         self._assert_job_passes(tool_id="exit_code_from_env")
