@@ -19,6 +19,53 @@ function submitPayload(payload, cnf) {
         });
 }
 
+function tusUpload(data, index, tusEndpoint, cnf) {
+    const startTime = performance.now();
+    const chunkSize = cnf.chunkSize;
+    const file = data.files[index];
+    if (!file) {
+        // We've uploaded all files, delete files from data and submit fetch payload
+        delete data["files"];
+        return submitPayload(data, cnf);
+    }
+    console.debug(`Starting chunked upload for ${file.name} [chunkSize=${chunkSize}].`);
+    const upload = new tus.Upload(file, {
+        endpoint: tusEndpoint,
+        chunkSize: chunkSize,
+        metadata: data.payload,
+        onError: function (error) {
+            console.log("Failed because: " + error);
+            cnf.error(error);
+        },
+        onProgress: function (bytesUploaded, bytesTotal) {
+            var percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
+            console.log(bytesUploaded, bytesTotal, percentage + "%");
+            cnf.progress(percentage);
+        },
+        onSuccess: function () {
+            console.log(
+                `Upload of ${upload.file.name} to ${upload.url} took ${(performance.now() - startTime) / 1000} seconds`
+            );
+            data[`files_${index}|file_data`] = {
+                session_id: upload.url.split("/").at(-1),
+                name: upload.file.name,
+            };
+            tusUpload(data, index + 1, tusEndpoint, cnf);
+        },
+    });
+    // Check if there are any previous uploads to continue.
+    upload.findPreviousUploads().then(function (previousUploads) {
+        // Found previous uploads so we select the first one.
+        if (previousUploads.length) {
+            console.log("previous Upload", previousUploads);
+            upload.resumeFromPreviousUpload(previousUploads[0]);
+        }
+
+        // Start the upload
+        upload.start();
+    });
+}
+
 (($) => {
     // add event properties
     jQuery.event.props.push("dataTransfer");
@@ -53,55 +100,12 @@ function submitPayload(payload, cnf) {
             cnf.error(data.error_message);
             return;
         }
-        const file = data.files && data.files[0];
-        if (!file) {
+        if (!data.files.length) {
+            // No files attached, don't need to use TUS uploader
             return submitPayload(data, cnf);
         }
-        console.log("file is", file);
-        const startTime = performance.now();
         const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
-        const chunkSize = cnf.chunkSize;
-        console.debug(`Starting chunked uploads [size=${chunkSize}].`);
-
-        const upload = new tus.Upload(file, {
-            endpoint: tusEndpoint,
-            chunkSize: chunkSize,
-            metadata: data.payload,
-            onError: function (error) {
-                console.log("Failed because: " + error);
-                cnf.error(error);
-            },
-            onProgress: function (bytesUploaded, bytesTotal) {
-                var percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
-                console.log(bytesUploaded, bytesTotal, percentage + "%");
-                cnf.progress(percentage);
-            },
-            onSuccess: function () {
-                console.log(
-                    `Upload of ${upload.file.name} to ${upload.url} took ${
-                        (performance.now() - startTime) / 1000
-                    } seconds`
-                );
-                // drop files from data
-                delete data["files"];
-                data["files_0|file_data"] = {
-                    session_id: upload.url.split("/").at(-1),
-                    name: upload.file.name,
-                };
-                submitPayload(data, cnf);
-            },
-        });
-        // Check if there are any previous uploads to continue.
-        upload.findPreviousUploads().then(function (previousUploads) {
-            // Found previous uploads so we select the first one.
-            if (previousUploads.length) {
-                console.log("previous Upload", previousUploads);
-                upload.resumeFromPreviousUpload(previousUploads[0]);
-            }
-
-            // Start the upload
-            upload.start();
-        });
+        tusUpload(data, 0, tusEndpoint, cnf);
     };
 
     /**
