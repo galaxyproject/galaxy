@@ -8,7 +8,7 @@ _.extend(window.bundleEntries || {}, {
             url     : dataset.download_url,
             success : function( content ) {
                 try {
-                    var tree = Phylocanvas.default.createTree( options.targets[ 0 ] ),
+                    var tree = Phylocanvas.default.createTree( options.target ),
                         node_size = 20,
                         text_size = 20,
                         line_width = 2;

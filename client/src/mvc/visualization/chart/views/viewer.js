@@ -5,6 +5,7 @@
 import $ from "jquery";
 import Backbone from "backbone";
 import Utils from "utils/utils";
+import { getAppRoot } from "onload/loadConfig";
 
 export default Backbone.View.extend({
     initialize: function (app, options) {
@@ -12,6 +13,7 @@ export default Backbone.View.extend({
         this.app = app;
         this.chart = this.app.chart;
         this.options = options;
+        this.$container = $("<div/>").css("height", "100%").attr("id", "charts-container");
         this.setElement(
             $("<div/>")
                 .addClass("charts-viewer")
@@ -21,12 +23,12 @@ export default Backbone.View.extend({
                         .append($("<span/>").addClass("icon"))
                         .append($("<span/>").addClass("text"))
                 )
+                .append(this.$container)
         );
         this.$info = this.$(".info");
         this.$icon = this.$(".icon");
         this.$text = this.$(".text");
         this._fullscreen(this.$el, 20);
-        this._createContainer("div");
         this.chart.on("redraw", function (confirmed) {
             if (!self.chart.get("modified") || !self._asBoolean(self.chart.plugin.specs.confirm) || confirmed) {
                 self.app.deferred.execute(function (process) {
@@ -79,29 +81,17 @@ export default Backbone.View.extend({
         });
     },
 
-    /** A chart may contain multiple sub charts/containers which are created here */
-    _createContainer: function (tag, n) {
-        tag = tag || "div";
-        n = n || 1;
-        this.$(".charts-viewer-container").remove();
-        this.targets = [];
-        for (var i = 0; i < n; i++) {
-            var container_id = Utils.uid();
-            var container_el = $("<div/>")
-                .addClass("charts-viewer-container")
-                .width(parseInt(100 / n) + "%")
-                .append($("<" + tag + " class='charts-viewer-canvas' />").attr("id", container_id));
-            this.$el.append(container_el);
-            this.targets.push(container_id);
-        }
-    },
-
     /** Draws a new chart by loading and executing the corresponding chart wrapper */
     _draw: function (process, chart) {
-        var n_panels = this._asBoolean(chart.settings.get("__use_panels")) ? chart.groups.length : 1;
-        this._createContainer(chart.plugin.specs.tag, n_panels);
         chart.set("date", Utils.time());
         chart.state("wait", "Please wait...");
-        this.app.chart_load({ process: process, chart: chart, dataset: this.app.dataset, targets: this.targets });
+        this.$container.empty();
+        this.app.chart_load({
+            process: process,
+            chart: chart,
+            target: "charts-container",
+            dataset: this.app.dataset,
+            root: getAppRoot(),
+        });
     },
 });
