@@ -20,10 +20,29 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
                 fileName = null;
             }
             const url = (item.get("file_uri") || item.get("file_path") || item.get("url_paste")).trim();
+            const elem = {
+                dbkey: item.get("genome", "?"),
+                ext: item.get("extension", "auto"),
+                space_to_tab: item.get("space_to_tab"),
+                to_posix_lines: item.get("to_posix_lines"),
+            };
             switch (item.get("file_mode")) {
                 case "new":
                     if (itemIsUrl(item)) {
                         src = "url";
+                        /* Could be multiple URLs pasted in.
+                          TODO: eliminate backbone models,
+                          then suggest to split multiple URLs
+                          across multiple uploads directly in upload modal,
+                          instead of this intransparent magic. */
+                        return url.split("\n").map((splitUrl) => {
+                            return {
+                                src: src,
+                                url: splitUrl,
+                                name: fileName,
+                                ...elem,
+                            };
+                        });
                     } else {
                         pasteContent = item.get("url_paste");
                         src = "pasted";
@@ -46,13 +65,11 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
                 url: url,
                 paste_content: pasteContent,
                 name: fileName,
-                dbkey: item.get("genome", "?"),
-                ext: item.get("extension", "auto"),
-                space_to_tab: item.get("space_to_tab"),
-                to_posix_lines: item.get("to_posix_lines"),
+                ...elem,
             };
         })
-        .filter((item) => item);
+        .filter((item) => item)
+        .flat();
 
     const target = {
         destination: { type: "hdas" },
