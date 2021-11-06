@@ -295,7 +295,7 @@ def _fetch_target(upload_config, target):
                 # Groom the dataset content if necessary
                 datatype.groom_dataset_content(path)
 
-        rval = {"name": name, "filename": path, "dbkey": dbkey, "ext": ext, "link_data_only": link_data_only, "sources": sources, "hashes": hashes}
+        rval = {"name": name, "filename": path, "dbkey": dbkey, "ext": ext, "link_data_only": link_data_only, "sources": sources, "hashes": hashes, "info": f"uploaded {ext} file"}
         if staged_extra_files:
             rval["extra_files"] = os.path.abspath(staged_extra_files)
         return _copy_and_validate_simple_attributes(item, rval)
