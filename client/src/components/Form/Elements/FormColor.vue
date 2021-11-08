@@ -1,7 +1,10 @@
 <template>
-    <b-row>
+    <b-row >
         <b-col sm="1">
-            <b-form-input v-model="currentValue" type="color" size="sm" />
+            <b-form-input class="cursor-pointer" :id="id" v-model="currentValue" type="color" size="sm" />
+        </b-col>
+        <b-col class="pl-0">
+            <label class="pt-1 cursor-pointer" :for="id">Select a color</label>
         </b-col>
     </b-row>
 </template>
@@ -10,6 +13,10 @@
 export default {
     props: {
         value: {
+            type: String,
+            required: true,
+        },
+        id: {
             type: String,
             required: true,
         },
@@ -26,3 +33,6 @@ export default {
     },
 };
 </script>
+<style scoped>
+@import "utils/pointer.css";
+</style>

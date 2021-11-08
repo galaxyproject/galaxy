@@ -385,5 +385,5 @@ export default {
 </script>
 
 <style scoped>
-@import "./pointer.css";
+@import "utils/pointer.css";
 </style>

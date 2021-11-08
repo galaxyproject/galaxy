@@ -1,4 +1,4 @@
-@import "./TopToolbar/pointer.css";
+@import "utils/pointer.css";
 
 th:focus {
     outline: none !important;
