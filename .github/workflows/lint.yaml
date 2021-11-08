@@ -34,7 +34,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .tox
-          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-lint
+          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('lib/galaxy/dependencies/pinned-lint-requirements.txt') }}-lint
       - name: Install tox
         run: pip install tox
       - name: Run linting

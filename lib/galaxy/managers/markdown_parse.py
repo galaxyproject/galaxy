@@ -6,6 +6,8 @@ Galaxy Markdown. Keeping things isolated to allow re-use of these utilities in o
 projects (e.g. gxformat2).
 """
 import re
+from typing import cast, Dict, List, Union
+
 
 BLOCK_FENCE_START = re.compile(r'```.*')
 BLOCK_FENCE_END = re.compile(r'```[\s]*')
@@ -13,8 +15,14 @@ GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
     r"```\s*galaxy\s*"
 )
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
-DYNAMIC_ARGUMENTS = object()
-VALID_ARGUMENTS = {
+
+
+class DynamicArguments:
+    pass
+
+
+DYNAMIC_ARGUMENTS = DynamicArguments()
+VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "history_link": ["history_id"],
     "history_dataset_display": ["input", "output", "history_dataset_id"],
     "history_dataset_embedded": ["input", "output", "history_dataset_id"],
@@ -93,9 +101,10 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
                 if function_calls > 1:
                     invalid_line("Only one Galaxy directive is allowed per fenced Galaxy block (```galaxy)")
                 container = func_call_match.group("container")
-                valid_args = VALID_ARGUMENTS[container]
-                if valid_args is DYNAMIC_ARGUMENTS:
+                valid_args_raw = VALID_ARGUMENTS[container]
+                if isinstance(valid_args_raw, DynamicArguments):
                     continue
+                valid_args = cast(List[str], valid_args_raw)
 
                 first_arg_call = func_call_match.group("firstargcall")
 
@@ -139,7 +148,7 @@ def _split_markdown_lines(markdown):
     indent_fenced = False
     for line_number, line in enumerate(markdown.splitlines(True)):
         open_fence_this_iteration = False
-        indent_fenced = line.startswith("    ") or (indent_fenced and WHITE_SPACE_ONLY_PATTERN.match(line))
+        indent_fenced = bool(line.startswith("    ") or (indent_fenced and WHITE_SPACE_ONLY_PATTERN.match(line)))
         if not block_fenced:
             if BLOCK_FENCE_START.match(line):
                 open_fence_this_iteration = True

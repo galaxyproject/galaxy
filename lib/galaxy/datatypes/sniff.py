@@ -14,7 +14,7 @@ import sys
 import tempfile
 import urllib.request
 import zipfile
-from typing import Callable, Dict, IO, Optional
+from typing import Callable, Dict, IO, NamedTuple, Optional
 
 from typing_extensions import Protocol
 
@@ -83,7 +83,7 @@ def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_
         datatype.groom_dataset_content(file_output_path)
 
 
-def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", block_size=128 * 1024, regexp=None):
+def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024, regexp=None):
     """
     Converts in place a file from universal line endings
     to Posix line endings.
@@ -120,17 +120,9 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
         return (i, fp.name)
 
 
-def convert_newlines_sep2tabs(fname, in_place=True, patt=br"[^\S\n]+", tmp_dir=None, tmp_prefix="gxupload"):
+def convert_newlines_sep2tabs(fname: str, in_place: bool = True, patt: bytes = br"[^\S\n]+", tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"):
     """
     Converts newlines in a file to posix newlines and replaces spaces with tabs.
-
-    >>> fname = get_test_fname('temp.txt')
-    >>> with open(fname, 'wt') as fh:
-    ...     _ = fh.write(u"1 2\\r3 4")
-    >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
-    (2, None)
-    >>> open(fname).read()
-    '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile(patt)
     return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
@@ -620,16 +612,23 @@ def disable_parent_class_sniffing(klass):
     return klass
 
 
+class HandleCompressedFileResponse(NamedTuple):
+    is_valid: bool
+    ext: str
+    uncompressed_path: str
+    compressed_type: Optional[str]
+
+
 def handle_compressed_file(
         filename: str,
         datatypes_registry,
-        ext='auto',
-        tmp_prefix='sniff_uncompress_',
-        tmp_dir=None,
-        in_place=False,
-        check_content=True,
-        auto_decompress=True,
-):
+        ext: str = 'auto',
+        tmp_prefix: Optional[str] = 'sniff_uncompress_',
+        tmp_dir: Optional[str] = None,
+        in_place: bool = False,
+        check_content: bool = True,
+        auto_decompress: bool = True,
+) -> HandleCompressedFileResponse:
     """
     Check uploaded files for compression, check compressed file contents, and uncompress if necessary.
 
@@ -692,28 +691,34 @@ def handle_compressed_file(
             uncompressed_path = filename
     elif not is_compressed or not check_content:
         is_valid = True
-    return is_valid, ext, uncompressed_path, compressed_type
+    return HandleCompressedFileResponse(is_valid, ext, uncompressed_path, compressed_type)
 
 
-def handle_uploaded_dataset_file(*args, **kwds):
+def handle_uploaded_dataset_file(*args, **kwds) -> str:
     """Legacy wrapper about handle_uploaded_dataset_file_internal for tools using it."""
     return handle_uploaded_dataset_file_internal(*args, **kwds)[0]
 
 
+class HandleUploadedDatasetFileInternalResponse(NamedTuple):
+    ext: str
+    converted_path: str
+    compressed_type: Optional[str]
+
+
 def handle_uploaded_dataset_file_internal(
-        filename,
+        filename: str,
         datatypes_registry,
-        ext='auto',
-        tmp_prefix='sniff_upload_',
-        tmp_dir=None,
-        in_place=False,
-        check_content=True,
-        is_binary=None,
-        auto_decompress=True,
-        uploaded_file_ext=None,
-        convert_to_posix_lines=None,
-        convert_spaces_to_tabs=None,
-):
+        ext: str = 'auto',
+        tmp_prefix: Optional[str] = 'sniff_upload_',
+        tmp_dir: Optional[str] = None,
+        in_place: bool = False,
+        check_content: bool = True,
+        is_binary: Optional[bool] = None,
+        auto_decompress: bool = True,
+        uploaded_file_ext: Optional[str] = None,
+        convert_to_posix_lines: Optional[bool] = None,
+        convert_spaces_to_tabs: Optional[bool] = None,
+) -> HandleUploadedDatasetFileInternalResponse:
     is_valid, ext, converted_path, compressed_type = handle_compressed_file(
         filename,
         datatypes_registry,
@@ -764,7 +769,7 @@ def handle_uploaded_dataset_file_internal(
         if filename != converted_path:
             os.unlink(converted_path)
         raise
-    return ext, converted_path, compressed_type
+    return HandleUploadedDatasetFileInternalResponse(ext, converted_path, compressed_type)
 
 
 AUTO_DETECT_EXTENSIONS = ['auto']  # should 'data' also cause auto detect?

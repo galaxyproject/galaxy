@@ -4,6 +4,7 @@ Contains library functions
 import json
 import logging
 import os.path
+from typing import Optional
 
 from markupsafe import escape
 
@@ -15,6 +16,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
+from galaxy.model import LibraryDataset
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -72,7 +74,7 @@ class LibraryActions:
     Mixin for controllers that provide library functionality.
     """
 
-    def _upload_dataset(self, trans, library_id, folder_id, replace_dataset=None, **kwd):
+    def _upload_dataset(self, trans, library_id: str, folder_id: str, replace_dataset: Optional[LibraryDataset] = None, **kwd):
         # Set up the traditional tool state/params
         cntrller = 'api'
         tool_id = 'upload1'
