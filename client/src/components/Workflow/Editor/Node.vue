@@ -202,7 +202,7 @@ export default {
 
         // initialize node data
         this.$emit("onAdd", this);
-        if (this.step._complete) {
+        if (this.step.config_form) {
             this.initData(this.step);
         } else {
             this.$emit("onUpdate", this);
@@ -291,16 +291,7 @@ export default {
             return this;
         },
         setNode(data) {
-            data.workflow_outputs = data.outputs.map((o) => {
-                return {
-                    output_name: o.name,
-                    label: o.label,
-                };
-            });
             this.initData(data);
-
-            // emit change completion event
-            this.showLoading = false;
             this.$emit("onChange");
             this.$emit("onActivate", this);
         },
