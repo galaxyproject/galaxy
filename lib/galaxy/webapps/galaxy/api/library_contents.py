@@ -333,7 +333,6 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             return 400, message
         else:
             created_outputs_dict = self._upload_dataset(trans,
-                                                        library_id=trans.security.encode_id(library.id),
                                                         folder_id=trans.security.encode_id(folder.id),
                                                         replace_dataset=replace_dataset,
                                                         **kwd)
