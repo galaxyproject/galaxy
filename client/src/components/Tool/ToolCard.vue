@@ -26,7 +26,7 @@
                         <b-dropdown-item v-if="showDownload" @click="onDownload"
                             ><span class="fa fa-download" /><span v-localize>Download</span>
                         </b-dropdown-item>
-                        <ToolSourceMenuItem :toolId="id" />
+                        <ToolSourceMenuItem :tool-id="id" />
                         <b-dropdown-item v-if="showLink" @click="onLink"
                             ><span class="fa fa-external-link" /><span v-localize
                                 >See in Tool Shed</span

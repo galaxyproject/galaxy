@@ -54,7 +54,7 @@ describe("ToolForm", () => {
         const button = wrapper.find(".btn-primary");
         expect(button.attributes("title")).toBe("Execute: tool_name (version)");
         const dropdown = wrapper.findAll(".dropdown-item");
-        expect(dropdown.length).toBe(3);
+        expect(dropdown.length).toBe(2);
         const help = wrapper.find(".form-help");
         expect(help.text()).toBe("help_text");
     });

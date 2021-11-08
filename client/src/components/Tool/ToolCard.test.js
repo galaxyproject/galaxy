@@ -32,6 +32,9 @@ describe("ToolCard", () => {
                 messageVariant: "warning",
                 disabled: false,
             },
+            stubs: {
+                ToolSourceMenuItem: { template: "<div></div>" },
+            },
             localVue,
         });
     });
@@ -46,7 +49,7 @@ describe("ToolCard", () => {
         const dropdownHeader = wrapper.find(".tool-dropdown");
         expect(dropdownHeader.attributes("title")).toBe("Options");
         const dropdownItems = wrapper.findAll(".dropdown-item");
-        expect(dropdownItems.length).toBe(5);
+        expect(dropdownItems.length).toBe(4);
         const backdrop = wrapper.findAll(".portlet-backdrop");
         expect(backdrop.length).toBe(0);
         await wrapper.setProps({ disabled: true });
