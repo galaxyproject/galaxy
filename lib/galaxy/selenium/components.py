@@ -4,6 +4,7 @@ from abc import (
     ABCMeta,
     abstractproperty,
 )
+from typing import Union
 
 from selenium.webdriver.common.by import By
 
@@ -140,6 +141,9 @@ class Text(Target):
     @property
     def element_locator(self):
         return (By.PARTIAL_LINK_TEXT, self.text)
+
+
+HasText = Union[Label, Text]
 
 
 class Component:

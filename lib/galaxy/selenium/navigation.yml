@@ -111,6 +111,7 @@ dataset_details:
   selectors:
     _: 'table#dataset-details'
     tool_parameters: 'table#tool-parameters'
+    transform_action: '[data-transform-action="${action}"]'
 
 history_panel:
   menu:
