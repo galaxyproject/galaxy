@@ -19,5 +19,7 @@ class DatasetCollectionType(metaclass=ABCMeta):
 
 
 class BaseDatasetCollectionType(DatasetCollectionType):
+    collection_type: str
+
     def _validation_failed(self, message):
         raise exceptions.ObjectAttributeInvalidException(message)
