@@ -26,7 +26,6 @@ export default Backbone.View.extend({
         integer: "_fieldSlider",
         float: "_fieldSlider",
         drill_down: "_fieldDrilldown",
-        color: "_fieldColor",
         group_tag: "_fieldSelect",
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
