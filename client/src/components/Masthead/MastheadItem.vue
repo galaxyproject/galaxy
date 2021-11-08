@@ -8,7 +8,6 @@
         :style="styles"
         :href="formatUrl(tab.url)"
         :target="tab.target || '_parent'"
-        role="menuitem"
         :link-classes="linkClasses"
         :title="tab.tooltip"
         @click="open(tab, $event)">
