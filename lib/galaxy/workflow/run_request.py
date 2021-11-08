@@ -1,6 +1,7 @@
 import json
 import logging
 import uuid
+from typing import Dict
 
 from galaxy import (
     exceptions,
@@ -110,7 +111,7 @@ def _normalize_step_parameters(steps, param_map, legacy=False, already_normalize
         if step.type == "subworkflow" and param_dict:
             if not already_normalized:
                 raise exceptions.RequestParameterInvalidException("Specifying subworkflow step parameters requires already_normalized to be specified as true.")
-            subworkflow_param_dict = {}
+            subworkflow_param_dict: Dict[str, Dict[str, str]] = {}
             for key, value in param_dict.items():
                 step_index, param_name = key.split("|", 1)
                 if step_index not in subworkflow_param_dict:
