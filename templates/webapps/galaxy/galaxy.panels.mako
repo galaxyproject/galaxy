@@ -28,8 +28,6 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        ## force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
-        <meta http-equiv="x-ua-compatible" content="ie=edge,chrome=1">
 
         <title>
             Galaxy
