@@ -1,5 +1,10 @@
 import * as ngl from "./viewer";
 
+/** Get boolean as string */
+function asBoolean (value) {
+    return String(value).toLowerCase() == "true";
+}
+
 window.bundleEntries = window.bundleEntries || {};
 window.bundleEntries.load = function (options) {
     var dataset = options.dataset,
@@ -25,7 +30,8 @@ window.bundleEntries.load = function (options) {
         options.process.resolve();
     }
     stage.setQuality(settings.get("quality"));
-    if (settings.get("spin") === true || settings.get("spin") === "true") {
+    const spin = String(settings.get("spin")).toLowerCase() == "true";
+    if (spin) {
         stage.setSpin([0, 1, 0], 0.01);
     }
     // Re-renders the molecule view when window is resized

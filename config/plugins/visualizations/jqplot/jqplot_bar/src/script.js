@@ -143,15 +143,15 @@ var CommonWrapper = Backbone.View.extend({
                 xaxis: {
                     label               : chart.settings.get( 'x_axis_label' ),
                     tickOptions: {
-                        angle           : chart.settings.get( '__use_panels' ) === 'true' ? 0 : -30,
-                        showGridline    : chart.settings.get( 'x_axis_grid' ) === 'true'
+                        angle           : this._asBoolean(chart.settings.get( '__use_panels' )) ? 0 : -30,
+                        showGridline    : this._asBoolean(chart.settings.get( 'x_axis_grid' ))
                     },
                     pad                 : 0
                 },
                 yaxis: {
                     label               : chart.settings.get( 'y_axis_label' ),
                     tickOptions         : {
-                        showGridline    : chart.settings.get( 'y_axis_grid' ) === 'true'
+                        showGridline    : this._asBoolean(chart.settings.get( 'y_axis_grid' ))
                     },
                     pad                 : 0
                 }
@@ -175,7 +175,7 @@ var CommonWrapper = Backbone.View.extend({
             series: []
         };
         // show the legend and put it outside the grid
-        if ( chart.settings.get( 'show_legend' ) == 'true' ) {
+        if (this._asBoolean(chart.settings.get('show_legend'))) {
             plot_config.legend = {
                 renderer                : EnhancedLegendRenderer,
                 show                    : true,
@@ -198,7 +198,12 @@ var CommonWrapper = Backbone.View.extend({
     /** Handle error */
     _handleError: function( chart, err ) {
         chart.state( 'failed', err );
-    }
+    },
+
+    /** Get boolean as string */
+    _asBoolean: function(value) {
+        return String(value).toLowerCase() == "true";
+    },
 });
 
 _.extend(window.bundleEntries || {}, {

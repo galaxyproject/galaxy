@@ -28,7 +28,7 @@ export default Backbone.View.extend({
         this._fullscreen(this.$el, 20);
         this._createContainer("div");
         this.chart.on("redraw", function (confirmed) {
-            if (!self.chart.get("modified") || !self.chart.plugin.specs.confirm || confirmed) {
+            if (!self.chart.get("modified") || !self._asBoolean(self.chart.plugin.specs.confirm) || confirmed) {
                 self.app.deferred.execute(function (process) {
                     console.debug("viewer:redraw() - Redrawing...");
                     self._draw(process, self.chart);
@@ -66,6 +66,11 @@ export default Backbone.View.extend({
         });
     },
 
+    /** Get boolean as string */
+    _asBoolean: function (value) {
+        return String(value).toLowerCase() == "true";
+    },
+
     /** Force resize to fullscreen */
     _fullscreen: function ($el, margin) {
         $el.css("height", $(window).height() - margin);
@@ -93,7 +98,7 @@ export default Backbone.View.extend({
 
     /** Draws a new chart by loading and executing the corresponding chart wrapper */
     _draw: function (process, chart) {
-        var n_panels = chart.settings.get("__use_panels") == "true" ? chart.groups.length : 1;
+        var n_panels = this._asBoolean(chart.settings.get("__use_panels")) ? chart.groups.length : 1;
         this._createContainer(chart.plugin.specs.tag, n_panels);
         chart.set("date", Utils.time());
         chart.state("wait", "Please wait...");

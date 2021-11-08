@@ -21,8 +21,9 @@
             <span v-else class="ui-form-title-text">{{ title }}</span>
         </div>
         <div v-if="showField" class="ui-form-field" :data-label="title">
+            <FormBoolean v-if="type == 'boolean'" v-model="currentValue" :id="id" />
             <FormParameter
-                v-if="backbonejs"
+                v-else-if="backbonejs"
                 v-model="currentValue"
                 :id="id"
                 :data-label="title"
@@ -30,7 +31,6 @@
                 :attributes="attrs"
                 ref="params"
             />
-            <FormBoolean v-else-if="type == 'boolean'" v-model="currentValue" :id="id" />
             <FormInput v-else v-model="currentValue" :id="id" :area="attrs['area']" />
         </div>
         <div v-if="showPreview" class="ui-form-preview" v-html="previewText" />
