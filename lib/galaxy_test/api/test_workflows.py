@@ -1930,6 +1930,35 @@ test_data:
                 history_id=history_id,
             )
 
+    def test_run_workflow_simple_conditional(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  should_run:
+    type: boolean
+  some_file:
+    type: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: some_file
+    when:
+      source: should_run
+""",
+                test_data="""
+some_file:
+  value: 1.bed
+  type: File
+should_run:
+  value: false
+  type: raw
+""",
+                history_id=history_id,
+            )
+            assert len(self.dataset_populator.invocation_jobs(summary.invocation_id)) == 0
+
     def test_run_subworkflow_simple(self) -> None:
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(

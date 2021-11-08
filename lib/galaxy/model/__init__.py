@@ -7040,6 +7040,7 @@ class WorkflowStep(Base, RepresentById):
     position = Column(MutableJSONType)
     config = Column(JSONType)
     order_index: int = Column(Integer)
+    when_expression = Column(JSONType)
     uuid = Column(UUIDType)
     label = Column(Unicode(255))
     temp_input_connections: Optional[InputConnDictType]

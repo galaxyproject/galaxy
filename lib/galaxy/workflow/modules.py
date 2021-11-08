@@ -104,6 +104,10 @@ class NoReplacement:
 NO_REPLACEMENT = NoReplacement()
 
 
+class ConditionalStepWhen(BooleanToolParameter):
+    pass
+
+
 class WorkflowModule:
 
     label: str
@@ -1637,6 +1641,18 @@ class ToolModule(WorkflowModule):
     def get_inputs(self):
         return self.tool.inputs if self.tool else {}
 
+    def get_conditional_param(self, inputs):
+        inputs.append(
+            dict(
+                name="when_source",
+                label="when_source",
+                multiple=False,
+                input_type="parameter",
+                optional=False,
+                type="boolean",
+            )
+        )
+
     def get_all_inputs(self, data_only=False, connectable_only=False):
         if data_only and connectable_only:
             raise Exception("Must specify at most one of data_only and connectable_only as True.")
@@ -1928,6 +1944,10 @@ class ToolModule(WorkflowModule):
             del tool_state.inputs[RUNTIME_STEP_META_STATE_KEY]
 
         all_inputs = self.get_all_inputs()
+        if step.input_connections_by_name.get("when_source"):
+            self.get_conditional_param(all_inputs)
+            tool_inputs = tool.inputs.copy()
+            tool_inputs["when_source"] = ConditionalStepWhen(None, {"name": "when_source", "type": "boolean"})
         all_inputs_by_name = {}
         for input_dict in all_inputs:
             all_inputs_by_name[input_dict["name"]] = input_dict
@@ -1971,12 +1991,16 @@ class ToolModule(WorkflowModule):
                                 replacement = json.load(f)
                     found_replacement_keys.add(prefixed_name)  # noqa: B023
 
+                    if isinstance(input, ConditionalStepWhen) and replacement is False:
+                        outputs = self.get_all_outputs()
+                        raise SkipWorkflowStepEvaluation(outputs)
+
                 return replacement
 
             try:
                 # Replace DummyDatasets with historydatasetassociations
                 visit_input_values(
-                    tool.inputs,
+                    tool_inputs,
                     execution_state.inputs,
                     callback,
                     no_replacement_value=NO_REPLACEMENT,
@@ -2197,6 +2221,11 @@ class DelayedWorkflowEvaluation(Exception):
 
 class CancelWorkflowEvaluation(Exception):
     pass
+
+
+class SkipWorkflowStepEvaluation(Exception):
+    def __init__(self, outputs):
+        self.outputs = outputs
 
 
 class WorkflowModuleInjector:
