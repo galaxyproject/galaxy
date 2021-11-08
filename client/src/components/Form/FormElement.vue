@@ -28,6 +28,7 @@
                 :id="id"
                 :info="attrs['info']"
             />
+            <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
             <FormParameter
                 v-else-if="backbonejs"
                 v-model="currentValue"
@@ -51,12 +52,14 @@ import FormBoolean from "./Elements/FormBoolean";
 import FormHidden from "./Elements/FormHidden";
 import FormInput from "./Elements/FormInput";
 import FormParameter from "./Elements/FormParameter";
+import FormColor from "./Elements/FormColor";
 
 export default {
     components: {
         FormBoolean,
         FormHidden,
         FormInput,
+        FormColor,
         FormParameter,
     },
     props: {
