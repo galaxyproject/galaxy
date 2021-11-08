@@ -1,5 +1,5 @@
 <template>
-    <b-row >
+    <b-row>
         <b-col sm="1">
             <b-form-input class="cursor-pointer" :id="id" v-model="currentValue" type="color" size="sm" />
         </b-col>
