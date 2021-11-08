@@ -1,6 +1,6 @@
 <%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
     <!--js-app.mako-->
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
