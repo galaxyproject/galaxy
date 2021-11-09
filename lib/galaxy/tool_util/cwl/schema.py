@@ -35,7 +35,7 @@ class SchemaLoader:
         loading_context.loader = self.raw_document_loader
         loading_context.do_update = True
         if _has_relax_path_checks_flag():
-            loading_context.relax_path_checks = True
+            loading_context.relax_path_checks = True  # type: ignore[attr-defined]
         return loading_context
 
     def raw_process_reference(self, path, loading_context=None):

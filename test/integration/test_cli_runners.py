@@ -7,8 +7,8 @@ import tempfile
 import unittest
 from typing import ClassVar, NamedTuple
 
+from galaxy.security.ssh_util import generate_ssh_keys
 from galaxy_test.base.populators import skip_without_tool
-from galaxy_test.base.ssh_util import generate_ssh_keys
 from galaxy_test.driver import integration_util
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 

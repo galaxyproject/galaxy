@@ -1,4 +1,5 @@
 galaxy-auth
+galaxy-data
 galaxy-job-execution
 galaxy-job-metrics
 galaxy-tool-util
