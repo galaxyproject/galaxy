@@ -1,3 +1,4 @@
+import logging
 import os
 
 from alembic import command, script
@@ -18,6 +19,8 @@ TSI = 'tsi'  # tool_shed_install model identifier
 ALEMBIC_TABLE = 'alembic_version'  # TODO this should come from alembic config
 SQLALCHEMYMIGRATE_TABLE = 'migrate_version'
 SQLALCHEMYMIGRATE_LAST_VERSION = 999  # TODO this should be the actual last SA-M revision
+
+log = logging.getLogger(__name__)
 
 
 class NoVersionTableError(Exception):
@@ -99,9 +102,10 @@ class AlembicManager:
 
 class DatabaseVerifier:
 
-    def __init__(self, db1_url, db2_url=None):
+    def __init__(self, db1_url, db2_url=None, app_config=None):
         self.db1_url = db1_url
         self.db2_url = db2_url
+        self.app_config = app_config
         self.is_combined = self._combine_databases(db1_url, db2_url)
         if self.is_combined:
             self.db2_url = db1_url  # use 1 database for both
@@ -188,8 +192,20 @@ class DatabaseVerifier:
         return not (db1_url and db2_url and db1_url != db2_url)
 
     def _create_galaxy_database(self, url):
-        # galaxy stuff goes here
-        create_database(url)
+        template, encoding = None, None
+        if self.app_config:
+            template = self.app_config.database_template
+            encoding = self.app_config.database_encoding  # TODO add to config_schema
+        create_kwds = {}
+        message = f'Creating database for URI [{url}]'
+        if template:
+            message += f' from template [{template}]'
+            create_kwds['template'] = template
+        if encoding:
+            message += f' with encoding [{encoding}]'
+            create_kwds['encoding'] = encoding
+        log.info(message)
+        create_database(url, **create_kwds)
 
     def _is_database_empty(self, db_url):
         with self._engines[db_url].connect() as conn:
