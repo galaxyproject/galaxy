@@ -116,11 +116,11 @@ class TestDatasetCollectionsApi(ApiTestCase):
             name="a record",
             instance_type="history",
             history_id=history_id,
-            element_identifiers=json.dumps(record_identifiers),
+            element_identifiers=record_identifiers,
             collection_type="record",
-            fields=json.dumps(fields),
+            fields=fields,
         )
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = self._check_create_response(create_response)
         assert dataset_collection["collection_type"] == "record"
         assert dataset_collection["name"] == "a record"
@@ -159,11 +159,11 @@ class TestDatasetCollectionsApi(ApiTestCase):
             name="a record",
             instance_type="history",
             history_id=history_id,
-            element_identifiers=json.dumps(record_identifiers),
+            element_identifiers=record_identifiers,
             collection_type="record",
             fields="auto",
         )
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         self._check_create_response(create_response)
 
     def test_record_field_validation(self, history_id):
