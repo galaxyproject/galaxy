@@ -3,7 +3,8 @@
     and polyfill for non-standard features.
  */
 
-import "@babel/polyfill";
+import "core-js/stable";
+import "regenerator-runtime/runtime";
 import _ from "underscore";
 
 (() => {

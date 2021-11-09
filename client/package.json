@@ -15,7 +15,6 @@
     "**/ua-parser-js": "0.7.30"
   },
   "dependencies": {
-    "@babel/polyfill": "^7.10.1",
     "@fortawesome/fontawesome-free": "^5.15.4",
     "@fortawesome/fontawesome-svg-core": "^1.2.36",
     "@fortawesome/free-brands-svg-icons": "^5.15.4",
@@ -32,6 +31,7 @@
     "bootstrap": "4.5.0",
     "bootstrap-vue": "^2.21.2",
     "citation-js": "^0.5.1",
+    "core-js": "^3.19.1",
     "d3": "3",
     "date-fns": "^2.24.0",
     "decode-uri-component": "^0.2.0",
@@ -70,6 +70,7 @@
     "pretty-bytes": "^5.6.0",
     "proper-skip-list": "^4.0.2",
     "pyre-to-regexp": "^0.0.5",
+    "regenerator-runtime": "^0.13.9",
     "regression": "^2.0.1",
     "requirejs": "2.3.6",
     "rxjs": "^7.4.0",
