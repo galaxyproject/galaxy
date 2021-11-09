@@ -590,14 +590,19 @@ class WorkflowProgress:
         try:
             replacement = step_outputs[output_name]
         except KeyError:
-            raise modules.FailWorkflowEvaluation(
-                why=InvocationFailureOutputNotFound(
-                    reason=FailureReason.output_not_found,
-                    workflow_step_id=connection.input_step_id,
-                    output_name=output_name,
-                    dependent_workflow_step_id=output_step_id,
+            if connection.non_data_connection:
+                replacement = NO_REPLACEMENT
+            else:
+                # If this not a implicit connection (the state of which is checked before in `check_implicitly_dependent_steps`)
+                # we must resolve this.
+                raise modules.FailWorkflowEvaluation(
+                    why=InvocationFailureOutputNotFound(
+                        reason=FailureReason.output_not_found,
+                        workflow_step_id=connection.input_step_id,
+                        output_name=output_name,
+                        dependent_workflow_step_id=output_step_id,
+                    )
                 )
-            )
         if isinstance(replacement, MutableMapping) and replacement.get("__class__") == "NoReplacement":
             return NO_REPLACEMENT
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
