@@ -1,3 +1,5 @@
+from typing import Union
+
 import pytest
 from sqlalchemy import create_engine, MetaData
 
@@ -828,6 +830,7 @@ def _setup_db_state4(db_url, metadata, model=None):
     load_metadata(db_url, metadata)
     load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION)
 
+    revisions: Union[str, list]
     if model == GXY:
         revisions = GXY_REVISION_0
     elif model == TSI:
@@ -860,6 +863,7 @@ def _setup_db_state5(db_url, metadata, model=None):
     create_database(db_url)
     load_metadata(db_url, metadata)
 
+    revisions: Union[str, list]
     if model == GXY:
         revisions = GXY_REVISION_1
     elif model == TSI:
@@ -892,6 +896,7 @@ def _setup_db_state6(db_url, metadata, model=None):
     create_database(db_url)
     load_metadata(db_url, metadata)
 
+    revisions: Union[str, list]
     if model == GXY:
         revisions = GXY_REVISION_2
     elif model == TSI:
