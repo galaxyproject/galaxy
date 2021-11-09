@@ -123,8 +123,9 @@ import * as tus from "tus-js-client";
                 );
 
                 const toolInputs = JSON.parse(data.payload.inputs);
+                const sessionId = upload.url.substr(upload.url.lastIndexOf("/") + 1);
                 toolInputs["files_0|file_data"] = {
-                    session_id: upload.url.split("/").at(-1),
+                    session_id: sessionId,
                     name: file.name,
                 };
                 data.payload.inputs = JSON.stringify(toolInputs);
