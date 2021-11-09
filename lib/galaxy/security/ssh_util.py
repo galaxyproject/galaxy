@@ -5,8 +5,8 @@ from Crypto.PublicKey import RSA
 
 
 class SSHKeys(NamedTuple):
-    private_key: str
-    public_key: str
+    private_key: bytes
+    public_key: bytes
     private_key_file: str
     public_key_file: str
 
