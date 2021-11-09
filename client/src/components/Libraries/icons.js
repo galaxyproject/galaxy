@@ -5,7 +5,6 @@ import {
     faShieldAlt,
     faGlobe,
     faHome,
-    faInfoCircle,
     faPlus,
     faSpinner,
     faTrash,
@@ -39,28 +38,19 @@ const tableIcons = [
 ];
 
 const manageIcons = [faAngleDoubleLeft, faSave, faFile];
-const topBarIcons = [faHome, faPlus, faInfoCircle, faTrash, faDownload, faBook];
+const topBarIcons = [faHome, faPlus, faTrash, faDownload, faBook];
 const librariesIcons = [faGlobe, faPencilAlt, faSave, faTimes, faTrash, faUnlock];
 
 export function initFolderTableIcons() {
-    tableIcons.forEach((icon) => {
-        library.add(icon);
-    });
+    tableIcons.forEach((icon) => library.add(icon));
 }
 
 export function initPermissionsIcons() {
-    manageIcons.forEach((icon) => {
-        library.add(icon);
-    });
+    manageIcons.forEach((icon) => library.add(icon));
 }
 export function initLibrariesIcons() {
-    librariesIcons.forEach((icon) => {
-        library.add(icon);
-    });
+    librariesIcons.forEach((icon) => library.add(icon));
 }
-
 export function initTopBarIcons() {
-    topBarIcons.forEach((icon) => {
-        library.add(icon);
-    });
+    topBarIcons.forEach((icon) => library.add(icon));
 }
