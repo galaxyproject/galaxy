@@ -462,60 +462,6 @@ class Taxonomy(Tabular):
 
 @dataproviders.decorators.has_dataproviders
 @build_sniff_from_prefix
-class GoldenPath(Tabular):
-    """Class describing NCBI's Golden Path assembly format"""
-    edam_format = 'format_3693'
-    file_ext = 'agp'
-
-    @dataproviders.decorators.dataprovider_factory('dict', dataproviders.column.GoldenPathDataProvider.settings)
-    def dict_dataprovider(self, dataset, **settings):
-        return super().dict_dataprovider(dataset, **settings)
-
-    def sniff_prefix(self, file_prefix):
-        """
-        Checks for and does cursory validation on data that looks like AGP
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('eg1.agp')
-        >>> GoldenPath().sniff(fname)
-        True
-        >>> fname = get_test_fname('eg2.agp')
-        >>> GoldenPath().sniff(fname)
-        True
-        >>> fname = get_test_fname('1.bed')
-        >>> GoldenPath().sniff(fname)
-        False
-        >>> fname = get_test_fname('2.tabular')
-        >>> GoldenPath().sniff(fname)
-        False
-        """
-        found_non_comment_lines = False
-        try:
-            for line in iter_headers(file_prefix, '\t', comment_designator='#'):
-                if line and not line[0].startswith('#'):
-                    if len(line) != 9:
-                        return False
-                    assert line[4] in ['A', 'D', 'F', 'G', 'O', 'P', 'W', 'N', 'U']
-                    ostensible_numbers = line[1:3]
-                    if line[4] in ['U', 'N']:
-                        ostensible_numbers.append(line[5])
-                        assert line[6] in ['scaffold', 'contig', 'centromere', 'short_arm', 'heterochromatin', 'telomere', 'repeat']
-                        assert line[7] in ['yes', 'no']
-                        assert line[8] in ['na', 'paired-ends', 'align_genus', 'align_xgenus', 'align_trnscript', 'within_clone', 'clone_contig', 'map', 'strobe', 'unspecified']
-                    else:
-                        ostensible_numbers.extend([line[6], line[7]])
-                        assert line[8] in ['+', '-', '?', '0', 'na']
-                    if line[4] == 'U':
-                        assert int(line[5]) == 100
-                    assert all(map(lambda x: str(x).isnumeric() and int(x) > 0, ostensible_numbers))
-                    found_non_comment_lines = True
-        except Exception:
-            return False
-        return found_non_comment_lines
-
-
-@dataproviders.decorators.has_dataproviders
-@build_sniff_from_prefix
 class Sam(Tabular):
     edam_format = "format_2573"
     edam_data = "data_0863"

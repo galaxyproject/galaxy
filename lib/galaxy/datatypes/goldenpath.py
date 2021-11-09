@@ -1,34 +1,73 @@
-"""
-MIT License
-
-Copyright (c) 2021 Michael Alonge <malonge11@gmail.com>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
-
 import abc
 import os
-from typing import Set, Union
+from typing import (
+    Set,
+    Union,
+)
+
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    iter_headers,
+)
+from .tabular import Tabular
+
+
+@build_sniff_from_prefix
+class GoldenPath(Tabular):
+    """Class describing NCBI's Golden Path assembly format"""
+    edam_format = 'format_3693'
+    file_ext = 'agp'
+
+    def set_meta(self, dataset, **kwd):
+        # AGPFile reads and validates entire file.
+        AGPFile(dataset.file_name)
+        super().set_meta(dataset, **kwd)
+
+    def sniff_prefix(self, file_prefix):
+        """
+        Checks for and does cursory validation on data that looks like AGP
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('eg1.agp')
+        >>> GoldenPath().sniff(fname)
+        True
+        >>> fname = get_test_fname('eg2.agp')
+        >>> GoldenPath().sniff(fname)
+        True
+        >>> fname = get_test_fname('1.bed')
+        >>> GoldenPath().sniff(fname)
+        False
+        >>> fname = get_test_fname('2.tabular')
+        >>> GoldenPath().sniff(fname)
+        False
+        """
+        found_non_comment_lines = False
+        try:
+            for line in iter_headers(file_prefix, '\t', comment_designator='#'):
+                if line:
+                    if len(line) != 9:
+                        return False
+                    assert line[4] in ['A', 'D', 'F', 'G', 'O', 'P', 'W', 'N', 'U']
+                    ostensible_numbers = line[1:3]
+                    if line[4] in ['U', 'N']:
+                        ostensible_numbers.append(line[5])
+                        assert line[6] in ['scaffold', 'contig', 'centromere', 'short_arm', 'heterochromatin', 'telomere', 'repeat']
+                        assert line[7] in ['yes', 'no']
+                        assert line[8] in ['na', 'paired-ends', 'align_genus', 'align_xgenus', 'align_trnscript', 'within_clone', 'clone_contig', 'map', 'strobe', 'unspecified']
+                    else:
+                        ostensible_numbers.extend([line[6], line[7]])
+                        assert line[8] in ['+', '-', '?', '0', 'na']
+                    if line[4] == 'U':
+                        assert int(line[5]) == 100
+                    assert all(map(lambda x: str(x).isnumeric() and int(x) > 0, ostensible_numbers))
+                    found_non_comment_lines = True
+        except Exception:
+            return False
+        return found_non_comment_lines
 
 
 class AGPError(Exception):
-    """ Exception raised for AGP related errors. """
+    """Exception raised for AGP related errors."""
 
     def __init__(self, fname, line_number, message="Error in AGP file."):
         self.fname = fname
@@ -43,7 +82,6 @@ class AGPError(Exception):
 
 
 class AGPFile:
-
     """
     A class storing the contents of an AGP v2.1 file. https://www.ncbi.nlm.nih.gov/assembly/agp/AGP_Specification/
 
@@ -58,9 +96,7 @@ class AGPFile:
       "pid":  AGP part number
     """
 
-    def __init__(self, in_file, mode="r"):
-        if mode != "r" and mode != "w":
-            raise ValueError("AGPFile mode must be either read ('r') or write ('w').")
+    def __init__(self, in_file):
 
         self._agp_version = "2.1"
         self._fname = os.path.abspath(in_file)
@@ -74,12 +110,7 @@ class AGPFile:
         self._seen_objs = set()
 
         # Read the contents of the AGP file
-        if mode == "r":
-            self._read_file()
-
-    def __iter__(self):
-        for obj in self._objects:
-            yield str(obj.obj), [dict(agp_line) for agp_line in obj]
+        self._read_file()
 
     def _read_file(self):
         """
@@ -163,21 +194,6 @@ class AGPFile:
         """ Calculate the number of lines in the current state of the AGP file. """
         return sum([len(self._comment_lines)] + [obj.num_lines for obj in self._objects])
 
-    @property
-    def num_objs(self):
-        return len(self._objects)
-
-    def add_pragma(self):
-        pragma = f"## agp-version {self.agp_version}"
-        if self._comment_lines:
-            new_comment_lines = [pragma]
-            for i in self._comment_lines:
-                if i != pragma:
-                    new_comment_lines.append(i)
-            self._comment_lines = new_comment_lines
-        else:
-            self._comment_lines.append(pragma)
-
     def iterate_objs(self):
         """ Iterate over the objects of the AGP file. """
         for obj in self._objects:
@@ -189,75 +205,10 @@ class AGPFile:
             for j in obj.iterate_lines():
                 yield j
 
-    def add_comment(self, c):
-        if not isinstance(c, str):
-            raise TypeError("Comment must be a string")
-
-        if not c.startswith("#"):
-            raise ValueError("Comment must start with a '#' character")
-
-        if c not in self._comment_lines:
-            self._comment_lines.append(c)
-
-    def add_seq_line(self, obj, obj_beg, obj_end, pid, comp_type, comp, comp_beg, comp_end, orientation):
-        """
-        # TODO fill this out
-        :param obj:
-        :param obj_beg:
-        :param obj_end:
-        :param pid:
-        :param comp_type:
-        :param comp:
-        :param comp_beg:
-        :param comp_end:
-        :param orientation:
-        """
-        line_number = self.num_lines + 1
-        agp_line = AGPSeqLine(self.fname, line_number, obj, obj_beg, obj_end, pid, comp_type, comp, comp_beg, comp_end, orientation)
-        self._add_line(agp_line)
-
-    def add_gap_line(self, obj, obj_beg, obj_end, pid, comp_type, gap_len, gap_type, linkage, linkage_evidence):
-        """
-        # TODO fill this out
-        :param obj:
-        :param obj_beg:
-        :param obj_end:
-        :param pid:
-        :param comp_type:
-        :param gap_len:
-        :param gap_type:
-        :param linkage:
-        :param linkage_evidence:
-        """
-        line_number = self.num_lines + 1
-        agp_line = AGPGapLine(self.fname, line_number, obj, obj_beg, obj_end, pid, comp_type, gap_len, gap_type, linkage, linkage_evidence)
-        self._add_line(agp_line)
-
-    def pop_agp_line(self):
-        """ Remove the last AGP line and update state info accordingly. """
-        if not self._objects:
-            return
-
-        if self._objects[-1].num_lines == 1:
-            self._seen_objs.remove(self._objects[-1].obj)
-            self._objects = self._objects[:-1]
-
-        else:
-            self._objects[-1].pop_line()
-
-    def write(self):
-        """ Write the agp contents to a file. """
-        with open(self.fname, "w") as f:
-            if self._comment_lines:
-                f.write("\n".join(self._comment_lines) + "\n")
-            if self._objects:
-                f.write("\n".join([str(obj) for obj in self._objects]) + "\n")
-
 
 class AGPObject:
-
     """
-    This (python) object represents an AGP object. Objects will consist of AGP lines, and have to adhere to
+    Represents an AGP object. Objects will consist of AGP lines, and have to adhere to
     certain rules. By organizing AGP lines into the objects that they comprise, we can easily calculate stats
     about the assembly (the collection of objects).
     """
@@ -331,7 +282,6 @@ class AGPObject:
 
 
 class AGPLine(object, metaclass=abc.ABCMeta):
-
     """
     An abstract base class representing a single AGP file line. Inheriting subclasses should
     override or implement new methods to check the validity of a single AFP line. Validity

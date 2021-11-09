@@ -17,8 +17,6 @@ from bx.bbi.bigbed_file import BigBedFile
 from bx.bbi.bigwig_file import BigWigFile
 from bx.interval_index_file import Indexes
 
-from galaxy.datatypes.dataproviders import column
-from galaxy.datatypes.goldenpath import AGPFile
 from galaxy.datatypes.interval import Bed, Gff, Gtf
 from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFFeature, GFFInterval, GFFReaderWrapper, parse_gff_attributes
 from galaxy.visualization.data_providers.basic import BaseDataProvider
@@ -312,26 +310,6 @@ class FilterableMixin:
                         'tool_exp_name': 'c5'}]
 
         return filters
-
-
-class GoldenPathDataProvider(column.GoldenPathDataProvider):
-    '''
-    Class that defines a data provider for AGP datasets.
-    '''
-    dataset_type: dict
-
-    def __init__(self, original_dataset, **kwargs):
-        filename = original_dataset.dataset.get_file_name()
-        self.goldenpath = AGPFile(filename)
-        self.columns = [str(gp) for gp in self.goldenpath]
-        super().__init__(filename, columns=self.columns, **kwargs)
-
-    def __iter__(self):
-        for gp in self.goldenpath:
-            yield gp
-
-    def get_data(self, columns=None):
-        return dict(self.goldenpath)
 
 
 class TabixDataProvider(GenomeDataProvider, FilterableMixin):
