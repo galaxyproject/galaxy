@@ -13,6 +13,7 @@ import weakref
 from collections import OrderedDict
 from collections.abc import Mapping
 from os.path import abspath
+from typing import Any, Iterator, TYPE_CHECKING, Union
 
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
@@ -27,6 +28,10 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.json import safe_dumps
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
+    from galaxy.model.none_like import NoneDataset
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +71,7 @@ class MetadataCollection(Mapping):
     retrieved, returning default values in cases when metadata is not set.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent: Union["DatasetInstance", "NoneDataset"]) -> None:
         self.parent = parent
         # initialize dict if needed
         if self.parent._metadata is None:
@@ -88,7 +93,7 @@ class MetadataCollection(Mapping):
     def spec(self):
         return self.parent.datatype.metadata_spec
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Any]:
         yield from self.spec.keys()
 
     def __getitem__(self, key):
@@ -142,7 +147,7 @@ class MetadataCollection(Mapping):
         else:
             log.info(f"Attempted to delete invalid key '{name}' from MetadataCollection")
 
-    def element_is_set(self, name):
+    def element_is_set(self, name) -> bool:
         """
         check if the meta data with the given name is set, i.e.
 

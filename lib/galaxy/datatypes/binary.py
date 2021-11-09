@@ -25,6 +25,7 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.data import (
+    Data,
     DatatypeValidation,
     get_file_peek,
 )
@@ -267,7 +268,10 @@ class Bref3(Binary):
 
 class DynamicCompressedArchive(CompressedArchive):
 
-    def matches_any(self, target_datatypes):
+    compressed_format: str
+    uncompressed_datatype_instance: Data
+
+    def matches_any(self, target_datatypes) -> bool:
         """Treat two aspects of compressed datatypes separately.
         """
         compressed_target_datatypes = []
@@ -281,8 +285,12 @@ class DynamicCompressedArchive(CompressedArchive):
 
         # TODO: Add gz and bz2 as proper datatypes and use those instances instead of
         # CompressedArchive() in the following check.
-        return self.uncompressed_datatype_instance.matches_any(uncompressed_target_datatypes) or \
-            CompressedArchive().matches_any(compressed_target_datatypes)
+        if not hasattr(self, "uncompressed_datatype_instance"):
+            raise Exception("Missing 'uncompressed_datatype_instance' attribute.")
+        else:
+            return self.uncompressed_datatype_instance.matches_any(
+                uncompressed_target_datatypes
+            ) or CompressedArchive().matches_any(compressed_target_datatypes)
 
 
 class GzDynamicCompressedArchive(DynamicCompressedArchive):

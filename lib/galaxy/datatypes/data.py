@@ -6,7 +6,7 @@ import shutil
 import string
 import tempfile
 from inspect import isclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import webob.exc
 from markupsafe import escape
@@ -28,6 +28,9 @@ from . import (
     dataproviders,
     metadata
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 XSS_VULNERABLE_MIME_TYPES = [
     'image/svg+xml',  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
@@ -633,7 +636,9 @@ class Data(metaclass=DataMeta):
         """Returns available converters by type for this dataset"""
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
 
-    def find_conversion_destination(self, dataset, accepted_formats, datatypes_registry, **kwd):
+    def find_conversion_destination(
+        self, dataset, accepted_formats: List[str], datatypes_registry, **kwd
+    ) -> Tuple[bool, Optional[str], Optional["DatasetInstance"]]:
         """Returns ( direct_match, converted_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions(dataset, accepted_formats, **kwd)
 
@@ -726,7 +731,7 @@ class Data(metaclass=DataMeta):
     def has_resolution(self):
         return False
 
-    def matches_any(self, target_datatypes):
+    def matches_any(self, target_datatypes: List[Any]) -> bool:
         """
         Check if this datatype is of any of the target_datatypes or is
         a subtype thereof.

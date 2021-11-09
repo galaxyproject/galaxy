@@ -27,6 +27,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Tuple,
     Type,
     TYPE_CHECKING,
     Union,
@@ -143,6 +144,8 @@ AUTO_PROPAGATED_TAGS = ["name"]
 
 
 if TYPE_CHECKING:
+    from galaxy.datatypes.data import Data
+
     class _HasTable:
         table: Table
         __table__: Table
@@ -210,8 +213,9 @@ def set_datatypes_registry(d_registry):
 
 
 class HasTags:
-    dict_collection_visible_keys = ['tags']
-    dict_element_visible_keys = ['tags']
+    dict_collection_visible_keys = ["tags"]
+    dict_element_visible_keys = ["tags"]
+    tags: List["ItemTagAssociation"]
 
     def to_dict(self, *args, **kwargs):
         rval = super().to_dict(*args, **kwargs)
@@ -3449,7 +3453,7 @@ class DatasetHash(Base, Serializable):
         return rval
 
 
-def datatype_for_extension(extension, datatypes_registry=None):
+def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
     if extension is not None:
         extension = extension.lower()
     if datatypes_registry is None:
@@ -3545,12 +3549,12 @@ class DatasetInstance(_HasTable):
                 object_session(self).flush()  # flush here, because hda.flush() won't flush the Dataset object
     state = property(get_dataset_state, set_dataset_state)
 
-    def get_file_name(self):
+    def get_file_name(self) -> str:
         if self.dataset.purged:
             return ""
         return self.dataset.get_file_name()
 
-    def set_file_name(self, filename):
+    def set_file_name(self, filename: str):
         return self.dataset.set_file_name(filename)
     file_name = property(get_file_name, set_file_name)
 
@@ -3568,7 +3572,7 @@ class DatasetInstance(_HasTable):
         return self.dataset.extra_files_path_exists()
 
     @property
-    def datatype(self):
+    def datatype(self) -> "Data":
         return datatype_for_extension(self.extension)
 
     def get_metadata(self):
@@ -3595,7 +3599,7 @@ class DatasetInstance(_HasTable):
                 meta_types.append(meta_type)
         return meta_types
 
-    def get_metadata_file_paths_and_extensions(self):
+    def get_metadata_file_paths_and_extensions(self) -> List[Tuple[str, str]]:
         metadata = self.metadata
         metadata_files = []
         for metadata_name in self.metadata_file_types:
@@ -3802,7 +3806,9 @@ class DatasetInstance(_HasTable):
     def can_convert_to(self, format):
         return format in self.get_converter_types()
 
-    def find_conversion_destination(self, accepted_formats, **kwd):
+    def find_conversion_destination(
+        self, accepted_formats: List[str], **kwd
+    ) -> Tuple[bool, Optional[str], Optional["DatasetInstance"]]:
         """Returns ( target_ext, existing converted dataset )"""
         return self.datatype.find_conversion_destination(self, accepted_formats, _get_datatypes_registry(), **kwd)
 
@@ -5263,7 +5269,9 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return [(row[:-2], row.extension, row.Dataset.file_name) for row in q]
 
     @property
-    def element_identifiers_extensions_paths_and_metadata_files(self):
+    def element_identifiers_extensions_paths_and_metadata_files(
+        self,
+    ) -> List[List[Any]]:
         q = self._get_nested_collection_attributes(
             element_attributes=('element_identifier',),
             hda_attributes=('extension',),
@@ -8125,6 +8133,7 @@ class ItemTagAssociation(Dictifiable):
     dict_element_visible_keys = dict_collection_visible_keys
     associated_item_names: List[str] = []
     user_tname: Column
+    user_value = Column(TrimmedString(255), index=True)
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -8151,7 +8160,6 @@ class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
-    user_value = Column(TrimmedString(255), index=True)
     history = relationship('History', back_populates='tags')
     tag = relationship('Tag')
     user = relationship('User')
@@ -8167,7 +8175,6 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
-    user_value = Column(TrimmedString(255), index=True)
     history_dataset_association = relationship('HistoryDatasetAssociation', back_populates='tags')
     tag = relationship('Tag')
     user = relationship('User')
@@ -8183,7 +8190,6 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
-    user_value = Column(TrimmedString(255), index=True)
     library_dataset_dataset_association = relationship(
         'LibraryDatasetDatasetAssociation', back_populates='tags')
     tag = relationship('Tag')
@@ -8199,7 +8205,6 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
-    user_value = Column(TrimmedString(255), index=True)
     page = relationship('Page', back_populates='tags')
     tag = relationship('Tag')
     user = relationship('User')
@@ -8214,7 +8219,6 @@ class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
-    user_value = Column(TrimmedString(255), index=True)
     workflow_step = relationship('WorkflowStep', back_populates='tags')
     tag = relationship('Tag')
     user = relationship('User')
@@ -8229,7 +8233,6 @@ class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
-    user_value = Column(TrimmedString(255), index=True)
     stored_workflow = relationship('StoredWorkflow', back_populates='tags')
     tag = relationship('Tag')
     user = relationship('User')
@@ -8244,7 +8247,6 @@ class VisualizationTagAssociation(Base, ItemTagAssociation, RepresentById):
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
-    user_value = Column(TrimmedString(255), index=True)
     visualization = relationship('Visualization', back_populates='tags')
     tag = relationship('Tag')
     user = relationship('User')
@@ -8260,7 +8262,6 @@ class HistoryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
-    user_value = Column(TrimmedString(255), index=True)
     dataset_collection = relationship('HistoryDatasetCollectionAssociation', back_populates='tags')
     tag = relationship('Tag')
     user = relationship('User')
@@ -8276,7 +8277,6 @@ class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
-    user_value = Column(TrimmedString(255), index=True)
     dataset_collection = relationship('LibraryDatasetCollectionAssociation', back_populates='tags')
     tag = relationship('Tag')
     user = relationship('User')
@@ -8291,7 +8291,6 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     user_tname = Column(TrimmedString(255), index=True)
     value = Column(TrimmedString(255), index=True)
-    user_value = Column(TrimmedString(255), index=True)
     tag = relationship('Tag')
     user = relationship('User')
 
