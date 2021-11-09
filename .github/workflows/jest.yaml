@@ -10,7 +10,7 @@ concurrency:
   group: client-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  jest:
+  client-unit-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
