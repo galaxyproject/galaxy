@@ -496,7 +496,7 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         page_sources = input_pages.page_sources
         assert len(page_sources) == 1
         page_source = page_sources[0]
-        input_sources = list(page_source.parse_input_sources())
+        input_sources = page_source.parse_input_sources()
         assert len(input_sources) == 2
 
     def test_tests(self):

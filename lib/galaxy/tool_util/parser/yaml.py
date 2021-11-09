@@ -286,7 +286,7 @@ class YamlPageSource(PageSource):
         self.inputs_list = inputs_list
 
     def parse_input_sources(self):
-        return map(YamlInputSource, self.inputs_list)
+        return list(map(YamlInputSource, self.inputs_list))
 
 
 class YamlInputSource(InputSource):
