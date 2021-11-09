@@ -5,7 +5,6 @@
         </b-button>
 
         <b-modal id="details-modal"> my amazing details! </b-modal>
-
     </div>
 </template>
 
@@ -32,7 +31,7 @@ export default {
     },
     data() {
         return {
-            someVariable: "example"
+            someVariable: "example",
         };
     },
     methods: {},
