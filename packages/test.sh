@@ -41,16 +41,17 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     run_mypy=${RUN_MYPY[$i]}
 
     cd "$package_dir"
-    pip install -e '.'
-    pip install -r test-requirements.txt
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
         pip install -e '.[template,jstree]'
+    elif [ "$package_dir" = "tool_util" ]; then
+        pip install -e '.[cwl,mulled,edam]'
+    else
+        pip install -e '.'
     fi
-    if [ "$package_dir" = "tool_util" ]; then
-        pip install -e '.[mulled,edam]'
-    fi
+
+    pip install -r test-requirements.txt
 
     if [[ "$run_tests" == "1" ]]; then
         pytest --doctest-modules galaxy tests
