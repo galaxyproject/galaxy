@@ -305,7 +305,7 @@ class PageSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_input_sources(self):
+    def parse_input_sources(self) -> List:
         """ Return a list of InputSource objects. """
 
 

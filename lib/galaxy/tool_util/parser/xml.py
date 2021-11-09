@@ -1084,7 +1084,7 @@ class XmlPageSource(PageSource):
         return display
 
     def parse_input_sources(self):
-        return map(XmlInputSource, self.parent_elem)
+        return list(map(XmlInputSource, self.parent_elem))
 
 
 class XmlInputSource(InputSource):
