@@ -30,6 +30,7 @@ from pydantic import (
 from typing_extensions import (
     Annotated,
     Literal,
+    TypedDict,
 )
 
 from galaxy.schema.bco import XrefItem
@@ -1537,6 +1538,11 @@ class CollectionElementIdentifier(Model):
     )
 
 
+class FieldDict(TypedDict):
+    name: str
+    type: str
+
+
 class CreateNewCollectionPayload(Model):
     collection_type: Optional[CollectionType] = OptionalCollectionTypeField
     element_identifiers: Optional[List[CollectionElementIdentifier]] = Field(
@@ -1571,6 +1577,11 @@ class CreateNewCollectionPayload(Model):
     folder_id: Optional[LibraryFolderDatabaseIdField] = Field(
         default=None,
         description="The ID of the library folder that will contain the collection. Required if `instance_type=library`.",
+    )
+    fields_: Optional[Union[str, List[FieldDict]]] = Field(
+        default=[],
+        description="List of fields to create for this collection. Set to 'auto' to guess fields from identifiers.",
+        alias="fields",
     )
 
 
