@@ -1,5 +1,12 @@
+from typing import (
+    Any,
+    Dict,
+    List,
+)
+
 from galaxy import model
 from galaxy.model.orm.util import add_object_to_object_session
+from galaxy.schema.schema import FieldDict
 from galaxy.util.oset import OrderedSet
 from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
@@ -37,8 +44,8 @@ def set_collection_elements(dataset_collection, type, dataset_instances, associa
     return dataset_collection
 
 
-def guess_fields(dataset_instances):
-    fields = []
+def guess_fields(dataset_instances: Dict[str, Any]) -> List[FieldDict]:
+    fields: List[FieldDict] = []
     for identifier, element in dataset_instances.items():
         # TODO: Make generic enough to handle nested record types.
         assert element.history_content_type == "dataset"
