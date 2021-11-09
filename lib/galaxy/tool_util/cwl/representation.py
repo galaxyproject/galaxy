@@ -304,7 +304,6 @@ def galactic_flavored_to_cwl_job(tool, param_dict, local_working_directory):
             map_to = input_param.map_to
             inputs_at_depth = inputs
             if map_to:
-
                 while "/" in map_to:
                     first, map_to = map_to.split("/", 1)
                     if first not in inputs_at_depth:
