@@ -52,7 +52,6 @@ const getDefaultValues = () => ({
     url: "",
     pathChunks: "",
     currentDirectoryName: "",
-    selectText: _l("Select"),
 });
 
 export default {
@@ -61,13 +60,7 @@ export default {
         FilesDialog,
     },
     data() {
-        return { ...getDefaultValues(), modalKey: 0 };
-    },
-    props: {
-        callback: {
-            type: Function,
-            required: true,
-        },
+        return { ...getDefaultValues(), modalKey: 0, selectText: _l("Select") };
     },
     computed: {
         isValidName() {
@@ -127,7 +120,7 @@ export default {
                 // create an string of path chunks separated by `/`
                 url = encodeURI(`${this.url.protocol}//${this.pathChunks.map(({ pathChunk }) => pathChunk).join("/")}`);
             }
-            this.callback(url);
+            this.$emit("input", url);
         },
     },
 };

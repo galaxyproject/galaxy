@@ -29,7 +29,7 @@
                 :info="attrs['info']"
             />
             <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
-            <FormDirectory v-if="type == 'directory_uri'" v-model="currentValue" :id="id" />
+            <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter
                 v-else-if="backbonejs"
                 v-model="currentValue"
