@@ -136,9 +136,9 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             if max_error_level == StdioErrorLevel.FATAL_OOM:
                 state = DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR
             elif max_error_level >= StdioErrorLevel.FATAL:
-                reason = ""
+                reason = ''  # type: ignore
                 if job_messages:
-                    reason = f" Reasons are {job_messages}"
+                    reason = f" Reasons are {job_messages}"  # type: ignore
                 log.info(f"Job error detected, failing job.{reason}")
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
 
