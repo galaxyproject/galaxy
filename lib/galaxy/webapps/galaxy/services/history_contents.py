@@ -788,7 +788,7 @@ class HistoriesContentsService(ServiceBase):
         trans.response.headers['history_size'] = str(history.disk_size)
         trans.response.headers['history_empty'] = json.dumps(history.empty)  # convert to proper bool
 
-        return json.dumps(contents)
+        return contents
 
     def _hid_greater_than(self, hid: int) -> HistoryContentsFilterList:
         return [["hid", "gt", hid]]
