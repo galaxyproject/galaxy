@@ -3,13 +3,14 @@ import logging
 import os
 import shlex
 import tempfile
+from typing import Any, cast, Dict, List
 
 from galaxy import model
 from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
-from galaxy.tools import global_tool_errors
+from galaxy.tools import global_tool_errors, Tool
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -118,7 +119,7 @@ class ToolEvaluator:
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
 
-        param_dict = dict()
+        param_dict: Dict[str, Any] = {}
 
         def input():
             raise SyntaxError("Unbound variable input.")  # Don't let $input hang Python evaluation process.
@@ -211,11 +212,14 @@ class ToolEvaluator:
                     else:
                         # Trick wrapper into using target conv ext (when
                         # None) without actually being a tool parameter
-                        input_values[conversion_name] = \
-                            DatasetFilenameWrapper(converted_dataset,
-                                                   datatypes_registry=self.app.datatypes_registry,
-                                                   tool=Bunch(conversion_name=Bunch(extensions=conv_ext)),
-                                                   name=conversion_name)
+                        input_values[conversion_name] = DatasetFilenameWrapper(
+                            converted_dataset,
+                            datatypes_registry=self.app.datatypes_registry,
+                            tool=cast(
+                                Tool, Bunch(conversion_name=Bunch(extensions=conv_ext))
+                            ),
+                            name=conversion_name,
+                        )
                 # Wrap actual input dataset
                 dataset = input_values[input.name]
                 wrapper_kwds = dict(
@@ -439,7 +443,7 @@ class ToolEvaluator:
         config templates corresponding to this tool with these inputs on this
         compute environment.
         """
-        self.extra_filenames = []
+        self.extra_filenames: List[str] = []
         self.command_line = None
 
         try:
