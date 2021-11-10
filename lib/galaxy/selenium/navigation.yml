@@ -797,7 +797,7 @@ libraries:
       access_dataset_roles: '.access_dataset_roles .multiselect__tag span'
       private_dataset_icon: '.fa-key'
       open_location_details_btn: '.details-btn'
-      location_details_ok_btn: '.modal .btn-primary'
+      location_details_ok_btn: '#details-modal .btn-primary'
 
     labels:
       from_history: 'from History'
