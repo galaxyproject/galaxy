@@ -31,7 +31,7 @@ cloudauthz = "==0.6.0"
 cloudbridge = "*"
 contextvars = {version = "*", python = "~3.6"}
 circus = "*"
-cwltool = "==3.0.20201109103151"
+cwltool = "==3.1.20211107152837"
 dictobj = "*"
 docutils = "!=0.17, !=0.17.1"
 edam-ontology = "*"
