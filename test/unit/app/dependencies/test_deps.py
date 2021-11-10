@@ -24,6 +24,11 @@ FILES_SOURCES_DROPBOX = """
 - type: webdav
 - type: dropbox
 """
+JOB_CONF_YAML = """
+runners:
+  runner1:
+    load: job_runner_A
+"""
 
 
 def test_default_objectstore():
@@ -78,6 +83,16 @@ def test_fs_configured():
         cds = cc.get_cond_deps(config=config)
         assert cds.check_fs_dropboxfs()
         assert cds.check_fs_webdavfs()
+
+
+def test_yaml_jobconf_runners():
+    with _config_context() as cc:
+        job_conf_file = cc.write_config("job_conf.yml", JOB_CONF_YAML)
+        config = {
+            "job_config_file": job_conf_file,
+        }
+        cds = cc.get_cond_deps(config=config)
+        assert 'job_runner_A' in cds.job_runners
 
 
 @contextmanager
