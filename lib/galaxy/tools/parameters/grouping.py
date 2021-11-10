@@ -5,8 +5,9 @@ import io
 import logging
 import os
 import unicodedata
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from galaxy.datatypes import sniff
+from galaxy.datatypes import data, sniff
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
@@ -20,6 +21,9 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
+
+if TYPE_CHECKING:
+    from galaxy.tools.parameter.basic import ToolParameter
 
 log = logging.getLogger(__name__)
 URI_PREFIXES = [f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp"]]
@@ -91,6 +95,8 @@ class Repeat(Group):
         return f"Repeat ({self.title})"
 
     def value_to_basic(self, value, app, use_security=False):
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for d in value:
             rval_dict = {}
@@ -104,6 +110,8 @@ class Repeat(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         try:
             for i, d in enumerate(value):
@@ -127,6 +135,8 @@ class Repeat(Group):
         return rval
 
     def get_initial_value(self, trans, context):
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for i in range(self.default):
             rval_dict = {'__index__': i}
@@ -136,6 +146,8 @@ class Repeat(Group):
         return rval
 
     def to_dict(self, trans):
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
         repeat_dict = super().to_dict(trans)
 
         def input_to_dict(input):
@@ -165,6 +177,8 @@ class Section(Group):
         return f"Section ({self.title})"
 
     def value_to_basic(self, value, app, use_security=False):
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = {}
         for input in self.inputs.values():
             if input.name in value:  # parameter might be absent in unverified workflow
@@ -172,6 +186,8 @@ class Section(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = {}
         try:
             for input in self.inputs.values():
@@ -183,13 +199,17 @@ class Section(Group):
         return rval
 
     def get_initial_value(self, trans, context):
-        rval = {}
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
+        rval: Dict[str, Any] = {}
         child_context = ExpressionContext(rval, context)
         for child_input in self.inputs.values():
             rval[child_input.name] = child_input.get_initial_value(trans, child_context)
         return rval
 
     def to_dict(self, trans):
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
         section_dict = super().to_dict(trans)
 
         def input_to_dict(input):
@@ -197,6 +217,25 @@ class Section(Group):
 
         section_dict["inputs"] = list(map(input_to_dict, self.inputs.values()))
         return section_dict
+
+
+class Dataset(Bunch):
+    type: str
+    file_type: str
+    dbkey: str
+    datatype: data.Data
+    warnings: List[str]
+    metadata: Dict[str, str]
+    composite_files: Dict[str, Optional[str]]
+    uuid: Optional[str]
+    tag_using_filenames: Optional[str]
+    tags: Optional[str]
+    name: str
+    primary_file: str
+    to_posix_lines: bool
+    auto_decompress: bool
+    ext: str
+    space_to_tab: bool
 
 
 class UploadDataset(Group):
@@ -283,6 +322,8 @@ class UploadDataset(Group):
         return None
 
     def value_to_basic(self, value, app, use_security=False):
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for d in value:
             rval_dict = {}
@@ -296,6 +337,8 @@ class UploadDataset(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for i, d in enumerate(value):
             try:
@@ -324,6 +367,8 @@ class UploadDataset(Group):
             return int(file_count)
 
     def get_initial_value(self, trans, context):
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
         file_count = self.get_file_count(trans, context)
         rval = []
         for i in range(file_count):
@@ -367,8 +412,7 @@ class UploadDataset(Group):
                     return looks_like_url
 
                 if start_of_url(url_paste):
-                    url_paste = url_paste.replace('\r', '').split('\n')
-                    for line in url_paste:
+                    for line in url_paste.replace("\r", "").split("\n"):
                         line = line.strip()
                         if line:
                             if not start_of_url(line):
@@ -560,7 +604,7 @@ class UploadDataset(Group):
         if d_type.composite_type is not None or force_composite:
             # handle uploading of composite datatypes
             # Only one Dataset can be created
-            dataset = Bunch()
+            dataset = Dataset()
             dataset.type = 'composite'
             dataset.file_type = file_type
             dataset.dbkey = dbkey
@@ -646,7 +690,7 @@ class Conditional(Group):
 
     def __init__(self):
         Group.__init__(self)
-        self.test_param = None
+        self.test_param: Optional["ToolParameter"] = None
         self.cases = []
         self.value_ref = None
         self.value_ref_in_group = True  # When our test_param is not part of the conditional Group, this is False
@@ -656,6 +700,8 @@ class Conditional(Group):
         return f"Conditional ({self.name})"
 
     def get_current_case(self, value):
+        if not self.test_param:
+            raise Exception("Must set 'test_param' attribute to use.")
         # Convert value to user representation
         str_value = self.test_param.to_param_dict_string(value)
         # Find the matching case
@@ -665,6 +711,8 @@ class Conditional(Group):
         raise ValueError("No case matched value:", self.name, str_value)
 
     def value_to_basic(self, value, app, use_security=False):
+        if not self.test_param:
+            raise Exception("Must set 'test_param' attribute to use.")
         rval = dict()
         rval[self.test_param.name] = self.test_param.value_to_basic(value[self.test_param.name], app)
         current_case = rval['__current_case__'] = self.get_current_case(value[self.test_param.name])
@@ -674,6 +722,8 @@ class Conditional(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
+        if not self.test_param:
+            raise Exception("Must set 'test_param' attribute to use.")
         rval = dict()
         try:
             rval[self.test_param.name] = self.test_param.value_from_basic(value.get(self.test_param.name), app, ignore_errors)
@@ -691,6 +741,8 @@ class Conditional(Group):
         return rval
 
     def get_initial_value(self, trans, context):
+        if not self.test_param:
+            raise Exception("Must set 'test_param' attribute to use.")
         # State for a conditional is a plain dictionary.
         rval = {}
         # Get the default value for the 'test element' and use it
@@ -708,6 +760,8 @@ class Conditional(Group):
         return rval
 
     def to_dict(self, trans):
+        if not self.test_param:
+            raise Exception("Must set 'test_param' attribute to use.")
         cond_dict = super().to_dict(trans)
 
         def nested_to_dict(input):
@@ -726,6 +780,8 @@ class ConditionalWhen(Dictifiable):
         self.inputs = None
 
     def to_dict(self, trans):
+        if not self.inputs:
+            raise Exception("Must set 'inputs' attribute to use.")
         when_dict = super().to_dict()
 
         def input_to_dict(input):

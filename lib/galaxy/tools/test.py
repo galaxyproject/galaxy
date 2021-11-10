@@ -90,6 +90,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
     for value in tool_inputs.values():
         if isinstance(value, galaxy.tools.parameters.grouping.Conditional):
             cond_context = ParamContext(name=value.name, parent_context=parent_context)
+            assert value.test_param
             case_context = ParamContext(name=value.test_param.name, parent_context=cond_context)
             raw_input_dict = case_context.extract_value(raw_inputs)
             case_value = raw_input_dict["value"] if raw_input_dict else None
@@ -112,6 +113,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
                     expanded_inputs[case_context.for_state()] = processed_value
         elif isinstance(value, galaxy.tools.parameters.grouping.Section):
             context = ParamContext(name=value.name, parent_context=parent_context)
+            assert value.inputs
             for r_value in value.inputs.values():
                 expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=context)
                 if expanded_input:
@@ -121,6 +123,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
             while True:
                 context = ParamContext(name=value.name, index=repeat_index, parent_context=parent_context)
                 updated = False
+                assert value.inputs
                 for r_value in value.inputs.values():
                     expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=context)
                     if expanded_input:
