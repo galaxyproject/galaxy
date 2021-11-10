@@ -38,7 +38,7 @@ pygithub
 influxdb
 
 # Deep learning packages for tool recommendation
-tensorflow==2.5.1
+tensorflow==2.5.2
 
 # weasyprint has problematic requirements so make it optional (i.e. cairo)
 # xref https://github.com/galaxyproject/galaxy/pull/9651
