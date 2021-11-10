@@ -713,18 +713,6 @@ QUnit.test("message", function (assert) {
     assert.ok(message.$el.html() === "_new_message", "Correct new message.");
 });
 
-QUnit.test("hidden", function (assert) {
-    var hidden = new Ui.Hidden();
-    $("body").prepend(hidden.$el);
-    hidden.model.set("info", "_info");
-    assert.ok(hidden.$info.css("display", "block"), "Info shown.");
-    assert.ok(hidden.$info.html() === "_info", "Info text correct.");
-    hidden.model.set("info", "");
-    assert.ok(hidden.$info.css("display", "none"), "Info hidden.");
-    hidden.model.set("value", "_value");
-    assert.ok(hidden.$hidden.val() === "_value", "Correct value");
-});
-
 QUnit.test("select-content", function (assert) {
     var select = new SelectContent.View({});
     $("body").prepend(select.$el);
