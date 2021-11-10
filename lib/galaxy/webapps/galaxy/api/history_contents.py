@@ -518,7 +518,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             trans, history_id, serialization_params, filter_params, hid, limit, since,
         )
 
-    @expose_api_raw_anonymous
+    @expose_api_anonymous
     def contents_after(self, trans, history_id, hid, limit, **kwd):
         """
         Return {limit} history items with hid > {hid}.
