@@ -5,7 +5,7 @@ import io
 import logging
 import os
 import unicodedata
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, Mapping, Optional, TYPE_CHECKING
 
 from galaxy.datatypes import data, sniff
 from galaxy.exceptions import (
@@ -24,6 +24,7 @@ from galaxy.util.expressions import ExpressionContext
 
 if TYPE_CHECKING:
     from galaxy.tools.parameter.basic import ToolParameter
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 URI_PREFIXES = [f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp"]]
@@ -95,7 +96,7 @@ class Repeat(Group):
         return f"Repeat ({self.title})"
 
     def value_to_basic(self, value, app, use_security=False):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for d in value:
@@ -110,7 +111,7 @@ class Repeat(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         try:
@@ -135,7 +136,7 @@ class Repeat(Group):
         return rval
 
     def get_initial_value(self, trans, context):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for i in range(self.default):
@@ -146,7 +147,7 @@ class Repeat(Group):
         return rval
 
     def to_dict(self, trans):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         repeat_dict = super().to_dict(trans)
 
@@ -177,7 +178,7 @@ class Section(Group):
         return f"Section ({self.title})"
 
     def value_to_basic(self, value, app, use_security=False):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         rval = {}
         for input in self.inputs.values():
@@ -186,7 +187,7 @@ class Section(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         rval = {}
         try:
@@ -199,7 +200,7 @@ class Section(Group):
         return rval
 
     def get_initial_value(self, trans, context):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         rval: Dict[str, Any] = {}
         child_context = ExpressionContext(rval, context)
@@ -208,7 +209,7 @@ class Section(Group):
         return rval
 
     def to_dict(self, trans):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         section_dict = super().to_dict(trans)
 
@@ -322,7 +323,7 @@ class UploadDataset(Group):
         return None
 
     def value_to_basic(self, value, app, use_security=False):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for d in value:
@@ -337,7 +338,7 @@ class UploadDataset(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for i, d in enumerate(value):
@@ -367,7 +368,7 @@ class UploadDataset(Group):
             return int(file_count)
 
     def get_initial_value(self, trans, context):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         file_count = self.get_file_count(trans, context)
         rval = []
@@ -687,6 +688,9 @@ class UploadDataset(Group):
 
 class Conditional(Group):
     type = "conditional"
+    value_from: Callable[
+        ["Conditional", ExpressionContext, "Conditional", "Tool"], Mapping[str, str]
+    ]
 
     def __init__(self):
         Group.__init__(self)
@@ -700,7 +704,7 @@ class Conditional(Group):
         return f"Conditional ({self.name})"
 
     def get_current_case(self, value):
-        if not self.test_param:
+        if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
         # Convert value to user representation
         str_value = self.test_param.to_param_dict_string(value)
@@ -711,7 +715,7 @@ class Conditional(Group):
         raise ValueError("No case matched value:", self.name, str_value)
 
     def value_to_basic(self, value, app, use_security=False):
-        if not self.test_param:
+        if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
         rval = dict()
         rval[self.test_param.name] = self.test_param.value_to_basic(value[self.test_param.name], app)
@@ -722,7 +726,7 @@ class Conditional(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
-        if not self.test_param:
+        if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
         rval = dict()
         try:
@@ -741,7 +745,7 @@ class Conditional(Group):
         return rval
 
     def get_initial_value(self, trans, context):
-        if not self.test_param:
+        if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
         # State for a conditional is a plain dictionary.
         rval = {}
@@ -760,7 +764,7 @@ class Conditional(Group):
         return rval
 
     def to_dict(self, trans):
-        if not self.test_param:
+        if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
         cond_dict = super().to_dict(trans)
 
@@ -780,7 +784,7 @@ class ConditionalWhen(Dictifiable):
         self.inputs = None
 
     def to_dict(self, trans):
-        if not self.inputs:
+        if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         when_dict = super().to_dict()
 
