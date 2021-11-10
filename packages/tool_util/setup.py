@@ -40,6 +40,10 @@ PACKAGES = [
     'galaxy.tool_util.linters',
     'galaxy.tool_util.locations',
     'galaxy.tool_util.parser',
+    'galaxy.tool_util.toolbox',
+    'galaxy.tool_util.toolbox.filters',
+    'galaxy.tool_util.toolbox.lineages',
+    'galaxy.tool_util.toolbox.views',
     'galaxy.tool_util.verify',
     'galaxy.tool_util.verify.asserts',
 ]
@@ -95,11 +99,17 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require={
+        'cwl': [
+            'cwltool==3.0.20201109103151',
+        ],
         'mulled': [
             'conda',
             'cytoolz',  # cytoolz is an undeclared dependency of the conda package on PyPI
             'jinja2',
             'Whoosh',
+        ],
+        'edam': [
+            'edam-ontology',
         ],
     },
     license="AFL",

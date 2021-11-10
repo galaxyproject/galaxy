@@ -13,6 +13,7 @@ from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.security import HostAgent
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.objectstore import ObjectStore
 from galaxy.quota import QuotaAgent
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -30,12 +31,12 @@ class BasicApp(Container):
     using BasicApp instead of StructuredApp below.
     """
     name: str
-    config: Any
+    config: Any  # 'galaxy.config.BaseAppConfiguration'
     application_stack: ApplicationStack
     model: SharedModelMapping
     security: IdEncodingHelper
     auth_manager: AuthManager
-    toolbox: Any
+    toolbox: Any  # 'galaxy.tools.ToolBox'
     security_agent: Any
     quota_agent: QuotaAgent
     datatypes_registry: Registry
@@ -49,19 +50,13 @@ class MinimalApp(BasicApp):
     install_model: ModelMapping
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
+    object_store: ObjectStore
 
 
 class MinimalManagerApp(MinimalApp):
-    is_webapp: bool  # is_webapp will be set to true when building WSGI app
-    new_installation: bool
-    tag_handler: GalaxyTagHandler
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
-    model: GalaxyModelMapping
-    install_model: ModelMapping
-    security_agent: GalaxyRBACAgent
-    host_security_agent: HostAgent
-    dataset_collections_service: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
+    dataset_collection_manager: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
     history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
     hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
     workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
@@ -71,6 +66,7 @@ class MinimalManagerApp(MinimalApp):
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     user_manager: Any
+    job_manager: Any  # galaxy.jobs.manager.JobManager
 
     @property
     def is_job_handler(self) -> bool:
@@ -105,7 +101,6 @@ class StructuredApp(MinimalManagerApp):
     webhooks_registry: WebhooksRegistry
 
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
-    dataset_collections_service: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
     history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
     hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
     workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
@@ -127,4 +122,5 @@ class StructuredApp(MinimalManagerApp):
     interactivetool_manager: Any
     job_manager: Any  # galaxy.jobs.manager.JobManager
     user_manager: Any
-    api_keys_manager: Any
+    api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'
+    visualizations_registry: Any  # 'galaxy.visualization.plugins.registry.VisualizationsRegistry'

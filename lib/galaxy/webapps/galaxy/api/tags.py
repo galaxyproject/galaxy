@@ -5,6 +5,7 @@ import logging
 
 from fastapi import (
     Body,
+    Response,
     status,
 )
 
@@ -50,6 +51,7 @@ class FastAPITags:
         - If no tags are provided in the request body, the currently associated tags will also be __deleted__.
         """
         self.manager.update(trans, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 class TagsController(BaseGalaxyAPIController):

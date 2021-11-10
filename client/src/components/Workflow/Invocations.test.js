@@ -4,7 +4,7 @@ import { getLocalVue } from "jest/helpers";
 import invocationData from "./test/json/invocation.json";
 import moment from "moment";
 
-jest.mock("../History/caching");
+jest.mock("components/History/caching");
 
 const localVue = getLocalVue();
 

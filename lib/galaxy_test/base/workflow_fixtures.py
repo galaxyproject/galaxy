@@ -57,6 +57,16 @@ steps:
 """
 
 
+WORKFLOW_SELECT_FROM_OPTIONAL_DATASET = """
+class: GalaxyWorkflow
+steps:
+  select_from_dataset_optional:
+    tool_id: select_from_dataset_optional
+    state:
+      select_single: null
+"""
+
+
 # Throwing a bunch of broken steps in to get a really long modal and sure it
 # is scrollable.
 WORKFLOW_WITH_INVALID_STATE = """
@@ -261,7 +271,7 @@ steps:
         seed: asdf
 test_data:
   input_c:
-    type: list
+    collection_type: list
     elements:
       - identifier: i1
         content: "0"
@@ -932,7 +942,7 @@ image_input:
   file_type: png
   name: my input image
 input_list:
-  type: list
+  collection_type: list
   elements:
     - identifier: i1
       content: "0"

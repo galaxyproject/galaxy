@@ -4,6 +4,7 @@ Utility functions used systemwide.
 """
 
 import binascii
+import codecs
 import collections
 import errno
 import importlib
@@ -60,8 +61,8 @@ try:
     import docutils.core as docutils_core
     import docutils.writers.html4css1 as docutils_html4css1
 except ImportError:
-    docutils_core = None
-    docutils_html4css1 = None
+    docutils_core = None  # type: ignore
+    docutils_html4css1 = None  # type: ignore
 
 try:
     import uwsgi
@@ -83,6 +84,8 @@ CHUNK_SIZE = 65536  # 64k
 
 DATABASE_MAX_STRING_SIZE = 32768
 DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
+
+DEFAULT_SOCKET_TIMEOUT = 600
 
 gzip_magic = b'\x1f\x8b'
 bz2_magic = b'BZh'
@@ -638,20 +641,21 @@ def sanitize_for_filename(text, default=None):
     return out
 
 
-def find_instance_nested(item, instances, match_key=None):
+def find_instance_nested(item, instances):
     """
     Recursively find instances from lists, dicts, tuples.
 
-    `instances` should be a tuple of valid instances
-    If match_key is given the key must match for an instance to be added to the list of found instances.
+    `instances` should be a tuple of valid instances.
+    Returns a dictionary, where keys are the deepest key at which an instance has been found,
+    and the value is the matched instance.
     """
 
-    matches = []
+    matches = {}
 
     def visit(path, key, value):
         if isinstance(value, instances):
-            if match_key is None or match_key == key:
-                matches.append(value)
+            if key not in matches:
+                matches[key] = value
         return key, value
 
     def enter(path, key, value):
@@ -1067,6 +1071,25 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
     return value
 
 
+def filesystem_safe_string(s, max_len=255, truncation_chars='..', strip_leading_dot=True, invalid_chars=('/',), replacement_char='_'):
+    """
+    Strip unicode null chars, truncate at 255 characters.
+    Optionally replace additional ``invalid_chars`` with `replacement_char` .
+
+    Defaults are probably only safe on linux / osx.
+    Needs further escaping if used in shell commands
+    """
+    sanitized_string = unicodify(s, strip_null=True)
+    if strip_leading_dot:
+        sanitized_string = sanitized_string.lstrip('.')
+    for invalid_char in invalid_chars:
+        sanitized_string = sanitized_string.replace(invalid_char, replacement_char)
+    if len(sanitized_string) > max_len:
+        sanitized_string = sanitized_string[:max_len - len(truncation_chars)]
+        sanitized_string = f"{sanitized_string}{truncation_chars}"
+    return sanitized_string
+
+
 def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict'):
     """
     Returns a bytestring version of 's', encoded as specified in 'encoding'.
@@ -1480,6 +1503,17 @@ def force_symlink(source, link_name):
             raise e
 
 
+def unlink(path_or_fd, ignore_errors=False):
+    """Calls os.unlink on `path_or_fd`, and ignore FileNoteFoundError if ignore_errors is True."""
+    try:
+        os.unlink(path_or_fd)
+    except FileNotFoundError:
+        if ignore_errors:
+            pass
+        else:
+            raise
+
+
 def move_merge(source, target):
     # when using shutil and moving a directory, if the target exists,
     # then the directory is placed inside of it
@@ -1504,6 +1538,7 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
+#  Don't use these two directly, prefer method version that "works" with packaged Galaxy.
 galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore
 galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore
 
@@ -1516,7 +1551,7 @@ def galaxy_directory():
 
 
 def galaxy_samples_directory():
-    return os.path.abspath(galaxy_samples_path)
+    return os.path.join(galaxy_directory(), 'lib', 'galaxy', 'config', 'sample')
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):
@@ -1650,6 +1685,38 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
         for chunk in r.iter_content(chunk_size):
             if chunk:
                 f.write(chunk)
+
+
+def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):
+    """Writes a stream to the provided file descriptor, returns the file name. Closes file descriptor"""
+    # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
+    CHUNK_SIZE = 1048576
+    try:
+        codecs.lookup(target_encoding)
+    except Exception:
+        target_encoding = DEFAULT_ENCODING  # utf-8
+    use_source_encoding = source_encoding is not None
+    while True:
+        chunk = stream.read(CHUNK_SIZE)
+        if not chunk:
+            break
+        if use_source_encoding:
+            # If a source encoding is given we use it to convert to the target encoding
+            try:
+                if not isinstance(chunk, str):
+                    chunk = chunk.decode(source_encoding, source_error)
+                os.write(fd, chunk.encode(target_encoding, target_error))
+            except UnicodeDecodeError:
+                use_source_encoding = False
+                os.write(fd, chunk)
+        else:
+            # Compressed files must be encoded after they are uncompressed in the upload utility,
+            # while binary files should not be encoded at all.
+            if isinstance(chunk, str):
+                chunk = chunk.encode(target_encoding, target_error)
+            os.write(fd, chunk)
+    os.close(fd)
+    return filename
 
 
 class classproperty:

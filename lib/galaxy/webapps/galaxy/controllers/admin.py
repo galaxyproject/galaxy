@@ -2,29 +2,28 @@ import imp
 import logging
 import os
 
-from sqlalchemy import false
+from sqlalchemy import false, func
 
 from galaxy import (
     model,
     util,
     web
 )
-from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
+from galaxy.managers.quotas import QuotaManager
 from galaxy.model import tool_shed_install as install_model
 from galaxy.security.validate_user_input import validate_password
 from galaxy.tool_shed.util.repository_util import get_ids_of_tool_shed_repositories_being_installed
 from galaxy.util import (
     nice_size,
+    pretty_print_time_interval,
     sanitize_text,
     url_get
 )
 from galaxy.util.tool_shed import common_util, encoding_util
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import grids, time_ago
-from galaxy.web.params import QuotaParamParser
 from galaxy.webapps.base import controller
-from galaxy.webapps.base.controller import UsesQuotaMixin
 from tool_shed.util.web_util import escape
 
 
@@ -89,6 +88,18 @@ class UserListGrid(grids.Grid):
     class DiskUsageColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
             return user.get_disk_usage(nice_size=True)
+
+        def sort(self, trans, query, ascending, column_name=None):
+            if column_name is None:
+                column_name = self.key
+            column = self.model_class.table.c.get(column_name)
+            if column is None:
+                column = getattr(self.model_class, column_name)
+            if ascending:
+                query = query.order_by(func.coalesce(column, 0).asc())
+            else:
+                query = query.order_by(func.coalesce(column, 0).desc())
+            return query
 
     # Grid definition
     title = "Users"
@@ -225,7 +236,7 @@ class RoleListGrid(grids.Grid):
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
-        grids.GridColumn("Last Updated", key="update_time", format=time_ago)
+        grids.GridColumn("Last Updated", key="update_time")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0], columns[1], columns[2]],
@@ -305,7 +316,7 @@ class GroupListGrid(grids.Grid):
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
-        grids.GridColumn("Last Updated", key="update_time", format=time_ago)
+        grids.GridColumn("Last Updated", key="update_time", format=pretty_print_time_interval)
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0]],
@@ -503,7 +514,7 @@ class ToolVersionListGrid(grids.Grid):
         return trans.install_model.context.query(self.model_class)
 
 
-class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaParamParser):
+class AdminGalaxy(controller.JSAppLauncher):
 
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
@@ -521,6 +532,10 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     )
     activate_operation = grids.GridOperation("Activate User", condition=(lambda item: not item.active), allow_multiple=False)
     resend_activation_email = grids.GridOperation("Resend Activation Email", condition=(lambda item: not item.active), allow_multiple=False)
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.quota_manager: QuotaManager = QuotaManager(app)
 
     @web.expose
     @web.require_admin
@@ -646,13 +661,13 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             operation = kwargs.pop('operation').lower()
             try:
                 if operation == 'delete':
-                    message = self._delete_quota(quotas)
+                    message = self.quota_manager.delete_quota(quotas)
                 elif operation == 'undelete':
-                    message = self._undelete_quota(quotas)
+                    message = self.quota_manager.undelete_quota(quotas)
                 elif operation == 'purge':
-                    message = self._purge_quota(quotas)
+                    message = self.quota_manager.purge_quota(quotas)
                 elif operation == 'unset as default':
-                    message = self._unset_quota_default(quotas[0])
+                    message = self.quota_manager.unset_quota_default(quotas[0])
             except ActionInputError as e:
                 message, status = (e.err_msg, 'error')
         if message:
@@ -703,7 +718,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         build_select_input('in_users', 'Users', all_users, [])]}
         else:
             try:
-                quota, message = self._create_quota(util.Params(payload), decode_id=trans.security.decode_id)
+                quota, message = self.quota_manager.create_quota(payload, decode_id=trans.security.decode_id)
                 return {'message': message}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
@@ -730,7 +745,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             }
         else:
             try:
-                return {'message': self._rename_quota(quota, util.Params(payload))}
+                return {'message': self.quota_manager.rename_quota(quota, util.Params(payload))}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
@@ -766,7 +781,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                               build_select_input('in_users', 'Users', all_users, in_users)]}
         else:
             try:
-                return {'message': self._manage_users_and_groups_for_quota(quota, util.Params(payload), decode_id=trans.security.decode_id)}
+                return {'message': self.quota_manager.manage_users_and_groups_for_quota(quota, util.Params(payload), decode_id=trans.security.decode_id)}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
@@ -794,7 +809,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             }
         else:
             try:
-                return {'message': self._edit_quota(quota, util.Params(payload))}
+                return {'message': self.quota_manager.edit_quota(quota, util.Params(payload))}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
@@ -822,7 +837,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             }
         else:
             try:
-                return {'message': self._set_quota_default(quota, util.Params(payload))}
+                return {'message': self.quota_manager.set_quota_default(quota, util.Params(payload))}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
@@ -957,12 +972,13 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     build_select_input('in_users', 'Users', all_users, []), {
                     'name': 'auto_create',
                     'label': 'Create a new group of the same name for this role:',
-                    'type': 'boolean'
+                    'type': 'boolean',
+                    'optional': True,
                 }]}
         else:
             name = util.restore_text(payload.get('name', ''))
             description = util.restore_text(payload.get('description', ''))
-            auto_create_checked = payload.get('auto_create') == 'true'
+            auto_create_checked = payload.get('auto_create')
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
             in_groups = [trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_groups'))]
             if not name or not description:
@@ -1270,12 +1286,13 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     build_select_input('in_users', 'Users', all_users, []), {
                     'name': 'auto_create',
                     'label': 'Create a new role of the same name for this group:',
-                    'type': 'boolean'
+                    'type': 'boolean',
+                    'optional': True,
                 }]
             }
         else:
             name = util.restore_text(payload.get('name', ''))
-            auto_create_checked = payload.get('auto_create') == 'true'
+            auto_create_checked = payload.get('auto_create')
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_roles'))]
             if not name:
@@ -1554,27 +1571,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                    unused_environments=view.unused_dependency_paths,
                                    viewkey=viewkey)
 
-    @web.expose
-    @web.require_admin
-    def sanitize_allowlist(self, trans, submit_allowlist=False, tools_to_allowlist=None):
-        tools_to_allowlist = tools_to_allowlist or []
-        if submit_allowlist:
-            # write the configured sanitize_allowlist_file with new allowlist
-            # and update in-memory list.
-            with open(trans.app.config.sanitize_allowlist_file, 'wt') as f:
-                if isinstance(tools_to_allowlist, str):
-                    tools_to_allowlist = [tools_to_allowlist]
-                new_allowlist = sorted([tid for tid in tools_to_allowlist if tid in trans.app.toolbox.tools_by_id])
-                f.write("\n".join(new_allowlist))
-            trans.app.config.sanitize_allowlist = new_allowlist
-            trans.app.queue_worker.send_control_task('reload_sanitize_allowlist', noop_self=True)
-            # dispatch a message to reload list for other processes
-        return trans.fill_template('/webapps/galaxy/admin/sanitize_allowlist.mako',
-                                   sanitize_all=trans.app.config.sanitize_all_html,
-                                   tools=trans.app.toolbox.tools_by_id)
-
-
 # ---- Utility methods -------------------------------------------------------
+
 
 def build_select_input(name, label, options, value):
     return {'type': 'select',

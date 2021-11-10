@@ -1,7 +1,7 @@
 export class ScrollPos {
     constructor(props = {}) {
-        const { cursor = 0.0, key = null } = props;
-        this.cursor = cursor;
+        const { cursor = null, key = null } = props;
+        this.cursor = key === null && cursor === null ? 0 : cursor;
         this.key = key;
     }
 }
@@ -12,5 +12,5 @@ ScrollPos.create = function (props) {
 };
 
 ScrollPos.equals = function (a, b) {
-    return a.cursor == b.cursor && a.key == b.key;
+    return a.cursor === b.cursor && a.key === b.key;
 };

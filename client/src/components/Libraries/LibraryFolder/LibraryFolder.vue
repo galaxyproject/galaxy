@@ -220,10 +220,10 @@
                         </b-button>
                         <b-button
                             v-if="row.item.can_manage && !row.item.deleted"
-                            @click="navigateToPermission(row.item)"
                             size="sm"
                             class="lib-btn permission_lib_btn"
                             :title="`Permissions of ${row.item.name}`"
+                            :to="{ path: `${navigateToPermission(row.item)}` }"
                         >
                             <font-awesome-icon icon="users" />
                             Manage
@@ -241,17 +241,26 @@
                     </div>
                 </template>
             </b-table>
+            <!-- hide pagination if the table is loading-->
             <b-container>
-                <b-row class="justify-content-md-center">
+                <b-row align-v="center" class="justify-content-md-center">
                     <b-col md="auto">
+                        <div v-if="isBusy">
+                            <b-spinner small type="grow"></b-spinner>
+                            <b-spinner small type="grow"></b-spinner>
+                            <b-spinner small type="grow"></b-spinner>
+                        </div>
                         <b-pagination
-                            v-model="currentPage"
+                            v-else
+                            :value="currentPage"
                             :total-rows="total_rows"
                             :per-page="perPage"
+                            @input="changePage"
                             aria-controls="folder_list_body"
                         >
                         </b-pagination>
                     </b-col>
+
                     <b-col cols="1.5">
                         <table>
                             <tr>
@@ -304,7 +313,6 @@ function initialFolderState() {
         include_deleted: false,
         search_text: "",
         isAllSelectedMode: false,
-        currentPage: 1,
     };
 }
 export default {
@@ -312,6 +320,11 @@ export default {
         folder_id: {
             type: String,
             required: true,
+        },
+        page: {
+            type: Number,
+            default: 1,
+            required: false,
         },
     },
     components: {
@@ -323,6 +336,7 @@ export default {
         return {
             ...initialFolderState(),
             ...{
+                currentPage: null,
                 current_folder_id: null,
                 error: null,
                 isBusy: false,
@@ -338,11 +352,12 @@ export default {
     },
     created() {
         this.services = new Services({ root: this.root });
-        this.initFolder(this.folder_id);
+        this.getFolder(this.folder_id, this.page);
     },
     methods: {
-        initFolder(folder_id) {
+        getFolder(folder_id, page) {
             this.current_folder_id = folder_id;
+            this.currentPage = page;
             this.resetData();
             this.fetchFolderContents(this.include_deleted);
         },
@@ -486,9 +501,9 @@ export default {
         },
         navigateToPermission(element) {
             if (element.type === "file") {
-                this.$router.push({ path: `${this.folder_id}/dataset/${element.id}/permissions` });
+                return `/folders/${this.folder_id}/dataset/${element.id}/permissions`;
             } else if (element.type === "folder") {
-                this.$router.push({ path: `${element.id}/permissions` });
+                return `/folders/${element.id}/permissions`;
             }
         },
         getMessage(element) {
@@ -581,6 +596,9 @@ export default {
                 );
             }
         },
+        changePage(page) {
+            this.$router.push({ name: `LibraryFolder`, params: { folder_id: this.folder_id, page: page } });
+        },
 
         /*
          Former Backbone code, adopted to work with Vue
@@ -624,11 +642,6 @@ export default {
         },
     },
     watch: {
-        currentPage: {
-            handler: function (value) {
-                this.fetchFolderContents(this.include_deleted);
-            },
-        },
         perPage: {
             handler: function (value) {
                 this.fetchFolderContents(this.include_deleted);
@@ -636,7 +649,7 @@ export default {
         },
     },
     beforeRouteUpdate(to, from, next) {
-        this.initFolder(to.params.folder_id);
+        this.getFolder(to.params.folder_id, to.params.page);
         next();
     },
 };

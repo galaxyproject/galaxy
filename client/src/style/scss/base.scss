@@ -12,12 +12,12 @@
 //@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 
 $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/brands";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/regular";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/solid";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/v4-shims";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/_variables";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/brands";
+@import "~@fortawesome/fontawesome-free/scss/regular";
+@import "~@fortawesome/fontawesome-free/scss/solid";
+@import "~@fortawesome/fontawesome-free/scss/v4-shims";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
 
 @import "select2.scss";
 @import "jquery.rating.scss";
@@ -364,8 +364,8 @@ body {
                     .nav-note {
                         @extend .font-weight-bold;
                         @extend .position-absolute;
-                        left: 2.2rem;
-                        top: 2.2rem;
+                        left: 1.9rem;
+                        top: 1.9rem;
                         font-size: 0.6rem;
                     }
                 }
@@ -585,11 +585,6 @@ div.form-row-input label {
     padding-top: 10px;
     padding-bottom: 10px;
     margin-top: 5px;
-}
-
-#run-workflow {
-    @extend .float-right;
-    @extend .mt-3;
 }
 
 .form-row {
@@ -1276,7 +1271,7 @@ div.toolSectionTitle {
     .labels {
         float: right;
     }
-    a {
+    .title-link {
         @extend .px-3;
         @extend .py-1;
         text-decoration: none;

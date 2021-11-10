@@ -7,23 +7,137 @@ may change often.
 import json
 import logging
 
+from fastapi import (
+    Body,
+    Path,
+    Response,
+    status,
+)
 
 from galaxy import (
     exceptions,
     util,
     web
 )
-from galaxy.managers.sharable import SharingPayload
-from galaxy.managers.visualizations import VisualizationsService
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import SetSlugPayload, ShareWithPayload, ShareWithStatus, SharingStatus
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
     UsesVisualizationMixin
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from . import BaseGalaxyAPIController, depends
+from galaxy.webapps.galaxy.services.visualizations import VisualizationsService
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
+
+router = Router(tags=['visualizations'])
+
+VisualizationIdPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    title="Visualization ID",
+    description="The encoded database identifier of the Visualization."
+)
+
+
+@router.cbv
+class FastAPIVisualizations:
+    service: VisualizationsService = depends(VisualizationsService)
+
+    @router.get(
+        '/api/visualizations/{id}/sharing',
+        summary="Get the current sharing status of the given Page.",
+    )
+    def sharing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+    ) -> SharingStatus:
+        """Return the sharing status of the item."""
+        return self.service.shareable_service.sharing(trans, id)
+
+    @router.put(
+        '/api/visualizations/{id}/enable_link_access',
+        summary="Makes this item accessible by a URL link.",
+    )
+    def enable_link_access(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+    ) -> SharingStatus:
+        """Makes this item accessible by a URL link and return the current sharing status."""
+        return self.service.shareable_service.enable_link_access(trans, id)
+
+    @router.put(
+        '/api/visualizations/{id}/disable_link_access',
+        summary="Makes this item inaccessible by a URL link.",
+    )
+    def disable_link_access(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+    ) -> SharingStatus:
+        """Makes this item inaccessible by a URL link and return the current sharing status."""
+        return self.service.shareable_service.disable_link_access(trans, id)
+
+    @router.put(
+        '/api/visualizations/{id}/publish',
+        summary="Makes this item public and accessible by a URL link.",
+    )
+    def publish(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+    ) -> SharingStatus:
+        """Makes this item publicly available by a URL link and return the current sharing status."""
+        return self.service.shareable_service.publish(trans, id)
+
+    @router.put(
+        '/api/visualizations/{id}/unpublish',
+        summary="Removes this item from the published list.",
+    )
+    def unpublish(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+    ) -> SharingStatus:
+        """Removes this item from the published list and return the current sharing status."""
+        return self.service.shareable_service.unpublish(trans, id)
+
+    @router.put(
+        '/api/visualizations/{id}/share_with_users',
+        summary="Share this item with specific users.",
+    )
+    def share_with_users(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        payload: ShareWithPayload = Body(...)
+    ) -> ShareWithStatus:
+        """Shares this item with specific users and return the current sharing status."""
+        return self.service.shareable_service.share_with_users(trans, id, payload)
+
+    @router.put(
+        '/api/visualizations/{id}/slug',
+        summary="Set a new slug for this shared item.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def set_slug(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        payload: SetSlugPayload = Body(...),
+    ):
+        """Sets a new slug to access this item by URL. The new slug must be unique."""
+        self.service.shareable_service.set_slug(trans, id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, UsesAnnotations):
@@ -152,14 +266,55 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         return rval
 
     @expose_api
-    def sharing(self, trans, id, payload=None, **kwd):
+    def sharing(self, trans, id, **kwd):
         """
-        * GET/POST /api/pages/{id}/sharing
-            View/modify sharing options for the page with the given id.
+        * GET /api/visualizations/{id}/sharing
         """
-        if payload:
-            payload = SharingPayload(**payload)
-        return self.service.sharing(trans, id, payload)
+        return self.service.shareable_service.sharing(trans, id)
+
+    @expose_api
+    def enable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/visualizations/{id}/enable_link_access
+        """
+        return self.service.shareable_service.enable_link_access(trans, id)
+
+    @expose_api
+    def disable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/visualizations/{id}/disable_link_access
+        """
+        return self.service.shareable_service.disable_link_access(trans, id)
+
+    @expose_api
+    def publish(self, trans, id, **kwd):
+        """
+        * PUT /api/visualizations/{id}/publish
+        """
+        return self.service.shareable_service.publish(trans, id)
+
+    @expose_api
+    def unpublish(self, trans, id, **kwd):
+        """
+        * PUT /api/visualizations/{id}/unpublish
+        """
+        return self.service.shareable_service.unpublish(trans, id)
+
+    @expose_api
+    def share_with_users(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/visualizations/{id}/share_with_users
+        """
+        payload = ShareWithPayload(**payload)
+        return self.service.shareable_service.share_with_users(trans, id, payload)
+
+    @expose_api
+    def set_slug(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/visualizations/{id}/slug
+        """
+        payload = SetSlugPayload(**payload)
+        self.service.shareable_service.set_slug(trans, id, payload)
 
     def _validate_and_parse_payload(self, payload):
         """

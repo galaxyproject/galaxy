@@ -441,7 +441,7 @@ class DependencyDisplayer:
         when displaying repository dependencies for installed repositories and when displaying
         them for uninstalled repositories that are being reinstalled.
         """
-        metadata = repository.metadata
+        metadata = repository.metadata_
         if metadata:
             # Handle proprietary datatypes.
             datatypes = metadata.get('datatypes', None)
@@ -464,7 +464,7 @@ class DependencyDisplayer:
                     readme_files_dict = readme_util.build_readme_files_dict(self.app,
                                                                             repository,
                                                                             repository.changeset_revision,
-                                                                            repository.metadata, tool_path)
+                                                                            repository.metadata_, tool_path)
             else:
                 readme_files_dict = None
             # Handle repository dependencies.

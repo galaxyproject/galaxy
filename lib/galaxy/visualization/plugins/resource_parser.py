@@ -5,6 +5,7 @@ a dictionary of string data/ids (often from a query string).
 import json
 import logging
 import weakref
+from typing import Callable, Dict, Optional, Union
 
 import galaxy.exceptions
 import galaxy.util
@@ -12,9 +13,14 @@ from galaxy.managers import (
     hdas as hda_manager,
     visualizations as visualization_manager
 )
+from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, Visualization
 from galaxy.util import bunch
 
 log = logging.getLogger(__name__)
+
+
+ParameterPrimitiveType = Union[int, float, str]
+ParameterType = Union[ParameterPrimitiveType, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, Visualization]
 
 
 class ResourceParser:
@@ -28,7 +34,7 @@ class ResourceParser:
     The keys used to store the new values can optionally be re-mapped to
     new keys (e.g. dataset_id="NNN" -> hda=<HistoryDatasetAssociation>).
     """
-    primitive_parsers = {
+    primitive_parsers: Dict[str, Callable[[str], ParameterPrimitiveType]] = {
         'str': lambda param: galaxy.util.sanitize_html.sanitize_html(param),
         'bool': lambda param: galaxy.util.string_as_bool(param),
         'int': int,
@@ -127,20 +133,21 @@ class ResourceParser:
         return config
 
     # TODO: I would LOVE to rip modifiers out completely
-    def parse_parameter_modifiers(self, trans, param_modifiers, query_params):
+    def parse_parameter_modifiers(self, trans, param_modifiers, query_params) -> Dict[str, Dict[str, Optional[ParameterType]]]:
         """
         Parse and return parameters that are meant to modify other parameters,
         be grouped with them, or are needed to successfully parse other parameters.
         """
         # only one level of modification - down that road lies madness
         # parse the modifiers out of query_params first since they modify the other params coming next
-        parsed_modifiers = {}
+        parsed_modifiers: Dict[str, Dict[str, Optional[ParameterType]]] = {}
         if not param_modifiers:
             return parsed_modifiers
         # precondition: expects a two level dictionary
         # { target_param_name -> { param_modifier_name -> { param_modifier_data }}}
         for target_param_name, modifier_dict in param_modifiers.items():
-            parsed_modifiers[target_param_name] = target_modifiers = {}
+            target_modifiers: Dict[str, Optional[ParameterType]] = {}
+            parsed_modifiers[target_param_name] = target_modifiers
 
             for modifier_name, modifier_config in modifier_dict.items():
                 query_val = query_params.get(modifier_name, None)
@@ -153,7 +160,7 @@ class ResourceParser:
 
         return parsed_modifiers
 
-    def parse_parameter_default(self, trans, param_config):
+    def parse_parameter_default(self, trans, param_config) -> Optional[ParameterType]:
         """
         Parse any default values for the given param, defaulting the default
         to `None`.
@@ -175,18 +182,7 @@ class ResourceParser:
         a resource usable directly by a template.
         """
         param_type = expected_param_data.get('type')
-        # constrain_to = expected_param_data.get( 'constrain_to' )
-        csv = expected_param_data.get('csv')
-
-        parsed_param = None
-
-        # handle recursion for csv values
-        if csv and recurse:
-            parsed_param = []
-            query_param_list = galaxy.util.listify(query_param)
-            for query_param in query_param_list:
-                parsed_param.append(self._parse_param(trans, expected_param_data, query_param, recurse=False))
-            return parsed_param
+        parsed_param: Optional[ParameterType] = None
 
         if param_type in self.primitive_parsers:
             # TODO: what about param modifiers on primitives?

@@ -30,6 +30,7 @@ class LazyProcess:
         with self.thread_lock:
             self.allow_process_request = False
         if self.running:
+            assert self.process  # tell type checker it can not be None if self.running
             self.process.terminate()
             time.sleep(.01)
             if self.running:

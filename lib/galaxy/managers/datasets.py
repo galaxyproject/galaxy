@@ -4,7 +4,7 @@ Manager and Serializer for Datasets.
 import glob
 import logging
 import os
-from typing import Type
+from typing import Dict, List, Type, TypeVar
 
 from galaxy import (
     exceptions,
@@ -23,6 +23,8 @@ from galaxy.util.checkers import check_binary
 
 log = logging.getLogger(__name__)
 
+T = TypeVar('T')
+
 
 class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
     """
@@ -30,6 +32,7 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
     """
     model_class = model.Dataset
     foreign_key_name = 'dataset'
+    app: MinimalManagerApp
 
     # TODO:?? get + error_if_uploading is common pattern, should upload check be worked into access/owed?
 
@@ -140,7 +143,7 @@ class DatasetRBACPermissions:
         return ([manage], access)
 
 
-class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
+class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.PurgableSerializerMixin):
     model_manager_class = DatasetManager
 
     def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager):
@@ -170,25 +173,26 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
     def add_serializers(self):
         super().add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
-
-        self.serializers.update({
+        serializers: Dict[str, base.Serializer] = {
             'create_time': self.serialize_date,
             'update_time': self.serialize_date,
 
-            'uuid': lambda i, k, **c: str(i.uuid) if i.uuid else None,
+            'uuid': lambda item, key, **context: str(item.uuid) if item.uuid else None,
             'file_name': self.serialize_file_name,
             'extra_files_path': self.serialize_extra_files_path,
             'permissions': self.serialize_permissions,
 
-            'total_size': lambda i, k, **c: int(i.get_total_size()),
-            'file_size': lambda i, k, **c: int(i.get_size())
-        })
+            'total_size': lambda item, key, **context: int(item.get_total_size()),
+            'file_size': lambda item, key, **context: int(item.get_size())
+        }
+        self.serializers.update(serializers)
 
-    def serialize_file_name(self, dataset, key, user=None, **context):
+    def serialize_file_name(self, item, key, user=None, **context):
         """
         If the config allows or the user is admin, return the file name
         of the file that contains this dataset's data.
         """
+        dataset = item
         is_admin = self.user_manager.is_admin(user, trans=context.get("trans"))
         # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
@@ -196,10 +200,11 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
                 return dataset.file_name
         self.skip()
 
-    def serialize_extra_files_path(self, dataset, key, user=None, **context):
+    def serialize_extra_files_path(self, item, key, user=None, **context):
         """
         If the config allows or the user is admin, return the file path.
         """
+        dataset = item
         is_admin = self.user_manager.is_admin(user, trans=context.get("trans"))
         # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
@@ -207,9 +212,10 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
                 return dataset.extra_files_path
         self.skip()
 
-    def serialize_permissions(self, dataset, key, user=None, **context):
+    def serialize_permissions(self, item, key, user=None, **context):
         """
         """
+        dataset = item
         trans = context.get("trans")
         if not self.dataset_manager.permissions.manage.is_permitted(dataset, user, trans=trans):
             self.skip()
@@ -234,7 +240,8 @@ class DatasetAssociationManager(base.ModelManager,
     """
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
-    model_class: Type[model.DatasetInstance] = model.DatasetInstance
+    model_class: Type[model.DatasetInstance]
+    app: MinimalManagerApp
 
     # NOTE: model_manager_class should be set in HDA/LDA subclasses
 
@@ -374,9 +381,10 @@ class DatasetAssociationManager(base.ModelManager,
                         if spec.get('default'):
                             setattr(data.metadata, name, spec.unwrap(spec.get('default')))
 
-            self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+            job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
                 self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data, 'validate': validate},
                 overwrite=overwrite)
+            self.app.job_manager.enqueue(job, tool=self.app.datatypes_registry.set_external_metadata_tool)
 
     def update_permissions(self, trans, dataset_assoc, **kwd):
         action = kwd.get('action', 'set_permissions')
@@ -437,7 +445,7 @@ class DatasetAssociationManager(base.ModelManager,
         raise exceptions.NotImplemented()
 
 
-class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
+class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T],
                                                        deletable.PurgableSerializerMixin):
 
     def __init__(self, app):
@@ -448,30 +456,30 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         super().add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
 
-        self.serializers.update({
+        serializers: Dict[str, base.Serializer] = {
             'create_time': self.serialize_date,
             'update_time': self.serialize_date,
 
             # underlying dataset
-            'dataset': lambda i, k, **c: self.dataset_serializer.serialize_to_view(i.dataset, view='summary', **c),
-            'dataset_id': self._proxy_to_dataset(key='id'),
+            'dataset': lambda item, key, **context: self.dataset_serializer.serialize_to_view(item.dataset, view='summary', **context),
+            'dataset_id': self._proxy_to_dataset(proxy_key='id'),
             # TODO: why is this named uuid!? The da doesn't have a uuid - it's the underlying dataset's uuid!
-            'uuid': self._proxy_to_dataset(key='uuid'),
+            'uuid': self._proxy_to_dataset(proxy_key='uuid'),
             # 'dataset_uuid': self._proxy_to_dataset( key='uuid' ),
             'file_name': self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_file_name),
             'extra_files_path': self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_extra_files_path),
             'permissions': self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_permissions),
             # TODO: do the sizes proxy accurately/in the same way?
-            'size': lambda i, k, **c: int(i.get_size()),
-            'file_size': lambda i, k, **c: self.serializers['size'](i, k, **c),
-            'nice_size': lambda i, k, **c: i.get_size(nice_size=True),
+            'size': lambda item, key, **context: int(item.get_size()),
+            'file_size': lambda item, key, **context: self.serializers['size'](item, key, **context),
+            'nice_size': lambda item, key, **context: item.get_size(nice_size=True),
 
             # common to lddas and hdas - from mapping.py
             'copied_from_history_dataset_association_id': self.serialize_id,
             'copied_from_library_dataset_dataset_association_id': self.serialize_id,
-            'info': lambda i, k, **c: i.info.strip() if isinstance(i.info, str) else i.info,
-            'blurb': lambda i, k, **c: i.blurb,
-            'peek': lambda i, k, **c: i.display_peek() if i.peek and i.peek != 'no peek' else None,
+            'info': lambda item, key, **context: item.info.strip() if isinstance(item.info, str) else item.info,
+            'blurb': lambda item, key, **context: item.blurb,
+            'peek': lambda item, key, **context: item.display_peek() if item.peek and item.peek != 'no peek' else None,
 
             'meta_files': self.serialize_meta_files,
             'metadata': self.serialize_metadata,
@@ -480,38 +488,40 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
             'rerunnable': self.serialize_rerunnable,
 
             'parent_id': self.serialize_id,
-            'designation': lambda i, k, **c: i.designation,
+            'designation': lambda item, key, **context: item.designation,
 
             # 'extended_metadata': self.serialize_extended_metadata,
             # 'extended_metadata_id': self.serialize_id,
 
             # remapped
-            'genome_build': lambda i, k, **c: i.dbkey,
+            'genome_build': lambda item, key, **context: item.dbkey,
 
             # derived (not mapped) attributes
-            'data_type': lambda i, k, **c: f"{i.datatype.__class__.__module__}.{i.datatype.__class__.__name__}",
+            'data_type': lambda item, key, **context: f"{item.datatype.__class__.__module__}.{item.datatype.__class__.__name__}",
 
             'converted': self.serialize_converted_datasets,
             # TODO: metadata/extra files
-        })
+        }
+        self.serializers.update(serializers)
         # this an abstract superclass, so no views created
         # because of that: we need to add a few keys that will use the default serializer
         self.serializable_keyset.update(['name', 'state', 'tool_version', 'extension', 'visible', 'dbkey'])
 
-    def _proxy_to_dataset(self, serializer=None, key=None):
+    def _proxy_to_dataset(self, serializer: base.Serializer = None, proxy_key=None):
         # dataset associations are (rough) proxies to datasets - access their serializer using this remapping fn
         # remapping done by either kwarg key: IOW dataset attr key (e.g. uuid)
         # or by kwarg serializer: a function that's passed in (e.g. permissions)
-        if key:
-            serializer = self.dataset_serializer.serializers.get(key)
+        if proxy_key:
+            serializer = self.dataset_serializer.serializers.get(proxy_key)
         if serializer:
-            return lambda i, k, **c: serializer(i.dataset, key or k, **c)
+            return lambda item, key, **context: serializer(item.dataset, proxy_key or key, **context)
         raise TypeError('kwarg serializer or key needed')
 
-    def serialize_meta_files(self, dataset_assoc, key, **context):
+    def serialize_meta_files(self, item, key, **context):
         """
         Cycle through meta files and return them as a list of dictionaries.
         """
+        dataset_assoc = item
         meta_files = []
         for meta_type in dataset_assoc.metadata_file_types:
             if getattr(dataset_assoc.metadata, meta_type, None):
@@ -523,10 +533,11 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
                                                    metadata_file=meta_type)))
         return meta_files
 
-    def serialize_metadata(self, dataset_assoc, key, excluded=None, **context):
+    def serialize_metadata(self, item, key, excluded=None, **context):
         """
         Cycle through metadata and return as dictionary.
         """
+        dataset_assoc = item
         # dbkey is a repeat actually (metadata_dbkey == genome_build)
         # excluded = [ 'dbkey' ] if excluded is None else excluded
         excluded = [] if excluded is None else excluded
@@ -552,34 +563,37 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
 
         return metadata
 
-    def serialize_creating_job(self, dataset, key, **context):
+    def serialize_creating_job(self, item, key, **context):
         """
         Return the id of the Job that created this dataset (or its original)
         or None if no `creating_job` is found.
         """
+        dataset = item
         if dataset.creating_job:
             return self.serialize_id(dataset.creating_job, 'id')
         else:
             return None
 
-    def serialize_rerunnable(self, dataset, key, **context):
+    def serialize_rerunnable(self, item, key, **context):
         """
         Return False if this tool that created this dataset can't be re-run
         (e.g. upload).
         """
+        dataset = item
         if dataset.creating_job:
             tool = self.app.toolbox.get_tool(dataset.creating_job.tool_id, dataset.creating_job.tool_version)
             if tool and tool.is_workflow_compatible:
                 return True
         return False
 
-    def serialize_converted_datasets(self, dataset_assoc, key, **context):
+    def serialize_converted_datasets(self, item, key, **context):
         """
         Return a file extension -> converted dataset encoded id map with all
         the existing converted datasets associated with this instance.
 
         This filters out deleted associations.
         """
+        dataset_assoc = item
         id_map = {}
         for converted in dataset_assoc.implicitly_converted_datasets:
             if not converted.deleted and converted.dataset:
@@ -587,7 +601,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         return id_map
 
 
-class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSerializer):
+class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSerializer[T]):
     # TODO: remove this class - metadata should be a sub-object instead as in the superclass
 
     def add_serializers(self):
@@ -658,7 +672,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
     def deserialize_metadata(self, dataset_assoc, metadata_key, metadata_dict, **context):
         """
         """
-        self.validate.type(metadata_key, metadata_dict, dict)
+        self.validate.matches_type(metadata_key, metadata_dict, dict)
         returned = {}
         for key, val in metadata_dict.items():
             returned[key] = self.deserialize_metadatum(dataset_assoc, key, val, **context)
@@ -691,7 +705,9 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         sa_session = self.app.model.context
         sa_session.flush()
         trans = context.get("trans")
-        self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
+        assert trans, "Logic error in Galaxy, deserialize_datatype not send a transation object"  # TODO: restructure this for stronger typing
+        job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
+        trans.app.job_manager.enqueue(job, tool=trans.app.datatypes_registry.set_external_metadata_tool)
         return item.datatype
 
 
@@ -704,7 +720,7 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
         self.orm_filter_parsers.update({
             'name': {'op': ('eq', 'contains', 'like')},
             'state': {'column': '_state', 'op': ('eq', 'in')},
-            'visible': {'op': ('eq'), 'val': self.parse_bool},
+            'visible': {'op': ('eq'), 'val': base.parse_bool},
         })
         self.fn_filter_parsers.update({
             'genome_build': self.string_standard_ops('dbkey'),
@@ -729,9 +745,9 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
         datatypes in the comma separated string `class_strs`?
         """
         parse_datatype_fn = self.app.datatypes_registry.get_datatype_class_by_name
-        comparison_classes = []
+        comparison_classes: List[Type] = []
         for class_str in class_strs.split(','):
             datatype_class = parse_datatype_fn(class_str)
             if datatype_class:
                 comparison_classes.append(datatype_class)
-        return comparison_classes and isinstance(dataset_assoc.datatype, comparison_classes)
+        return comparison_classes and isinstance(dataset_assoc.datatype, tuple(comparison_classes))

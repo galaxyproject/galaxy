@@ -32,9 +32,10 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.actions',
+    'galaxy.app_unittest_utils',
+    'galaxy.authnz',
     'galaxy.config',
-    'galaxy.files',
-    'galaxy.files.sources',
+    'galaxy.dependencies',
     'galaxy.forms',
     'galaxy.jobs',
     'galaxy.jobs.actions',
@@ -61,9 +62,6 @@ PACKAGES = [
     'galaxy.tools.imp_exp',
     'galaxy.tools.parameters',
     'galaxy.tools.search',
-    'galaxy.tools.toolbox',
-    'galaxy.tools.toolbox.filters',
-    'galaxy.tools.toolbox.lineages',
     'galaxy.tools.util',
     'galaxy.tools.util.galaxyops',
     'galaxy.tool_shed',
@@ -93,6 +91,10 @@ PACKAGES = [
     'galaxy.workflow.reports',
     'galaxy.workflow.resources',
     'galaxy.workflow.schedulers',
+    'galaxy_ext',
+    'galaxy_ext.container_monitor',
+    'galaxy_ext.expressions',
+    'galaxy_ext.metadata',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
@@ -102,6 +104,10 @@ ENTRY_POINTS = '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
     'galaxy': [
+        'config_schema.yml',
+        'job_config_schema.yml',
+        'uwsgi_schema.yml',
+        'config/sample/*',
     ],
     'tool_shed': [
         'scripts/bootstrap_tool_shed/user_info.xml',

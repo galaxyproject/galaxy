@@ -35,6 +35,10 @@ pre {
 .dropdown-menu {
     .dropdown-item {
         text-decoration: none;
+        .fa {
+            @extend .fa-fw;
+            @extend .mr-2;
+        }
     }
 }
 
@@ -156,6 +160,10 @@ table.info_data_table th:nth-child(1) {
         font-weight: bold;
     }
     border-color: transparent;
+}
+
+.alert-info {
+    background: $state-info-bg !important;
 }
 
 // increase visibility of dropdown menu section headers

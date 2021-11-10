@@ -10,7 +10,10 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
-from galaxy.util import unicodify
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    unicodify,
+)
 
 
 log = logging.getLogger(__name__)
@@ -39,7 +42,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.post(url, data, headers=header, verify=verify_ssl)
+            res = requests.post(url, data, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A transport error occurred in the GoDocker job runner:', e)
@@ -55,7 +58,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.get(url, headers=header, verify=verify_ssl)
+            res = requests.get(url, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A communication error occurred in the GoDocker job runner:', e)
@@ -71,7 +74,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.delete(url, headers=header, verify=verify_ssl)
+            res = requests.delete(url, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A communication error occurred in the GoDocker job runner:', e)
@@ -87,7 +90,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.put(url, data, headers=header, verify=verify_ssl)
+            res = requests.put(url, data, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A communication error occurred in the GoDocker job runner:', e)
@@ -134,16 +137,6 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
         # godocker API login call
         self.auth = self.login(self.runner_params["key"], self.runner_params["user"], self.runner_params["godocker_master"])
-
-        if not self.auth:
-            log.error("Authentication failure, GoDocker runner cannot be started")
-        else:
-            """ Following methods starts threads.
-                These methods invoke threading.Thread(name,target)
-                      which in turn invokes methods monitor() and run_next().
-            """
-            self._init_monitor_thread()
-            self._init_worker_threads()
 
     def queue_job(self, job_wrapper):
         """ Create job script and submit it to godocker """
@@ -321,7 +314,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         g_auth = Godocker(server, login, apikey, noCert)
         auth = g_auth.http_post_request("/api/1.0/authenticate", data, {'Content-type': 'application/json', 'Accept': 'application/json'})
         if not auth:
-            log.error("GoDocker authentication Error.")
+            raise Exception("Authentication failure, GoDocker runner cannot be started")
         else:
             log.debug("GoDocker authentication successful.")
             token = auth.json()['token']

@@ -32,4 +32,4 @@ class PageRevisionsApiTestCase(BasePageApiTestCase):
         revisions_url = f"pages/{self._random_key()}/revisions"
         revisions_response = self._get(revisions_url)
         self._assert_status_code_is(revisions_response, 400)
-        self._assert_error_code_is(revisions_response, error_codes.MALFORMED_ID)
+        self._assert_error_code_is(revisions_response, error_codes.error_codes_by_name['MALFORMED_ID'])

@@ -2,6 +2,7 @@
 Determine what optional dependencies are needed.
 """
 
+import os
 import sys
 from os.path import dirname, exists, join
 
@@ -191,7 +192,7 @@ class ConditionalDependencies:
     def check_fluent_logger(self):
         return asbool(self.config["fluent_log"])
 
-    def check_raven(self):
+    def check_sentry_sdk(self):
         return self.config.get("sentry_dsn", None) is not None
 
     def check_statsd(self):
@@ -227,6 +228,9 @@ class ConditionalDependencies:
         # pyfilesystem plugin access to terra on anvil
         return 'anvil' in self.file_sources
 
+    def check_fs_sshfs(self):
+        return 'ssh' in self.file_sources
+
     def check_s3fs(self):
         # use s3fs directly (skipping pyfilesystem) for direct access to more options
         return 's3fs' in self.file_sources
@@ -255,6 +259,10 @@ class ConditionalDependencies:
 
     def check_tensorflow(self):
         return asbool(self.config["enable_tool_recommendations"])
+
+    def check_weasyprint(self):
+        # See notes in ./conditional-requirements.txt for more information.
+        return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
 
 
 def optional(config_file=None):

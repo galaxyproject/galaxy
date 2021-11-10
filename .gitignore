@@ -51,6 +51,7 @@ database/tool_recommendation_model.hdf5
 *.lock
 *.log
 *.pid
+celerybeat-schedule
 
 # Tool Shed Runtime Files
 tool_shed_webapp.lock
@@ -182,7 +183,7 @@ packages/*/*.egg-info
 *~
 
 # standalone script + main, or build into dist.
-config/plugins/visualizations/**/static/dist
-config/plugins/visualizations/**/static/script.js
-config/plugins/visualizations/**/static/main.css
-config/plugins/visualizations/**/static/plugin_build_hash.txt
+config/plugins/**/static/dist
+config/plugins/**/static/script.js
+config/plugins/**/static/main.css
+config/plugins/**/static/plugin_build_hash.txt

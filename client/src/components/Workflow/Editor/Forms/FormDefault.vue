@@ -27,13 +27,12 @@
             </b-button>
         </template>
         <template v-slot:body>
-            <FormMessage class="mt-2" :message="errorText" variant="danger" :persistent="true" />
             <FormElement
                 id="__label"
                 :value="node.label"
                 title="Label"
                 help="Add a step label."
-                @onChange="onLabel"
+                @input="onLabel"
                 :error="errorLabel"
             />
             <FormElement
@@ -42,28 +41,25 @@
                 title="Step Annotation"
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-                @onChange="onAnnotation"
+                @input="onAnnotation"
             />
-            <Form :id="id" :inputs="inputs" @onChange="onChange" />
+            <FormDisplay :id="id" :inputs="inputs" @onChange="onChange" />
         </template>
     </FormCard>
 </template>
 
 <script>
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
-import FormMessage from "components/Form/FormMessage";
-import { getModule } from "components/Workflow/Editor/modules/services";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import WorkflowIcons from "components/Workflow/icons";
 
 export default {
     components: {
-        Form,
+        FormDisplay,
         FormCard,
         FormElement,
-        FormMessage,
     },
     props: {
         datatypes: {
@@ -77,16 +73,6 @@ export default {
         getNode: {
             type: Function,
             required: true,
-        },
-    },
-    data() {
-        return {
-            errorText: null,
-        };
-    },
-    watch: {
-        id() {
-            this.errorText = null;
         },
     },
     computed: {
@@ -128,20 +114,12 @@ export default {
             ]);
         },
         onChange(values) {
-            getModule({
+            this.$emit("onSetData", this.node.id, {
                 id: this.node.id,
                 type: this.node.type,
                 content_id: this.node.content_id,
                 inputs: values,
-            }).then(
-                (data) => {
-                    this.errorText = null;
-                    this.$emit("onSetData", this.node.id, data);
-                },
-                () => {
-                    this.errorText = `Failed to handle node state.`;
-                }
-            );
+            });
         },
     },
 };

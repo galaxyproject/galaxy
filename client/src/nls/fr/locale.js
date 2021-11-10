@@ -92,7 +92,7 @@ define({
 
     // // ---- history-view-edit
     "Edit history tags": "Editer les mots-clés de l'historique",
-    "Edit history Annotation": "Editer l'annotation de l'historique",
+    "Edit history annotation": "Editer l'annotation de l'historique",
     "Click to rename history": "Cliquer pour renommer l'historique",
     // multi operations
     "Operations on multiple datasets": "Opérer sur plusieurs jeux de données en même temps",
@@ -259,7 +259,7 @@ define({
     "Convert the datatype to a new format.": "Convertir le format de données",
     "Save attributes of the dataset.": "Sauvegarder les attributs du jeu de données",
     "Change data type": "Changer le format de données",
-    "Edit dataset attributes": "Modifier les attributs du jeu de données",
+    "Edit Dataset Attributes": "Modifier les attributs du jeu de données",
     "Save permissions": "Sauvegarder les permissions",
     "Manage dataset permissions": "Gérer les permissions sur les jeux de données",
     "Change datatype": "Changer le format de données",
@@ -293,16 +293,16 @@ define({
     "Access your current API key or create a new one.": false,
     "Enable or disable the communication feature to chat with other users.": false,
     "Allows you to change your login credentials.": false,
-    "User Preferences": false,
+    "User preferences": false,
     "Sign out": false,
     "Manage custom builds": false,
     "Manage OpenIDs": false,
     "Manage Toolbox filters": false,
-    "Manage API key": false,
+    "Manage API Key": false,
     "Set dataset permissions for new histories": false,
     "Change communication settings": false,
-    "Change password": false,
-    "Manage information": false,
+    "Change Password": false,
+    "Manage Information": false,
     // ---------------------------------------------------------------------------- history-list
     Histories: false,
     // ---------------------------------------------------------------------------- shed-list-view

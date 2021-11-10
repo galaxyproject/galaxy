@@ -9,7 +9,11 @@ import tempfile
 import requests
 
 from .mulled_list import get_singularity_containers
-from .util import build_target, v2_image_name
+from .util import (
+    build_target,
+    MULLED_SOCKET_TIMEOUT,
+    v2_image_name,
+)
 
 try:
     from conda.cli.python_api import run_command
@@ -46,7 +50,7 @@ class QuaySearch():
 
         parameters = {'public': 'true', 'namespace': self.organization}
         r = requests.get(QUAY_API_URL, headers={
-                         'Accept-encoding': 'gzip'}, params=parameters, timeout=12)
+                         'Accept-encoding': 'gzip'}, params=parameters, timeout=MULLED_SOCKET_TIMEOUT)
         tmp_dir = tempfile.mkdtemp()
         schema = Schema(title=TEXT(stored=True), content=STORED)
         self.index = create_in(tmp_dir, schema)
@@ -98,7 +102,7 @@ class QuaySearch():
         get the tag-field which includes the version number.
         """
         url = f"{QUAY_API_URL}/{self.organization}/{repository_string}"
-        r = requests.get(url, headers={'Accept-encoding': 'gzip'})
+        r = requests.get(url, headers={'Accept-encoding': 'gzip'}, timeout=MULLED_SOCKET_TIMEOUT)
 
         json_decoder = json.JSONDecoder()
         decoded_request = json_decoder.decode(r.text)
@@ -141,29 +145,23 @@ class GitHubSearch():
         Takes search_string variable and return results from the bioconda-recipes github repository in JSON format
         """
         response = requests.get(
-            f"https://api.github.com/search/code?q={search_string}+in:path+repo:bioconda/bioconda-recipes+path:recipes").json()
-        return response
+            f"https://api.github.com/search/code?q={search_string}+in:path+repo:bioconda/bioconda-recipes+path:recipes", timeout=MULLED_SOCKET_TIMEOUT)
+        response.raise_for_status()
+        return response.json()
 
-    def process_json(self, json, search_string):
+    def process_json(self, json_response, search_string):
         """
         Take JSON input and process it, returning the required data
         """
-        json = json['items'][0:10]  # get top ten results
-
-        results = []
-
-        for result in json:
-            results.append({'name': result['name'], 'path': result['path']})
-        return results
+        top_10_items = json_response['items'][0:10]  # get top ten results
+        return [{'name': result['name'], 'path': result['path']} for result in top_10_items]
 
     def recipe_present(self, search_string):
         """
         Check if a recipe exists in bioconda-recipes which matches search_string exactly
         """
-        if requests.get(f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{search_string}").status_code == 200:
-            return True
-        else:
-            return False
+        response = requests.get(f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{search_string}", timeout=MULLED_SOCKET_TIMEOUT)
+        return response.status_code == 200
 
 
 def get_package_hash(packages, versions):
@@ -184,7 +182,7 @@ def get_package_hash(packages, versions):
     if versions:
         hash_results['version_hash'] = package_hash.split(':')[1]
 
-    r = requests.get(f"https://quay.io/api/v1/repository/biocontainers/{hash_results['package_hash']}")
+    r = requests.get(f"https://quay.io/api/v1/repository/biocontainers/{hash_results['package_hash']}", timeout=MULLED_SOCKET_TIMEOUT)
     if r.status_code == 200:
         hash_results['container_present'] = True
         if versions:  # now test if the version hash is listed in the repository tags
@@ -219,12 +217,12 @@ def singularity_search(search_string):
 def readable_output(json, organization='biocontainers', channel='bioconda'):
 
     # if json is empty:
-    if sum([len(json[destination][results]) for destination in json for results in json[destination]]) == 0:
+    if sum(len(json[destination][results]) for destination in json for results in json[destination]) == 0:
         sys.stdout.write('No results found for that query.\n')
         return
 
     # return results for quay, conda and singularity together
-    if sum([len(json[destination][results]) for destination in ['quay', 'conda', 'singularity', ] for results in json.get(destination, [])]) > 0:
+    if sum(len(json[destination][results]) for destination in ['quay', 'conda', 'singularity', ] for results in json.get(destination, [])) > 0:
         sys.stdout.write("The query returned the following result(s).\n")
         # put quay, conda etc results as lists in lines
         lines = [['LOCATION', 'NAME', 'VERSION', 'COMMAND\n']]
@@ -264,7 +262,7 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
             sys.stdout.write(
                 "".join((line[0].ljust(col_width0), line[1])))  # output
 
-    if sum([len(json['github'][results]) for results in json.get('github', [])]) > 0:
+    if sum(len(json['github'][results]) for results in json.get('github', [])) > 0:
         sys.stdout.write('\n' if 'lines' in locals() else '')
         sys.stdout.write(
             "Other result(s) on the bioconda-recipes GitHub repository:\n")

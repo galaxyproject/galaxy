@@ -1,4 +1,3 @@
-
 """This module contains a linting functions for tool inputs."""
 from galaxy.util import string_as_bool
 from ._util import is_datasource, is_valid_cheetah_placeholder
@@ -16,6 +15,33 @@ FILTER_TYPES = [
     'remove_value',
     'sort_by',
 ]
+
+ATTRIB_VALIDATOR_COMPATIBILITY = {
+    "check": ["metadata"],
+    "expression": ["substitute_value_in_message"],
+    "table_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table"],
+    "filename": ["dataset_metadata_in_file"],
+    "metadata_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "dataset_metadata_in_file"],
+    "metadata_column": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_file"],
+    "line_startswith": ["dataset_metadata_in_file"],
+    "min": ["in_range", "length", "dataset_metadata_in_range"],
+    "max": ["in_range", "length", "dataset_metadata_in_range"],
+    "exclude_min": ["in_range", "dataset_metadata_in_range"],
+    "exclude_max": ["in_range", "dataset_metadata_in_range"],
+    "split": ["dataset_metadata_in_file"],
+    "skip": ["metadata"]
+}
+
+PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
+    "integer": ["in_range", "expression"],
+    "float": ["in_range", "expression"],
+    "data": ["metadata", "unspecified_build", "dataset_ok_validator", "dataset_metadata_in_range", "dataset_metadata_in_file", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "expression"],
+    "data_collection": ["metadata", "unspecified_build", "dataset_ok_validator", "dataset_metadata_in_range", "dataset_metadata_in_file", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "expression"],
+    "text": ["regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"],
+    "select": ["no_options", "regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"],
+    "drill_down": ["no_options", "regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"],
+    "data_column": ["no_options", "regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"]
+}
 
 
 def lint_inputs(tool_xml, lint_ctx):
@@ -105,9 +131,9 @@ def lint_inputs(tool_xml, lint_ctx):
             # lint statically defined options
             if any(['value' not in option.attrib for option in select_options]):
                 lint_ctx.error(f"Select parameter [{param_name}] has option without value")
-            if len(set([option.text.strip() for option in select_options])) != len(select_options):
+            if len({option.text.strip() for option in select_options if option.text is not None}) != len(select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same text content")
-            if len(set([option.attrib.get("value") for option in select_options])) != len(select_options):
+            if len({option.attrib.get("value") for option in select_options}) != len(select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value")
 
             if param_attrib.get("display") == "checkboxes":
@@ -120,8 +146,28 @@ def lint_inputs(tool_xml, lint_ctx):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with multiple="true"')
                 if string_as_bool(param_attrib.get("optional", "false")):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with optional="true"')
-
         # TODO: Validate type, much more...
+
+        # lint validators
+        validators = param.findall("./validator")
+        for validator in validators:
+            vtype = validator.attrib['type']
+            if param_type in PARAMETER_VALIDATOR_TYPE_COMPATIBILITY:
+                if vtype not in PARAMETER_VALIDATOR_TYPE_COMPATIBILITY[param_type]:
+                    lint_ctx.error(f"Parameter [{param_name}]: validator with an incompatible type '{vtype}'")
+            for attrib in ATTRIB_VALIDATOR_COMPATIBILITY:
+                if attrib in validator.attrib and vtype not in ATTRIB_VALIDATOR_COMPATIBILITY[attrib]:
+                    lint_ctx.error(f"Parameter [{param_name}]: attribute '{attrib}' is incompatible with validator of type '{vtype}'")
+            if vtype == "expression" and validator.text is None:
+                lint_ctx.error(f"Parameter [{param_name}]: expression validator without content")
+            if vtype not in ["expression", "regex"] and validator.text is not None:
+                lint_ctx.warn(f"Parameter [{param_name}]: '{vtype}' validators are not expected to contain text (found '{validator.text}')")
+            if vtype in ["in_range", "length", "dataset_metadata_in_range"] and ("min" not in validator.attrib and "max" not in validator.attrib):
+                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'min' or 'max' attribute(s)")
+            if vtype in ["metadata"] and ("check" not in validator.attrib and "skip" not in validator.attrib):
+                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'check' or 'skip' attribute(s) {validator.attrib}")
+            if vtype in ["value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table"] and "table_name" not in validator.attrib:
+                lint_ctx.error(f"Parameter [{param_name}]: '{vtype}' validators need to define the 'table_name' attribute")
 
     conditional_selects = tool_xml.findall("./inputs//conditional")
     for conditional in conditional_selects:

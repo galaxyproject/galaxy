@@ -34,8 +34,7 @@ class UniverseApplication(BasicApp):
         # Setup the database engine and ORM
         self.model = galaxy.model.mapping.init(self.config.file_path,
                                                db_url,
-                                               self.config.database_engine_options,
-                                               create_tables=True)
+                                               self.config.database_engine_options)
         if not self.config.database_connection:
             self.targets_mysql = False
         else:

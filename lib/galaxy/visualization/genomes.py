@@ -11,7 +11,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     ReferenceDataError,
 )
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.structured_app import StructuredApp
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
@@ -197,7 +197,7 @@ class Genomes:
     Provides information about available genome data and methods for manipulating that data.
     """
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: StructuredApp):
         self.app = app
         # Create list of genomes from app.genome_builds
         self.genomes: Dict[str, Genome] = {}
@@ -396,13 +396,11 @@ class Genomes:
 
         return self._get_reference_data(twobit_file_name, chrom, low, high)
 
+    @staticmethod
     def _get_reference_data(twobit_file_name, chrom, low, high):
         # Read and return reference data.
-        try:
-            with open(twobit_file_name, 'rb') as f:
-                twobit = TwoBitFile(f)
-                if chrom in twobit:
-                    seq_data = twobit[chrom].get(int(low), int(high))
-                    return GenomeRegion(chrom=chrom, start=low, end=high, sequence=seq_data)
-        except OSError as e:
-            raise e()
+        with open(twobit_file_name, 'rb') as f:
+            twobit = TwoBitFile(f)
+            if chrom in twobit:
+                seq_data = twobit[chrom].get(int(low), int(high))
+                return GenomeRegion(chrom=chrom, start=low, end=high, sequence=seq_data)

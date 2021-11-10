@@ -42,23 +42,39 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         hda = self.latest_history_item()
         self._check_dataset_details_for_inttest_value(1)
 
-        with self.main_panel():
-            dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
-            number_found = name_found = format_found = False
-            for key, value in dataset_details_key_value_pairs:
-                if "Number" in key.text:
-                    assert str(hda["hid"]) in value.text
-                    number_found = True
-                if "Name" in key.text:
-                    assert hda["name"] in value.text
-                    name_found = True
-                if "Format" in key.text:
-                    assert hda["extension"] in value.text
-                    format_found = True
+        dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
+        number_found = name_found = format_found = False
+        for key, value in dataset_details_key_value_pairs:
+            if "Number" in key.text:
+                assert str(hda["hid"]) in value.text
+                number_found = True
+            if "Name" in key.text:
+                assert hda["name"] in value.text
+                name_found = True
+            if "Format" in key.text:
+                assert hda["extension"] in value.text
+                format_found = True
 
-            assert number_found
-            assert name_found
-            assert format_found
+        assert number_found
+        assert name_found
+        assert format_found
+
+        job_outputs = self._table_to_key_value_elements("table#job-outputs")
+        assert job_outputs[0][0].text == 'environment_variables'
+        assert "View data\nEdit attributes\nDelete" in job_outputs[0][1].text
+        job_outputs[0][1].click()
+        assert job_outputs[0][1].find_element_by_css_selector('pre').text == '42\nmoo\nNOTTHREE'
+        dataset_operations = self.wait_for_selector_visible("table#job-outputs div.dropdown")
+        dataset_operations.click()
+        menu = self.wait_for_selector_visible("table#job-outputs div.dropdown ul")
+        self.click_menu_item(menu, 'Run job again')
+        self.components.tool_form.execute.wait_for_visible()
+
+    @staticmethod
+    def click_menu_item(menu, text):
+        for element in menu.find_elements_by_css_selector('a'):
+            if element.text == text:
+                return element.click()
 
     def _table_to_key_value_elements(self, table_selector):
         tool_parameters_table = self.wait_for_selector_visible(table_selector)
@@ -141,15 +157,13 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.screenshot("tool_form_citations_formatted")
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
-        self.hda_click_primary_action_button(hid, "info")
-
-        with self.main_panel():
-            self.wait_for_selector_visible("table#dataset-details")
-            tool_parameters_table = self.wait_for_selector_visible("table#tool-parameters")
-            tbody_element = tool_parameters_table.find_element_by_css_selector("tbody")
-            tds = tbody_element.find_elements_by_css_selector("td")
-            assert tds
-            assert any([expected_value in td.text for td in tds])
+        self.hda_click_details(hid)
+        self.components.dataset_details._.wait_for_visible()
+        tool_parameters_table = self.components.dataset_details.tool_parameters.wait_for_visible()
+        tbody_element = tool_parameters_table.find_element_by_css_selector("tbody")
+        tds = tbody_element.find_elements_by_css_selector("td")
+        assert tds
+        assert any([expected_value in td.text for td in tds])
 
     def _run_environment_test_tool(self, inttest_value="42"):
         self.home()
@@ -359,6 +373,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         rule_builder.main_button_ok.wait_for_and_click()
         self.tool_form_execute()
         output_hid = example["output_hid"]
+        self.home()
         self.history_panel_wait_for_hid_ok(output_hid)
         output_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_hid, wait=False)
         example["check"](output_hdca, self.dataset_populator)

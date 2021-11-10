@@ -3,7 +3,7 @@ const path = require("path");
 // For a detailed explanation regarding each configuration property, visit:
 // https://jestjs.io/docs/en/configuration.html
 
-const modulesToTransform = ["bootstrap-vue/src/components/form-input"];
+const modulesToTransform = ["bootstrap-vue", "rxjs", "@hirez_io"].join("|");
 
 module.exports = {
     // All imported modules in your tests should be mocked automatically
@@ -81,6 +81,7 @@ module.exports = {
         "^config$": "<rootDir>/tests/jest/__mocks__/config.js",
         "utils/localization$": "<rootDir>/tests/jest/__mocks__/localization.js",
         "viz/trackster$": "<rootDir>/tests/jest/__mocks__/trackster.js",
+        "rxjs/internal/scheduler/AsyncScheduler": "<rootDir>/node_modules/rxjs/dist/esm/internal/scheduler/AsyncScheduler.js"
     },
 
     // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
@@ -133,7 +134,7 @@ module.exports = {
     // snapshotSerializers: [],
 
     // The test environment that will be used for testing
-    // testEnvironment: "jest-environment-jsdom",
+    testEnvironment: "jsdom",
 
     // Options that will be passed to the testEnvironment
     // testEnvironmentOptions: {},
@@ -169,10 +170,10 @@ module.exports = {
 
     // A map from regular expressions to paths to transformers
     transform: {
-        [`(${modulesToTransform}).+\\.js$`]: "vue-jest",
-        ".*\\.(vue)$": "vue-jest",
+        // [`(${modulesToTransform}).+\\.js$`]: "vue-jest",
         "^.+\\.js$": "babel-jest",
-        "\\.yml$": "yaml-jest",
+        ".*\\.(vue)$": "@vue/vue2-jest",
+        "\\.yml$": "jest-transform-yaml",
         "\\.txt$": "jest-raw-loader",
     },
 

@@ -337,7 +337,7 @@ class WorkflowModule:
         )
         # Have implicit collections...
         if collections_to_match.has_collections():
-            collection_info = self.trans.app.dataset_collections_service.match_collections(
+            collection_info = self.trans.app.dataset_collection_manager.match_collections(
                 collections_to_match
             )
         else:
@@ -347,7 +347,7 @@ class WorkflowModule:
 
     def _find_collections_to_match(self, progress, step, all_inputs):
         collections_to_match = matching.CollectionsToMatch()
-        dataset_collection_type_descriptions = self.trans.app.dataset_collections_service.collection_type_descriptions
+        dataset_collection_type_descriptions = self.trans.app.dataset_collection_manager.collection_type_descriptions
 
         for input_dict in all_inputs:
             name = input_dict["name"]
@@ -398,6 +398,7 @@ class SubWorkflowModule(WorkflowModule):
     # - Second pass actually turn RuntimeInputs into inputs if possible.
     type = "subworkflow"
     name = "Subworkflow"
+    _modules = None
 
     @classmethod
     def from_dict(Class, trans, d, **kwds):
@@ -455,7 +456,22 @@ class SubWorkflowModule(WorkflowModule):
         return inputs
 
     def get_modules(self):
-        return [module_factory.from_workflow_step(self.trans, step) for step in self.subworkflow.steps]
+        if self._modules is None:
+            self._modules = [module_factory.from_workflow_step(self.trans, step) for step in self.subworkflow.steps]
+        return self._modules
+
+    @property
+    def version_changes(self):
+        version_changes = []
+        for m in self.get_modules():
+            if hasattr(m, 'version_changes'):
+                version_changes.extend(m.version_changes)
+        return version_changes
+
+    def check_and_update_state(self):
+        states = (m.check_and_update_state() for m in self.get_modules())
+        # TODO: key ("Step N:") is not currently consumed in UI
+        return {f"Step {i + 1}": upgrade_message for i, upgrade_message in enumerate(states) if upgrade_message} or None
 
     def get_errors(self, **kwargs):
         errors = (module.get_errors(include_tool_id=True) for module in self.get_modules())
@@ -937,10 +953,10 @@ class InputParameterModule(WorkflowModule):
                 if restrictions_list is None:
                     restrictions_list = []
                 restriction_values = self._parameter_option_def_to_tool_form_str(restrictions_list)
-                restrictions_source = dict(name="restrictions", label="Restriction Values", value=restriction_values, help="Comman-separated list of potential all values")
+                restrictions_source = dict(name="restrictions", label="Restricted Values", value=restriction_values, help="Comma-separated list of all permitted values")
                 restrictions = TextToolParameter(None, restrictions_source)
 
-                suggestions_source = dict(name="suggestions", label="Suggestion Values", value=restriction_values, help="Comman-separated list of some potential values")
+                suggestions_source = dict(name="suggestions", label="Suggested Values", value=restriction_values, help="Comma-separated list of some potential values")
                 suggestions = TextToolParameter(None, suggestions_source)
 
                 when_restrict_static_restrictions.inputs["restrictions"] = restrictions
@@ -1244,15 +1260,23 @@ class ToolModule(WorkflowModule):
     def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds):
         super().__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
-        self.tool_version = str(tool_version)
+        self.tool_version = str(tool_version) if tool_version else None
         self.tool_uuid = tool_uuid
         self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid)
         if self.tool:
-            if tool_version and exact_tools and str(self.tool.version) != tool_version:
-                safe_version = WORKFLOW_SAFE_TOOL_VERSION_UPDATES.get(tool_id)
-                if safe_version and safe_version.current_version >= packaging.version.parse(tool_version) >= safe_version.min_version:
-                    self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=False, tool_uuid=tool_uuid)
-                else:
+            current_tool_id = self.tool.id
+            current_tool_version = str(self.tool.version)
+            if tool_version and exact_tools and self.tool_version != current_tool_version:
+                safe_version = WORKFLOW_SAFE_TOOL_VERSION_UPDATES.get(current_tool_id)
+                safe_version_found = False
+                if safe_version and self.tool.lineage:
+                    # tool versions are sorted from old to new, so check newest version first
+                    for lineage_version in reversed(self.tool.lineage.tool_versions):
+                        if safe_version.current_version >= packaging.version.parse(lineage_version) >= safe_version.min_version:
+                            self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=lineage_version, exact=True, tool_uuid=tool_uuid)
+                            safe_version_found = True
+                            break
+                if not safe_version_found:
                     log.info(f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}].")
                     self.tool = None
         self.post_job_actions = {}
@@ -1299,22 +1323,19 @@ class ToolModule(WorkflowModule):
 
     @classmethod
     def from_workflow_step(Class, trans, step, **kwds):
-        if step.tool_id is not None:
-            tool_id = trans.app.toolbox.get_tool_id(step.tool_id) or step.tool_id
-        else:
-            tool_id = None
         tool_version = step.tool_version
         tool_uuid = step.tool_uuid
-        module = super().from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
+        kwds['exact_tools'] = False
+        module = super().from_workflow_step(trans, step, tool_id=step.tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
         module.workflow_outputs = step.workflow_outputs
         module.post_job_actions = {}
         for pja in step.post_job_actions:
             module.post_job_actions[pja.action_type] = pja
         if module.tool:
             message = ""
-            if step.tool_id and step.tool_id != module.tool_id:  # This means the exact version of the tool is not installed. We inform the user.
+            if step.tool_id and step.tool_id != module.tool.id or step.tool_version and step.tool_version != module.tool.version:  # This means the exact version of the tool is not installed. We inform the user.
                 old_tool_shed = step.tool_id.split("/repos/")[0]
-                if old_tool_shed not in tool_id:  # Only display the following warning if the tool comes from a different tool shed
+                if old_tool_shed not in module.tool.id:  # Only display the following warning if the tool comes from a different tool shed
                     old_tool_shed_url = get_tool_shed_url_from_tool_shed_registry(trans.app, old_tool_shed)
                     if not old_tool_shed_url:  # a tool from a different tool_shed has been found, but the original tool shed has been deactivated
                         old_tool_shed_url = f"http://{old_tool_shed}"  # let's just assume it's either http, or a http is forwarded to https.
@@ -1324,12 +1345,12 @@ class ToolModule(WorkflowModule):
                     message += f"The tool \'{module.tool.name}\', version {tool_version} by the owner {module.tool.repository_owner} installed from <a href=\"{old_url}\" target=\"_blank\">{old_tool_shed_url}</a> is not available. "
                     message += f"A derivation of this tool installed from <a href=\"{new_url}\" target=\"_blank\">{new_tool_shed_url}</a> will be used instead. "
             if step.tool_version and (step.tool_version != module.tool.version):
-                message += f"<span title=\"tool id '{tool_id}'\">Using version '{module.tool.version}' instead of version '{step.tool_version}' specified in this workflow. "
+                message += f"<span title=\"tool id '{step.tool_id}'\">Using version '{module.tool.version}' instead of version '{step.tool_version}' specified in this workflow. "
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
         else:
-            log.warning(f"The tool '{tool_id}' is missing. Cannot build workflow module.")
+            log.warning(f"The tool '{step.tool_id}' is missing. Cannot build workflow module.")
         return module
 
     # ---- Saving in various forms ------------------------------------------

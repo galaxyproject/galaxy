@@ -151,7 +151,7 @@ def process_FASTA(filename, org_num, refseq):
 
     # Create Chrom Info File:
     chrom_info_file = open(os.path.join(os.path.split(filename)[0], "%s.info" % refseq), 'wb+')
-    chrom_info_file.write("chromosome={}\nname={}\nlength={}\norganism={}\n".format(refseq, chr_name, len(fasta), org_num))
+    chrom_info_file.write(f"chromosome={refseq}\nname={chr_name}\nlength={len(fasta)}\norganism={org_num}\n")
     try:
         chrom_info_file.write("gi=%s\n" % accesions['gi'])
     except Exception:

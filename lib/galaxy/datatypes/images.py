@@ -359,7 +359,7 @@ class Gmaj(data.Data):
                     "nobutton": "false",
                     "urlpause": "100",
                     "debug": "false",
-                    "posturl": "history_add_to?%s" % "&".join("{}={}".format(x[0], quote_plus(str(x[1]))) for x in [('copy_access_from', dataset.id), ('history_id', dataset.history_id), ('ext', 'maf'), ('name', f'GMAJ Output on data {dataset.hid}'), ('info', 'Added by GMAJ'), ('dbkey', dataset.dbkey)])
+                    "posturl": "history_add_to?%s" % "&".join(f"{x[0]}={quote_plus(str(x[1]))}" for x in [('copy_access_from', dataset.id), ('history_id', dataset.history_id), ('ext', 'maf'), ('name', f'GMAJ Output on data {dataset.hid}'), ('info', 'Added by GMAJ'), ('dbkey', dataset.dbkey)])
                 }
                 class_name = "edu.psu.bx.gmaj.MajApplet.class"
                 archive = "/static/gmaj/gmaj.jar"

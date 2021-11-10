@@ -144,10 +144,10 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
         return
 
     tags = target.get("tags", [])
-    collections_service = trans.app.dataset_collections_service
-    collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
+    collections_manager = trans.app.dataset_collection_manager
+    collection_type_description = collections_manager.collection_type_descriptions.for_collection_type(collection_type)
     structure = UninitializedTree(collection_type_description)
-    hdca = collections_service.precreate_dataset_collection_instance(
+    hdca = collections_manager.precreate_dataset_collection_instance(
         trans, history, name, structure=structure, tags=tags
     )
     outputs.append(hdca)

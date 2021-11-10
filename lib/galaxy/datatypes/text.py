@@ -10,6 +10,8 @@ import shlex
 import subprocess
 import tempfile
 
+import yaml
+
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
 from galaxy.datatypes.sniff import build_sniff_from_prefix, iter_headers
@@ -856,3 +858,40 @@ class Gfa2(Text):
                 return False
             found_valid_lines = True
         return found_valid_lines
+
+
+@build_sniff_from_prefix
+class Yaml(Text):
+    """Yaml files"""
+    file_ext = "yaml"
+
+    def sniff_prefix(self, file_prefix):
+        """
+            Try to load the string with the yaml module. If successful it's a yaml file.
+        """
+        return self._looks_like_yaml(file_prefix)
+
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'application/yaml'
+
+    def _looks_like_yaml(self, file_prefix):
+        # Pattern used by SequenceSplitLocations
+        if file_prefix.file_size < 50000 and not file_prefix.truncated:
+            # If the file is small enough - don't guess just check.
+            try:
+                item = yaml.safe_load(file_prefix.contents_header)
+                assert isinstance(item, (list, dict))
+                return True
+            except yaml.YAMLError:
+                return False
+        else:
+            # If file is too big, load the first part. Trim the current line, in case it cut off in the middle of a key.
+            file_start = file_prefix.string_io().read(50000).strip().rsplit("\n", 1)[0]
+            try:
+                item = yaml.safe_load(file_start)
+                assert isinstance(item, (list, dict))
+                return True
+            except yaml.YAMLError:
+                return False
+            return False

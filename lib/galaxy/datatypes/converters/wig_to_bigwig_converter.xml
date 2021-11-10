@@ -17,8 +17,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" format="wig" value="aggregate_binned_scores_3.wig" dbkey="hg17"/>
-            <output name="output" format="bigwig" value="aggregate_binned_scores_3.bigwig"/>
+            <param name="input" ftype="wig" value="aggregate_binned_scores_3.wig" dbkey="hg17"/>
+            <output name="output" ftype="bigwig" value="aggregate_binned_scores_3.bigwig"/>
         </test>
     </tests>
     <help>

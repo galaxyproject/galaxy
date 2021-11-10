@@ -202,7 +202,7 @@ export default {
 
         // initialize node data
         this.$emit("onAdd", this);
-        if (this.step._complete) {
+        if (this.step.config_form) {
             this.initData(this.step);
         } else {
             this.$emit("onUpdate", this);
@@ -251,9 +251,6 @@ export default {
             this.onRedraw();
         },
         onAddOutput(output, terminal) {
-            if (this.mapOver) {
-                terminal.setMapOver(this.mapOver);
-            }
             this.outputTerminals[output.name] = terminal;
             this.onRedraw();
         },
@@ -294,16 +291,7 @@ export default {
             return this;
         },
         setNode(data) {
-            data.workflow_outputs = data.outputs.map((o) => {
-                return {
-                    output_name: o.name,
-                    label: o.label,
-                };
-            });
             this.initData(data);
-
-            // emit change completion event
-            this.showLoading = false;
             this.$emit("onChange");
             this.$emit("onActivate", this);
         },
@@ -316,15 +304,16 @@ export default {
             this.$emit("onChange");
         },
         setData(data) {
-            this.config_form = data.config_form;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.tooltip = data.tooltip || "";
-            this.postJobActions = data.post_job_actions || {};
             this.inputs = data.inputs ? data.inputs.slice() : [];
             this.outputs = data.outputs ? data.outputs.slice() : [];
             const outputNames = this.outputs.map((output) => output.name);
+            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             this.activeOutputs.filterOutputs(outputNames);
+            this.postJobActions = data.post_job_actions || {};
+            this.config_form = data.config_form;
         },
         initData(data) {
             this.uuid = data.uuid;
@@ -332,28 +321,10 @@ export default {
             this.annotation = data.annotation;
             this.label = data.label;
             this.setData(data);
-            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             this.showLoading = false;
         },
         labelOutput(outputName, label) {
             return this.activeOutputs.labelOutput(outputName, label);
-        },
-        changeOutputDatatype(outputName, datatype) {
-            if (datatype === "__empty__") {
-                datatype = null;
-            }
-            const outputTerminal = this.outputTerminals[outputName];
-            if (datatype) {
-                this.postJobActions["ChangeDatatypeAction" + outputName] = {
-                    action_arguments: { newtype: datatype },
-                    action_type: "ChangeDatatypeAction",
-                    output_name: outputName,
-                };
-            } else {
-                delete this.postJobActions["ChangeDatatypeAction" + outputName];
-            }
-            outputTerminal.destroyInvalidConnections();
-            this.$emit("onChange");
         },
         onScrollTo() {
             this.scrolledTo = true;

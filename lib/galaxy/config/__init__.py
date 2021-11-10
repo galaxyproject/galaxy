@@ -39,16 +39,14 @@ from galaxy.util import (
 )
 from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.properties import (
     find_config_file,
     read_properties_from_file,
     running_from_source,
 )
 from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web_stack import (
-    get_stack_facts,
-    register_postfork_function
-)
+from galaxy.web_stack import get_stack_facts
 from ..version import VERSION_MAJOR, VERSION_MINOR
 
 log = logging.getLogger(__name__)
@@ -115,7 +113,7 @@ def find_root(kwargs):
     return os.path.abspath(kwargs.get('root_dir', '.'))
 
 
-class BaseAppConfiguration:
+class BaseAppConfiguration(HasDynamicProperties):
     # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
     renamed_options: Optional[Dict[str, str]] = None
@@ -491,13 +489,15 @@ class CommonConfigurationMixin:
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     deprecated_options = ('database_file', 'track_jobs_in_database', 'blacklist_file', 'whitelist_file',
-                          'sanitize_whitelist_file', 'user_library_import_symlink_whitelist', 'fetch_url_whitelist')
+                          'sanitize_whitelist_file', 'user_library_import_symlink_whitelist', 'fetch_url_whitelist',
+                          'containers_resolvers_config_file')
     renamed_options = {
         'blacklist_file': 'email_domain_blocklist_file',
         'whitelist_file': 'email_domain_allowlist_file',
         'sanitize_whitelist_file': 'sanitize_allowlist_file',
         'user_library_import_symlink_whitelist': 'user_library_import_symlink_allowlist',
         'fetch_url_whitelist': 'fetch_url_allowlist',
+        'containers_resolvers_config_file': 'container_resolvers_config_file',
     }
     default_config_file_name = 'galaxy.yml'
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
@@ -563,6 +563,19 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     def _override_tempdir(self, kwargs):
         if string_as_bool(kwargs.get("override_tempdir", "True")):
             tempfile.tempdir = self.new_file_path
+
+    def config_value_for_host(self, config_option, host):
+        val = getattr(self, config_option)
+        if config_option in self.schema.per_host_options:
+            per_host_option = f"{config_option}_by_host"
+            if per_host_option in self.config_dict:
+                per_host = self.config_dict[per_host_option] or {}
+                for host_key, host_val in per_host.items():
+                    if host_key in host:
+                        val = host_val
+                        break
+
+        return val
 
     def _process_config(self, kwargs):
         # Backwards compatibility for names used in too many places to fix
@@ -728,8 +741,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             # self, populate config_dict
             self.config_dict["conda_mapping_files"] = [self.local_conda_mapping_file, _default_mapping]
 
-        if self.containers_resolvers_config_file:
-            self.containers_resolvers_config_file = self._in_config_dir(self.containers_resolvers_config_file)
+        if self.container_resolvers_config_file:
+            self.container_resolvers_config_file = self._in_config_dir(self.container_resolvers_config_file)
 
         # tool_dependency_dir can be "none" (in old configs). If so, set it to None
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
@@ -957,14 +970,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def reload_sanitize_allowlist(self, explicit=True):
         self.sanitize_allowlist = []
-        try:
-            with open(self.sanitize_allowlist_file) as f:
-                for line in f.readlines():
-                    if not line.startswith("#"):
-                        self.sanitize_allowlist.append(line.strip())
-        except OSError:
+        if not os.path.exists(self.sanitize_allowlist_file):
             if explicit:
                 log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools allowlisted.", self.sanitize_allowlist_file)
+        else:
+            with open(self.sanitize_allowlist_file) as f:
+                self.sanitize_allowlist = sorted(line.strip() for line in f.readlines() if not line.startswith('#'))
 
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)
@@ -1093,7 +1104,6 @@ def configure_logging(config):
     """
     # Get root logger
     logging.addLevelName(LOGLV_TRACE, "TRACE")
-    root = logging.getLogger()
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
     # some simple setup using the 'log_*' values from the config.
@@ -1116,11 +1126,6 @@ def configure_logging(config):
                 conf['filename'] = conf.pop('filename_template').format(**get_stack_facts(config=config))
                 logging_conf['handlers'][name] = conf
         logging.config.dictConfig(logging_conf)
-    if getattr(config, "sentry_dsn", None):
-        from raven.handlers.logging import SentryHandler
-        sentry_handler = SentryHandler(config.sentry_dsn)
-        sentry_handler.setLevel(logging.WARN)
-        register_postfork_function(root.addHandler, sentry_handler)
 
 
 class ConfiguresGalaxyMixin:
@@ -1153,12 +1158,14 @@ class ConfiguresGalaxyMixin:
 
     def _configure_toolbox(self):
         from galaxy import tools
+        from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
         from galaxy.managers.citations import CitationsManager
         from galaxy.tool_util.deps import containers
         from galaxy.tool_util.deps.dependencies import AppInfo
         import galaxy.tools.search
 
         self.citations_manager = CitationsManager(self)
+        self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
 
         from galaxy.managers.tools import DynamicToolManager
         self.dynamic_tools_manager = DynamicToolManager(self)
@@ -1175,7 +1182,8 @@ class ConfiguresGalaxyMixin:
             container_image_cache_path=self.config.container_image_cache_path,
             library_import_dir=self.config.library_import_dir,
             enable_mulled_containers=self.config.enable_mulled_containers,
-            containers_resolvers_config_file=self.config.containers_resolvers_config_file,
+            container_resolvers_config_file=self.config.container_resolvers_config_file,
+            container_resolvers_config_dict=self.config.container_resolvers,
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,
             mulled_channels=self.config.mulled_channels,
@@ -1205,8 +1213,8 @@ class ConfiguresGalaxyMixin:
                 for enabled_container_type in self.container_finder._enabled_container_types(destination.params):
                     container_types_to_destinations[enabled_container_type].append(destination)
         self.toolbox.dependency_manager.set_enabled_container_types(container_types_to_destinations)
-        self.toolbox.dependency_manager.resolver_classes.update(self.container_finder.container_registry.resolver_classes)
-        self.toolbox.dependency_manager.dependency_resolvers.extend(self.container_finder.container_registry.container_resolvers)
+        self.toolbox.dependency_manager.resolver_classes.update(self.container_finder.default_container_registry.resolver_classes)
+        self.toolbox.dependency_manager.dependency_resolvers.extend(self.container_finder.default_container_registry.container_resolvers)
 
     def _configure_tool_data_tables(self, from_shed_config):
         from galaxy.tools.data import ToolDataTableManager

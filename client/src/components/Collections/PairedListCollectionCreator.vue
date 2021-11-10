@@ -480,7 +480,7 @@ export default {
             filters: this.DEFAULT_FILTERS,
             automaticallyPair: true,
             initialPairsPossible: true,
-            matchPercentage: 0.9,
+            matchPercentage: 0.99,
             twoPassAutoPairing: true,
             removeExtensions: true,
             workingElements: [],
@@ -723,6 +723,9 @@ export default {
                     fwdName = fwdName.replace(extension, "");
                     revName = revName.replace(extension, "");
                 }
+            }
+            if (lcs.endsWith(".") || lcs.endsWith("_")) {
+                lcs = lcs.substring(0, lcs.length - 1);
             }
             return lcs || `${fwdName} & ${revName}`;
         },
@@ -1039,9 +1042,9 @@ export default {
 <style lang="scss">
 $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "~@fortawesome/fontawesome-free/scss/_variables";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/solid";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/brands";
+@import "~@fortawesome/fontawesome-free/scss/solid";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/brands";
 .paired-column {
     text-align: center;
     // mess with these two to make center more/scss priority

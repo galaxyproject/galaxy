@@ -5,6 +5,7 @@
 import _ from "underscore";
 import jQuery from "jquery";
 import { getAppRoot } from "onload/loadConfig";
+import * as tus from "tus-js-client";
 
 (($) => {
     // add event properties
@@ -79,6 +80,7 @@ import { getAppRoot } from "onload/loadConfig";
                 error_file: "File not provided.",
                 error_attempt: "Maximum number of attempts reached.",
                 error_tool: "Tool submission failed.",
+                chunkSize: 10485760,
             },
             config
         );
@@ -94,82 +96,63 @@ import { getAppRoot } from "onload/loadConfig";
             cnf.error(cnf.error_file);
             return;
         }
-        var file = file_data.file;
-        var attempts = cnf.attempts;
-        var session_id = `${cnf.session.id}-${new Date().valueOf()}-${file.size}`;
-        var chunk_size = cnf.session.chunk_upload_size;
-        console.debug(`Starting chunked uploads [size=${chunk_size}].`);
+        const startTime = performance.now();
+        const file = file_data.file;
+        const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
+        const chunkSize = cnf.chunkSize;
+        console.debug(`Starting chunked uploads [size=${chunkSize}].`);
 
-        // chunk processing helper
-        function process(start) {
-            start = start || 0;
-            var slicer = file.mozSlice || file.webkitSlice || file.slice;
-            if (!slicer) {
-                cnf.error("Browser does not support chunked uploads.");
-                return;
+        const upload = new tus.Upload(file, {
+            endpoint: tusEndpoint,
+            chunkSize: chunkSize,
+            metadata: data.payload,
+            onError: function (error) {
+                console.log("Failed because: " + error);
+                cnf.error(error);
+            },
+            onProgress: function (bytesUploaded, bytesTotal) {
+                var percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
+                console.log(bytesUploaded, bytesTotal, percentage + "%");
+                cnf.progress(percentage);
+            },
+            onSuccess: function () {
+                console.log(
+                    `Upload of ${upload.file.name} to ${upload.url} took ${
+                        (performance.now() - startTime) / 1000
+                    } seconds`
+                );
+
+                const toolInputs = JSON.parse(data.payload.inputs);
+                toolInputs["files_0|file_data"] = {
+                    session_id: upload.url.split("/").at(-1),
+                    name: file.name,
+                };
+                data.payload.inputs = JSON.stringify(toolInputs);
+                $.ajax({
+                    url: `${getAppRoot()}api/tools`,
+                    method: "POST",
+                    data: data.payload,
+                    success: (tool_response) => {
+                        cnf.success(tool_response);
+                    },
+                    error: (tool_response) => {
+                        var err_msg = tool_response && tool_response.responseJSON && tool_response.responseJSON.err_msg;
+                        cnf.error(err_msg || cnf.error_tool);
+                    },
+                });
+            },
+        });
+        // Check if there are any previous uploads to continue.
+        upload.findPreviousUploads().then(function (previousUploads) {
+            // Found previous uploads so we select the first one.
+            if (previousUploads.length) {
+                console.log("previous Upload", previousUploads);
+                upload.resumeFromPreviousUpload(previousUploads[0]);
             }
-            var end = Math.min(start + chunk_size, file.size);
-            var size = file.size;
-            console.debug(`Submitting chunk at ${start} bytes...`);
-            var form = new FormData();
-            form.append("session_id", session_id);
-            form.append("session_start", start);
-            form.append("session_chunk", slicer.bind(file)(start, end));
-            _uploadrequest({
-                url: `${getAppRoot()}api/uploads`,
-                data: form,
-                success: (upload_response) => {
-                    var new_start = start + chunk_size;
-                    if (new_start < size) {
-                        attempts = cnf.attempts;
-                        process(new_start);
-                    } else {
-                        console.debug("Upload completed.");
-                        data.payload.inputs = JSON.parse(data.payload.inputs);
-                        data.payload.inputs["files_0|file_data"] = {
-                            session_id: session_id,
-                            name: file.name,
-                        };
-                        data.payload.inputs = JSON.stringify(data.payload.inputs);
-                        $.ajax({
-                            url: `${getAppRoot()}api/tools`,
-                            method: "POST",
-                            data: data.payload,
-                            success: (tool_response) => {
-                                cnf.success(tool_response);
-                            },
-                            error: (tool_response) => {
-                                var err_msg =
-                                    tool_response && tool_response.responseJSON && tool_response.responseJSON.err_msg;
-                                cnf.error(err_msg || cnf.error_tool);
-                            },
-                        });
-                    }
-                },
-                warning: (upload_response) => {
-                    if (--attempts > 0) {
-                        console.debug("Retrying last chunk...");
-                        cnf.warning(upload_response);
-                        setTimeout(() => process(start), cnf.timeout);
-                    } else {
-                        console.debug(cnf.error_attempt);
-                        cnf.error(cnf.error_attempt);
-                    }
-                },
-                error: (upload_response) => {
-                    console.debug(upload_response);
-                    cnf.error(upload_response);
-                },
-                progress: (e) => {
-                    if (e.lengthComputable) {
-                        cnf.progress(Math.min(Math.round(((start + e.loaded) * 100) / file.size), 100));
-                    }
-                },
-            });
-        }
 
-        // initiate processing queue for chunks
-        process();
+            // Start the upload
+            upload.start();
+        });
     };
 
     /**
@@ -343,9 +326,6 @@ import { getAppRoot } from "onload/loadConfig";
         // file queue
         var queue = {};
 
-        // session options
-        var session = null;
-
         // queue index/length counter
         var queue_index = 0;
         var queue_length = 0;
@@ -427,13 +407,7 @@ import { getAppRoot } from "onload/loadConfig";
             // create and submit data
             var submitter = $.uploadpost;
             var requestData = opts.initialize(index);
-            if (
-                file.chunk_mode &&
-                session &&
-                session.id &&
-                session.chunk_upload_size &&
-                session.chunk_upload_size > 0
-            ) {
+            if (file.chunk_mode && opts.chunkSize > 0) {
                 submitter = $.uploadchunk;
             } else if (requestData.fetchRequest) {
                 submitter = $.datafetchpost;
@@ -442,7 +416,6 @@ import { getAppRoot } from "onload/loadConfig";
             submitter({
                 url: opts.initUrl(index),
                 data: requestData.fetchRequest ? requestData.fetchRequest : requestData.uploadRequest,
-                session: session,
                 success: (message) => {
                     opts.success(index, message);
                     process();
@@ -477,8 +450,7 @@ import { getAppRoot } from "onload/loadConfig";
         }
 
         // initiate upload process
-        function start(_session) {
-            session = _session;
+        function start() {
             if (!queue_running) {
                 queue_running = true;
                 process();

@@ -4,7 +4,6 @@
         <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
             <thead>
                 <tr>
-                    <th>Name</th>
                     <th>Size</th>
                     <th>Status</th>
                     <th />
@@ -87,7 +86,7 @@
                 ref="btnCreate"
                 class="ui-button-default"
                 id="btn-new"
-                @click="_eventCreate"
+                @click="_eventCreate(false)"
                 :disabled="!enableSources"
             >
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
@@ -202,6 +201,7 @@ export default {
             ondragleave: () => {
                 this.highlightBox = false;
             },
+            chunkSize: this.app.chunkUploadSize,
         });
         this.collection.on("remove", (model) => {
             this._eventRemove(model);

@@ -67,6 +67,8 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner:
+
+    start_methods = ['_init_monitor_thread', '_init_worker_threads']
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
@@ -83,6 +85,11 @@ class BaseJobRunner:
             log.debug('Loading %s with params: %s', self.runner_name, kwargs)
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
         self.runner_state_handlers = build_state_handlers()
+        self._should_stop = False
+
+    def start(self):
+        for start_method in self.start_methods:
+            getattr(self, start_method, lambda: None)()
 
     def _init_worker_threads(self):
         """Start ``nworkers`` worker threads.
@@ -93,7 +100,7 @@ class BaseJobRunner:
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
             worker.daemon = True
-            self.app.application_stack.register_postfork_function(worker.start)
+            worker.start()
             self.work_threads.append(worker)
 
     def _alive_worker_threads(self, cycle=False):
@@ -110,8 +117,11 @@ class BaseJobRunner:
     def run_next(self):
         """Run the next item in the work queue (a job waiting to run)
         """
-        while True:
-            (method, arg) = self.work_queue.get()
+        while self._should_stop is False:
+            try:
+                (method, arg) = self.work_queue.get(timeout=1)
+            except Empty:
+                continue
             if method is STOP_SIGNAL:
                 return
             # id and name are collected first so that the call of method() is the last exception.
@@ -161,6 +171,7 @@ class BaseJobRunner:
         """Attempts to gracefully shut down the worker threads
         """
         log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
+        self._should_stop = True
         for _ in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
@@ -702,7 +713,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
             except Exception:
                 log.exception('Unhandled exception checking active jobs')
             # Sleep a bit before the next state check
-            time.sleep(1)
+            time.sleep(self.app.config.job_runner_monitor_sleep)
 
     def monitor_job(self, job_state):
         self.monitor_queue.put(job_state)

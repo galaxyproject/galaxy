@@ -6,6 +6,7 @@ import os
 import traceback
 import unittest
 from functools import partial, wraps
+from typing import Any, Dict, TYPE_CHECKING
 
 import requests
 from gxformat2 import (
@@ -21,9 +22,14 @@ from galaxy.selenium.context import (
     GalaxySeleniumContext,
 )
 from galaxy.selenium.navigates_galaxy import (
-    retry_during_transitions
+    NavigatesGalaxy,
+    retry_during_transitions,
 )
-from galaxy.util import asbool, classproperty
+from galaxy.util import (
+    asbool,
+    classproperty,
+    DEFAULT_SOCKET_TIMEOUT,
+)
 from galaxy_test.base import populators
 from galaxy_test.base.api import UsesApiTestCaseMixin
 from galaxy_test.base.api_util import get_admin_api_key
@@ -59,6 +65,7 @@ GALAXY_TEST_SELENIUM_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_USER_EMAI
 GALAXY_TEST_SELENIUM_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_USER_PASSWORD", None)
 GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL", DEFAULT_ADMIN_USER)
 GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD)
+GALAXY_TEST_SELENIUM_BETA_HISTORY = os.environ.get("GALAXY_TEST_SELENIUM_BETA_HISTORY", "0") == "1"
 
 # JS code to execute in Galaxy JS console to setup localStorage of session for logging and
 # logging "flatten" messages because it seems Selenium (with Chrome at least) only grabs
@@ -213,6 +220,8 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
     # will be used to login.
     ensure_registered = False
 
+    ensure_beta_history = GALAXY_TEST_SELENIUM_BETA_HISTORY
+
     # Override this in subclasses to annotate that an admin user
     # is required for the test to run properly. Override admin user
     # login info with GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL /
@@ -252,6 +261,8 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         """
         if self.ensure_registered:
             self.login()
+            if self.ensure_beta_history:
+                self.use_beta_history()
 
     def tear_down_selenium(self):
         self.tear_down_driver()
@@ -298,6 +309,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
 
     def reset_driver_and_session(self):
         self.tear_down_driver()
+        self.target_url_from_selenium = self._target_url_from_selenium()
         self.setup_driver_and_session()
         self._try_setup_with_driver()
 
@@ -359,6 +371,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         initial_size_str = self.components.history_panel.new_size.text
         size_selector = self.components.history_panel.size
         size_text = size_selector.wait_for_text()
+
         assert initial_size_str in size_text, f"{initial_size_str} not in {size_text}"
 
         self.components.history_panel.empty_message.wait_for_visible()
@@ -444,17 +457,24 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
         """Override this to setup shared data for tests that gets initialized only once."""
 
 
-class UsesLibraryAssertions:
+if TYPE_CHECKING:
+    NavigatesGalaxyMixin = NavigatesGalaxy
+else:
+    NavigatesGalaxyMixin = object
+
+
+class UsesLibraryAssertions(NavigatesGalaxyMixin):
 
     @retry_assertion_during_transitions
     def assert_num_displayed_items_is(self, n):
-        self.assertEqual(n, self.num_displayed_items())
+        num_displayed = self.num_displayed_items()
+        assert n == num_displayed, f"Expected number of displayed items is {n} but actual was {num_displayed}"
 
-    def num_displayed_items(self):
+    def num_displayed_items(self) -> int:
         return len(self.libraries_table_elements())
 
 
-class UsesHistoryItemAssertions:
+class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
 
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
@@ -551,7 +571,7 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.get(full_url, params=data, cookies=cookies, headers=headers)
+        response = requests.get(full_url, params=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
@@ -569,10 +589,11 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.post(full_url, data=data, cookies=cookies, files=files, headers=headers)
+        request_kwd = self._prepare_request_data(dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT, files=files), data, as_json=json)
+        response = requests.post(full_url, **request_kwd)
         return response
 
-    def _delete(self, route, data=None, headers=None, admin=False) -> Response:
+    def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
@@ -580,10 +601,11 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.delete(full_url, data=data, cookies=cookies, headers=headers)
+        request_kwd = self._prepare_request_data(dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json)
+        response = requests.delete(full_url, **request_kwd)
         return response
 
-    def _put(self, route, data=None, headers=None, admin=False) -> Response:
+    def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
@@ -591,8 +613,16 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.put(full_url, data=data, cookies=cookies, headers=headers)
+        request_kwd = self._prepare_request_data(dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json)
+        response = requests.put(full_url, **request_kwd)
         return response
+
+    def _prepare_request_data(self, request_kwd: Dict[str, Any], data: Dict[str, Any], as_json: bool = False):
+        if as_json:
+            request_kwd['json'] = data
+        else:
+            request_kwd['data'] = data
+        return request_kwd
 
 
 class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetPopulator):
@@ -614,7 +644,7 @@ class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, pop
         self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_context)
 
     def _create_collection(self, payload: dict) -> Response:
-        create_response = self._post("dataset_collections", data=payload)
+        create_response = self._post("dataset_collections", data=payload, json=True)
         return create_response
 
 
@@ -626,7 +656,7 @@ class SeleniumSessionWorkflowPopulator(SeleniumSessionGetPostMixin, populators.B
         """Construct a workflow populator from a bioblend GalaxyInstance."""
         self.selenium_context = selenium_context
         self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_context)
-        self.dataset_collection_populator = SeleniumSessionDatasetPopulator(selenium_context)
+        self.dataset_collection_populator = SeleniumSessionDatasetCollectionPopulator(selenium_context)
 
     def import_workflow(self, workflow: dict, **kwds) -> dict:
         workflow_str = json.dumps(workflow, indent=4)

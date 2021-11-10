@@ -225,6 +225,14 @@ mapping:
           Where temporary files are stored. It must be accessible at the same path on any cluster
           nodes that will run Galaxy jobs, unless using Pulsar.
 
+      maximum_upload_file_size:
+        type: int
+        default: 107374182400
+        required: false
+        desc: |
+          Maximum size of uploadable files, specified in bytes (default: 100GB).
+          This value is ignored if an external upload server is configured.
+
       tool_config_file:
         type: any
         default: tool_conf.xml
@@ -316,12 +324,9 @@ mapping:
         path_resolves_to: config_dir
         required: false
         desc: |
-          The dependency resolvers config file specifies an ordering and options for how
-          Galaxy resolves tool dependencies (requirement tags in Tool XML). The default
-          ordering is to the use the Tool Shed for tools installed that way, use local
-          Galaxy packages, and then use Conda if available.
-          See https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
-          for more information on these options.
+          Specifies the path to the standalone dependency resolvers configuration file. This
+          configuration can now be specified directly in the Galaxy configuration, see the
+          description of the 'dependency_resolvers' option for details.
 
       conda_prefix:
         type: str
@@ -507,14 +512,28 @@ mapping:
           Container availability will vary by tool, this option will only be used
           for job destinations with Docker or Singularity enabled.
 
-      containers_resolvers_config_file:
+      container_resolvers_config_file:
         type: str
         required: false
         desc: |
           Container resolvers configuration (beta). Set up a file describing
           container resolvers to use when discovering containers for Galaxy. If
-          this is set to None, the default containers loaded is determined by
-          enable_mulled_containers.
+          this is set to None, the default container resolvers loaded is
+          determined by enable_mulled_containers.
+
+      container_resolvers:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Rather than specifying a container_resolvers_config_file, the definition of the
+          resolvers to enable can be embedded into Galaxy's config with this option.
+          This has no effect if a container_resolvers_config_file is used.
+
+          The syntax, available resolvers, and documentation of their options is explained in detail in the
+          documentation:
+
+          https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
 
       involucro_path:
         type: str
@@ -820,6 +839,46 @@ mapping:
           This results in faster startup times but uses more memory when using forked Galaxy
           processes.
 
+      biotools_content_directory:
+        type: str
+        required: false
+        desc: |
+          Point Galaxy at a repository consisting of a copy of the bio.tools database (e.g.
+          https://github.com/bio-tools/content/) to resolve bio.tools data for tool metadata.
+
+      biotools_use_api:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Set this to true to attempt to resolve bio.tools metadata for tools for tool not
+          resovled via biotools_content_directory.
+
+      biotools_service_cache_type:
+        type: str
+        default: file
+        required: false
+        desc: |
+          bio.tools web service request related caching. The type of beaker cache used.
+
+      biotools_service_cache_data_dir:
+        type: str
+        default: biotools/data
+        path_resolves_to: cache_dir
+        required: false
+        desc: |
+          bio.tools web service request related caching. The data directory to point
+          beaker cache at.
+
+      biotools_service_cache_lock_dir:
+        type: str
+        default: biotools/locks
+        path_resolves_to: cache_dir
+        required: false
+        desc: |
+          bio.tools web service request related caching. The lock directory to point
+          beaker cache at.
+
       citation_cache_type:
         type: str
         default: file
@@ -934,7 +993,23 @@ mapping:
           is the address used to subscribe to the list. Uncomment and leave empty if you
           want to remove this option from the user registration form.
 
-          Example value 'galaxy-announce-join@bx.psu.edu'
+          Example value 'galaxy-announce-join@lists.galaxyproject.org'
+
+      mailing_join_subject:
+        type: str
+        default: Join Mailing List
+        required: false
+        desc: |
+          The subject of the email sent to the mailing list join address. See the
+          `mailing_join_addr` option for more information.
+
+      mailing_join_body:
+        type: str
+        default: Join Mailing List
+        required: false
+        desc: |
+          The body of the email sent to the mailing list join address. See the
+          `mailing_join_addr` option for more information.
 
       error_email_to:
         type: str
@@ -1053,6 +1128,14 @@ mapping:
           screen when they log in after their password expires. Enter 0 to disable
           password expiration.
 
+      enable_account_interface:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Allow users to manage their account data, change passwords or delete their
+          accounts.
+
       session_duration:
         type: int
         default: 0
@@ -1152,9 +1235,17 @@ mapping:
 
       interactivetools_proxy_host:
         type: str
+        required: false
         desc: |
           Proxy host - assumed to just be hosted on the same hostname and port as
           Galaxy by default.
+
+      interactivetools_base_path:
+        type: str
+        required: false
+        default: "/"
+        desc: |
+          Base path for interactive tools running at a subpath without a subdomain. Defaults to "/".
 
       interactivetools_map:
         type: str
@@ -1224,6 +1315,7 @@ mapping:
       brand:
         type: str
         required: false
+        per_host: true
         desc: |
           Append "{brand}" text to the masthead.
 
@@ -1231,6 +1323,7 @@ mapping:
         type: bool
         default: true
         required: false
+        per_host: true
         desc: |
           Display the "Galaxy" text in the masthead.
 
@@ -1314,6 +1407,7 @@ mapping:
         default: /static/welcome.html
         required: false
         reloadable: true
+        per_host: true
         desc: |
           The URL of the page to display in Galaxy's middle pane when loaded.  This can
           be an absolute or relative URL.
@@ -1322,6 +1416,7 @@ mapping:
         type: str
         default: /
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Galaxy/brand" text.
 
@@ -1329,18 +1424,21 @@ mapping:
         type: str
         default: /static/favicon.png
         required: false
+        per_host: true
         desc: |
           The brand image source.
 
       logo_src_secondary:
         type: str
         required: false
+        per_host: true
         desc: |
           The custom brand image source.
 
       helpsite_url:
         type: str
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Galaxy Help" link in the "Help" menu.
 
@@ -1348,6 +1446,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Wiki" link in the "Help" menu.
 
@@ -1362,6 +1461,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/support/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
 
@@ -1369,6 +1469,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/citing-galaxy
         required: false
+        per_host: true
         desc: |
           The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
 
@@ -1383,6 +1484,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/search/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Search" link in the "Help" menu.
 
@@ -1390,6 +1492,7 @@ mapping:
         type: str
         default: https://galaxyproject.org/mailing-lists/
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Mailing Lists" link in the "Help" menu.
 
@@ -1397,12 +1500,14 @@ mapping:
         type: str
         default: https://vimeo.com/galaxyproject
         required: false
+        per_host: true
         desc: |
           The URL linked by the "Videos" link in the "Help" menu.
 
       terms_url:
         type: str
         required: false
+        per_host: true        
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
           as on the user registration and login forms and in the activation emails.
@@ -1438,6 +1543,7 @@ mapping:
       static_dir:
         type: str
         default: static/
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1448,6 +1554,7 @@ mapping:
       static_images_dir:
         type: str
         default: static/images
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1458,6 +1565,7 @@ mapping:
       static_favicon_dir:
         type: str
         default: static/favicon.ico
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1468,6 +1576,7 @@ mapping:
       static_scripts_dir:
         type: str
         default: static/scripts/
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1478,6 +1587,7 @@ mapping:
       static_style_dir:
         type: str
         default: static/style
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1488,6 +1598,7 @@ mapping:
       static_robots_txt:
         type: str
         default: static/robots.txt
+        per_host: true
         required: false
         desc: |
           Serve static content, which must be enabled if you're not serving it via a
@@ -1594,12 +1705,12 @@ mapping:
 
       chunk_upload_size:
         type: int
-        default: 104857600
+        default: 10485760
         required: false
         desc: |
           Galaxy can upload user files in chunks without using nginx. Enable the chunk
           uploader by specifying a chunk size larger than 0. The chunk size is specified
-          in bytes (default: 100MB).
+          in bytes (default: 10MB).
 
       dynamic_proxy_manage:
         type: bool
@@ -1926,16 +2037,13 @@ mapping:
           indicated sentry instance.  This connection string is available in your
           sentry instance under <project_name> -> Settings -> API Keys.
 
-      sentry_sloreq_threshold:
-        type: float
-        default: 0.0
+      sentry_event_level:
+        type: str
+        default: ERROR
         required: false
         desc: |
-          Sentry slow request logging.  Requests slower than the threshold
-          indicated below will be sent as events to the configured Sentry
-          server (above, sentry_dsn).  A value of '0' is disabled.  For
-          example, you would set this to .005 to log all queries taking longer
-          than 5 milliseconds.
+          Determines the minimum log level that will be sent as an event to Sentry.
+          Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
 
       statsd_host:
         type: str
@@ -2427,21 +2535,50 @@ mapping:
           stable API. (The module state definitions may change and workflows built using
           these modules may not function in the future.)
 
-      enable_beta_edam_toolbox:
-        type: bool
-        default: false
+      edam_panel_views:
+        type: str
+        default: 'operations,topics'
         required: false
         desc: |
-          Enable beta EDAM organised toolbox which ignores admin managed
-          sections in lieu of EDAM topics only.
+          Comma-separated list of the EDAM panel views to load - choose from merged, operations, topics.
+          Set to empty string to disable EDAM all together. Set default_panel_view to 'ontology:edam_topics'
+          to override default tool panel to use an EDAM view.
 
-      beta_edam_toolbox_ontology_path:
+      edam_toolbox_ontology_path:
         type: str
         default: EDAM.tsv
         path_resolves_to: data_dir
         required: false
         desc: |
-          Sets the path to EDAM ontology file.
+          Sets the path to EDAM ontology file - if the path doesn't exist PyPI package data will be loaded.
+
+      panel_views_dir:
+        type: str
+        default: config/plugins/activities
+        required: false
+        desc: |
+          Directory to check out for toolbox tool panel views. The path is relative to the
+          Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a
+          comma-separated list.
+
+      panel_views:
+        type: seq
+        sequence:
+          - type: any
+        required: false
+        desc: |
+          Definitions of static toolbox panel views embedded directly in the config instead of reading
+          YAML from directory with panel_views_dir.
+
+      default_panel_view:
+        type: str
+        default: default
+        required: false
+        desc: |
+          Default tool panel view for the current Galaxy configuration. This should refer to an id of
+          a panel view defined using the panel_views or panel_views_dir configuration options or an
+          EDAM panel view. The default panel view is simply called `default` and refers to the tool
+          panel state defined by the integrated tool panel.
 
       default_workflow_export_format:
         type: str
@@ -2450,42 +2587,6 @@ mapping:
         desc: |
           Default format for the export of workflows. Possible values are 'ga'
           or 'format2'.
-
-      force_beta_workflow_scheduled_min_steps:
-        type: int
-        default: 250
-        required: false
-        desc: |
-          Following options only apply to workflows scheduled using the legacy workflow
-          run API (running workflows via a POST to /api/workflows).
-          Force usage of Galaxy's beta workflow scheduler under certain circumstances -
-          this workflow scheduling forces Galaxy to schedule workflows in the background
-          so initial submission of the workflows is significantly sped up. This does
-          however force the user to refresh their history manually to see newly scheduled
-          steps (for "normal" workflows - steps are still scheduled far in advance of
-          them being queued and scheduling here doesn't refer to actual cluster job
-          scheduling).
-          Workflows containing more than the specified number of steps will always use
-          the Galaxy's beta workflow scheduling.
-
-      force_beta_workflow_scheduled_for_collections:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Following options only apply to workflows scheduled using the legacy workflow
-          run API (running workflows via a POST to /api/workflows).
-          Force usage of Galaxy's beta workflow scheduler under certain circumstances -
-          this workflow scheduling forces Galaxy to schedule workflows in the background
-          so initial submission of the workflows is significantly sped up. This does
-          however force the user to refresh their history manually to see newly scheduled
-          steps (for "normal" workflows - steps are still scheduled far in advance of
-          them being queued and scheduling here doesn't refer to actual cluster job
-          scheduling).
-          Workflows containing more than the specified number of steps will always use
-          the Galaxy's beta workflow scheduling.
-          Switch to using Galaxy's beta workflow scheduling for all workflows involving
-          collections.
 
       parallelize_workflow_scheduling_within_histories:
         type: bool
@@ -2625,6 +2726,7 @@ mapping:
         default: 'prefer'
         enum: ['off', 'prefer']
         required: false
+        per_host: true
         desc: |
           If set to 'off' by default, always use the traditional workflow form that renders
           all steps in the GUI and serializes the tool state of all steps during
@@ -2639,6 +2741,7 @@ mapping:
         default: 'current'
         enum: ['current', 'new']
         required: false
+        per_host: true
         desc: |
           When the simplified workflow run form is rendered, should the invocation outputs
           be sent to the 'current' history or a 'new' history.
@@ -2648,6 +2751,7 @@ mapping:
         default: 'off'
         enum: ['on', 'off']
         required: false
+        per_host: true
         desc: |
           When the simplified workflow run form is rendered, should the invocation use job
           caching. This isn't a boolean so an option for 'show-selection' can be added later.
@@ -2659,22 +2763,23 @@ mapping:
         desc: |
           The URL to the myExperiment instance being used (omit scheme but include port).
 
-      ftp_upload_dir:
+      ftp_upload_site:
         type: str
         required: false
+        per_host: true
         desc: |
           Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
           configure an FTP server (we've used ProFTPd since it can use Galaxy's
           database for authentication) and set the following two options.
-          This should point to a directory containing subdirectories matching users'
-          identifier (defaults to e-mail), where Galaxy will look for files.
+          This will be provided to users in the help text as 'log in to the FTP
+          server at '. Thus, it should be the hostname of your FTP server.
 
-      ftp_upload_site:
+      ftp_upload_dir:
         type: str
         required: false
         desc: |
-          This should be the hostname of your FTP server, which will be provided to
-          users in the help text.
+          This should point to a directory containing subdirectories matching users'
+          identifier (defaults to e-mail), where Galaxy will look for files.
 
       ftp_upload_dir_identifier:
         type: str
@@ -2803,6 +2908,11 @@ mapping:
           resolvers to enable can be embedded into Galaxy's config with this option.
           This has no effect if a dependency_resolvers_config_file is used.
 
+          The syntax, available resolvers, and documentation of their options is explained in detail in the
+          documentation:
+
+          https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+
       dependency_resolution:
         type: map
         desc: |
@@ -2873,14 +2983,27 @@ mapping:
           config.
           This is a new feature and not recommended for production servers yet.
 
-      enable_job_recovery:
-        type: bool
-        default: true
+      job_handler_monitor_sleep:
+        type: float
+        default: 1.0
         required: false
         desc: |
-          Enable job recovery (if Galaxy is restarted while cluster jobs are running,
-          it can "recover" them when it starts).  This is not safe to use if you are
-          running more than one Galaxy server using the same database.
+          Each Galaxy job handler process runs one thread responsible for discovering jobs and
+          dispatching them to runners. This thread operates in a loop and sleeps for the given
+          number of seconds at the end of each iteration. This can be decreased if extremely high
+          job throughput is necessary, but doing so can increase CPU usage of handler processes.
+          Float values are allowed.
+
+      job_runner_monitor_sleep:
+        type: float
+        default: 1.0
+        required: false
+        desc: |
+          Each Galaxy job handler process runs one thread per job runner plugin responsible for
+          checking the state of queued and running jobs.  This thread operates in a loop and
+          sleeps for the given number of seconds at the end of each iteration. This can be
+          decreased if extremely high job throughput is necessary, but doing so can increase CPU
+          usage of handler processes. Float values are allowed.
 
       metadata_strategy:
         type: str
@@ -3213,7 +3336,7 @@ mapping:
 
       toolbox_filter_base_modules:
         type: str
-        default: galaxy.tools.filters,galaxy.tools.toolbox.filters
+        default: galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters
         required: false
         desc: |
           The base module(s) that are searched for modules for toolbox filtering
@@ -3340,3 +3463,12 @@ mapping:
         required: false
         desc: |
           Path to dynamic tool destinations configuration file.
+
+      welcome_directory:
+        type: str
+        default: plugins/welcome_page/new_user/static/topics/
+        required: false
+        desc: |
+          Location of New User Welcome data, a single directory containing the
+          images and JSON of Topics/Subtopics/Slides as export. This location
+          is relative to galaxy/static

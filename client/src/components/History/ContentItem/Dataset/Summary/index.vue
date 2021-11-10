@@ -1,5 +1,5 @@
 <template>
-    <component :is="summaryComponent" :dataset="dataset" class="summary" />
+    <component :is="summaryComponent" :dataset="dataset" @edit="edit" />
 </template>
 
 <script>
@@ -42,6 +42,11 @@ export default {
                 state = this.STATES.OK;
             }
             return capitalize(camelize(state));
+        },
+    },
+    methods: {
+        edit() {
+            this.$emit("edit");
         },
     },
 };

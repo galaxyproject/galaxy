@@ -36,6 +36,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         tagName: "div",
         className: "list-panel",
+        actionButtonClass: "list-action-menu-btn",
 
         /** (in ms) that jquery effects will use */
         fxSpeed: "fast",
@@ -297,7 +298,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             }
             var $newMenu = $(
                 `<div class="list-action-menu btn-group">
-                    <button class="list-action-menu-btn btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                    <button class="${this.actionButtonClass} btn btn-secondary dropdown-toggle" data-toggle="dropdown">
                         ${_l("For all selected")}...
                     </button>
                     <div class="dropdown-menu float-right" role="menu"/>
@@ -858,7 +859,7 @@ ListPanel.prototype.templates = (() => {
         "<div>",
         '<div class="controls"></div>',
         '<div class="list-items"></div>',
-        '<div class="empty-message infomessagesmall"></div>',
+        '<div class="empty-message alert alert-info"></div>',
         "</div>",
     ]);
 

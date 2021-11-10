@@ -10,7 +10,9 @@ from typing import Type
 from sqlalchemy import sql
 
 from galaxy import model
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.util import unicodify
+from .base import ModelValidator, raise_filter_err
 
 log = logging.getLogger(__name__)
 
@@ -47,6 +49,7 @@ def _tags_from_strings(item, tag_handler, new_tags_list, user=None):
 
 class TaggableManagerMixin:
     tag_assoc: Type[model.ItemTagAssociation]
+    tag_handler: GalaxyTagHandler
 
     # TODO: most of this can be done by delegating to the GalaxyTagHandler?
     def get_tags(self, item):
@@ -59,7 +62,7 @@ class TaggableManagerMixin:
         """
         Set an `item`'s tags from a list of strings.
         """
-        return _tags_from_strings(item, self.app.tag_handler, new_tags, user=user)
+        return _tags_from_strings(item, self.tag_handler, new_tags, user=user)
 
     # def tags_by_user( self, user, **kwargs ):
     # TODO: here or GalaxyTagHandler
@@ -79,6 +82,8 @@ class TaggableSerializerMixin:
 
 
 class TaggableDeserializerMixin:
+    tag_handler: GalaxyTagHandler
+    validate: ModelValidator
 
     def add_deserializers(self):
         self.deserializers['tags'] = self.deserialize_tags
@@ -90,7 +95,7 @@ class TaggableDeserializerMixin:
         Note: this will erase any previous tags.
         """
         new_tags_list = self.validate.basestring_list(key, val)
-        _tags_from_strings(item, self.app.tag_handler, new_tags_list, user=user)
+        _tags_from_strings(item, self.tag_handler, new_tags_list, user=user)
         return item.tags
 
 
@@ -102,7 +107,7 @@ class TaggableFilterMixin:
 
         def _create_tag_filter(model_class=None):
             if op not in TaggableFilterMixin.valid_ops:
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
             if model_class is None:
                 return True
             class_name = model_class.__name__

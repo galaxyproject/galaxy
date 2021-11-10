@@ -673,6 +673,30 @@ QUnit.test("textarea", function (assert) {
     assert.ok(input.$el.hasClass("_cls"), "Has custom class.");
 });
 
+QUnit.test("nullableText", function (assert) {
+    // Start with null value, optional button should be off
+    var input = new Ui.NullableText({ area: false, value: null });
+    $("body").prepend(input.$el);
+    assert.ok(input.text_input.tagName === "input", "input tag");
+    assert.ok(input.value() === null, "null value");
+    assert.ok(input.optional_button.model.get("value") === "false");
+    // toggle button, will set value to `""`
+    input.optional_button.model.set("value", "true");
+    assert.ok(input.value() === "", "Correct new value.");
+    // set value
+    input.text_input.model.set("value", "_value");
+    assert.ok(input.value() === "_value", "Correct new value.");
+    assert.ok(input.optional_button.model.get("value") === "true");
+    // toggle button to false, will reset value to null
+    input.optional_button.model.set("value", "false");
+    assert.ok(input.value() === null, "Correct new value.");
+    assert.ok(input.optional_button.model.get("value") === "false");
+    // New input, start with value, optional button should be on
+    var definedInput = new Ui.NullableText({ area: false, value: "123" });
+    assert.ok(definedInput.value() === "123");
+    assert.ok(definedInput.optional_button.model.get("value") === "true");
+});
+
 QUnit.test("message", function (assert) {
     var message = new Ui.Message({
         persistent: true,

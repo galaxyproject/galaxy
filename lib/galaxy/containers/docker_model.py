@@ -44,7 +44,7 @@ class DockerAttributeContainer:
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(tuple(sorted([repr(x) for x in self._members])))
+        return hash(tuple(sorted(repr(x) for x in self._members)))
 
     def __str__(self):
         return ', '.join(str(x) for x in self._members) or 'None'

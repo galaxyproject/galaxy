@@ -46,3 +46,15 @@ def test_set_meta_presorted():
         bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb',
                                        index_filename=dataset.metadata.bam_index.file_name)
         assert bam_file.has_index() is True
+
+
+def test_set_meta_header_info():
+    """
+    check if information from the bam header is set
+    as metadata
+    """
+    b = Bam()
+    with get_dataset('bam_from_sam.bam') as dataset:
+        b.set_meta(dataset=dataset)
+        assert dataset.metadata.bam_header == {'HD': {'VN': '1.3', 'SO': 'coordinate'}, 'SQ': [{'SN': 'ref', 'LN': 45}, {'SN': 'ref2', 'LN': 40}]}
+        assert dataset.metadata.reference_names == ['ref', 'ref2']

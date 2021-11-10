@@ -24,11 +24,10 @@ class JobManager:
     def __init__(self, app: MinimalManagerApp):
         self.app = app
         self.job_lock = False
-        if self.app.is_job_handler:
-            log.debug("Initializing job handler")
-            self.job_handler = handler.JobHandler(app)
-        else:
-            self.job_handler = NoopHandler()
+        self.job_handler = NoopHandler()
+
+    def _check_jobs_at_startup(self):
+        if not self.app.is_job_handler:
             self.__check_jobs_at_startup()
 
     def __check_jobs_at_startup(self):
@@ -44,7 +43,10 @@ class JobManager:
                 self.enqueue(job, tool)
 
     def start(self):
-        self.job_handler.start()
+        if self.app.is_job_handler:
+            log.debug("Initializing job handler")
+            self.job_handler = handler.JobHandler(self.app)
+            self.job_handler.start()
 
     def _queue_callback(self, job, tool_id):
         self.job_handler.job_queue.put(job.id, tool_id)

@@ -218,6 +218,7 @@ def _get_target_history(trans, workflow, payload, param_keys=None, index=0):
             nh_name = f"{nh_name} on {', '.join(ids[0:-1])} and {ids[-1]}"
         new_history = trans.app.model.History(user=trans.user, name=nh_name)
         trans.sa_session.add(new_history)
+        trans.sa_session.flush()
         target_history = new_history
     return target_history
 
@@ -322,15 +323,12 @@ def build_workflow_run_configs(trans, workflow, payload):
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), dataset)
                     content = history.add_dataset(dataset)
                 elif input_source == 'hdca':
-                    content = app.dataset_collections_service.get_dataset_collection_instance(trans, 'history', input_id)
+                    content = app.dataset_collection_manager.get_dataset_collection_instance(trans, 'history', input_id)
                 else:
                     raise exceptions.RequestParameterInvalidException(f"Unknown workflow input source '{input_source}' specified.")
                 if add_to_history and content.history != history:
-                    content = content.copy()
-                    if isinstance(content, app.model.HistoryDatasetAssociation):
-                        history.add_dataset(content)
-                    else:
-                        history.add_dataset_collection(content)
+                    content = content.copy(flush=False)
+                    history.stage_addition(content)
                 input_dict['content'] = content
             except AssertionError:
                 raise exceptions.ItemAccessibilityException(f"Invalid workflow input '{input_id}' specified")
@@ -368,7 +366,7 @@ def build_workflow_run_configs(trans, workflow, payload):
                                     valid_option = True
                         if not valid_option:
                             raise exceptions.RequestParameterInvalidException(f"Invalid value for parameter '{name}' found.")
-
+        history.add_pending_items()
         run_configs.append(WorkflowRunConfig(
             target_history=history,
             replacement_dict=payload.get('replacement_params', {}),

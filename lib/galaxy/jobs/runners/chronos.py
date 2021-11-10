@@ -142,8 +142,6 @@ class ChronosJobRunner(AsynchronousJobRunner):
             username=self.runner_params.get('username'),
             password=self.runner_params.get('password'),
             proto=protocol)
-        self._init_monitor_thread()
-        self._init_worker_threads()
 
     @handle_exception_call
     def queue_job(self, job_wrapper):

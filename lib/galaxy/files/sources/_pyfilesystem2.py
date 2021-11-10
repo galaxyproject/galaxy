@@ -2,6 +2,11 @@ import abc
 import functools
 import logging
 import os
+from typing import Any, Dict, List, Optional, Type
+
+import fs
+from fs.base import FS
+from typing_extensions import ClassVar
 
 from ..sources import BaseFilesSource
 
@@ -11,6 +16,8 @@ PACKAGE_MESSAGE = "FilesSource plugin is missing required Python PyFilesystem2 p
 
 
 class PyFilesystem2FilesSource(BaseFilesSource):
+    required_module: ClassVar[Optional[Type[FS]]]
+    required_package: ClassVar[str]
 
     def __init__(self, **kwd):
         if self.required_module is None:
@@ -27,7 +34,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
 
         with self._open_fs(user_context=user_context) as h:
             if recursive:
-                res = []
+                res: List[Dict[str, Any]] = []
                 for p, dirs, files in h.walk(path):
                     to_dict = functools.partial(self._resource_info_to_dict, p)
                     res.extend(map(to_dict, dirs))
@@ -44,7 +51,11 @@ class PyFilesystem2FilesSource(BaseFilesSource):
 
     def _write_from(self, target_path, native_path, user_context=None):
         with open(native_path, 'rb') as read_file:
-            self._open_fs(user_context=user_context).upload(target_path, read_file)
+            openfs = self._open_fs(user_context=user_context)
+            dirname = fs.path.dirname(target_path)
+            if not openfs.exists(dirname):
+                openfs.makedirs(dirname)
+            openfs.upload(target_path, read_file)
 
     def _resource_info_to_dict(self, dir_path, resource_info):
         name = resource_info.name

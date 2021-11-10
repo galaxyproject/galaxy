@@ -67,8 +67,14 @@ class ProvidesAppContext:
         """
 
     @abc.abstractproperty
-    def qualified_url_builder(self) -> Optional[Callable[[str], str]]:
-        """Provide access to fully qualified Galaxy URLs (if available)."""
+    def url_builder(self) -> Optional[Callable[..., str]]:
+        """
+        Provide access to Galaxy URLs (if available).
+
+        :type   qualified:  bool
+        :param  qualified:  if True, the fully qualified URL is returned,
+                            else a relative URL is returned (default False).
+        """
 
     @property
     def security(self) -> IdEncodingHelper:
@@ -207,6 +213,11 @@ class ProvidesUserContext(ProvidesAppContext):
     @property
     def user_is_admin(self) -> bool:
         return self.app.config.is_admin_user(self.user)
+
+    @property
+    def user_is_bootstrap_admin(self) -> bool:
+        """Master key provided so there is no real user"""
+        return not self.anonymous and self.user.bootstrap_admin_user
 
     @property
     def user_can_do_run_as(self) -> bool:

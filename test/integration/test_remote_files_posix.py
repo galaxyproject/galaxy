@@ -16,10 +16,17 @@ class PosixFileSourceIntegrationTestCase(PosixFileSourceSetup, integration_util.
 
     def setUp(self):
         super().setUp()
+        self._write_file_fixtures()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_plugin_config(self):
+        # Default user has required role but not required group, so cannot see plugin
         plugin_config_response = self.galaxy_interactor.get("remote_files/plugins")
+        api_asserts.assert_status_code_is_ok(plugin_config_response)
+        plugins = plugin_config_response.json()
+        assert len(plugins) == 0
+        # Admins can see plugins
+        plugin_config_response = self.galaxy_interactor.get("remote_files/plugins", admin=True)
         api_asserts.assert_status_code_is_ok(plugin_config_response)
         plugins = plugin_config_response.json()
         assert len(plugins) == 1

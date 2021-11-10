@@ -1,4 +1,16 @@
 flake8
 flake8-bugbear
 flake8-import-order
-mypy==0.812
+mypy==0.910
+types-bleach
+types-boto
+types-contextvars
+types-dataclasses
+types-docutils
+types-Markdown
+types-paramiko
+types-pkg-resources
+types-python-dateutil
+types-PyYAML
+types-requests
+types-six

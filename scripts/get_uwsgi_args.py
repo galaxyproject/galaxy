@@ -86,7 +86,7 @@ def _get_uwsgi_args(cliargs, kwargs):
         'pythonpath': 'lib',
         'threads': '4',
         'buffer-size': '16384',  # https://github.com/galaxyproject/galaxy/issues/1530
-        'http': 'localhost:{port}'.format(port=DEFAULT_PORTS[cliargs.app]),
+        'http': f'localhost:{DEFAULT_PORTS[cliargs.app]}',
         'static-map': (f'/static={os.getcwd()}/static',
                        f'/favicon.ico={os.getcwd()}/static/favicon.ico'),
         'die-on-term': True,

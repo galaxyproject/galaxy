@@ -144,7 +144,7 @@ class DatabaseQuotaAgent(QuotaAgent):
         return self._default_quota(self.model.DefaultQuotaAssociation.types.REGISTERED)
 
     def _default_quota(self, default_type):
-        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(self.model.DefaultQuotaAssociation.table.c.type == default_type).first()
+        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(self.model.DefaultQuotaAssociation.type == default_type).first()
         if not dqa:
             return None
         if dqa.quota.bytes < 0:
@@ -161,7 +161,7 @@ class DatabaseQuotaAgent(QuotaAgent):
         for gqa in quota.groups:
             self.sa_session.delete(gqa)
         # Find the old default, assign the new quota if it exists
-        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(self.model.DefaultQuotaAssociation.table.c.type == default_type).first()
+        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(self.model.DefaultQuotaAssociation.type == default_type).first()
         if dqa:
             dqa.quota = quota
         # Or create if necessary

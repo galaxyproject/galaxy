@@ -57,7 +57,7 @@ class GenomesManager:
         ext = index_extensions[index_type]
         index_filename = self._get_index_filename(id, tbl_entries, ext, index_type)
         try:
-            with open(index_filename, mode='r') as f:
+            with open(index_filename) as f:
                 return f.read()
         except OSError:
             raise ReferenceDataError(f'Failed to load index file for {id}')
@@ -67,8 +67,8 @@ class GenomesManager:
             paths = [x[-1] for x in tbl_entries if id in x]
             file_name = paths.pop()
         except TypeError:
-            raise ReferenceDataError('Data tables not found for {index_type}')
+            raise ReferenceDataError(f'Data tables not found for {index_type}')
         except IndexError:
-            raise ReferenceDataError('Data tables not found for {index_type} for {id}')
+            raise ReferenceDataError(f'Data tables not found for {index_type} for {id}')
         else:
             return f"{file_name}{ext}"

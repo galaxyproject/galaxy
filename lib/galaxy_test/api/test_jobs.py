@@ -151,13 +151,11 @@ steps:
         inputs = {
             '0': self.dataset_populator.ds_entry(hdca_id),
         }
-        invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
-        self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, inputs=inputs, assert_ok=True)
         jobs1 = self.__jobs_index(data={"workflow_id": workflow_id})
         jobs2 = self.__jobs_index(data={"invocation_id": invocation_id})
         assert len(jobs1) == len(jobs2) == 1
-        second_invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
-        self.workflow_populator.wait_for_invocation(workflow_id, second_invocation_id)
+        second_invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, inputs=inputs, assert_ok=True)
         workflow_jobs = self.__jobs_index(data={"workflow_id": workflow_id})
         second_invocation_jobs = self.__jobs_index(data={"invocation_id": second_invocation_id})
         assert len(workflow_jobs) == 2
@@ -321,33 +319,40 @@ steps:
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error(self):
         with self.dataset_populator.test_history() as history_id:
+            self._run_error_report(history_id)
+
+    @skip_without_tool('detect_errors_aggressive')
+    def test_report_error_anon(self):
+        with self._different_user(anon=True):
+            history_id = self._get(f"{self.url}/history/current_history_json").json()['id']
+            self._run_error_report(history_id)
+
+    def _run_error_report(self, history_id):
+        payload = self.dataset_populator.run_tool_payload(
+            tool_id='detect_errors_aggressive',
+            inputs={'error_bool': 'true'},
+            history_id=history_id,
+        )
+        run_response = self._post("tools", data=payload).json()
+        job_id = run_response['jobs'][0]["id"]
+        self.dataset_populator.wait_for_job(job_id)
+        dataset_id = run_response['outputs'][0]['id']
+        response = self._post(f'jobs/{job_id}/error',
+                              data={'dataset_id': dataset_id})
+        assert response.status_code == 200, response.text
+
+    @skip_without_tool('detect_errors_aggressive')
+    def test_report_error_bootstrap_admin(self):
+        with self.dataset_populator.test_history() as history_id:
             payload = self.dataset_populator.run_tool_payload(
                 tool_id='detect_errors_aggressive',
                 inputs={'error_bool': 'true'},
                 history_id=history_id,
             )
-            run_response = self._post("tools", data=payload).json()
-            job_id = run_response['jobs'][0]["id"]
-            self.dataset_populator.wait_for_job(job_id)
-            dataset_id = run_response['outputs'][0]['id']
-            response = self._post(f'jobs/{job_id}/error',
-                                  data={'dataset_id': dataset_id})
-            assert response.status_code == 200, response.text
+            run_response = self._post("tools", data=payload, key=self.master_api_key)
+            self._assert_status_code_is(run_response, 400)
 
-    @skip_without_tool('detect_errors_aggressive')
-    def test_report_error_anon(self):
-        # Need to get a cookie and use that for anonymous tool runs
-        cookies = requests.get(self.url).cookies
-        payload = json.dumps({"tool_id": "detect_errors_aggressive",
-                              "inputs": {"error_bool": "true"}})
-        run_response = requests.post(f"{self.galaxy_interactor.api_url}/tools", data=payload, cookies=cookies).json()
-        job_id = run_response['jobs'][0]["id"]
-        dataset_id = run_response['outputs'][0]['id']
-        response = requests.post(f'{self.galaxy_interactor.api_url}/jobs/{job_id}/error',
-                                 data={'email': 'someone@domain.com', 'dataset_id': dataset_id},
-                                 cookies=cookies)
-        assert response.status_code == 200, response.text
-
+    @skip_without_tool("create_2")
     @uses_test_history(require_new=True)
     def test_deleting_output_keep_running_until_all_deleted(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 120)
@@ -371,6 +376,7 @@ steps:
         final_state = wait_on_state(job_state, assert_ok=False, timeout=15)
         assert final_state in ["deleting", "deleted"], final_state
 
+    @skip_without_tool("create_2")
     @uses_test_history(require_new=True)
     def test_purging_output_keep_running_until_all_purged(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 120)
@@ -413,6 +419,7 @@ steps:
         if output_dataset_paths_exist:
             wait_on(paths_deleted, "path deletion")
 
+    @skip_without_tool("create_2")
     @uses_test_history(require_new=True)
     def test_purging_output_cleaned_after_ok_run(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 10)
@@ -458,9 +465,11 @@ steps:
             ),
             history_id=history_id,
         )
-        run_response = self._post("tools", data=payload).json()
-        outputs = run_response["outputs"]
-        jobs = run_response["jobs"]
+        run_response = self._post("tools", data=payload)
+        run_response.raise_for_status()
+        run_object = run_response.json()
+        outputs = run_object["outputs"]
+        jobs = run_object["jobs"]
 
         assert len(outputs) == 2
         assert len(jobs) == 1
@@ -473,10 +482,6 @@ steps:
         time.sleep(2)
         running_state = wait_on_state(job_state, skip_states=["queued", "new"], assert_ok=False, timeout=15)
         assert running_state == "running", running_state
-
-        def job_state():
-            jobs_response = self._get(f"jobs/{jobs[0]['id']}")
-            return jobs_response
 
         return job_state, outputs
 
@@ -523,7 +528,7 @@ steps:
         assert dataset_details['state'] == 'paused'
         # Undelete input dataset
         undelete_response = self._put(f"histories/{history_id}/contents/{hda1['id']}",
-                                      data=json.dumps({'deleted': False}))
+                                      data={'deleted': False}, json=True)
         self._assert_status_code_is(undelete_response, 200)
         resume_response = self._put(f"jobs/{job_id}/resume")
         self._assert_status_code_is(resume_response, 200)
@@ -574,7 +579,7 @@ steps:
         self._job_search(tool_id='identifier_single', history_id=history_id, inputs=inputs)
         dataset_details = self._get(f"histories/{history_id}/contents/{dataset_id}").json()
         dataset_details['name'] = 'Renamed Test Dataset'
-        dataset_update_response = self._put(f"histories/{history_id}/contents/{dataset_id}", data=dict(name='Renamed Test Dataset'))
+        dataset_update_response = self._put(f"histories/{history_id}/contents/{dataset_id}", data=dict(name='Renamed Test Dataset'), json=True)
         self._assert_status_code_is(dataset_update_response, 200)
         assert dataset_update_response.json()['name'] == 'Renamed Test Dataset'
         search_payload = self._search_payload(history_id=history_id, tool_id='identifier_single', inputs=inputs)

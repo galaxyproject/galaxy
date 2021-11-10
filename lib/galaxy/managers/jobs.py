@@ -406,7 +406,8 @@ def view_show_job(trans, job, full: bool) -> typing.Dict:
             job_stderr=job.job_stderr,
             stderr=job.stderr,
             stdout=job.stdout,
-            job_messages=job.job_messages
+            job_messages=job.job_messages,
+            dependencies=job.dependencies
         ))
 
         if is_admin:
@@ -665,12 +666,16 @@ def summarize_job_parameters(trans, job):
                 elif input.type == "data":
                     value = []
                     for element in listify(param_values[input.name]):
-                        if element.history_content_type == "dataset":
+                        encoded_id = trans.security.encode_id(element.id)
+                        if isinstance(element, model.HistoryDatasetAssociation):
                             hda = element
-                            encoded_id = trans.security.encode_id(hda.id)
                             value.append({"src": "hda", "id": encoded_id, "hid": hda.hid, "name": hda.name})
+                        elif isinstance(element, model.DatasetCollectionElement):
+                            value.append({'src': "dce", "id": encoded_id, "name": element.element_identifier})
+                        elif isinstance(element, model.HistoryDatasetCollectionAssociation):
+                            value.append({"src": "hdca", "id": encoded_id, "hid": element.hid, "name": element.name})
                         else:
-                            value.append({"hid": element.hid, "name": element.name})
+                            raise Exception(f"Unhandled data input parameter type encountered {element.__class__.__name__}")
                     rval.append(dict(text=input.label, depth=depth, value=value))
                 elif input.visible:
                     if hasattr(input, "label") and input.label:
@@ -696,22 +701,59 @@ def summarize_job_parameters(trans, job):
     app = trans.app
     toolbox = app.toolbox
     tool = toolbox.get_tool(job.tool_id, job.tool_version)
-    assert tool is not None, 'Requested tool has not been loaded.'
 
     params_objects = None
+    parameters = []
     upgrade_messages = {}
     has_parameter_errors = False
 
     # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
-    try:
-        params_objects = job.get_param_values(app, ignore_errors=False)
-    except Exception:
-        params_objects = job.get_param_values(app, ignore_errors=True)
-        # use different param_objects in the following line, since we want to display original values as much as possible
-        upgrade_messages = tool.check_and_update_param_values(job.get_param_values(app, ignore_errors=True),
-                                                              trans,
-                                                              update_values=False)
+    if tool:
+        try:
+            params_objects = job.get_param_values(app, ignore_errors=False)
+        except Exception:
+            params_objects = job.get_param_values(app, ignore_errors=True)
+            # use different param_objects in the following line, since we want to display original values as much as possible
+            upgrade_messages = tool.check_and_update_param_values(job.get_param_values(app, ignore_errors=True),
+                                                                  trans,
+                                                                  update_values=False)
+            has_parameter_errors = True
+        parameters = inputs_recursive(tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages)
+    else:
         has_parameter_errors = True
 
-    parameters = inputs_recursive(tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages)
-    return {"parameters": parameters, "has_parameter_errors": has_parameter_errors}
+    return {"parameters": parameters, "has_parameter_errors": has_parameter_errors, 'outputs': summarize_job_outputs(job=job, tool=tool, params=params_objects, security=trans.security)}
+
+
+def get_output_name(tool, output, params):
+    try:
+        return tool.tool_action.get_output_name(
+            output,
+            tool=tool,
+            params=params,
+        )
+    except Exception:
+        pass
+
+
+def summarize_job_outputs(job: model.Job, tool, params, security):
+    outputs = defaultdict(list)
+    output_labels = {}
+    possible_outputs = (
+        ('hda', 'dataset_id', job.output_datasets),
+        ('ldda', 'ldda_id', job.output_library_datasets),
+        ('hdca', 'dataset_collection_id', job.output_dataset_collections),
+        ('hdca', 'dataset_collection_id', job.output_dataset_collection_instances),
+    )
+    for src, attribute, output_associations in possible_outputs:
+        for output_association in output_associations:
+            output_name = output_association.name
+            if src == 'hdca' and output_name in outputs:
+                # Is a mapped over output, don't want to display both (for now?)
+                continue
+            if output_name not in output_labels and tool:
+                tool_output = tool.output_collections if src == 'hdca' else tool.outputs
+                output_labels[output_name] = get_output_name(tool=tool, output=tool_output.get(output_name), params=params)
+            label = output_labels.get(output_name)
+            outputs[output_name].append({'label': label, 'value': {'src': src, 'id': security.encode_id(getattr(output_association, attribute))}})
+    return outputs

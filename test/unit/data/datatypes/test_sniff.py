@@ -59,6 +59,7 @@ def test_convert_newlines_non_utf():
     fname = get_test_fname("dosimzml")
     rval = convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), in_place=False)
     new_file = rval[1]
+    assert new_file
     assert open(new_file, "rb").read() == open(get_test_fname("1imzml"), "rb").read()
 
 

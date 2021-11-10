@@ -13,6 +13,11 @@ var Series = window.bundleEntries.chartUtilities.Series;
 var Datasets = window.bundleEntries.chartUtilities.Datasets;
 var Jobs = window.bundleEntries.chartUtilities.Jobs;
 
+/** Get boolean as string */
+function _asBoolean(value) {
+    return String(value).toLowerCase() == "true";
+}
+
 var CommonWrapper = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
@@ -34,13 +39,13 @@ var CommonWrapper = Backbone.View.extend({
                 d3chart.yAxis.axisLabel(chart.settings.get("y_axis_label"));
                 d3chart.options({ showControls: false });
                 if (d3chart.showLegend) {
-                    d3chart.showLegend(chart.settings.get("show_legend") == "true");
+                    d3chart.showLegend(_asBoolean(chart.settings.get("show_legend")));
                 }
                 self._makeAxes(d3chart, groups, chart.settings);
                 if (makeConfig) {
                     makeConfig(d3chart);
                 }
-                if (chart.settings.get("__use_panels") === "true") {
+                if (_asBoolean(chart.settings.get("__use_panels"))) {
                     d3chart.options({ showControls: false });
                 }
                 d3chart.xAxis.showMaxMin(false);
@@ -131,8 +136,8 @@ var PieWrapper = Backbone.View.extend({
                 pie_data.push({ y: value.y, x: value.label });
             });
             nv.addGraph(function() {
-                var legend_visible = chart.settings.get("legend_visible") == "true";
-                var label_outside = chart.settings.get("label|outside") == "true";
+                var legend_visible = _asBoolean(chart.settings.get("legend_visible"));
+                var label_outside = _asBoolean(chart.settings.get("label|outside"));
                 var label_type = chart.settings.get("label|type");
                 var donut_ratio = parseFloat(chart.settings.get("donut_ratio"));
                 var chart_3d = nv.models

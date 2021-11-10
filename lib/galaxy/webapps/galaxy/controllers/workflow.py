@@ -5,7 +5,7 @@ from html.parser import HTMLParser
 from http.client import HTTPConnection
 
 from markupsafe import escape
-from sqlalchemy import and_
+from sqlalchemy import and_, desc
 from sqlalchemy.orm import eagerload, joinedload, lazyload, undefer
 from sqlalchemy.sql import expression
 
@@ -20,7 +20,6 @@ from galaxy.managers.workflows import (
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.model.mapping import desc
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util import (
@@ -724,7 +723,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             'tags': item_tag_names,
             'initialVersion': version,
             'annotation': self.get_item_annotation_str(trans.sa_session, trans.user, stored),
-            'toolbox': trans.app.toolbox.to_dict(trans),
             'moduleSections': module_sections,
             'dataManagers': data_managers,
             'workflows': workflows

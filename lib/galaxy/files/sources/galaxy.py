@@ -16,7 +16,7 @@ class UserFtpFilesSource(PosixFilesSource):
         )
         posix_kwds.update(kwd)
         if "delete_on_realize" not in posix_kwds:
-            file_sources_config = kwd.get("file_sources_config")
+            file_sources_config = kwd["file_sources_config"]
             posix_kwds["delete_on_realize"] = file_sources_config.ftp_upload_purge
         super().__init__(**posix_kwds)
 

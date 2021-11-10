@@ -8,11 +8,11 @@ const newlineMatch = /\r?\n|\r/g;
 const doublespaces = /\s\s+/g;
 
 const localizeDirective = {
+    // TODO consider using a different hook if we need dynamic updates in content translation
     bind(el, binding, vnode) {
         el.childNodes.forEach((node) => {
-            const oneline = node.textContent.replace(newlineMatch, " ");
-            const singleSpaces = oneline.replace(doublespaces, " ");
-            node.textContent = _l(singleSpaces);
+            const standardizedContent = node.textContent.replace(newlineMatch, " ").replace(doublespaces, " ").trim();
+            node.textContent = _l(standardizedContent);
         });
     },
 };

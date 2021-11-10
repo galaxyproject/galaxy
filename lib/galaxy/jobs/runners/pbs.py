@@ -102,8 +102,6 @@ class PBSJobRunner(AsynchronousJobRunner):
 
         # Proceed with general initialization
         super().__init__(app, nworkers)
-        self._init_monitor_thread()
-        self._init_worker_threads()
 
     @property
     def default_pbs_server(self):
@@ -387,7 +385,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                 pbs_job_state.job_wrapper.change_state(model.Job.states.RUNNING)
             if status.job_state == "R" and status.get('resources_used', False):
                 # resources_used may not be in the status for new jobs
-                h, m, s = [int(i) for i in status.resources_used.walltime.split(':')]
+                h, m, s = (int(i) for i in status.resources_used.walltime.split(':'))
                 runtime = timedelta(0, s, 0, 0, m, h)
                 if pbs_job_state.check_limits(runtime=runtime):
                     self.work_queue.put((self.fail_job, pbs_job_state))

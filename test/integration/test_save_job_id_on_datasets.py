@@ -25,12 +25,20 @@ TEST_TOOL_IDS = [
 ]
 
 
-@pytest.mark.parametrize('tool_id', TEST_TOOL_IDS)
-def test_tool_datasets(tool_id):
+@pytest.fixture()
+def test_driver():
     driver = GalaxyTestDriver()
     driver.setup(TestConfig)
-    driver.run_tool_test(tool_id)
-    session = driver.app.model.context.current
+    try:
+        yield driver
+    finally:
+        driver.tear_down()
+
+
+@pytest.mark.parametrize('tool_id', TEST_TOOL_IDS)
+def test_tool_datasets(tool_id, test_driver):
+    test_driver.run_tool_test(tool_id)
+    session = test_driver.app.model.context.current
     job = session.query(model.Job).order_by(model.Job.id.desc()).first()
     datasets = session.query(model.Dataset).filter(model.Dataset.job_id == job.id).all()
 
@@ -38,5 +46,3 @@ def test_tool_datasets(tool_id):
         assert len(datasets) == 1
     elif tool_id in ('color_param', 'multi_output'):
         assert len(datasets) == 2
-
-    driver.tear_down()

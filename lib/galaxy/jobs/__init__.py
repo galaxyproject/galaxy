@@ -24,13 +24,13 @@ import packaging.version
 import yaml
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
-import galaxy
 from galaxy import (
     model,
     util,
 )
 from galaxy.datatypes import sniff
 from galaxy.exceptions import (
+    MessageException,
     ObjectInvalid,
     ObjectNotFound,
 )
@@ -40,7 +40,10 @@ from galaxy.job_execution.datasets import (
     OutputsToWorkingDirectoryPathRewriter,
     TaskPathRewriter
 )
-from galaxy.job_execution.output_collect import collect_extra_files
+from galaxy.job_execution.output_collect import (
+    collect_extra_files,
+    collect_shrinked_content_from_path,
+)
 from galaxy.job_execution.setup import (  # noqa: F401
     create_working_directory_for_job,
     ensure_configs_directory,
@@ -82,6 +85,7 @@ DEFAULT_JOB_SHELL = '/bin/bash'
 DEFAULT_LOCAL_WORKERS = 4
 
 DEFAULT_CLEANUP_JOB = "always"
+VALID_TOOL_CLASSES = ["local", "requires_galaxy"]
 
 
 class JobDestination(Bunch):
@@ -244,10 +248,10 @@ def job_config_xml_to_dict(config, root):
     tools = root.find('tools')
     config_dict['tools'] = []
     if tools is not None:
-        for tool in ConfiguresHandlers._findall_with_required(tools, 'tool'):
+        for tool in tools.findall('tool'):
             # There can be multiple definitions with identical ids, but different params
             tool_mapping_conf = {}
-            for key in ['handler', 'destination', 'id', 'resources']:
+            for key in ['handler', 'destination', 'id', 'resources', 'class']:
                 value = tool.get(key)
                 if value:
                     if key == "destination":
@@ -283,6 +287,7 @@ class JobConfiguration(ConfiguresHandlers):
     handlers: dict
     handler_runner_plugins: Dict[str, str]
     tools: Dict[str, list]
+    tool_classes: Dict[str, list]
     resource_groups: Dict[str, list]
     destinations: Dict[str, tuple]
     resource_parameters: Dict[str, Any]
@@ -317,6 +322,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.destinations = {}
         self.default_destination_id = None
         self.tools = {}
+        self.tool_classes = {}
         self.resource_groups = {}
         self.default_resource_group = None
         self.resource_parameters = {}
@@ -473,9 +479,18 @@ class JobConfiguration(ConfiguresHandlers):
 
         tools = job_config_dict.get('tools', [])
         for tool in tools:
-            tool_id = tool.get('id').lower().rstrip('/')
-            if tool_id not in self.tools:
-                self.tools[tool_id] = list()
+            raw_tool_id = tool.get('id')
+            tool_class = tool.get('class')
+            if raw_tool_id is not None:
+                assert tool_class is None
+                tool_id = raw_tool_id.lower().rstrip('/')
+                if tool_id not in self.tools:
+                    self.tools[tool_id] = list()
+            else:
+                assert tool_class in VALID_TOOL_CLASSES, tool_class
+                if tool_class not in self.tool_classes:
+                    self.tool_classes[tool_class] = list()
+
             params = tool.get("params")
             if params is None:
                 params = {}
@@ -486,7 +501,12 @@ class JobConfiguration(ConfiguresHandlers):
                 tool["params"] = params
             if "environment" in tool:
                 tool["destination"] = tool.pop("environment")
-            self.tools[tool_id].append(JobToolConfiguration(**dict(tool.items())))
+
+            jtc = JobToolConfiguration(**dict(tool.items()))
+            if raw_tool_id:
+                self.tools[tool_id].append(jtc)
+            else:
+                self.tool_classes[tool_class].append(jtc)
 
         types = dict(registered_user_concurrent_jobs=int,
                      anonymous_user_concurrent_jobs=int,
@@ -519,12 +539,12 @@ class JobConfiguration(ConfiguresHandlers):
                 self.limits.__dict__[limit_type] = types.get(limit_type, str)(limit_value)
 
         if self.limits.walltime is not None:
-            h, m, s = [int(v) for v in self.limits.walltime.split(':')]
+            h, m, s = (int(v) for v in self.limits.walltime.split(':'))
             self.limits.walltime_delta = datetime.timedelta(0, s, 0, 0, m, h)
 
         if "raw" in self.limits.total_walltime:
-            h, m, s = [int(v) for v in
-                       self.limits.total_walltime["raw"].split(':')]
+            h, m, s = (int(v) for v in
+                       self.limits.total_walltime["raw"].split(':'))
             self.limits.total_walltime["delta"] = datetime.timedelta(
                 0, s, 0, 0, m, h
             )
@@ -693,7 +713,7 @@ class JobConfiguration(ConfiguresHandlers):
         return JobToolConfiguration(id='_default_', handler=self.default_handler_id, destination=self.default_destination_id)
 
     # Called upon instantiation of a Tool object
-    def get_job_tool_configurations(self, ids):
+    def get_job_tool_configurations(self, ids, tool_classes):
         """
         Get all configured JobToolConfigurations for a tool ID, or, if given
         a list of IDs, the JobToolConfigurations for the first id in ``ids``
@@ -713,6 +733,7 @@ class JobConfiguration(ConfiguresHandlers):
         * Tool config tool id: ``filter_tool``
         """
         rval = []
+        match_found = False
         # listify if ids is a single (string) id
         ids = util.listify(ids)
         for id in ids:
@@ -723,11 +744,16 @@ class JobConfiguration(ConfiguresHandlers):
                 for job_tool_configuration in self.tools[id]:
                     if not job_tool_configuration.params:
                         break
-                else:
-                    rval.append(self.default_job_tool_configuration)
                 rval.extend(self.tools[id])
-                break
-        else:
+                match_found = True
+
+        if not match_found:
+            for tool_class in tool_classes:
+                if tool_class in self.tool_classes:
+                    rval.extend(self.tool_classes[tool_class])
+                    match_found = True
+                    break
+        if not match_found:
             rval.append(self.default_job_tool_configuration)
         return rval
 
@@ -1107,6 +1133,7 @@ class JobWrapper(HasResourceParameters):
         Prepare the job to run by creating the working directory and the
         config files.
         """
+        prepare_timer = util.ExecutionTimer()
         self.sa_session.expunge_all()  # this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
 
         if not os.path.exists(self.working_directory):
@@ -1115,10 +1142,10 @@ class JobWrapper(HasResourceParameters):
         job = self._load_job()
 
         def get_special():
-            special = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=job).first()
-            if not special:
-                special = self.sa_session.query(model.GenomeIndexToolData).filter_by(job=job).first()
-            return special
+            jeha = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=job).first()
+            if jeha:
+                return jeha.fda
+            return self.sa_session.query(model.GenomeIndexToolData).filter_by(job=job).first()
 
         tool_evaluator = self._get_tool_evaluator(job)
         compute_environment = compute_environment or self.default_compute_environment(job)
@@ -1153,6 +1180,7 @@ class JobWrapper(HasResourceParameters):
             self.write_version_cmd = f"{version_string_cmd} > {compute_environment.version_path()} 2>&1"
         else:
             self.write_version_cmd = None
+        log.debug(f"Job wrapper for Job [{job.id}] prepared {prepare_timer}")
         return self.extra_filenames
 
     def _setup_working_directory(self, job=None):
@@ -1610,8 +1638,11 @@ class JobWrapper(HasResourceParameters):
         self.sa_session.expunge_all()
         job = self.get_job()
 
-        def fail():
-            return self.fail(job.info, tool_stdout=tool_stdout, tool_stderr=tool_stderr, exit_code=tool_exit_code, job_stdout=job_stdout, job_stderr=job_stderr)
+        def fail(message=job.info, exception=None):
+            if not isinstance(exception, (AssertionError, MessageException)):
+                # Only attach MessageException and AssertionErrors to job.traceback
+                exception = None
+            return self.fail(message, tool_stdout=tool_stdout, tool_stderr=tool_stderr, exit_code=tool_exit_code, job_stdout=job_stdout, job_stderr=job_stderr, exception=exception)
 
         # TODO: After failing here, consider returning from the function.
         try:
@@ -1629,7 +1660,7 @@ class JobWrapper(HasResourceParameters):
             # the tasks failed. So include the stderr, stdout, and exit code:
             return fail()
 
-        extended_metadata = self.external_output_metadata.extended
+        extended_metadata = self.external_output_metadata.extended and not self.tool.tool_type == 'interactive'
 
         # We collect the stderr from tools that write their stderr to galaxy.json
         tool_provided_metadata = self.get_tool_provided_job_metadata()
@@ -1647,16 +1678,6 @@ class JobWrapper(HasResourceParameters):
             final_job_state = job.states.OK
         else:
             final_job_state = job.states.ERROR
-
-        if self.tool.version_string_cmd:
-            version_filename = self.get_version_string_path()
-            # TODO: Remove in Galaxy 20.XX, for running jobs at GX upgrade
-            if not os.path.exists(version_filename):
-                version_filename = self.get_version_string_path_legacy()
-            if os.path.exists(version_filename):
-                with open(version_filename, 'rb') as fh:
-                    self.version_string = galaxy.util.shrink_and_unicodify(fh.read())
-                os.unlink(version_filename)
 
         outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
         if not extended_metadata and outputs_to_working_directory and not self.__link_file_check():
@@ -1681,55 +1702,54 @@ class JobWrapper(HasResourceParameters):
         if extended_metadata:
             try:
                 import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
-                import_model_store = store.get_import_model_store_for_directory(os.path.join(self.working_directory, 'metadata', 'outputs_populated'), app=self.app, import_options=import_options)
-                import_model_store.perform_import(history=job.history)
+                import_model_store = store.get_import_model_store_for_directory(
+                    os.path.join(self.working_directory, 'metadata', 'outputs_populated'),
+                    app=self.app,
+                    import_options=import_options,
+                    user=job.user,
+                    tag_handler=self.app.tag_handler.create_tag_handler_session(),
+                )
+                import_model_store.perform_import(history=job.history, job=job)
             except Exception:
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
                 raise
-        output_dataset_associations = job.output_datasets + job.output_library_datasets
-        for dataset_assoc in output_dataset_associations:
-            context = self.get_dataset_finish_context(job_context, dataset_assoc)
-            # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
-            # lets not allow this to occur
-            # need to update all associated output hdas, i.e. history was shared with job running
-            for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
-                output_name = dataset_assoc.name
-                standard_job_finish = not extended_metadata
-                if extended_metadata:
-                    if job.states.ERROR == final_job_state:
-                        dataset.blurb = "error"
-                        dataset.mark_unhidden()
+        else:
+            if self.tool.version_string_cmd:
+                version_filename = self.get_version_string_path()
+                self.version_string = collect_shrinked_content_from_path(version_filename)
 
-                if standard_job_finish:
+        output_dataset_associations = job.output_datasets + job.output_library_datasets
+        inp_data, out_data, out_collections = job.io_dicts()
+
+        if not extended_metadata:
+            # importing metadata will discover outputs if extended metadata
+            for dataset_assoc in output_dataset_associations:
+                context = self.get_dataset_finish_context(job_context, dataset_assoc)
+                # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
+                # lets not allow this to occur
+                # need to update all associated output hdas, i.e. history was shared with job running
+                for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
+                    output_name = dataset_assoc.name
+
                     # Handles retry internally on error for instance...
                     self._finish_dataset(
                         output_name, dataset, job, context, final_job_state, remote_metadata_directory
                     )
+                if not final_job_state == job.states.ERROR:
+                    dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
+            self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
 
-        for dataset_assoc in output_dataset_associations:
-            if job.states.ERROR == final_job_state:
+        if job.states.ERROR == final_job_state:
+            for dataset_assoc in output_dataset_associations:
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
                 # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset_assoc.dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
-            else:
-                dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
-
-        # If any of the rest of the finish method below raises an
-        # exception, the fail method will run and set the datasets to
-        # ERROR.  The user will never see that the datasets are in error if
-        # they were flushed as OK here, since upon doing so, the history
-        # panel stops checking for updates.  So allow the
-        # self.sa_session.flush() at the bottom of this method set
-        # the state instead.
 
         for pja in job.post_job_actions:
-            ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job)
-        # Flush all the dataset and job changes above.  Dataset state changes
-        # will now be seen by the user.
-        self.sa_session.flush()
+            ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job, final_job_state=final_job_state)
 
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
@@ -1737,24 +1757,6 @@ class JobWrapper(HasResourceParameters):
         if tool_exit_code is not None:
             job.exit_code = tool_exit_code
         # custom post process setup
-        inp_data, out_data, out_collections = job.io_dicts()
-        if not extended_metadata:
-            # importing metadata will discover outputs if extended metadata
-            # is enabled.
-            self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
-
-        # Certain tools require tasks to be completed after job execution
-        # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
-        param_dict = self.get_param_dict(job)
-        try:
-            self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
-        except Exception:
-            log.exception(f"exec_after_process hook failed for job {self.job_id}")
-            final_job_state = job.states.ERROR
-        # Call 'exec_after_process' hook
-        self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
-                            out_data=out_data, param_dict=param_dict,
-                            tool=self.tool, stdout=job.stdout, stderr=job.stderr)
 
         collected_bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
@@ -1765,6 +1767,22 @@ class JobWrapper(HasResourceParameters):
         if job.user:
             job.user.adjust_total_disk_usage(collected_bytes)
 
+        # Certain tools require tasks to be completed after job execution
+        # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
+        param_dict = self.get_param_dict(job)
+        try:
+            self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
+        except Exception as e:
+            log.exception(f"exec_after_process hook failed for job {self.job_id}")
+            return fail("exec_after_process hook failed", exception=e)
+
+        # Call 'exec_after_process' hook
+        self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
+                            out_data=out_data, param_dict=param_dict,
+                            tool=self.tool, stdout=job.stdout, stderr=job.stderr)
+
+        self._fix_output_permissions()
+
         # Empirically, we need to update job.user and
         # job.workflow_invocation_step.workflow_invocation in separate
         # transactions. Best guess as to why is that the workflow_invocation
@@ -1774,8 +1792,6 @@ class JobWrapper(HasResourceParameters):
         # waits on invocation and the other updates invocation and waits on
         # user).
         self.sa_session.flush()
-
-        self._fix_output_permissions()
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
@@ -2021,10 +2037,14 @@ class JobWrapper(HasResourceParameters):
     @property
     def tmp_dir_creation_statement(self):
         tmp_dir = self.get_destination_configuration("tmp_dir", None)
-        if not tmp_dir or tmp_dir.lower() == "true":
-            working_directory = self.working_directory
-            return '''$([ ! -e '{0}/tmp' ] || mv '{0}/tmp' '{0}'/tmp.$(date +%Y%m%d-%H%M%S) ; mkdir '{0}/tmp'; echo '{0}/tmp')'''.format(working_directory)
-        else:
+        try:
+            if not tmp_dir or util.asbool(tmp_dir):
+                working_directory = self.working_directory
+                return '''$([ ! -e '{0}/tmp' ] || mv '{0}/tmp' '{0}'/tmp.$(date +%Y%m%d-%H%M%S) ; mkdir '{0}/tmp'; echo '{0}/tmp')'''.format(working_directory)
+            else:
+                return tmp_dir
+        except ValueError:
+            # Catch case where tmp_dir is a complex expression and not a boolean value
             return tmp_dir
 
     def home_directory(self):
@@ -2120,6 +2140,7 @@ class JobWrapper(HasResourceParameters):
                                                                         job=job,
                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                         validate_outputs=self.validate_outputs,
+                                                                        link_data_only=self.__link_file_check(),
                                                                         **kwds)
         if resolve_metadata_dependencies:
             metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")

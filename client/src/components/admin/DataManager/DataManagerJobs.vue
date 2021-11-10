@@ -43,7 +43,7 @@
                 <template v-slot:cell(actions)="row">
                     <b-button-group>
                         <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
-                            <span class="fa fa-refresh" />
+                            <span class="fa fa-redo" />
                         </b-button>
                         <b-button
                             v-b-tooltip.hover

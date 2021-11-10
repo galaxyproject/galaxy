@@ -67,7 +67,7 @@ def assert_realizes_as(file_sources, uri, expected, user_context=None):
     file_source_path = file_sources.get_file_source_path(uri)
     with tempfile.NamedTemporaryFile(mode='r') as temp:
         file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
-        with open(temp.name, "r") as f:
+        with open(temp.name) as f:
             realized_contents = f.read()
         if realized_contents != expected:
             message = "Expected to realize contents at [{}] as [{}], instead found [{}]".format(
@@ -90,6 +90,18 @@ def assert_realizes_contains(file_sources, uri, expected, user_context=None):
                 realized_contents,
             )
             raise AssertionError(message)
+
+
+def assert_realizes_throws_exception(file_sources, uri, user_context=None) -> Exception:
+    file_source_path = file_sources.get_file_source_path(uri)
+    exception = None
+    with tempfile.NamedTemporaryFile(mode='r') as temp:
+        try:
+            file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
+        except Exception as e:
+            exception = e
+    assert exception
+    return exception
 
 
 def write_from(file_sources, uri, content, user_context=None):

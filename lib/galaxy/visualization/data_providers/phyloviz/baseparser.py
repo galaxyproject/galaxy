@@ -1,4 +1,5 @@
 import json
+from typing import Any, Dict
 
 
 class Node:
@@ -14,6 +15,8 @@ class Node:
         self.length, self.bootstrap = kwargs.get("length", 0), kwargs.get("bootstrap", None)
         self.events = kwargs.get("events", "")
 
+        self.parent = None
+
         # clean up boot strap values
         if self.bootstrap == -1:
             self.bootstrap = None
@@ -28,7 +31,7 @@ class Node:
     def __str__(self):
         return f"{self.name} id:{str(self.id)}, depth: {str(self.depth)}"
 
-    def toJson(self):
+    def toJson(self) -> Dict[str, Any]:
         """Converts the data in the node to a dict representation of json"""
         thisJson = {
             "name": self.name,
@@ -79,7 +82,7 @@ class PhyloTree:
         self.id += 1
         return Node(nodeName, **kwargs)
 
-    def addRoot(self, root):
+    def addRoot(self, root: Node):
         """Creates a root for phyloTree"""
         assert isinstance(root, Node)
         root.parent = None
@@ -88,7 +91,7 @@ class PhyloTree:
     def generateJsonableDict(self):
         """Changes itself into a dictonary by recurssively calling the tojson on all its nodes. Think of it
         as a dict in an array of dict in an array of dict and so on..."""
-        jsonTree = ""
+        jsonTree: Dict[str, Any]
         if self.root:
             assert isinstance(self.root, Node)
             jsonTree = self.root.toJson()

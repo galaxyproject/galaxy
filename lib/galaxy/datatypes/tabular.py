@@ -18,7 +18,11 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import binary, data, metadata
-from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.binary import _BamOrSam
+from galaxy.datatypes.metadata import (
+    MetadataElement,
+    MetadataParameter,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     get_headers,
@@ -99,7 +103,7 @@ class TabularData(data.Text):
             else:
                 trans.response.set_content_type("text/html")
                 return trans.stream_template_mako("/dataset/large_file.mako",
-                                                  truncated_data=open(dataset.file_name, mode='r').read(max_peek_size),
+                                                  truncated_data=open(dataset.file_name).read(max_peek_size),
                                                   data=dataset)
         else:
             column_names = 'null'
@@ -260,6 +264,7 @@ class TabularData(data.Text):
 @dataproviders.decorators.has_dataproviders
 class Tabular(TabularData):
     """Tab delimited data"""
+    file_ext = "tabular"
 
     def get_column_names(self, first_line=None):
         return None
@@ -434,7 +439,7 @@ class Tabular(TabularData):
 
 class SraManifest(Tabular):
     """A manifest received from the sra_source tool."""
-    ext = 'sra_manifest.tabular'
+    file_ext = 'sra_manifest.tabular'
     data_line_offset = 1
 
     def set_meta(self, dataset, **kwds):
@@ -446,6 +451,8 @@ class SraManifest(Tabular):
 
 
 class Taxonomy(Tabular):
+    file_ext = "taxonomy"
+
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
         super().__init__(**kwd)
@@ -462,12 +469,19 @@ class Taxonomy(Tabular):
 
 @dataproviders.decorators.has_dataproviders
 @build_sniff_from_prefix
-class Sam(Tabular):
+class Sam(Tabular, _BamOrSam):
     edam_format = "format_2573"
     edam_data = "data_0863"
     file_ext = 'sam'
     track_type = "ReadTrack"
     data_sources = {"data": "bam", "index": "bigwig"}
+
+    MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
+    MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
+    MetadataElement(name="read_groups", default=[], desc="Read Groups", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={})
 
     def __init__(self, **kwd):
         """Initialize sam datatype"""
@@ -537,6 +551,26 @@ class Sam(Tabular):
         return False
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+        >>> from galaxy.model import Dataset, set_datatypes_registry
+        >>> from galaxy.model import History, HistoryDatasetAssociation
+        >>> from galaxy.model.mapping import init
+        >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
+        >>> hist = History()
+        >>> sa_session.add(hist)
+        >>> sa_session.flush()
+        >>> set_datatypes_registry(example_datatype_registry_for_sample())
+        >>> fname = get_test_fname( 'sam_with_header.sam' )
+        >>> samds = Dataset(external_filename=fname)
+        >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='sam', create_dataset=True, sa_session=sa_session, dataset=samds))
+        >>> Sam().set_meta(hda)
+        >>> hda.metadata.comment_lines
+        2
+        >>> hda.metadata.reference_names
+        ['ref', 'ref2']
+        """
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
                 comment_lines = 0
@@ -558,6 +592,8 @@ class Sam(Tabular):
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.columns = 12
             dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
+
+            _BamOrSam().set_meta(dataset)
 
     @staticmethod
     def merge(split_files, output_file):
@@ -686,7 +722,7 @@ class Pileup(Tabular):
         >>> fname = get_test_fname( '2.txt' )
         >>> Pileup().sniff( fname )  # 2.txt
         False
-        >>> fname = get_test_fname( '2.tabular' )
+        >>> fname = get_test_fname( 'test_tab2.tabular' )
         >>> Pileup().sniff( fname )
         False
         """
@@ -802,6 +838,7 @@ class Vcf(BaseVcf):
 class VcfGz(BaseVcf, binary.Binary):
     # This class name is a misnomer, should be VcfBgzip
     file_ext = 'vcf_bgzip'
+    file_ext_export_alias = 'vcf.gz'
     compressed = True
     compressed_format = "gzip"
 
@@ -1328,7 +1365,13 @@ class CMAP(TabularData):
     file_ext = "cmap"
 
     def sniff_prefix(self, file_prefix):
-        return file_prefix.startswith('# CMAP File Version:')
+        handle = file_prefix.string_io()
+        for line in handle:
+            if not line.startswith('#'):
+                return False
+            if line.startswith('# CMAP File Version:'):
+                return True
+        return False
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=7, **kwd):
         if dataset.has_data():

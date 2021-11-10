@@ -1,9 +1,50 @@
+from inspect import getfullargspec
+
 import pytest
 
 from galaxy.tool_util.lint import LintContext
-from galaxy.tool_util.linters import inputs
+from galaxy.tool_util.linters import (
+    general,
+    inputs,
+    outputs
+)
+from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
 
+WHITESPACE_IN_VERSIONS_AND_NAMES = """
+<tool name=" BWA Mapper " id="bwa tool" version=" 1.0.1 " is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <requirements>
+        <requirement type="package" version=" 1.2.5 "> bwa </requirement>
+    </requirements>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <inputs>
+        <param name="select_fd_op" type="select">
+            <options from_dataset="xyz"/>
+            <options from_data_table="xyz"/>
+            <option value="x">x</option>
+        </param>
+    </inputs>
+</tool>
+"""
+
+REQUIREMENT_WO_VERSION = """
+<tool name="BWA Mapper" id="bwa_tool" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <requirements>
+        <requirement type="package">bwa</requirement>
+        <requirement type="package" version="1.2.5"></requirement>
+    </requirements>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <inputs>
+        <param name="select_fd_op" type="select">
+            <options from_dataset="xyz"/>
+            <options from_data_table="xyz"/>
+            <option value="x">x</option>
+        </param>
+    </inputs>
+</tool>
+"""
 
 NO_SECTIONS_XML = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
@@ -93,7 +134,109 @@ SELECT_OPTION_DEFINITIONS = """
 </tool>
 """
 
+VALIDATOR_INCOMPATIBILITIES = """
+<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <inputs>
+        <param name="param_name" type="text">
+            <validator type="in_range">TEXT</validator>
+            <validator type="regex" filename="blah"/>
+        </param>
+    </inputs>
+</tool>
+"""
+
+VALIDATOR_CORRECT = """
+<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <inputs>
+        <param name="data_param" type="data" format="data">
+            <validator type="metadata" check="md1,md2" skip="md3,md4" message="cutom validation message" negate="true"/>
+            <validator type="unspecified_build" message="cutom validation message" negate="true"/>
+            <validator type="dataset_ok_validator" message="cutom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="cutom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="cutom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message" negate="true"/>
+        </param>
+        <param name="collection_param" type="collection">
+            <validator type="metadata" check="md1,md2" skip="md3,md4" message="cutom validation message"/>
+            <validator type="unspecified_build" message="cutom validation message"/>
+            <validator type="dataset_ok_validator" message="cutom validation message"/>
+            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="cutom validation message"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="cutom validation message"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message"/>
+        </param>
+        <param name="text_param" type="text">
+            <validator type="regex">reg.xp</validator>
+            <validator type="length" min="0" max="100" message="cutom validation message"/>
+            <validator type="empty_field" message="cutom validation message"/>
+            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message"/>
+            <validator type="expression" message="cutom validation message">somepythonexpression</validator>
+        </param>
+        <param name="select_param" type="select">
+            <options from_data_table="bowtie2_indexes"/>
+            <validator type="no_options" negate="true"/>
+            <validator type="regex" negate="true">reg.xp</validator>
+            <validator type="length" min="0" max="100" message="cutom validation message" negate="true"/>
+            <validator type="empty_field" message="cutom validation message" negate="true"/>
+            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message" negate="true"/>
+            <validator type="expression" message="cutom validation message" negate="true">somepythonexpression</validator>
+        </param>
+        <param name="int_param" type="integer">
+            <validator type="in_range" min="0" max="100" exclude_min="true" exclude_max="true" negate="true"/>
+            <validator type="expression" message="cutom validation message">somepythonexpression</validator>
+        </param>
+    </inputs>
+</tool>
+"""
+
+# check that linter accepts format source for collection elements as means to specify format
+# and that the linter warns if format and format_source are used
+OUTPUTS_COLLECTION_FORMAT_SOURCE = """
+<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <outputs>
+        <collection name="output_collection" type="paired">
+            <data name="forward" format_source="input_readpair" />
+            <data name="reverse" format_source="input_readpair" format="fastq"/>
+        </collection>
+    </outputs>
+</tool>
+"""
+
+# check that linter does not complain about missing format if from_tool_provided_metadata is used
+OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA = """
+<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+    <description>The BWA Mapper</description>
+    <version_command interpreter="python">bwa.py --version</version_command>
+    <outputs>
+        <data name="output">
+            <discover_datasets from_tool_provided_metadata="true"/>
+        </data>
+    </outputs>
+</tool>
+"""
+
 TESTS = [
+    (
+        WHITESPACE_IN_VERSIONS_AND_NAMES, general.lint_general,
+        lambda x:
+            "Tool version contains whitespace, this may cause errors: [ 1.0.1 ]." in x.warn_messages
+            and "Tool name contains whitespace, this may cause errors: [ BWA Mapper ]." in x.warn_messages
+            and "Requirement version contains whitespace, this may cause errors: [ 1.2.5 ]." in x.warn_messages
+            and "Tool ID contains whitespace - this is discouraged: [bwa tool]." in x.warn_messages
+            and len(x.warn_messages) == 4 and len(x.error_messages) == 0
+    ),
+    (
+        REQUIREMENT_WO_VERSION, general.lint_general,
+        lambda x:
+            "Requirement bwa defines no version" in x.warn_messages
+            and "Requirement without name found" in x.error_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 1
+    ),
     (
         NO_SECTIONS_XML, inputs.lint_inputs,
         lambda x:
@@ -142,21 +285,59 @@ TESTS = [
             and "Select parameter [select_fd_fdt] options uses 'from_dataset' and 'from_data_table' attribute." in x.error_messages
             and len(x.warn_messages) == 0 and len(x.error_messages) == 5
     ),
+    (
+        VALIDATOR_INCOMPATIBILITIES, inputs.lint_inputs,
+        lambda x:
+            "Parameter [param_name]: 'in_range' validators are not expected to contain text (found 'TEXT')" in x.warn_messages
+            and "Parameter [param_name]: validator with an incompatible type 'in_range'" in x.error_messages
+            and "Parameter [param_name]: 'in_range' validators need to define the 'min' or 'max' attribute(s)" in x.error_messages
+            and "Parameter [param_name]: attribute 'filename' is incompatible with validator of type 'regex'" in x.error_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 3
+    ),
+    (
+        VALIDATOR_CORRECT, inputs.lint_inputs,
+        lambda x: len(x.warn_messages) == 0 and len(x.error_messages) == 0
+    ),
+    (
+        OUTPUTS_COLLECTION_FORMAT_SOURCE, outputs.lint_output,
+        lambda x:
+            "Tool data output reverse should use either format_source or format/ext" in x.warn_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA, outputs.lint_output,
+        lambda x:
+            len(x.warn_messages) == 0 and len(x.error_messages) == 0
+    ),
 ]
 
 TEST_IDS = [
-    'Lint no sections',
+    'hazardous whitespace',
+    'requirement without version',
+    'lint no sections',
     'lint no when',
     'radio select incompatibilities',
     'select duplicated options',
     'select deprecations',
-    'select option definitions'
+    'select option definitions',
+    'validator imcompatibilities',
+    'validator all correct',
+    'outputs collection static elements with format_source',
+    'outputs discover datatsets with tool provided metadata'
 ]
 
 
 @pytest.mark.parametrize('tool_xml,lint_func,assert_func', TESTS, ids=TEST_IDS)
 def test_tool_xml(tool_xml, lint_func, assert_func):
     lint_ctx = LintContext('all')
-    tree = etree.ElementTree(element=etree.fromstring(tool_xml))
-    lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=tree)
-    assert assert_func(lint_ctx), f"Warnings: {lint_ctx.warn_messages}\nErrors: {lint_ctx.error_messages}"
+    # the general linter gets XMLToolSource and all others
+    # an ElementTree
+    first_arg = getfullargspec(lint_func).args[0]
+    lint_target = etree.ElementTree(element=etree.fromstring(tool_xml))
+    if first_arg != "tool_xml":
+        lint_target = XmlToolSource(lint_target)
+    lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=lint_target)
+    assert assert_func(lint_ctx), (
+        f"Warnings: {lint_ctx.warn_messages}\n"
+        f"Errors: {lint_ctx.error_messages}"
+    )

@@ -140,7 +140,6 @@ class DataManager:
         self.declared_id = elem.get('id')
         self.guid = elem.get('guid')
         path = elem.get('tool_file')
-        self.version = elem.get('version', self.version)
         tool_shed_repository = None
         tool_guid = None
 
@@ -169,6 +168,7 @@ class DataManager:
         self.name = elem.get('name', self.tool.name)
         self.description = elem.get('description', self.tool.description)
         self.undeclared_tables = util.asbool(elem.get('undeclared_tables', self.undeclared_tables))
+        self.version = elem.get('version', self.tool.version)
 
         for data_table_elem in elem.findall('data_table'):
             data_table_name = data_table_elem.get("name")

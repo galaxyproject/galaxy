@@ -109,7 +109,7 @@ class UpdateRepositoryManager:
         Update a tool_shed_repository database record with new information retrieved from the
         Tool Shed.  This happens when updating an installed repository to a new changeset revision.
         """
-        repository.metadata = updated_metadata_dict
+        repository.metadata_ = updated_metadata_dict
         tool_shed_url = get_tool_shed_url_from_tool_shed_registry(self.app, repository.tool_shed)
         clean_dependency_relationships(self.app, updated_metadata_dict, repository, tool_shed_url)
         # Update the repository.changeset_revision column in the database.

@@ -28,21 +28,47 @@ attribute change to a model object.
 import datetime
 import logging
 import re
-from typing import Callable, Dict, List, Optional, Set, Type
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
-import routes
 import sqlalchemy
+from sqlalchemy.orm import Query
 from sqlalchemy.orm.scoping import scoped_session
+from typing_extensions import Protocol
 
 from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
+from galaxy.schema import FilterQueryParams
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import BasicApp, MinimalManagerApp
-from galaxy.util import namedtuple
+from galaxy.web import url_for as gx_url_for
 
 log = logging.getLogger(__name__)
 
-parsed_filter = namedtuple("ParsedFilter", "filter_type filter")
+
+class ParsedFilter(NamedTuple):
+    filter_type: str  # orm_function, function, or orm
+    filter: Any
+
+
+parsed_filter = ParsedFilter
+OrmFilterParserType = Union[None, Dict[str, Any], Callable]
+OrmFilterParsersType = Dict[str, OrmFilterParserType]
+FunctionFilterParserType = Dict[str, Any]
+FunctionFilterParsersType = Dict[str, Any]
 
 
 # ==== accessors from base/controller.py
@@ -93,10 +119,18 @@ def get_class(class_name):
     return item_class
 
 
-def decode_id(app, id):
+def decode_id(app: BasicApp, id: Any):
     # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
     #   resulting in error for valid id
-    return app.security.decode_id(str(id))
+    return decode_with_security(app.security, id)
+
+
+def decode_with_security(security: IdEncodingHelper, id: Any):
+    return security.decode_id(str(id))
+
+
+def encode_with_security(security: IdEncodingHelper, id: Any):
+    return security.encode_id(id)
 
 
 def get_object(trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
@@ -154,7 +188,7 @@ class ModelManager:
     Provides common queries and CRUD operations as a (hopefully) light layer
     over the ORM.
     """
-    model_class: type = object
+    model_class: Type[model._HasTable]
     foreign_key_name: str
     app: BasicApp
 
@@ -164,11 +198,8 @@ class ModelManager:
     def session(self) -> scoped_session:
         return self.app.model.context
 
-    def _session_setattr(self, item, attr, val, fn=None, flush=True):
-        if fn:
-            fn(item, attr, val)
-        else:
-            setattr(item, attr, val)
+    def _session_setattr(self, item: model._HasTable, attr: str, val: Any, flush: bool = True):
+        setattr(item, attr, val)
 
         self.session().add(item)
         if flush:
@@ -176,7 +207,7 @@ class ModelManager:
         return item
 
     # .... query foundation wrapper
-    def query(self, eagerloads=True, **kwargs):
+    def query(self, eagerloads: bool = True, filters=None, order_by=None, limit: Optional[int] = None, offset: Optional[int] = None) -> Query:
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
 
@@ -186,9 +217,9 @@ class ModelManager:
         # joined table loading
         if eagerloads is False:
             query = query.enable_eagerloads(False)
-        return self._filter_and_order_query(query, **kwargs)
+        return self._filter_and_order_query(query, filters=filters, order_by=order_by, limit=limit, offset=offset)
 
-    def _filter_and_order_query(self, query, filters=None, order_by=None, limit=None, offset=None, **kwargs):
+    def _filter_and_order_query(self, query: Query, filters=None, order_by=None, limit: Optional[int] = None, offset: Optional[int] = None) -> Query:
         # TODO: not a lot of functional cohesion here
         query = self._apply_orm_filters(query, filters)
         query = self._apply_order_by(query, order_by)
@@ -196,7 +227,7 @@ class ModelManager:
         return query
 
     # .... filters
-    def _apply_orm_filters(self, query, filters):
+    def _apply_orm_filters(self, query: Query, filters) -> Query:
         """
         Add any filters to the given query.
         """
@@ -219,7 +250,7 @@ class ModelManager:
         return munge_lists(filtersA, filtersB)
 
     # .... order, limit, and offset
-    def _apply_order_by(self, query, order_by):
+    def _apply_order_by(self, query: Query, order_by) -> Query:
         """
         Return the query after adding the order_by clauses.
 
@@ -236,9 +267,9 @@ class ModelManager:
         """
         Returns a tuple of columns for the default order when getting multiple models.
         """
-        return (self.model_class.create_time, )
+        return (self.model_class.table.c.create_time, )
 
-    def _apply_orm_limit_offset(self, query, limit, offset):
+    def _apply_orm_limit_offset(self, query: Query, limit: Optional[int], offset: Optional[int]) -> Query:
         """
         Return the query after applying the given limit and offset (if not None).
         """
@@ -283,12 +314,12 @@ class ModelManager:
             return None
 
     # NOTE: at this layer, all ids are expected to be decoded and in int form
-    def by_id(self, id, **kwargs):
+    def by_id(self, id: int):
         """
         Gets a model by primary id.
         """
-        id_filter = self.model_class.id == id
-        return self.one(filters=id_filter, **kwargs)
+        id_filter = self.model_class.table.c.id == id
+        return self.one(filters=id_filter)
 
     # .... multirow queries
     def list(self, filters=None, order_by=None, limit=None, offset=None, **kwargs):
@@ -319,7 +350,8 @@ class ModelManager:
             a list of filters to be added to the SQL query
         and a list of functional filters to be applied after the SQL query.
         """
-        orm_filters, fn_filters = ([], [])
+        orm_filters: list = []
+        fn_filters: list = []
         if filters is None:
             return (orm_filters, fn_filters)
         if not isinstance(filters, list):
@@ -380,7 +412,7 @@ class ModelManager:
         """
         if not ids:
             return []
-        ids_filter = parsed_filter("orm", self.model_class.id.in_(ids))
+        ids_filter = parsed_filter("orm", self.model_class.table.c.id.in_(ids))
         found = self.list(filters=self._munge_filters(ids_filter, filters), **kwargs)
         # TODO: this does not order by the original 'ids' array
 
@@ -470,9 +502,12 @@ class ModelManager:
     #    return item
 
 
+T = TypeVar('T')
+
+
 # ---- code for classes that use one *main* model manager
 # TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
-class HasAModelManager:
+class HasAModelManager(Generic[T]):
     """
     Mixin used where serializers, deserializers, filter parsers, etc.
     need some functionality around the model they're mainly concerned with
@@ -480,15 +515,17 @@ class HasAModelManager:
     """
 
     #: the class used to create this serializer's generically accessible model_manager
-    model_manager_class: Type[object]
+    model_manager_class: Type[T]  # ideally this would be Type[ModelManager] but HistoryContentsManager cannot be a ModelManager
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
+    app: MinimalManagerApp
 
     def __init__(self, app: MinimalManagerApp, manager=None, **kwargs):
         self._manager = manager
+        self.app = app
 
     @property
-    def manager(self):
+    def manager(self) -> T:
         """Return an appropriate manager if it exists, instantiate if not."""
         # PRECONDITION: assumes self.app is assigned elsewhere
         if not self._manager:
@@ -516,7 +553,13 @@ class SkipAttribute(Exception):
     """
 
 
-class ModelSerializer(HasAModelManager):
+class Serializer(Protocol):
+
+    def __call__(self, item: Any, key: str, **context) -> Any:
+        ...
+
+
+class ModelSerializer(HasAModelManager[T]):
     """
     Turns models into JSONable dicts.
 
@@ -534,7 +577,7 @@ class ModelSerializer(HasAModelManager):
         item_dict = MySerializer.serialize( my_item, keys_to_serialize )
     """
     #: 'service' to use for getting urls - use class var to allow overriding when testing
-    url_for = staticmethod(routes.url_for)
+    url_for = staticmethod(gx_url_for)
     default_view: Optional[str]
     views: Dict[str, List[str]]
 
@@ -543,7 +586,6 @@ class ModelSerializer(HasAModelManager):
         Set up serializer map, any additional serializable keys, and views here.
         """
         super().__init__(app, **kwargs)
-        self.app = app
 
         # a list of valid serializable keys that can use the default (string) serializer
         #   this allows us to: 'mention' the key without adding the default serializer
@@ -551,7 +593,7 @@ class ModelSerializer(HasAModelManager):
         #   that is in neither serializable_keyset or serializers
         self.serializable_keyset: Set[str] = set()
         # a map of dictionary keys to the functions (often lambdas) that create the values for those keys
-        self.serializers: Dict[str, Callable] = {}
+        self.serializers: Dict[str, Serializer] = {}
         # add subclass serializers defined there
         self.add_serializers()
         # update the keyset by the serializers (removing the responsibility from subclasses)
@@ -632,14 +674,14 @@ class ModelSerializer(HasAModelManager):
         return getattr(item, key)
 
     # serializers for common galaxy objects
-    def serialize_date(self, item, key, **context):
+    def serialize_date(self, item: Any, key: str, **context):
         """
         Serialize a date attribute of `item`.
         """
         date = getattr(item, key)
         return date.isoformat() if date is not None else None
 
-    def serialize_id(self, item, key, **context):
+    def serialize_id(self, item: Any, key: str, **context):
         """
         Serialize an id attribute of `item`.
         """
@@ -647,7 +689,7 @@ class ModelSerializer(HasAModelManager):
         # Note: it may not be best to encode the id at this layer
         return self.app.security.encode_id(id) if id is not None else None
 
-    def serialize_type_id(self, item, key, **context):
+    def serialize_type_id(self, item: Any, key: str, **context):
         """
         Serialize an type-id for `item`.
         """
@@ -702,25 +744,114 @@ class ModelSerializer(HasAModelManager):
         return self.views[view][:]
 
 
-class ModelDeserializer(HasAModelManager):
+class ModelValidator:
+    """
+    An object that inspects a dictionary (generally meant to be a set of
+    new/updated values for the model) and raises an error if a value is
+    not acceptable.
+    """
+
+    @staticmethod
+    def matches_type(key: str, val: Any, types: Union[type, Tuple[Union[type, Tuple[Any, ...]], ...]]):
+        """
+        Check `val` against the type (or tuple of types) in `types`.
+
+        :raises exceptions.RequestParameterInvalidException: if not an instance.
+        """
+        if not isinstance(val, types):
+            msg = f'must be a type: {str(types)}'
+            raise exceptions.RequestParameterInvalidException(msg, key=key, val=val)
+        return val
+
+    # validators for primitives and compounds of primitives
+    @staticmethod
+    def basestring(key: str, val: Any) -> str:
+        return ModelValidator.matches_type(key, val, (str,))
+
+    @staticmethod
+    def bool(key: str, val: Any) -> bool:
+        return ModelValidator.matches_type(key, val, bool)
+
+    @staticmethod
+    def nullable_basestring(key: str, val: Any) -> str:
+        """
+        Must be a basestring or None.
+        """
+        return ModelValidator.matches_type(key, val, ((str,), type(None)))
+
+    @staticmethod
+    def int_range(key: str, val: Any, min: Optional[int] = None, max: Optional[int] = None) -> int:
+        """
+        Must be a int between min and max.
+        """
+        val_ = ModelValidator.matches_type(key, val, int)
+        if min is not None and val_ < min:
+            raise exceptions.RequestParameterInvalidException("less than minimum", key=key, val=val_, min=min)
+        if max is not None and val_ > max:
+            raise exceptions.RequestParameterInvalidException("greater than maximum", key=key, val=val_, max=max)
+        return val_
+
+    @staticmethod
+    def basestring_list(key: str, val: Any) -> List[str]:
+        """
+        Must be a list of basestrings.
+        """
+        # TODO: Here's where compound types start becoming a nightmare. Any more or more complex
+        #   and should find a different way.
+        val_ = ModelValidator.matches_type(key, val, list)
+        return [ModelValidator.basestring(key, elem) for elem in val_]
+
+    # validators for Galaxy
+    @staticmethod
+    def genome_build(key: str, val: Any) -> str:
+        """
+        Must be a valid base_string.
+
+        Note: no checking against installation's ref list is done as many
+        data sources consider this an open field.
+        """
+        # TODO: is this correct?
+        if val is None:
+            return '?'
+        # currently, data source sites like UCSC are able to set the genome build to non-local build names
+        # afterwards, attempting to validate the whole model will choke here
+        # for genome_build_shortname, longname in self.app.genome_builds.get_genome_build_names( trans=trans ):
+        #     if val == genome_build_shortname:
+        #         return val
+        # raise exceptions.RequestParameterInvalidException( "invalid reference", key=key, val=val )
+        # IOW: fallback to string validation
+        return ModelValidator.basestring(key, val)
+
+    # def slug( self, item, key, val ):
+    #    """validate slug"""
+    #    pass
+
+
+class Deserializer(Protocol):
+
+    def __call__(self, item: Any, key: Any, val: Any, **kwargs) -> Any:
+        ...
+
+
+class ModelDeserializer(HasAModelManager[T]):
     """
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.
     """
+    validate = ModelValidator()
+    app: MinimalManagerApp
+
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__(self, app: MinimalManagerApp, validator=None, **kwargs):
+    def __init__(self, app: MinimalManagerApp, **kwargs):
         """
         Set up deserializers and validator.
         """
         super().__init__(app, **kwargs)
-        self.app = app
 
-        self.deserializers: Dict[str, Callable] = {}
+        self.deserializers: Dict[str, Deserializer] = {}
         self.deserializable_keyset: Set[str] = set()
         self.add_deserializers()
-        # a sub object that can validate incoming values
-        self.validate = validator or ModelValidator(self.app)
 
     def add_deserializers(self):
         """
@@ -786,89 +917,6 @@ class ModelDeserializer(HasAModelManager):
         return self.default_deserializer(item, key, val, **context)
 
 
-class ModelValidator(HasAModelManager):
-    """
-    An object that inspects a dictionary (generally meant to be a set of
-    new/updated values for the model) and raises an error if a value is
-    not acceptable.
-    """
-
-    def __init__(self, app, *args, **kwargs):
-        super().__init__(app, **kwargs)
-        self.app = app
-
-    def type(self, key, val, types):
-        """
-        Check `val` against the type (or tuple of types) in `types`.
-
-        :raises exceptions.RequestParameterInvalidException: if not an instance.
-        """
-        if not isinstance(val, types):
-            msg = f'must be a type: {str(types)}'
-            raise exceptions.RequestParameterInvalidException(msg, key=key, val=val)
-        return val
-
-    # validators for primitives and compounds of primitives
-    def basestring(self, key, val):
-        return self.type(key, val, (str,))
-
-    def bool(self, key, val):
-        return self.type(key, val, bool)
-
-    def int(self, key, val):
-        return self.type(key, val, int)
-
-    def nullable_basestring(self, key, val):
-        """
-        Must be a basestring or None.
-        """
-        return self.type(key, val, ((str,), type(None)))
-
-    def int_range(self, key, val, min=None, max=None):
-        """
-        Must be a int between min and max.
-        """
-        val = self.type(key, val, int)
-        if min is not None and val < min:
-            raise exceptions.RequestParameterInvalidException("less than minimum", key=key, val=val, min=min)
-        if max is not None and val > max:
-            raise exceptions.RequestParameterInvalidException("greater than maximum", key=key, val=val, max=max)
-        return val
-
-    def basestring_list(self, key, val):
-        """
-        Must be a list of basestrings.
-        """
-        # TODO: Here's where compound types start becoming a nightmare. Any more or more complex
-        #   and should find a different way.
-        val = self.type(key, val, list)
-        return [self.basestring(key, elem) for elem in val]
-
-    # validators for Galaxy
-    def genome_build(self, key, val):
-        """
-        Must be a valid base_string.
-
-        Note: no checking against installation's ref list is done as many
-        data sources consider this an open field.
-        """
-        # TODO: is this correct?
-        if val is None:
-            return '?'
-        # currently, data source sites like UCSC are able to set the genome build to non-local build names
-        # afterwards, attempting to validate the whole model will choke here
-        # for genome_build_shortname, longname in self.app.genome_builds.get_genome_build_names( trans=trans ):
-        #     if val == genome_build_shortname:
-        #         return val
-        # raise exceptions.RequestParameterInvalidException( "invalid reference", key=key, val=val )
-        # IOW: fallback to string validation
-        return self.basestring(key, val)
-
-    # def slug( self, item, key, val ):
-    #    """validate slug"""
-    #    pass
-
-
 # ==== Building query filters based on model data
 class ModelFilterParser(HasAModelManager):
     """
@@ -895,17 +943,16 @@ class ModelFilterParser(HasAModelManager):
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
 
-    model_class: type
+    model_class: Type[model._HasTable]
     parsed_filter = parsed_filter
-    orm_filter_parsers: Dict[str, Dict]
-    fn_filter_parsers: Dict[str, Dict]
+    orm_filter_parsers: OrmFilterParsersType
+    fn_filter_parsers: FunctionFilterParsersType
 
     def __init__(self, app: MinimalManagerApp, **kwargs):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
         super().__init__(app, **kwargs)
-        self.app = app
 
         #: regex for testing/dicing iso8601 date strings, with optional time and ms, but allowing only UTC timezone
         self.date_string_re = re.compile(r'^(\d{4}\-\d{2}\-\d{2})[T| ]{0,1}(\d{2}:\d{2}:\d{2}(?:\.\d{1,6}){0,1}){0,1}Z{0,1}$')
@@ -935,6 +982,49 @@ class ModelFilterParser(HasAModelManager):
             'create_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
             'update_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
         })
+
+    def build_filter_params(
+        self,
+        query_params: FilterQueryParams,
+        filter_attr_key: str = 'q',
+        filter_value_key: str = 'qv',
+        attr_op_split_char: str = '-',
+    ) -> List[Tuple[str, str, str]]:
+        """
+        Builds a list of tuples containing filtering information in the form of (attribute, operator, value).
+        """
+        DEFAULT_OP = 'eq'
+        qdict = query_params.dict(exclude_defaults=True)
+        if filter_attr_key not in qdict:
+            return []
+        # precondition: attrs/value pairs are in-order in the qstring
+        attrs = qdict.get(filter_attr_key)
+        if not isinstance(attrs, list):
+            attrs = [attrs]
+        # ops are strings placed after the attr strings and separated by a split char (e.g. 'create_time-lt')
+        # ops are optional and default to 'eq'
+        reparsed_attrs = []
+        ops = []
+        for attr in attrs:
+            op = DEFAULT_OP
+            if attr_op_split_char in attr:
+                # note: only split the last (e.g. q=community-tags-in&qv=rna yields ( 'community-tags', 'in', 'rna' )
+                attr, op = attr.rsplit(attr_op_split_char, 1)
+            ops.append(op)
+            reparsed_attrs.append(attr)
+        attrs = reparsed_attrs
+
+        values = qdict.get(filter_value_key, [])
+        if not isinstance(values, list):
+            values = [values]
+        # TODO: it may be more helpful to the consumer if we error on incomplete 3-tuples
+        #   (instead of relying on zip to shorten)
+        return list(zip(attrs, ops, values))
+
+    def parse_query_filters(self, query_filters: FilterQueryParams):
+        """Convenience function to parse a FilterQueryParams object into a collection of filtering criteria."""
+        filter_params = self.build_filter_params(query_filters)
+        return self.parse_filters(filter_params)
 
     def parse_filters(self, filter_tuple_list):
         """
@@ -987,7 +1077,7 @@ class ModelFilterParser(HasAModelManager):
         attr_map = self.fn_filter_parsers.get(attr, None)
         if not attr_map:
             return None
-        allowed_ops = attr_map.get('op')
+        allowed_ops = attr_map['op']
         # allowed ops is a map here, op => fn
         filter_fn = allowed_ops.get(op, None)
         if not filter_fn:
@@ -1027,7 +1117,7 @@ class ModelFilterParser(HasAModelManager):
             return None
 
         # op must be allowlisted: contained in the list orm_filter_list[ attr ][ 'op' ]
-        allowed_ops = column_map.get('op')
+        allowed_ops = column_map['op']
         if op not in allowed_ops:
             return None
         op = self._convert_op_string_to_fn(column, op)
@@ -1075,17 +1165,6 @@ class ModelFilterParser(HasAModelManager):
 
     # --- more parsers! yay!
     # TODO: These should go somewhere central - we've got ~6 parser modules/sections now
-    def parse_bool(self, bool_string):
-        """
-        Parse a boolean from a string.
-        """
-        # Be strict here to remove complexity of options (but allow already parsed).
-        if bool_string in ('True', True):
-            return True
-        if bool_string in ('False', False):
-            return False
-        raise ValueError(f"invalid boolean: {str(bool_string)}")
-
     def parse_id_list(self, id_list_string, sep=','):
         """
         Split `id_list_string` at `sep`.
@@ -1123,8 +1202,21 @@ class ModelFilterParser(HasAModelManager):
             return date_string
         raise ValueError('datetime strings must be in the ISO 8601 format and in the UTC')
 
-    def raise_filter_err(self, attr, op, val, msg):
-        raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
+
+def parse_bool(bool_string: Union[str, bool]) -> bool:
+    """
+    Parse a boolean from a string.
+    """
+    # Be strict here to remove complexity of options (but allow already parsed).
+    if bool_string in ('True', True):
+        return True
+    if bool_string in ('False', False):
+        return False
+    raise ValueError(f"invalid boolean: {str(bool_string)}")
+
+
+def raise_filter_err(attr, op, val, msg):
+    raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
 
 
 def is_valid_slug(slug):
@@ -1132,3 +1224,12 @@ def is_valid_slug(slug):
 
     VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
     return VALID_SLUG_RE.match(slug)
+
+
+class SortableManager:
+    """A manager interface for parsing order_by strings into actual 'order by' queries."""
+
+    def parse_order_by(self, order_by_string, default=None):
+        """Return an ORM compatible order_by clause using the given string (i.e.: 'name-dsc,create_time').
+        This must be implemented by the manager."""
+        raise NotImplementedError

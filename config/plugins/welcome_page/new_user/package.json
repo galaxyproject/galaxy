@@ -1,0 +1,33 @@
+{
+  "name": "galaxy_new_user",
+  "version": "1.0.0",
+  "description": "Set of image files and json used to generate Galaxy new user page",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --mode production"
+  },
+  "dependencies": {
+    "fbjs": "^1.0.0",
+    "@galaxyproject/new_user_welcome": "^1.0.6",
+    "underscore": "^1.9.2"
+  },
+  "devDependencies": {
+    "css-loader": "^3.4.2",
+    "copy-webpack-plugin": "^6.0.3",
+    "expose-loader": "^0.7.5",
+    "file-loader": "^5.0.2",
+    "mini-css-extract-plugin": "^0.9.0",
+    "style-loader": "^1.1.3",
+    "webpack": "^4.41.6",
+    "webpack-cli": "^3.3.11"
+  },
+  "resolutions": {
+    "**/underscore": "1.9.2"
+  },
+  "keywords": [
+    "galaxy",
+    "new_user"
+  ],
+  "author": "Alex Ostrovsky",
+  "license": "AFL-3.0"
+}

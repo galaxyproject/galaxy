@@ -21,6 +21,7 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy import model
+from galaxy.exceptions import ObjectNotFound
 from galaxy.jobs import (
     JobDestination,
     JobWrapper,
@@ -63,6 +64,7 @@ class JobHandler(JobHandlerI):
         self.job_stop_queue = JobHandlerStopQueue(app, self.dispatcher)
 
     def start(self):
+        self.dispatcher.start()
         self.job_queue.start()
         self.job_stop_queue.start()
 
@@ -308,7 +310,7 @@ class JobHandlerQueue(Monitors):
                 # With sqlite backends we can run into locked databases occasionally
                 # To avoid that the monitor step locks again we backoff a little longer.
                 self._monitor_sleep(5)
-            self._monitor_sleep(1)
+            self._monitor_sleep(self.app.config.job_handler_monitor_sleep)
 
     def __monitor_step(self):
         """
@@ -1024,6 +1026,10 @@ class DefaultJobDispatcher:
         self.app.job_config.convert_legacy_destinations(self.job_runners)
         log.debug(f"Loaded job runners plugins: {':'.join(self.job_runners.keys())}")
 
+    def start(self):
+        for runner in self.job_runners.values():
+            runner.start()
+
     def __get_runner_name(self, job_wrapper):
         if job_wrapper.can_split():
             runner_name = "tasks"
@@ -1087,6 +1093,10 @@ class DefaultJobDispatcher:
         except KeyError:
             log.error(f'recover(): ({job_wrapper.job_id}) Invalid job runner: {runner_name}')
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
+        except ObjectNotFound:
+            msg = "Could not recover job working directory after Galaxy restart"
+            log.exception(f"recover(): ({job_wrapper.job_id}) {msg}")
+            job_wrapper.fail(msg)
 
     def shutdown(self):
         failures = []

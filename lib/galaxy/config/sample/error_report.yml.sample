@@ -15,7 +15,7 @@
 # verbose/user_submission, but those are not necessary to provide.
 
 # The default Email bug reporter. By default, the standard
-# configuration is taken from your galaxy.ini
+# configuration is taken from your galaxy.yml
 - type: email
   verbose: true
   user_submission: true
@@ -29,10 +29,9 @@
 #   directory: /tmp/reports/
 
 # Submit error reports to sentry. If a sentry_dsn is configured in your
-# galaxy.ini, then Galaxy will submit the job error to Sentry. You may supply a
-# separate DSN for tool reports by supplying a ``custom_dsn`` parameter.
-- type: sentry
-  user_submission: false
+# galaxy.yml, then Galaxy will submit the job error to Sentry.
+# - type: sentry
+#   user_submission: false
 
 # InfluxDB error reporting backend. You will need to `pip install
 # influxdb` in the galaxy virtualenv yourself. This sends well tagged

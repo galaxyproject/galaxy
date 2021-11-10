@@ -1,6 +1,7 @@
 """Integration tests for dependency resolution."""
 import os
 from tempfile import mkdtemp
+from typing import ClassVar
 
 from galaxy_test.base.populators import (
     DatasetPopulator,
@@ -15,6 +16,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
     """Test conda dependency resolution through API."""
 
     framework_tool_and_types = True
+    conda_tmp_prefix: ClassVar[str]
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -43,11 +45,15 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         self._assert_dependency_type(response)
+        # Verify GET request
+        create_response = self._get("dependency_resolvers/dependency", data=data, admin=True)
+        self._assert_status_code_is(create_response, 200)
+        response = create_response.json()
+        self._assert_dependency_type(response)
 
     def test_dependency_install_not_exact(self):
         """
         Test installation of gnuplot with a version that does not exist.
-        Sh
         """
         data = GNUPLOT.copy()
         data['version'] = '4.9999'
@@ -55,17 +61,11 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         self._assert_dependency_type(response, exact=False)
-
-    def test_dependency_status_installed_exact(self):
-        """
-        GET request to dependency_resolvers/dependency with GNUPLOT dependency.
-        Should be installed through conda (response['dependency_type'] == 'conda').
-        """
-        data = GNUPLOT
+        # Verify GET request
         create_response = self._get("dependency_resolvers/dependency", data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
-        self._assert_dependency_type(response)
+        self._assert_dependency_type(response, exact=False)
 
     def test_legacy_r_mapping(self):
         """
@@ -85,19 +85,6 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         create_response = self._post("tools", data=payload)
         self._assert_status_code_is(create_response, 200)
         dataset_populator.wait_for_history(history_id, assert_ok=True)
-
-    def test_dependency_status_installed_not_exact(self):
-        """
-        GET request to dependency_resolvers/dependency with GNUPLOT dependency.
-        Should be installed through conda (response['dependency_type'] == 'conda'),
-        but version 4.9999 does not exist.
-        """
-        data = GNUPLOT.copy()
-        data['version'] = '4.9999'
-        create_response = self._get("dependency_resolvers/dependency", data=data, admin=True)
-        self._assert_status_code_is(create_response, 200)
-        response = create_response.json()
-        self._assert_dependency_type(response, exact=False)
 
     def test_conda_install_through_tools_api(self):
         tool_id = 'mulled_example_multi_1'

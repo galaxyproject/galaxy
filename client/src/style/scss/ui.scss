@@ -38,6 +38,13 @@ $ui-margin-horizontal: $margin-h;
 $ui-margin-horizontal-small: $margin-h * 0.5;
 $ui-margin-horizontal-large: $margin-v * 2;
 
+.ui-autocomplete {
+    max-height: 9.5rem;
+    position: fixed;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 .ui-modal {
     display: none;
     overflow: auto;
@@ -125,13 +132,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
     .ui-form-title {
         word-wrap: break-word;
         font-weight: bold;
-        .ui-form-collapsible {
-            .icon {
-                cursor: pointer;
-                font-size: 1.2em;
-                position: relative;
-                top: 1px;
-            }
+        .icon {
+            cursor: pointer;
+            font-size: 1.2em;
         }
     }
     .ui-form-field {
@@ -203,6 +206,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
         .portlet-operations {
             button {
                 @extend .ml-1;
+                @extend .py-0;
             }
         }
     }
@@ -220,12 +224,11 @@ $ui-margin-horizontal-large: $margin-v * 2;
         display: none;
         z-index: 10;
         position: absolute;
+        opacity: 0;
         top: 0px;
         width: 100%;
         height: 100%;
-        opacity: 0.2;
-        background: $white;
-        cursor: not-allowed;
+        cursor: wait;
     }
 }
 
@@ -236,14 +239,13 @@ $ui-margin-horizontal-large: $margin-v * 2;
     border-left: solid 3px $portlet-bg-color;
     border-radius: $border-radius-large;
     .portlet-header:first-child {
-        background: $portlet-bg-color;
         @extend .rounded-0;
+        @extend .p-2;
+        background: $portlet-bg-color;
         border-top-right-radius: $border-radius-large !important;
-        padding: 5px;
     }
     > .portlet-content {
         @extend .pl-2;
-        @extend .pr-0;
     }
 }
 

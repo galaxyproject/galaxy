@@ -19,7 +19,12 @@ import BootstrapVue from "bootstrap-vue";
 Vue.use(BootstrapVue);
 
 export default {
-    props: ["installed", "status"],
+    props: {
+        status: {
+            type: String,
+            default: null,
+        },
+    },
     data() {
         return {
             buttonClass: "btn-sm text-nowrap",

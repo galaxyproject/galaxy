@@ -106,7 +106,6 @@ class Forms(BaseUIController):
             fd_types = sorted(trans.app.model.FormDefinition.types.__members__.items())
             return {
                 'title': 'Create new form',
-                'submit_title': 'Create',
                 'inputs': [{
                     'name': 'name',
                     'label': 'Name'

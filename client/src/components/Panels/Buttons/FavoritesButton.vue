@@ -14,6 +14,7 @@
 </template>
 
 <script>
+import _l from "utils/localization";
 import { VBTooltip } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -34,7 +35,7 @@ export default {
     data() {
         return {
             searchKey: "#favorites",
-            tooltipToggle: "Show favorites",
+            tooltipToggle: _l("Show favorites"),
             tooltipUntoggle: "Clear",
             toggle: false,
         };

@@ -1,6 +1,5 @@
 from markupsafe import escape
 from sqlalchemy import (
-    and_,
     desc,
     false,
     true
@@ -444,46 +443,6 @@ class PageController(BaseUIController, SharableMixin,
         Render the main page editor interface.
         """
         return trans.fill_template("page/editor.mako", id=id)
-
-    @web.expose
-    @web.require_login("use Galaxy pages")
-    def share(self, trans, id, email="", use_panels=False):
-        """ Handle sharing with an individual user. """
-        msg = mtype = None
-        page = trans.sa_session.query(model.Page).get(self.decode_id(id))
-        if email:
-            other = trans.sa_session.query(model.User) \
-                                    .filter(and_(model.User.table.c.email == email,
-                                                 model.User.table.c.deleted == false())) \
-                                    .first()
-            if not other:
-                mtype = "error"
-                msg = f"User '{escape(email)}' does not exist"
-            elif other == trans.get_user():
-                mtype = "error"
-                msg = ("You cannot share a page with yourself")
-            elif trans.sa_session.query(model.PageUserShareAssociation) \
-                    .filter_by(user=other, page=page).count() > 0:
-                mtype = "error"
-                msg = f"Page already shared with '{escape(email)}'"
-            else:
-                share = model.PageUserShareAssociation()
-                share.page = page
-                share.user = other
-                session = trans.sa_session
-                session.add(share)
-                self.slug_builder.create_item_slug(session, page)
-                session.flush()
-                page_title = escape(page.title)
-                other_email = escape(other.email)
-                trans.set_message(f"Page '{page_title}' shared with user '{other_email}'")
-                return trans.response.send_redirect(url_for(f"/pages/sharing?id={id}"))
-        return trans.fill_template("/ind_share_base.mako",
-                                   message=msg,
-                                   messagetype=mtype,
-                                   item=page,
-                                   email=email,
-                                   use_panels=use_panels)
 
     @web.expose
     @web.require_login()

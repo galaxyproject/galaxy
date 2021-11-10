@@ -86,7 +86,12 @@ def build_engine(url, engine_options, database_query_profiling_proxy=False, trac
                 except AttributeError:
                     pass
 
+    # Set check_same_thread to False for sqlite, handled by request-specific session
+    # See https://fastapi.tiangolo.com/tutorial/sql-databases/#note
+    connect_args = {}
+    if 'sqlite://' in url:
+        connect_args['check_same_thread'] = False
     # Create the database engine
-    engine = create_engine(url, **engine_options)
+    engine = create_engine(url, connect_args=connect_args, **engine_options)
     register_after_fork(engine, lambda e: e.dispose())
     return engine

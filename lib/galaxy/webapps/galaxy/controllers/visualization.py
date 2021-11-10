@@ -9,7 +9,6 @@ from paste.httpexceptions import (
     HTTPNotFound
 )
 from sqlalchemy import (
-    and_,
     desc,
     false,
     or_,
@@ -19,14 +18,12 @@ from sqlalchemy import (
 from sqlalchemy.orm import eagerload, undefer
 
 from galaxy import model, util, web
-from galaxy.datatypes.interval import Bed
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.structured_app import StructuredApp
 from galaxy.util import sanitize_text, unicodify
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.visualization.data_providers.genome import RawBedDataProvider
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genomes import GenomeRegion
@@ -413,46 +410,6 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             return trans.show_ok_message(
                 message="""Visualization "%s" has been imported. <br>You can <a href="%s">start using this visualization</a> or %s."""
                 % (visualization.title, web.url_for('/visualizations/list'), referer_message), use_panels=True)
-
-    @web.expose
-    @web.require_login("share Galaxy visualizations")
-    def share(self, trans, id=None, email="", use_panels=False):
-        """ Handle sharing a visualization with a particular user. """
-        msg = mtype = None
-        visualization = self.get_visualization(trans, id, check_ownership=True)
-        if email:
-            other = trans.sa_session.query(model.User) \
-                                    .filter(and_(model.User.table.c.email == email,
-                                                 model.User.table.c.deleted == false())) \
-                                    .first()
-            if not other:
-                mtype = "error"
-                msg = f"User '{escape(email)}' does not exist"
-            elif other == trans.get_user():
-                mtype = "error"
-                msg = ("You cannot share a visualization with yourself")
-            elif trans.sa_session.query(model.VisualizationUserShareAssociation) \
-                    .filter_by(user=other, visualization=visualization).count() > 0:
-                mtype = "error"
-                msg = f"Visualization already shared with '{escape(email)}'"
-            else:
-                share = model.VisualizationUserShareAssociation()
-                share.visualization = visualization
-                share.user = other
-                session = trans.sa_session
-                session.add(share)
-                self.slug_builder.create_item_slug(session, visualization)
-                session.flush()
-                viz_title = escape(visualization.title)
-                other_email = escape(other.email)
-                trans.set_message(f"Visualization '{viz_title}' shared with user '{other_email}'")
-                return trans.response.send_redirect(web.url_for(f"/visualizations/sharing?id={id}"))
-        return trans.fill_template("/ind_share_base.mako",
-                                   message=msg,
-                                   messagetype=mtype,
-                                   item=visualization,
-                                   email=email,
-                                   use_panels=use_panels)
 
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug):
@@ -920,26 +877,3 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         if len(args) > 0:
             nargs += args
         return os.path.join(*nargs)
-
-    @web.json
-    def bookmarks_from_dataset(self, trans, hda_id=None, ldda_id=None):
-        if hda_id:
-            hda_ldda = "hda"
-            dataset_id = hda_id
-        elif ldda_id:
-            hda_ldda = "ldda"
-            dataset_id = ldda_id
-        dataset = self.get_hda_or_ldda(trans, hda_ldda, dataset_id)
-
-        rows = []
-        if isinstance(dataset.datatype, Bed):
-            data = RawBedDataProvider(original_dataset=dataset).get_iterator()
-            for i, line in enumerate(data):
-                if (i > 500):
-                    break
-                fields = line.split()
-                location = name = f"{fields[0]}:{fields[1]}-{fields[2]}"
-                if len(fields) > 3:
-                    name = fields[4]
-                rows.append([location, name])
-        return {'data': rows}

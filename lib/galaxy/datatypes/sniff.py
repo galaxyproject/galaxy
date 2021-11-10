@@ -3,7 +3,6 @@ File format detector
 """
 
 import bz2
-import codecs
 import gzip
 import io
 import logging
@@ -15,15 +14,17 @@ import sys
 import tempfile
 import urllib.request
 import zipfile
+from typing import Callable, Dict, IO, NamedTuple, Optional
+
+from typing_extensions import Protocol
 
 from galaxy import util
-from galaxy.util import compression_utils
+from galaxy.files import ConfiguredFileSources
+from galaxy.util import compression_utils, stream_to_open_named_file
 from galaxy.util.checkers import (
     check_binary,
-    check_bz2,
-    check_gzip,
     check_html,
-    check_zip,
+    COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
 
@@ -47,7 +48,7 @@ def sniff_with_cls(cls, fname):
         return False
 
 
-def stream_url_to_file(path, file_sources=None):
+def stream_url_to_file(path: str, file_sources: Optional[ConfiguredFileSources] = None):
     prefix = "url_paste"
     if file_sources and file_sources.looks_like_uri(path):
         file_source_path = file_sources.get_file_source_path(path)
@@ -56,41 +57,9 @@ def stream_url_to_file(path, file_sources=None):
         file_source_path.file_source.realize_to(file_source_path.path, temp_name)
         return temp_name
     else:
-        page = urllib.request.urlopen(path)  # page will be .close()ed in stream_to_file
+        page = urllib.request.urlopen(path, timeout=util.DEFAULT_SOCKET_TIMEOUT)  # page will be .close()ed in stream_to_file
         temp_name = stream_to_file(page, prefix=prefix, source_encoding=util.get_charset_from_http_headers(page.headers))
         return temp_name
-
-
-def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):
-    """Writes a stream to the provided file descriptor, returns the file name. Closes file descriptor"""
-    # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
-    CHUNK_SIZE = 1048576
-    try:
-        codecs.lookup(target_encoding)
-    except Exception:
-        target_encoding = util.DEFAULT_ENCODING  # utf-8
-    use_source_encoding = source_encoding is not None
-    while True:
-        chunk = stream.read(CHUNK_SIZE)
-        if not chunk:
-            break
-        if use_source_encoding:
-            # If a source encoding is given we use it to convert to the target encoding
-            try:
-                if not isinstance(chunk, str):
-                    chunk = chunk.decode(source_encoding, source_error)
-                os.write(fd, chunk.encode(target_encoding, target_error))
-            except UnicodeDecodeError:
-                use_source_encoding = False
-                os.write(fd, chunk)
-        else:
-            # Compressed files must be encoded after they are uncompressed in the upload utility,
-            # while binary files should not be encoded at all.
-            if isinstance(chunk, str):
-                chunk = chunk.encode(target_encoding, target_error)
-            os.write(fd, chunk)
-    os.close(fd)
-    return filename
 
 
 def stream_to_file(stream, suffix='', prefix='', dir=None, text=False, **kwd):
@@ -114,7 +83,7 @@ def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_
         datatype.groom_dataset_content(file_output_path)
 
 
-def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", block_size=128 * 1024, regexp=None):
+def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024, regexp=None):
     """
     Converts in place a file from universal line endings
     to Posix line endings.
@@ -151,17 +120,9 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
         return (i, fp.name)
 
 
-def convert_newlines_sep2tabs(fname, in_place=True, patt=br"[^\S\n]+", tmp_dir=None, tmp_prefix="gxupload"):
+def convert_newlines_sep2tabs(fname: str, in_place: bool = True, patt: bytes = br"[^\S\n]+", tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"):
     """
     Converts newlines in a file to posix newlines and replaces spaces with tabs.
-
-    >>> fname = get_test_fname('temp.txt')
-    >>> with open(fname, 'wt') as fh:
-    ...     _ = fh.write(u"1 2\\r3 4")
-    >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
-    (2, None)
-    >>> open(fname).read()
-    '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile(patt)
     return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
@@ -303,7 +264,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('2.txt')
     >>> guess_ext(fname, sniff_order)
     'txt'
-    >>> fname = get_test_fname('2.tabular')
+    >>> fname = get_test_fname('test_tab2.tabular')
     >>> guess_ext(fname, sniff_order)
     'tabular'
     >>> fname = get_test_fname('3.txt')
@@ -651,16 +612,23 @@ def disable_parent_class_sniffing(klass):
     return klass
 
 
+class HandleCompressedFileResponse(NamedTuple):
+    is_valid: bool
+    ext: str
+    uncompressed_path: str
+    compressed_type: Optional[str]
+
+
 def handle_compressed_file(
-        filename,
+        filename: str,
         datatypes_registry,
-        ext='auto',
-        tmp_prefix='sniff_uncompress_',
-        tmp_dir=None,
-        in_place=False,
-        check_content=True,
-        auto_decompress=True,
-):
+        ext: str = 'auto',
+        tmp_prefix: Optional[str] = 'sniff_uncompress_',
+        tmp_dir: Optional[str] = None,
+        in_place: bool = False,
+        check_content: bool = True,
+        auto_decompress: bool = True,
+) -> HandleCompressedFileResponse:
     """
     Check uploaded files for compression, check compressed file contents, and uncompress if necessary.
 
@@ -681,7 +649,7 @@ def handle_compressed_file(
     compressed_type = None
     keep_compressed = False
     is_valid = False
-    uncompressed = filename
+    uncompressed_path = filename
     tmp_dir = tmp_dir or os.path.dirname(filename)
     for key, check_compressed_function in COMPRESSION_CHECK_FUNCTIONS:
         is_compressed, is_valid = check_compressed_function(filename, check_content=check_content)
@@ -701,6 +669,7 @@ def handle_compressed_file(
             keep_compressed = getattr(datatype, 'compressed', False)
     # don't waste time decompressing if we sniff invalid contents
     if is_compressed and is_valid and auto_decompress and not keep_compressed:
+        assert compressed_type  # Tell type checker is_compressed will only be true if compressed_type is also set.
         with tempfile.NamedTemporaryFile(prefix=tmp_prefix, dir=tmp_dir, delete=False) as uncompressed:
             compressed_file = DECOMPRESSION_FUNCTIONS[compressed_type](filename)
             # TODO: it'd be ideal to convert to posix newlines and space-to-tab here as well
@@ -714,36 +683,42 @@ def handle_compressed_file(
                 if not chunk:
                     break
                 uncompressed.write(chunk)
-        uncompressed = uncompressed.name
+        uncompressed_path = uncompressed.name
         compressed_file.close()
         if in_place:
             # Replace the compressed file with the uncompressed file
-            shutil.move(uncompressed, filename)
-            uncompressed = filename
+            shutil.move(uncompressed_path, filename)
+            uncompressed_path = filename
     elif not is_compressed or not check_content:
         is_valid = True
-    return is_valid, ext, uncompressed, compressed_type
+    return HandleCompressedFileResponse(is_valid, ext, uncompressed_path, compressed_type)
 
 
-def handle_uploaded_dataset_file(*args, **kwds):
+def handle_uploaded_dataset_file(*args, **kwds) -> str:
     """Legacy wrapper about handle_uploaded_dataset_file_internal for tools using it."""
     return handle_uploaded_dataset_file_internal(*args, **kwds)[0]
 
 
+class HandleUploadedDatasetFileInternalResponse(NamedTuple):
+    ext: str
+    converted_path: str
+    compressed_type: Optional[str]
+
+
 def handle_uploaded_dataset_file_internal(
-        filename,
+        filename: str,
         datatypes_registry,
-        ext='auto',
-        tmp_prefix='sniff_upload_',
-        tmp_dir=None,
-        in_place=False,
-        check_content=True,
-        is_binary=None,
-        auto_decompress=True,
-        uploaded_file_ext=None,
-        convert_to_posix_lines=None,
-        convert_spaces_to_tabs=None,
-):
+        ext: str = 'auto',
+        tmp_prefix: Optional[str] = 'sniff_upload_',
+        tmp_dir: Optional[str] = None,
+        in_place: bool = False,
+        check_content: bool = True,
+        is_binary: Optional[bool] = None,
+        auto_decompress: bool = True,
+        uploaded_file_ext: Optional[str] = None,
+        convert_to_posix_lines: Optional[bool] = None,
+        convert_spaces_to_tabs: Optional[bool] = None,
+) -> HandleUploadedDatasetFileInternalResponse:
     is_valid, ext, converted_path, compressed_type = handle_compressed_file(
         filename,
         datatypes_registry,
@@ -773,6 +748,7 @@ def handle_uploaded_dataset_file_internal(
 
         if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
+            convert_fxn: Callable
             if convert_spaces_to_tabs:
                 convert_fxn = convert_newlines_sep2tabs
             else:
@@ -793,12 +769,19 @@ def handle_uploaded_dataset_file_internal(
         if filename != converted_path:
             os.unlink(converted_path)
         raise
-    return ext, converted_path, compressed_type
+    return HandleUploadedDatasetFileInternalResponse(ext, converted_path, compressed_type)
 
 
 AUTO_DETECT_EXTENSIONS = ['auto']  # should 'data' also cause auto detect?
-DECOMPRESSION_FUNCTIONS = dict(gz=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
-COMPRESSION_CHECK_FUNCTIONS = [('gz', check_gzip), ('bz2', check_bz2), ('zip', check_zip)]
+
+
+class Decompress(Protocol):
+
+    def __call__(self, path: str) -> IO[bytes]:
+        ...
+
+
+DECOMPRESSION_FUNCTIONS: Dict[str, Decompress] = dict(gz=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
 
 
 class InappropriateDatasetContentError(Exception):

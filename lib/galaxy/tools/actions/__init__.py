@@ -84,8 +84,6 @@ class DefaultToolAction:
                 if formats is None:
                     formats = input.formats
 
-                # Need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
-                trans.sa_session.refresh(data)
                 direct_match, target_ext, converted_dataset = data.find_conversion_destination(formats)
                 if not direct_match and target_ext:
                     if converted_dataset:
@@ -192,7 +190,7 @@ class DefaultToolAction:
                             processed_dataset_dict[v] = processed_dataset
                     input_datasets[prefix + input.name + str(i + 1)] = processed_dataset or v
                 if conversion_required:
-                    collection_type_description = trans.app.dataset_collections_service.collection_type_descriptions.for_collection_type(collection.collection_type)
+                    collection_type_description = trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(collection.collection_type)
                     collection_builder = CollectionBuilder(collection_type_description)
                     collection_builder.replace_elements_in_collection(
                         template_collection=collection,
@@ -260,23 +258,24 @@ class DefaultToolAction:
         # Collect any input datasets from the incoming parameters
         inp_data, all_permissions = self._collect_input_datasets(tool, incoming, trans, history=history, current_user_roles=current_user_roles, collection_info=collection_info)
 
-        # grap tags from incoming HDAs
         preserved_tags = {}
+        preserved_hdca_tags = {}
+        # grab tags from incoming HDAs
         for data in inp_data.values():
             if not data:
                 continue
             for tag in data.auto_propagated_tags:
                 preserved_tags[tag.value] = tag
-
-        # grap tags from incoming HDCAs
+        # grab tags from incoming HDCAs
         for collection_pairs in inp_dataset_collections.values():
             for collection, _ in collection_pairs:
                 # if sub-collection mapping, this will be an DC not an HDCA
                 # (e.g. part of collection not a collection instance) and thus won't have tags.
                 if hasattr(collection, "tags"):
                     for tag in collection.auto_propagated_tags:
-                        preserved_tags[tag.value] = tag
-        return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
+                        preserved_hdca_tags[tag.value] = tag
+        preserved_tags.update(preserved_hdca_tags)
+        return history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions
 
     def execute(self,
                 tool,
@@ -306,7 +305,7 @@ class DefaultToolAction:
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
+        history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
 
@@ -370,6 +369,7 @@ class DefaultToolAction:
             params=wrapped_params.params,
             job_params=job_params,
             tags=preserved_tags,
+            hdca_tags=preserved_hdca_tags,
         )
 
         # Keep track of parent / child relationships, we'll create all the
@@ -472,7 +472,7 @@ class DefaultToolAction:
                     if completed_job and dataset_collection_elements and name in dataset_collection_elements:
                         # Output collection is mapped over and has already been copied from original job
                         continue
-                    collections_manager = app.dataset_collections_service
+                    collections_manager = app.dataset_collection_manager
                     element_identifiers = []
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
                     # Just to echo TODO elsewhere - this should be restructured to allow
@@ -537,6 +537,7 @@ class DefaultToolAction:
         for name, data in out_data.items():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 history.stage_addition(data)
+        history.add_pending_items(set_output_hid=set_output_hid)
 
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
@@ -558,13 +559,16 @@ class DefaultToolAction:
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)
-        # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
+        # Remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
-            # We need a flush here and get hids in order to rewrite jobs parameter,
-            # but remapping jobs should only affect single jobs anyway, so this is not too costly.
-            history.add_pending_items(set_output_hid=set_output_hid)
-            trans.sa_session.flush()
+            # Need to flush here so that referencing outputs by id works
+            session = trans.sa_session()
+            try:
+                session.expire_on_commit = False
+                session.flush()
+            finally:
+                session.expire_on_commit = True
             self._remap_job_on_rerun(trans=trans,
                                      galaxy_session=galaxy_session,
                                      rerun_remap_job_id=rerun_remap_job_id,
@@ -595,14 +599,10 @@ class DefaultToolAction:
         else:
             if flush_job:
                 # Set HID and add to history.
-                history.add_pending_items(set_output_hid=set_output_hid)
                 job_flush_timer = ExecutionTimer()
                 trans.sa_session.flush()
                 log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
 
-                # Dispatch to a job handler. enqueue() is responsible for flushing the job
-                app.job_manager.enqueue(job, tool=tool)
-                trans.log_event(f"Added job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
             return job, out_data, history
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
@@ -658,6 +658,9 @@ class DefaultToolAction:
                     for job in hdca.implicit_collection_jobs.jobs:
                         if job.job_id == old_job.id:
                             job.job_id = current_job.id
+            for jtoidca in old_job.output_dataset_collections:
+                jtoidca.dataset_collection.replace_failed_elements(remapped_hdas)
+            current_job.hide_outputs(flush=False)
         except Exception:
             log.exception('Cannot remap rerun dependencies.')
 
@@ -772,7 +775,7 @@ class DefaultToolAction:
             # TODO: figure out why can't pass dataset_id here.
             job.add_input_dataset(name, dataset=dataset)
 
-    def get_output_name(self, output, dataset, tool, on_text, trans, incoming, history, params, job_params):
+    def get_output_name(self, output, dataset=None, tool=None, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None):
         if output.label:
             params['tool'] = tool
             params['on_string'] = on_text
@@ -813,8 +816,9 @@ class OutputCollections:
     parameter).
     """
 
-    def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags):
+    def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags, hdca_tags):
         self.trans = trans
+        self.tag_handler = trans.app.tag_handler.create_tag_handler_session()
         self.history = history
         self.tool = tool
         self.tool_action = tool_action
@@ -826,11 +830,12 @@ class OutputCollections:
         self.job_params = job_params
         self.out_collections = {}
         self.out_collection_instances = {}
-        self.tags = tags
+        self.tags = tags  # all inherited tags
+        self.hdca_tags = hdca_tags  # only tags inherited from input HDCAs
 
-    def create_collection(self, output, name, collection_type=None, completed_job=None, **element_kwds):
+    def create_collection(self, output, name, collection_type=None, completed_job=None, propagate_hda_tags=True, **element_kwds):
         input_collections = self.input_collections
-        collections_manager = self.trans.app.dataset_collections_service
+        collections_manager = self.trans.app.dataset_collection_manager
         collection_type = collection_type or output.structure.collection_type
         if collection_type is None:
             collection_type_source = output.structure.collection_type_source
@@ -906,7 +911,7 @@ class OutputCollections:
                 name=hdca_name,
                 collection_type=collection_type,
                 trusted_identifiers=True,
-                tags=self.tags,
+                tags=self.tags if propagate_hda_tags else self.hdca_tags,
                 set_hid=False,
                 flush=False,
                 completed_job=completed_job,

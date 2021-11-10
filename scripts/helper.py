@@ -29,10 +29,10 @@ helper = idencoding.IdEncodingHelper(id_secret=app_properties.get('id_secret'))
 model = galaxy.config.init_models_from_config(config)
 
 if args.encode_id:
-    print('Encoded "{}": {}'.format(args.encode_id, helper.encode_id(args.encode_id)))
+    print(f'Encoded "{args.encode_id}": {helper.encode_id(args.encode_id)}')
 
 if args.decode_id:
-    print('Decoded "{}": {}'.format(args.decode_id, helper.decode_id(args.decode_id)))
+    print(f'Decoded "{args.decode_id}": {helper.decode_id(args.decode_id)}')
 
 if args.hda_id:
     try:

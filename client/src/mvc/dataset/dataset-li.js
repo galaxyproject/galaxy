@@ -135,6 +135,7 @@ export var DatasetListItemView = _super.extend(
             _super.prototype._swapNewRender.call(this, $newRender);
             if (this.model.has("state")) {
                 this.$el.addClass(`state-${this.model.get("state")}`);
+                this.$el.attr("data-state", this.model.get("state"));
             }
             return this.$el;
         },
@@ -271,22 +272,24 @@ export var DatasetListItemView = _super.extend(
          *  @returns {jQuery} rendered DOM
          */
         _renderShowParamsButton: function () {
-            // gen. safe to show in all cases
             return faIconButton({
                 title: _l("View details"),
                 classes: "params-btn",
                 href: this.model.urls.show_params,
                 target: this.linkTarget,
                 faIcon: "fa-info-circle",
-                onclick: function (ev) {
+                onclick: (ev) => {
                     const Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
-                        Galaxy.frame.add({
-                            title: _l("Dataset details"),
-                            url: this.href,
-                        });
                         ev.preventDefault();
-                        ev.stopPropagation();
+                        Galaxy.frame.add({
+                            url: this.model.urls.show_params,
+                            title: `Dataset Details of ${this.model.get("name")}`,
+                        });
+                    } else if (Galaxy.router) {
+                        ev.preventDefault();
+                        Galaxy.router.push(this.model.urls.show_params);
+                        Galaxy.trigger("activate-hda", this.model.get("id"));
                     }
                 },
             });
@@ -575,7 +578,7 @@ DatasetListItemView.prototype.templates = (() => {
         resubmitted: BASE_MVC.wrapTemplate([
             // deleted not purged
             "<% if( model.resubmitted ){ %>",
-            '<div class="resubmitted-msg infomessagesmall">',
+            '<div class="resubmitted-msg alert alert-info">',
             _l("The job creating this dataset has been resubmitted"),
             "</div>",
             "<% } %>",

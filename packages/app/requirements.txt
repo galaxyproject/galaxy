@@ -1,4 +1,5 @@
 galaxy-auth
+galaxy-data
 galaxy-job-execution
 galaxy-job-metrics
 galaxy-tool-util
@@ -6,16 +7,18 @@ galaxy-web-framework
 galaxy-web-stack
 
 celery
+cloudauthz==0.6.0
+cwltool==3.0.20201109103151
 kombu
 Beaker
 pykwalify
-pulsar-galaxy-lib
+pulsar-galaxy-lib>=0.14.7
 gxformat2
 Mako
 sqlitedict
 svgwrite
-sortedcontainers
 Markdown
 refgenconf>=0.7.0,<0.10.0 # https://github.com/galaxyproject/galaxy/issues/11601
 Fabric3
 lagom
+tuswsgi

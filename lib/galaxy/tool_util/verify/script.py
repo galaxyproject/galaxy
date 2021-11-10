@@ -173,6 +173,8 @@ def test_tools(
     log=None,
     parallel_tests=1,
     history_per_test_case=False,
+    history_name=None,
+    no_history_reuse=False,
     no_history_cleanup=False,
     publish_history=False,
     retries=0,
@@ -185,11 +187,23 @@ def test_tools(
     verify_kwds = (verify_kwds or {}).copy()
     tool_test_start = dt.datetime.now()
     history_created = False
-    if history_per_test_case:
-        test_history = None
-    else:
-        history_created = True
-        test_history = galaxy_interactor.new_history(history_name=f"History for {results.suitename}", publish_history=publish_history)
+    test_history = None
+    if not history_per_test_case:
+        if not history_name:
+            history_name = f"History for {results.suitename}"
+        if log:
+            log.info(f"History name is '{history_name}'")
+        if not no_history_reuse:
+            history = galaxy_interactor.get_history(history_name=history_name)
+            if history:
+                test_history = history['id']
+                if log:
+                    log.info(f"Using existing history with id '{test_history}', last updated: {history['update_time']}")
+        if not test_history:
+            history_created = True
+            test_history = galaxy_interactor.new_history(history_name=history_name, publish_history=publish_history)
+            if log:
+                log.info(f"History created with id '{test_history}'")
     verify_kwds.update({
         "no_history_cleanup": no_history_cleanup,
         "test_history": test_history,
@@ -435,6 +449,8 @@ def run_tests(args, test_filters=None, log=None):
         log=log,
         parallel_tests=args.parallel_tests,
         history_per_test_case=args.history_per_test_case,
+        history_name=args.history_name,
+        no_history_reuse=args.no_history_reuse,
         no_history_cleanup=args.no_history_cleanup,
         publish_history=get_option("publish_history"),
         verify_kwds=verify_kwds,
@@ -491,6 +507,8 @@ def arg_parser():
     history_per_group = parser.add_mutually_exclusive_group()
     history_per_group.add_argument('--history-per-suite', dest="history_per_test_case", default=False, action="store_false", help="Create new history per test suite (all tests in same history).")
     history_per_group.add_argument('--history-per-test-case', dest="history_per_test_case", action="store_true", help="Create new history per test case.")
+    history_per_group.add_argument('--history-name', default=None, help="Override default history name")
+    parser.add_argument('--no-history-reuse', default=False, action="store_true", help="Do not reuse histories if a matching one already exists.")
     parser.add_argument('--no-history-cleanup', default=False, action="store_true", help="Perserve histories created for testing.")
     parser.add_argument('--publish-history', default=False, action="store_true", help="Publish test history. Useful for CI testing.")
     parser.add_argument('--parallel-tests', default=1, type=int, help="Parallel tests.")

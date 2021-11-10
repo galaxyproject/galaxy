@@ -92,8 +92,8 @@ export default {
             const textCursor = textArea.selectionEnd;
             this.content = this.markdownText;
             Vue.nextTick(() => {
-                textArea.focus();
                 textArea.selectionEnd = textCursor;
+                textArea.focus();
             });
         },
     },

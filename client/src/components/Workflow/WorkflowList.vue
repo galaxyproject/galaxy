@@ -14,7 +14,7 @@
                             id="workflow-search"
                             class="m-1"
                             name="query"
-                            placeholder="Search Workflows"
+                            :placeholder="titleSearchWorkflows"
                             autocomplete="off"
                             type="text"
                             v-model="filter"
@@ -24,11 +24,11 @@
                         <span class="float-right">
                             <b-button id="workflow-create" class="m-1" @click="createWorkflow">
                                 <font-awesome-icon icon="plus" />
-                                Create
+                                {{ titleCreate }}
                             </b-button>
                             <b-button id="workflow-import" class="m-1" @click="importWorkflow">
                                 <font-awesome-icon icon="upload" />
-                                Import
+                                {{ titleImport }}
                             </b-button>
                         </span>
                     </b-col>
@@ -59,7 +59,12 @@
                         <font-awesome-icon v-if="row.item.shared" v-b-tooltip.hover title="Shared" icon="share-alt" />
                     </template>
                     <template v-slot:cell(show_in_tool_panel)="row">
-                        <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
+                        <b-link @click="bookmarkWorkflow(row.item, false)" v-if="row.item.show_in_tool_panel">
+                            <font-awesome-icon :icon="['fas', 'star']" />
+                        </b-link>
+                        <b-link @click="bookmarkWorkflow(row.item, true)" v-else>
+                            <font-awesome-icon :icon="['far', 'star']" />
+                        </b-link>
                     </template>
                     <template v-slot:cell(update_time)="data">
                         <UtcDate :date="data.value" mode="elapsed" />
@@ -67,7 +72,7 @@
                     <template v-slot:cell(execute)="row">
                         <b-button
                             v-b-tooltip.hover.bottom
-                            title="Run Workflow"
+                            :title="titleRunWorkflow"
                             class="workflow-run btn-sm btn-primary fa fa-play"
                             @click.stop="executeWorkflow(row.item)"
                         />
@@ -83,25 +88,20 @@
     </div>
 </template>
 <script>
+import _l from "utils/localization";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
-import { faUpload } from "@fortawesome/free-solid-svg-icons";
-import { faGlobe } from "@fortawesome/free-solid-svg-icons";
-import { faShareAlt } from "@fortawesome/free-solid-svg-icons";
-
+import { faPlus, faShareAlt, faGlobe, faUpload, faSpinner, faStar } from "@fortawesome/free-solid-svg-icons";
+import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
 import Tags from "components/Common/Tags";
 import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
+import { getGalaxyInstance } from "app";
 
-library.add(faPlus);
-library.add(faUpload);
-library.add(faSpinner);
-library.add(faGlobe);
-library.add(faShareAlt);
+library.add(faPlus, faUpload, faSpinner, faGlobe, faShareAlt, farStar, faStar);
+
 export default {
     components: {
         FontAwesomeIcon,
@@ -115,24 +115,26 @@ export default {
             fields: [
                 {
                     key: "name",
+                    label: _l("Name"),
                     sortable: true,
                 },
                 {
                     key: "tags",
+                    label: _l("Tags"),
                     sortable: true,
                 },
                 {
-                    label: "Updated",
+                    label: _l("Updated"),
                     key: "update_time",
                     sortable: true,
                 },
                 {
-                    label: "Sharing",
+                    label: _l("Sharing"),
                     key: "published",
                     sortable: true,
                 },
                 {
-                    label: "Bookmarked",
+                    label: _l("Bookmarked"),
                     key: "show_in_tool_panel",
                     sortable: true,
                 },
@@ -147,6 +149,10 @@ export default {
             messageVariant: null,
             nWorkflows: 0,
             workflows: [],
+            titleSearchWorkflows: _l("Search Workflows"),
+            titleCreate: _l("Create"),
+            titleImport: _l("Import"),
+            titleRunWorkflow: _l("Run workflow"),
         };
     },
     computed: {
@@ -192,20 +198,31 @@ export default {
         executeWorkflow: function (workflow) {
             window.location = `${this.root}workflows/run?id=${workflow.id}`;
         },
-        bookmarkWorkflow: function (workflow) {
-            // This reloads the whole page, so that the workflow appears in the tool panel.
-            // Ideally we would notify only the tool panel of a change
+        bookmarkWorkflow: function (workflow, checked) {
             const id = workflow.id;
-            const show_in_tool_panel = workflow.show_in_tool_panel;
             const tags = workflow.tags;
             const data = {
-                show_in_tool_panel: !show_in_tool_panel,
+                show_in_tool_panel: checked,
                 tags: tags,
             };
             this.services
                 .updateWorkflow(id, data)
-                .then(() => {
-                    window.location = `${getAppRoot()}workflows/list`;
+                .then(({ id, name }) => {
+                    if (checked) {
+                        getGalaxyInstance().config.stored_workflow_menu_entries.push({ id: id, name: name });
+                    } else {
+                        const indexToRemove = getGalaxyInstance().config.stored_workflow_menu_entries.findIndex(
+                            (workflow) => workflow.id === id
+                        );
+                        getGalaxyInstance().config.stored_workflow_menu_entries.splice(indexToRemove, 1);
+                    }
+
+                    this.workflows.find((workflow) => {
+                        if (workflow.id === id) {
+                            workflow.show_in_tool_panel = checked;
+                            return true;
+                        }
+                    });
                 })
                 .catch((error) => {
                     this.onError(error);

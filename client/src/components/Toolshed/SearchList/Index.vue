@@ -34,7 +34,16 @@ import Categories from "./Categories.vue";
 import Repositories from "./Repositories.vue";
 import ServerSelection from "./ServerSelection.vue";
 export default {
-    props: ["query", "scrolled"],
+    props: {
+        query: {
+            type: String,
+            default: null,
+        },
+        scrolled: {
+            type: Boolean,
+            required: true,
+        },
+    },
     components: {
         Categories,
         Repositories,

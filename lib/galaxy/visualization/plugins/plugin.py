@@ -5,6 +5,7 @@ from a query string and render a webpage based on those data.
 import copy
 import logging
 import os
+from typing import Any, Dict
 
 import mako.lookup
 
@@ -23,6 +24,7 @@ class ServesTemplatesPluginMixin:
     """
     An object that renders (mako) template files from the server.
     """
+    path: str
 
     #: default number of templates to search for plugin template lookup
     DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
@@ -85,9 +87,8 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         Render and return the text of the non-saved plugin webpage/fragment.
         """
         # not saved - no existing config
-        config = {}
         # set up render vars based on plugin.config and kwargs
-        render_vars = self._build_render_vars(config, trans=trans, **kwargs)
+        render_vars = self._build_render_vars({}, trans=trans, **kwargs)
         return self._render(render_vars, trans=trans, embedded=embedded)
 
     def render_saved(self, visualization, trans=None, embedded=None, **kwargs):
@@ -95,7 +96,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         Render and return the text of the plugin webpage/fragment using the
         config/data of a saved visualization.
         """
-        config = self._get_saved_visualization_config(visualization, **kwargs)
+        config: Dict[str, Any] = self._get_saved_visualization_config(visualization, **kwargs)
         # pass the saved visualization config for parsing into render vars
         render_vars = self._build_render_vars(config, trans=trans, **kwargs)
         # update any values that were loaded from the saved Visualization
@@ -134,7 +135,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         else:
             log.debug(f'Visualization has no static path: {path}.')
 
-    def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
+    def _get_saved_visualization_config(self, visualization, revision=None, **kwargs) -> Dict[str, Any]:
         """
         Return the config of a saved visualization and revision.
 
@@ -144,11 +145,11 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         return copy.copy(visualization.latest_revision.config)
 
     # ---- non-public
-    def _build_render_vars(self, config, trans=None, **kwargs):
+    def _build_render_vars(self, config: Dict[str, Any], trans=None, **kwargs) -> Dict[str, Any]:
         """
         Build all the variables that will be passed into the renderer.
         """
-        render_vars = {}
+        render_vars: Dict[str, Any] = {}
         # Meta variables passed to the template/renderer to describe the visualization being rendered.
         render_vars.update(
             visualization_name=self.name,
@@ -161,14 +162,14 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             query=kwargs,
         )
         # config based on existing or kwargs
-        config = self._build_config(config, trans=trans, **kwargs)
-        render_vars['config'] = config
+        render_config = self._build_config(config, trans=trans, **kwargs)
+        render_vars['config'] = render_config
         # further parse config to resources (models, etc.) used in template based on registry config
-        resources = self._config_to_resources(trans, config)
+        resources = self._config_to_resources(trans, render_config)
         render_vars.update(resources)
         return render_vars
 
-    def _build_config(self, config, trans=None, **kwargs):
+    def _build_config(self, config, trans=None, **kwargs) -> utils.OpenObject:
         """
         Build the configuration for this new/saved visualization by combining
         any existing config and the kwargs (gen. from the url query).

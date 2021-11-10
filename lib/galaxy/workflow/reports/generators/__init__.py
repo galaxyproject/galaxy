@@ -11,6 +11,7 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     resolve_invocation_markdown,
 )
+from galaxy.schema import PdfDocumentType
 
 
 class WorkflowReportGeneratorPlugin(metaclass=ABCMeta):
@@ -58,7 +59,7 @@ class WorkflowMarkdownGeneratorPlugin(WorkflowReportGeneratorPlugin, metaclass=A
 
     def generate_report_pdf(self, trans, invocation, runtime_report_config_json=None):
         internal_markdown = self._generate_internal_markdown(trans, invocation, runtime_report_config_json=runtime_report_config_json)
-        return internal_galaxy_markdown_to_pdf(trans, internal_markdown, 'invocation_report')
+        return internal_galaxy_markdown_to_pdf(trans, internal_markdown, PdfDocumentType.invocation_report)
 
     @abstractmethod
     def _generate_report_markdown(self, trans, invocation, runtime_report_config_json=None):

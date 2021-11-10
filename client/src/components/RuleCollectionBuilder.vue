@@ -611,7 +611,6 @@ import $ from "jquery";
 import _ from "underscore";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import AjaxQueue from "utils/ajax-queue";
 import axios from "axios";
 import _l from "utils/localization";
 import HotTable from "@handsontable/vue";
@@ -639,6 +638,14 @@ Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
+
+// convert deferred backbone nonsense into a promise
+const deferredToPromise = (d) => {
+    return new Promise((resolve, reject) => {
+        d.done((_, result) => resolve(result));
+        d.fail((err) => reject(err));
+    });
+};
 
 export default {
     data: function () {
@@ -1353,21 +1360,19 @@ export default {
             }
             this.saveSession(JSON.stringify(asJson));
             this.state = "wait";
-            const name = this.collectionName;
-            const collectionType = this.collectionType;
+            const { collectionName: name, collectionType, hideSourceItems } = this;
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
                 if (this.state !== "error") {
-                    new AjaxQueue.AjaxQueue(
-                        _.map(elements, (elements, name) => {
-                            return () => {
-                                const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
-                                return response;
-                            };
-                        })
-                    )
-                        .done(this.oncreate)
-                        .fail(this.renderFetchError);
+                    const deferreds = Object.entries(elements).map(([name, els]) => {
+                        // This looks like a promise but it is not one because creationFn and
+                        // oncreate are references to function from the backbone models which means
+                        // they are expecting their arguments in a different order. So, looks like,
+                        // jQuery.Deferred and therefore jQuery are still dependencies
+                        return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
+                    });
+                    const promises = deferreds.map(deferredToPromise);
+                    return Promise.all(promises).catch((err) => this.renderFetchError(err));
                 }
             } else if (this.elementsType == "collection_contents") {
                 this.resetSource();
@@ -1630,6 +1635,7 @@ export default {
             if (mappingAsDict.url) {
                 const urlColumn = mappingAsDict.url.columns[0];
                 let url = data[dataIndex][urlColumn];
+                url = url.trim();
                 if (url.indexOf("://") == -1) {
                     // special case columns containing SRA links. EBI serves these a lot
                     // faster over FTP.
@@ -1829,6 +1835,7 @@ export default {
 .rules {
     flex-grow: 1;
     overflow-y: scroll;
+    padding: 0px;
 }
 .rule-source {
     height: 400px;

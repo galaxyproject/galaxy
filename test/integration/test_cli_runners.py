@@ -1,21 +1,27 @@
 """Integration tests for the CLI shell plugins and runners."""
-import collections
 import os
 import string
 import subprocess
 import sys
 import tempfile
 import unittest
+from typing import ClassVar, NamedTuple
 
+from galaxy.security.ssh_util import generate_ssh_keys
 from galaxy_test.base.populators import skip_without_tool
-from galaxy_test.base.ssh_util import generate_ssh_keys
 from galaxy_test.driver import integration_util
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
-RemoteConnection = collections.namedtuple('RemoteConnection', ['hostname', 'username', 'port', 'private_key', 'public_key'])
+
+class RemoteConnection(NamedTuple):
+    hostname: str
+    username: str
+    port: int
+    private_key: str
+    public_key: str
 
 
-def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi/slurm'):
+def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi/slurm') -> RemoteConnection:
     ssh_keys = generate_ssh_keys()
     START_SLURM_DOCKER = ['docker',
                           'run',
@@ -77,6 +83,12 @@ def cli_job_config(remote_connection, shell_plugin='ParamikoShell', job_plugin='
 
 @integration_util.skip_unless_docker()
 class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+    container_name: ClassVar[str]
+    jobs_directory: ClassVar[str]
+    remote_connection: ClassVar[RemoteConnection]
+    image: ClassVar[str]
+    shell_plugin: ClassVar[str]
+    job_plugin: ClassVar[str]
 
     @classmethod
     def setUpClass(cls):

@@ -72,7 +72,7 @@ class UploadController(BaseUIController):
             elif url:
                 valid_url = True
                 try:
-                    stream = requests.get(url, stream=True)
+                    stream = requests.get(url, stream=True, timeout=util.DEFAULT_SOCKET_TIMEOUT)
                 except Exception as e:
                     valid_url = False
                     message = f'Error uploading file via http: {util.unicodify(e)}'

@@ -19,7 +19,11 @@ from twill.utils import ResultWrapper
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
 from galaxy.security import idencoding
-from galaxy.util import smart_str, unicodify
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    smart_str,
+    unicodify,
+)
 from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.driver.testcase import DrivenFunctionalTestCase
 from tool_shed.util import (
@@ -317,7 +321,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             (installed_repository.status, expected_status)
 
     def check_galaxy_repository_tool_panel_section(self, repository, expected_tool_panel_section):
-        metadata = repository.metadata
+        metadata = repository.metadata_
         assert 'tools' in metadata, f'Tools not found in repository metadata: {metadata}'
         # If integrated_tool_panel.xml is to be tested, this test method will need to be enhanced to handle tools
         # from the same repository in different tool panel sections. Getting the first tool guid is ok, because
@@ -530,7 +534,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
     def deactivate_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         encoded_id = self.security.encode_id(installed_repository.id)
         api_key = get_admin_api_key()
-        response = requests.delete(f"{self.galaxy_url}/api/tool_shed_repositories/{encoded_id}", data={'remove_from_disk': False, 'key': api_key})
+        response = requests.delete(f"{self.galaxy_url}/api/tool_shed_repositories/{encoded_id}", data={'remove_from_disk': False, 'key': api_key}, timeout=DEFAULT_SOCKET_TIMEOUT)
         assert response.status_code != 403, response.content
 
     def delete_files_from_repository(self, repository, filenames=None, strings_displayed=None, strings_not_displayed=None):
@@ -567,7 +571,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_installed_jobs_list_page(self, installed_repository, data_manager_names=None, strings_displayed=None, strings_not_displayed=None):
-        data_managers = installed_repository.metadata.get('data_manager', {}).get('data_managers', {})
+        data_managers = installed_repository.metadata_.get('data_manager', {}).get('data_managers', {})
         if data_manager_names:
             if not isinstance(data_manager_names, list):
                 data_manager_names = [data_manager_names]
@@ -1259,7 +1263,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
     def reset_installed_repository_metadata(self, repository):
         encoded_id = self.security.encode_id(repository.id)
         api_key = get_admin_api_key()
-        response = requests.post(f"{self.galaxy_url}/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': [encoded_id], 'key': api_key})
+        response = requests.post(f"{self.galaxy_url}/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': [encoded_id], 'key': api_key}, timeout=DEFAULT_SOCKET_TIMEOUT)
         assert response.status_code != 403, response.content
 
     def reset_metadata_on_selected_repositories(self, repository_ids):
@@ -1269,7 +1273,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def reset_metadata_on_selected_installed_repositories(self, repository_ids):
         api_key = get_admin_api_key()
-        response = requests.post(f"{self.galaxy_url}/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': repository_ids, 'key': api_key})
+        response = requests.post(f"{self.galaxy_url}/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': repository_ids, 'key': api_key}, timeout=DEFAULT_SOCKET_TIMEOUT)
         assert response.status_code != 403, response.content
 
     def reset_repository_metadata(self, repository):
@@ -1376,7 +1380,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
     def uninstall_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         encoded_id = self.security.encode_id(installed_repository.id)
         api_key = get_admin_api_key()
-        response = requests.delete(f"{self.galaxy_url}/api/tool_shed_repositories/{encoded_id}", data={'remove_from_disk': True, 'key': api_key})
+        response = requests.delete(f"{self.galaxy_url}/api/tool_shed_repositories/{encoded_id}", data={'remove_from_disk': True, 'key': api_key}, timeout=DEFAULT_SOCKET_TIMEOUT)
         assert response.status_code != 403, response.content
 
     def update_installed_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
@@ -1391,7 +1395,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def update_tool_shed_status(self):
         api_key = get_admin_api_key()
-        response = requests.get(f"{self.galaxy_url}/api/tool_shed_repositories/check_for_updates?key={api_key}")
+        response = requests.get(f"{self.galaxy_url}/api/tool_shed_repositories/check_for_updates?key={api_key}", timeout=DEFAULT_SOCKET_TIMEOUT)
         assert response.status_code != 403, response.content
 
     def upload_file(self,
@@ -1496,14 +1500,14 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def verify_installed_repository_metadata_unchanged(self, name, owner):
         installed_repository = test_db_util.get_installed_repository_by_name_owner(name, owner)
-        metadata = installed_repository.metadata
+        metadata = installed_repository.metadata_
         self.reset_installed_repository_metadata(installed_repository)
-        new_metadata = installed_repository.metadata
+        new_metadata = installed_repository.metadata_
         assert metadata == new_metadata, f'Metadata for installed repository {name} differs after metadata reset.'
 
     def verify_installed_repository_no_tool_panel_section(self, repository):
         '''Verify that there is no 'tool_panel_section' entry in the repository metadata.'''
-        metadata = repository.metadata
+        metadata = repository.metadata_
         assert 'tool_panel_section' not in metadata, f'Tool panel section incorrectly found in metadata: {metadata}'
 
     def verify_installed_repository_data_table_entries(self, required_data_table_entries):
@@ -1578,7 +1582,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         if strings_not_displayed is None:
             strings_not_displayed = []
         repository_id = self.security.encode_id(installed_repository.id)
-        for tool in installed_repository.metadata['tools']:
+        for tool in installed_repository.metadata_['tools']:
             strings = list(strings_displayed)
             strings.extend([tool['id'], tool['description'], tool['version'], tool['guid'], tool['name']])
             params = dict(repository_id=repository_id, tool_id=tool['id'])

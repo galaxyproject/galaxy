@@ -15,6 +15,7 @@ import sys
 import tempfile
 import threading
 import time
+from typing import Optional
 from urllib.parse import urlparse
 
 import nose.config
@@ -25,6 +26,7 @@ import yaml
 from paste import httpserver
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
+from galaxy.app_unittest_utils.celery_helper import rebind_container_to_task
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
 from galaxy.model.database_utils import create_database, database_exists
@@ -34,7 +36,6 @@ from galaxy.util import asbool, download_to_file, galaxy_directory
 from galaxy.util.properties import load_app_properties
 from galaxy.webapps.galaxy import buildapp
 from galaxy_test.base.api_util import get_admin_api_key, get_user_api_key
-from galaxy_test.base.celery_helper import rebind_container_to_task
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     target_url_parts,
@@ -155,6 +156,7 @@ def setup_galaxy_config(
     conda_auto_init=False,
     conda_auto_install=False,
     use_shared_connection_for_amqp=False,
+    allow_tool_conf_override: bool = True,
 ):
     """Setup environment and build config for test Galaxy instance."""
     # For certain docker operations this needs to be evaluated out - e.g. for cwltool.
@@ -165,6 +167,7 @@ def setup_galaxy_config(
     new_file_path = tempfile.mkdtemp(prefix='new_files_path_', dir=tmpdir)
     job_working_directory = tempfile.mkdtemp(prefix='job_working_directory_', dir=tmpdir)
 
+    user_library_import_dir: Optional[str]
     if use_test_file_dir:
         first_test_file_dir = ensure_test_file_dir_set()
         if not os.path.isabs(first_test_file_dir):
@@ -196,7 +199,10 @@ def setup_galaxy_config(
     # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
     galaxy_data_manager_data_path = tempfile.mkdtemp(prefix='data_manager_tool-data', dir=tmpdir)
 
-    tool_conf = os.environ.get('GALAXY_TEST_TOOL_CONF', default_tool_conf)
+    if allow_tool_conf_override:
+        tool_conf = os.environ.get('GALAXY_TEST_TOOL_CONF', default_tool_conf)
+    else:
+        tool_conf = default_tool_conf
     conda_auto_install = os.environ.get('GALAXY_TEST_CONDA_AUTO_INSTALL', conda_auto_install)
     conda_auto_init = os.environ.get('GALAXY_TEST_CONDA_AUTO_INIT', conda_auto_init)
     conda_prefix = os.environ.get('GALAXY_TEST_CONDA_PREFIX')
@@ -433,6 +439,7 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
 
 
 def install_database_conf(db_path, default_merged=False):
+    install_galaxy_database_connection: Optional[str]
     if 'GALAXY_TEST_INSTALL_DBURI' in os.environ:
         install_galaxy_database_connection = os.environ['GALAXY_TEST_INSTALL_DBURI']
     elif asbool(os.environ.get('GALAXY_TEST_INSTALL_DB_MERGED', default_merged)):
@@ -569,14 +576,19 @@ def uvicorn_serve(app, port, host=None):
     server = Server(config=config)
 
     def run_in_loop(loop):
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(server.serve())
+        try:
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(server.serve())
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
+            log.info("Event loop for uvicorn closed")
 
     loop = asyncio.new_event_loop()
     t = threading.Thread(target=run_in_loop, args=(loop,))
     t.start()
 
-    return server, port
+    return server, port, t
 
 
 def cleanup_directory(tempdir):
@@ -614,7 +626,7 @@ def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_insta
         app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
 
 
-def build_galaxy_app(simple_kwargs):
+def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     """Build a Galaxy app object from a simple keyword arguments.
 
     Construct paste style complex dictionary and use load_app_properties so
@@ -629,7 +641,8 @@ def build_galaxy_app(simple_kwargs):
     )
     # Build the Universe Application
     app = GalaxyUniverseApplication(**simple_kwargs)
-    rebind_container_to_task(app)
+    if not simple_kwargs.get("enable_celery_tasks"):
+        rebind_container_to_task(app)
 
     log.info("Embedded Galaxy application started")
 
@@ -717,16 +730,19 @@ class ServerWrapper:
 
 class EmbeddedServerWrapper(ServerWrapper):
 
-    def __init__(self, app, server, name, host, port):
+    def __init__(self, app, server, name, host, port, thread=None):
         super().__init__(name, host, port)
         self._app = app
         self._server = server
+        self._thread = thread
 
     @property
     def app(self):
         return self._app
 
     def stop(self):
+        log.info(f"{threading.active_count()} threads were active before stopping embedded server")
+
         if self._server is not None and hasattr(self._server, "server_close"):
             log.info(f"Shutting down embedded {self.name} Paste server")
             self._server.server_close()
@@ -737,10 +753,17 @@ class EmbeddedServerWrapper(ServerWrapper):
             self._server.should_exit = True
             log.info(f"Embedded web server {self.name} stopped")
 
+        if self._thread is not None:
+            log.info("Stopping embedded server thread")
+            self._thread.join()
+            log.info("Embedded server thread stopped")
+
         if self._app is not None:
             log.info(f"Stopping application {self.name}")
             self._app.shutdown()
             log.info(f"Application {self.name} stopped.")
+
+        log.info(f"{threading.active_count()} active after stopping embedded server")
 
 
 class UwsgiServerWrapper(ServerWrapper):
@@ -818,9 +841,9 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             "--enable-threads",
             "--die-on-term",
         ]
-        for p in sys.path:
+        for path in sys.path:
             uwsgi_command.append('--pythonpath')
-            uwsgi_command.append(p)
+            uwsgi_command.append(path)
 
         handle_uwsgi_cli_command = getattr(
             config_object, "handle_uwsgi_cli_command", None
@@ -865,11 +888,11 @@ def launch_uvicorn(webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=N
     )
     from galaxy.webapps.galaxy.fast_app import initialize_fast_app
     app = initialize_fast_app(gx_wsgi_webapp, gx_app)
-    server, port = uvicorn_serve(app, host=host, port=port)
+    server, port, thread = uvicorn_serve(app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port)
     log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}")
     return EmbeddedServerWrapper(
-        gx_app, server, name, host, port
+        gx_app, server, name, host, port, thread=thread
     )
 
 
@@ -971,7 +994,7 @@ class GalaxyTestDriver(TestDriver):
 
         # Allow a particular test to force uwsgi or any test to use uwsgi with
         # the GALAXY_TEST_UWSGI environment variable.
-        use_uwsgi = os.environ.get('GALAXY_TEST_UWSGI', None)
+        use_uwsgi = bool(os.environ.get('GALAXY_TEST_UWSGI', None))
         if not use_uwsgi:
             if getattr(config_object, "require_uwsgi", None):
                 use_uwsgi = True
@@ -1002,7 +1025,8 @@ class GalaxyTestDriver(TestDriver):
         else:
             default_tool_conf = getattr(config_object, "default_tool_conf", None)
             datatypes_conf_override = getattr(config_object, "datatypes_conf_override", None)
-
+        allow_tool_conf_override = getattr(config_object, "allow_tool_conf_override", True)
+        self.allow_tool_conf_override = allow_tool_conf_override
         self.default_tool_conf = default_tool_conf
         self.datatypes_conf_override = datatypes_conf_override
 
@@ -1047,7 +1071,8 @@ class GalaxyTestDriver(TestDriver):
                         log_format=self.log_format,
                         conda_auto_init=getattr(config_object, "conda_auto_init", False),
                         conda_auto_install=getattr(config_object, "conda_auto_install", False),
-                        use_shared_connection_for_amqp=getattr(config_object, "use_shared_connection_for_amqp", False)
+                        use_shared_connection_for_amqp=getattr(config_object, "use_shared_connection_for_amqp", False),
+                        allow_tool_conf_override=self.allow_tool_conf_override,
                     )
                     galaxy_config = setup_galaxy_config(
                         galaxy_db_path,

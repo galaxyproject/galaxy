@@ -10,6 +10,7 @@ import os
 import shutil
 import sys
 from json import dump, load, loads
+from typing import Dict
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
@@ -77,7 +78,7 @@ def parse_outputs(args):
     return rval
 
 
-def add_file(dataset, registry, output_path):
+def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
     ext = None
     compression_type = None
     line_count = None

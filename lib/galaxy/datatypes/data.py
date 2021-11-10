@@ -46,6 +46,10 @@ DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}_
 DEFAULT_MAX_PEEK_SIZE = 1000000  # 1 MB
 
 
+class DatatypeConverterNotFoundException(Exception):
+    pass
+
+
 class DatatypeValidation:
 
     def __init__(self, state, message):
@@ -74,6 +78,25 @@ def validate(dataset_instance):
     except Exception as e:
         datatype_validation = DatatypeValidation.invalid(f"Problem running datatype validation method [{str(e)}]")
     return datatype_validation
+
+
+def get_params_and_input_name(converter, deps, target_context=None):
+    # Generate parameter dictionary
+    params = {}
+    # determine input parameter name and add to params
+    input_name = 'input1'
+    for key, value in converter.inputs.items():
+        if deps and value.name in deps:
+            params[value.name] = deps[value.name]
+        elif value.type == 'data':
+            input_name = key
+
+    # add potentially required/common internal tool parameters e.g. '__job_resource'
+    if target_context:
+        for key, value in target_context.items():
+            if key.startswith('__'):
+                params[key] = value
+    return params, input_name
 
 
 class DataMeta(abc.ABCMeta):
@@ -460,7 +483,7 @@ class Data(metaclass=DataMeta):
             # Sanitize anytime we respond with plain text/html content.
             # Check to see if this dataset's parent job is allowlisted
             # We cannot currently trust imported datasets for rendering.
-            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id in trans.app.config.sanitize_allowlist:
+            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id.startswith(tuple(trans.app.config.sanitize_allowlist)):
                 return open(filename, mode='rb')
 
             # This is returning to the browser, it needs to be encoded.
@@ -619,32 +642,23 @@ class Data(metaclass=DataMeta):
         converter = trans.app.datatypes_registry.get_converter_by_target_type(original_dataset.ext, target_type)
 
         if converter is None:
-            raise Exception(f"A converter does not exist for {original_dataset.ext} to {target_type}.")
-        # Generate parameter dictionary
-        params = {}
-        # determine input parameter name and add to params
-        input_name = 'input1'
-        for key, value in converter.inputs.items():
-            if deps and value.name in deps:
-                params[value.name] = deps[value.name]
-            elif value.type == 'data':
-                input_name = key
-        # add potentially required/common internal tool parameters e.g. '__job_resource'
-        if target_context:
-            for key, value in target_context.items():
-                if key.startswith('__'):
-                    params[key] = value
-        params[input_name] = original_dataset
+            raise DatatypeConverterNotFoundException(f"A converter does not exist for {original_dataset.ext} to {target_type}.")
 
+        params, input_name = get_params_and_input_name(converter, deps, target_context)
+
+        params[input_name] = original_dataset
+        # Make the target datatype available to the converter
+        params['__target_datatype__'] = target_type
         # Run converter, job is dispatched through Queue
-        converted_dataset = converter.execute(trans, incoming=params, set_output_hid=visible, history=history)[1]
+        job, converted_datasets, *_ = converter.execute(trans, incoming=params, set_output_hid=visible, history=history)
+        trans.app.job_manager.enqueue(job, tool=converter)
         if len(params) > 0:
             trans.log_event(f"Converter params: {str(params)}", tool_id=converter.id)
         if not visible:
-            for value in converted_dataset.values():
+            for value in converted_datasets.values():
                 value.visible = False
         if return_output:
-            return converted_dataset
+            return converted_datasets
         return f"The file conversion of {converter.name} on data {original_dataset.hid} has been added to the Queue."
 
     # We need to clear associated files before we set metadata

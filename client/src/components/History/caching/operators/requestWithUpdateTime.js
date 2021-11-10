@@ -25,7 +25,7 @@ export const requestWithUpdateTime = (config = {}) => {
         requestTime = moment.utc(),
         // indicates we don't want initial results
         noInitial = false,
-        responseQualifier = () => true
+        responseQualifier = (response) => response.status == 200
     } = config;
 
     // mark and flag this update-time, append to next request with same base

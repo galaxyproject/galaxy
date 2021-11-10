@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Dict
+from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
@@ -156,6 +156,8 @@ class TagHandler:
 
     def apply_item_tag(self, user, item, name, value=None, flush=True):
         # Use lowercase name for searching/creating tag.
+        if name is None:
+            return
         lc_name = name.lower()
         # Get or create item-tag association.
         item_tag_assoc = self._get_item_tag_assoc(user, item, lc_name)
@@ -288,7 +290,7 @@ class TagHandler:
         raw_tags = reg_exp.split(tag_str)
         return self.parse_tags_list(raw_tags)
 
-    def parse_tags_list(self, tags_list):
+    def parse_tags_list(self, tags_list: List[str]) -> List[Tuple[str, Optional[str]]]:
         """
         Return a list of tag tuples (name, value) pairs derived from a list.
         Method scrubs tag names and values as well.
@@ -339,13 +341,13 @@ class TagHandler:
             scrubbed_tag_list.append(self._scrub_tag_name(tag))
         return scrubbed_tag_list
 
-    def _get_name_value_pair(self, tag_str):
+    def _get_name_value_pair(self, tag_str) -> List[Optional[str]]:
         """Get name, value pair from a tag string."""
         # Use regular expression to parse name, value.
         if tag_str.startswith('#'):
             tag_str = f"name:{tag_str[1:]}"
         reg_exp = re.compile(f"[{self.key_value_separators}]")
-        name_value_pair = reg_exp.split(tag_str, 1)
+        name_value_pair: List[Optional[str]] = list(reg_exp.split(tag_str, 1))
         # Add empty slot if tag does not have value.
         if len(name_value_pair) < 2:
             name_value_pair.append(None)
@@ -358,28 +360,28 @@ class GalaxyTagHandler(TagHandler):
         TagHandler.__init__(self, sa_session)
         self.item_tag_assoc_info["History"] = ItemTagAssocInfo(model.History,
                                                                model.HistoryTagAssociation,
-                                                               model.HistoryTagAssociation.table.c.history_id)
+                                                               model.HistoryTagAssociation.history_id)
         self.item_tag_assoc_info["HistoryDatasetAssociation"] = \
             ItemTagAssocInfo(model.HistoryDatasetAssociation,
                              model.HistoryDatasetAssociationTagAssociation,
-                             model.HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id)
+                             model.HistoryDatasetAssociationTagAssociation.history_dataset_association_id)
         self.item_tag_assoc_info["HistoryDatasetCollectionAssociation"] = \
             ItemTagAssocInfo(model.HistoryDatasetCollectionAssociation,
                              model.HistoryDatasetCollectionTagAssociation,
-                             model.HistoryDatasetCollectionTagAssociation.table.c.history_dataset_collection_id)
+                             model.HistoryDatasetCollectionTagAssociation.history_dataset_collection_id)
         self.item_tag_assoc_info["LibraryDatasetDatasetAssociation"] = \
             ItemTagAssocInfo(model.LibraryDatasetDatasetAssociation,
                              model.LibraryDatasetDatasetAssociationTagAssociation,
-                             model.LibraryDatasetDatasetAssociationTagAssociation.table.c.library_dataset_dataset_association_id)
+                             model.LibraryDatasetDatasetAssociationTagAssociation.library_dataset_dataset_association_id)
         self.item_tag_assoc_info["Page"] = ItemTagAssocInfo(model.Page,
                                                             model.PageTagAssociation,
-                                                            model.PageTagAssociation.table.c.page_id)
+                                                            model.PageTagAssociation.page_id)
         self.item_tag_assoc_info["StoredWorkflow"] = ItemTagAssocInfo(model.StoredWorkflow,
                                                                       model.StoredWorkflowTagAssociation,
-                                                                      model.StoredWorkflowTagAssociation.table.c.stored_workflow_id)
+                                                                      model.StoredWorkflowTagAssociation.stored_workflow_id)
         self.item_tag_assoc_info["Visualization"] = ItemTagAssocInfo(model.Visualization,
                                                                      model.VisualizationTagAssociation,
-                                                                     model.VisualizationTagAssociation.table.c.visualization_id)
+                                                                     model.VisualizationTagAssociation.visualization_id)
 
 
 class GalaxyTagHandlerSession(GalaxyTagHandler):
@@ -399,6 +401,17 @@ class GalaxyTagHandlerSession(GalaxyTagHandler):
         tag = super()._create_tag_instance(tag_name)
         self.created_tags[tag_name] = tag
         return tag
+
+
+class GalaxySessionlessTagHandler(GalaxyTagHandlerSession):
+
+    def _get_tag(self, tag_name):
+        """Get tag from cache or database."""
+        # Short-circuit session access
+        return self.created_tags.get(tag_name)
+
+    def get_tag_by_name(self, tag_name):
+        self.created_tags.get(tag_name)
 
 
 class CommunityTagHandler(TagHandler):
