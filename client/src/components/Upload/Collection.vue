@@ -121,6 +121,7 @@ import _ from "underscore";
 import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/collection/collection-row";
 import UploadBoxMixin from "./UploadBoxMixin";
+import { uploadModelsToPayload } from "./helpers";
 import { BButton } from "bootstrap-vue";
 
 export default {
@@ -178,7 +179,7 @@ export default {
                 this._eventAnnounce(index, file);
             },
             initialize: (index) => {
-                return this.app.toData([this.collection.get(index)], this.history_id);
+                return uploadModelsToPayload([this.collection.get(index)], this.history_id);
             },
             progress: (index, percentage) => {
                 this._eventProgress(index, percentage);
@@ -215,14 +216,6 @@ export default {
         },
         appModel() {
             return this.app.model;
-        },
-        history_id() {
-            const storeId = this.$store?.getters["betaHistory/currentHistoryId"];
-            if (storeId) {
-                return storeId;
-            }
-            const legacyId = this.app.currentHistory();
-            return legacyId;
         },
     },
     watch: {
@@ -269,28 +262,6 @@ export default {
             this._updateStateForCounters();
             this._eventReset();
             this.$emit("dismiss");
-        },
-
-        /** Start upload process */
-        _eventStart: function () {
-            if (this.counterAnnounce == 0 || this.counterRunning > 0) {
-                return;
-            }
-            this.uploadSize = 0;
-            this.uploadCompleted = 0;
-            this.collection.each((model) => {
-                if (model.get("status") == "init") {
-                    model.set("status", "queued");
-                    this.uploadSize += model.get("file_size");
-                }
-            });
-            this.appModel.set({ percentage: 0, status: "success" });
-            this.counterRunning = this.counterAnnounce;
-
-            // package ftp files separately, and remove them from queue
-            this._uploadFtp();
-            this.uploadbox.start();
-            this._updateStateForCounters();
         },
 
         /** Remove all */

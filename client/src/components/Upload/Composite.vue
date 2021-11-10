@@ -61,6 +61,7 @@ import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/composite/composite-row";
 import UploadBoxMixin from "./UploadBoxMixin";
+import { uploadModelsToPayload } from "./helpers";
 
 export default {
     mixins: [UploadBoxMixin],
@@ -139,9 +140,9 @@ export default {
                     extension: this.extension,
                 });
             });
-            $.uploadpost({
+            $.uploadchunk({
                 url: this.app.uploadPath,
-                data: this.app.toFileUploadData(this.collection.filter()),
+                data: uploadModelsToPayload(this.collection.filter(), this.history_id, true),
                 success: (message) => {
                     this._eventSuccess(message);
                 },

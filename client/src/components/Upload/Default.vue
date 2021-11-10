@@ -114,6 +114,7 @@ import _l from "utils/localization";
 import _ from "underscore";
 import UploadRow from "mvc/upload/default/default-row";
 import UploadBoxMixin from "./UploadBoxMixin";
+import { uploadModelsToPayload } from "./helpers";
 import { BButton } from "bootstrap-vue";
 
 export default {
@@ -175,7 +176,7 @@ export default {
                 this._eventAnnounce(index, file);
             },
             initialize: (index) => {
-                return this.app.toData([this.collection.get(index)], this.history_id);
+                return uploadModelsToPayload([this.collection.get(index)], this.history_id);
             },
             progress: (index, percentage) => {
                 this._eventProgress(index, percentage);
@@ -212,13 +213,6 @@ export default {
         },
         appModel() {
             return this.app.model;
-        },
-        history_id() {
-            const storeId = this.$store?.getters["betaHistory/currentHistoryId"];
-            if (storeId) {
-                return storeId;
-            }
-            return this.app.currentHistoryId;
         },
     },
     watch: {
@@ -260,31 +254,6 @@ export default {
             var it = this.collection.get(index);
             it.set({ percentage: 100, status: "success", hids: hids });
             this._updateStateForSuccess(it);
-        },
-
-        /** Start upload process */
-        _eventStart: function () {
-            if (this.counterAnnounce !== 0 && this.counterRunning === 0) {
-                // prepare upload process
-                this.uploadSize = 0;
-                this.uploadCompleted = 0;
-                this.collection.each((model) => {
-                    if (model.get("status") == "init") {
-                        model.set("status", "queued");
-                        this.uploadSize += model.get("file_size");
-                    }
-                });
-
-                this.appModel.set({ percentage: 0, status: "success" });
-                this.counterRunning = this.counterAnnounce;
-
-                // package ftp files separately, and remove them from queue
-                this._uploadFtp();
-
-                // queue remaining files
-                this.uploadbox.start();
-                this._updateStateForCounters();
-            }
         },
 
         /** Remove all */
