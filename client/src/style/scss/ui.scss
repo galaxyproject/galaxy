@@ -428,3 +428,11 @@ $ui-margin-horizontal-large: $margin-v * 2;
     border: 2px solid $state-success-bg;
     background: lighten($state-success-bg, 10%);
 }
+// util class to make pointer cursor
+.cursor-pointer {
+    cursor: pointer;
+    -webkit-user-select: none; /* Chrome all / Safari all */
+    -moz-user-select: none; /* Firefox all */
+    -ms-user-select: none; /* IE 10+ */
+    user-select: none; /* Likely future */
+}

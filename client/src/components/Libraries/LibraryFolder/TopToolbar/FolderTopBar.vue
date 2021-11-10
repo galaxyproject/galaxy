@@ -383,7 +383,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-@import "utils/pointer.css";
-</style>
