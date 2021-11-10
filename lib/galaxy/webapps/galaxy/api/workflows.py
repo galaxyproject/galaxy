@@ -235,6 +235,7 @@ class WorkflowsAPIController(
             archive_source = payload.get("archive_source")
             archive_file = payload.get("archive_file")
             archive_data = None
+            uploaded_file_name = None
             if archive_source:
                 validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
                 if archive_source.startswith("file://"):
@@ -273,8 +274,8 @@ class WorkflowsAPIController(
                         raise exceptions.MessageException(f"Failed to open URL '{escape(archive_source)}'.")
             elif hasattr(archive_file, "file"):
                 uploaded_file = archive_file.file
-                uploaded_file_name = uploaded_file.name
-                if os.path.getsize(os.path.abspath(uploaded_file_name)) > 0:
+                uploaded_file_name = os.path.abspath(uploaded_file.name)
+                if os.path.getsize(uploaded_file_name) > 0:
                     archive_data = util.unicodify(uploaded_file.read())
                     import_source = "uploaded file"
                 else:
@@ -282,7 +283,7 @@ class WorkflowsAPIController(
             else:
                 raise exceptions.MessageException("Please provide a URL or file.")
             return self.__api_import_from_archive(
-                trans, archive_data, import_source, payload=payload, from_path=os.path.abspath(uploaded_file_name)
+                trans, archive_data, import_source, payload=payload, from_path=uploaded_file_name
             )
 
         if "from_history_id" in payload:
