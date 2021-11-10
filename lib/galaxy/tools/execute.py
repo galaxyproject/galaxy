@@ -5,6 +5,8 @@ collections from matched collections.
 """
 import collections
 import logging
+from abc import abstractmethod
+from typing import Dict, List
 
 from boltons.iterutils import remap
 
@@ -44,7 +46,9 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     )
 
     if invocation_step is None:
-        execution_tracker = ToolExecutionTracker(trans, tool, mapping_params, collection_info, completed_jobs=completed_jobs)
+        execution_tracker: ExecutionTracker = ToolExecutionTracker(
+            trans, tool, mapping_params, collection_info, completed_jobs=completed_jobs
+        )
     else:
         execution_tracker = WorkflowStepExecutionTracker(trans, tool, mapping_params, collection_info, invocation_step, completed_jobs=completed_jobs)
     execution_cache = ToolExecutionCache(trans)
@@ -100,7 +104,9 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     jobs_executed = 0
     has_remaining_jobs = False
     execution_slice = None
-    job_datasets = {}  # job: list of dataset instances created by job
+    job_datasets: Dict[
+        str, List[model.DatasetInstance]
+    ] = {}  # job: list of dataset instances created by job
 
     for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
         if max_num_jobs is not None and jobs_executed >= max_num_jobs:
@@ -122,10 +128,12 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     trans.sa_session.flush()
 
     tool_id = tool.id
-    for job in execution_tracker.successful_jobs:
+    for job2 in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
-        tool.app.job_manager.enqueue(job, tool=tool, flush=False)
-        trans.log_event(f"Added job to the job queue, id: {str(job.id)}", tool_id=tool_id)
+        tool.app.job_manager.enqueue(job2, tool=tool, flush=False)
+        trans.log_event(
+            f"Added job to the job queue, id: {str(job2.id)}", tool_id=tool_id
+        )
     trans.sa_session.flush()
 
     if has_remaining_jobs:
@@ -408,6 +416,10 @@ class ExecutionTracker:
             job_assoc.implicit_collection_jobs = implicit_collection_jobs
             job_assoc.job = job
             self.trans.sa_session.add(job_assoc)
+
+    @abstractmethod
+    def new_collection_execution_slices(self):
+        pass
 
 
 # Seperate these because workflows need to track their jobs belong to the invocation
