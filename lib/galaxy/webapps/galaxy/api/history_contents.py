@@ -518,6 +518,22 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             trans, history_id, serialization_params, filter_params, hid, limit, since,
         )
 
+    @expose_api_raw_anonymous
+    def contents_after(self, trans, history_id, hid, limit, **kwd):
+        """
+        Return {limit} history items with hid > {hid}.
+
+        GET /api/histories/{history_id}/contents/after/{hid}/{limit}
+        """
+        serialization_params = parse_serialization_params(default_view='betawebclient', **kwd)
+        filter_params = self._parse_rest_params(kwd)
+        hid = int(hid)
+        limit = int(limit)
+
+        return self.service.contents_after(
+            trans, history_id, serialization_params, filter_params, hid, limit
+        )
+
     # Parsing query string according to REST standards.
     def _parse_rest_params(self, qdict: Dict[str, Any]) -> HistoryContentsFilterList:
         DEFAULT_OP = 'eq'

@@ -756,6 +756,40 @@ class HistoriesContentsService(ServiceBase):
 
         return json.dumps(contents)
 
+    def contents_after(
+        self, trans,
+        history_id: EncodedDatabaseIdField,
+        serialization_params: SerializationParams,
+        filter_params: HistoryContentsFilterList,
+        hid: int,
+        limit: int,
+        since: Optional[datetime.datetime] = None,
+    ):
+        """
+        Return {limit} history items with hid > {hid}.
+        """
+        history: History = self.history_manager.get_accessible(
+            self.decode_id(history_id), trans.user, current_history=trans.history
+        )
+        up_params = filter_params + self._hid_greater_than(hid)
+        up_order = 'hid-asc'
+        contents_up, up_count = self._seek(history, up_params, up_order, limit, serialization_params)
+
+        min_hid, max_hid = self._get_filtered_extrema(history, filter_params)
+
+        contents = self._expand_contents(trans, contents_up, serialization_params)
+        contents.reverse()
+
+        # Put stats in http headers
+        trans.response.headers['matches_up'] = len(contents_up)
+        trans.response.headers['total_matches_up'] = up_count
+        trans.response.headers['max_hid'] = max_hid
+        trans.response.headers['min_hid'] = min_hid
+        trans.response.headers['history_size'] = str(history.disk_size)
+        trans.response.headers['history_empty'] = json.dumps(history.empty)  # convert to proper bool
+
+        return json.dumps(contents)
+
     def _hid_greater_than(self, hid: int) -> HistoryContentsFilterList:
         return [["hid", "gt", hid]]
 
