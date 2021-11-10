@@ -54,7 +54,6 @@ from galaxy.util import (
     shrink_and_unicodify,
     unicodify,
 )
-from galaxy.tool_util.provided_metadata import (BaseToolProvidedMetadata)
 
 DATASET_ID_TOKEN = "DATASET_ID"
 
