@@ -83,6 +83,9 @@ SUPPORTED_TOOL_REQUIREMENTS = [
 
 SUPPORTED_WORKFLOW_REQUIREMENTS = SUPPORTED_TOOL_REQUIREMENTS + []
 
+PERSISTED_REPRESENTATION = "cwl_tool_object"
+SENTINEL_GALAXY_SLOTS_VALUE = 1.480231396
+
 ToolStateType = Dict[str, Union[None, str, bool, Dict[str, str]]]
 
 
@@ -397,13 +400,19 @@ class JobProxy:
 
     def _select_resources(self, request, runtime_context=None):
         new_request = request.copy()
-        new_request["cores"] = "$GALAXY_SLOTS"
+        # TODO: we really need to find a better solution to set cores here.
+        # This could be to delay building the cwl job until we're at the worker node,
+        # (see https://github.com/galaxyproject/galaxy/pull/12459 for an attempt)
+        # or guessing what the value of $GALAXY_SLOTS will be when preparing the job.
+        new_request["cores"] = SENTINEL_GALAXY_SLOTS_VALUE
         return new_request
 
     @property
     def command_line(self):
         if self.is_command_line_job:
-            return self.cwl_job().command_line
+            command_line = self.cwl_job().command_line
+            # Undo the SENTINEL_GALAXY_SLOTS_VALUE hack above
+            return [fragment.replace(str(SENTINEL_GALAXY_SLOTS_VALUE), "$GALAXY_SLOTS") for fragment in command_line]
         else:
             return ["true"]
 
