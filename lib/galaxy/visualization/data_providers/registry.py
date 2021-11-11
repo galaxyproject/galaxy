@@ -48,7 +48,6 @@ class DataProviderRegistry:
             "bam": genome.SamDataProvider,
             "bigwig": genome.BigWigDataProvider,
             "bigbed": genome.BigBedDataProvider,
-
             "column_with_stats": ColumnDataProvider
         }
 
@@ -61,6 +60,8 @@ class DataProviderRegistry:
         data_provider: Optional[BaseDataProvider]
         data_provider_class: Type[BaseDataProvider]
 
+        # any datatype class that is a subclass of another needs to be
+        # checked before the parent in this conditional.
         if raw:
             # Working with raw data.
             if isinstance(original_dataset.datatype, Gff):
