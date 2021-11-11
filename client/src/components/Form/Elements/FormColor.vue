@@ -1,6 +1,6 @@
 <template>
     <b-row>
-        <b-col sm="1">
+        <b-col class="form-color-input">
             <b-form-input class="cursor-pointer" :id="id" v-model="currentValue" type="color" size="sm" />
         </b-col>
         <b-col class="pl-0">
@@ -33,3 +33,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.form-color-input {
+    max-width: 3.6rem;
+}
+</style>
