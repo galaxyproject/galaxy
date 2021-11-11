@@ -61,24 +61,21 @@ class Augustus(CompressedArchive):
         """
         Augustus archives always contain the same files
         """
-        try:
-            if filename and tarfile.is_tarfile(filename):
-                with tarfile.open(filename, 'r') as temptar:
-                    for f in temptar:
-                        if not f.isfile():
-                            continue
-                        if f.name.endswith('_exon_probs.pbl') \
-                           or f.name.endswith('_igenic_probs.pbl') \
-                           or f.name.endswith('_intron_probs.pbl') \
-                           or f.name.endswith('_metapars.cfg') \
-                           or f.name.endswith('_metapars.utr.cfg') \
-                           or f.name.endswith('_parameters.cfg') \
-                           or f.name.endswith('_parameters.cgp.cfg') \
-                           or f.name.endswith('_utr_probs.pbl') \
-                           or f.name.endswith('_weightmatrix.txt'):
-                            return True
-                        else:
-                            return False
-        except Exception as e:
-            log.warning('%s, sniff Exception: %s', self, e)
+        if filename and tarfile.is_tarfile(filename):
+            with tarfile.open(filename, 'r') as temptar:
+                for f in temptar:
+                    if not f.isfile():
+                        continue
+                    if f.name.endswith('_exon_probs.pbl') \
+                            or f.name.endswith('_igenic_probs.pbl') \
+                            or f.name.endswith('_intron_probs.pbl') \
+                            or f.name.endswith('_metapars.cfg') \
+                            or f.name.endswith('_metapars.utr.cfg') \
+                            or f.name.endswith('_parameters.cfg') \
+                            or f.name.endswith('_parameters.cgp.cfg') \
+                            or f.name.endswith('_utr_probs.pbl') \
+                            or f.name.endswith('_weightmatrix.txt'):
+                        return True
+                    else:
+                        return False
         return False
