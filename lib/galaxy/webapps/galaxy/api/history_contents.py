@@ -486,21 +486,17 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         return self.service.archive(trans, history_id, filter_parameters, filename, dry_run)
 
     @expose_api_raw_anonymous
-    def contents_near(self, trans, history_id, hid, limit, **kwd):
+    def contents_near(self, trans, history_id, direction, hid, limit, **kwd):
         """
-        This endpoint provides random access to a large history without having
-        to know exactly how many pages are in the final query. Pick a target HID
-        and filters, and the endpoint will get LIMIT counts above and below that
-        target regardless of how many gaps may exist in the HID due to
-        filtering.
+        Return {limit} history items "near" the {hid}. The {direction} determines what items
+        are selected:
+        - before: select items with hid < {hid}
+        - after:  select items with hid > {hid}
+        - near:   select items "around" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1
 
-        It does 2 queries, one up and one down from the target hid with a
-        result size of limit. Additional counts for total matches of both seeks
-        provided in the http headers.
+        Additional counts provided in the HTTP headers.
 
-        I've also abandoned the wierd q/qv syntax.
-
-        * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
+        GET /api/histories/{history_id}/contents/{direction}/{hid}/{limit}
         """
         serialization_params = parse_serialization_params(default_view='betawebclient', **kwd)
 
@@ -515,23 +511,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         limit = int(limit)
 
         return self.service.contents_near(
-            trans, history_id, serialization_params, filter_params, hid, limit, since,
-        )
-
-    @expose_api_anonymous
-    def contents_before(self, trans, history_id, hid, limit, **kwd):
-        """
-        Return {limit} history items with hid > {hid}.
-
-        GET /api/histories/{history_id}/contents/before/{hid}/{limit}
-        """
-        serialization_params = parse_serialization_params(default_view='betawebclient', **kwd)
-        filter_params = self._parse_rest_params(kwd)
-        hid = int(hid)
-        limit = int(limit)
-
-        return self.service.contents_before(
-            trans, history_id, serialization_params, filter_params, hid, limit
+            trans, history_id, serialization_params, filter_params, direction, hid, limit, since,
         )
 
     # Parsing query string according to REST standards.

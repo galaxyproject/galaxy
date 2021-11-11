@@ -5,6 +5,7 @@ from datetime import datetime
 
 from requests import delete, put
 
+from galaxy.schema.schema import DirectionOptions
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -747,3 +748,110 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert len(contents_response) == expected_num_datasets
         contents_response = self._get(f"histories/{history_id}/contents?types=dataset_collection").json()
         assert len(contents_response) == expected_num_collections
+
+
+class HistoryContentsApiNearTestCase(HistoryContentsApiTestCase):
+    """
+    Test the /api/histories/{history_id}/contents/{direction}/{hid}/{limit} endpoint.
+    """
+    NEAR = DirectionOptions.near
+    BEFORE = DirectionOptions.before
+    AFTER = DirectionOptions.after
+
+    def _create_list_in_history(self, history_id, n=2):
+        # Creates list of size n*4 (n collections with 3 items each)
+        for _ in range(n):
+            self.dataset_collection_populator.create_list_in_history(history_id=history_id)
+
+    def _get_content(self, history_id, direction, *, hid, limit=1000):
+        return self._get(f"/api/histories/{history_id}/contents/{direction}/{hid}/{limit}").json()
+
+    def test_returned_hid_sequence_in_base_case(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_list_in_history(history_id)
+            result = self._get_content(history_id, self.NEAR, hid=1)
+            assert len(result) == 8
+            assert result[0]['hid'] == 8
+            assert result[1]['hid'] == 7
+            assert result[2]['hid'] == 6
+            assert result[3]['hid'] == 5
+            assert result[4]['hid'] == 4
+            assert result[5]['hid'] == 3
+            assert result[6]['hid'] == 2
+            assert result[7]['hid'] == 1
+
+    def test_near_even_limit(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_list_in_history(history_id)
+            result = self._get_content(history_id, self.NEAR, hid=5, limit=3)
+            assert len(result) == 3
+            assert result[0]['hid'] == 6  # hid + 1
+            assert result[1]['hid'] == 5  # hid
+            assert result[2]['hid'] == 4  # hid - 1
+
+    def test_near_odd_limit(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_list_in_history(history_id)
+            result = self._get_content(history_id, self.NEAR, hid=5, limit=4)
+            assert len(result) == 4
+            assert result[0]['hid'] == 7  # hid + 1
+            assert result[1]['hid'] == 6  # hid
+            assert result[2]['hid'] == 5  # hid - 1
+            assert result[3]['hid'] == 4  # hid - 2
+
+    def test_near_less_than_before_limit(self):  # n before < limit // 2
+        with self.dataset_populator.test_history() as history_id:
+            self._create_list_in_history(history_id)
+            result = self._get_content(history_id, self.NEAR, hid=1, limit=3)
+            assert len(result) == 2
+            assert result[0]['hid'] == 2  # hid + 1
+            assert result[1]['hid'] == 1  # hid (there's nothing before hid=1)
+
+    def test_near_less_than_after_limit(self):  # n after < limit // 2 + 1
+        with self.dataset_populator.test_history() as history_id:
+            self._create_list_in_history(history_id)
+            result = self._get_content(history_id, self.NEAR, hid=8, limit=3)
+            assert len(result) == 2
+            assert result[0]['hid'] == 8  # hid (there's nothing after hid=8)
+            assert result[1]['hid'] == 7  # hid - 1
+
+    def test_near_less_than_before_and_after_limit(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_list_in_history(history_id, n=1)
+            result = self._get_content(history_id, self.NEAR, hid=2, limit=10)
+            assert len(result) == 4
+            assert result[0]['hid'] == 4  # hid + 2  (can't go after hid=4)
+            assert result[1]['hid'] == 3  # hid + 1
+            assert result[2]['hid'] == 2  # hid
+            assert result[3]['hid'] == 1  # hid - 1  (can't go before hid=1)
+
+    def test_before(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_list_in_history(history_id)
+            result = self._get_content(history_id, self.BEFORE, hid=5, limit=3)
+            assert len(result) == 3
+            assert result[0]['hid'] == 4  # hid - 1
+            assert result[1]['hid'] == 3  # hid - 2
+            assert result[2]['hid'] == 2  # hid - 3
+
+    def test_before_less_than_limit(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_list_in_history(history_id)
+            result = self._get_content(history_id, self.BEFORE, hid=2, limit=3)
+            assert len(result) == 1
+            assert result[0]['hid'] == 1  # hid - 1
+
+    def test_after(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_list_in_history(history_id)
+            result = self._get_content(history_id, self.AFTER, hid=5, limit=2)
+            assert len(result) == 2
+            assert result[0]['hid'] == 7  # hid + 2 (hid + 3 not included: tests reversed order)
+            assert result[1]['hid'] == 6  # hid + 1
+
+    def test_after_less_than_limit(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_list_in_history(history_id)
+            result = self._get_content(history_id, self.AFTER, hid=7, limit=3)
+            assert len(result) == 1
+            assert result[0]['hid'] == 8  # hid + 1
