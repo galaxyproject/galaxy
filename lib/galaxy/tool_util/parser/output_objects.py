@@ -35,6 +35,7 @@ class ToolOutput(ToolOutputBase):
     """
     count: int
     tool: str
+    default_identifier_source: str
 
     dict_collection_visible_keys = [
         "name",
