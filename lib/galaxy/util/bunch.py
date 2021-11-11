@@ -1,5 +1,6 @@
-from .dynamic import HasDynamicProperties
 from datetime import timedelta
+
+from .dynamic import HasDynamicProperties
 
 
 class Bunch(HasDynamicProperties):

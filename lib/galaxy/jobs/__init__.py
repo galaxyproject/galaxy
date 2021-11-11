@@ -16,13 +16,13 @@ import traceback
 from json import loads
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
     TYPE_CHECKING,
-    Callable,
+    Tuple,
     Union,
-    Tuple
 )
 
 import packaging.version

@@ -163,7 +163,7 @@ class MockJobWrapper(HasResourceParameters):
     def __init__(self, tool_job_destination):
         self.tool = MockTool(tool_job_destination)
         self.job_id = 12345
-        self.app = object() # type: ignore
+        self.app = object()  # type: ignore
 
     def is_mock_job_wrapper(self):
         return True
