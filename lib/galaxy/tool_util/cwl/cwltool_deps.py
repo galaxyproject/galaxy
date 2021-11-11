@@ -53,25 +53,8 @@ except ImportError:
     resolve_and_validate_document = None  # type: ignore
 
 
-def _has_relax_path_checks_flag():
-    """Return True if cwltool uses a flag to control path checks.
-
-    Old cwltool uses the module global below to control whether
-    it's strict about path checks. New versions use an attribute
-    of LoadingContext.
-
-    Once the version of cwltool required is new enough, we can remove
-    this function and simplify the conditionals where it's used.
-    """
-
-    lc = LoadingContext()
-    return hasattr(lc, "relax_path_checks")
-
-
 try:
     from cwltool import command_line_tool
-    if not _has_relax_path_checks_flag():
-        command_line_tool.ACCEPTLIST_RE = command_line_tool.ACCEPTLIST_EN_RELAXED_RE
 except ImportError:
     command_line_tool = None  # type: ignore
 

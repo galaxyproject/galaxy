@@ -64,7 +64,7 @@ pykwalify = "*"
 pyparsing = "*"
 pysam = "*"
 python = "^3.6.1"  # required by fastapi
-python-multipart = "*"
+python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
 pyuwsgi = "*"
 PyYAML = "*"
 refgenconf = ">=0.12.0"
