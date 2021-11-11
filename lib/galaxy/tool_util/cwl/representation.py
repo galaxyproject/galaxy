@@ -82,26 +82,32 @@ FIELD_TYPE_REPRESENTATION = TYPE_REPRESENTATIONS[-1]
 if not USE_FIELD_TYPES:
     CWL_TYPE_TO_REPRESENTATIONS = {
         "Any": ["integer", "float", "file", "boolean", "text", "record", "json"],
+        "org.w3id.cwl.salad.Any": ["integer", "float", "file", "boolean", "text", "record", "json"],
         "array": ["array"],
         "string": ["text"],
         "boolean": ["boolean"],
         "int": ["integer"],
         "float": ["float"],
         "File": ["file"],
+        "org.w3id.cwl.cwl.File": ["file"],
         "Directory": ["directory"],
+        "org.w3id.cwl.cwl.Directory": ["directory"],
         "null": ["null"],
         "record": ["record"],
     }
 else:
     CWL_TYPE_TO_REPRESENTATIONS = {
         "Any": ["field"],
+        "org.w3id.cwl.salad.Any": ["field"],
         "array": ["array"],
         "string": ["text"],
         "boolean": ["boolean"],
         "int": ["integer"],
         "float": ["float"],
         "File": ["file"],
+        "org.w3id.cwl.cwl.File": ["file"],
         "Directory": ["directory"],
+        "org.w3id.cwl.cwl.Directory": ["directory"],
         "null": ["null"],
         "record": ["record"],
         "enum": ["enum"],
