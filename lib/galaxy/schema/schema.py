@@ -252,12 +252,6 @@ class DatasetCollectionInstanceType(str, Enum):
     library = "library"
 
 
-class DirectionOptions(str, Enum):
-    near = "near"
-    before = "before"
-    after = "after"
-
-
 class TagItem(ConstrainedStr):
     regex = re.compile(r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")
 

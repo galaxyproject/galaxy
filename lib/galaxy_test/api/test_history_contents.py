@@ -5,7 +5,7 @@ from datetime import datetime
 
 from requests import delete, put
 
-from galaxy.schema.schema import DirectionOptions
+from galaxy.webapps.galaxy.services.history_contents import DirectionOptions
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,

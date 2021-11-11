@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -63,7 +64,6 @@ from galaxy.schema.schema import (
     AnyJobStateSummary,
     DatasetAssociationRoles,
     DeleteHDCAResult,
-    DirectionOptions,
     HistoryContentSource,
     HistoryContentType,
     JobSourceType,
@@ -81,6 +81,12 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 log = logging.getLogger(__name__)
 
 DatasetDetailsType = Union[Set[EncodedDatabaseIdField], Literal['all']]
+
+
+class DirectionOptions(str, Enum):
+    near = "near"
+    before = "before"
+    after = "after"
 
 
 class HistoryContentsFilterQueryParams(FilterQueryParams):
