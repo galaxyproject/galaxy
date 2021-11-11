@@ -4,7 +4,6 @@ import tempfile
 from collections import namedtuple
 
 from .cwltool_deps import (
-    _has_relax_path_checks_flag,
     default_loader,
     ensure_cwltool_available,
     load_tool,
@@ -34,8 +33,7 @@ class SchemaLoader:
         loading_context.do_validate = self._validate
         loading_context.loader = self.raw_document_loader
         loading_context.do_update = True
-        if _has_relax_path_checks_flag():
-            loading_context.relax_path_checks = True  # type: ignore[attr-defined]
+        loading_context.relax_path_checks = True
         return loading_context
 
     def raw_process_reference(self, path, loading_context=None):

@@ -100,7 +100,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'cwl': [
-            'cwltool==3.0.20201109103151',
+            'cwltool==3.1.20211107152837',
         ],
         'mulled': [
             'conda',
