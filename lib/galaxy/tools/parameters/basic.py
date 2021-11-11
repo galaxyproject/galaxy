@@ -256,7 +256,7 @@ class ToolParameter(Dictifiable):
             return str_value
         return "Not available."
 
-    def to_param_dict_string(self, value, other_values=None):
+    def to_param_dict_string(self, value, other_values=None) -> str:
         """Called via __str__ when used in the Cheetah template"""
         if value is None:
             value = ""
@@ -844,6 +844,8 @@ class SelectToolParameter(ToolParameter):
     >>> print(p.to_param_dict_string(["y", "z"]))
     y,z
     """
+
+    value_label: str
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
