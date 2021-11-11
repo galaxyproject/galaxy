@@ -328,15 +328,16 @@ class WorkflowProgress:
                 delayed_why = f"dependent collection [{replacement.id}] not yet populated with datasets"
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
-        data_inputs = (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation, model.DatasetCollection)
-        if not is_data and isinstance(replacement, data_inputs):
+        if isinstance(replacement, model.DatasetCollection):
+            raise NotImplementedError
+        if not is_data and isinstance(replacement, (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)):
             if isinstance(replacement, model.HistoryDatasetAssociation):
                 if replacement.is_pending:
                     raise modules.DelayedWorkflowEvaluation()
                 if not replacement.is_ok:
                     raise modules.CancelWorkflowEvaluation()
             else:
-                if not replacement.collection.populated:  # type: ignore
+                if not replacement.collection.populated:
                     raise modules.DelayedWorkflowEvaluation()
                 pending = False
                 for dataset_instance in replacement.dataset_instances:
