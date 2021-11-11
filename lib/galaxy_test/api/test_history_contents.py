@@ -750,13 +750,18 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert len(contents_response) == expected_num_collections
 
 
-class HistoryContentsApiNearTestCase(HistoryContentsApiTestCase):
+class HistoryContentsApiNearTestCase(ApiTestCase):
     """
     Test the /api/histories/{history_id}/contents/{direction}/{hid}/{limit} endpoint.
     """
     NEAR = DirectionOptions.near
     BEFORE = DirectionOptions.before
     AFTER = DirectionOptions.after
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     def _create_list_in_history(self, history_id, n=2):
         # Creates list of size n*4 (n collections with 3 items each)
