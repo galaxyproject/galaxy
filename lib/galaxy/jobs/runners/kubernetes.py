@@ -64,6 +64,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_config_path=dict(map=str, default=None),
             k8s_use_service_account=dict(map=bool, default=False),
             k8s_persistent_volume_claims=dict(map=str),
+            k8s_working_volume_claim=dict(map=str),
             k8s_data_volume_claim=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
             k8s_pod_priority_class=dict(map=str, default=None),
@@ -128,13 +129,29 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if self.runner_params.get('k8s_data_volume_claim'):
             try:
                 param_claim = self.runner_params['k8s_data_volume_claim'].split(":")
-                princip_claim_name = param_claim[0]
+                data_claim_name = param_claim[0]
             except Exception as e:
                 log.debug('Failed to parse `k8s_data_volume_claim` parameter in the kubernetes runner configuration')
                 raise e
-            principal_volume = {'name': princip_claim_name, 'persistentVolumeClaim': {'claimName': princip_claim_name}}
-            if princip_claim_name not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
-                self.runner_params['k8s_mountable_volumes'].append(principal_volume)
+            data_volume = {'name': data_claim_name, 'persistentVolumeClaim': {'claimName': data_claim_name}}
+            if data_claim_name not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
+                self.runner_params['k8s_mountable_volumes'].append(data_volume)
+        if self.runner_params.get('k8s_working_volume_claim'):
+            try:
+                param_claim = self.runner_params['k8s_working_volume_claim'].split(":")
+                working_claim_name = param_claim[0]
+            except Exception as e:
+                log.debug('Failed to parse `k8s_working_volume_claim` parameter in the kubernetes runner configuration')
+                raise e
+            working_volume = {'name': working_claim_name, 'persistentVolumeClaim': {'claimName': working_claim_name}}
+            if "/" in working_volume:
+                name = working_volume.split("/")[0]
+                subpath = working_volume.split("/")[1]
+                working_volume["name"] = name
+                working_volume["subPath"] = subpath
+            if working_claim_name not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
+                self.runner_params['k8s_mountable_volumes'].append(working_volume)
+
 
     def queue_job(self, job_wrapper):
         """Create job script and submit it to Kubernetes cluster"""
@@ -465,6 +482,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return "Never"
 
     def __get_volume_mounts_for_job(self, job_wrapper):
+        volume_mounts = []
         if self.runner_params.get('k8s_data_volume_claim'):
             try:
                 param_claim = self.runner_params['k8s_data_volume_claim'].split(":")
@@ -474,26 +492,31 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 log.debug('Failed to parse `k8s_data_volume_claim` parameter in the kubernetes runner configuration')
                 raise e
             inputs = job_wrapper.get_input_fnames()
-            outputs = job_wrapper.get_output_fnames()
-            volume_mounts = []
+            # outputs = job_wrapper.get_output_fnames()
             for i in list(inputs):
                 file_path = str(i)
                 subpath = file_path.lstrip(base_mount).lstrip('/').rstrip('/')
                 volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
-            for o in list(outputs):
-                file_path = str(o).rstrip('/').split('/')
-                file_path = "/".join(file_path[:-1])
-                subpath = str(file_path).lstrip(base_mount).lstrip('/')
-                # Avoid mounting the same output directory twice for two output files using same dir
-                if subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
-                    volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
+            # for o in list(outputs):
+            #     file_path = str(o).rstrip('/').split('/')
+            #     file_path = "/".join(file_path[:-1])
+            #     subpath = str(file_path).lstrip(base_mount).lstrip('/')
+            #     # Avoid mounting the same output directory twice for two output files using same dir
+            #     if subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
+            #         volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
+        if self.runner_params.get('k8s_working_volume_claim'):
+            try:
+                param_claim = self.runner_params['k8s_working_volume_claim'].split(":")
+                claim_name = param_claim[0]
+                base_mount = param_claim[1]
+            except Exception as e:
+                log.debug('Failed to parse `k8s_working_volume_claim` parameter in the kubernetes runner configuration')
+                raise e
             wd_subpath = str(job_wrapper.working_directory).lstrip(base_mount).lstrip('/').rstrip('/')
             volume_mounts.append({'name': claim_name,
                                   'mountPath': str(job_wrapper.working_directory),
                                   'subPath': wd_subpath})
-            return volume_mounts
-        else:
-            return {}
+        return volume_mounts
 
     def __get_k8s_containers(self, ajs):
         """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
@@ -507,6 +530,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         mounts = self.__get_volume_mounts_for_job(ajs.job_wrapper)
         mounts.extend(self.runner_params['k8s_volume_mounts'])
+        log.debug(mounts)
 
         k8s_container = {
             "name": self.__get_k8s_container_name(ajs.job_wrapper),
