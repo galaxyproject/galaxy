@@ -799,10 +799,10 @@ class HistoryContentsApiNearTestCase(ApiTestCase):
             self._create_list_in_history(history_id)
             result = self._get_content(history_id, self.NEAR, hid=5, limit=4)
             assert len(result) == 4
-            assert result[0]['hid'] == 7  # hid + 1
-            assert result[1]['hid'] == 6  # hid
-            assert result[2]['hid'] == 5  # hid - 1
-            assert result[3]['hid'] == 4  # hid - 2
+            assert result[0]['hid'] == 7  # hid + 2
+            assert result[1]['hid'] == 6  # hid + 1
+            assert result[2]['hid'] == 5  # hid
+            assert result[3]['hid'] == 4  # hid - 1
 
     def test_near_less_than_before_limit(self):  # n before < limit // 2
         with self.dataset_populator.test_history() as history_id:
