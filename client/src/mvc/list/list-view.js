@@ -301,7 +301,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
                     <button class="${this.actionButtonClass} btn btn-secondary dropdown-toggle" data-toggle="dropdown">
                         ${_l("For all selected")}...
                     </button>
-                    <div class="dropdown-menu float-right" role="menu"/>
+                    <div class="dropdown-menu" role="menu"/>
                 </div>`
             );
             var $actions = actions.map((action) => {
