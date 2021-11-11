@@ -5,6 +5,12 @@ import json
 import os
 import shutil
 from logging import getLogger
+from typing import (
+    Dict,
+    Union,
+    List,
+    Any
+)
 
 import galaxy.model
 from galaxy.model import store
@@ -34,6 +40,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
     """Interface describing the abstract process of writing out and collecting output metadata."""
 
     extended = False
+    portable: bool
 
     def invalidate_external_metadata(self, datasets, sa_session):
         """Invalidate written files."""
@@ -222,7 +229,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                 json.dump(object_store_conf, f)
 
             # setup tool
-            tool_as_dict = {}
+            tool_as_dict: Dict[str, Union[List[Any], Dict[str, Any]]] = {}
             tool_as_dict["stdio_exit_codes"] = [e.to_dict() for e in tool.stdio_exit_codes]
             tool_as_dict["stdio_regexes"] = [r.to_dict() for r in tool.stdio_regexes]
             tool_as_dict["outputs"] = {name: output.to_dict() for name, output in tool.outputs.items()}
