@@ -129,6 +129,7 @@ from .execute import (
 
 if TYPE_CHECKING:
     from galaxy.tools.actions.metadata import SetMetadataToolAction
+    from galaxy.managers.jobs import JobSearch
 
 log = logging.getLogger(__name__)
 
@@ -538,6 +539,8 @@ class Tool(Dictifiable):
     dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
     __help: Optional[threading.Lock]
     __help_by_page: Union[threading.Lock, List[str]]
+    job_search: 'JobSearch'
+    version: str
 
     def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, tool_shed_repository=None, allow_code_files=True, dynamic=False):
         """Load a tool from the config named by `config_file`"""
@@ -587,7 +590,6 @@ class Tool(Dictifiable):
         # guid attribute since it is useful to have.
         self.guid = guid
         self.old_id = None
-        self.version = None
         self.python_template_version = None
         self._lineage = None
         self.dependencies = []
@@ -2604,7 +2606,7 @@ class OutputParameterJSONTool(Tool):
             json_params['output_data'].append(data_dict)
             if json_filename is None:
                 json_filename = file_name
-        if not json_filename:
+        if json_filename is None:
             raise Exception(
                 "Must call 'exec_before_job' with 'out_data' containing at least one entry."
             )
@@ -2759,7 +2761,7 @@ class DataSourceTool(OutputParameterJSONTool):
             json_params['output_data'].append(data_dict)
             if json_filename is None:
                 json_filename = file_name
-        if not json_filename:
+        if json_filename is None:
             raise Exception(
                 "Must call 'exec_before_job' with 'out_data' containing at least one entry."
             )
