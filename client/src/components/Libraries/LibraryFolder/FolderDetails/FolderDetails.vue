@@ -78,10 +78,6 @@ export default {
             libraryDetails: null,
             folderDetails: null,
             error: null,
-            fields: [
-                { label: "Library", key: "name" },
-                { label: "", key: "value" },
-            ],
         };
     },
     computed: {

@@ -99,7 +99,7 @@
                         <font-awesome-icon icon="trash" />
                         Delete
                     </button>
-                    <Details class="mr-1" :id="folder_id" :metadata="metadata" />
+                    <FolderDetails class="mr-1" :id="folder_id" :metadata="metadata" />
                     <div class="form-check logged-dataset-manipulation mr-1" v-if="logged_dataset_manipulation">
                         <b-form-checkbox
                             id="checkbox-1"
@@ -133,7 +133,7 @@ import { Toast } from "ui/toast";
 import download from "./download";
 import mod_utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";
-import Details from "components/Libraries/LibraryFolder/FolderDetails/Details";
+import FolderDetails from "components/Libraries/LibraryFolder/FolderDetails/FolderDetails";
 import SearchField from "../SearchField";
 import { Services } from "../services";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
@@ -178,7 +178,7 @@ export default {
         SearchField,
         FontAwesomeIcon,
         LibraryBreadcrumb,
-        Details,
+        FolderDetails,
     },
     data() {
         return {
