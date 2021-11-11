@@ -1,6 +1,11 @@
 <template>
     <div>
-        <b-button class="details-btn" title="Show location details" v-b-modal.details-modal>
+        <b-button
+            class="details-btn"
+            title="Show location details"
+            v-b-modal.details-modal
+            data-testid="loc-details-btn"
+        >
             <font-awesome-icon icon="info-circle" /> Details
         </b-button>
 
@@ -8,10 +13,22 @@
             <div>
                 <b-alert :show="hasError" variant="danger"> {{ error }} </b-alert>
                 <div v-if="libraryDetails">
-                    <b-table-lite :items="libraryDetails" :fields="getFields('Library')" striped small />
+                    <b-table-lite
+                        :items="libraryDetails"
+                        :fields="getFieldsWithHeaderTitle('Library')"
+                        striped
+                        small
+                        data-testid="library-table"
+                    />
                 </div>
                 <div>
-                    <b-table-lite :items="folderDetails" :fields="getFields('Folder')" striped small />
+                    <b-table-lite
+                        :items="folderDetails"
+                        :fields="getFieldsWithHeaderTitle('Folder')"
+                        striped
+                        small
+                        data-testid="folder-table"
+                    />
                 </div>
             </div>
         </b-modal>
@@ -30,13 +47,13 @@ library.add(faInfoCircle);
 
 function buildLibraryDetailsFields(data) {
     const libraryDetails = [
-        { key: "Name", value: data.name },
-        { key: "Description", value: data.description },
-        { key: "Synopsis", value: data.synopsis },
-        { key: "ID", value: data.id },
+        { name: "Name", value: data.name },
+        { name: "Description", value: data.description },
+        { name: "Synopsis", value: data.synopsis },
+        { name: "ID", value: data.id },
     ];
     if (data.create_time_pretty !== "") {
-        libraryDetails.push({ key: "Created", value: data.create_time_pretty });
+        libraryDetails.push({ name: "Created", value: data.create_time_pretty });
     }
     return libraryDetails;
 }
@@ -62,7 +79,7 @@ export default {
             folderDetails: null,
             error: null,
             fields: [
-                { label: "Library", key: "key" },
+                { label: "Library", key: "name" },
                 { label: "", key: "value" },
             ],
         };
@@ -81,9 +98,9 @@ export default {
 
                 this.libraryDetails = buildLibraryDetailsFields(response.data);
                 this.folderDetails = [
-                    { key: "Name", value: this.metadata.folder_name },
-                    { key: "Description", value: this.metadata.folder_description },
-                    { key: "ID", value: this.id },
+                    { name: "Name", value: this.metadata.folder_name },
+                    { name: "Description", value: this.metadata.folder_description },
+                    { name: "ID", value: this.id },
                 ];
                 this.error = null;
             } catch (e) {
@@ -91,9 +108,12 @@ export default {
                 this.error = `Failed to retrieve library details. ${e}`;
             }
         },
-        getFields(title) {
+        /** Create table fields to display just the first column
+         * header as the table title.
+         */
+        getFieldsWithHeaderTitle(title) {
             return [
-                { label: title, key: "key" },
+                { label: title, key: "name" },
                 { label: "", key: "value" },
             ];
         },
