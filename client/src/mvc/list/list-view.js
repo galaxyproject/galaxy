@@ -298,7 +298,9 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             }
             var $newMenu = $(
                 `<div class="list-action-menu btn-group dropdown">
-                    <button class="${this.actionButtonClass} btn btn-secondary dropdown-toggle" data-boundary="viewport" data-toggle="dropdown">
+                    <button class="${
+                        this.actionButtonClass
+                    } btn btn-secondary dropdown-toggle" data-boundary="viewport" data-toggle="dropdown">
                         ${_l("For all selected")}...
                     </button>
                     <div class="dropdown-menu" role="menu"/>
