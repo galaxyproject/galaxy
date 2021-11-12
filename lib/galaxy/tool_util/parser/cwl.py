@@ -3,8 +3,8 @@ import logging
 import math
 from typing import Optional
 from typing import (
-    List,
-    Any
+    Any,
+    List
 )
 
 import packaging.version

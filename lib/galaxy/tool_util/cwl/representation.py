@@ -7,9 +7,9 @@ import os
 from enum import Enum
 from typing import (
     Any,
+    Dict,
     NamedTuple,
-    Optional,
-    Dict
+    Optional
 )
 
 from galaxy.exceptions import RequestParameterInvalidException

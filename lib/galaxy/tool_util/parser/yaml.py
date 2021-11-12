@@ -1,15 +1,13 @@
 import json
-from typing import (
-    Dict,
-    List,
-)
 
 import packaging.version
 from typing import (
-    List,
+    Any,
     Dict,
-    Any
+    List
 )
+
+import packaging.version
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (

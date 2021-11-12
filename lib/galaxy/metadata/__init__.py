@@ -6,10 +6,10 @@ import os
 import shutil
 from logging import getLogger
 from typing import (
+    Any,
     Dict,
-    Union,
     List,
-    Any
+    Union
 )
 
 import galaxy.model
