@@ -494,11 +494,24 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
     @expose_api_raw_anonymous
     def contents_near(self, trans, history_id, direction, hid, limit, **kwd):
         """
-        Supports scroller functionality.
-        Return {limit} history items "near" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1.
-        Additional counts provided in the HTTP headers.
+        Returns the following data:
 
-        GET /api/histories/{history_id}/contents/near/{hid}/{limit}
+        a) item counts:
+        - total matches-up:   hid < {hid}
+        - total matches-down: hid > {hid}
+        - total matches:      total matches-up + total matches-down + 1 (+1 for hid == {hid})
+        - displayed matches-up:   hid <= {hid} (hid == {hid} is included)
+        - displayed matches-down: hid > {hid}
+        - displayed matches:      displayed matches-up + displayed matches-down 
+
+        b) {limit} history items:
+        - if direction == before: hid <= {hid}
+        - if direction == after:  hid > {hid}
+        - if direction == near:   "near" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1.
+
+        Intended purpose: supports scroller functionality.
+
+        GET /api/histories/{history_id}/contents/{direction:near|before|after}/{hid}/{limit}
         """
         serialization_params = parse_serialization_params(default_view='betawebclient', **kwd)
 
