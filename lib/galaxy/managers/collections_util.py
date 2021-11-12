@@ -111,7 +111,7 @@ def dictify_dataset_collection_instance(dataset_collection_instance, parent, sec
         encoded_history_id = security.encode_id(parent.id)
         dict_value['url'] = web.url_for('history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset_collection")
     elif isinstance(parent, model.LibraryFolder):
-        encoded_library_id = security.encode_id(parent.library.id)  # type: ignore
+        encoded_library_id = security.encode_id(parent.library_root.id)
         encoded_folder_id = security.encode_id(parent.id)
         # TODO: Work in progress - this end-point is not right yet...
         dict_value['url'] = web.url_for('library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id)
