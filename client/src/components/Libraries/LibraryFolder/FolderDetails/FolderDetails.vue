@@ -9,7 +9,7 @@
             <font-awesome-icon icon="info-circle" /> Details
         </b-button>
 
-        <b-modal id="details-modal" :title="titleLocationDetails" @show="getDetails" ok-only title-tag="h3">
+        <b-modal :static="isStatic" id="details-modal" :title="titleLocationDetails" @show="getDetails" ok-only title-tag="h3">
             <div>
                 <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
                 <div v-if="libraryDetails">
@@ -71,6 +71,11 @@ export default {
         metadata: {
             type: Object,
             required: true,
+        },
+        isStatic: {
+            type: Boolean,
+            required: false,
+            default: false,
         },
     },
     data() {
