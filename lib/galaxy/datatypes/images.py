@@ -305,12 +305,13 @@ class Trk(Binary):
             ('header_size', 'i4'),
         ]
         np_dtype = np.dtype(header_def)
-        header = np.ndarray(
-            shape=(),
-            dtype=np_dtype,
-            buffer=header_raw)
-        if header['header_size'] == 1000 and b'TRACK' in header['magic'] and \
-           header['version'] == 2 and len(header['dim']) == 3:
+        header: np.ndarray = np.ndarray(shape=(), dtype=np_dtype, buffer=header_raw)
+        if (
+            header["header_size"] == 1000
+            and b"TRACK" in header["magic"]
+            and header["version"] == 2
+            and len(header["dim"]) == 3
+        ):
             return True
         return False
 
