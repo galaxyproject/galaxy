@@ -599,16 +599,15 @@ class DatasetCollectionManager:
                         found = True
 
                     if not found:
+                        # Create a new collection whose elements are defined in the next loop
                         sub_collection: Dict[str, Any] = {}
                         sub_collection["src"] = "new_collection"
                         sub_collection["collection_type"] = collection_type_at_depth.collection_type
                         sub_collection["elements"] = {}
-                        elements_at_depth[
-                            identifier
-                        ] = sub_collection  # ??? but this is overridenn on the next line??
-                        elements_at_depth = sub_collection[
-                            "elements"
-                        ]  # ??? sub_collection is just lost?
+                        # Update elements with new collection
+                        elements_at_depth[identifier] = sub_collection
+                        # Subsequent loop fills elements of newly created collection
+                        elements_at_depth = sub_collection["elements"]
 
         return elements
 
