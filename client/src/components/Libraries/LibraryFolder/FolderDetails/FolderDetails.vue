@@ -6,7 +6,7 @@
             v-b-modal.details-modal
             data-testid="loc-details-btn"
         >
-            <font-awesome-icon icon="info-circle" /> Details
+            <font-awesome-icon icon="info-circle" /> {{ detailsCaption }}
         </b-button>
 
         <b-modal
@@ -59,7 +59,6 @@ function buildFields(fields, data) {
 }
 
 export default {
-    name: "FolderDetails",
     components: {
         FontAwesomeIcon,
     },
@@ -80,14 +79,15 @@ export default {
     },
     data() {
         return {
-            folderHeader: "Folder",
-            libraryHeader: "Library",
-            folderFields: { folder_name: "Name", folder_description: "Description", id: "ID" },
+            detailsCaption: _l("Details"),
+            folderHeader: _l("Folder"),
+            libraryHeader: _l("Library"),
+            folderFields: { folder_name: _l("Name"), folder_description: _l("Description"), id: "ID" },
             libraryFields: {
-                name: "Name",
-                description: "Description",
-                synopsis: "Synopsis",
-                create_time_pretty: "Created",
+                name: _l("Name"),
+                description: _l("Description"),
+                synopsis: _l("Synopsis"),
+                create_time_pretty: _l("Created"),
                 id: "ID",
             },
             titleLocationDetails: _l("Location Details"),
@@ -112,7 +112,7 @@ export default {
                 this.error = null;
             } catch (e) {
                 this.libraryDetails = null;
-                this.error = `Failed to retrieve library details. ${e}`;
+                this.error = `${_l("Failed to retrieve library details.")} ${e}`;
             }
         },
         /** Create table fields to display just the first column
