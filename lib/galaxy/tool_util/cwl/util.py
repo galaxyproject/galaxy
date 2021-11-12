@@ -9,8 +9,10 @@ import os
 import tarfile
 import tempfile
 from collections import namedtuple
+from typing import Any, List, Optional
 
 import yaml
+from typing_extensions import TypedDict
 
 from galaxy.util import unicodify
 
@@ -25,15 +27,38 @@ def set_basename_and_derived_properties(properties, basename):
     return properties
 
 
-def output_properties(path=None, content=None, basename=None, pseduo_location=False):
+OutputPropertiesType = TypedDict(
+    "OutputPropertiesType",
+    {
+        "class": str,
+        "location": Optional[str],
+        "path": Optional[str],
+        "listing": Optional[List[Any]],
+        "basename": Optional[str],
+        "nameroot": Optional[str],
+        "nameext": Optional[str],
+        "secondaryFiles": List[Any],
+        "checksum": str,
+        "size": int,
+    },
+    total=False,
+)
+
+
+def output_properties(
+    path: Optional[str] = None,
+    content: Optional[bytes] = None,
+    basename=None,
+    pseduo_location=False,
+) -> OutputPropertiesType:
     checksum = hashlib.sha1()
-    properties = {
-        "class": "File",
-    }
+    properties: OutputPropertiesType = {"class": "File", "checksum": "", "size": 0}
     if path is not None:
         properties["path"] = path
         f = open(path, "rb")
     else:
+        if content is None:
+            raise Exception("If no 'path', must provide 'content'.")
         f = io.BytesIO(content)
 
     try:
@@ -206,7 +231,7 @@ def galactic_job_json(
         if secondary_files:
             tmp = tempfile.NamedTemporaryFile(delete=False)
             tf = tarfile.open(fileobj=tmp, mode='w:')
-            order = []
+            order: List[str] = []
             index_contents = {
                 "order": order
             }
@@ -438,7 +463,7 @@ def output_to_cwl_json(
             return json.loads(dataset_dict["content"])
         else:
             with open(dataset_dict["path"]) as f:
-                return json.safe_load(f)
+                return json.load(f)
 
     if galaxy_output.history_content_type == "raw_value":
         return galaxy_output.history_content_id
@@ -493,7 +518,9 @@ def output_to_cwl_json(
                     for basename in index["order"]:
                         for extra_file in extra_files:
                             path = extra_file["path"]
-                            if path != os.path.join(SECONDARY_FILES_EXTRA_PREFIX, basename):
+                            if path != os.path.join(
+                                SECONDARY_FILES_EXTRA_PREFIX, basename or ""
+                            ):
                                 continue
 
                             extra_file_class = extra_file["class"]
@@ -522,7 +549,7 @@ def output_to_cwl_json(
                 if not basename:
                     basename = output_metadata.get("name")
 
-                listing = []
+                listing: List[OutputPropertiesType] = []
                 properties = {
                     "class": "Directory",
                     "basename": basename,
@@ -543,17 +570,18 @@ def output_to_cwl_json(
             return properties
 
     elif output_metadata["history_content_type"] == "dataset_collection":
-        rval = None
         collection_type = output_metadata["collection_type"].split(":", 1)[0]
         if collection_type in ["list", "paired"]:
-            rval = []
+            rval_l = []
             for element in output_metadata["elements"]:
-                rval.append(element_to_cwl_json(element))
+                rval_l.append(element_to_cwl_json(element))
+            return rval_l
         elif collection_type == "record":
-            rval = {}
+            rval_d = {}
             for element in output_metadata["elements"]:
-                rval[element["element_identifier"]] = element_to_cwl_json(element)
-        return rval
+                rval_d[element["element_identifier"]] = element_to_cwl_json(element)
+            return rval_d
+        return None
     else:
         raise NotImplementedError("Unknown history content type encountered")
 
