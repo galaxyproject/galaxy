@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -80,6 +81,12 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 log = logging.getLogger(__name__)
 
 DatasetDetailsType = Union[Set[EncodedDatabaseIdField], Literal['all']]
+
+
+class DirectionOptions(str, Enum):
+    near = "near"
+    before = "before"
+    after = "after"
 
 
 class HistoryContentsFilterQueryParams(FilterQueryParams):
@@ -693,23 +700,26 @@ class HistoriesContentsService(ServiceBase):
         history_id: EncodedDatabaseIdField,
         serialization_params: SerializationParams,
         filter_params: HistoryContentsFilterList,
+        direction: DirectionOptions,
         hid: int,
         limit: int,
         since: Optional[datetime.datetime] = None,
     ):
         """
-        This endpoint provides random access to a large history without having
-        to know exactly how many pages are in the final query. Pick a target HID
-        and filters, and the endpoint will get LIMIT counts above and below that
-        target regardless of how many gaps may exist in the HID due to
-        filtering.
+        Return {limit} history items "near" the {hid}. The {direction} determines what items
+        are selected:
+        - before: select items with hid < {hid}
+        - after:  select items with hid > {hid}
+        - near:   select items "around" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1
 
-        It does 2 queries, one up and one down from the target hid with a
-        result size of limit. Additional counts for total matches of both seeks
-        provided in the http headers.
-
-        I've also abandoned the wierd q/qv syntax.
+        Additional counts provided in the HTTP headers.
         """
+        def get_contents_data(hid_params, order, limit):
+            params = filter_params + hid_params
+            matches, total_count = self._seek(history, params, order, limit, serialization_params)
+            expanded = self._expand_contents(trans, matches, serialization_params)
+            return len(matches), total_count, expanded
+
         history: History = self.history_manager.get_accessible(
             self.decode_id(history_id), trans.user, current_history=trans.history
         )
@@ -725,39 +735,67 @@ class HistoriesContentsService(ServiceBase):
                 trans.response.status = 204
                 return
 
-        # SEEK UP, contents > hid
-        up_params = filter_params + self._hid_greater_than(hid)
-        up_order = 'hid-asc'
-        contents_up, up_count = self._seek(history, up_params, up_order, limit, serialization_params)
-
-        # SEEK DOWN, contents <= hid
-        down_params = filter_params + self._hid_less_or_equal_than(hid)
-        down_order = 'hid-dsc'
-        contents_down, down_count = self._seek(history, down_params, down_order, limit, serialization_params)
-
-        # min/max hid values
         min_hid, max_hid = self._get_filtered_extrema(history, filter_params)
+        order_asc, order_dsc = 'hid-asc', 'hid-dsc'
 
-        # results
-        up = self._expand_contents(trans, contents_up, serialization_params)
-        up.reverse()
-        down = self._expand_contents(trans, contents_down, serialization_params)
-        contents = up + down
+        if direction == DirectionOptions.after:  # seek up: contents > hid (newer)
+            hid_params = self._hid_greater_than(hid)
+            match_count, total_count, expanded = get_contents_data(hid_params, order_asc, limit)
+            item_counts = self._set_item_counts(matches_up=match_count, total_matches_up=total_count)
+            expanded.reverse()
 
-        # Put stats in http headers
-        trans.response.headers['matches_up'] = len(contents_up)
-        trans.response.headers['matches_down'] = len(contents_down)
-        trans.response.headers['total_matches_up'] = up_count
-        trans.response.headers['total_matches_down'] = down_count
+        elif direction == DirectionOptions.before:  # seek down: contents <= hid (older)
+            hid_params = self._hid_less_than(hid)
+            match_count, total_count, expanded = get_contents_data(hid_params, order_dsc, limit)
+            item_counts = self._set_item_counts(matches_down=match_count, total_matches_down=total_count)
+
+        elif direction == DirectionOptions.near:  # seek up, down; then reverse up, and combine
+            up_limit, down_limit = self._get_limits(limit)
+
+            hid_params = self._hid_greater_than(hid)
+            up_match_count, up_total_count, up_expanded = get_contents_data(hid_params, order_asc, up_limit)
+
+            hid_params = self._hid_less_or_equal_than(hid)
+            down_match_count, down_total_count, down_expanded = get_contents_data(hid_params, order_dsc, down_limit)
+
+            item_counts = self._set_item_counts(matches_up=up_match_count, total_matches_up=up_total_count,
+                matches_down=down_match_count, total_matches_down=down_total_count)
+
+            up_expanded.reverse()
+            expanded = up_expanded + down_expanded
+
+        trans.response.headers['matches'] = item_counts['matches']
+        trans.response.headers['matches_up'] = item_counts['matches_up']
+        trans.response.headers['matches_down'] = item_counts['matches_down']
+        trans.response.headers['total_matches'] = item_counts['total_matches']
+        trans.response.headers['total_matches_up'] = item_counts['total_matches_up']
+        trans.response.headers['total_matches_down'] = item_counts['total_matches_down']
         trans.response.headers['max_hid'] = max_hid
         trans.response.headers['min_hid'] = min_hid
         trans.response.headers['history_size'] = str(history.disk_size)
         trans.response.headers['history_empty'] = json.dumps(history.empty)  # convert to proper bool
 
-        return json.dumps(contents)
+        return json.dumps(expanded)
+
+    def _get_limits(self, limit):
+        q, r = divmod(limit, 2)
+        return q, q + r
+
+    def _set_item_counts(self, *, matches_up=0, total_matches_up=0, matches_down=0, total_matches_down=0):
+        counts = {}
+        counts['matches'] = matches_up + matches_down
+        counts['matches_up'] = matches_up
+        counts['matches_down'] = matches_down
+        counts['total_matches'] = total_matches_up + total_matches_down
+        counts['total_matches_up'] = total_matches_up
+        counts['total_matches_down'] = total_matches_down
+        return counts
 
     def _hid_greater_than(self, hid: int) -> HistoryContentsFilterList:
         return [["hid", "gt", hid]]
+
+    def _hid_less_than(self, hid: int) -> HistoryContentsFilterList:
+        return [["hid", "lt", hid]]
 
     def _hid_less_or_equal_than(self, hid: int) -> HistoryContentsFilterList:
         return [["hid", "le", hid]]

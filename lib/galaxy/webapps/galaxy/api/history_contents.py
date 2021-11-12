@@ -35,7 +35,14 @@ from galaxy.webapps.base.controller import (
     UsesTagsMixin
 )
 from galaxy.webapps.galaxy.api.common import parse_serialization_params
-from galaxy.webapps.galaxy.services.history_contents import CreateHistoryContentPayload, HistoriesContentsService, HistoryContentsFilterList, HistoryContentsFilterQueryParams, HistoryContentsIndexLegacyParams
+from galaxy.webapps.galaxy.services.history_contents import (
+    CreateHistoryContentPayload,
+    DirectionOptions,
+    HistoriesContentsService,
+    HistoryContentsFilterList,
+    HistoryContentsFilterQueryParams,
+    HistoryContentsIndexLegacyParams
+)
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
@@ -488,20 +495,34 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
     @expose_api_raw_anonymous
     def contents_near(self, trans, history_id, hid, limit, **kwd):
         """
-        This endpoint provides random access to a large history without having
-        to know exactly how many pages are in the final query. Pick a target HID
-        and filters, and the endpoint will get LIMIT counts above and below that
-        target regardless of how many gaps may exist in the HID due to
-        filtering.
+        Return {limit} history items "near" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1.
+        Additional counts provided in the HTTP headers.
 
-        It does 2 queries, one up and one down from the target hid with a
-        result size of limit. Additional counts for total matches of both seeks
-        provided in the http headers.
-
-        I've also abandoned the wierd q/qv syntax.
-
-        * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
+        GET /api/histories/{history_id}/contents/near/{hid}/{limit}
         """
+        return self._handle_direction(trans, history_id, DirectionOptions.near, hid, limit, **kwd)
+
+    @expose_api_raw_anonymous
+    def contents_after(self, trans, history_id, hid, limit, **kwd):
+        """
+        Return {limit} history items with hid > {hid}.
+        Additional counts provided in the HTTP headers.
+
+        GET /api/histories/{history_id}/contents/after/{hid}/{limit}
+        """
+        return self._handle_direction(trans, history_id, DirectionOptions.after, hid, limit, **kwd)
+
+    @expose_api_raw_anonymous
+    def contents_before(self, trans, history_id, hid, limit, **kwd):
+        """
+        Return {limit} history items with hid < {hid}.
+        Additional counts provided in the HTTP headers.
+
+        GET /api/histories/{history_id}/contents/before/{hid}/{limit}
+        """
+        return self._handle_direction(trans, history_id, DirectionOptions.before, hid, limit, **kwd)
+
+    def _handle_direction(self, trans, history_id, direction, hid, limit, **kwd):
         serialization_params = parse_serialization_params(default_view='betawebclient', **kwd)
 
         since_str = kwd.pop('since', None)
@@ -515,7 +536,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         limit = int(limit)
 
         return self.service.contents_near(
-            trans, history_id, serialization_params, filter_params, hid, limit, since,
+            trans, history_id, serialization_params, filter_params, direction, hid, limit, since,
         )
 
     # Parsing query string according to REST standards.
