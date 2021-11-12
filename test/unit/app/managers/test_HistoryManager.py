@@ -569,7 +569,7 @@ class HistorySerializerTestCase(BaseTestCase):
         self.assertIsInstance(serialized['hdas'], list)
 
         self.log('a history with contents should be properly reflected in empty, etc.')
-        hda1 = self.hda_manager.create(history=history1, hid=1)
+        hda1 = self.hda_manager.create(history=history1)
         self.hda_manager.update(hda1, dict(state='ok'))
 
         serialized = self.history_serializer.serialize(history1, keys)
