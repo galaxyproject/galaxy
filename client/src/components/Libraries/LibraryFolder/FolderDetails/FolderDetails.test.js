@@ -4,6 +4,7 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import FolderDetails from "./FolderDetails";
 import apiResponse from "./response.test.json";
+import BootstrapVue from "bootstrap-vue";
 
 const LIBRARY_ID = "lib_test_id";
 const FOLDER_ID = "folder_test_id";
@@ -26,6 +27,7 @@ const ERROR_ALERT = '[data-testid="error-alert"]';
 
 async function mountFolderDetailsWrapper() {
     const localVue = createLocalVue();
+    localVue.use(BootstrapVue);
     const wrapper = mount(FolderDetails, { localVue, propsData: INPUT_PROP_DATA });
     await flushPromises();
     return wrapper;
@@ -37,6 +39,7 @@ describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
 
     beforeEach(async () => {
         axiosMock.reset();
+        axiosMock.onGet(API_URL).reply(200, apiResponse);
         wrapper = await mountFolderDetailsWrapper();
     });
 
@@ -46,8 +49,6 @@ describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
     });
 
     it("Should display the modal dialog with both tables when the button is clicked", async () => {
-        axiosMock.onGet(API_URL).replyOnce(200, apiResponse);
-
         await openDetailsModal(wrapper);
 
         console.log(wrapper.html());
