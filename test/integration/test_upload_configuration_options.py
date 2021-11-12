@@ -434,8 +434,7 @@ class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
             "collection_type": "list",
             "name": "cool collection",
         }
-        response = self.fetch_target(target)
-        self._assert_status_code_is(response, 200)
+        response = self.fetch_target(target, assert_ok=True, wait=True)
         response_object = response.json()
         assert "output_collections" in response_object
         output_collections = response_object["output_collections"]
