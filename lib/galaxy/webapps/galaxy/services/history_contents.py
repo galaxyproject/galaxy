@@ -739,13 +739,15 @@ class HistoriesContentsService(ServiceBase):
             matches = self._get_matches(history, filter_params, _hid_params, order_by_asc, limit, serialization_params)
             expanded = self._expand_contents(trans, matches, serialization_params)
             expanded.reverse()
-            item_counts = self._set_item_counts(matches_up=len(matches), total_matches_up=up_total_count, total_matches_down=down_total_count)
+            item_counts = self._set_item_counts(
+                matches_up=len(matches), total_matches_up=up_total_count, total_matches_down=down_total_count)
 
         elif direction == DirectionOptions.before:  # seek down: contents <= hid (older)
             _hid_params = self._hid_less_than(hid)
             matches = self._get_matches(history, filter_params, _hid_params, order_by_dsc, limit, serialization_params)
             expanded = self._expand_contents(trans, matches, serialization_params)
-            item_counts = self._set_item_counts(matches_down=len(matches), total_matches_up=up_total_count, total_matches_down=down_total_count)
+            item_counts = self._set_item_counts(
+                matches_down=len(matches), total_matches_up=up_total_count, total_matches_down=down_total_count)
 
         elif direction == DirectionOptions.near:  # seek up, down; then reverse up, and combine
             up_limit, down_limit = self._get_limits(limit)
@@ -760,7 +762,9 @@ class HistoriesContentsService(ServiceBase):
             down_expanded = self._expand_contents(trans, down_matches, serialization_params)
 
             expanded = up_expanded + down_expanded
-            item_counts = self._set_item_counts(matches_up=len(up_matches), matches_down=len(down_matches), total_matches_up=up_total_count, total_matches_down=down_total_count)
+            item_counts = self._set_item_counts(
+                matches_up=len(up_matches), matches_down=len(down_matches), total_matches_up=up_total_count,
+                total_matches_down=down_total_count)
 
         trans.response.headers['matches'] = item_counts['matches']
         trans.response.headers['matches_up'] = item_counts['matches_up']
