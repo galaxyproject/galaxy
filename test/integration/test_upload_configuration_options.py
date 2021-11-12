@@ -25,6 +25,7 @@ import re
 import shutil
 import tempfile
 import unittest
+from typing import Dict, TextIO, Union
 
 from galaxy_test.base.api_util import (
     TEST_USER,
@@ -57,7 +58,7 @@ class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstanc
         self.history_id = self.dataset_populator.new_history()
 
     def fetch_target(self, target, assert_ok=False, attach_test_file=False, wait=False):
-        payload = {
+        payload: Dict[str, Union[str, Dict[str, TextIO]]] = {
             "history_id": self.history_id,
             "targets": json.dumps([target]),
         }
