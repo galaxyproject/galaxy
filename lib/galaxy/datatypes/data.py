@@ -24,10 +24,8 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
-from . import (
-    dataproviders,
-    metadata
-)
+from . import dataproviders as p_dataproviders
+from . import metadata
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
@@ -114,7 +112,7 @@ class DataMeta(abc.ABCMeta):
         metadata.Statement.process(cls)
 
 
-@dataproviders.decorators.has_dataproviders
+@p_dataproviders.decorators.has_dataproviders
 class Data(metaclass=DataMeta):
     """
     Base class for all datatypes.  Implements basic interfaces as well
@@ -137,7 +135,7 @@ class Data(metaclass=DataMeta):
     CHUNKABLE = False
 
     #: Dictionary of metadata fields for this datatype
-    metadata_spec = None
+    metadata_spec: metadata.MetadataSpecCollection
 
     # Add metadata elements
     MetadataElement(name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, no_value="?")
@@ -164,9 +162,10 @@ class Data(metaclass=DataMeta):
     # Data sources.
     data_sources: Dict[str, str] = {}
 
+    dataproviders: Dict[str, Any]
+
     def __init__(self, **kwd):
         """Initialize the datatype"""
-        object.__init__(self, **kwd)
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
         self.display_applications = {}
@@ -272,10 +271,9 @@ class Data(metaclass=DataMeta):
                     continue
                 out.append(f"<tr><td>{escape(unicodify(line, 'utf-8'))}</td></tr>")
             out.append('</table>')
-            out = "".join(out)
+            return "".join(out)
         except Exception as exc:
-            out = f"Can't create peek: {unicodify(exc)}"
-        return out
+            return f"Can't create peek: {unicodify(exc)}"
 
     def _archive_main_file(self, archive, display_name, data_filename):
         """Called from _archive_composite_dataset to add central file to archive.
@@ -428,8 +426,15 @@ class Data(metaclass=DataMeta):
         self._clean_and_set_mime_type(trans, data.get_mime())
 
         trans.log_event(f"Display dataset id: {str(data.id)}")
-        from galaxy import datatypes  # DBTODO REMOVE THIS AT REFACTOR
-        if to_ext or isinstance(data.datatype, datatypes.binary.Binary):  # Saving the file, or binary file
+        from galaxy.datatypes import (
+            binary,
+            images,
+            text,
+        )  # DBTODO REMOVE THIS AT REFACTOR
+
+        if to_ext or isinstance(
+            data.datatype, binary.Binary
+        ):  # Saving the file, or binary file
             if data.extension in composite_extensions:
                 return self._archive_composite_dataset(trans, data, do_action=kwd.get('do_action', 'zip'))
             else:
@@ -441,10 +446,14 @@ class Data(metaclass=DataMeta):
         if not os.path.exists(data.file_name):
             raise webob.exc.HTTPNotFound(f"File Not Found ({data.file_name}).")
         max_peek_size = DEFAULT_MAX_PEEK_SIZE  # 1 MB
-        if isinstance(data.datatype, datatypes.text.Html):
+        if isinstance(data.datatype, text.Html):
             max_peek_size = 10000000  # 10 MB for html
         preview = util.string_as_bool(preview)
-        if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat(data.file_name).st_size < max_peek_size:
+        if (
+            not preview
+            or isinstance(data.datatype, images.Image)
+            or os.stat(data.file_name).st_size < max_peek_size
+        ):
             return self._yield_user_file_content(trans, data, data.file_name)
         else:
             trans.response.set_content_type("text/html")
@@ -537,7 +546,7 @@ class Data(metaclass=DataMeta):
         """Returns formatted html of dataset info"""
         try:
             # Change new line chars to html
-            info = escape(dataset.info)
+            info: str = escape(dataset.info)
             if info.find('\r\n') >= 0:
                 info = info.replace('\r\n', '<br/>')
             if info.find('\r') >= 0:
@@ -697,7 +706,7 @@ class Data(metaclass=DataMeta):
             if dataset:
                 meta_value = str(dataset.metadata.get(composite_file.substitute_name_with_metadata))
             else:
-                meta_value = self.spec[composite_file.substitute_name_with_metadata].default
+                meta_value = self.spec[composite_file.substitute_name_with_metadata].default  # type: ignore
             return key % meta_value
         return key
 
@@ -777,25 +786,29 @@ class Data(metaclass=DataMeta):
         """
         if self.has_dataprovider(data_format):
             return self.dataproviders[data_format](self, dataset, **settings)
-        raise dataproviders.exceptions.NoProviderAvailable(self, data_format)
+        raise p_dataproviders.exceptions.NoProviderAvailable(self, data_format)
 
     def validate(self, dataset, **kwd):
         return DatatypeValidation.unvalidated()
 
-    @dataproviders.decorators.dataprovider_factory('base')
+    @p_dataproviders.decorators.dataprovider_factory("base")
     def base_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.base.DataProvider(dataset_source, **settings)
+        dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
+        return p_dataproviders.base.DataProvider(dataset_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('chunk', dataproviders.chunk.ChunkDataProvider.settings)
+    @p_dataproviders.decorators.dataprovider_factory(
+        "chunk", p_dataproviders.chunk.ChunkDataProvider.settings
+    )
     def chunk_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.chunk.ChunkDataProvider(dataset_source, **settings)
+        dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
+        return p_dataproviders.chunk.ChunkDataProvider(dataset_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('chunk64', dataproviders.chunk.Base64ChunkDataProvider.settings)
+    @p_dataproviders.decorators.dataprovider_factory(
+        "chunk64", p_dataproviders.chunk.Base64ChunkDataProvider.settings
+    )
     def chunk64_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.chunk.Base64ChunkDataProvider(dataset_source, **settings)
+        dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
+        return p_dataproviders.chunk.Base64ChunkDataProvider(dataset_source, **settings)
 
     def _clean_and_set_mime_type(self, trans, mime):
         if mime.lower() in XSS_VULNERABLE_MIME_TYPES:
@@ -803,8 +816,11 @@ class Data(metaclass=DataMeta):
                 mime = DEFAULT_MIME_TYPE
         trans.response.set_content_type(mime)
 
+    def handle_dataset_as_image(self, hda) -> str:
+        raise Exception("Unimplemented Method")
 
-@dataproviders.decorators.has_dataproviders
+
+@p_dataproviders.decorators.has_dataproviders
 class Text(Data):
     edam_format = "format_2330"
     file_ext = 'txt'
@@ -834,11 +850,10 @@ class Text(Data):
             with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
                 dataset_read = dataset_fh.read(sample_size)
             sample_lines = dataset_read.count('\n')
-            est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
+            return int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
         except UnicodeDecodeError:
             log.error(f'Unable to estimate lines in file {dataset.file_name}')
-            est_lines = None
-        return est_lines
+            return None
 
     def count_data_lines(self, dataset):
         """
@@ -861,7 +876,7 @@ class Text(Data):
                         data_lines += 1
             except UnicodeDecodeError:
                 log.error(f'Unable to count lines in file {dataset.file_name}')
-                data_lines = None
+                return None
         return data_lines
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True, **kwd):
@@ -970,23 +985,27 @@ class Text(Data):
                 part_file.close()
 
     # ------------- Dataproviders
-    @dataproviders.decorators.dataprovider_factory('line', dataproviders.line.FilteredLineDataProvider.settings)
+    @p_dataproviders.decorators.dataprovider_factory(
+        "line", p_dataproviders.line.FilteredLineDataProvider.settings
+    )
     def line_dataprovider(self, dataset, **settings):
         """
         Returns an iterator over the dataset's lines (that have been stripped)
         optionally excluding blank lines and lines that start with a comment character.
         """
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.line.FilteredLineDataProvider(dataset_source, **settings)
+        dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
+        return p_dataproviders.line.FilteredLineDataProvider(dataset_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('regex-line', dataproviders.line.RegexLineDataProvider.settings)
+    @p_dataproviders.decorators.dataprovider_factory(
+        "regex-line", p_dataproviders.line.RegexLineDataProvider.settings
+    )
     def regex_line_dataprovider(self, dataset, **settings):
         """
         Returns an iterator over the dataset's lines
         optionally including/excluding lines that match one or more regex filters.
         """
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.line.RegexLineDataProvider(dataset_source, **settings)
+        dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
+        return p_dataproviders.line.RegexLineDataProvider(dataset_source, **settings)
 
 
 class Directory(Data):
@@ -1084,7 +1103,7 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
     count = 0
 
     last_line_break = False
-    with compression_utils.get_fileobj(file_name, "U") as temp:
+    with compression_utils.get_fileobj(file_name) as temp:
         while count < LINE_COUNT:
             try:
                 line = temp.readline(WIDTH)
