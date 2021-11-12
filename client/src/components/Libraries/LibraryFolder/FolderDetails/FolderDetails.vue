@@ -22,7 +22,7 @@
                 <div v-if="libraryDetails">
                     <b-table-lite
                         :items="libraryDetails"
-                        :fields="getFieldsWithHeaderTitle('Library')"
+                        :fields="getFieldsWithHeaderTitle(libraryHeader)"
                         striped
                         small
                         data-testid="library-table"
@@ -31,7 +31,7 @@
                 <div>
                     <b-table-lite
                         :items="folderDetails"
-                        :fields="getFieldsWithHeaderTitle('Folder')"
+                        :fields="getFieldsWithHeaderTitle(folderHeader)"
                         striped
                         small
                         data-testid="folder-table"
@@ -52,17 +52,10 @@ import { getAppRoot } from "onload/loadConfig";
 
 library.add(faInfoCircle);
 
-function buildLibraryDetailsFields(data) {
-    const libraryDetails = [
-        { name: "Name", value: data.name },
-        { name: "Description", value: data.description },
-        { name: "Synopsis", value: data.synopsis },
-        { name: "ID", value: data.id },
-    ];
-    if (data.create_time_pretty !== "") {
-        libraryDetails.push({ name: "Created", value: data.create_time_pretty });
-    }
-    return libraryDetails;
+function buildFields(fields, data) {
+    return Object.entries(fields).flatMap(([property, title]) =>
+        data[property] ? { name: title, value: data[property] } : []
+    );
 }
 
 export default {
@@ -87,6 +80,16 @@ export default {
     },
     data() {
         return {
+            folderHeader: "Folder",
+            libraryHeader: "Library",
+            folderFields: { folder_name: "Name", folder_description: "Description", id: "ID" },
+            libraryFields: {
+                name: "Name",
+                description: "Description",
+                synopsis: "Synopsis",
+                create_time_pretty: "Created",
+                id: "ID",
+            },
             titleLocationDetails: _l("Location Details"),
             libraryDetails: null,
             folderDetails: null,
@@ -96,7 +99,7 @@ export default {
     computed: {
         /** @return {Boolean} */
         hasError() {
-            return this.error !== null;
+            return !!this.error;
         },
     },
     methods: {
@@ -104,13 +107,8 @@ export default {
             try {
                 const url = `${getAppRoot()}api/libraries/${this.metadata.parent_library_id}`;
                 const response = await axios.get(url);
-
-                this.libraryDetails = buildLibraryDetailsFields(response.data);
-                this.folderDetails = [
-                    { name: "Name", value: this.metadata.folder_name },
-                    { name: "Description", value: this.metadata.folder_description },
-                    { name: "ID", value: this.id },
-                ];
+                this.libraryDetails = buildFields(this.libraryFields, response.data);
+                this.folderDetails = buildFields(this.folderFields, { ...this.metadata, ...{ id: this.id } });
                 this.error = null;
             } catch (e) {
                 this.libraryDetails = null;
