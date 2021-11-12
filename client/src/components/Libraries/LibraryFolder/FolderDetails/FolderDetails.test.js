@@ -1,4 +1,4 @@
-import { mount } from "@vue/test-utils";
+import { createLocalVue, mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
@@ -24,22 +24,29 @@ const LIBRARY_TABLE = '[data-testid="library-table"]';
 const FOLDER_TABLE = '[data-testid="folder-table"]';
 const ERROR_ALERT = '[data-testid="error-alert"]';
 
+async function mountFolderDetailsWrapper() {
+    const localVue = createLocalVue();
+    const wrapper = mount(FolderDetails, { localVue, propsData: INPUT_PROP_DATA });
+    await flushPromises();
+    return wrapper;
+}
+
 describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
     const axiosMock = new MockAdapter(axios);
+    let wrapper;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         axiosMock.reset();
+        wrapper = await mountFolderDetailsWrapper();
     });
 
     it("Should display details button", async () => {
-        const wrapper = mount(FolderDetails, { propsData: INPUT_PROP_DATA });
         const button = wrapper.find(DETAILS_BUTTON);
         expect(button.exists()).toBeTruthy();
     });
 
     it("Should display the modal dialog with both tables when the button is clicked", async () => {
         axiosMock.onGet(API_URL).replyOnce(200, apiResponse);
-        const wrapper = mount(FolderDetails, { propsData: INPUT_PROP_DATA });
 
         await openDetailsModal(wrapper);
 
@@ -52,7 +59,6 @@ describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
 
     it("Should display error when the library details cannot be retrieved", async () => {
         axiosMock.onGet(API_URL).networkError();
-        const wrapper = mount(FolderDetails, { propsData: INPUT_PROP_DATA });
 
         await openDetailsModal(wrapper);
 
