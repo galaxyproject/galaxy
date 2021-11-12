@@ -502,7 +502,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         - total matches:      total matches-up + total matches-down + 1 (+1 for hid == {hid})
         - displayed matches-up:   hid <= {hid} (hid == {hid} is included)
         - displayed matches-down: hid > {hid}
-        - displayed matches:      displayed matches-up + displayed matches-down 
+        - displayed matches:      displayed matches-up + displayed matches-down
 
         b) {limit} history items:
         - if direction == before: hid <= {hid}
