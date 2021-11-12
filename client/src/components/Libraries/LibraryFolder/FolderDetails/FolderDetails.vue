@@ -11,7 +11,7 @@
 
         <b-modal id="details-modal" :title="titleLocationDetails" @show="getDetails" ok-only title-tag="h3">
             <div>
-                <b-alert :show="hasError" variant="danger"> {{ error }} </b-alert>
+                <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
                 <div v-if="libraryDetails">
                     <b-table-lite
                         :items="libraryDetails"
@@ -59,6 +59,7 @@ function buildLibraryDetailsFields(data) {
 }
 
 export default {
+    name: "FolderDetails",
     components: {
         FontAwesomeIcon,
     },
