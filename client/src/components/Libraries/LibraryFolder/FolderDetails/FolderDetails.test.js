@@ -1,11 +1,10 @@
-import { mount, shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { getLocalVue } from "jest/helpers";
 import FolderDetails from "./FolderDetails";
 import apiResponse from "./response.test.json";
-import { getLocalVue } from "jest/helpers";
-import { BModal } from "bootstrap-vue";
 
 const LIBRARY_ID = "lib_test_id";
 const FOLDER_ID = "folder_test_id";
@@ -24,17 +23,14 @@ const INPUT_PROP_DATA = {
 
 const DETAILS_BUTTON = '[data-testid="loc-details-btn"]';
 const LIBRARY_TABLE = '[data-testid="library-table"]';
-const FORLDER_MODAL = "#details-modal";
+const DETAILS_MODAL = "#details-modal";
 const FOLDER_TABLE = '[data-testid="folder-table"]';
 const ERROR_ALERT = '[data-testid="error-alert"]';
 
 async function mountFolderDetailsWrapper(localVue) {
-    const wrapper = shallowMount(FolderDetails, {
+    const wrapper = mount(FolderDetails, {
         localVue,
         propsData: INPUT_PROP_DATA,
-        stubs: {
-            BModal: BModal,
-        },
     });
     await flushPromises();
     return wrapper;
@@ -46,41 +42,56 @@ describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
 
     beforeEach(async () => {
         axiosMock.reset();
-        axiosMock.onGet(API_URL).reply(200, apiResponse);
         wrapper = await mountFolderDetailsWrapper(localVue);
     });
+
     afterEach(async () => {
         wrapper.destroy();
     });
 
     it("Should display details button", async () => {
         const button = wrapper.find(DETAILS_BUTTON);
-        expect(button.exists()).toBeTruthy();
+        expect(button.exists()).toBe(true);
     });
 
     it("Should display the modal dialog with both tables when the button is clicked", async () => {
-        // make sure that modal is hidden
-        expect(wrapper.find(FORLDER_MODAL).attributes("aria-hidden")).toEqual("true");
-        await openDetailsModal(wrapper);
-        // make sure that modal is visible
-        expect(wrapper.find(FORLDER_MODAL).attributes("aria-hidden")).toEqual(undefined);
+        // Using replyOnce to make sure we made only one request
+        axiosMock.onGet(API_URL).replyOnce(200, apiResponse);
+
+        expectModalToBeHidden();
+
+        await openDetailsModal();
+
+        expectModalToBeVisible();
+
+        expect(wrapper.find(LIBRARY_TABLE).html()).toContain(LIBRARY_ID);
+        expect(wrapper.find(FOLDER_TABLE).html()).toContain(FOLDER_ID);
+        expect(wrapper.find(ERROR_ALERT).text()).toBeFalsy();
     });
 
     it("Should display error when the library details cannot be retrieved", async () => {
         axiosMock.onGet(API_URL).networkError();
 
-        await openDetailsModal(wrapper);
+        await openDetailsModal();
 
-        expect(wrapper.find(LIBRARY_TABLE).exists()).toBeFalsy();
-        expect(wrapper.find(FOLDER_TABLE).exists()).toBeTruthy();
-        expect(wrapper.find(ERROR_ALERT).exists()).toBeTruthy();
+        expect(wrapper.find(LIBRARY_TABLE).exists()).toBe(false);
+        expect(wrapper.find(FOLDER_TABLE).exists()).toBe(true);
+        expect(wrapper.find(ERROR_ALERT).text()).toContain("Failed to retrieve library details.");
     });
 
-    async function openDetailsModal(wrapper) {
+    async function openDetailsModal() {
         const button = wrapper.find(DETAILS_BUTTON);
 
         await button.trigger("click");
 
         await flushPromises();
+    }
+
+    function expectModalToBeHidden() {
+        expect(wrapper.find(DETAILS_MODAL).attributes("aria-hidden")).toBeTruthy();
+    }
+
+    function expectModalToBeVisible() {
+        expect(wrapper.find(DETAILS_MODAL).attributes("aria-hidden")).toBeFalsy();
     }
 });

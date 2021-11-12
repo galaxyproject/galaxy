@@ -6,7 +6,7 @@
     "create_time_pretty": "5.4 months ago",
     "deleted": false,
     "description": "Test library description",
-    "id": "f2db41e1fa331b3e",
+    "id": "lib_test_id",
     "model_class": "Library",
     "name": "Library Name",
     "public": true,
