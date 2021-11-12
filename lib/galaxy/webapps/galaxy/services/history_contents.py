@@ -714,9 +714,9 @@ class HistoriesContentsService(ServiceBase):
 
         Additional counts provided in the HTTP headers.
         """
-        def get_contents_data(hid_params, order, limit):
+        def get_contents_data(hid_params, order_by, limit):
             params = filter_params + hid_params
-            matches, total_count = self._seek(history, params, order, limit, serialization_params)
+            matches, total_count = self._seek(history, params, order_by, limit, serialization_params)
             expanded = self._expand_contents(trans, matches, serialization_params)
             return len(matches), total_count, expanded
 
@@ -735,28 +735,29 @@ class HistoriesContentsService(ServiceBase):
                 trans.response.status = 204
                 return
 
-        min_hid, max_hid = self._get_filtered_extrema(history, filter_params)
-        order_asc, order_dsc = 'hid-asc', 'hid-dsc'
+        order_by_dsc = self.build_order_by(self.history_contents_manager, 'hid-dsc')
+        order_by_asc = self.build_order_by(self.history_contents_manager, 'hid-asc')
+        min_hid, max_hid = self._get_filtered_extrema(history, filter_params, order_by_dsc, order_by_asc)
 
         if direction == DirectionOptions.after:  # seek up: contents > hid (newer)
             hid_params = self._hid_greater_than(hid)
-            match_count, total_count, expanded = get_contents_data(hid_params, order_asc, limit)
+            match_count, total_count, expanded = get_contents_data(hid_params, order_by_asc, limit)
             item_counts = self._set_item_counts(matches_up=match_count, total_matches_up=total_count)
             expanded.reverse()
 
         elif direction == DirectionOptions.before:  # seek down: contents <= hid (older)
             hid_params = self._hid_less_than(hid)
-            match_count, total_count, expanded = get_contents_data(hid_params, order_dsc, limit)
+            match_count, total_count, expanded = get_contents_data(hid_params, order_by_dsc, limit)
             item_counts = self._set_item_counts(matches_down=match_count, total_matches_down=total_count)
 
         elif direction == DirectionOptions.near:  # seek up, down; then reverse up, and combine
             up_limit, down_limit = self._get_limits(limit)
 
             hid_params = self._hid_greater_than(hid)
-            up_match_count, up_total_count, up_expanded = get_contents_data(hid_params, order_asc, up_limit)
+            up_match_count, up_total_count, up_expanded = get_contents_data(hid_params, order_by_asc, up_limit)
 
             hid_params = self._hid_less_or_equal_than(hid)
-            down_match_count, down_total_count, down_expanded = get_contents_data(hid_params, order_dsc, down_limit)
+            down_match_count, down_total_count, down_expanded = get_contents_data(hid_params, order_by_dsc, down_limit)
 
             item_counts = self._set_item_counts(matches_up=up_match_count, total_matches_up=up_total_count,
                 matches_down=down_match_count, total_matches_down=down_total_count)
@@ -801,9 +802,8 @@ class HistoriesContentsService(ServiceBase):
         return [["hid", "le", hid]]
 
     # Perform content query and matching count
-    def _seek(self, history, filter_params, order_by_string, limit, serialization_params):
+    def _seek(self, history, filter_params, order_by, limit, serialization_params):
         filters = self.history_contents_filters.parse_filters(filter_params)
-        order_by = self.build_order_by(self.history_contents_manager, order_by_string)
 
         # actual contents
         contents = self.history_contents_manager.contents(history,
@@ -835,13 +835,10 @@ class HistoriesContentsService(ServiceBase):
                 rval.append(collection)
         return rval
 
-    def _get_filtered_extrema(self, history, filter_params):
+    def _get_filtered_extrema(self, history, filter_params, order_by_dsc, order_by_asc):
         extrema_params = parse_serialization_params(keys='hid', default_view='summary')
         extrema_filter_params = [f for f in filter_params if f[0] != 'update_time']
         extrema_filters = self.history_contents_filters.parse_filters(extrema_filter_params)
-
-        order_by_dsc = self.build_order_by(self.history_contents_manager, 'hid-dsc')
-        order_by_asc = self.build_order_by(self.history_contents_manager, 'hid-asc')
 
         max_row_result = self.history_contents_manager.contents(history,
             limit=1,
