@@ -671,7 +671,7 @@ class FastAPIHistoryContents:
         return StreamingResponse(archive.get_iterator(), headers=archive.get_headers(), media_type="application/zip")
 
     @router.get(
-        '/api/histories/{history_id}/contents/near/{hid}/{limit}',
+        '/api/histories/{history_id}/contents/{direction}/{hid}/{limit}',
         summary='Get content items around (above and below) a particular `HID`.',
     )
     def contents_near(
@@ -684,6 +684,10 @@ class FastAPIHistoryContents:
             ...,
             title="Target HID",
             description="The target `HID` to get content around it.",
+        ),
+        direction: DirectionOptions = Path(
+            ...,
+            description="Determines what items are selected before, after or near the target `hid`.",
         ),
         limit: int = Path(
             ...,
@@ -701,13 +705,13 @@ class FastAPIHistoryContents:
         """
         This endpoint provides random access to a large history without having
         to know exactly how many pages are in the final query. Pick a target HID
-        and filters, and the endpoint will get LIMIT counts above and below that
-        target regardless of how many gaps may exist in the HID due to
-        filtering.
+        and filters, and the endpoint will get a maximum of `limit` history items "near" the `hid`.
+        The `direction` determines what items are selected:
+        - before: select items with hid < {hid}
+        - after:  select items with hid > {hid}
+        - near:   select items "around" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1
 
-        It does 2 queries, one up and one down from the target hid with a
-        result size of limit. Additional counts for total matches of both seeks
-        provided in the http headers.
+        Additional counts are provided in the HTTP headers.
 
         **Note**: This endpoint uses slightly different filter params syntax. Instead of using `q`/`qv` parameters
                   it uses the following syntax for query parameters:
@@ -726,7 +730,7 @@ class FastAPIHistoryContents:
         filter_params = parse_content_filter_params(request.query_params._dict, exclude=exclude_params)
 
         result = self.service.contents_near(
-            trans, history_id, serialization_params, filter_params, hid, limit, since,
+            trans, history_id, serialization_params, filter_params, direction, hid, limit, since,
         )
         if result is None:
             return Response(status_code=status.HTTP_204_NO_CONTENT)
