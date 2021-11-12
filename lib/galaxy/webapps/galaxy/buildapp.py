@@ -318,11 +318,11 @@ def populate_api_routes(webapp, app):
                           controller='history_contents',
                           conditions=dict(method=["GET"]))
     webapp.mapper.connect("/api/histories/{history_id}/contents/after/{hid}/{limit}",
-                          action="contents_near",
+                          action="contents_after",
                           controller='history_contents',
                           conditions=dict(method=["GET"]))
     webapp.mapper.connect("/api/histories/{history_id}/contents/before/{hid}/{limit}",
-                          action="contents_near",
+                          action="contents_before",
                           controller='history_contents',
                           conditions=dict(method=["GET"]))
     webapp.mapper.resource('user',

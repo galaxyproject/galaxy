@@ -35,7 +35,14 @@ from galaxy.webapps.base.controller import (
     UsesTagsMixin
 )
 from galaxy.webapps.galaxy.api.common import parse_serialization_params
-from galaxy.webapps.galaxy.services.history_contents import CreateHistoryContentPayload, HistoriesContentsService, HistoryContentsFilterList, HistoryContentsFilterQueryParams, HistoryContentsIndexLegacyParams
+from galaxy.webapps.galaxy.services.history_contents import (
+    CreateHistoryContentPayload,
+    DirectionOptions,
+    HistoriesContentsService,
+    HistoryContentsFilterList,
+    HistoryContentsFilterQueryParams,
+    HistoryContentsIndexLegacyParams
+)
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
@@ -486,18 +493,36 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         return self.service.archive(trans, history_id, filter_parameters, filename, dry_run)
 
     @expose_api_raw_anonymous
-    def contents_near(self, trans, history_id, direction, hid, limit, **kwd):
+    def contents_near(self, trans, history_id, hid, limit, **kwd):
         """
-        Return {limit} history items "near" the {hid}. The {direction} determines what items
-        are selected:
-        - before: select items with hid < {hid}
-        - after:  select items with hid > {hid}
-        - near:   select items "around" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1
-
+        Return {limit} history items "near" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1.
         Additional counts provided in the HTTP headers.
 
-        GET /api/histories/{history_id}/contents/{direction}/{hid}/{limit}
+        GET /api/histories/{history_id}/contents/near/{hid}/{limit}
         """
+        return self._handle_direction(trans, history_id, DirectionOptions.near, hid, limit, **kwd)
+
+    @expose_api_raw_anonymous
+    def contents_after(self, trans, history_id, hid, limit, **kwd):
+        """
+        Return {limit} history items with hid > {hid}.
+        Additional counts provided in the HTTP headers.
+
+        GET /api/histories/{history_id}/contents/after/{hid}/{limit}
+        """
+        return self._handle_direction(trans, history_id, DirectionOptions.after, hid, limit, **kwd)
+
+    @expose_api_raw_anonymous
+    def contents_before(self, trans, history_id, hid, limit, **kwd):
+        """
+        Return {limit} history items with hid < {hid}.
+        Additional counts provided in the HTTP headers.
+
+        GET /api/histories/{history_id}/contents/before/{hid}/{limit}
+        """
+        return self._handle_direction(trans, history_id, DirectionOptions.before, hid, limit, **kwd)
+
+    def _handle_direction(self, trans, history_id, direction, hid, limit, **kwd):
         serialization_params = parse_serialization_params(default_view='betawebclient', **kwd)
 
         since_str = kwd.pop('since', None)
