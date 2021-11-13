@@ -10,7 +10,6 @@ import SelectLibrary from "mvc/ui/ui-select-library";
 import SelectFtp from "mvc/ui/ui-select-ftp";
 import RulesEdit from "mvc/ui/ui-rules-edit";
 import FileSource from "mvc/ui/ui-file-source";
-import ColorPicker from "mvc/ui/ui-color-picker";
 import DataPicker from "mvc/ui/ui-data-picker";
 
 // create form view
@@ -27,7 +26,6 @@ export default Backbone.View.extend({
         integer: "_fieldSlider",
         float: "_fieldSlider",
         drill_down: "_fieldDrilldown",
-        color: "_fieldColor",
         group_tag: "_fieldSelect",
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
@@ -181,14 +179,6 @@ export default Backbone.View.extend({
             is_workflow: input_def.is_workflow,
             min: input_def.min,
             max: input_def.max,
-            onchange: input_def.onchange,
-        });
-    },
-
-    /** Color picker field */
-    _fieldColor: function (input_def) {
-        return new ColorPicker({
-            id: `field-${input_def.id}`,
             onchange: input_def.onchange,
         });
     },
