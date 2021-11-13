@@ -14,28 +14,42 @@
             :static="isStatic"
             :title="titleLocationDetails"
             @show="getDetails"
-            ok-only
             title-tag="h3"
+            ok-only
         >
             <div>
                 <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
                 <div v-if="libraryDetails">
                     <b-table-lite
                         :items="libraryDetails"
-                        :fields="getFieldsWithHeaderTitle(libraryHeader)"
                         striped
                         small
+                        caption-top
+                        thead-class="d-none"
                         data-testid="library-table"
-                    />
+                    >
+                        <template v-slot:table-caption>
+                            <h4>
+                                <b>{{ libraryHeader }}</b>
+                            </h4>
+                        </template>
+                    </b-table-lite>
                 </div>
                 <div>
                     <b-table-lite
                         :items="folderDetails"
-                        :fields="getFieldsWithHeaderTitle(folderHeader)"
                         striped
                         small
+                        caption-top
+                        thead-class="d-none"
                         data-testid="folder-table"
-                    />
+                    >
+                        <template v-slot:table-caption>
+                            <h4>
+                                <b>{{ folderHeader }}</b>
+                            </h4>
+                        </template>
+                    </b-table-lite>
                 </div>
             </div>
         </b-modal>
@@ -114,15 +128,6 @@ export default {
                 this.libraryDetails = null;
                 this.error = `${_l("Failed to retrieve library details.")} ${e}`;
             }
-        },
-        /** Create table fields to display just the first column
-         * header as the table title.
-         */
-        getFieldsWithHeaderTitle(title) {
-            return [
-                { label: title, key: "name" },
-                { label: "", key: "value" },
-            ];
         },
     },
 };
