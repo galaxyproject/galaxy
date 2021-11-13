@@ -74,7 +74,7 @@ class ToolParameterValueWrapper:
     Base class for object that Wraps a Tool Parameter and Value.
     """
 
-    value: Optional[Union[str, list[str]]]
+    value: Any
     input: "ToolParameter"
 
     def __bool__(self) -> bool:
@@ -128,7 +128,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
     def __init__(
         self,
         input: "ToolParameter",
-        value: Optional[str],
+        value: Any,
         other_values: Optional[dict[str, str]] = None,
         profile: Optional[float] = None,
     ) -> None:
