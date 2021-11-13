@@ -66,6 +66,12 @@ import { getAppRoot } from "onload/loadConfig";
 
 library.add(faInfoCircle);
 
+/** Maps the title `fields` to the value of that property from the object `data`.
+ * @param {Object} fields   Contains the name of the properties and their display title.
+ * @param {Object} data     Contains property/value pairs.
+ * @returns An array with name/value pairs with the corresponding title and the actual value
+ * of the property contained in `data`.
+ */
 function buildFields(fields, data) {
     return Object.entries(fields).flatMap(([property, title]) =>
         data[property] ? { name: title, value: data[property] } : []
@@ -118,15 +124,20 @@ export default {
     },
     methods: {
         async getDetails() {
+            // Compose the folder metadata with it's id as a new object
+            const folderData = { ...this.metadata, ...{ id: this.id } };
+            this.folderDetails = buildFields(this.folderFields, folderData);
+            this.libraryDetails = await this.retrieveLibraryDetails();
+        },
+        async retrieveLibraryDetails() {
             try {
+                this.error = null;
                 const url = `${getAppRoot()}api/libraries/${this.metadata.parent_library_id}`;
                 const response = await axios.get(url);
-                this.libraryDetails = buildFields(this.libraryFields, response.data);
-                this.folderDetails = buildFields(this.folderFields, { ...this.metadata, ...{ id: this.id } });
-                this.error = null;
+                return buildFields(this.libraryFields, response.data);
             } catch (e) {
-                this.libraryDetails = null;
                 this.error = `${_l("Failed to retrieve library details.")} ${e}`;
+                return null;
             }
         },
     },
