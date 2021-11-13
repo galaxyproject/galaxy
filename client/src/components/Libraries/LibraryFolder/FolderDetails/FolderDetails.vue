@@ -21,6 +21,7 @@
                 <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
                 <div v-if="libraryDetails">
                     <b-table-lite
+                        :fields="fields"
                         :items="libraryDetails"
                         striped
                         small
@@ -37,6 +38,7 @@
                 </div>
                 <div>
                     <b-table-lite
+                        :fields="fields"
                         :items="folderDetails"
                         striped
                         small
@@ -66,14 +68,14 @@ import { getAppRoot } from "onload/loadConfig";
 
 library.add(faInfoCircle);
 
-/** Maps the title `fields` to the value of that property from the object `data`.
- * @param {Object} fields   Contains the name of the properties and their display title.
+/** Maps the title in `fieldTitles` to the value of that property from the object `data`.
+ * @param {Object} fieldTitles   Contains property/title pairs.
  * @param {Object} data     Contains property/value pairs.
  * @returns An array with name/value pairs with the corresponding title and the actual value
  * of the property contained in `data`.
  */
-function buildFields(fields, data) {
-    return Object.entries(fields).flatMap(([property, title]) =>
+function buildFields(fieldTitles, data) {
+    return Object.entries(fieldTitles).flatMap(([property, title]) =>
         data[property] ? { name: title, value: data[property] } : []
     );
 }
@@ -102,15 +104,22 @@ export default {
             detailsCaption: _l("Details"),
             folderHeader: _l("Folder"),
             libraryHeader: _l("Library"),
-            folderFields: { folder_name: _l("Name"), folder_description: _l("Description"), id: "ID" },
-            libraryFields: {
+            titleLocationDetails: _l("Location Details"),
+            fields: [
+                {
+                    key: "name",
+                    tdClass: "name-column",
+                },
+                { key: "value" },
+            ],
+            folderFieldTitles: { folder_name: _l("Name"), folder_description: _l("Description"), id: "ID" },
+            libraryFieldTitles: {
                 name: _l("Name"),
                 description: _l("Description"),
                 synopsis: _l("Synopsis"),
                 create_time_pretty: _l("Created"),
                 id: "ID",
             },
-            titleLocationDetails: _l("Location Details"),
             libraryDetails: null,
             folderDetails: null,
             error: null,
@@ -126,7 +135,7 @@ export default {
         async getDetails() {
             // Compose the folder metadata with it's id as a new object
             const folderData = { ...this.metadata, ...{ id: this.id } };
-            this.folderDetails = buildFields(this.folderFields, folderData);
+            this.folderDetails = buildFields(this.folderFieldTitles, folderData);
             this.libraryDetails = await this.retrieveLibraryDetails();
         },
         async retrieveLibraryDetails() {
@@ -134,7 +143,7 @@ export default {
                 this.error = null;
                 const url = `${getAppRoot()}api/libraries/${this.metadata.parent_library_id}`;
                 const response = await axios.get(url);
-                return buildFields(this.libraryFields, response.data);
+                return buildFields(this.libraryFieldTitles, response.data);
             } catch (e) {
                 this.error = `${_l("Failed to retrieve library details.")} ${e}`;
                 return null;
@@ -143,3 +152,9 @@ export default {
     },
 };
 </script>
+<style>
+/* Cannot be scoped because name-column is used in tdClass */
+.name-column {
+    width: 25%;
+}
+</style>
