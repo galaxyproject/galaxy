@@ -788,7 +788,7 @@ class HistoriesContentsService(ServiceBase):
         counts['matches'] = matches_up + matches_down
         counts['matches_up'] = matches_up
         counts['matches_down'] = matches_down
-        counts['total_matches'] = total_matches_up + total_matches_down
+        counts['total_matches'] = total_matches_up + total_matches_down + 1  # + 1 for hid == {hid}
         counts['total_matches_up'] = total_matches_up
         counts['total_matches_down'] = total_matches_down
         return counts

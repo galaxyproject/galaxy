@@ -48,6 +48,6 @@ class TestSetItemCounts:
         assert counts['matches_up'] == up
         assert counts['matches_down'] == down
         # total counts of matching items
-        assert counts['total_matches'] == total_up + total_down
+        assert counts['total_matches'] == total_up + total_down + 1
         assert counts['total_matches_up'] == total_up
         assert counts['total_matches_down'] == total_down
