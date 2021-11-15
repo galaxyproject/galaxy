@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import shlex
+import string
 import tempfile
 from typing import Any, Dict, List
 
@@ -343,6 +344,10 @@ class ToolEvaluator:
             # Write outputs to the working directory (for security purposes)
             # if desired.
             param_dict[name] = DatasetFilenameWrapper(hda, compute_environment=self.compute_environment, io_type="output")
+            if '|__part__|' in name:
+                unqualified_name = name.split('|__part__|')[-1]
+                if unqualified_name not in param_dict:
+                    param_dict[unqualified_name] = param_dict[name]
             output_path = str(param_dict[name])
             # Conditionally create empty output:
             # - may already exist (e.g. symlink output)
@@ -487,9 +492,14 @@ class ToolEvaluator:
         """
         Build command line to invoke this tool given a populated param_dict
         """
-        command = self.tool.command
+        command = self.tool.command or ''
         param_dict = self.param_dict
         interpreter = self.tool.interpreter
+        version_string_cmd_raw = self.tool.version_string_cmd
+        if version_string_cmd_raw:
+            version_command_template = string.Template(version_string_cmd_raw)
+            version_string_cmd = version_command_template.safe_substitute({"__tool_directory__": self.compute_environment.tool_directory()})
+            command = f"{version_string_cmd} > {self.compute_environment.version_path()} 2>&1\n{command}"
         command_line = None
         if not command:
             return

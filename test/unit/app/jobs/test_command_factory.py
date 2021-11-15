@@ -175,7 +175,6 @@ class MockJobWrapper:
 
     def __init__(self, job_dir):
         self.strict_shell = False
-        self.write_version_cmd = None
         self.command_line = MOCK_COMMAND_LINE
         self.dependency_shell_commands = []
         self.metadata_line = None

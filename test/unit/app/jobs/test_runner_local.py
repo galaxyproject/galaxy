@@ -127,7 +127,6 @@ class MockJobWrapper:
         self.environment_variables = []
         self.commands_in_new_shell = False
         self.prepare_called = False
-        self.write_version_cmd = None
         self.dependency_shell_commands = None
         self.working_directory = working_directory
         self.tool_working_directory = tool_working_directory

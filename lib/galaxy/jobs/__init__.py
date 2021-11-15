@@ -937,7 +937,6 @@ class JobWrapper(HasResourceParameters):
         self.remote_command_line = True
         self._dependency_shell_commands = None
         # Tool versioning variables
-        self.write_version_cmd = None
         self.version_string = ""
         self.__galaxy_lib_dir = None
         # If the job has an object_store_id ensure working directory is setup, otherwise
@@ -1203,13 +1202,6 @@ class JobWrapper(HasResourceParameters):
         self.sa_session.flush()
         # Return list of all extra files
         self.param_dict = tool_evaluator.param_dict
-        version_string_cmd_raw = self.tool.version_string_cmd
-        if version_string_cmd_raw:
-            version_command_template = string.Template(version_string_cmd_raw)
-            version_string_cmd = version_command_template.safe_substitute({"__tool_directory__": compute_environment.tool_directory()})
-            self.write_version_cmd = f"{version_string_cmd} > {compute_environment.version_path()} 2>&1"
-        else:
-            self.write_version_cmd = None
         log.debug(f"Job wrapper for Job [{job.id}] prepared {prepare_timer}")
         return self.extra_filenames
 

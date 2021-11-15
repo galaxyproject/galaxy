@@ -57,13 +57,11 @@ def build_command(
 
     commands_builder = CommandsBuilder(base_command_line)
 
-    # Version, dependency resolution, and task splitting are prepended to the
+    # Dependency resolution and task splitting are prepended to the
     # command - so they need to appear in the following order to ensure that
     # the underlying application used by version command is available in the
     # environment after dependency resolution, but the task splitting command
     # is still executed in Galaxy's Python environment.
-
-    __handle_version_command(commands_builder, job_wrapper)
 
     # One could imagine also allowing dependencies inside of the container but
     # that is too sophisticated for a first crack at this - build your
@@ -173,13 +171,6 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         commands += " > ../outputs/tool_stdout 2> ../outputs/tool_stderr"
     log.info(f"Built script [{local_container_script}] for tool command [{tool_commands}]")
     return commands
-
-
-def __handle_version_command(commands_builder, job_wrapper):
-    # Prepend version string
-    write_version_cmd = job_wrapper.write_version_cmd
-    if write_version_cmd:
-        commands_builder.prepend_command(write_version_cmd)
 
 
 def __handle_remote_command_line_building(commands_builder, job_wrapper):
