@@ -62,16 +62,17 @@ class ValidationContext:
             cleanup = True
         tool_data_tables = ToolDataTableManager(work_dir)
         try:
-            with ValidationContext(app_name=app.name,
-                                   security=app.security,
-                                   model=app.model,
-                                   tool_data_path=work_dir,
-                                   shed_tool_data_path=work_dir,
-                                   tool_data_tables=tool_data_tables,
-                                   registry=app.datatypes_registry,
-                                   hgweb_config_manager=getattr(app, 'hgweb_config_manager', None),
-                                   biotools_metadata_source=getattr(app, 'biotools_metadata_source', None),
-                                   ) as app:
+            with ValidationContext(
+                app_name=app.name,
+                security=app.security,
+                model=app.model,
+                tool_data_path=work_dir,
+                shed_tool_data_path=work_dir,
+                tool_data_tables=tool_data_tables,
+                registry=app.datatypes_registry,
+                hgweb_config_manager=getattr(app, 'hgweb_config_manager', None),
+                biotools_metadata_source=getattr(app, 'biotools_metadata_source', None),
+            ) as app:
                 yield app
         finally:
             if cleanup:
