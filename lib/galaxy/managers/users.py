@@ -476,7 +476,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Send the verification email containing the activation link to the user's email.
         """
-        activation_token = self.__get_activation_token(trans, escape(email))
+        activation_token = self.__get_activation_token(trans, email)
         activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=escape(email), qualified=True)
         host = self.__get_host(trans)
         custom_message = ''
