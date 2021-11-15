@@ -92,8 +92,6 @@ def build_command(
         else:
             commands_builder = CommandsBuilder(externalized_commands)
 
-    __handle_remote_command_line_building(commands_builder, job_wrapper)
-
     # Don't need to create a separate tool working directory for Pulsar
     # jobs - that is handled by Pulsar.
     if create_tool_working_directory:
@@ -103,6 +101,8 @@ def build_command(
         # Copy working and outputs before job submission so that these can be restored on resubmission
         # xref https://github.com/galaxyproject/galaxy/issues/3289
         commands_builder.prepend_command(PREPARE_DIRS)
+
+    __handle_remote_command_line_building(commands_builder, job_wrapper)
 
     container_monitor_command = job_wrapper.container_monitor_command(container)
     if container_monitor_command:
@@ -175,7 +175,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
 
 def __handle_remote_command_line_building(commands_builder, job_wrapper):
     if getattr(job_wrapper, 'remote_command_line', False):
-        commands_builder.prepend_commands(('cd .. && PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/metadata/remote_tool_eval.py && cd -',))
+        commands_builder.prepend_commands(('PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/metadata/remote_tool_eval.py',))
 
 
 def __handle_task_splitting(commands_builder, job_wrapper):

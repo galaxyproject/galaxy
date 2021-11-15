@@ -934,7 +934,6 @@ class JobWrapper(HasResourceParameters):
         self.sa_session = self.app.model.context
         self.extra_filenames: List[str] = []
         self.command_line = None
-        self.remote_command_line = True
         self._dependency_shell_commands = None
         # Tool versioning variables
         self.version_string = ""
