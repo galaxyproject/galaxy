@@ -1181,13 +1181,6 @@ class JobWrapper(HasResourceParameters):
         if job.tool_id == 'upload1':
             self.__prepare_upload_paramfile(tool_evaluator)
 
-        self.job_io.to_json(path=os.path.join(self.working_directory, 'job_io.json'))
-        self.app.tool_data_tables.to_json(path=os.path.join(self.working_directory, 'tool_data_tables.json'))
-
-        # object_store_conf = self.object_store.to_dict()
-        # with open(os.path.join(self.working_directory, "object_store_conf.json"), "w") as f:
-        #     json.dump(object_store_conf, f)
-
         command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
@@ -1198,6 +1191,11 @@ class JobWrapper(HasResourceParameters):
         # if the server was stopped and restarted before the job finished
         if self.remote_command_line:
             job.command_line = None
+            self.job_io.to_json(path=os.path.join(self.working_directory, 'job_io.json'))
+            self.app.tool_data_tables.to_json(path=os.path.join(self.working_directory, 'tool_data_tables.json'))
+            object_store_conf = self.object_store.to_dict()
+            with open(os.path.join(self.working_directory, "object_store_conf.json"), "w") as f:
+                json.dump(object_store_conf, f)
         else:
             self.command_line = command_line
             job.command_line = unicodify(command_line)
