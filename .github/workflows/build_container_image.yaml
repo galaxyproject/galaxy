@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v2
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
       - name: Set outputs
-        id: vars
+        id: commit
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
       - name: Set branch name
         id: branch
