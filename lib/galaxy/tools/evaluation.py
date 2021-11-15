@@ -499,7 +499,7 @@ class ToolEvaluator:
         if version_string_cmd_raw:
             version_command_template = string.Template(version_string_cmd_raw)
             version_string_cmd = version_command_template.safe_substitute({"__tool_directory__": self.compute_environment.tool_directory()})
-            command = f"{version_string_cmd} > {self.compute_environment.version_path()} 2>&1\n{command}"
+            command = f"{version_string_cmd} > {self.compute_environment.version_path()} 2>&1;\n{command}"
         command_line = None
         if not command:
             return
