@@ -85,9 +85,7 @@ RADIO_SELECT_INCOMPATIBILITIES = """
 """
 
 SELECT_DUPLICATED_OPTIONS = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
-    <version_command interpreter="python">bwa.py --version</version_command>
+<tool>
     <inputs>
         <param name="select" type="select" optional="true" multiple="true">
             <option value="v">x</option>
@@ -114,9 +112,7 @@ SELECT_DEPRECATIONS = """
 """
 
 SELECT_OPTION_DEFINITIONS = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
-    <version_command interpreter="python">bwa.py --version</version_command>
+<tool>
     <inputs>
         <param name="select_noopt" type="select"/>
         <param name="select_noopts" type="select">
@@ -129,6 +125,10 @@ SELECT_OPTION_DEFINITIONS = """
         </param>
         <param name="select_fd_fdt" type="select">
             <options from_dataset="xyz" from_data_table="xyz"/>
+        </param>
+        <param name="select_noval_notext" type="select">
+            <option>option wo value</option>
+            <option value="value"/>
         </param>
     </inputs>
 </tool>
@@ -283,7 +283,9 @@ TESTS = [
             and "Select parameter [select_fd_op] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute." in x.error_messages
             and "Select parameter [select_fd_op] contains multiple options elements" in x.error_messages
             and "Select parameter [select_fd_fdt] options uses 'from_dataset' and 'from_data_table' attribute." in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 5
+            and "Select parameter [select_noval_notext] has option without value" in x.error_messages
+            and "Select parameter [select_noval_notext] has option without text" in x.warn_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 6
     ),
     (
         VALIDATOR_INCOMPATIBILITIES, inputs.lint_inputs,
