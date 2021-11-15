@@ -138,7 +138,7 @@ def lint_inputs(tool_xml, lint_ctx):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value")
 
             multiple = string_as_bool(param_attrib.get("multiple", "false"))
-            optional = string_as_bool(param_attrib.get("optional", param_attrib.get("multiple", "false")))
+            optional = string_as_bool(param_attrib.get("optional", multiple))
             if param_attrib.get("display") == "checkboxes":
                 if not multiple:
                     lint_ctx.error(f'Select [{param_name}] `display="checkboxes"` is incompatible with `multiple="false"`, remove the `display` attribute')
