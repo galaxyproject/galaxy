@@ -8,7 +8,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -2042,7 +2041,8 @@ class RoleListModel(BaseModel):
 
 # The tuple should probably be another proper model instead?
 # Keeping it as a Tuple for now for backward compatibility
-RoleNameIdTuple = Tuple[str, EncodedDatabaseIdField]
+# TODO: Use Tuple again when https://github.com/tiangolo/fastapi/issues/3665 is fixed upstream
+RoleNameIdTuple = List[str]  # Tuple[str, EncodedDatabaseIdField]
 
 # Group_Roles -----------------------------------------------------------------
 
