@@ -143,15 +143,16 @@ class JobIO(Dictifiable):
         assert dataset.id is not None, f"{dataset} needs to be flushed to find output path"
         if self.output_paths is None:
             self.compute_outputs()
-        for (hda, dataset_path) in self.output_hdas_and_paths.values():
-            if hda.id == dataset.id:
-                return dataset_path
+        if self.output_hdas_and_paths is not None:
+            for (hda, dataset_path) in self.output_hdas_and_paths.values():
+                if hda.id == dataset.id:
+                    return dataset_path
         raise KeyError(f"Couldn't find job output for [{dataset}] in [{self.output_hdas_and_paths.values()}]")
 
     def get_mutable_output_fnames(self):
         if self.output_paths is None:
             self.compute_outputs()
-        return [dsp for dsp in self.output_paths if dsp.mutable]
+        return [dsp for dsp in self.output_paths or [] if dsp.mutable]
 
     def get_output_hdas_and_fnames(self):
         if self.output_hdas_and_paths is None:
@@ -185,7 +186,7 @@ class JobIO(Dictifiable):
     def get_output_file_id(self, file):
         if self.output_paths is None:
             self.get_output_fnames()
-        for dp in self.output_paths:
+        for dp in self.output_paths or []:
             if self.outputs_to_working_directory and os.path.basename(dp.false_path) == file:
                 return dp.dataset_id
             elif os.path.basename(dp.real_path) == file:

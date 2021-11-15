@@ -1,8 +1,12 @@
 import json
 import os
+import tempfile
 from typing import NamedTuple
 
+from sqlalchemy.orm import scoped_session
+
 from galaxy import model
+from galaxy.datatypes.registry import Registry
 from galaxy.job_execution.setup import JobIO
 from galaxy.metadata.set_metadata import (
     get_metadata_params,
@@ -13,6 +17,7 @@ from galaxy.model import (
     Job,
     store,
 )
+from galaxy.objectstore import ObjectStore
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tools import (
     create_tool_from_source,
@@ -23,14 +28,17 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 
 
+TMPDIR = tempfile.mkdtemp()
+
+
 class ToolAppConfig(NamedTuple):
     name: str
     tool_data_path: str
-    root: str = '/tmp'
+    nginx_upload_path: str
+    len_file_path: str
+    builds_file_path: str
+    root: str = TMPDIR
     admin_users: list = []
-    nginx_upload_path = None
-    len_file_path: str = None
-    builds_file_path: str = None
 
 
 class ToolApp:
@@ -38,8 +46,8 @@ class ToolApp:
     name = 'tool_app'
     model = model
 
-    def __init__(self, sa_session, tool_app_config, datatypes_registry, object_store, tool_data_table_manager: ToolDataTableManager):
-        self.model.context = sa_session
+    def __init__(self, sa_session: scoped_session, tool_app_config: ToolAppConfig, datatypes_registry: Registry, object_store: ObjectStore, tool_data_table_manager: ToolDataTableManager):
+        self.model.context = sa_session  # type: ignore[attr-defined]
         self.config = tool_app_config
         self.datatypes_registry = datatypes_registry
         self.object_store = object_store
@@ -55,9 +63,9 @@ def main():
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
     object_store = get_object_store()
     import_store = store.imported_store_for_metadata(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new'))
-    job = next(iter(import_store.sa_session.objects_by_class_and_id[Job].values()))
+    job = next(iter(import_store.sa_session.objects[Job].values()))
     job_io = JobIO.from_json(os.path.join(WORKING_DIRECTORY, 'job_io.json'), sa_session=import_store.sa_session, job=job)
-    tool_app_config = ToolAppConfig('tool_app', '/tmp', len_file_path=job_io.len_file_path, builds_file_path=job_io.builds_file_path)
+    tool_app_config = ToolAppConfig('tool_app', TMPDIR, len_file_path=job_io.len_file_path, builds_file_path=job_io.builds_file_path, nginx_upload_path=TMPDIR)
     with open(os.path.join(WORKING_DIRECTORY, 'tool_data_tables.json')) as data_tables_json:
         tdtm = ToolDataTableManager.from_dict(json.load(data_tables_json))
     app = ToolApp(sa_session=import_store.sa_session, tool_app_config=tool_app_config, datatypes_registry=datatypes_registry, object_store=object_store, tool_data_table_manager=tdtm)
