@@ -5,7 +5,7 @@ from galaxy.tool_util.linters import (
     general,
     inputs,
     outputs,
-    tests
+    tests,
 )
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
@@ -319,7 +319,7 @@ TEST_IDS = [
     'outputs collection static elements with format_source',
     'outputs discover datatsets with tool provided metadata',
     'test without expectations',
-    'test param missing from inputs'
+    'test param missing from inputs',
 ]
 
 
