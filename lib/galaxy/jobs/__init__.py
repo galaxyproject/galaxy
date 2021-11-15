@@ -1001,6 +1001,7 @@ class JobWrapper(HasResourceParameters):
                 tool_directory=self.tool_directory(),
                 home_directory=self.home_directory(),
                 tmp_directory=self.tmp_directory(),
+                tool_data_path=self.app.config.tool_data_path,
                 new_file_path=self.app.config.new_file_path,
                 builds_file_path=self.app.config.builds_file_path,
                 len_file_path=self.app.config.len_file_path,

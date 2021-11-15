@@ -24,6 +24,7 @@ class JobIO(Dictifiable):
         'tool_directory',
         'home_directory',
         'tmp_directory',
+        'tool_data_path',
         'new_file_path',
         'len_file_path',
         'builds_file_path',
@@ -44,6 +45,7 @@ class JobIO(Dictifiable):
             tool_directory,
             home_directory,
             tmp_directory,
+            tool_data_path,
             new_file_path,
             len_file_path,
             builds_file_path,
@@ -60,6 +62,7 @@ class JobIO(Dictifiable):
         self.tool_directory = tool_directory
         self.home_directory = home_directory
         self.tmp_directory = tmp_directory
+        self.tool_data_path = tool_data_path
         self.new_file_path = new_file_path
         self.len_file_path = len_file_path
         self.builds_file_path = builds_file_path
