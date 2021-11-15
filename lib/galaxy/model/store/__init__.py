@@ -76,7 +76,7 @@ class SessionlessContext:
 
         def filter_by(*args, **kwargs):
             # TODO: Hack for history export archive, should support this too
-            return Bunch(first=lambda: None)
+            return Bunch(first=next(iter(self.objects.get(model_class, {}))))
 
         return Bunch(find=find, get=find, filter_by=filter_by)
 
@@ -1222,7 +1222,14 @@ class DirectoryModelExportStore(ModelExportStore):
             with open(os.path.join(self.export_directory, 'tool.xml'), 'w') as out:
                 out.write(tool_source.to_string())
 
-    def export_jobs(self, jobs, jobs_attrs=None, include_job_data=False):
+    def export_jobs(self, jobs, jobs_attrs=None, include_job_data=True):
+        """
+        Export jobs.
+
+        ``include_job_data`` determines whether datasets associated with jobs should be exported as well.
+        This should generally be ``True``, except when re-exporting a job (to store the generated command line)
+        when running the set_meta script.
+        """
         jobs_attrs = jobs_attrs or []
         for job in jobs:
             job_attrs = job.serialize(self.security, self.serialization_options)

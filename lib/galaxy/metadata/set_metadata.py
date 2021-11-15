@@ -232,13 +232,15 @@ def set_metadata_portable():
         export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False, serialize_jobs=False)
     try:
         import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
+    except AssertionError:
+        # Remove in 21.09, this should only happen for jobs that started on <= 20.09 and finish now
+        import_model_store = None
+
+    if import_model_store and export_store:
         job = next(iter(import_model_store.sa_session.objects[Job].values()))
         with open(os.path.join(tool_job_working_directory, 'tool_script.sh')) as command_fh:
             job.command_line = command_fh.read().strip()
             export_store.export_job(job, include_job_data=False)
-    except AssertionError:
-        # Remove in 21.09, this should only happen for jobs that started on <= 20.09 and finish now
-        import_model_store = None
 
     job_context = SessionlessJobContext(
         metadata_params,

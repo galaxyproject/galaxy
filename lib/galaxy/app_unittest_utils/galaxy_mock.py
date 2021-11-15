@@ -22,6 +22,7 @@ from galaxy.model.unittest_utils import GalaxyDataTestApp, GalaxyDataTestConfig
 from galaxy.security import idencoding
 from galaxy.structured_app import BasicApp, MinimalManagerApp, StructuredApp
 from galaxy.tool_util.deps.containers import NullContainerFinder
+from galaxy.tools.data import ToolDataTableManager
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
@@ -83,7 +84,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
             use_messaging=False,
             assign_handler=lambda *args, **kwargs: None
         )
-        self.tool_data_tables = {}
+        self.tool_data_tables = ToolDataTableManager(tool_data_path=self.config.tool_data_path)
         self.dataset_collections_service = None
         self.container_finder = NullContainerFinder()
         self._toolbox_lock = MockLock()
