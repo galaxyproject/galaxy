@@ -822,10 +822,13 @@ class ObjectImportTracker:
         self.jobs_by_key = {}
         self.requires_hid = []
 
-    def find_hda(self, input_key: ObjectKeyType) -> Optional[model.HistoryDatasetAssociation]:
+    def find_hda(self, input_key: ObjectKeyType, hda_id: Optional[int] = None) -> Optional[model.HistoryDatasetAssociation]:
         hda = None
         if input_key in self.hdas_by_key:
             hda = self.hdas_by_key[input_key]
+        elif isinstance(input_key, int) and input_key in self.hdas_by_id:
+            # TODO: untangle this, I don't quite understand why we hdas_by_key and hdas_by_id
+            hda = self.hdas_by_id[input_key]
         if input_key in self.hda_copied_from_sinks:
             hda = self.hdas_by_key[self.hda_copied_from_sinks[input_key]]
         return hda
@@ -834,6 +837,8 @@ class ObjectImportTracker:
         hdca = None
         if input_key in self.hdcas_by_key:
             hdca = self.hdcas_by_key[input_key]
+        elif isinstance(input_key, int) and input_key in self.hdcas_by_id:
+            hdca = self.hdcas_by_id[input_key]
         if input_key in self.hdca_copied_from_sinks:
             hdca = self.hdcas_by_key[self.hdca_copied_from_sinks[input_key]]
         return hdca
@@ -842,6 +847,8 @@ class ObjectImportTracker:
         dce = None
         if input_key in self.dces_by_key:
             dce = self.dces_by_key[input_key]
+        elif isinstance(input_key, int) and input_key in self.dces_by_id:
+            dce = self.dces_by_id[input_key]
         return dce
 
 
