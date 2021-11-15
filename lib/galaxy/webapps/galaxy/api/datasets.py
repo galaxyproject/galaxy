@@ -7,8 +7,12 @@ from galaxy import (
     util,
     web
 )
-from galaxy.schema import FilterQueryParams
-from galaxy.webapps.base.controller import UsesVisualizationMixin
+from galaxy.schema import (
+    FilterQueryParams,
+)
+from galaxy.schema.schema import (
+    DatasetSourceType,
+)
 from galaxy.webapps.galaxy.api.common import (
     get_update_permission_payload,
     parse_serialization_params,
@@ -81,8 +85,10 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         serialization_params = parse_serialization_params(**kwd)
         filter_parameters = FilterQueryParams(**kwd)
+        filter_parameters.limit = filter_parameters.limit or limit
+        filter_parameters.offset = filter_parameters.offset or offset
         return self.service.index(
-            trans, limit, offset, history_id, serialization_params, filter_parameters
+            trans, history_id, serialization_params, filter_parameters
         )
 
     @web.expose_api_anonymous_and_sessionless
@@ -131,7 +137,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :rtype:     dict
         :returns:   dictionary containing new permissions
         """
-        hda_ldda = kwd.pop('hda_ldda', 'hda')
+        hda_ldda = kwd.pop('hda_ldda', DatasetSourceType.hda)
         if payload:
             kwd.update(payload)
         update_payload = get_update_permission_payload(kwd)
@@ -173,7 +179,10 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         GET /api/histories/{history_id}/contents/{history_content_id}/metadata_file
         """
-        metadata_file, headers = self.service.get_metadata_file(trans, history_content_id, metadata_file)
+        # TODO: remove open_file parameter when deleting this legacy endpoint
+        metadata_file, headers = self.service.get_metadata_file(
+            trans, history_content_id, metadata_file, open_file=True
+        )
         trans.response.headers.update(headers)
         return metadata_file
 
