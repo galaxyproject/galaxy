@@ -4,9 +4,9 @@ import * as d3 from "d3";
 import Backbone from "backbone";
 import Colors from "./colorsets";
 
-var Series = window.bundleEntries.chartUtilities.Series;
-var Datasets = window.bundleEntries.chartUtilities.Datasets;
-var Jobs = window.bundleEntries.chartUtilities.Jobs;
+import { addZoom, makeUniqueCategories, makeTickFormat } from "@galaxyproject/charts/lib/utilities/series";
+import { requestPanels } from "@galaxyproject/charts/lib/utilities/datasets";
+import { requestCharts, request as requestJobs } from "@galaxyproject/charts/lib/utilities/jobs";
 
 var CommonWrapper = Backbone.View.extend({
     optionsDefault: {
@@ -47,7 +47,7 @@ var CommonWrapper = Backbone.View.extend({
         this.color_set = Colors[this.chart.settings.get("color_set", "seism")];
 
         // categories
-        this.categories = Series.makeUniqueCategories([this.group]);
+        this.categories = makeUniqueCategories([this.group]);
 
         // domains/scales
         this.xScale = d3.scale.linear().domain([0, this.categories.array.x.length]);
@@ -83,7 +83,7 @@ var CommonWrapper = Backbone.View.extend({
             self.redraw();
         });
         this.redraw();
-        Series.addZoom({
+        addZoom({
             xAxis: this.xAxis,
             yAxis: this.yAxis,
             redraw: function () {
@@ -387,7 +387,7 @@ var CommonWrapper = Backbone.View.extend({
     _makeTickFormat: function (id) {
         var settings = this.chart.settings;
         var self = this;
-        Series.makeTickFormat({
+        makeTickFormat({
             categories: self.categories.array[id],
             type: settings.get(id + "_axis_type|type"),
             precision: settings.get(id + "_axis_type|precision"),
@@ -436,52 +436,71 @@ var CommonWrapper = Backbone.View.extend({
     },
 });
 
-_.extend(window.bundleEntries || {}, {
-    heatmap_default: function (options) {
-        options.render = function (canvas_id, groups) {
-            new CommonWrapper({
-                chart: options.chart,
-                canvas_id: canvas_id,
-                groups: groups,
-            });
-            return true;
-        };
-        Datasets.requestPanels(options);
-    },
-    heatmap_cluster: function (options) {
-        Jobs.request(
-            options.chart,
-            Jobs.requestCharts(options.chart, "heatmap"),
-            function (dataset) {
-                var dataset_groups = new Backbone.Collection();
-                options.chart.groups.each(function (group, index) {
-                    dataset_groups.add({
-                        __data_columns: {
-                            x: { is_label: true },
-                            y: { is_label: true },
-                            z: { is_numeric: true },
-                        },
-                        x: index++,
-                        y: index++,
-                        z: index++,
-                        key: group.get("key"),
-                    });
+
+/* Prepare containers */
+function createContainers(tag, chart, target) {
+    var n = chart.groups.length;
+    var $container = $("#" + target);
+    $container.empty();
+    const targets = [];
+    for (var i = 0; i < n; i++) {
+        var panel_id = "vis-container-id-" + i;
+        var $panel = $("<" + tag + " style='float: left; height: 100%;' />").attr("id", panel_id);
+        $panel.width(parseInt(100 / n) + "%");
+        $container.append($panel);
+        targets.push(panel_id);
+    }
+    return targets;
+}
+
+window.bundleEntries = window.bundleEntries || {};
+window.bundleEntries.heatmap_default = function (options) {
+    options.targets = createContainers("svg", options.chart, options.target);
+    options.render = function (canvas_id, groups) {
+        new CommonWrapper({
+            chart: options.chart,
+            canvas_id: canvas_id,
+            groups: groups,
+        });
+        return true;
+    };
+    requestPanels(options);
+}
+
+window.bundleEntries.heatmap_cluster = function (options) {
+    options.targets = createContainers(options.chart, options.target);
+    requestJobs(
+        options.chart,
+        requestCharts(options.chart, "heatmap"),
+        function (dataset) {
+            var dataset_groups = new Backbone.Collection();
+            options.chart.groups.each(function (group, index) {
+                dataset_groups.add({
+                    __data_columns: {
+                        x: { is_label: true },
+                        y: { is_label: true },
+                        z: { is_numeric: true },
+                    },
+                    x: index++,
+                    y: index++,
+                    z: index++,
+                    key: group.get("key"),
                 });
-                options.dataset_id = dataset.id;
-                options.dataset_groups = dataset_groups;
-                options.render = function (canvas_id, groups) {
-                    new CommonWrapper({
-                        chart: options.chart,
-                        canvas_id: canvas_id,
-                        groups: groups,
-                    });
-                    return true;
-                };
-                Datasets.requestPanels(options);
-            },
-            function () {
-                options.process.reject();
-            }
-        );
-    },
-});
+            });
+            options.dataset_id = dataset.id;
+            options.dataset_groups = dataset_groups;
+            options.render = function (canvas_id, groups) {
+                new CommonWrapper({
+                    chart: options.chart,
+                    canvas_id: canvas_id,
+                    groups: groups,
+                });
+                return true;
+            };
+            requestPanels(options);
+        },
+        function () {
+            options.process.reject();
+        }
+    );
+}

@@ -13,16 +13,22 @@ const glob = require("glob");
 const STATIC_PLUGIN_BUILD_IDS = [
     "annotate_image",
     "chiraviz",
+    "cytoscape",
+    "drawrna",
     "editor",
+    "example",
     "heatmap/heatmap_default",
     "hyphyvision",
+    "jqplot/jqplot_bar",
     "media_player",
     "mvpapp",
     "ngl",
+    "nvd3/nvd3_bar",
     "openlayers",
     "openseadragon",
     "pv",
     "nora",
+    "venn",
 ];
 
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];

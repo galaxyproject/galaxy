@@ -76,19 +76,9 @@ export { default as async_save_text } from "utils/async-save-text";
 
 // Previously "chart"
 import Client from "mvc/visualization/chart/chart-client";
-import Datasets from "mvc/visualization/chart/utilities/datasets";
-import Series from "mvc/visualization/chart/utilities/series";
-import Jobs from "mvc/visualization/chart/utilities/jobs";
-
 export function chart(options) {
     return new Client(options);
 }
-
-export const chartUtilities = {
-    Datasets: Datasets,
-    Jobs: Jobs,
-    Series: Series,
-};
 
 export { initMasthead } from "components/Masthead/initMasthead";
 export { panelManagement } from "onload/globalInits/panelManagement";
