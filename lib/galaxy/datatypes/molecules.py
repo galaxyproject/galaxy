@@ -939,3 +939,42 @@ class CML(GenericXml):
                         if molecule_found:
                             out.write(line)
             out.write("</cml>\n")
+
+
+class GRO(GenericMolFile):
+    """
+    GROMACS structure format.
+    https://manual.gromacs.org/current/reference-manual/file-formats.html#gro
+    """
+    file_ext = "gro"
+
+    def sniff_prefix(self, file_prefix):
+        """
+        Try to guess if the file is a GRO file.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('5e5z.gro')
+        >>> GRO().sniff_prefix(fname)
+        True
+        >>> fname = get_test_fname('5e5z.pdb')
+        >>> GRO().sniff_prefix(fname)
+        False
+        """
+        headers = get_headers(file_prefix, sep='\n', count=300)
+        try:
+            int(headers[1][0])  # the second line should just be the number of atoms
+        except ValueError:
+            return False
+        for line in headers[2:-1]:  # skip the first, second and last lines
+            if not re.search(r'^[0-9 ]{5}[a-zA-Z0-9 ]{10}[0-9 ]{5}[0-9 -]{4}\.[0-9]{3}[0-9 -]{4}\.[0-9]{3}[0-9 -]{4}\.[0-9]{3}', line[0]):
+                return False
+        return True
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name)
+            atom_number = int(dataset.peek.split('\n')[1])
+            dataset.blurb = f"{atom_number} atoms"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'

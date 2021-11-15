@@ -752,7 +752,7 @@
     <datatype extension="cpt" type="galaxy.datatypes.binary:Cpt" display_in_upload="true"/>
     <datatype extension="edr" type="galaxy.datatypes.binary:Edr" display_in_upload="true"/>
     <datatype extension="tpr" type="galaxy.datatypes.binary:Binary" display_in_upload="true"/>
-    <datatype extension="gro" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true">
+    <datatype extension="gro" type="galaxy.datatypes.molecules:GRO" display_in_upload="true">
       <converter file="gro_to_pdb.xml" target_datatype="pdb"/>
     </datatype>
     <datatype extension="vel" type="galaxy.datatypes.binary:Vel" display_in_upload="true"/>
@@ -1037,6 +1037,7 @@
     <sniffer type="galaxy.datatypes.molecules:InChI"/>
     <sniffer type="galaxy.datatypes.molecules:FPS"/>
     <sniffer type="galaxy.datatypes.molecules:PQR"/>
+    <sniffer type="galaxy.datatypes.molecules:GRO"/>
     <!-- TODO: see molecules.py <sniffer type="galaxy.datatypes.molecules:SMILES"/>-->
     <sniffer type="galaxy.datatypes.phylip:Phylip"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
