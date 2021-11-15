@@ -5,7 +5,20 @@ import logging
 import os
 import tarfile
 import zipfile
-from typing import Any, cast, Generator, IO, Iterable, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    cast,
+    Generator,
+    IO,
+    Iterable,
+    List,
+    Optional,
+    overload,
+    Tuple,
+    Union,
+)
+
+from typing_extensions import Literal
 
 from galaxy.util.path import safe_relpath
 from .checkers import (
@@ -15,7 +28,35 @@ from .checkers import (
 
 log = logging.getLogger(__name__)
 
-FileObjType = Union[gzip.GzipFile, bz2.BZ2File, IO[Any], io.TextIOWrapper]
+FileObjTypeStr = Union[IO[str], io.TextIOWrapper]
+FileObjTypeBytes = Union[gzip.GzipFile, bz2.BZ2File, IO[bytes]]
+FileObjType = Union[FileObjTypeStr, FileObjTypeBytes]
+
+
+@overload
+def get_fileobj(
+    filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None
+) -> FileObjTypeStr:
+    ...
+
+
+@overload
+def get_fileobj(
+    filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None
+) -> FileObjTypeBytes:
+    ...
+
+
+@overload
+def get_fileobj(filename: str) -> FileObjTypeStr:
+    ...
+
+
+@overload
+def get_fileobj(
+    filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None
+) -> FileObjType:
+    ...
 
 
 def get_fileobj(
@@ -31,6 +72,32 @@ def get_fileobj(
       'bz2', 'gzip' and 'zip'. If left to None, all 3 formats are allowed
     """
     return get_fileobj_raw(filename, mode, compressed_formats)[1]
+
+
+@overload
+def get_fileobj_raw(
+    filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None
+) -> Tuple[Optional[str], FileObjTypeStr]:
+    ...
+
+
+@overload
+def get_fileobj_raw(
+    filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None
+) -> Tuple[Optional[str], FileObjTypeBytes]:
+    ...
+
+
+@overload
+def get_fileobj_raw(filename: str) -> Tuple[Optional[str], FileObjTypeStr]:
+    ...
+
+
+@overload
+def get_fileobj_raw(
+    filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None
+) -> Tuple[Optional[str], FileObjType]:
+    ...
 
 
 def get_fileobj_raw(

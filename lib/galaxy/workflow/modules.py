@@ -8,6 +8,7 @@ from collections import defaultdict
 from typing import Any, cast, Dict, List, Optional, Union
 
 import packaging.version
+from typing_extensions import TypedDict
 
 from galaxy import (
     exceptions,
@@ -614,6 +615,11 @@ def format_param(trans, formats):
     return format_value
 
 
+class InputModuleState(TypedDict, total=False):
+    optional: bool
+    format: List[str]
+
+
 class InputModule(WorkflowModule):
     default_optional = False
 
@@ -662,14 +668,14 @@ class InputModule(WorkflowModule):
 
     def _parse_state_into_dict(self):
         inputs = self.state.inputs
-        rval = {}
+        rval: InputModuleState = {}
         if "optional" in inputs:
             optional = bool(inputs["optional"])
         else:
             optional = self.default_optional
         rval["optional"] = optional
         if "format" in inputs:
-            formats = listify(inputs["format"])
+            formats: Optional[List[str]] = listify(inputs["format"])
         else:
             formats = None
         if formats:

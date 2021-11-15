@@ -959,7 +959,7 @@ def asbool(obj):
     return bool(obj)
 
 
-def string_as_bool(string):
+def string_as_bool(string: str) -> bool:
     if str(string).lower() in ('true', 'yes', 'on', '1'):
         return True
     else:
@@ -985,7 +985,7 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip=False):
+def listify(item, do_strip=False) -> typing.List[typing.Any]:
     """
     Make a single item a single item list.
 
