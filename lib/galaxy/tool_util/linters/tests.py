@@ -30,7 +30,7 @@ def lint_tsts(tool_xml, lint_ctx):
         for param in test.findall("param"):
             name = param.attrib.get("name", None)
             if not name:
-                lint_ctx.warn("Found test param tag without a name defined.")
+                lint_ctx.error("Found test param tag without a name defined.")
                 continue
             name = name.split("|")[-1]
             xpaths = [f"@name='{name}'",
