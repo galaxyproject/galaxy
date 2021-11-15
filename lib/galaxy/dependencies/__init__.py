@@ -43,15 +43,13 @@ class ConditionalDependencies:
     def parse_configs(self):
 
         def load_job_config_dict(job_conf_dict):
-            for runner in job_conf_dict.get("runners"):
+            runners = job_conf_dict.get("runners", [])
+            for runner_id in runners:
+                runner = runners[runner_id]
                 if "load" in runner:
                     self.job_runners.append(runner.get("load"))
                 if "rules_module" in runner:
-                    self.job_rule_modules.append(plugin.text)
-                if "params" in runner:
-                    runner_params = runner["params"]
-                    if "rules_module" in runner_params:
-                        self.job_rule_modules.append(plugin.text)
+                    self.job_rule_modules.append(runner.get("rules_module"))
 
         if "job_config" in self.config:
             load_job_config_dict(self.config.get("job_config"))
@@ -76,7 +74,7 @@ class ConditionalDependencies:
                     pass
             else:
                 try:
-                    with open("job_conf_path") as f:
+                    with open(job_conf_path) as f:
                         job_conf_dict = yaml.safe_load(f)
                     load_job_config_dict(job_conf_dict)
                 except OSError:
