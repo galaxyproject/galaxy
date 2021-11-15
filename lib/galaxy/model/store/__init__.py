@@ -76,7 +76,7 @@ class SessionlessContext:
 
         def filter_by(*args, **kwargs):
             # TODO: Hack for history export archive, should support this too
-            return Bunch(first=next(iter(self.objects.get(model_class, {}))))
+            return Bunch(first=lambda: next(iter(self.objects.get(model_class, {None: None}))))
 
         return Bunch(find=find, get=find, filter_by=filter_by)
 
