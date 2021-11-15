@@ -934,11 +934,7 @@ class JobWrapper(HasResourceParameters):
         self.sa_session = self.app.model.context
         self.extra_filenames: List[str] = []
         self.command_line = None
-<<<<<<< HEAD
-=======
         self.remote_command_line = True
-        self.dependencies = []
->>>>>>> 277f52db11 (Include generated command line in setup)
         self._dependency_shell_commands = None
         # Tool versioning variables
         self.write_version_cmd = None
@@ -980,6 +976,10 @@ class JobWrapper(HasResourceParameters):
                 metadata_strategy_override = "directory"
             self.__external_output_metadata = get_metadata_compute_strategy(self.app.config, self.job_id, metadata_strategy_override=metadata_strategy_override, tool_id=self.tool.id)
         return self.__external_output_metadata
+
+    @property
+    def remote_command_line(self):
+        return self.external_output_metadata.extended
 
     def tool_directory(self):
         tool_dir = self.tool.tool_dir
@@ -1187,16 +1187,13 @@ class JobWrapper(HasResourceParameters):
         if self.tool.requires_galaxy_python_environment or self.remote_command_line:
             # These tools (upload, metadata, data_source) may need access to the datatypes registry.
             self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, 'registry.xml'))
-        # We need command_line persisted to the db in order for Galaxy to re-queue the job
-        # if the server was stopped and restarted before the job finished
         if self.remote_command_line:
             job.command_line = None
             self.job_io.to_json(path=os.path.join(self.working_directory, 'job_io.json'))
             self.app.tool_data_tables.to_json(path=os.path.join(self.working_directory, 'tool_data_tables.json'))
-            object_store_conf = self.object_store.to_dict()
-            with open(os.path.join(self.working_directory, "object_store_conf.json"), "w") as f:
-                json.dump(object_store_conf, f)
         else:
+            # We need command_line persisted to the db in order for Galaxy to re-queue the job
+            # if the server was stopped and restarted before the job finished
             self.command_line = command_line
             job.command_line = unicodify(command_line)
         job.dependencies = self.tool.dependencies
