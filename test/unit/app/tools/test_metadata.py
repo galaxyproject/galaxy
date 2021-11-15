@@ -177,6 +177,8 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
             f.write(contents)
 
     def _write_job_files(self, stdout="tool stdout", stderr="tool stderr"):
+        with open(os.path.join(self.job_working_directory, "tool_script.sh"), 'w') as f:
+            f.write("echo hi")
         with open(os.path.join(self.job_working_directory, "tool_stdout"), "wb") as f:
             f.write(stdout.encode("utf-8"))
         with open(os.path.join(self.job_working_directory, "tool_stderr"), "wb") as f:
