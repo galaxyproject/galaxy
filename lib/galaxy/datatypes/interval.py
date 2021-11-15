@@ -395,7 +395,7 @@ class Bed(Interval):
         """Sets the metadata information for datasets previously determined to be in bed format."""
         if dataset.has_data():
             i = 0
-            for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
+            with compression_utils.get_fileobj(dataset.file_name) as in_fh:
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
                     elems = line.split('\t')
