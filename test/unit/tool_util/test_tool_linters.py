@@ -68,15 +68,18 @@ NO_WHEN_IN_CONDITIONAL_XML = """
 """
 
 RADIO_SELECT_INCOMPATIBILITIES = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
-    <version_command interpreter="python">bwa.py --version</version_command>
+<tool>
     <inputs>
         <param name="radio_select" type="select" display="radio" optional="true" multiple="true">
             <option value="1">1</option>
             <option value="2">2</option>
         </param>
-        <param name="radio_checkboxes" type="select" display="checkboxes" optional="false" multiple="false">
+        <param name="checkboxes_select" type="select" display="checkboxes" optional="false" multiple="false">
+            <option value="1">1</option>
+            <option value="2">2</option>
+        </param>
+        <!-- this must not raise any warning/error since multiple=true implies true as default for optional -->
+        <param name="checkboxes_select_correct" type="select" display="checkboxes" multiple="true">
             <option value="1">1</option>
             <option value="2">2</option>
         </param>
@@ -254,8 +257,8 @@ TESTS = [
         lambda x:
             'Select [radio_select] display="radio" is incompatible with optional="true"' in x.error_messages
             and 'Select [radio_select] display="radio" is incompatible with multiple="true"' in x.error_messages
-            and 'Select [radio_checkboxes] `display="checkboxes"` is incompatible with `optional="false"`, remove the `display` attribute' in x.error_messages
-            and 'Select [radio_checkboxes] `display="checkboxes"` is incompatible with `multiple="false"`, remove the `display` attribute' in x.error_messages
+            and 'Select [checkboxes_select] `display="checkboxes"` is incompatible with `optional="false"`, remove the `display` attribute' in x.error_messages
+            and 'Select [checkboxes_select] `display="checkboxes"` is incompatible with `multiple="false"`, remove the `display` attribute' in x.error_messages
             and len(x.warn_messages) == 0 and len(x.error_messages) == 4
     ),
     (

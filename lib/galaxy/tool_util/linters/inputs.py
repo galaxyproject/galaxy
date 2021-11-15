@@ -137,15 +137,17 @@ def lint_inputs(tool_xml, lint_ctx):
             if len(set([option.attrib.get("value") for option in select_options])) != len(select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value")
 
+            multiple = string_as_bool(param_attrib.get("multiple", "false"))
+            optional = string_as_bool(param_attrib.get("optional", param_attrib.get("multiple", "false")))
             if param_attrib.get("display") == "checkboxes":
-                if not string_as_bool(param_attrib.get("multiple", "false")):
+                if not multiple:
                     lint_ctx.error(f'Select [{param_name}] `display="checkboxes"` is incompatible with `multiple="false"`, remove the `display` attribute')
-                if not string_as_bool(param_attrib.get("optional", "false")):
+                if not optional:
                     lint_ctx.error(f'Select [{param_name}] `display="checkboxes"` is incompatible with `optional="false"`, remove the `display` attribute')
             if param_attrib.get("display") == "radio":
-                if string_as_bool(param_attrib.get("multiple", "false")):
+                if multiple:
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with multiple="true"')
-                if string_as_bool(param_attrib.get("optional", "false")):
+                if optional:
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with optional="true"')
         # TODO: Validate type, much more...
 
