@@ -188,7 +188,7 @@ TESTS_WO_EXPECTATIONS = """
 TESTS_PARAM = """
 <tool>
     <inputs>
-        <param name="existent_test_name"/>
+        <param argument="--existent-test-name"/>
         <conditional>
             <when>
                 <param name="another_existent_test_name"/>
