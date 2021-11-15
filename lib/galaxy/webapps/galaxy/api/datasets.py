@@ -2,31 +2,238 @@
 API operations on the contents of a history dataset.
 """
 import logging
+from typing import (
+    Any,
+    cast,
+    Dict,
+    List,
+    Optional,
+)
+
+from fastapi import (
+    Body,
+    Depends,
+    Path,
+    Query,
+    Request,
+)
+from starlette.responses import FileResponse
 
 from galaxy import (
     util,
-    web
+    web,
 )
 from galaxy.schema import (
     FilterQueryParams,
+    SerializationParams,
 )
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyHistoryContentItem,
+    DatasetAssociationRoles,
     DatasetSourceType,
+    UpdateDatasetPermissionsPayload,
 )
 from galaxy.webapps.galaxy.api.common import (
+    get_filter_query_params,
     get_update_permission_payload,
     parse_serialization_params,
+    query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.datasets import (
+    DatasetInheritanceChainEntry,
     DatasetShowParams,
     DatasetsService,
+    DatasetTextContentDetails,
 )
-from . import BaseGalaxyAPIController, depends
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=['datasets'])
 
-class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
+DatasetIDPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    description="The encoded database identifier of the dataset."
+)
+
+DatasetSourceQueryParam: DatasetSourceType = Query(
+    default=DatasetSourceType.hda,
+    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
+)
+
+HistoryIDPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    description="The encoded database identifier of the History."
+)
+
+
+@router.cbv
+class FastAPIDatasets:
+    service: DatasetsService = depends(DatasetsService)
+
+    @router.get(
+        '/api/datasets',
+        summary='Search datasets or collections using a query system.',
+    )
+    def index(
+        self,
+        trans=DependsOnTrans,
+        history_id: Optional[EncodedDatabaseIdField] = Query(
+            default=None,
+            description="Optional identifier of a History. Use it to restrict the search whithin a particular History."
+        ),
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
+    ) -> List[AnyHistoryContentItem]:
+        return self.service.index(trans, history_id, serialization_params, filter_query_params)
+
+    @router.get(
+        '/api/datasets/{dataset_id}/storage',
+        summary='Display user-facing storage details related to the objectstore a dataset resides in.',
+    )
+    def show_storage(
+        self,
+        trans=DependsOnTrans,
+        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
+    ):
+        return self.service.show_storage(trans, dataset_id, hda_ldda)
+
+    @router.get(
+        '/api/datasets/{dataset_id}/inheritance_chain',
+        summary='For internal use, this endpoint may change without warning.',
+        include_in_schema=False,
+    )
+    def show_inheritance_chain(
+        self,
+        trans=DependsOnTrans,
+        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
+    ) -> List[DatasetInheritanceChainEntry]:
+        return self.service.show_inheritance_chain(trans, dataset_id, hda_ldda)
+
+    @router.get(
+        '/api/datasets/{dataset_id}/get_content_as_text',
+        summary='Returns item content as Text.',
+    )
+    def get_content_as_text(
+        self,
+        trans=DependsOnTrans,
+        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+    ) -> DatasetTextContentDetails:
+        return self.service.get_content_as_text(trans, dataset_id)
+
+    @router.get(
+        '/api/datasets/{dataset_id}/converted/{ext}',
+        summary='Return information about datasets made by converting this dataset to a new format',
+    )
+    def converted(
+        self,
+        trans=DependsOnTrans,
+        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        ext: Optional[str] = Query(
+            default=None,
+            description="TODO",
+        ),
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ):
+        return self.service.converted(trans, dataset_id, ext, serialization_params)
+
+    @router.put(
+        '/api/datasets/{dataset_id}/permissions',
+        summary='Set permissions of the given history dataset to the given role ids.',
+    )
+    def update_permissions(
+        self,
+        trans=DependsOnTrans,
+        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
+        payload: Dict[str, Any] = Body(
+            default=...,
+            example=UpdateDatasetPermissionsPayload(),
+        ),
+    ) -> DatasetAssociationRoles:
+        """Set permissions of the given history dataset to the given role ids."""
+        update_payload = get_update_permission_payload(payload)
+        return self.service.update_permissions(trans, dataset_id, update_payload)
+
+    @router.get(
+        '/api/histories/{history_id}/contents/{history_content_id}/extra_files',
+        summary='Generate list of extra files.',
+        tags=["histories"],
+    )
+    def extra_files(
+        self,
+        trans=DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
+    ):
+        return self.service.extra_files(trans, history_content_id)
+
+    @router.get(
+        '/api/histories/{history_id}/contents/{history_content_id}/display',
+        summary='Displays history content (dataset).',
+        tags=["histories"],
+    )
+    def display(
+        self,
+        request: Request,
+        trans=DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        preview: bool = Query(
+            default=False,
+            description="TODO",
+        ),
+        filename: Optional[str] = Query(
+            default=None,
+            description="TODO",
+        ),
+        to_ext: Optional[str] = Query(
+            default=None,
+            description="TODO",
+        ),
+        raw: bool = Query(
+            default=False,
+            description=(
+                "The query parameter 'raw' should be considered experimental and may be dropped at "
+                "some point in the future without warning. Generally, data should be processed by its "
+                "datatype prior to display."
+            ),
+        ),
+    ):
+        exclude_params = set(["preview", "filename", "to_ext", "raw"])
+        extra_params = request.query_params._dict
+        for p in exclude_params:
+            extra_params.pop(p, None)
+        return self.service.display(trans, history_content_id, history_id, preview, filename, to_ext, raw, **extra_params)
+
+    @router.get(
+        '/api/histories/{history_id}/contents/{history_content_id}/metadata_file',
+        summary='Returns the metadata file associated with this history item.',
+        tags=["histories"],
+    )
+    def get_metadata_file(
+        self,
+        trans=DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        metadata_file: Optional[str] = Query(
+            default=None,
+            description="TODO",
+        ),
+    ):
+        metadata_file_path, headers = self.service.get_metadata_file(trans, history_content_id, metadata_file)
+        return FileResponse(path=cast(str, metadata_file_path), headers=headers)
+
+
+class DatasetsController(BaseGalaxyAPIController):
     service: DatasetsService = depends(DatasetsService)
 
     @web.expose_api
