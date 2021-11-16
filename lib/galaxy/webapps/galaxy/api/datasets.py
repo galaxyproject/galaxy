@@ -36,6 +36,7 @@ from galaxy.schema.schema import (
 )
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
+    get_query_parameters_from_request_excluding,
     get_update_permission_payload,
     parse_serialization_params,
     query_serialization_params,
@@ -208,10 +209,7 @@ class FastAPIDatasets:
             ),
         ),
     ):
-        exclude_params = set(["preview", "filename", "to_ext", "raw"])
-        extra_params = request.query_params._dict
-        for p in exclude_params:
-            extra_params.pop(p, None)
+        extra_params = get_query_parameters_from_request_excluding(request, {"preview", "filename", "to_ext", "raw"})
         return self.service.display(trans, history_content_id, history_id, preview, filename, to_ext, raw, **extra_params)
 
     @router.get(

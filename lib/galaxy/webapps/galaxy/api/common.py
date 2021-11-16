@@ -4,9 +4,13 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
 )
 
-from fastapi import Query
+from fastapi import (
+    Query,
+    Request,
+)
 
 from galaxy.schema import (
     FilterQueryParams,
@@ -113,3 +117,16 @@ def get_update_permission_payload(payload: Dict[str, Any]) -> UpdateDatasetPermi
     payload["modify_ids"] = payload.get("modify_ids[]") or payload.get("modify")
     update_payload = UpdateDatasetPermissionsPayload(**payload)
     return update_payload
+
+
+def get_query_parameters_from_request_excluding(request: Request, exclude: Set[str]) -> dict:
+    """Gets all the request query parameters excluding the given parameters names in `exclude` set.
+
+    This is useful when an endpoint uses arbitrary or dynamic query parameters that
+    cannot be anticipated or documented beforehand. The `exclude` set can be used to avoid
+    including those parameters that are already handled by the endpoint.
+    """
+    extra_params = request.query_params._dict
+    for param_name in exclude:
+        extra_params.pop(param_name, None)
+    return extra_params
