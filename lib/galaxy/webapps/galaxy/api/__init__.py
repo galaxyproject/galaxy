@@ -16,6 +16,7 @@ from fastapi import (
     Form,
     Header,
     Query,
+    Response,
 )
 from fastapi.params import Depends
 from fastapi_utils.cbv import cbv
@@ -46,6 +47,7 @@ from galaxy.web.framework.decorators import require_admin_message
 from galaxy.webapps.base.controller import BaseAPIController
 from galaxy.work.context import (
     GalaxyAbstractRequest,
+    GalaxyAbstractResponse,
     SessionRequestContext,
 )
 
@@ -168,6 +170,20 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
         return str(self.__request.client.host)
 
 
+class GalaxyASGIResponse(GalaxyAbstractResponse):
+    """Wrapper around Starlette/FastAPI Response object.
+
+    Implements the GalaxyAbstractResponse interface to provide access to some properties
+    of the response object commonly used."""
+
+    def __init__(self, response: Response):
+        self.__response = response
+
+    @property
+    def headers(self):
+        return self.__response.headers
+
+
 DependsOnUser = Depends(get_user)
 
 
@@ -177,16 +193,18 @@ def get_current_history_from_session(galaxy_session: Optional[model.GalaxySessio
     return None
 
 
-def get_trans(request: Request, app: StructuredApp = DependsOnApp, user: Optional[User] = Depends(get_user),
+def get_trans(request: Request, response: Response, app: StructuredApp = DependsOnApp, user: Optional[User] = Depends(get_user),
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
     url_builder = UrlBuilder(request)
     galaxy_request = GalaxyASGIRequest(request)
+    galaxy_response = GalaxyASGIResponse(response)
     return SessionRequestContext(
         app=app, user=user,
         galaxy_session=galaxy_session,
         url_builder=url_builder,
         request=galaxy_request,
+        response=galaxy_response,
         history=get_current_history_from_session(galaxy_session),
     )
 
