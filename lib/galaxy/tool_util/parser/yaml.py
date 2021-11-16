@@ -1,3 +1,5 @@
+import json
+
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
@@ -191,6 +193,10 @@ class YamlToolSource(ToolSource):
         if python_template_version is not None:
             python_template_version = packaging.version.parse(python_template_version)
         return python_template_version
+
+    def to_string(self):
+        # TODO: Unit test for dumping/restoring
+        return json.dumps(self.root_dict)
 
 
 def _parse_test(i, test_dict):
