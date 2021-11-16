@@ -229,7 +229,7 @@ def set_metadata_portable():
         expression_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
 
         # Load outputs.
-        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False, serialize_jobs=False)
+        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False, serialize_jobs=True)
     try:
         import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
     except AssertionError:
