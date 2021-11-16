@@ -26,6 +26,30 @@ def lint_tsts(tool_xml, lint_ctx):
                 has_test = True
                 break
 
+        # really simple test that test parameters are also present in the inputs
+        for param in test.findall("param"):
+            name = param.attrib.get("name", None)
+            if not name:
+                lint_ctx.error("Found test param tag without a name defined.")
+                continue
+            name = name.split("|")[-1]
+            xpaths = [f"@name='{name}'",
+                      f"@argument='{name}'",
+                      f"@argument='-{name}'",
+                      f"@argument='--{name}'"]
+            if "_" in name:
+                xpaths += [f"@argument='-{name.replace('_', '-')}'",
+                           f"@argument='--{name.replace('_', '-')}'"]
+            found = False
+            for xp in xpaths:
+                inxpath = f".//inputs//param[{xp}]"
+                inparam = tool_xml.findall(inxpath)
+                if len(inparam) > 0:
+                    found = True
+                    break
+            if not found:
+                lint_ctx.error(f"Test param {name} not found in the inputs")
+
         output_data_names, output_collection_names = _collect_output_names(tool_xml)
         found_output_test = False
         for output in test.findall("output"):
