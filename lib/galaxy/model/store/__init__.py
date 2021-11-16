@@ -1081,12 +1081,20 @@ class ModelExportStore(metaclass=abc.ABCMeta):
         """Export history to store."""
 
     @abc.abstractmethod
-    def add_dataset_collection(self, collection):
-        """Add HDCA to export store."""
+    def add_dataset_collection(self, collection, include_files=False):
+        """
+        Add HDCA to export store.
+
+        ``include_files`` controls whether file contents are exported as well.
+        """
 
     @abc.abstractmethod
     def add_dataset(self, dataset, include_files=True):
-        """Add HDA to export store."""
+        """
+        Add HDA to export store.
+
+        ``include_files`` controls whether file contents are exported as well.
+        """
 
     @abc.abstractmethod
     def __enter__(self):
@@ -1401,9 +1409,11 @@ class DirectoryModelExportStore(ModelExportStore):
             job_output_dataset_associations[job_id] = {}
         job_output_dataset_associations[job_id][name] = dataset_instance
 
-    def add_dataset_collection(self, collection):
+    def add_dataset_collection(self, collection: model.HistoryDatasetCollectionAssociation, include_files=False):
         self.collections_attrs.append(collection)
         self.included_collections.append(collection)
+        for dataset in collection.collection.dataset_instances:
+            self.add_dataset(dataset, include_files=include_files)
 
     def add_dataset(self, dataset, include_files=True):
         self.included_datasets[dataset] = (dataset, include_files)
