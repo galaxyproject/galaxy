@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import configparser
 import json
 import os
 import os.path
@@ -49,7 +48,8 @@ def main():
 		mgm_utils.exception_if_file_not_exist(input_json)
 		
 		print ("Handling HMGM task: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json + ", task JSON: " + task_json)				
-		config = config_hmgm(root_dir)
+        # Load basic HMGM configuration based from the property file under the given root directory
+		config = mgm_utils.get_config(root_dir)
 		context = json.loads(context_json)
 		context = desanitize_context(context)
 		
@@ -85,13 +85,6 @@ def main():
 		traceback.print_exc()
 		sys.stdout.flush()
 		exit(-1)
-
-
-# Load basic HGMG configuration based from the property file under the given root directory and return the configuration instance.
-def config_hmgm(root_dir):
-	config = configparser.ConfigParser()
-	config.read(root_dir + "/config/amp_mgm.ini")    
-	return config
 
 
 # Desanitize all the names in the given context.
@@ -206,7 +199,7 @@ def get_editor_input_path(config, dataset_file):
 	# For security concerns, we don't pass the original input/output path to HMGM task editors, to avoid exposing the internal Galaxy file system 
 	# to external web apps; Instead, we use a designated directory for passing such input/output files, and generate a soft link in 
 	# (or copy the file to) this directory, using a filename uniquely mapped from the original filename.  
-	io_dir = config["general"]["hmgm_dir"] 
+	io_dir = config["workdir"]["hmgm_io"] 
 
 	# TODO replace below code with logic to generate an obscure soft link based on the original file path
 	# for now we just use the original filename within the designated directory

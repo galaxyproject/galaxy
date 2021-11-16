@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import configparser
 import ffmpeg
 import sys
 import requests

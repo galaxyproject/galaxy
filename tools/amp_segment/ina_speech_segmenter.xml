@@ -5,7 +5,7 @@
     <requirement type="package" version="8.30">coreutils</requirement>
   </requirements>
   <command detect_errors="exit_code">
-  	'$__tool_directory__/ina_speech_segmenter.py' '$input_audio' '$amp_segments'
+  	'$__tool_directory__/ina_speech_segmenter.py' '$__root_dir__' '$input_audio' '$amp_segments'
   </command>
   <inputs>
     <!-- should be wave data type -->

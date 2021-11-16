@@ -14,7 +14,7 @@ import mgm_utils
 
 
 def main():
-	(speech_audio, amp_transcript_unaligned, gentle_transcript, amp_transcript_aligned) = sys.argv[1:5]
+	(root_dir, speech_audio, amp_transcript_unaligned, gentle_transcript, amp_transcript_aligned) = sys.argv[1:6]
 	exception = False
 	try:
 		# prefix random id to original filenames to ensure uniqueness for the tmp Gentle singularity input files 
@@ -44,7 +44,8 @@ def main():
 
 			# Run gentle
 			print(f"Running Gentle... tmp_speech_audio: {tmp_speech_audio}, tmp_amp_transcript_unaligned: {tmp_amp_transcript_unaligned}, tmp_gentle_transcript: {tmp_gentle_transcript}")
-			r = subprocess.run(["singularity", "run", "/srv/amp/gentle-singularity/gentle-singularity.sif", tmp_speech_audio, tmp_amp_transcript_unaligned, "-o", tmp_gentle_transcript], stdout=subprocess.PIPE)
+			sif = mgm_utils.get_sif_dir(root_dir) + "/gentle_forced_alignment.sif"
+			r = subprocess.run(["singularity", "run", sif, tmp_speech_audio, tmp_amp_transcript_unaligned, "-o", tmp_gentle_transcript], stdout=subprocess.PIPE)
 			print(f"Finished running Gentle with return Code: {r.returncode}")
 
 			# if Gentle completed in success, continue with transcript conversion
