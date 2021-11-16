@@ -43,9 +43,8 @@ class ConditionalDependencies:
     def parse_configs(self):
 
         def load_job_config_dict(job_conf_dict):
-            runners = job_conf_dict.get("runners", [])
-            for runner_id in runners:
-                runner = runners[runner_id]
+            runners = job_conf_dict.get("runners", {})
+            for runner in runners.values():
                 if "load" in runner:
                     self.job_runners.append(runner.get("load"))
                 if "rules_module" in runner:
