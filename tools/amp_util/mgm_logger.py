@@ -54,7 +54,7 @@ class MgmLogger(object):
         self.log.write(date_time + "\t" + message + "\n")  
     
     def get_log_dir(self, root_dir):
-        return mgm_utils.get_workdir(root_dir, "mgm_log")
+        return mgm_utils.get_log_dir(root_dir)
 
     def flush(self):
         pass    

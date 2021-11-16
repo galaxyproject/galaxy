@@ -5,7 +5,7 @@
     <requirement type="package" version="8.30">coreutils</requirement>
   </requirements>
   <command detect_errors="exit_code">
-  	python '$__tool_directory__/gentle_forced_alignment.py' '$speech_audio' '$amp_transcript_unaligned' '$gentle_transcript' '$amp_transcript_aligned'
+  	python '$__tool_directory__/gentle_forced_alignment.py' '$__root_dir__' '$speech_audio' '$amp_transcript_unaligned' '$gentle_transcript' '$amp_transcript_aligned'
   </command>
   <inputs>
     <!-- should be wave data type -->

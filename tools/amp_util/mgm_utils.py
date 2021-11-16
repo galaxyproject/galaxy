@@ -100,8 +100,19 @@ def get_config(root_dir):
 	return config
     
 
-# Get the absolute path for the specified module/mgm working directory
-def get_workdir(root_dir, work_dir):
+# Get the absolute path of the specified module/mgm working directory
+def get_work_dir(root_dir, work_dir):
     config = get_config(root_dir)
     dir = config["workdir"].get(work_dir)
     return dir    
+
+# Get the absolute path of the mgm logs directory
+def get_log_dir(root_dir):
+    return get_work_dir(root_dir, "mgm_log")
+
+
+# Get the absolute path of the mgm singularities directory
+def get_sif_dir(root_dir):
+    return get_work_dir(root_dir, "mgm_sif") 
+
+

@@ -7,11 +7,11 @@ import subprocess
 import sys
 import tempfile
 
-# The applause_detection singularity file is assumed to be at /srv/amp/applause_detection/applause_detection.sif
-APPLAUSE_DETECTION = "/srv/amp/applause-detection/applause-detection.sif"
+import mgm_utils
+
 
 def main():
-    (input_audio, min_segment_duration, amp_segments) = sys.argv[1:4]
+    (root_dir, input_audio, min_segment_duration, amp_segments) = sys.argv[1:5]
     print("Current directory: " + os.getcwd())
     print("Input audio: " + input_audio)
     
@@ -22,8 +22,11 @@ def main():
         shutil.copy(input_audio, f"{tmpdir}/{filename}")
         print("Temporary directory " + tmpdir + " after input file copied: " + str(os.listdir(tmpdir)))
         
+        # The applause_detection singularity file is assumed to be @ {mgm_sif}/applause_detection.sif
+        sif = mgm_utils.get_sif_dir(root_dir) + "/applause_detection.sif"
+
         # run singularity
-        subprocess.run([APPLAUSE_DETECTION, tmpdir, min_segment_duration], check=True)
+        subprocess.run([sif, tmpdir, min_segment_duration], check=True)
 
         # copy the corresponding temporary output file to the output AMP segments JSON
         print("Temporary directory " + tmpdir + " after output file generated: " + str(os.listdir(tmpdir)))   

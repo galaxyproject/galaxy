@@ -26,7 +26,7 @@ def main():
     args = parser.parse_args()
 
     # get hpc dropbox dir path
-    dropbox = mgm_utils.get_workdir(args.root_dir, "hpc_dropbox")
+    dropbox = mgm_utils.get_work_dir(args.root_dir, "hpc_dropbox")
                                     
     # set up logging
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO,

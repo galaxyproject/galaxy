@@ -6,7 +6,7 @@
   </requirements>
   <command detect_errors="exit_code">
   	'$__tool_directory__/kaldi.py' '$input_audio' '$kaldi_transcript_json' '$kaldi_transcript_text';
-    '$__tool_directory__/kaldi_transcript_to_amp_transcript.py' '$input_audio' '$kaldi_transcript_json' '$kaldi_transcript_text' '$amp_transcript'
+    '$__tool_directory__/kaldi_transcript_to_amp_transcript.py' '$__root_dir__' '$input_audio' '$kaldi_transcript_json' '$kaldi_transcript_text' '$amp_transcript'
   </command>
   <inputs>
     <!-- should be wav data type -->

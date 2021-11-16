@@ -10,14 +10,15 @@ import uuid
 
 
 def main():
-	(input_file, json_file) = sys.argv[1:3]
+	(root_dir, input_file, json_file) = sys.argv[1:4]
 	tmpName = str(uuid.uuid4())
 	tmpdir = "/tmp"
 	temp_input_file = f"{tmpdir}/{tmpName}.dat"
 	temp_output_file = f"{tmpdir}/{tmpName}.json"
 	shutil.copy(input_file, temp_input_file)
 
-	r = subprocess.run(["singularity", "run", "/srv/amp/ina-speech-tools-singularity/ina-speech-tools-singularity.sif", temp_input_file, temp_output_file])
+	sif = mgm_utils.get_sif_dir(root_dir) + "/ina_segmentation.sif"
+	r = subprocess.run(["singularity", "run", sif, temp_input_file, temp_output_file])
 	
 	shutil.copy(temp_output_file, json_file)
 

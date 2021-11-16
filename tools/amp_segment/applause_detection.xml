@@ -12,7 +12,7 @@
     <requirement type="package" version="2.0.1">tensorflow</requirement>
   </requirements>
   <command detect_errors="exit_code">
-  	'$__tool_directory__/applause_detection.py' '$input_audio' '$min_segment_duration' '$amp_applause_segments'
+  	'$__tool_directory__/applause_detection.py' '$__root_dir__' '$input_audio' '$min_segment_duration' '$amp_applause_segments'
   </command>
   <inputs>
     <!-- should be wave data type -->

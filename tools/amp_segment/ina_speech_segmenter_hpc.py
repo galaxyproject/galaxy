@@ -32,7 +32,7 @@ def main():
                         format="%(asctime)s %(levelname)s %(message)s")
     
     # get hpc dropbox dir path
-    dropbox = mgm_utils.get_workdir(args.root_dir, "hpc_dropbox")
+    dropbox = mgm_utils.get_work_dir(args.root_dir, "hpc_dropbox")
     
     # job parameters    
     job = {
