@@ -257,7 +257,7 @@ def check_requirements(rec, tool=True):
             check_requirements(d, tool=tool)
 
 
-class ToolProxy(ABCMeta):
+class ToolProxy(metaclass=ABCMeta):
 
     _class: str
 
