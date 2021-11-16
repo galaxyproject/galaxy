@@ -8,7 +8,7 @@
   <configfiles>
     <file_sources filename="file_sources.json" />
   </configfiles>
-  <command>
+  <command><![CDATA[
     python '$__tool_directory__/upload.py' '$GALAXY_ROOT_DIR' '$GALAXY_DATATYPES_CONF_FILE' '$paramfile'
     #set $outnum = 0
     #while $varExists('output%i' % $outnum):
@@ -21,16 +21,17 @@
         #end if
         '${output.dataset.dataset.id}:${output.files_path}:${file_name}'
     #end while
-  </command>
+  ]]></command>
   <inputs nginx_upload="true">
-    <param name="file_type" type="select" label="File Format" help="Which format? See help below">
+    <!-- <param name="file_type" type="select" label="File Format" help="Which format? See help below">
       <options from_parameter="tool.app.datatypes_registry.upload_file_formats" transform_lines="[ &quot;%s%s%s&quot; % ( line, self.separator, line ) for line in obj ]">
         <column name="value" index="1"/>
         <column name="name" index="0"/>
         <filter type="sort_by" column="0"/>
         <filter type="add_value" name="Auto-detect" value="auto" index="0"/>
       </options>
-    </param>
+    </param> -->
+    <param name="file_type" type="text" label="File Format" help="Which format? See help below"/>
     <param name="file_count" type="hidden" value="auto" />
     <upload_dataset name="files" title="Specify Files for Dataset" file_type_name="file_type" metadata_ref="files_metadata">
         <param name="file_data" type="file" label="File" ajax-upload="true" help="TIP: Due to browser limitations, uploading files larger than 2GB is guaranteed to fail.  To upload large files, use the URL method (below) or FTP (if enabled by the site administrator).">
