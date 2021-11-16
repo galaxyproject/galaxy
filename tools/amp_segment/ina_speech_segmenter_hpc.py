@@ -30,9 +30,9 @@ def main():
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO,
                         stream=sys.stderr,
                         format="%(asctime)s %(levelname)s %(message)s")
-
-    config = mgm_utils.get_config(args.root_dir)
-    dropbox = config["hpc"]["dropbox"]
+    
+    # get hpc dropbox dir path
+    dropbox = mgm_utils.get_workdir(args.root_dir, "hpc_dropbox")
     
     # job parameters    
     job = {

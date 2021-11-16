@@ -25,9 +25,9 @@ def main():
     parser.add_argument("hpc_timestamps", help="HPC Timestamps output")
     args = parser.parse_args()
 
-    config = mgm_utils.get_config(args.root_dir)
-    dropbox = config["hpc"]["dropbox"]
-
+    # get hpc dropbox dir path
+    dropbox = mgm_utils.get_workdir(args.root_dir, "hpc_dropbox")
+                                    
     # set up logging
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO,
                         stream=sys.stderr,

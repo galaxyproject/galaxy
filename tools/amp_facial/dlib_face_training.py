@@ -111,13 +111,11 @@ def get_model_file(training_photos):
     filename, file_extension = os.path.splitext(training_photos)
     model_file = filename + FR_TRAINED_MODEL_SUFFIX
     return model_file
-            
+                
 
 # Get the facial recognition working directory path for training and matching.
 def get_facial_dir(root_dir):
-    config = mgm_utils.get_config(root_dir)
-    facial_dir = config["general"]["facial_dir"]
-    return facial_dir
+    return mgm_utils.get_workdir(root_dir, "facial_io")
 
     
 # Unzip training_photos zip file to a directory with the same name as training_photos under facial_dir.

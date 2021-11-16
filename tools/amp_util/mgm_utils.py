@@ -98,3 +98,10 @@ def get_config(root_dir):
 	config = configparser.ConfigParser()
 	config.read(root_dir + "/config/amp_mgm.ini")    
 	return config
+    
+
+# Get the absolute path for the specified module/mgm working directory
+def get_workdir(root_dir, work_dir):
+    config = get_config(root_dir)
+    dir = config["workdir"].get(work_dir)
+    return dir    
