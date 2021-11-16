@@ -8,6 +8,7 @@ import logging
 import os
 import os.path
 import re
+from typing import Any, Dict, List, Tuple, Union
 
 from webob.compat import cgi_FieldStorage
 
@@ -428,7 +429,7 @@ class IntegerToolParameter(TextToolParameter):
             raise err
 
     def get_initial_value(self, trans, other_values):
-        if self.value not in {None, ''}:
+        if self.value is not None and self.value != "":
             return int(self.value)
         else:
             return None
@@ -500,6 +501,8 @@ class FloatToolParameter(TextToolParameter):
             raise err
 
     def get_initial_value(self, trans, other_values):
+        if self.value is None:
+            return None
         try:
             return float(self.value)
         except Exception:
@@ -686,7 +689,7 @@ class FTPFileToolParameter(ToolParameter):
     def to_python(self, value, app, validate=False):
         if not isinstance(value, list):
             value = [value]
-        lst = []
+        lst: List[str] = []
         for val in value:
             if val in [None, '']:
                 lst = []
@@ -997,12 +1000,14 @@ class SelectToolParameter(ToolParameter):
             if not self.optional and not self.multiple and options:
                 # Nothing selected, but not optional and not a multiple select, with some values,
                 # so we have to default to something (the HTML form will anyway)
-                value = options[0][1]
+                value2 = options[0][1]
             else:
-                value = None
+                value2 = None
         elif len(value) == 1 or not self.multiple:
-            value = value[0]
-        return value
+            value2 = value[0]
+        else:
+            value2 = value
+        return value2
 
     def to_text(self, value):
         if not isinstance(value, list):
@@ -1334,7 +1339,7 @@ class ColumnListParameter(SelectToolParameter):
         """
         Show column labels rather than c1..cn if use_header_names=True
         """
-        options = []
+        options: List[Tuple[str, Union[str, Tuple[str, str]], bool]] = []
         if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
             dataset = other_values.get(self.data_ref, None)
             try:
@@ -1472,7 +1477,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         if self.dynamic_options:
             self.is_dynamic = True
         self.options = []
-        self.filtered = {}
+        self.filtered: Dict[str, Any] = {}
         if elem.find('filter'):
             self.is_dynamic = True
             for filter in elem.findall('filter'):
@@ -1524,7 +1529,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             for option in options:
                 legal_values.append(option['value'])
                 recurse_options(legal_values, option['options'])
-        legal_values = []
+        legal_values: List[str] = []
         recurse_options(legal_values, self.get_options(trans=trans, other_values=other_values))
         return legal_values
 
@@ -1574,7 +1579,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 else:
                     for opt in option['options']:
                         recurse_option(option_list, opt)
-            rval = []
+
+            rval: List[str] = []
             recurse_option(rval, get_base_option(value, self.get_options(other_values=other_values)))
             return rval or [value]
 
@@ -1607,10 +1613,10 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         options = self.get_options(trans=trans, other_values=other_values)
         if not options:
             return None
-        initial_values = []
+        initial_values: List[str] = []
         recurse_options(initial_values, options)
         if len(initial_values) == 0:
-            initial_values = None
+            return None
         return initial_values
 
     def to_text(self, value):
@@ -1661,6 +1667,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
 
 class BaseDataToolParameter(ToolParameter):
+
+    multiple: bool
 
     def __init__(self, tool, input_source, trans):
         super().__init__(tool, input_source)
@@ -2325,7 +2333,7 @@ class LibraryDatasetToolParameter(ToolParameter):
     def to_json(self, value, app, use_security):
         if not isinstance(value, list):
             value = [value]
-        lst = []
+        lst: List[Dict[str, str]] = []
         for item in value:
             lda_id = lda_name = None
             if isinstance(item, app.model.LibraryDatasetDatasetAssociation):

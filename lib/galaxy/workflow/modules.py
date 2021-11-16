@@ -932,8 +932,8 @@ class InputParameterModule(WorkflowModule):
             optional_cond.cases = optional_cases
 
             if param_type == "text":
-                restrict_how_source: Union[
-                    Dict[str, Union[str, List[Dict[str, Union[str, bool]]]]]
+                restrict_how_source: Dict[
+                    str, Union[str, List[Dict[str, Union[str, bool]]]]
                 ] = dict(name="how", label="Restrict Text Values?", type="select")
                 if parameter_def.get("restrictions") is not None:
                     restrict_how_value = "staticRestrictions"

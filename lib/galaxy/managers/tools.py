@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from sqlalchemy import sql
@@ -10,6 +11,9 @@ from .base import ModelManager, raise_filter_err
 from .executables import artifact_class
 
 log = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from galaxy.managers.base import OrmFilterParsersType
 
 
 class DynamicToolManager(ModelManager):
@@ -103,6 +107,7 @@ class DynamicToolManager(ModelManager):
 
 
 class ToolFilterMixin:
+    orm_filter_parsers: "OrmFilterParsersType"
 
     def create_tool_filter(self, attr, op, val):
 
