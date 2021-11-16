@@ -3,6 +3,7 @@ import json
 import os
 
 from galaxy import model
+from galaxy.files import ConfiguredFileSources
 from galaxy.job_execution.datasets import (
     DatasetPath,
     get_path_rewriter,
@@ -28,6 +29,7 @@ class JobIO(Dictifiable):
         'new_file_path',
         'len_file_path',
         'builds_file_path',
+        '_file_sources',
         'check_job_script_integrity',
         'check_job_script_integrity_count',
         'check_job_script_integrity_sleep',
@@ -49,6 +51,7 @@ class JobIO(Dictifiable):
             new_file_path,
             len_file_path,
             builds_file_path,
+            _file_sources,
             check_job_script_integrity,
             check_job_script_integrity_count,
             check_job_script_integrity_sleep):
@@ -66,6 +69,7 @@ class JobIO(Dictifiable):
         self.new_file_path = new_file_path
         self.len_file_path = len_file_path
         self.builds_file_path = builds_file_path
+        self._file_sources = _file_sources
         self.check_job_script_integrity = check_job_script_integrity
         self.check_job_script_integrity_count = check_job_script_integrity_count
         self.check_job_script_integrity_sleep = check_job_script_integrity_sleep
@@ -79,6 +83,10 @@ class JobIO(Dictifiable):
             kwargs = json.load(job_io_serialized)
         kwargs.pop('model_class')
         return cls(sa_session=sa_session, job=job, **kwargs)
+
+    @property
+    def file_sources(self) -> ConfiguredFileSources:
+        return ConfiguredFileSources.from_dict(json.loads(self._file_sources))
 
     def to_json(self, path):
         with open(path, 'w') as out:
