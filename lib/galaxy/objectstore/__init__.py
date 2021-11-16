@@ -92,7 +92,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def exists(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def exists(self, obj, base_dir=None, dir_only=False, obj_dir=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """Return True if the object identified by `obj` exists, False otherwise."""
         raise NotImplementedError()
 
