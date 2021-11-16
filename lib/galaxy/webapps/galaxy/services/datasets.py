@@ -398,10 +398,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                     file_path = hda.file_name
                 rval = open(file_path, 'rb')
             else:
-                display_kwd = kwd.copy()
-                if 'key' in display_kwd:
-                    del display_kwd["key"]
-                rval, headers = hda.datatype.display_data(trans, hda, preview, filename, to_ext, **display_kwd)
+                rval, headers = hda.datatype.display_data(trans, hda, preview, filename, to_ext, **kwd)
         except galaxy_exceptions.MessageException:
             raise
         except Exception as e:
