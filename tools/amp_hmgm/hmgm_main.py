@@ -48,7 +48,7 @@ def main():
 		mgm_utils.exception_if_file_not_exist(input_json)
 		
 		print ("Handling HMGM task: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json + ", task JSON: " + task_json)				
-        # Load basic HGMG configuration based from the property file under the given root directory
+        # Load basic HMGM configuration based from the property file under the given root directory
 		config = mgm_utils.get_config(root_dir)
 		context = json.loads(context_json)
 		context = desanitize_context(context)
