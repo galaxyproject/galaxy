@@ -734,6 +734,7 @@ class InputDataModule(InputModule):
         input_param = DataToolParameter(None, data_src, self.trans)
         return dict(input=input_param)
 
+
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
         optional = parameter_def["optional"]
@@ -752,6 +753,7 @@ class InputDataCollectionModule(InputModule):
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
         collection_type = parameter_def["collection_type"]
+        tag = parameter_def["tag"]
         optional = parameter_def["optional"]
         collection_type_source = dict(name="collection_type", label="Collection type", type="text", value=collection_type)
         collection_type_source["options"] = [
@@ -760,10 +762,13 @@ class InputDataCollectionModule(InputModule):
             {"value": "list:paired", "label": "List of Dataset Pairs"},
         ]
         input_collection_type = TextToolParameter(None, collection_type_source)
+        tag_source = dict(name="tag", label="Tag filter", type="text", value=tag, help="Tags to automatically filter inputs")
+        input_tag = TextToolParameter(None, tag_source)
         inputs = {}
         inputs["collection_type"] = input_collection_type
         inputs["optional"] = optional_param(optional)
         inputs["format"] = format_param(self.trans, parameter_def.get("format"))
+        inputs["tag"] = input_tag
         return inputs
 
     def get_runtime_inputs(self, **kwds):
@@ -803,6 +808,11 @@ class InputDataCollectionModule(InputModule):
         else:
             collection_type = self.default_collection_type
         state_as_dict["collection_type"] = collection_type
+        if "tag" in inputs:
+            tag = inputs["tag"]
+        else:
+            tag = None
+        state_as_dict["tag"] = tag
         return state_as_dict
 
 
