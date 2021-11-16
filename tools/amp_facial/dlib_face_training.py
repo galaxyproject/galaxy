@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import configparser
 import os
 import os.path
 import traceback
@@ -11,6 +10,7 @@ import pickle
 # from tqdm.notebook import tqdm
 from zipfile import ZipFile
 
+import mgm_utils
 
 FR_TRAINED_MODEL_SUFFIX = ".frt"
 
@@ -115,8 +115,7 @@ def get_model_file(training_photos):
 
 # Get the facial recognition working directory path for training and matching.
 def get_facial_dir(root_dir):
-    config = configparser.ConfigParser()
-    config.read(root_dir + "/config/amp_mgm.ini")    
+    config = mgm_utils.get_config(root_dir)
     facial_dir = config["general"]["facial_dir"]
     return facial_dir
 

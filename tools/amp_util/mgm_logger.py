@@ -1,11 +1,12 @@
 import sys
-
-import configparser
 import os
 from datetime import datetime
 import shutil
 import zipfile
 import gzip
+
+import mgm_utils
+
 
 class MgmLogger(object):
     log_file_size = 1000000
@@ -53,8 +54,7 @@ class MgmLogger(object):
         self.log.write(date_time + "\t" + message + "\n")  
     
     def get_log_dir(self, root_dir):
-        config = configparser.ConfigParser()
-        config.read(root_dir + "/config/amp_mgm.ini") 
+        config = mgm_utils.get_config(root_dir)
         return config["general"]["log_dir"]
 
     def flush(self):

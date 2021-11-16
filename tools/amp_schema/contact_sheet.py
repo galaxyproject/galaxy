@@ -1,4 +1,3 @@
-import configparser
 import ffmpeg
 import sys
 import requests

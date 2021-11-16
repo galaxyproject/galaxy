@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import configparser
 import json
 import os
 import os.path
@@ -49,7 +48,8 @@ def main():
 		mgm_utils.exception_if_file_not_exist(input_json)
 		
 		print ("Handling HMGM task: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json + ", task JSON: " + task_json)				
-		config = config_hmgm(root_dir)
+        # Load basic HGMG configuration based from the property file under the given root directory
+		config = mgm_utils.get_config(root_dir)
 		context = json.loads(context_json)
 		context = desanitize_context(context)
 		
@@ -85,13 +85,6 @@ def main():
 		traceback.print_exc()
 		sys.stdout.flush()
 		exit(-1)
-
-
-# Load basic HGMG configuration based from the property file under the given root directory and return the configuration instance.
-def config_hmgm(root_dir):
-	config = configparser.ConfigParser()
-	config.read(root_dir + "/config/amp_mgm.ini")    
-	return config
 
 
 # Desanitize all the names in the given context.
