@@ -787,7 +787,7 @@ class ValueInDataTableColumnValidator(Validator):
             column = int(column)
         except ValueError:
             pass
-        message = elem.get("message", f"Value %s was not found in {table_name}.")
+        message = elem.get("message", f"Value was not found in {table_name}.")
         negate = elem.get('negate', 'false')
         return cls(tool_data_table, column, message, negate)
 
@@ -814,12 +814,7 @@ class ValueInDataTableColumnValidator(Validator):
         if not self._tool_data_table.is_current_version(self._data_table_content_version):
             log.debug('ValueInDataTableColumnValidator: values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
             self._load_values()
-        log.error(f"ValueInDataTableColumnValidator value {value} valid {self.valid_values}")
-        if not isinstance(value, list):
-            value = [value]
-        for v in value:
-            log.error(f"ValueInDataTableColumnValidator v {v} valid {self.valid_values}")
-            super().validate(v in self.valid_values, value_to_show=v)
+        super().validate(value in self.valid_values)
 
 
 class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
