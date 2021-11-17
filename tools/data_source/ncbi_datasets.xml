@@ -10,7 +10,7 @@
     <version_command>datasets version</version_command>
     <command><![CDATA[
 ## If running in container use certificate from ca-certificates instead of outdated / missing container certificates
-[ -f /usr/local/ssl/cacert.pem ] && export export SSL_CERT_FILE="/usr/local/ssl/cacert.pem";
+[ -f /usr/local/ssl/cacert.pem ] && export SSL_CERT_FILE="/usr/local/ssl/cacert.pem";
 datasets download --input-json '$file_param' --filename '$compressed_archive' --no-progressbar
 && unzip -l '$compressed_archive'
     ]]></command>
