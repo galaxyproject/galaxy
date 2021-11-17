@@ -29,8 +29,15 @@ async def change_headers(trans=Depends(get_trans)):
 
 
 @app.get("/test/change_content_type")
-async def change_content_type(trans=Depends(get_trans)):
+async def change_content_type(response: Response, trans=Depends(get_trans)):
+    trans.response.__response = response
     trans.response.set_content_type("test-content-type")
+
+
+@app.get("/test/change_content_type_custom_response")
+async def change_content_type_custom_response(trans=Depends(get_trans)):
+    trans.response.set_content_type("test-content-type")
+    return Response(headers=trans.response.headers)
 
 
 def test_change_headers():
@@ -47,3 +54,13 @@ def test_change_content_type():
     assert response.status_code == 200
     assert "content-type" in response.headers
     assert "test-content-type" in response.headers["content-type"]
+    assert response.headers["content-type"] == "test-content-type"
+
+
+def test_change_content_type_custom_response():
+    response = client.get("/test/change_content_type_custom_response")
+
+    assert response.status_code == 200
+    assert "content-type" in response.headers
+    assert "test-content-type" in response.headers["content-type"]
+    assert response.headers["content-type"] == "test-content-type"
