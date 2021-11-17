@@ -1,14 +1,11 @@
 <template>
     <FormCard :title="outputTitle" collapsible :expanded.sync="expanded">
         <template v-slot:body>
-            <FormElement
-                :id="outputLabelId"
-                :value="outputLabel"
+            <FormOutputLabel
+                :name="outputName"
+                :label="outputLabel"
                 :error="outputLabelError"
-                title="Label"
-                type="text"
-                help="This will provide a short name to describe the output - this must be unique across workflows."
-                @input="onLabel"
+                @onLabel="onLabel"
             />
             <FormElement
                 :id="actionNames.RenameDatasetAction__newname"
@@ -100,6 +97,7 @@
 <script>
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
+import FormOutputLabel from "./FormOutputLabel";
 
 const actions = [
     "RenameDatasetAction__newname",
@@ -120,6 +118,7 @@ export default {
     components: {
         FormCard,
         FormElement,
+        FormOutputLabel,
     },
     props: {
         outputName: {
@@ -161,9 +160,6 @@ export default {
         outputTitle() {
             const title = this.outputLabel || this.outputName;
             return `Configure Output: '${title}'`;
-        },
-        outputLabelId() {
-            return `__label__${this.outputName}`;
         },
         actionNames() {
             const index = {};
@@ -225,8 +221,8 @@ export default {
         onInput(value, pjaKey) {
             this.$emit("onInput", value, pjaKey);
         },
-        onLabel(newLabel) {
-            this.$emit("onLabel", this.outputLabelId, this.outputName, newLabel);
+        onLabel(id, name, label) {
+            this.$emit("onLabel", id, name, label);
         },
         onDatatype(newDatatype) {
             this.$emit("onDatatype", this.actionNames.ChangeDatatypeAction__newtype, this.outputName, newDatatype);
