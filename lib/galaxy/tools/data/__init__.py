@@ -355,6 +355,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
     """
     dict_collection_visible_keys = ['name']
+    dict_element_visible_keys = ['name', 'fields']
     dict_export_visible_keys = ['name', 'data', 'largest_index', 'columns', 'missing_index_file']
 
     type_key = 'tabular'
@@ -839,6 +840,8 @@ class RefgenieToolDataTable(TabularToolDataTable):
         </table>
     """
     dict_collection_visible_keys = ['name']
+    dict_element_visible_keys = ['name', 'fields']
+    dict_export_visible_keys = ['name', 'data', 'rg_asset', 'largest_index', 'columns', 'missing_index_file']
 
     type_key = 'refgenie'
 
