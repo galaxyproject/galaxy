@@ -62,9 +62,6 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     # Load the appropriate db module
     engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold, thread_local_log=thread_local_log, log_query_counts=log_query_counts)
 
-    # Connect the metadata to the database.
-    metadata.bind = engine
-
     model_modules = [model]
     if map_install_models:
         import galaxy.model.tool_shed_install.mapping  # noqa: F401
@@ -76,7 +73,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
 
     # Create tables if needed
     if create_tables:
-        metadata.create_all()
+        metadata.create_all(bind=engine)
         install_timestamp_triggers(engine)
         install_views(engine)
 
