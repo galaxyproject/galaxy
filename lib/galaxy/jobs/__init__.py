@@ -1728,6 +1728,10 @@ class JobWrapper(HasResourceParameters):
                     tag_handler=self.app.tag_handler.create_tag_handler_session(),
                 )
                 import_model_store.perform_import(history=job.history, job=job)
+            except store.FileTracebackException as e:
+                job.traceback = e.traceback
+                log.exception(f"Problem generating command line for Job {job.id}.\n{job.traceback}")
+                raise
             except Exception:
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
                 raise

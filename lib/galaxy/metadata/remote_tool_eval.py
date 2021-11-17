@@ -1,6 +1,8 @@
 import json
 import os
+import shutil
 import tempfile
+import traceback
 from typing import (
     Callable,
     NamedTuple,
@@ -67,9 +69,7 @@ class ToolApp:
         self.file_sources = file_sources
 
 
-def main():
-    TMPDIR = tempfile.mkdtemp()
-    WORKING_DIRECTORY = os.getcwd()
+def main(TMPDIR, WORKING_DIRECTORY):
     metadata_params = get_metadata_params(WORKING_DIRECTORY)
     datatypes_config = metadata_params["datatypes_config"]
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
@@ -94,5 +94,13 @@ def main():
 
 
 if __name__ == "__main__":
-    # TODO: exception handling, right now we silently fail with no clue what happened.
-    main()
+    TMPDIR = tempfile.mkdtemp()
+    WORKING_DIRECTORY = os.getcwd()
+    try:
+        main(TMPDIR, WORKING_DIRECTORY)
+    except Exception:
+        with open(os.path.join(WORKING_DIRECTORY, 'traceback.txt'), 'w') as out:
+            out.write(traceback.format_exc())
+        raise
+    finally:
+        shutil.rmtree(TMPDIR, ignore_errors=True)

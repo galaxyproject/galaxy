@@ -175,7 +175,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
 
 def __handle_remote_command_line_building(commands_builder, job_wrapper):
     if getattr(job_wrapper, 'remote_command_line', False):
-        commands_builder.prepend_commands(('PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/metadata/remote_tool_eval.py',))
+        commands_builder.prepend_command('PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/metadata/remote_tool_eval.py', sep="&&")
 
 
 def __handle_task_splitting(commands_builder, job_wrapper):
