@@ -23,6 +23,14 @@
         <div v-if="showField" class="ui-form-field" :data-label="title">
             <FormBoolean v-if="type == 'boolean'" v-model="currentValue" :id="id" />
             <FormHidden v-else-if="isHiddenType" v-model="currentValue" :id="id" :info="attrs['info']" />
+            <FormNumber
+                v-else-if="type == 'integer' || type == 'float'"
+                :max="attrs.max"
+                :min="attrs.min"
+                :type="type"
+                v-model="currentValue"
+                :id="id"
+            />
             <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
             <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter
@@ -48,13 +56,18 @@ import FormHidden from "./Elements/FormHidden";
 import FormInput from "./Elements/FormInput";
 import FormParameter from "./Elements/FormParameter";
 import FormColor from "./Elements/FormColor";
+<<<<<<< HEAD
 import FormDirectory from "./Elements/FormDirectory";
+=======
+import FormNumber from "./Elements/FormNumber";
+>>>>>>> 829f9e464f (implement slider in vue)
 
 export default {
     components: {
         FormBoolean,
         FormHidden,
         FormInput,
+        FormNumber,
         FormColor,
         FormParameter,
         FormDirectory,
