@@ -217,6 +217,7 @@ export default {
         },
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
+            this.validationInternal = validationInternal;
         },
         onChange(newData, refreshRequest) {
             this.formData = newData;

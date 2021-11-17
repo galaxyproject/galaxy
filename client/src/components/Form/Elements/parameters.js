@@ -22,8 +22,6 @@ export default Backbone.View.extend({
         genomebuild: "_fieldSelect",
         data: "_fieldData",
         data_collection: "_fieldData",
-        integer: "_fieldSlider",
-        float: "_fieldSlider",
         drill_down: "_fieldDrilldown",
         group_tag: "_fieldSelect",
         library_data: "_fieldLibrary",
@@ -167,18 +165,6 @@ export default Backbone.View.extend({
             datalist: input_def.datalist,
             onchange: input_def.onchange,
             value: input_def.value,
-        });
-    },
-
-    /** Slider field */
-    _fieldSlider: function (input_def) {
-        return new Ui.Slider.View({
-            id: `field-${input_def.id}`,
-            precise: input_def.type == "float",
-            is_workflow: input_def.is_workflow,
-            min: input_def.min,
-            max: input_def.max,
-            onchange: input_def.onchange,
         });
     },
 

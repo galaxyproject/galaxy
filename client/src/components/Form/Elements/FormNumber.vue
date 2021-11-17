@@ -1,6 +1,6 @@
 <template>
     <b-row align-v="center">
-        <b-col :sm="isSliderVisible ? 4 : false">
+        <b-col :sm="isSliderVisible ? defaultInputSizeWithSlider : false">
             <b-form-input v-model="currentValue" size="sm" />
         </b-col>
         <b-col class="pl-0" v-if="isSliderVisible">
@@ -32,7 +32,11 @@ export default {
             default: undefined,
         },
     },
-    created() {},
+    data() {
+        return {
+            defaultInputSizeWithSlider: 4,
+        };
+    },
     computed: {
         isSliderVisible() {
             return this.min && this.max && this.max > this.min;
