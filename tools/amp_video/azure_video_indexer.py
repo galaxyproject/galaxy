@@ -14,7 +14,7 @@ import mgm_utils
 def main():
     apiUrl = "https://api.videoindexer.ai"
 
-    (input_file, include_ocr, location, root_dir, index_file, ocr_file) = sys.argv[1:7]
+    (root_dir, input_file, include_ocr, location, index_file, ocr_file) = sys.argv[1:7]
 
     try:
         import http.client as http_client

@@ -15,7 +15,7 @@
     </param>
   </inputs>
   <outputs>
-    <data name="spacy_entities" format="json" label="Sapcy Entities"/>
+    <data name="spacy_entities" format="json" label="Spacy Entities"/>
     <data name="amp_entities" format="ner" label="AMP Entities Extracted"/>
   </outputs>
   <tests>
