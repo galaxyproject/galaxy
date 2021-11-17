@@ -1,6 +1,10 @@
 from abc import ABC
 import os
 import yaml
+try:
+    import hvac
+except ImportError:
+    hvac = None
 
 
 class UnknownVaultTypeException(Exception):
@@ -17,7 +21,23 @@ class Vault(ABC):
 
 
 class HashicorpVault(Vault):
-    pass
+
+    def __init__(self, config):
+        if not hvac:
+            raise UnknownVaultTypeException("Hashicorp vault library 'hvac' is not available. Make sure hvac is installed.")
+        self.vault_address = config.get('vault_address')
+        self.vault_token = config.get('vault_token')
+        self.client = hvac.Client(url=self.vault_address, token=self.vault_token)
+
+    def read_secret(self, path: str) -> dict:
+        try:
+            response = self.client.secrets.kv.read_secret_version(path=path)
+            return response['data']['data']
+        except hvac.exceptions.InvalidPath:
+            return None
+
+    def write_secret(self, path: str, value: dict) -> None:
+        self.client.secrets.kv.v2.create_or_update_secret(path=path, secret=value)
 
 
 class DatabaseVault(Vault):
