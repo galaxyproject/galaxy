@@ -1157,7 +1157,6 @@ class JobWrapper(HasResourceParameters):
         config files.
         """
         prepare_timer = util.ExecutionTimer()
-        self.sa_session.expunge_all()  # this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
 
         if not os.path.exists(self.working_directory):
             os.mkdir(self.working_directory)
