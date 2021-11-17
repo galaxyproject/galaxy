@@ -2,13 +2,14 @@
     <div>
         <b-row align-v="center">
             <b-col :sm="isSliderVisible ? defaultInputSizeWithSlider : false">
-                <b-form-input @keydown.190.capture="onFloatInput" :value="value" size="sm" type="number" />
+                <b-form-input @keydown.190.capture="onFloatInput" v-model="currentValue" size="sm" type="number" />
             </b-col>
             <b-col class="pl-0" v-if="isSliderVisible">
-                <b-form-input :value="value" :min="min" :max="max" type="range" />
+                <b-form-input v-model="currentValue" :min="min" :max="max" type="range" />
             </b-col>
         </b-row>
         <b-alert
+            class="mt-2"
             v-if="errorMessage"
             :show="dismissCountDown"
             dismissible
@@ -73,11 +74,7 @@ export default {
         },
     },
     methods: {
-        onInput(e) {
-            console.log(e);
-        },
         onFloatInput(e) {
-            console.log(e);
             if (this.isInteger) {
                 e.preventDefault();
                 this.errorMessage = this.fractionWarning;
