@@ -54,6 +54,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Set,
 )
 
 import requests
@@ -275,6 +276,26 @@ class BaseDatasetPopulator(BasePopulator):
                 assert details["state"] == "ok", details
 
         return tool_response
+
+    def fetch_hdas(self, history_id: str, items: List[Dict[str, Any]], wait: bool = True) -> List[Dict[str, Any]]:
+        destination = {"type": "hdas"}
+        targets = [{
+            "destination": destination,
+            "items": items,
+        }]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.fetch(payload, wait=wait)
+        api_asserts.assert_status_code_is(fetch_response, 200)
+        outputs = fetch_response.json()["outputs"]
+        return outputs
+
+    def fetch_hda(self, history_id, item: Dict[str, Any], wait: bool = True) -> Dict[str, Any]:
+        hdas = self.fetch_hdas(history_id, [item], wait=wait)
+        assert len(hdas) == 1
+        return hdas[0]
 
     def wait_for_tool_run(self, history_id: str, run_response: requests.Response, timeout: timeout_type = DEFAULT_TIMEOUT, assert_ok: bool = True):
         job = self.check_run(run_response)
@@ -503,6 +524,23 @@ class BaseDatasetPopulator(BasePopulator):
             return display_response.text
         else:
             return display_response.content
+
+    def get_history_dataset_source_transform_actions(self, history_id: str, **kwd) -> Set[str]:
+        details = self.get_history_dataset_details(history_id, **kwd)
+        if "sources" not in details:
+            return set([])
+        sources = details["sources"]
+        assert len(sources) <= 1  # We don't handle this use case yet.
+        if len(sources) == 0:
+            return set([])
+
+        source_0 = sources[0]
+        assert "transform" in source_0
+        transform = source_0["transform"]
+        if transform is None:
+            return set([])
+        assert isinstance(transform, list)
+        return set([t["action"] for t in transform])
 
     def get_history_dataset_details(self, history_id: str, **kwds) -> dict:
         dataset_id = self.__history_content_id(history_id, **kwds)

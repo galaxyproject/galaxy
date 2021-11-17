@@ -122,6 +122,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         for source_dict in sources:
             source = galaxy.model.DatasetSource()
             source.source_uri = source_dict["source_uri"]
+            source.transform = source_dict.get("transform")
             primary_data.dataset.sources.append(source)
 
         for hash_dict in hashes:

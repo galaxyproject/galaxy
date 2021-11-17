@@ -201,8 +201,9 @@ def _fetch_target(upload_config, target):
         sources = []
 
         url = item.get("url")
+        source_dict = {"source_uri": url}
         if url:
-            sources.append({"source_uri": url})
+            sources.append(source_dict)
         hashes = item.get("hashes", [])
         for hash_dict in hashes:
             hash_function = hash_dict.get("hash_function")
@@ -232,7 +233,7 @@ def _fetch_target(upload_config, target):
             registry = upload_config.registry
             check_content = upload_config.check_content
 
-            stdout, ext, datatype, is_binary, converted_path = handle_upload(
+            stdout, ext, datatype, is_binary, converted_path, converted_newlines, converted_spaces = handle_upload(
                 registry=registry,
                 path=path,
                 requested_ext=requested_ext,
@@ -246,7 +247,11 @@ def _fetch_target(upload_config, target):
                 convert_to_posix_lines=to_posix_lines,
                 convert_spaces_to_tabs=space_to_tab,
             )
-
+            transform = []
+            if converted_newlines:
+                transform.append({"action": "to_posix_lines"})
+            if converted_spaces:
+                transform.append({"action": "spaces_to_tabs"})
             if link_data_only:
                 # Never alter a file that will not be copied to Galaxy's local file store.
                 if datatype.dataset_content_needs_grooming(path):
@@ -293,9 +298,19 @@ def _fetch_target(upload_config, target):
 
             # TODO:
             # in galaxy json add 'extra_files' and point at target derived from extra_files:
-            if not link_data_only and datatype and datatype.dataset_content_needs_grooming(path):
+
+            needs_grooming = not link_data_only and datatype and datatype.dataset_content_needs_grooming(path)
+            if needs_grooming:
                 # Groom the dataset content if necessary
+                transform.append({
+                    "action": "datatype_groom",
+                    "datatype_ext": ext,
+                    "datatype_class": datatype.__class__.__name__
+                })
                 datatype.groom_dataset_content(path)
+
+            if len(transform) > 0:
+                source_dict["transform"] = transform
 
         rval = {"name": name, "filename": path, "dbkey": dbkey, "ext": ext, "link_data_only": link_data_only, "sources": sources, "hashes": hashes, "info": f"uploaded {ext} file"}
         if staged_extra_files:

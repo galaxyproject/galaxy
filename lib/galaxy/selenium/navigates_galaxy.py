@@ -10,7 +10,7 @@ import string
 import time
 from abc import abstractmethod
 from functools import partial, wraps
-from typing import Union
+from typing import cast, Union
 
 import requests
 import yaml
@@ -19,7 +19,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from . import sizzle
-from .components import Component
+from .components import Component, HasText
 from .data import (
     load_root_component,
 )
@@ -1673,11 +1673,17 @@ class NavigatesGalaxy(HasDriver):
         """
         return self.assert_absent_or_hidden(selector)
 
-    def assert_tooltip_text(self, element, expected, sleep=0, click_away=True):
+    def assert_tooltip_text(self, element, expected: Union[str, HasText], sleep: int = 0, click_away: bool = True):
         if hasattr(expected, "text"):
-            expected = expected.text
+            expected = cast(HasText, expected).text
         text = self.get_tooltip_text(element, sleep=sleep, click_away=click_away)
         assert text == expected, f"Tooltip text [{text}] was not expected text [{expected}]."
+
+    def assert_tooltip_text_contains(self, element, expected: Union[str, HasText], sleep: int = 0, click_away: bool = True):
+        if hasattr(expected, "text"):
+            expected = cast(HasText, expected).text
+        text = self.get_tooltip_text(element, sleep=sleep, click_away=click_away)
+        assert expected in text, f"Tooltip text [{text}] was not expected text [{expected}]."
 
     def assert_error_message(self, contains=None):
         self.components._.messages.error.wait_for_visible()

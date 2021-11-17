@@ -8,6 +8,7 @@ from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
+    ONE_TO_SIX_WITH_SPACES_ON_WINDOWS,
     ONE_TO_SIX_WITH_TABS,
     ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE,
 )
@@ -110,6 +111,11 @@ class ToolsUploadTestCase(ApiTestCase):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
         self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+
+    def test_fetch_tab_to_space_doesnt_swap_newlines(self):
+        table = ONE_TO_SIX_WITH_SPACES_ON_WINDOWS
+        result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
+        self.assertEqual(result_content, ONE_TO_SIX_ON_WINDOWS)
 
     def test_fetch_compressed_with_explicit_type(self):
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
@@ -329,25 +335,15 @@ class ToolsUploadTestCase(ApiTestCase):
     @uses_test_history(require_new=False)
     @skip_if_github_down
     def test_fetch_bam_file_from_url_with_extension_set(self, history_id):
-        destination = {"type": "hdas"}
-        targets = [{
-            "destination": destination,
-            "items": [
-                {
-                    "src": "url",
-                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
-                    "ext": "bam"
-                },
-            ]
-        }]
-        payload = {
-            "history_id": history_id,
-            "targets": json.dumps(targets),
+        item = {
+            "src": "url",
+            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            "ext": "bam"
         }
-        fetch_response = self.dataset_populator.fetch(payload)
-        self._assert_status_code_is(fetch_response, 200)
-        outputs = fetch_response.json()["outputs"]
-        self.dataset_populator.get_history_dataset_details(history_id, dataset=outputs[0], assert_ok=True)
+        output = self.dataset_populator.fetch_hda(
+            history_id, item
+        )
+        self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=True)
 
     @uses_test_history(require_new=False)
     @skip_if_github_down
@@ -392,31 +388,18 @@ class ToolsUploadTestCase(ApiTestCase):
     @skip_without_datatype("velvet")
     @uses_test_history(require_new=False)
     def test_composite_datatype_fetch(self, history_id):
-        destination = {"type": "hdas"}
-        targets = [{
-            "destination": destination,
-            "items": [{
-                "src": "composite",
-                "ext": "velvet",
-                "composite": {
-                    "items": [
-                        {"src": "pasted", "paste_content": "sequences content"},
-                        {"src": "pasted", "paste_content": "roadmaps content"},
-                        {"src": "pasted", "paste_content": "log content"},
-                    ]
-                },
-            }],
-        }]
-        payload = {
-            "history_id": history_id,
-            "targets": json.dumps(targets),
+        item = {
+            "src": "composite",
+            "ext": "velvet",
+            "composite": {
+                "items": [
+                    {"src": "pasted", "paste_content": "sequences content"},
+                    {"src": "pasted", "paste_content": "roadmaps content"},
+                    {"src": "pasted", "paste_content": "log content"},
+                ]
+            },
         }
-        fetch_response = self.dataset_populator.fetch(payload)
-        self._assert_status_code_is(fetch_response, 200)
-        outputs = fetch_response.json()["outputs"]
-        assert len(outputs) == 1
-        output = outputs[0]
-
+        output = self.dataset_populator.fetch_hda(history_id, item)
         roadmaps_content = self._get_roadmaps_content(history_id, output)
         assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
 

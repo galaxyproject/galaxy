@@ -3384,13 +3384,14 @@ class Dataset(StorableObject, Serializable, _HasTable):
             total_size=to_int(self.total_size),
             created_from_basename=self.created_from_basename,
             uuid=str(self.uuid or '') or None,
-            hashes=list(map(lambda h: h.serialize(id_encoder, serialization_options), self.hashes))
+            hashes=list(map(lambda h: h.serialize(id_encoder, serialization_options), self.hashes)),
+            sources=list(map(lambda s: s.serialize(id_encoder, serialization_options), self.sources)),
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
 
 
-class DatasetSource(Base, Serializable):
+class DatasetSource(Base, Dictifiable, Serializable):
     __tablename__ = 'dataset_source'
 
     id = Column(Integer, primary_key=True)
@@ -3400,6 +3401,8 @@ class DatasetSource(Base, Serializable):
     transform = Column(MutableJSONType)
     dataset = relationship('Dataset', back_populates='sources')
     hashes = relationship('DatasetSourceHash', back_populates='source')
+    dict_collection_visible_keys = ['id', 'source_uri', 'extra_files_path', "transform"]
+    dict_element_visible_keys = ['id', 'source_uri', 'extra_files_path', 'transform']  # TODO: implement to_dict and add hashes...
 
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
@@ -3432,7 +3435,7 @@ class DatasetSourceHash(Base, Serializable):
         return rval
 
 
-class DatasetHash(Base, Serializable):
+class DatasetHash(Base, Dictifiable, Serializable):
     __tablename__ = 'dataset_hash'
 
     id = Column(Integer, primary_key=True)
@@ -3441,6 +3444,8 @@ class DatasetHash(Base, Serializable):
     hash_value = Column(TEXT)
     extra_files_path = Column(TEXT)
     dataset = relationship('Dataset', back_populates='hashes')
+    dict_collection_visible_keys = ['id', 'hash_function', 'hash_value', 'extra_files_path']
+    dict_element_visible_keys = ['id', 'hash_function', 'hash_value', 'extra_files_path']
 
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
@@ -3671,6 +3676,14 @@ class DatasetInstance(_HasTable):
         self.dataset.created_from_basename = created_from_basename
 
     created_from_basename = property(get_created_from_basename, set_created_from_basename)
+
+    @property
+    def sources(self):
+        return self.dataset.sources
+
+    @property
+    def hashes(self):
+        return self.dataset.hashes
 
     def get_raw_data(self):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
