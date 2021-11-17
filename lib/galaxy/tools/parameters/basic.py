@@ -1040,6 +1040,17 @@ class SelectToolParameter(ToolParameter):
         d['textable'] = is_runtime_context(trans, other_values)
         return d
 
+    def validate(self, value, trans=None):
+        if not value:
+            super().validate(value, trans)
+        if self.multiple:
+            if not isinstance(value, list):
+                value = [value]
+        else:
+            value = [value]
+        for v in value:
+            super().validate(v, trans)
+
 
 class GenomeBuildParameter(SelectToolParameter):
     """
