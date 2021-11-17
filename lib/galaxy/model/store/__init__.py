@@ -1290,7 +1290,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
                         input_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
                         if include_job_data:
-                            self.add_dataset_collection(assoc.dataset_collection)
+                            self.export_collection(assoc.dataset_collection)
 
                 for assoc in job.input_dataset_collection_elements:
                     if assoc.dataset_collection_element:
@@ -1309,7 +1309,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
                         output_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection_instance))
                         if include_job_data:
-                            self.add_dataset_collection(assoc.dataset_collection_instance)
+                            self.export_collection(assoc.dataset_collection_instance)
 
                 for assoc in job.output_dataset_collections:
                     if assoc.dataset_collection:
@@ -1320,7 +1320,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
                         implicit_output_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
                         if include_job_data:
-                            self.add_dataset_collection(assoc.dataset_collection)
+                            self.export_collection(assoc.dataset_collection)
 
                 job_attrs['input_dataset_mapping'] = input_dataset_mapping
                 job_attrs['input_dataset_collection_mapping'] = input_dataset_collection_mapping
@@ -1409,11 +1409,22 @@ class DirectoryModelExportStore(ModelExportStore):
             job_output_dataset_associations[job_id] = {}
         job_output_dataset_associations[job_id][name] = dataset_instance
 
+    def export_collection(self, collection, include_deleted=False):
+        self.add_dataset_collection(collection)
+
+        # export jobs for these datasets
+        for collection_dataset in collection.dataset_instances:
+            if collection_dataset.deleted and not include_deleted:
+                include_files = False
+            else:
+                include_files = True
+
+            self.add_dataset(collection_dataset, include_files=include_files)
+            self.collection_datasets[collection_dataset.id] = True
+
     def add_dataset_collection(self, collection: model.HistoryDatasetCollectionAssociation, include_files=False):
         self.collections_attrs.append(collection)
         self.included_collections.append(collection)
-        for dataset in collection.collection.dataset_instances:
-            self.add_dataset(dataset, include_files=include_files)
 
     def add_dataset(self, dataset, include_files=True):
         self.included_datasets[dataset] = (dataset, include_files)
