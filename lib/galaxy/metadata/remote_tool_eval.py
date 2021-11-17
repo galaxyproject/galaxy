@@ -72,14 +72,16 @@ class ToolApp:
 def main(TMPDIR, WORKING_DIRECTORY):
     metadata_params = get_metadata_params(WORKING_DIRECTORY)
     datatypes_config = metadata_params["datatypes_config"]
+    if not os.path.exists(datatypes_config):
+        datatypes_config = os.path.join(WORKING_DIRECTORY, 'configs', datatypes_config)
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
-    object_store = get_object_store()
+    object_store = get_object_store(WORKING_DIRECTORY)
     import_store = store.imported_store_for_metadata(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new'))
     job = next(iter(import_store.sa_session.objects[Job].values()))
     # TODO: clean up random places from which we read files in the working directory
-    job_io = JobIO.from_json(os.path.join(WORKING_DIRECTORY, 'job_io.json'), sa_session=import_store.sa_session, job=job)
+    job_io = JobIO.from_json(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'job_io.json'), sa_session=import_store.sa_session, job=job)
     tool_app_config = ToolAppConfig(name='tool_app', tool_data_path=job_io.tool_data_path, nginx_upload_path=TMPDIR, len_file_path=job_io.len_file_path, builds_file_path=job_io.builds_file_path, root=TMPDIR)
-    with open(os.path.join(WORKING_DIRECTORY, 'tool_data_tables.json')) as data_tables_json:
+    with open(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'tool_data_tables.json')) as data_tables_json:
         tdtm = ToolDataTableManager.from_dict(json.load(data_tables_json))
     app = ToolApp(sa_session=import_store.sa_session, tool_app_config=tool_app_config, datatypes_registry=datatypes_registry, object_store=object_store, tool_data_table_manager=tdtm, file_sources=job_io.file_sources)
     # TODO: could try to serialize just a minimal tool variant instead of the whole thing ?
@@ -96,6 +98,10 @@ def main(TMPDIR, WORKING_DIRECTORY):
 if __name__ == "__main__":
     TMPDIR = tempfile.mkdtemp()
     WORKING_DIRECTORY = os.getcwd()
+    WORKING_PARENT = os.path.join(WORKING_DIRECTORY, os.path.pardir)
+    if not os.path.isdir("working") and os.path.isdir(os.path.join(WORKING_PARENT, 'working')):
+        # We're probably in pulsar
+        WORKING_DIRECTORY = WORKING_PARENT
     try:
         main(TMPDIR, WORKING_DIRECTORY)
     except Exception:

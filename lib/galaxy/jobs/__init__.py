@@ -1187,8 +1187,9 @@ class JobWrapper(HasResourceParameters):
             self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, 'registry.xml'))
         if self.remote_command_line:
             job.command_line = None
-            self.job_io.to_json(path=os.path.join(self.working_directory, 'job_io.json'))
-            self.app.tool_data_tables.to_json(path=os.path.join(self.working_directory, 'tool_data_tables.json'))
+            os.makedirs(os.path.join(self.working_directory, 'metadata', 'outputs_new'))
+            self.job_io.to_json(path=os.path.join(self.working_directory, 'metadata', 'outputs_new', 'job_io.json'))
+            self.app.tool_data_tables.to_json(path=os.path.join(self.working_directory, 'metadata', 'outputs_new', 'tool_data_tables.json'))
         else:
             # We need command_line persisted to the db in order for Galaxy to re-queue the job
             # if the server was stopped and restarted before the job finished

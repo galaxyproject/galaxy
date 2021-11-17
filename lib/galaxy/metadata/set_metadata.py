@@ -114,7 +114,7 @@ def set_metadata():
 
 
 def get_metadata_params(tool_job_working_directory):
-    metadata_params_path = os.path.join("metadata", "params.json")
+    metadata_params_path = os.path.join(tool_job_working_directory, "metadata", "params.json")
     try:
         with open(metadata_params_path) as f:
             return json.load(f)
@@ -122,8 +122,8 @@ def get_metadata_params(tool_job_working_directory):
         raise Exception(f"Failed to find metadata/params.json from cwd [{tool_job_working_directory}]")
 
 
-def get_object_store():
-    object_store_conf_path = os.path.join("metadata", "object_store_conf.json")
+def get_object_store(tool_job_working_directory):
+    object_store_conf_path = os.path.join(tool_job_working_directory, "metadata", "object_store_conf.json")
     with open(object_store_conf_path) as f:
         config_dict = json.load(f)
     assert config_dict is not None
@@ -151,7 +151,7 @@ def set_metadata_portable():
         set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size)
 
     try:
-        object_store = get_object_store()
+        object_store = get_object_store(tool_job_working_directory=tool_job_working_directory)
     except (FileNotFoundError, AssertionError):
         object_store = None
     extended_metadata_collection = bool(object_store)
@@ -236,9 +236,10 @@ def set_metadata_portable():
         # Remove in 21.09, this should only happen for jobs that started on <= 20.09 and finish now
         import_model_store = None
 
-    if import_model_store and export_store:
+    tool_script_file = os.path.join(tool_job_working_directory, 'tool_script.sh')
+    if import_model_store and export_store and os.path.exists(tool_script_file):
         job = next(iter(import_model_store.sa_session.objects[Job].values()))
-        with open(os.path.join(tool_job_working_directory, 'tool_script.sh')) as command_fh:
+        with open(tool_script_file) as command_fh:
             job.command_line = command_fh.read().strip()
             export_store.export_job(job, include_job_data=False)
 

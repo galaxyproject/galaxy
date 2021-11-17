@@ -102,7 +102,8 @@ def build_command(
         # xref https://github.com/galaxyproject/galaxy/issues/3289
         commands_builder.prepend_command(PREPARE_DIRS)
 
-    __handle_remote_command_line_building(commands_builder, job_wrapper)
+    for_pulsar = 'script_directory' in remote_command_params
+    __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=for_pulsar)
 
     container_monitor_command = job_wrapper.container_monitor_command(container)
     if container_monitor_command:
@@ -163,19 +164,24 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     #   doesn't need to mount the job directory (rw) and then eliminate this hack
     #   (or restrict to older Pulsar versions).
     #   https://github.com/galaxyproject/galaxy/pull/8449
-    for_pulsar = False
-    if 'script_directory' in remote_command_params:
+    for_pulsar = 'script_directory' in remote_command_params
+    if for_pulsar:
         commands = f"{shell} {join(remote_command_params['script_directory'], script_name)}"
-        for_pulsar = True
-    if not for_pulsar:
+    else:
         commands += " > ../outputs/tool_stdout 2> ../outputs/tool_stderr"
     log.info(f"Built script [{local_container_script}] for tool command [{tool_commands}]")
     return commands
 
 
-def __handle_remote_command_line_building(commands_builder, job_wrapper):
+def __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=False):
     if getattr(job_wrapper, 'remote_command_line', False):
-        commands_builder.prepend_command('PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/metadata/remote_tool_eval.py', sep="&&")
+        sep = "" if for_pulsar else "&&"
+        command = 'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/metadata/remote_tool_eval.py'
+        if for_pulsar:
+            # TODO: that's not how to do this, pulsar doesn't execute an externalized script by default.
+            # This also breaks rewriting paths etc, so it doesn't really work if there are no shared paths
+            command = f"{command} && bash ../tool_script.sh"
+        commands_builder.prepend_command(command, sep=sep)
 
 
 def __handle_task_splitting(commands_builder, job_wrapper):
