@@ -8,6 +8,7 @@ import sys
 import tempfile
 import uuid
 
+import mgm_utils
 
 def main():
 	(root_dir, input_file, json_file) = sys.argv[1:4]
