@@ -436,6 +436,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
     ):
         """
         Gets the associated metadata file.
+
+        The `open_file` parameter determines if we return the path of the file or the opened file handle.
+        TODO: Remove the `open_file` parameter when removing the associated legacy endpoint.
         """
         decoded_content_id = self.decode_id(history_content_id)
         hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)

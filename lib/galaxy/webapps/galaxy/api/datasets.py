@@ -17,7 +17,10 @@ from fastapi import (
     Query,
     Request,
 )
-from starlette.responses import FileResponse
+from starlette.responses import (
+    FileResponse,
+    StreamingResponse,
+)
 
 from galaxy import (
     util,
@@ -181,6 +184,7 @@ class FastAPIDatasets:
         '/api/histories/{history_id}/contents/{history_content_id}/display',
         summary='Displays history content (dataset).',
         tags=["histories"],
+        response_class=StreamingResponse,
     )
     def display(
         self,
@@ -210,7 +214,8 @@ class FastAPIDatasets:
         ),
     ):
         extra_params = get_query_parameters_from_request_excluding(request, {"preview", "filename", "to_ext", "raw"})
-        return self.service.display(trans, history_content_id, history_id, preview, filename, to_ext, raw, **extra_params)
+        display_content = self.service.display(trans, history_content_id, history_id, preview, filename, to_ext, raw, **extra_params)
+        return StreamingResponse(display_content)
 
     @router.get(
         '/api/histories/{history_id}/contents/{history_content_id}/metadata_file',
