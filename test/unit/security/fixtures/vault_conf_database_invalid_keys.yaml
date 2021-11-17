@@ -1,0 +1,12 @@
+type: database
+# Encryption keys must be valid fernet keys
+# To generate a valid key:
+# >>> from cryptography.fernet import Fernet
+# >>> Fernet.generate_key()
+# b'pZDP8_baVs3oWT4597HJWCysm49j-XELONQ-EdoU0DE='
+#
+# Use the ascii string value as a key
+# For more details, see: https://cryptography.io/en/latest/fernet/#
+encryption_keys:
+  - EDC-1x8Xm9XqsXCdHbjvCTVE9oK83NOjJnWxc7IPYk=
+  - DB-cW4mX3116YN6y2tewUTZrUeGMKEtTXl9uQGk8lnM=

@@ -1,10 +1,14 @@
 from abc import ABC
+from cryptography.fernet import Fernet, MultiFernet
+import json
 import os
 import yaml
 try:
     import hvac
 except ImportError:
     hvac = None
+
+from galaxy import model
 
 
 class UnknownVaultTypeException(Exception):
@@ -41,7 +45,28 @@ class HashicorpVault(Vault):
 
 
 class DatabaseVault(Vault):
-    pass
+
+    def __init__(self, sa_session, config):
+        self.sa_session = sa_session
+        self.encryption_keys = config.get('encryption_keys')
+
+    def _get_multi_fernet(self) -> MultiFernet:
+        fernet_keys = [Fernet(key.encode('utf-8')) for key in self.encryption_keys]
+        return MultiFernet(fernet_keys)
+
+    def read_secret(self, path: str) -> dict:
+        key_obj = self.sa_session.query(model.Vault).filter_by(key=path).first()
+        if key_obj:
+            f = self._get_multi_fernet()
+            return json.loads(f.decrypt(key_obj.value.encode('utf-8')).decode('utf-8'))
+        return None
+
+    def write_secret(self, path: str, value: dict) -> None:
+        f = self._get_multi_fernet()
+        token = f.encrypt(json.dumps(value).encode('utf-8'))
+        vault_entry = model.Vault(key=path, value=token.decode('utf-8'))
+        self.sa_session.add(vault_entry)
+        self.sa_session.flush()
 
 
 class CustosVault(Vault):
@@ -71,19 +96,19 @@ class VaultFactory(object):
         return None
 
     @staticmethod
-    def from_vault_type(vault_type, cfg):
+    def from_vault_type(app, vault_type, cfg):
         if vault_type == "hashicorp":
             return HashicorpVault(cfg)
         elif vault_type == "database":
-            return DatabaseVault(cfg)
+            return DatabaseVault(app.model.context, cfg)
         elif vault_type == "custos":
             return CustosVault(cfg)
         else:
             raise UnknownVaultTypeException(f"Unknown vault type: {vault_type}")
 
     @staticmethod
-    def from_app_config(config):
-        vault_config = VaultFactory.load_vault_config(config.vault_config_file)
+    def from_app_config(app):
+        vault_config = VaultFactory.load_vault_config(app.config.vault_config_file)
         if vault_config:
-            return VaultFactory.from_vault_type(vault_config.get('type'), vault_config)
+            return VaultFactory.from_vault_type(app, vault_config.get('type'), vault_config)
         return None

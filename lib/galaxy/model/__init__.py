@@ -8420,6 +8420,16 @@ class LibraryDatasetCollectionAnnotationAssociation(Base, RepresentById):
     user = relationship('User')
 
 
+class Vault(Base, RepresentById):
+    __tablename__ = 'vault'
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    key = Column(Text, index=True, unique=True)
+    value = Column(Text)
+
+
 # Item rating classes.
 class ItemRatingAssociation(Base):
     __abstract__ = True
