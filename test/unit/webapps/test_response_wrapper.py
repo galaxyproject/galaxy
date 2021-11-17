@@ -1,31 +1,42 @@
-from fastapi.applications import FastAPI
-from fastapi.testclient import TestClient
+from unittest.mock import Mock
 
-from galaxy.webapps.galaxy.api import DependsOnTrans  # TODO mock most of the dependencies?
+from fastapi.applications import FastAPI
+from fastapi.param_functions import Depends
+from fastapi.testclient import TestClient
+from starlette.responses import Response
+
+from galaxy.app_unittest_utils.galaxy_mock import MockApp
+from galaxy.webapps.galaxy.api import GalaxyASGIResponse
+from galaxy.work.context import SessionRequestContext
 
 app = FastAPI()
 
 client = TestClient(app)
 
-OK_RESPONSE = {"msg": "OK"}
+
+def get_trans(response: Response) -> SessionRequestContext:
+    galaxy_response = GalaxyASGIResponse(response)
+    return SessionRequestContext(
+        app=MockApp(),
+        request=Mock(),
+        response=galaxy_response,
+    )
 
 
 @app.get("/test/change_headers")
-async def change_headers(trans=DependsOnTrans):
+async def change_headers(trans=Depends(get_trans)):
     trans.response.headers["test-header"] = "test-value"
-    return OK_RESPONSE
 
 
 @app.get("/test/change_content_type")
-async def change_content_type(trans=DependsOnTrans):
+async def change_content_type(trans=Depends(get_trans)):
     trans.response.set_content_type("test-content-type")
-    return OK_RESPONSE
 
 
 def test_change_headers():
     response = client.get("/test/change_headers")
 
-    _assert_response_ok(response)
+    assert response.status_code == 200
     assert "test-header" in response.headers
     assert response.headers["test-header"] == "test-value"
 
@@ -33,11 +44,6 @@ def test_change_headers():
 def test_change_content_type():
     response = client.get("/test/change_content_type")
 
-    _assert_response_ok(response)
-    assert "content-type" in response.headers
-    assert response.headers["content-type"] == "test-content-type"
-
-
-def _assert_response_ok(response):
     assert response.status_code == 200
-    assert response.json() == OK_RESPONSE
+    assert "content-type" in response.headers
+    assert "test-content-type" in response.headers["content-type"]
