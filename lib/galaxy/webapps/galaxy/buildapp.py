@@ -213,13 +213,11 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
                                  kwargs=dict(plugin_frameworks=[app.visualizations_registry], **kwargs))
     # Close any pooled database connections before forking
     try:
-        galaxy.model.mapping.metadata.bind.dispose()
+        app.model.engine.dispose()
     except Exception:
         log.exception("Unable to dispose of pooled galaxy model database connections.")
     try:
-        # This model may not actually be bound.
-        if galaxy.model.tool_shed_install.mapping.metadata.bind:
-            galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
+        app.install_model.engine.dispose()
     except Exception:
         log.exception("Unable to dispose of pooled toolshed install model database connections.")
 
