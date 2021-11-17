@@ -16,6 +16,7 @@ from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import ObjectStore
 from galaxy.quota import QuotaAgent
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.security.vault import Vault
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
 from galaxy.util.dbkeys import GenomeBuilds
@@ -98,6 +99,7 @@ class StructuredApp(MinimalManagerApp):
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
     trs_proxy: TrsProxy
+    vault: Vault
     webhooks_registry: WebhooksRegistry
 
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'

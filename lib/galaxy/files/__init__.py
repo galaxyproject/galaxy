@@ -263,6 +263,11 @@ class ProvidesUserFileSourcesUserContext:
         """Whether this user is an administrator."""
         return self.trans.user_is_admin
 
+    @property
+    def vault(self):
+        user = self.trans.user
+        return user and user.personal_vault or defaultdict(lambda: None)
+
 
 class DictFileSourcesUserContext:
 
@@ -296,3 +301,7 @@ class DictFileSourcesUserContext:
     @property
     def is_admin(self):
         return self._kwd.get("is_admin")
+
+    @property
+    def vault(self):
+        return self._kwd.get("vault")

@@ -33,6 +33,7 @@ class ConditionalDependencies:
         self.container_interface_types = []
         self.job_rule_modules = []
         self.error_report_modules = []
+        self.vault_type = None
         if config is None:
             self.config = load_app_properties(config_file=self.config_file)
         else:
@@ -151,6 +152,17 @@ class ConditionalDependencies:
             file_sources_conf = []
         self.file_sources = [c.get('type', None) for c in file_sources_conf]
 
+        # Parse vault config
+        vault_conf_yml = self.config.get(
+            "vault_config_file",
+            join(dirname(self.config_file), 'vault_conf.yml'))
+        if exists(vault_conf_yml):
+            with open(vault_conf_yml) as f:
+                vault_conf = yaml.safe_load(f)
+        else:
+            vault_conf = {}
+        self.vault_type = vault_conf.get('type', '').lower()
+
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), 'conditional-requirements.txt')
         for req in pkg_resources.parse_requirements(open(crfile).readlines()):
@@ -260,6 +272,12 @@ class ConditionalDependencies:
     def check_weasyprint(self):
         # See notes in ./conditional-requirements.txt for more information.
         return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
+
+    def check_custos_sdk(self):
+        return 'custos' == self.vault_type
+
+    def check_hvac(self):
+        return 'hashicorp' == self.vault_type
 
 
 def optional(config_file=None):

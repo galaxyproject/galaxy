@@ -94,6 +94,7 @@ PATH_CONFIG_PROPERTIES = [
     'tool_sheds_config_file',
     'trs_servers_config_file',
     'user_preferences_extra_conf_path',
+    'vault_config_file',
     'webhooks_dir',
     'workflow_resource_params_file',
     'workflow_resource_params_mapper',
@@ -131,6 +132,7 @@ RESOLVE = {
     'tool_path': 'root_dir',
     'tool_sheds_config_file': 'config_dir',
     'user_preferences_extra_conf_path': 'config_dir',
+    'vault_config_file': 'config_dir',
     'workflow_resource_params_file': 'config_dir',
     'workflow_schedulers_config_file': 'config_dir',
 }

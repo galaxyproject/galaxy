@@ -157,6 +157,7 @@ class ExpectedValues:
             'tool_test_data_directories': self._in_root_dir('test-data'),
             'trs_servers_config_file': self._in_config_dir('trs_servers_conf.yml'),
             'user_preferences_extra_conf_path': self._in_config_dir('user_preferences_extra_conf.yml'),
+            'vault_config_file': self._in_config_dir('vault_conf.yml'),
             'workflow_resource_params_file': self._in_config_dir('workflow_resource_params_conf.xml'),
             'workflow_schedulers_config_file': self._in_config_dir('workflow_schedulers_conf.xml'),
         }
