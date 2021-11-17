@@ -20,6 +20,10 @@ describe("FormElement", () => {
                 title: "title_text",
             },
             localVue,
+            stubs: {
+                FormInput: { template: "<div>form-input</div>" },
+                FormHidden: { template: "<div>form-hidden</div>" },
+            },
         });
     });
 
@@ -58,5 +62,12 @@ describe("FormElement", () => {
         await Vue.nextTick();
         expect(wrapper.findAll("span[title='Disable Collapsible']").length).toEqual(1);
         expect(wrapper.findAll("span[title='Enable Collapsible']").length).toEqual(0);
+    });
+
+    it("check type matching", async () => {
+        await wrapper.setProps({ type: "text" });
+        expect(wrapper.find("div[id='input'").text()).toEqual("form-input");
+        await wrapper.setProps({ attributes: { titleonly: true } });
+        expect(wrapper.find("div[id='input'").text()).toEqual("form-hidden");
     });
 });
