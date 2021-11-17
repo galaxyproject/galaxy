@@ -5,7 +5,6 @@ import sinon from "sinon";
 import Ui from "mvc/ui/ui-misc";
 import SelectContent from "mvc/ui/ui-select-content";
 import Drilldown from "mvc/ui/ui-drilldown";
-import Slider from "mvc/ui/ui-slider";
 import Tabs from "mvc/ui/ui-tabs";
 
 QUnit.module("Ui test", {
@@ -620,22 +619,6 @@ QUnit.test("select-default", function (assert) {
         multiple: true,
         all_icon: "fa-minus-square-o",
     });
-});
-
-QUnit.test("slider", function (assert) {
-    var input = new Slider.View({ min: 1, max: 100, value: 10 });
-    $("body").prepend(input.$el);
-    assert.ok(input.$slider.slider("value") == 10, "Correct value.");
-    assert.ok(input.value(1000) == 100, "Correct upper limit.");
-    assert.ok(input.$slider.slider("value") == 100, "Correct slider value.");
-    assert.ok(input.$slider.slider("option", "step") == 1, "Correct default step size.");
-    var input1 = new Slider.View({ value: 10 });
-    $("body").prepend(input1.$el);
-    assert.ok(input1.$slider.css("display") == "none", "Slider hidden.");
-    var input2 = new Slider.View({ min: 0, max: 100, value: 10.1, precise: true });
-    $("body").prepend(input2.$el);
-    assert.ok(input2.$slider.slider("option", "step") == 0.01, "Correct float step size.");
-    assert.ok(input2.$slider.slider("value") == 10.1, "Correct float slider value.");
 });
 
 QUnit.test("input", function (assert) {
