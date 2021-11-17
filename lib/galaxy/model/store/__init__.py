@@ -1077,19 +1077,15 @@ class BagArchiveImportModelStore(DirectoryImportModelStoreLatest):
 class ModelExportStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def export_history(self, history, include_hidden=False, include_deleted=False):
+    def export_history(self, history: model.History, include_hidden: bool = False, include_deleted: bool = False):
         """Export history to store."""
 
     @abc.abstractmethod
-    def add_dataset_collection(self, collection, include_files=False):
-        """
-        Add HDCA to export store.
-
-        ``include_files`` controls whether file contents are exported as well.
-        """
+    def add_dataset_collection(self, collection: Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]):
+        """Add Dataset Collection or HDCA to export store."""
 
     @abc.abstractmethod
-    def add_dataset(self, dataset, include_files=True):
+    def add_dataset(self, dataset: model.DatasetInstance, include_files: bool = True):
         """
         Add HDA to export store.
 
@@ -1427,7 +1423,7 @@ class DirectoryModelExportStore(ModelExportStore):
         self.collections_attrs.append(collection)
         self.included_collections.append(collection)
 
-    def add_dataset(self, dataset, include_files=True):
+    def add_dataset(self, dataset: model.DatasetInstance, include_files: bool = True):
         self.included_datasets[dataset] = (dataset, include_files)
 
     def _finalize(self):
