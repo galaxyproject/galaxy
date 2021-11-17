@@ -9,7 +9,6 @@ import logging
 import os
 import pwd
 import shutil
-import string
 import sys
 import time
 import traceback
