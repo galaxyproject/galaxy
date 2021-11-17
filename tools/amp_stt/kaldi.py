@@ -6,6 +6,8 @@ import subprocess
 import sys
 import tempfile
 
+import mgm_utils
+
 # The run_kaldi.sh script is assumed to be in a directory called kaldi-pua-singularity, which is a peer to the
 # galaxy install.  It can either be a check out of that repo, or just the script and the appropriate .sif file.
 # by default the cwd is somewhere near: 
