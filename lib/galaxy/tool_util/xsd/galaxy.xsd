@@ -3739,25 +3739,22 @@ Check if a metadata value is contained in a specific column of a file in the ``t
 
 ### Validators for textual inputs (``text``, ``select``, ...)
 
-``regex``: Check if a regular expression **matches** the value, i.e. appears
+- ``regex``: Check if a regular expression **matches** the value, i.e. appears
 at the beginning of the value. To enforce a match of the complete value use
 ``$`` at the end of the expression. The expression is given is the content 
 of the validator tag. Note that for ``selects`` each option is checked
 separately.
+- ``length``: Check if the length of the value is within a range.
+- ``empty_field``: Check if the string is not empty
+- ``value_in_data_table``: Check if the value is
+contained in a column of a given data table.
+- ``value_not_in_data_table``: Equivalent to ``value_in_data_table`` with ``negate="true"``.
 
 For selects (in particular with dynamically defined options) the following
 validator is useful:
 
 ``no_options``: Check if options are available for a ``select`` parameter.
 Useful for parameters with dynamically defined options.
-
-For ``text`` inputs the following validators are useful:
-
-- ``length``: Check if the length of the value is within a range.
-- ``empty_field``: Check if the string is not empty
-- ``value_in_data_table``: Check if the value is
-contained in a column of a given data table.
-- ``value_not_in_data_table``: Equivalent to ``value_in_data_table`` with ``negate="true"``.
 
 ### Validators for numeric inputs (``integer``, ``float``)
 
