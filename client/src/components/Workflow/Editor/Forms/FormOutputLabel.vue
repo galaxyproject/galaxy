@@ -3,7 +3,7 @@
         :id="id"
         :value="label"
         :error="error"
-        title="Label"
+        :title="title"
         type="text"
         help="This will provide a short name to describe the output - this must be unique across workflows."
         @input="onInput"
@@ -22,6 +22,10 @@ export default {
             type: String,
             required: true,
         },
+        showDetails: {
+            type: Boolean,
+            default: false,
+        },
         label: {
             type: String,
             default: null,
@@ -34,6 +38,13 @@ export default {
     computed: {
         id() {
             return `__label__${this.name}`;
+        },
+        title() {
+            if (this.showDetails) {
+                return `Set Label for: ${this.name}`;
+            } else {
+                return "Label";
+            }
         },
     },
     methods: {

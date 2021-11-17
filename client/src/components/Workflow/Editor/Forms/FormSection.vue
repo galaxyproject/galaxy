@@ -150,7 +150,6 @@ export default {
         onLabel(pjaKey, outputName, newLabel) {
             if (this.node.labelOutput(outputName, newLabel)) {
                 this.outputLabelError = null;
-                this.onInput(newLabel, pjaKey);
             } else {
                 this.outputLabelError = `Duplicate output label '${newLabel}' will be ignored.`;
             }

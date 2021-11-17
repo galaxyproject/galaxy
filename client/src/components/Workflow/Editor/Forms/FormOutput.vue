@@ -1,12 +1,7 @@
 <template>
     <FormCard :title="outputTitle" collapsible :expanded.sync="expanded">
         <template v-slot:body>
-            <FormOutputLabel
-                :name="outputName"
-                :label="outputLabel"
-                :error="outputLabelError"
-                @onLabel="onLabel"
-            />
+            <FormOutputLabel :name="outputName" :label="outputLabel" :error="outputLabelError" @onLabel="onLabel" />
             <FormElement
                 :id="actionNames.RenameDatasetAction__newname"
                 :value="formData[actionNames.RenameDatasetAction__newname]"
