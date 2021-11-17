@@ -65,11 +65,7 @@ export default {
                 return this.value;
             },
             set(val) {
-                let value = val;
-                if (this.type === "integer") {
-                    value = Math.round(value);
-                }
-                this.$emit("input", value);
+                this.$emit("input", val);
             },
         },
     },
