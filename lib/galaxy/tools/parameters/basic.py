@@ -1041,14 +1041,16 @@ class SelectToolParameter(ToolParameter):
         return d
 
     def validate(self, value, trans=None):
-        if value:
-            if self.multiple:
-                if not isinstance(value, list):
-                    value = [value]
-            else:
+        if not value:
+            super().validate(value, trans)
+        if self.multiple:
+            if not isinstance(value, list):
                 value = [value]
-            for v in value:
-                super().validate(v, trans)
+        else:
+            value = [value]
+        for v in value:
+            super().validate(v, trans)
+
 
 class GenomeBuildParameter(SelectToolParameter):
     """
