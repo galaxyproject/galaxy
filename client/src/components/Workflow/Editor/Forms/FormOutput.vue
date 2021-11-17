@@ -1,7 +1,7 @@
 <template>
     <FormCard :title="outputTitle" collapsible :expanded.sync="expanded">
         <template v-slot:body>
-            <FormOutputLabel :name="outputName" :label="outputLabel" :error="outputLabelError" @onLabel="onLabel" />
+            <FormOutputLabel :name="outputName" :active-outputs="activeOutputs" />
             <FormElement
                 :id="actionNames.RenameDatasetAction__newname"
                 :value="formData[actionNames.RenameDatasetAction__newname]"
@@ -140,6 +140,10 @@ export default {
             type: Object,
             required: true,
         },
+        activeOutputs: {
+            type: Object,
+            required: true,
+        },
     },
     data() {
         return {
@@ -215,9 +219,6 @@ export default {
         },
         onInput(value, pjaKey) {
             this.$emit("onInput", value, pjaKey);
-        },
-        onLabel(id, name, label) {
-            this.$emit("onLabel", id, name, label);
         },
         onDatatype(newDatatype) {
             this.$emit("onDatatype", this.actionNames.ChangeDatatypeAction__newtype, this.outputName, newDatatype);

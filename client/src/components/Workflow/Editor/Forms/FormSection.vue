@@ -20,13 +20,11 @@
             v-for="(output, index) in outputs"
             :key="index"
             :output-name="output.name"
-            :output-label="getOutputLabel(output)"
-            :output-label-error="outputLabelError"
+            :active-outputs="node.activeOutputs"
             :inputs="node.inputs"
             :datatypes="datatypes"
             :form-data="formData"
             @onInput="onInput"
-            @onLabel="onLabel"
             @onDatatype="onDatatype"
         />
     </div>
@@ -58,7 +56,6 @@ export default {
     data() {
         return {
             formData: {},
-            outputLabelError: null,
         };
     },
     created() {
@@ -70,9 +67,6 @@ export default {
         },
         postJobActions() {
             return this.node.postJobActions;
-        },
-        activeOutputs() {
-            return this.node.activeOutputs;
         },
         outputs() {
             return this.node.outputs;
@@ -124,10 +118,6 @@ export default {
                 delete pjas[this.emailPayloadKey];
             }
         },
-        getOutputLabel(output) {
-            const activeOutput = this.activeOutputs.get(output.name);
-            return activeOutput && activeOutput.label;
-        },
         onInput(value, pjaKey) {
             let changed = false;
             const exists = pjaKey in this.formData;
@@ -145,13 +135,6 @@ export default {
             if (changed) {
                 this.formData = Object.assign({}, this.formData);
                 this.$emit("onChange", this.formData, true);
-            }
-        },
-        onLabel(pjaKey, outputName, newLabel) {
-            if (this.node.labelOutput(outputName, newLabel)) {
-                this.outputLabelError = null;
-            } else {
-                this.outputLabelError = `Duplicate output label '${newLabel}' will be ignored.`;
             }
         },
         onDatatype(pjaKey, outputName, newDatatype) {

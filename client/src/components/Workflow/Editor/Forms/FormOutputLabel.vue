@@ -1,11 +1,10 @@
 <template>
     <FormElement
-        :id="id"
         :value="label"
         :error="error"
         :title="title"
         type="text"
-        help="This will provide a short name to describe the output - this must be unique across workflows."
+        help="Provide a short, unique name to describe this output."
         @input="onInput"
     />
 </template>
@@ -26,30 +25,36 @@ export default {
             type: Boolean,
             default: false,
         },
-        label: {
-            type: String,
+        activeOutputs: {
+            type: Object,
             default: null,
         },
-        error: {
-            type: String,
-            required: null,
-        },
+    },
+    data() {
+        return {
+            error: null,
+        };
     },
     computed: {
-        id() {
-            return `__label__${this.name}`;
-        },
         title() {
             if (this.showDetails) {
-                return `Set Label for: ${this.name}`;
+                return `Label for: '${this.name}'`;
             } else {
                 return "Label";
             }
         },
+        label() {
+            const activeOutput = this.activeOutputs.get(this.name);
+            return activeOutput && activeOutput.label;
+        },
     },
     methods: {
         onInput(newLabel) {
-            this.$emit("onLabel", this.id, this.name, newLabel);
+            if (this.activeOutputs.labelOutput(this.name, newLabel)) {
+                this.error = null;
+            } else {
+                this.error = `Duplicate output label '${newLabel}' will be ignored.`;
+            }
         },
     },
 };

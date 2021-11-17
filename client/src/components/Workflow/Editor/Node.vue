@@ -323,9 +323,6 @@ export default {
             this.setData(data);
             this.showLoading = false;
         },
-        labelOutput(outputName, label) {
-            return this.activeOutputs.labelOutput(outputName, label);
-        },
         onScrollTo() {
             this.scrolledTo = true;
             setTimeout(() => {

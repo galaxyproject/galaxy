@@ -43,16 +43,14 @@
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation"
             />
-            <FormDisplay v-if="!isSubworkflow" :id="id" :inputs="inputs" @onChange="onChange" />
-            <div v-else>
+            <FormDisplay :id="id" :inputs="inputs" @onChange="onChange" />
+            <div v-if="isSubworkflow">
                 <FormOutputLabel
-                    v-for="(output, index) in outputs"
+                    v-for="(output, index) in node.outputs"
                     :key="index"
                     :name="output.name"
-                    :label="getOutputLabel(output)"
-                    :error="outputLabelError"
+                    :active-outputs="node.activeOutputs"
                     :show-details="true"
-                    @onLabel="onOutputLabel"
                 />
             </div>
         </template>
@@ -64,8 +62,8 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 import FormOutputLabel from "./FormOutputLabel";
-import WorkflowIcons from "components/Workflow/icons";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
+import WorkflowIcons from "components/Workflow/icons";
 
 export default {
     components: {
@@ -87,11 +85,6 @@ export default {
             type: Function,
             required: true,
         },
-    },
-    data() {
-        return {
-            outputLabelError: null,
-        };
     },
     computed: {
         node() {
@@ -115,18 +108,8 @@ export default {
         errorLabel() {
             return checkLabels(this.node.id, this.node.label, this.workflow.nodes);
         },
-        activeOutputs() {
-            return this.node.activeOutputs;
-        },
-        outputs() {
-            return this.node.outputs;
-        },
     },
     methods: {
-        getOutputLabel(output) {
-            const activeOutput = this.activeOutputs.get(output.name);
-            return activeOutput && activeOutput.label;
-        },
         onAnnotation(newAnnotation) {
             this.$emit("onAnnotation", this.node.id, newAnnotation);
         },
@@ -148,13 +131,6 @@ export default {
                 content_id: this.node.content_id,
                 inputs: values,
             });
-        },
-        onOutputLabel(pjaKey, outputName, newLabel) {
-            if (this.node.labelOutput(outputName, newLabel)) {
-                this.outputLabelError = null;
-            } else {
-                this.outputLabelError = `Duplicate output label '${newLabel}' will be ignored.`;
-            }
         },
     },
 };
