@@ -1409,11 +1409,12 @@ class DirectoryModelExportStore(ModelExportStore):
             job_output_dataset_associations[job_id] = {}
         job_output_dataset_associations[job_id][name] = dataset_instance
 
-    def export_collection(self, collection, include_deleted=False):
+    def export_collection(self, collection: Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation], include_deleted: bool = False):
         self.add_dataset_collection(collection)
 
-        # export jobs for these datasets
-        for collection_dataset in collection.dataset_instances:
+        # export datasets for this collection
+        has_collection = collection.collection if isinstance(collection, model.HistoryDatasetCollectionAssociation) else collection
+        for collection_dataset in has_collection.dataset_instances:
             if collection_dataset.deleted and not include_deleted:
                 include_files = False
             else:
@@ -1422,7 +1423,7 @@ class DirectoryModelExportStore(ModelExportStore):
             self.add_dataset(collection_dataset, include_files=include_files)
             self.collection_datasets[collection_dataset.id] = True
 
-    def add_dataset_collection(self, collection: model.HistoryDatasetCollectionAssociation, include_files=False):
+    def add_dataset_collection(self, collection: Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]):
         self.collections_attrs.append(collection)
         self.included_collections.append(collection)
 
