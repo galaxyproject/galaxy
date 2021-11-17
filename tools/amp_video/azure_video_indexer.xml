@@ -6,7 +6,7 @@
 	<requirement type="package" version="2.12">azure-cli</requirement>
   </requirements>
   <command detect_errors="exit_code">
-  	'$__tool_directory__/azure_video_indexer.py' '$input_video' '$include_ocr' '$location' '$__root_dir__' '$azure_video_index' '$azure_artifact_ocr'
+  	'$__tool_directory__/azure_video_indexer.py' '$__root_dir__' '$input_video' '$include_ocr' '$location' '$azure_video_index' '$azure_artifact_ocr'
   </command>
   <inputs>
 	<param name="input_video" type="data" format="video" label="Input Video" help="An input video file for Azure Video Indexer"/>
