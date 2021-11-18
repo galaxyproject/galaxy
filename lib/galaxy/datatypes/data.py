@@ -16,8 +16,10 @@ from galaxy.datatypes.metadata import MetadataElement  # import directly to main
 from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.util import (
     compression_utils,
+    file_reader,
     FILENAME_VALID_CHARS,
     inflector,
+    iter_start_of_line,
     smart_str,
     unicodify
 )
@@ -867,8 +869,7 @@ class Text(Data):
             # causing set_meta process to fail otherwise OK jobs. A better solution than
             # a silent try/except is desirable.
             try:
-                while True:
-                    line = in_file.readline(CHUNK_SIZE)
+                for line in iter_start_of_line(in_file, CHUNK_SIZE):
                     if not line:
                         break
                     line = line.strip()
@@ -1116,8 +1117,7 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
                 line = line[:-1]
                 last_line_break = True
             elif not line_wrap:
-                while True:
-                    i = temp.read(1)
+                for i in file_reader(temp, 1):
                     if i == '\n':
                         last_line_break = True
                     if not i or i == '\n':

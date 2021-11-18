@@ -20,7 +20,11 @@ from typing_extensions import Protocol
 
 from galaxy import util
 from galaxy.files import ConfiguredFileSources
-from galaxy.util import compression_utils, stream_to_open_named_file
+from galaxy.util import (
+    compression_utils,
+    file_reader,
+    stream_to_open_named_file
+)
 from galaxy.util.checkers import (
     check_binary,
     check_html,
@@ -723,18 +727,15 @@ def handle_compressed_file(
         with tempfile.NamedTemporaryFile(prefix=tmp_prefix, dir=tmp_dir, delete=False) as uncompressed:
             compressed_file = DECOMPRESSION_FUNCTIONS[compressed_type](filename)
             # TODO: it'd be ideal to convert to posix newlines and space-to-tab here as well
-            while True:
-                try:
-                    chunk = compressed_file.read(CHUNK_SIZE)
-                except OSError as e:
-                    os.remove(uncompressed.name)
-                    compressed_file.close()
-                    raise OSError(f'Problem uncompressing {compressed_type} data, please try retrieving the data uncompressed: {util.unicodify(e)}')
-                if not chunk:
-                    break
-                uncompressed.write(chunk)
+            try:
+                for chunk in file_reader(compressed_file, CHUNK_SIZE):
+                    if not chunk:
+                        break
+                    uncompressed.write(chunk)
+            except OSError as e:
+                os.remove(uncompressed.name)
+                raise OSError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
         uncompressed_path = uncompressed.name
-        compressed_file.close()
         if in_place:
             # Replace the compressed file with the uncompressed file
             shutil.move(uncompressed_path, filename)

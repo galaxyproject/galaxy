@@ -366,8 +366,7 @@ class Tabular(TabularData):
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
             with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
                 i = 0
-                while True:
-                    line = dataset_fh.readline()
+                for line in dataset_fh:
                     if not line:
                         break
                     line = line.rstrip('\r\n')
@@ -525,11 +524,10 @@ class Sam(Tabular, _BamOrSam):
         """
         fh = file_prefix.string_io()
         count = 0
-        while True:
-            line = fh.readline()
-            line = line.strip()
+        for line in fh.readlines():
             if not line:
                 break  # EOF
+            line = line.strip()
             if line:
                 if line[0] != '@':
                     line_pieces = line.split('\t')
@@ -930,11 +928,10 @@ class Eland(Tabular):
         """
         fh = file_prefix.string_io()
         count = 0
-        while True:
-            line = fh.readline()
+        for line in fh.readlines():
             line = line.strip()
             if not line:
-                break  # EOF
+                break  # Had a EOF comment previously, but this does not indicate EOF. I assume empty lines are not valid and this was intentional.
             if line:
                 line_pieces = line.split('\t')
                 if len(line_pieces) != 22:

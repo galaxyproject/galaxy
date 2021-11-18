@@ -588,13 +588,13 @@ class ProteomicsXml(GenericXml):
     def sniff_prefix(self, file_prefix):
         """ Determines whether the file is the correct XML type. """
         contents = file_prefix.string_io()
-        while True:
-            line = contents.readline().strip()
-            if line is None or not line.startswith('<?'):
+        for line in contents.readlines():
+            line = line.strip()
+            if not line.startswith('<?'):
                 break
         # pattern match <root or <ns:root for any ns string
         pattern = r'<(\w*:)?%s' % self.root
-        return line is not None and re.search(pattern, line) is not None
+        return re.search(pattern, line) is not None
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
@@ -929,8 +929,7 @@ class Ms2(Text):
         """ Determines whether the file is a valid ms2 file."""
         contents = file_prefix.string_io()
         header_lines = []
-        while True:
-            line = contents.readline()
+        for line in contents.readlines():
             if not line:
                 return False
             if line.strip() == "":

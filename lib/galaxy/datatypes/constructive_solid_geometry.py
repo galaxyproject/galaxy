@@ -67,8 +67,8 @@ class Ply:
         if line.find(subtype) < 0:
             return False
         stop_index = 0
-        while True:
-            line = get_next_line(fh)
+        for line in util.iter_start_of_line(fh, MAX_LINE_LEN):
+            line = line.strip()
             stop_index += 1
             if line == 'end_header':
                 return True

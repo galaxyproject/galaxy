@@ -348,8 +348,7 @@ class Fasta(Sequence):
         True
         """
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
+        for line in fh.readlines():
             if not line:
                 break  # EOF
             line = line.strip()
@@ -422,74 +421,70 @@ class Fasta(Sequence):
         start of a new FASTQ sequence record.
         """
         log.debug("Attemping to split FASTA file %s into chunks of %i bytes" % (input_file, chunk_size))
-        f = open(input_file)
-        part_file = None
-        try:
-            # Note if the input FASTA file has no sequences, we will
-            # produce just one sub-file which will be a copy of it.
-            part_dir = subdir_generator_function()
-            part_path = os.path.join(part_dir, os.path.basename(input_file))
-            part_file = open(part_path, 'w')
-            log.debug(f"Writing {input_file} part to {part_path}")
-            start_offset = 0
-            while True:
-                offset = f.tell()
-                line = f.readline()
-                if not line:
-                    break
-                if line[0] == ">" and offset - start_offset >= chunk_size:
-                    # Start a new sub-file
-                    part_file.close()
-                    part_dir = subdir_generator_function()
-                    part_path = os.path.join(part_dir, os.path.basename(input_file))
-                    part_file = open(part_path, 'w')
-                    log.debug(f"Writing {input_file} part to {part_path}")
-                    start_offset = f.tell()
-                part_file.write(line)
-        except Exception as e:
-            log.error('Unable to size split FASTA file: %s', util.unicodify(e))
-            raise
-        finally:
-            f.close()
-            if part_file:
-                part_file.close()
-
-    @classmethod
-    def _count_split(cls, input_file, chunk_size, subdir_generator_function):
-        """Split a FASTA file into chunks based on counting records."""
-        log.debug("Attemping to split FASTA file %s into chunks of %i sequences" % (input_file, chunk_size))
-        f = open(input_file)
-        part_file = None
-        try:
-            # Note if the input FASTA file has no sequences, we will
-            # produce just one sub-file which will be a copy of it.
-            part_dir = subdir_generator_function()
-            part_path = os.path.join(part_dir, os.path.basename(input_file))
-            part_file = open(part_path, 'w')
-            log.debug(f"Writing {input_file} part to {part_path}")
-            rec_count = 0
-            while True:
-                line = f.readline()
-                if not line:
-                    break
-                if line[0] == ">":
-                    rec_count += 1
-                    if rec_count > chunk_size:
+        with open(input_file) as f:
+            part_file = None
+            try:
+                # Note if the input FASTA file has no sequences, we will
+                # produce just one sub-file which will be a copy of it.
+                part_dir = subdir_generator_function()
+                part_path = os.path.join(part_dir, os.path.basename(input_file))
+                part_file = open(part_path, 'w')
+                log.debug(f"Writing {input_file} part to {part_path}")
+                start_offset = 0
+                for line in f:
+                    offset = f.tell()
+                    if not line:
+                        break
+                    if line[0] == ">" and offset - start_offset >= chunk_size:
                         # Start a new sub-file
                         part_file.close()
                         part_dir = subdir_generator_function()
                         part_path = os.path.join(part_dir, os.path.basename(input_file))
                         part_file = open(part_path, 'w')
                         log.debug(f"Writing {input_file} part to {part_path}")
-                        rec_count = 1
-                part_file.write(line)
-        except Exception as e:
-            log.error('Unable to count split FASTA file: %s', util.unicodify(e))
-            raise
-        finally:
-            f.close()
-            if part_file:
-                part_file.close()
+                        start_offset = f.tell()
+                    part_file.write(line)
+            except Exception as e:
+                log.error('Unable to size split FASTA file: %s', util.unicodify(e))
+                raise
+            finally:
+                if part_file:
+                    part_file.close()
+
+    @classmethod
+    def _count_split(cls, input_file, chunk_size, subdir_generator_function):
+        """Split a FASTA file into chunks based on counting records."""
+        log.debug("Attemping to split FASTA file %s into chunks of %i sequences" % (input_file, chunk_size))
+        with open(input_file) as f:
+            part_file = None
+            try:
+                # Note if the input FASTA file has no sequences, we will
+                # produce just one sub-file which will be a copy of it.
+                part_dir = subdir_generator_function()
+                part_path = os.path.join(part_dir, os.path.basename(input_file))
+                part_file = open(part_path, 'w')
+                log.debug(f"Writing {input_file} part to {part_path}")
+                rec_count = 0
+                for line in f:
+                    if not line:
+                        break
+                    if line[0] == ">":
+                        rec_count += 1
+                        if rec_count > chunk_size:
+                            # Start a new sub-file
+                            part_file.close()
+                            part_dir = subdir_generator_function()
+                            part_path = os.path.join(part_dir, os.path.basename(input_file))
+                            part_file = open(part_path, 'w')
+                            log.debug(f"Writing {input_file} part to {part_path}")
+                            rec_count = 1
+                    part_file.write(line)
+            except Exception as e:
+                log.error('Unable to count split FASTA file: %s', util.unicodify(e))
+                raise
+            finally:
+                if part_file:
+                    part_file.close()
 
 
 @build_sniff_from_prefix
@@ -513,8 +508,7 @@ class csFasta(Sequence):
         True
         """
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
+        for line in fh:
             if not line:
                 break  # EOF
             line = line.strip()

@@ -41,8 +41,7 @@ class QualityScoreSOLiD(QualityScore):
         fh = file_prefix.string_io()
         readlen = None
         goodblock = 0
-        while True:
-            line = fh.readline()
+        for line in fh.readlines():
             if not line:
                 if goodblock > 0:
                     return True
@@ -94,8 +93,7 @@ class QualityScore454(QualityScore):
         True
         """
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
+        for line in fh.readlines():
             if not line:
                 break  # EOF
             line = line.strip()

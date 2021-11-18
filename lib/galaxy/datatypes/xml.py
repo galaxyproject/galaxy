@@ -36,13 +36,12 @@ class GenericXml(data.Text):
 
     def _has_root_element_in_prefix(self, file_prefix, root):
         contents = file_prefix.string_io()
-        while True:
-            line = contents.readline()
-            if line is None or not line.startswith('<?'):
+        for line in contents.readlines():
+            if not line.startswith('<?'):
                 break
         # pattern match <root or <ns:root for any ns string
         pattern = r'^<(\w*:)?%s' % root
-        return line is not None and re.match(pattern, line) is not None
+        return re.match(pattern, line) is not None
 
     def sniff_prefix(self, file_prefix):
         """

@@ -77,8 +77,7 @@ class Sequences(sequence.Fasta):
           CGACGAATGACAGGTCACGAATTTGGCGGGGATTA
         """
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
+        for line in fh.readlines():
             if not line:
                 break  # EOF
             line = line.strip()
@@ -112,8 +111,7 @@ class Roadmaps(data.Text):
         """
 
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
+        for line in fh.readlines():
             if not line:
                 break  # EOF
             line = line.strip()
