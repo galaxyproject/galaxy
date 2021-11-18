@@ -32,6 +32,7 @@ from galaxy.schema import (
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyHDA,
     AnyHistoryContentItem,
     DatasetAssociationRoles,
     DatasetSourceType,
@@ -45,6 +46,7 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.datasets import (
+    ConvertedDatasetsMap,
     DatasetInheritanceChainEntry,
     DatasetShowParams,
     DatasetsService,
@@ -135,19 +137,42 @@ class FastAPIDatasets:
 
     @router.get(
         '/api/datasets/{dataset_id}/converted/{ext}',
-        summary='Return information about datasets made by converting this dataset to a new format',
+        summary='Return information about datasets made by converting this dataset to a new format.',
+    )
+    def converted_ext(
+        self,
+        trans=DependsOnTrans,
+        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        ext: str = Path(
+            ...,
+            description="File extension of the new format to convert this dataset to.",
+        ),
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ) -> AnyHDA:
+        """
+        Return information about datasets made by converting this dataset to a new format.
+
+        If there is no existing converted dataset for the format in `ext`, one will be created.
+
+        **Note**: `view` and `keys` are also available to control the serialization of the dataset.
+        """
+        return self.service.converted_ext(trans, dataset_id, ext, serialization_params)
+
+    @router.get(
+        '/api/datasets/{dataset_id}/converted',
+        summary=(
+            "Return a a map with all the existing converted datasets associated with this instance."
+        ),
     )
     def converted(
         self,
         trans=DependsOnTrans,
         dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
-        ext: Optional[str] = Query(
-            default=None,
-            description="TODO",
-        ),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-    ):
-        return self.service.converted(trans, dataset_id, ext, serialization_params)
+    ) -> ConvertedDatasetsMap:
+        """
+        Return a map of `<converted extension> : <converted id>` containing all the *existing* converted datasets.
+        """
+        return self.service.converted(trans, dataset_id)
 
     @router.put(
         '/api/datasets/{dataset_id}/permissions',
@@ -423,5 +448,7 @@ class DatasetsController(BaseGalaxyAPIController):
         :returns:   dictionary containing detailed HDA information
                     or (if `ext` is None) an extension->dataset_id map
         """
-        serialization_params = parse_serialization_params(**kwargs)
-        return self.service.converted(trans, dataset_id, ext, serialization_params)
+        if ext:
+            serialization_params = parse_serialization_params(**kwargs)
+            return self.service.converted_ext(trans, dataset_id, ext, serialization_params)
+        return self.service.converted(trans, dataset_id)

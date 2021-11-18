@@ -131,7 +131,16 @@ class DatasetTextContentDetails(Model):
     )
 
 
-ConvertedDatasetsMap = Dict[str, EncodedDatabaseIdField]  # extension -> dataset ID
+class ConvertedDatasetsMap(BaseModel):
+    """Map of `file extension` -> `converted dataset encoded id`"""
+    __root__: Dict[str, EncodedDatabaseIdField]  # extension -> dataset ID
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "csv": "dataset_id",
+            }
+        }
 
 
 class DataMode(str, Enum):
@@ -452,28 +461,38 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             return open(file_path, 'rb'), headers
         return file_path, headers
 
-    def converted(
+    def converted_ext(
         self,
         trans: ProvidesHistoryContext,
         dataset_id: EncodedDatabaseIdField,
-        ext: Optional[str],
+        ext: str,
         serialization_params: SerializationParams,
-    ) -> Union[AnyHDA, ConvertedDatasetsMap]:
+    ) -> AnyHDA:
         """
         Return information about datasets made by converting this dataset to a new format
         """
         decoded_id = self.decode_id(dataset_id)
         hda = self.hda_manager.get_accessible(decoded_id, trans.user)
-        if ext:
-            serialization_params.default_view = "detailed"
-            converted = self._get_or_create_converted(trans, hda, ext)
-            return self.hda_serializer.serialize_to_view(
-                converted,
-                user=trans.user,
-                trans=trans,
-                **serialization_params.dict()
-            )
+        serialization_params.default_view = "detailed"
+        converted = self._get_or_create_converted(trans, hda, ext)
+        return self.hda_serializer.serialize_to_view(
+            converted,
+            user=trans.user,
+            trans=trans,
+            **serialization_params.dict()
+        )
 
+    def converted(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: EncodedDatabaseIdField,
+    ) -> ConvertedDatasetsMap:
+        """
+        Return a `file extension` -> `converted dataset encoded id` map
+        with all the existing converted datasets associated with this instance.
+        """
+        decoded_id = self.decode_id(dataset_id)
+        hda = self.hda_manager.get_accessible(decoded_id, trans.user)
         return self.hda_serializer.serialize_converted_datasets(hda, 'converted')
 
     def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
