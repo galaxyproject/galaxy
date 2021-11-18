@@ -89,9 +89,10 @@
                             :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }"
                             >{{ row.item.name }}</b-link
                         >
-                        <a v-else :href="`${root}library/list#folders/${current_folder_id}/datasets/${row.item.id}`">{{
+
+                        <b-link v-else :to="{ name: `LibraryDataset`, params: { folder_id: folder_id, dataset_id: `${row.item.id}` } }">{{
                             row.item.name
-                        }}</a>
+                        }}</b-link>
                     </div>
                     <!-- Deleted Item-->
                     <div v-else>

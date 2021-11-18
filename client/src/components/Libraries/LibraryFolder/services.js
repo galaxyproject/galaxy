@@ -99,4 +99,15 @@ export class Services {
             rethrowSimple(e);
         }
     }
+    async getDataset(datasetID, onError) {
+        const url = `${this.root}api/libraries/datasets/${datasetID}`;
+        try {
+            const response = await axios.get(url).catch((error) => {
+                onError(error);
+            });
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
 }

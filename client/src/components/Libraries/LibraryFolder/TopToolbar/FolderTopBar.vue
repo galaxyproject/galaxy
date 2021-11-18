@@ -118,21 +118,11 @@
             </div>
         </div>
 
-        <b-breadcrumb>
-            <b-breadcrumb-item title="Return to the list of libraries" :to="{ path: `/` }">
-                Libraries
-            </b-breadcrumb-item>
-            <template v-for="path_item in this.metadata.full_path">
-                <b-breadcrumb-item
-                    :key="path_item[0]"
-                    :title="isCurrentFolder(path_item[0]) ? `You are in this folder` : `Return to this folder`"
-                    :active="isCurrentFolder(path_item[0])"
-                    :to="{ name: `LibraryFolder`, params: { folder_id: `${path_item[0]}` } }"
-                    href="#"
-                    >{{ path_item[1] }}</b-breadcrumb-item
-                >
-            </template>
-        </b-breadcrumb>
+        <LibraryBreadcrumb
+            v-if="metadata && metadata.full_path"
+            :full_path="metadata.full_path"
+            :current-id="folder_id"
+        />
     </div>
 </template>
 <script>
@@ -152,6 +142,7 @@ import mod_utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";
 import SearchField from "../SearchField";
 import { Services } from "../services";
+import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
 
 initTopBarIcons();
 
@@ -192,6 +183,7 @@ export default {
     components: {
         SearchField,
         FontAwesomeIcon,
+        LibraryBreadcrumb,
     },
     data() {
         return {
@@ -315,9 +307,6 @@ export default {
                     });
                 }
             });
-        },
-        isCurrentFolder(id) {
-            return this.folder_id === id;
         },
         /*
             Slightly adopted Bootstrap code
