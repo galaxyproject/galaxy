@@ -70,7 +70,13 @@ export default {
         },
     },
     watch: {
-        output: function (newOutput) {
+        label() {
+            // See discussion at: https://github.com/vuejs/vue/issues/8030
+            this.$nextTick(() => {
+                this.$emit("onChange");
+            });
+        },
+        output(newOutput) {
             const oldTerminal = this.terminal;
             if (oldTerminal instanceof this.terminalClassForOutput(newOutput)) {
                 oldTerminal.update(newOutput);

@@ -240,6 +240,7 @@ export default {
     },
     methods: {
         onChange() {
+            this.onRedraw();
             this.$emit("onChange");
         },
         onAddInput(input, terminal) {
