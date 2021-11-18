@@ -61,6 +61,8 @@ class QualityScoreSOLiD(QualityScore):
                     goodblock += 1
                     if goodblock > 10:
                         return True
+                else:
+                    return False
         return goodblock > 0
 
     def set_meta(self, dataset, **kwd):
