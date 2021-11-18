@@ -584,11 +584,12 @@ class ProteomicsXml(GenericXml):
     proteomic/mass-spec datatypes. """
     edam_data = "data_2536"
     edam_format = "format_2032"
+    root: str
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """ Determines whether the file is the correct XML type. """
         contents = file_prefix.string_io()
-        for line in contents.readlines():
+        for line in contents:
             line = line.strip()
             if not line.startswith('<?'):
                 break
@@ -925,13 +926,11 @@ class SPLib(Msp):
 class Ms2(Text):
     file_ext = "ms2"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """ Determines whether the file is a valid ms2 file."""
         contents = file_prefix.string_io()
         header_lines = []
-        for line in contents.readlines():
-            if not line:
-                return False
+        for line in contents:
             if line.strip() == "":
                 continue
             elif line.startswith('H\t'):

@@ -41,31 +41,24 @@ class QualityScoreSOLiD(QualityScore):
         fh = file_prefix.string_io()
         readlen = None
         goodblock = 0
-        for line in fh.readlines():
-            if not line:
-                if goodblock > 0:
-                    return True
-                else:
-                    break  # EOF
+        for line in fh:
             line = line.strip()
-            if line and not line.startswith('#'):  # first non-empty non-comment line
+            if not line.startswith('#'):  # first non-empty non-comment line
                 if line.startswith('>'):
-                    line = fh.readline().strip()
+                    line = next(fh).strip()
                     if line == '' or line.startswith('>'):
-                        break
+                        return False
                     try:
                         [int(x) for x in line.split()]
-                        if not(readlen):
+                        if not readlen:
                             readlen = len(line.split())
                         assert len(line.split()) == readlen  # SOLiD reads should be of the same length
                     except Exception:
-                        break
+                        return False
                     goodblock += 1
                     if goodblock > 10:
                         return True
-                else:
-                    break  # we found a non-empty line, but it's not a header
-        return False
+        return goodblock > 0
 
     def set_meta(self, dataset, **kwd):
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
@@ -93,7 +86,7 @@ class QualityScore454(QualityScore):
         True
         """
         fh = file_prefix.string_io()
-        for line in fh.readlines():
+        for line in fh:
             if not line:
                 break  # EOF
             line = line.strip()

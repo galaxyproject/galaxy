@@ -562,7 +562,7 @@ class Star(data.Text):
         """
         in_data_block = False
         fh = file_prefix.string_io()
-        for line in fh.readlines():
+        for line in fh:
             # All lines before the first
             # data_ block must be comments.
             if not line:

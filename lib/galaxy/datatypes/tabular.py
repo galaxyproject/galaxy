@@ -524,9 +524,7 @@ class Sam(Tabular, _BamOrSam):
         """
         fh = file_prefix.string_io()
         count = 0
-        for line in fh.readlines():
-            if not line:
-                break  # EOF
+        for line in fh:
             line = line.strip()
             if line:
                 if line[0] != '@':
@@ -928,7 +926,7 @@ class Eland(Tabular):
         """
         fh = file_prefix.string_io()
         count = 0
-        for line in fh.readlines():
+        for line in fh:
             line = line.strip()
             if not line:
                 break  # Had a EOF comment previously, but this does not indicate EOF. I assume empty lines are not valid and this was intentional.

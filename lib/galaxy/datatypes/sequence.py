@@ -348,24 +348,25 @@ class Fasta(Sequence):
         True
         """
         fh = file_prefix.string_io()
-        for line in fh.readlines():
-            if not line:
-                break  # EOF
+        for line in fh:
             line = line.strip()
             if line:  # first non-empty line
                 if line.startswith('>'):
                     # The next line.strip() must not be '', nor startwith '>'
-                    line = fh.readline().strip()
+                    line = next(fh).strip()
                     if line == '' or line.startswith('>'):
-                        break
+                        return False
 
                     # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file
-                    line = fh.readline()
+                    try:
+                        line = next(fh)
+                    except StopIteration:
+                        return True
                     if not line.startswith('>') and re.search(r"[\(\)\[\]\.]", line):
-                        break
+                        return False
                     return True
                 else:
-                    break  # we found a non-empty line, but it's not a fasta header
+                    return False
         return False
 
     @classmethod
@@ -509,8 +510,6 @@ class csFasta(Sequence):
         """
         fh = file_prefix.string_io()
         for line in fh:
-            if not line:
-                break  # EOF
             line = line.strip()
             if line and not line.startswith('#'):  # first non-empty non-comment line
                 if line.startswith('>'):
@@ -523,7 +522,7 @@ class csFasta(Sequence):
                         return False
                     return True
                 else:
-                    break  # we found a non-empty line, but it's not a header
+                    return False
         return False
 
     def set_meta(self, dataset, **kwd):

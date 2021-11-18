@@ -36,7 +36,7 @@ class GenericXml(data.Text):
 
     def _has_root_element_in_prefix(self, file_prefix, root):
         contents = file_prefix.string_io()
-        for line in contents.readlines():
+        for line in contents:
             if not line.startswith('<?'):
                 break
         # pattern match <root or <ns:root for any ns string

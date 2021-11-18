@@ -77,21 +77,19 @@ class Sequences(sequence.Fasta):
           CGACGAATGACAGGTCACGAATTTGGCGGGGATTA
         """
         fh = file_prefix.string_io()
-        for line in fh.readlines():
-            if not line:
-                break  # EOF
+        for line in fh:
             line = line.strip()
             if line:  # first non-empty line
                 if line.startswith('>'):
                     if not re.match(r'>[^\t]+\t\d+\t\d+$', line):
-                        break
+                        return False
                     # The next line.strip() must not be '', nor startwith '>'
-                    line = fh.readline().strip()
+                    line = next(fh).strip()
                     if line == '' or line.startswith('>'):
-                        break
+                        return False
                     return True
                 else:
-                    break  # we found a non-empty line, but it's not a fasta header
+                    return False
         return False
 
 
@@ -111,20 +109,18 @@ class Roadmaps(data.Text):
         """
 
         fh = file_prefix.string_io()
-        for line in fh.readlines():
-            if not line:
-                break  # EOF
+        for line in fh:
             line = line.strip()
             if line:  # first non-empty line
                 if not re.match(r'\d+\t\d+\t\d+$', line):
-                    break
+                    return False
                 # The next line.strip() should be 'ROADMAP 1'
-                line = fh.readline().strip()
+                line = next(fh).strip()
                 if not re.match(r'ROADMAP \d+$', line):
                     break
                 return True
             else:
-                break  # we found a non-empty line, but it's not a fasta header
+                return False  # we found a non-empty line, but it's not a fasta header
         return False
 
 
