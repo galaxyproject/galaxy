@@ -110,4 +110,17 @@ export class Services {
             rethrowSimple(e);
         }
     }
+    async detectDatatype(datasetID, data, onSucess, onError) {
+        const url = `${this.root}api/libraries/datasets/${datasetID}`;
+        try {
+            await axios
+                .patch(url, data)
+                .then(() => onSucess())
+                .catch((error) => {
+                    onError(error.err_msg);
+                });
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
 }
