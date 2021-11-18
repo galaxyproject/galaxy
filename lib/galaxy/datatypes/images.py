@@ -564,13 +564,9 @@ class Star(data.Text):
         False
         """
         in_data_block = False
-        fh = file_prefix.string_io()
-        for line in fh:
+        for line in file_prefix.line_iterator():
             # All lines before the first
             # data_ block must be comments.
-            if not line:
-                # End of file_prefix.
-                return False
             line = line.strip()
             if len(line) == 0:
                 continue

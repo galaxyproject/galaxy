@@ -593,8 +593,7 @@ class ProteomicsXml(GenericXml):
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """ Determines whether the file is the correct XML type. """
-        contents = file_prefix.string_io()
-        for line in contents:
+        for line in file_prefix.line_iterator():
             line = line.strip()
             if not line.startswith('<?'):
                 break
@@ -933,9 +932,8 @@ class Ms2(Text):
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """ Determines whether the file is a valid ms2 file."""
-        contents = file_prefix.string_io()
         header_lines = []
-        for line in contents:
+        for line in file_prefix.line_iterator():
             if line.strip() == "":
                 continue
             elif line.startswith('H\t'):

@@ -90,8 +90,6 @@ class QualityScore454(QualityScore):
         """
         fh = file_prefix.string_io()
         for line in fh:
-            if not line:
-                break  # EOF
             line = line.strip()
             if line and not line.startswith('#'):  # first non-empty non-comment line
                 if line.startswith('>'):
@@ -101,7 +99,7 @@ class QualityScore454(QualityScore):
                     try:
                         [int(x) for x in line.split()]
                     except Exception:
-                        break
+                        return False
                     return True
                 else:
                     break  # we found a non-empty line, but it's not a header

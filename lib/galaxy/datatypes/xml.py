@@ -39,8 +39,7 @@ class GenericXml(data.Text):
             dataset.blurb = 'file purged from disk'
 
     def _has_root_element_in_prefix(self, file_prefix, root):
-        contents = file_prefix.string_io()
-        for line in contents:
+        for line in file_prefix.line_iterator():
             if not line.startswith('<?'):
                 break
         # pattern match <root or <ns:root for any ns string

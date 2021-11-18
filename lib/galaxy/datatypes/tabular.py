@@ -368,8 +368,6 @@ class Tabular(TabularData):
             with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
                 i = 0
                 for line in dataset_fh:
-                    if not line:
-                        break
                     line = line.rstrip('\r\n')
                     if i == 0:
                         column_names = self.get_column_names(first_line=line)
