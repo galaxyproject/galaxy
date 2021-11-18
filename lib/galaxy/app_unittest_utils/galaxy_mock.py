@@ -6,8 +6,6 @@ import shutil
 import tempfile
 from typing import Any
 
-from sqlalchemy.orm.scoping import scoped_session
-
 from galaxy import (
     di,
     quota,
@@ -19,6 +17,7 @@ from galaxy.managers.users import UserManager
 from galaxy.model import tags
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.mapping import GalaxyModelMapping
+from galaxy.model.scoped_session import gxy_scoped_session
 from galaxy.model.unittest_utils import GalaxyDataTestApp, GalaxyDataTestConfig
 from galaxy.security import idencoding
 from galaxy.structured_app import BasicApp, MinimalManagerApp, StructuredApp
@@ -73,7 +72,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.name = kwargs.get('name', 'galaxy')
         self[SharedModelMapping] = self.model
         self[GalaxyModelMapping] = self.model
-        self[scoped_session] = self.model.context
+        self[gxy_scoped_session] = self.model.context
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
         self[tags.GalaxyTagHandler] = self.tag_handler

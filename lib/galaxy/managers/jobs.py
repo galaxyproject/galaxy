@@ -9,7 +9,6 @@ from pydantic import (
 )
 from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import aliased
-from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
 
 from galaxy import model
@@ -22,6 +21,7 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model.scoped_session import gxy_scoped_session
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.util import (
@@ -98,7 +98,7 @@ class JobSearch:
     """Search for jobs using tool inputs or other jobs"""
     def __init__(
         self,
-        sa_session: scoped_session,
+        sa_session: gxy_scoped_session,
         hda_manager: HDAManager,
         dataset_collection_manager: DatasetCollectionManager,
         ldda_manager: LDDAManager,

@@ -2,11 +2,11 @@ import logging
 import re
 from typing import Dict, List, Optional, Tuple
 
-from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
 import galaxy.model
+from galaxy.model.scoped_session import gxy_scoped_session
 from galaxy.util import (
     strip_control_characters,
     unicodify,
@@ -28,7 +28,7 @@ class TagHandler:
     Manages CRUD operations related to tagging objects.
     """
 
-    def __init__(self, sa_session: scoped_session) -> None:
+    def __init__(self, sa_session: gxy_scoped_session) -> None:
         self.sa_session = sa_session
         # Minimum tag length.
         self.min_tag_len = 1
@@ -355,7 +355,7 @@ class TagHandler:
 
 
 class GalaxyTagHandler(TagHandler):
-    def __init__(self, sa_session: scoped_session):
+    def __init__(self, sa_session: gxy_scoped_session):
         from galaxy import model
         TagHandler.__init__(self, sa_session)
         self.item_tag_assoc_info["History"] = ItemTagAssocInfo(model.History,
