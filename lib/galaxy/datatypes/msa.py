@@ -6,7 +6,10 @@ import re
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.datatypes.util import generic_util
 from galaxy.util import (
     nice_size,
@@ -40,7 +43,7 @@ class InfernalCM(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'infernal_model.cm' )
@@ -91,7 +94,7 @@ class Hmmer2(Hmmer):
     edam_format = "format_3328"
     file_ext = "hmm2"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """HMMER2 files start with HMMER2.0
         """
         return file_prefix.startswith('HMMER2.0')
@@ -101,7 +104,7 @@ class Hmmer3(Hmmer):
     edam_format = "format_3329"
     file_ext = "hmm3"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """HMMER3 files start with HMMER3/f
         """
         return file_prefix.startswith('HMMER3/f')
@@ -159,7 +162,7 @@ class Stockholm_1_0(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         return file_prefix.search(STOCKHOLM_SEARCH_PATTERN)
 
     def set_meta(self, dataset, **kwd):
@@ -238,7 +241,7 @@ class MauveXmfa(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         return file_prefix.startswith('#FormatVersion Mauve1')
 
     def set_meta(self, dataset, **kwd):

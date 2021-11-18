@@ -14,7 +14,13 @@ import sys
 import tempfile
 import urllib.request
 import zipfile
-from typing import Dict, IO, NamedTuple, Optional
+from typing import (
+    Dict,
+    IO,
+    NamedTuple,
+    Optional,
+    Union,
+)
 
 from typing_extensions import Protocol
 
@@ -504,16 +510,97 @@ def guess_ext(fname, sniff_order, is_binary=False):
     return 'txt'  # default text data type file extension
 
 
-def run_sniffers_raw(filename_or_file_prefix, sniff_order, is_binary=False):
+class FilePrefix:
+
+    def __init__(self, filename):
+        non_utf8_error = None
+        compressed_format = None
+        contents_header_bytes = None
+        contents_header = None  # First MAX_BYTES of the file.
+        truncated = False
+        # A future direction to optimize sniffing even more for sniffers at the top of the list
+        # is to lazy load contents_header based on what interface is requested. For instance instead
+        # of returning a StringIO directly in string_io() return an object that reads the contents and
+        # populates contents_header while providing a StringIO-like interface until the file is read
+        # but then would fallback to native string_io()
+        try:
+            compressed_format, f = compression_utils.get_fileobj_raw(filename, "rb")
+            try:
+                contents_header_bytes = f.read(SNIFF_PREFIX_BYTES)
+                truncated = len(contents_header_bytes) == SNIFF_PREFIX_BYTES
+                contents_header = contents_header_bytes.decode("utf-8")
+            finally:
+                f.close()
+        except UnicodeDecodeError as e:
+            non_utf8_error = e
+
+        self.truncated = truncated
+        self.filename = filename
+        self.non_utf8_error = non_utf8_error
+        self.binary = non_utf8_error is not None  # obviously wrong
+        self.compressed_format = compressed_format
+        self.contents_header = contents_header
+        self.contents_header_bytes = contents_header_bytes
+        self._file_size = None
+
+    @property
+    def file_size(self):
+        if self._file_size is None:
+            self._file_size = os.path.getsize(self.filename)
+        return self._file_size
+
+    def string_io(self) -> io.StringIO:
+        if self.non_utf8_error is not None:
+            raise self.non_utf8_error
+        rval = io.StringIO(self.contents_header)
+        return rval
+
+    def startswith(self, prefix):
+        return self.string_io().read(len(prefix)) == prefix
+
+    def line_iterator(self):
+        s = self.string_io()
+        s_len = len(s.getvalue())
+        for line in s:
+            if line.endswith("\n") or line.endswith("\r"):
+                yield line
+            elif s.tell() == s_len and not self.truncated:
+                # At the end, return the last line if it wasn't truncated when reading it in.
+                yield line
+
+    # Convenience wrappers around contents_header, shielding contents_header means we can
+    # potentially do a better job lazy loading this data later on.
+    def search(self, pattern):
+        return pattern.search(self.contents_header)
+
+    def search_str(self, query_str):
+        return query_str in self.contents_header
+
+    def magic_header(self, pattern):
+        """
+        Unpack header and get first element
+        """
+        size = struct.calcsize(pattern)
+        header_bytes = self.contents_header_bytes[:size]
+        if len(header_bytes) < size:
+            return None
+        return struct.unpack(pattern, header_bytes)[0]
+
+    def startswith_bytes(self, test_bytes):
+        return self.contents_header_bytes.startswith(test_bytes)
+
+
+def _get_file_prefix(filename_or_file_prefix: Union[str, FilePrefix]) -> FilePrefix:
+    if not isinstance(filename_or_file_prefix, FilePrefix):
+        return FilePrefix(filename_or_file_prefix)
+    return filename_or_file_prefix
+
+
+def run_sniffers_raw(filename_or_file_prefix: Union[str, FilePrefix], sniff_order, is_binary=False):
     """Run through sniffers specified by sniff_order, return None of None match.
     """
-    if isinstance(filename_or_file_prefix, FilePrefix):
-        fname = filename_or_file_prefix.filename
-        file_prefix = filename_or_file_prefix
-    else:
-        fname = filename_or_file_prefix
-        file_prefix = FilePrefix(filename_or_file_prefix)
-
+    file_prefix = _get_file_prefix(filename_or_file_prefix)
+    fname = file_prefix.filename
     file_ext = None
     for datatype in sniff_order:
         """
@@ -555,86 +642,6 @@ def zip_single_fileobj(path):
     for name in z.namelist():
         if not name.endswith('/'):
             return z.open(name)
-
-
-class FilePrefix:
-
-    def __init__(self, filename):
-        non_utf8_error = None
-        compressed_format = None
-        contents_header_bytes = None
-        contents_header = None  # First MAX_BYTES of the file.
-        truncated = False
-        # A future direction to optimize sniffing even more for sniffers at the top of the list
-        # is to lazy load contents_header based on what interface is requested. For instance instead
-        # of returning a StringIO directly in string_io() return an object that reads the contents and
-        # populates contents_header while providing a StringIO-like interface until the file is read
-        # but then would fallback to native string_io()
-        try:
-            compressed_format, f = compression_utils.get_fileobj_raw(filename, "rb")
-            try:
-                contents_header_bytes = f.read(SNIFF_PREFIX_BYTES)
-                truncated = len(contents_header_bytes) == SNIFF_PREFIX_BYTES
-                contents_header = contents_header_bytes.decode("utf-8")
-            finally:
-                f.close()
-        except UnicodeDecodeError as e:
-            non_utf8_error = e
-
-        self.truncated = truncated
-        self.filename = filename
-        self.non_utf8_error = non_utf8_error
-        self.binary = non_utf8_error is not None  # obviously wrong
-        self.compressed_format = compressed_format
-        self.contents_header = contents_header
-        self.contents_header_bytes = contents_header_bytes
-        self._file_size = None
-
-    @property
-    def file_size(self):
-        if self._file_size is None:
-            self._file_size = os.path.getsize(self.filename)
-        return self._file_size
-
-    def string_io(self):
-        if self.non_utf8_error is not None:
-            raise self.non_utf8_error
-        rval = io.StringIO(self.contents_header)
-        return rval
-
-    def startswith(self, prefix):
-        return self.string_io().read(len(prefix)) == prefix
-
-    def line_iterator(self):
-        s = self.string_io()
-        s_len = len(s.getvalue())
-        for line in s:
-            if line.endswith("\n") or line.endswith("\r"):
-                yield line
-            elif s.tell() == s_len and not self.truncated:
-                # At the end, return the last line if it wasn't truncated when reading it in.
-                yield line
-
-    # Convenience wrappers around contents_header, shielding contents_header means we can
-    # potentially do a better job lazy loading this data later on.
-    def search(self, pattern):
-        return pattern.search(self.contents_header)
-
-    def search_str(self, query_str):
-        return query_str in self.contents_header
-
-    def magic_header(self, pattern):
-        """
-        Unpack header and get first element
-        """
-        size = struct.calcsize(pattern)
-        header_bytes = self.contents_header_bytes[:size]
-        if len(header_bytes) < size:
-            return None
-        return struct.unpack(pattern, header_bytes)[0]
-
-    def startswith_bytes(self, test_bytes):
-        return self.contents_header_bytes.startswith(test_bytes)
 
 
 def build_sniff_from_prefix(klass):

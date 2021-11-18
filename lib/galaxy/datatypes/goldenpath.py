@@ -7,6 +7,7 @@ from typing import (
 
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
+    FilePrefix,
     iter_headers,
 )
 from .tabular import Tabular
@@ -23,7 +24,7 @@ class GoldenPath(Tabular):
         AGPFile(dataset.file_name)
         super().set_meta(dataset, **kwd)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Checks for and does cursory validation on data that looks like AGP
 

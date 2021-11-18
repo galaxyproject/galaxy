@@ -12,7 +12,10 @@ import sys
 from galaxy.datatypes import data
 from galaxy.datatypes import sequence
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.datatypes.text import Html
 
 log = logging.getLogger(__name__)
@@ -25,7 +28,7 @@ class Amos(data.Text):
     edam_format = "format_3582"
     file_ext = 'afg'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is an amos assembly file format
         Example::
@@ -66,7 +69,7 @@ class Sequences(sequence.Fasta):
     edam_data = "data_0925"
     file_ext = 'sequences'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a velveth produced  fasta format
         The id line has 3 fields separated by tabs: sequence_name  sequence_index category::
@@ -99,7 +102,7 @@ class Roadmaps(data.Text):
     edam_format = "format_2561"
     file_ext = 'roadmaps'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a velveth produced RoadMap::
           142858  21      1
