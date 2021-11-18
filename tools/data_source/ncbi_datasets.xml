@@ -5,7 +5,6 @@
     </edam_operations>
     <requirements>
         <requirement type="package" version="12.11.0">ncbi-datasets-cli</requirement>
-        <requirement type="package" version="2021.10.8">ca-certificates</requirement>
     </requirements>
     <version_command>datasets version</version_command>
     <command><![CDATA[
