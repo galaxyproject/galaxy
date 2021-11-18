@@ -1,5 +1,6 @@
 """This module contains a linting functions for tool inputs."""
 import re
+from copy import deepcopy
 
 from galaxy.util import string_as_bool
 from ._util import (
@@ -152,7 +153,7 @@ def lint_inputs(tool_xml, lint_ctx):
         tool_node = tool_xml.getroot()
     num_inputs = 0
 
-    # get the set of param names 
+    # get the set of param names
     param_names = set()
     for param in inputs:
         if "name" in param.attrib or "argument" in param.attrib:

@@ -634,7 +634,7 @@ class DynamicOptions:
                 data_file = data_file.strip()
                 full_path = os.path.join(self.tool_param.tool.app.config.tool_data_path, data_file)
                 full_path = os.path.normpath(full_path)
-                if safe_contains(self.tool_param.tool.app.config.tool_data_path, full_path)
+                if safe_contains(self.tool_param.tool.app.config.tool_data_path, full_path):
                     if os.path.exists(full_path):
                         self.index_file = data_file
                         with open(full_path) as fh:
