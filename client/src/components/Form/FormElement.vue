@@ -1,5 +1,5 @@
 <template>
-    <div v-show="!hidden" :id="elementId" :class="['ui-form-element section-row', cls]" :tour_id="id">
+    <div v-show="!isHidden" :id="elementId" :class="['ui-form-element section-row', cls]" :tour_id="id">
         <div v-if="hasError" class="ui-form-error">
             <span class="fa fa-exclamation mr-1" />
             <span class="ui-form-error-text" v-html="error" />
@@ -22,12 +22,7 @@
         </div>
         <div v-if="showField" class="ui-form-field" :data-label="title">
             <FormBoolean v-if="type == 'boolean'" v-model="currentValue" :id="id" />
-            <FormHidden
-                v-else-if="['hidden', 'hidden_data', 'baseurl'].includes(type)"
-                v-model="currentValue"
-                :id="id"
-                :info="attrs['info']"
-            />
+            <FormHidden v-else-if="isHiddenType" v-model="currentValue" :id="id" :info="attrs['info']" />
             <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
             <FormParameter
                 v-else-if="backbonejs"
@@ -189,8 +184,14 @@ export default {
             }
             return help;
         },
-        hidden() {
+        isHidden() {
             return this.attrs["hidden"];
+        },
+        isHiddenType() {
+            return (
+                ["hidden", "hidden_data", "baseurl"].includes(this.type) ||
+                (this.attributes && this.attributes.titleonly)
+            );
         },
         previewText() {
             return _.escape(this.textValue).replace(/\n/g, "<br>");
