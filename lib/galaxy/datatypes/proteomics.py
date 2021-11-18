@@ -100,13 +100,15 @@ class MzTab(Text):
         for line in contents:
             if re.match(r"^\s*$", line):
                 continue
-            line = line.strip("\r\n").split("\t")
-            if line[0] == "MTD":
-                if line[1] == "mzTab-version" and re.match(self._version_re, line[2]) is not None:
+            columns = line.strip("\r\n").split("\t")
+            if columns[0] == "MTD":
+                if columns[1] == "mzTab-version" and re.match(self._version_re, columns[2]) is not None:
                     has_version = True
-                elif line[1] in self._man_mtd and (self._man_mtd[line[1]] is None or line[2].lower() in self._man_mtd[line[1]]):
-                    found_man_mtd.add(line[1])
-            elif not line[0] in self._sections:
+                elif columns[1] in self._man_mtd:
+                    mandatory_field = self._man_mtd[columns[1]]
+                    if mandatory_field is None or columns[2].lower() in mandatory_field:
+                        found_man_mtd.add(columns[1])
+            elif not columns[0] in self._sections:
                 return False
         return has_version and found_man_mtd == set(self._man_mtd.keys())
 
