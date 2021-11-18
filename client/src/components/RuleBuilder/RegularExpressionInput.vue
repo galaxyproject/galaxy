@@ -35,7 +35,7 @@ export default {
         },
         popoverContent() {
             return _l(
-                `Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in <a href="https://pythonforbiologists.com/regular-expressions/">this Python for Biologists tutorial</a>.`
+                `Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in <a href="https://pythonforbiologists.com/tutorial/regex.html">this Python for Biologists tutorial</a>.`
             );
         },
     },
