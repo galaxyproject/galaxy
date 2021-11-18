@@ -48,10 +48,10 @@ from galaxy.webapps.galaxy.api.common import (
 from galaxy.webapps.galaxy.services.datasets import (
     ConvertedDatasetsMap,
     DatasetInheritanceChainEntry,
-    DatasetShowParams,
     DatasetsService,
     DatasetStorageDetails,
     DatasetTextContentDetails,
+    RequestDataType,
 )
 from . import (
     BaseGalaxyAPIController,
@@ -263,6 +263,42 @@ class FastAPIDatasets:
         metadata_file_path, headers = self.service.get_metadata_file(trans, history_content_id, metadata_file)
         return FileResponse(path=cast(str, metadata_file_path), headers=headers)
 
+    @router.get(
+        '/api/datasets/{dataset_id}',
+        summary="Displays information about and/or content of a dataset.",
+    )
+    def show(
+        self,
+        request: Request,
+        trans=DependsOnTrans,
+        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        hda_ldda: DatasetSourceType = Query(
+            default=DatasetSourceType.hda,
+            description=(
+                "The type of information about the dataset to be requested."
+            ),
+        ),
+        data_type: Optional[RequestDataType] = Query(
+            default=None,
+            description=(
+                "The type of information about the dataset to be requested. "
+                "Each of these values may require additional parameters in the request and "
+                "may return different responses."
+            ),
+        ),
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ):
+        """
+        **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
+        and return different kinds of responses, the documentation here will be limited.
+        To get more information please check the source code.
+        """
+        exclude_params = set(["hda_ldda", "data_type"])
+        exclude_params.update(SerializationParams.__fields__.keys())
+        extra_params = get_query_parameters_from_request_excluding(request, exclude_params)
+
+        return self.service.show(trans, dataset_id, hda_ldda, serialization_params, data_type, **extra_params)
+
 
 class DatasetsController(BaseGalaxyAPIController):
     service: DatasetsService = depends(DatasetsService)
@@ -337,12 +373,9 @@ class DatasetsController(BaseGalaxyAPIController):
         """
         serialization_params = parse_serialization_params(**kwd)
         kwd.update({
-            "hda_ldda": hda_ldda,
-            "data_type": data_type,
             "provider": provider,
         })
-        params = DatasetShowParams(**kwd)
-        rval = self.service.show(trans, id, params, serialization_params)
+        rval = self.service.show(trans, id, hda_ldda, serialization_params, data_type, **kwd)
         return rval
 
     @web.expose_api_anonymous

@@ -14,7 +14,6 @@ from typing import (
 
 from pydantic import (
     BaseModel,
-    Extra,
     Field,
 )
 
@@ -148,26 +147,6 @@ class DataMode(str, Enum):
     Auto = "Auto"
 
 
-class DatasetShowParams(BaseModel):
-    hda_ldda: DatasetSourceType = Field(default=DatasetSourceType.hda)
-    data_type: Optional[RequestDataType] = Field(default=None)
-    provider: Optional[str] = Field(default=None)
-    # Converted
-    chrom: Optional[str] = Field(default=None)
-    retry: bool = Field(default=False)
-    # Data
-    low: Optional[int] = Field(default=None)
-    high: Optional[int] = Field(default=None)
-    start_val: int = Field(default=0)
-    max_vals: Optional[int] = Field(default=None)
-    mode: Optional[DataMode] = Field(default=DataMode.Auto)
-    query: Optional[str] = Field(default=None)
-    dbkey: Optional[str] = Field(default=None)
-
-    class Config:
-        extra = Extra.allow
-
-
 class DataResult(BaseModel):
     data: List[Any]
     dataset_type: Optional[str]
@@ -243,38 +222,41 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         id: EncodedDatabaseIdField,
-        params: DatasetShowParams,
+        hda_ldda: DatasetSourceType,
         serialization_params: SerializationParams,
+        data_type: Optional[RequestDataType] = None,
+        **extra_params,
     ):
         """
         Displays information about and/or content of a dataset.
         """
-        # Get dataset.
-        dataset = self.get_hda_or_ldda(trans, hda_ldda=params.hda_ldda, dataset_id=id)
-        params_dict = params.dict(exclude_unset=True)
+        dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
 
         # Use data type to return particular type of data.
-        data_type = params.data_type
         rval: Any
         if data_type == RequestDataType.state:
             rval = self._dataset_state(dataset)
         elif data_type == RequestDataType.converted_datasets_state:
-            rval = self._converted_datasets_state(trans, dataset, params.chrom, params.retry)
+            rval = self._converted_datasets_state(
+                trans, dataset,
+                chrom=extra_params.get("chrom", None),
+                retry=extra_params.get("retry", False),
+            )
         elif data_type == RequestDataType.data:
-            rval = self._data(trans, dataset, **params_dict)
+            rval = self._data(trans, dataset, **extra_params)
         elif data_type == RequestDataType.features:
-            rval = self._search_features(trans, dataset, params.query)
+            rval = self._search_features(trans, dataset, query=extra_params.get("query", None))
         elif data_type == RequestDataType.raw_data:
-            rval = self._raw_data(trans, dataset, **params_dict)
+            rval = self._raw_data(trans, dataset, **extra_params)
         elif data_type == RequestDataType.track_config:
             rval = self.get_new_track_config(trans, dataset)
         elif data_type == RequestDataType.genome_data:
-            rval = self._get_genome_data(trans, dataset, params.dbkey)
+            rval = self._get_genome_data(trans, dataset, dbkey=extra_params.get("dbkey", None))
         elif data_type == RequestDataType.in_use_state:
             rval = self._dataset_in_use_state(dataset)
         else:
             # Default: return dataset as dict.
-            if params.hda_ldda == DatasetSourceType.hda:
+            if hda_ldda == DatasetSourceType.hda:
                 return self.hda_serializer.serialize_to_view(
                     dataset,
                     view=serialization_params.view or 'detailed',
