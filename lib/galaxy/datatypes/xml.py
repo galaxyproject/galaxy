@@ -38,7 +38,7 @@ class GenericXml(data.Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def _has_root_element_in_prefix(self, file_prefix, root):
+    def _has_root_element_in_prefix(self, file_prefix: FilePrefix, root):
         for line in file_prefix.line_iterator():
             if not line.startswith('<?'):
                 break

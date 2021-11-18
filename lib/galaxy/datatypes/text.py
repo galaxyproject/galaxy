@@ -234,7 +234,7 @@ class Biom1(Json):
             is_biom = self._looks_like_biom(file_prefix)
         return is_biom
 
-    def _looks_like_biom(self, file_prefix, load_size=50000):
+    def _looks_like_biom(self, file_prefix: FilePrefix, load_size=50000):
         """
         @param filepath: [str] The path to the evaluated file.
         @param load_size: [int] The size of the file block load in RAM (in
@@ -340,7 +340,7 @@ class ImgtJson(Json):
             is_imgt = self._looks_like_imgt(file_prefix)
         return is_imgt
 
-    def _looks_like_imgt(self, file_prefix, load_size=5000):
+    def _looks_like_imgt(self, file_prefix: FilePrefix, load_size=5000):
         """
         @param filepath: [str] The path to the evaluated file.
         @param load_size: [int] The size of the file block load in RAM (in
@@ -405,7 +405,7 @@ class GeoJson(Json):
             is_geojson = self._looks_like_geojson(file_prefix)
         return is_geojson
 
-    def _looks_like_geojson(self, file_prefix, load_size=5000):
+    def _looks_like_geojson(self, file_prefix: FilePrefix, load_size=5000):
         """
         One of "Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", and "GeometryCollection" needs to be present.
         All of "type", "geometry", and "coordinates" needs to be present.
@@ -879,7 +879,7 @@ class Yaml(Text):
         """Returns the mime type of the datatype"""
         return 'application/yaml'
 
-    def _looks_like_yaml(self, file_prefix):
+    def _looks_like_yaml(self, file_prefix: FilePrefix):
         # Pattern used by SequenceSplitLocations
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
             # If the file is small enough - don't guess just check.

@@ -196,7 +196,7 @@ class GroupAbund(Otu):
             dataset.metadata.groups = sorted(group_names)
             dataset.metadata.skip = skip
 
-    def sniff_prefix(self, file_prefix, vals_are_int=False):
+    def sniff_prefix(self, file_prefix: FilePrefix, vals_are_int=False):
         """
         Determines whether the file is a otu (operational taxonomic unit)
         Shared format

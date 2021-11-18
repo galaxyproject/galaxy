@@ -783,7 +783,7 @@ class BaseFastq(Sequence):
         return True
 
     @classmethod
-    def check_first_block(cls, file_prefix):
+    def check_first_block(cls, file_prefix: FilePrefix):
         # check that first block looks like a fastq block
         block = get_headers(file_prefix, sep='\n', count=4)
         return cls.check_block(block)
