@@ -1305,17 +1305,21 @@ class DirectoryModelExportStore(ModelExportStore):
                             input_dataset_collection_element_mapping[name] = []
 
                         input_dataset_collection_element_mapping[name].append(self.exported_key(assoc.dataset_collection_element))
+                        if include_job_data:
+                            if assoc.dataset_collection_element.is_collection:
+                                self.export_collection(assoc.dataset_collection_element.element_object)
+                            else:
+                                self.add_dataset(assoc.dataset_collection_element.element_object)
 
                 for assoc in job.output_dataset_collection_instances:
                     # Optional data outputs will not have a dataset.
+                    # These are implicit outputs, we don't need to export them
                     if assoc.dataset_collection_instance:
                         name = assoc.name
                         if name not in output_dataset_collection_mapping:
                             output_dataset_collection_mapping[name] = []
 
                         output_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection_instance))
-                        if include_job_data:
-                            self.export_collection(assoc.dataset_collection_instance)
 
                 for assoc in job.output_dataset_collections:
                     if assoc.dataset_collection:
