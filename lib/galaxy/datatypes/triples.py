@@ -128,10 +128,10 @@ class Rdf(xml.GenericXml, Triples):
     edam_format = "format_3261"
     file_ext = "rdf"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         # <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ...
         match = re.compile(r'xmlns:([^=]*)="http://www.w3.org/1999/02/22-rdf-syntax-ns#"').search(file_prefix.contents_header)
-        if not match and (f"{match.group(1)}:RDF") in file_prefix.contents_header:
+        if match and (f"{match.group(1)}:RDF") in file_prefix.contents_header:
             return True
         return False
 
