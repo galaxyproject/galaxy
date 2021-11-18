@@ -50,6 +50,7 @@ from galaxy.webapps.galaxy.services.datasets import (
     DatasetInheritanceChainEntry,
     DatasetShowParams,
     DatasetsService,
+    DatasetStorageDetails,
     DatasetTextContentDetails,
 )
 from . import (
@@ -68,14 +69,14 @@ DatasetIDPathParam: EncodedDatabaseIdField = Path(
     description="The encoded database identifier of the dataset."
 )
 
-DatasetSourceQueryParam: DatasetSourceType = Query(
-    default=DatasetSourceType.hda,
-    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
-)
-
 HistoryIDPathParam: EncodedDatabaseIdField = Path(
     ...,
     description="The encoded database identifier of the History."
+)
+
+DatasetSourceQueryParam: DatasetSourceType = Query(
+    default=DatasetSourceType.hda,
+    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
 )
 
 
@@ -108,13 +109,13 @@ class FastAPIDatasets:
         trans=DependsOnTrans,
         dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
         hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
-    ):
+    ) -> DatasetStorageDetails:
         return self.service.show_storage(trans, dataset_id, hda_ldda)
 
     @router.get(
         '/api/datasets/{dataset_id}/inheritance_chain',
         summary='For internal use, this endpoint may change without warning.',
-        include_in_schema=False,
+        include_in_schema=True,  # Can be changed to False if we don't really want to expose this
     )
     def show_inheritance_chain(
         self,
@@ -126,7 +127,7 @@ class FastAPIDatasets:
 
     @router.get(
         '/api/datasets/{dataset_id}/get_content_as_text',
-        summary='Returns item content as Text.',
+        summary='Returns dataset content as Text.',
     )
     def get_content_as_text(
         self,
@@ -207,7 +208,7 @@ class FastAPIDatasets:
 
     @router.get(
         '/api/histories/{history_id}/contents/{history_content_id}/display',
-        summary='Displays history content (dataset).',
+        summary='Displays dataset (preview) content.',
         tags=["histories"],
         response_class=StreamingResponse,
     )
@@ -238,6 +239,7 @@ class FastAPIDatasets:
             ),
         ),
     ):
+        """Streams the preview contents of a dataset to be displayed in a browser."""
         extra_params = get_query_parameters_from_request_excluding(request, {"preview", "filename", "to_ext", "raw"})
         display_content = self.service.display(trans, history_content_id, history_id, preview, filename, to_ext, raw, **extra_params)
         return StreamingResponse(display_content)
@@ -246,6 +248,7 @@ class FastAPIDatasets:
         '/api/histories/{history_id}/contents/{history_content_id}/metadata_file',
         summary='Returns the metadata file associated with this history item.',
         tags=["histories"],
+        response_class=FileResponse,
     )
     def get_metadata_file(
         self,
@@ -254,7 +257,7 @@ class FastAPIDatasets:
         history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
         metadata_file: Optional[str] = Query(
             default=None,
-            description="TODO",
+            description="The name of the metadata file to retrieve.",
         ),
     ):
         metadata_file_path, headers = self.service.get_metadata_file(trans, history_content_id, metadata_file)

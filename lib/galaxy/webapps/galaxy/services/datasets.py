@@ -421,7 +421,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         trans: ProvidesHistoryContext,
         dataset_id: EncodedDatabaseIdField,
     ) -> DatasetTextContentDetails:
-        """ Returns item content as Text. """
+        """ Returns dataset content as Text. """
         user = self.get_authenticated_user(trans)
         decoded_id = self.decode_id(dataset_id)
         hda = self.hda_manager.get_accessible(decoded_id, user)
