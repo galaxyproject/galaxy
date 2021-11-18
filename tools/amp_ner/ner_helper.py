@@ -45,7 +45,8 @@ def populate_amp_entities(amp_transcript_obj, ner_entities_list, amp_entities_ob
     lenw = len(words)
     lene = len(ner_entities_list)
     last = -1  # index of last matched word in AMP Transcript words list
-    ignored = 0; # count of ignored entities
+    ignored = 0 # count of ignored entities
+    mgm = "NER" # initialize for AWS/Spacy in case ner_entities_list is empty 
     
     # go through entities from NER output
     for entity in ner_entities_list:
@@ -86,9 +87,9 @@ def populate_amp_entities(amp_transcript_obj, ner_entities_list, amp_entities_ob
                         print(f"Warning: output {mgm} Entity {text} does not start with input AMP Transcript words[{i}] = {textamp}, even though both start at offset {beginOffset}.")
                     last = i
                     break
-            # reached the end of words list, match not found
-            else:
-                last = lenw
+                # reached the end of words list, match not found
+                else:
+                    last = lenw
                 
             # if reached end of words list and no matched word is found for current entity, no need to match the rest of entities
             if last == lenw:
