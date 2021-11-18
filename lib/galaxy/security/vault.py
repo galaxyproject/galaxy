@@ -27,10 +27,10 @@ class UnknownVaultTypeException(Exception):
 
 class Vault(ABC):
 
-    def read_secret(self, path: str) -> dict:
+    def read_secret(self, key: str) -> str:
         pass
 
-    def write_secret(self, path: str, value: dict) -> None:
+    def write_secret(self, key: str, value: str) -> None:
         pass
 
 
@@ -43,15 +43,15 @@ class HashicorpVault(Vault):
         self.vault_token = config.get('vault_token')
         self.client = hvac.Client(url=self.vault_address, token=self.vault_token)
 
-    def read_secret(self, path: str) -> dict:
+    def read_secret(self, key: str) -> str:
         try:
-            response = self.client.secrets.kv.read_secret_version(path=path)
-            return response['data']['data']
+            response = self.client.secrets.kv.read_secret_version(path=key)
+            return response['data']['data'].get('value')
         except hvac.exceptions.InvalidPath:
             return None
 
-    def write_secret(self, path: str, value: dict) -> None:
-        self.client.secrets.kv.v2.create_or_update_secret(path=path, secret=value)
+    def write_secret(self, key: str, value: str) -> None:
+        self.client.secrets.kv.v2.create_or_update_secret(path=key, secret={'value': value})
 
 
 class DatabaseVault(Vault):
@@ -64,7 +64,7 @@ class DatabaseVault(Vault):
     def _get_multi_fernet(self) -> MultiFernet:
         return MultiFernet(self.fernet_keys)
 
-    def _update_or_create(self, key, value):
+    def _update_or_create(self, key: str, value: str):
         vault_entry = self.sa_session.query(model.Vault).filter_by(key=key).first()
         if vault_entry:
             vault_entry.value = value
@@ -73,17 +73,17 @@ class DatabaseVault(Vault):
         self.sa_session.merge(vault_entry)
         self.sa_session.flush()
 
-    def read_secret(self, path: str) -> dict:
-        key_obj = self.sa_session.query(model.Vault).filter_by(key=path).first()
+    def read_secret(self, key: str) -> str:
+        key_obj = self.sa_session.query(model.Vault).filter_by(key=key).first()
         if key_obj:
             f = self._get_multi_fernet()
-            return json.loads(f.decrypt(key_obj.value.encode('utf-8')).decode('utf-8'))
+            return f.decrypt(key_obj.value.encode('utf-8')).decode('utf-8')
         return None
 
-    def write_secret(self, path: str, value: dict) -> None:
+    def write_secret(self, key: str, value: str) -> None:
         f = self._get_multi_fernet()
-        token = f.encrypt(json.dumps(value).encode('utf-8'))
-        self._update_or_create(key=path, value=token.decode('utf-8'))
+        token = f.encrypt(value.encode('utf-8'))
+        self._update_or_create(key=key, value=token.decode('utf-8'))
 
 
 class CustosVault(Vault):
@@ -98,24 +98,24 @@ class CustosVault(Vault):
         self.b64_encoded_custos_token = custos_util.get_token(custos_settings=self.custos_settings)
         self.client = ResourceSecretManagementClient(self.custos_settings)
 
-    def read_secret(self, path: str) -> dict:
+    def read_secret(self, key: str) -> str:
         try:
             response = self.client.get_KV_credential(token=self.b64_encoded_custos_token,
                                                      client_id=self.custos_settings.CUSTOS_CLIENT_ID,
-                                                     key=path)
-            return json.loads(json.loads(response)['value'])
+                                                     key=key)
+            return json.loads(response).get('value')
         except Exception:
             return None
 
-    def write_secret(self, path: str, value: dict) -> None:
-        if self.read_secret(path):
+    def write_secret(self, key: str, value: str) -> None:
+        if self.read_secret(key):
             self.client.update_KV_credential(token=self.b64_encoded_custos_token,
                                              client_id=self.custos_settings.CUSTOS_CLIENT_ID,
-                                             key=path, value=json.dumps(value))
+                                             key=key, value=value)
         else:
             self.client.set_KV_credential(token=self.b64_encoded_custos_token,
                                           client_id=self.custos_settings.CUSTOS_CLIENT_ID,
-                                          key=path, value=json.dumps(value))
+                                          key=key, value=value)
 
 
 class UserVaultWrapper(Vault):
@@ -124,11 +124,11 @@ class UserVaultWrapper(Vault):
         self.vault = vault
         self.user = user
 
-    def read_secret(self, path: str) -> dict:
-        return self.vault.read_secret(f"user/{self.user.id}/{path}")
+    def read_secret(self, key: str) -> str:
+        return self.vault.read_secret(f"user/{self.user.id}/{key}")
 
-    def write_secret(self, path: str, value: dict) -> None:
-        return self.vault.write_secret(f"user/{self.user.id}/{path}", value)
+    def write_secret(self, key: str, value: str) -> None:
+        return self.vault.write_secret(f"user/{self.user.id}/{key}", value)
 
 
 class VaultFactory(object):

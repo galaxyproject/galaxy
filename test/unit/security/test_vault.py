@@ -11,13 +11,13 @@ from galaxy.security import vault
 class VaultTestBase(ABC):
 
     def test_read_write_secret(self):
-        self.vault.write_secret("my/test/secret", {"value": "hello world"})
-        self.assertEqual(self.vault.read_secret("my/test/secret"), {"value": "hello world"})
+        self.vault.write_secret("my/test/secret", "hello world")
+        self.assertEqual(self.vault.read_secret("my/test/secret"), "hello world")
 
     def test_overwrite_secret(self):
-        self.vault.write_secret("my/new/secret", {"value": "hello world"})
-        self.vault.write_secret("my/new/secret", {"value": "hello overwritten"})
-        self.assertEqual(self.vault.read_secret("my/new/secret"), {"value": "hello overwritten"})
+        self.vault.write_secret("my/new/secret", "hello world")
+        self.vault.write_secret("my/new/secret", "hello overwritten")
+        self.assertEqual(self.vault.read_secret("my/new/secret"), "hello overwritten")
 
 
 VAULT_CONF_HASHICORP = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_hashicorp.yaml")
@@ -47,19 +47,19 @@ class TestDatabaseVault(VaultTestBase, unittest.TestCase):
         config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
         app = MockApp(config=config)
         self.vault = vault.VaultFactory.from_app_config(app)
-        self.vault.write_secret("my/rotated/secret", {"value": "hello rotated"})
+        self.vault.write_secret("my/rotated/secret", "hello rotated")
 
         # should succeed after rotation
         app.config.vault_config_file = VAULT_CONF_DATABASE_ROTATED
         self.vault = vault.VaultFactory.from_app_config(app)
-        self.assertEqual(self.vault.read_secret("my/rotated/secret"), {"value": "hello rotated"})
+        self.assertEqual(self.vault.read_secret("my/rotated/secret"), "hello rotated")
         super().test_read_write_secret()
 
     def test_wrong_keys(self):
         config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
         app = MockApp(config=config)
         self.vault = vault.VaultFactory.from_app_config(app)
-        self.vault.write_secret("my/incorrect/secret", {"value": "hello incorrect"})
+        self.vault.write_secret("my/incorrect/secret", "hello incorrect")
 
         # should fail because decryption keys are the wrong
         app.config.vault_config_file = VAULT_CONF_DATABASE_INVALID
