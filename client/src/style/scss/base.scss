@@ -160,7 +160,7 @@ body {
     @extend .unified-panel;
     right: 0px;
     width: $panel-width;
-    overflow: unset;
+    overflow: unset !important;
 }
 #right > .unified-panel-footer {
     .drag {
