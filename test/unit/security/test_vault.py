@@ -1,3 +1,4 @@
+from abc import ABC
 import os
 import unittest
 
@@ -5,12 +6,17 @@ from galaxy.app_unittest_utils.galaxy_mock import MockApp, MockAppConfig
 from galaxy.security import vault
 
 
-class VaultTestBase:
+class VaultTestBase(ABC):
 
     def test_read_write_secret(self):
         self.assertIsNone(self.vault.read_secret("my/test/secret"), "Vault secret should initially be empty")
         self.vault.write_secret("my/test/secret", {"value": "hello world"})
         self.assertEqual(self.vault.read_secret("my/test/secret"), {"value": "hello world"})
+
+    def test_overwrite_secret(self):
+        self.vault.write_secret("my/new/secret", {"value": "hello world"})
+        self.vault.write_secret("my/new/secret", {"value": "hello overwritten"})
+        self.assertEqual(self.vault.read_secret("my/new/secret"), {"value": "hello overwritten"})
 
 
 VAULT_CONF_HASHICORP = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_hashicorp.yaml")

@@ -8,5 +8,5 @@ type: database
 # Use the ascii string value as a key
 # For more details, see: https://cryptography.io/en/latest/fernet/#
 encryption_keys:
-  - EDC-1x8Xm9XqsXCdHbjvCTVE9oK83NOjJnWxc7IPYk=
-  - DB-cW4mX3116YN6y2tewUTZrUeGMKEtTXl9uQGk8lnM=
+  - aXOrK0R8eXRztiy8CHo-fNnwKhBBhMSS8cPv4JY4jOQ=
+  - 4KSQIhUU5W8oK36XxVBxXanA2Ge9Yu4ofe4-328E11o=

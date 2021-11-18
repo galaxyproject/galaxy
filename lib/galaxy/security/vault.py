@@ -1,8 +1,10 @@
 from abc import ABC
-from cryptography.fernet import Fernet, MultiFernet
 import json
 import os
 import yaml
+
+from cryptography.fernet import Fernet, MultiFernet
+
 try:
     import hvac
 except ImportError:
@@ -49,10 +51,19 @@ class DatabaseVault(Vault):
     def __init__(self, sa_session, config):
         self.sa_session = sa_session
         self.encryption_keys = config.get('encryption_keys')
+        self.fernet_keys = [Fernet(key.encode('utf-8')) for key in self.encryption_keys]
 
     def _get_multi_fernet(self) -> MultiFernet:
-        fernet_keys = [Fernet(key.encode('utf-8')) for key in self.encryption_keys]
-        return MultiFernet(fernet_keys)
+        return MultiFernet(self.fernet_keys)
+
+    def _update_or_create(self, key, value):
+        vault_entry = self.sa_session.query(model.Vault).filter_by(key=key).first()
+        if vault_entry:
+            vault_entry.value = value
+        else:
+            vault_entry = model.Vault(key=key, value=value)
+        self.sa_session.merge(vault_entry)
+        self.sa_session.flush()
 
     def read_secret(self, path: str) -> dict:
         key_obj = self.sa_session.query(model.Vault).filter_by(key=path).first()
@@ -64,9 +75,7 @@ class DatabaseVault(Vault):
     def write_secret(self, path: str, value: dict) -> None:
         f = self._get_multi_fernet()
         token = f.encrypt(json.dumps(value).encode('utf-8'))
-        vault_entry = model.Vault(key=path, value=token.decode('utf-8'))
-        self.sa_session.add(vault_entry)
-        self.sa_session.flush()
+        self._update_or_create(key=path, value=token.decode('utf-8'))
 
 
 class CustosVault(Vault):
@@ -89,14 +98,14 @@ class UserVaultWrapper(Vault):
 class VaultFactory(object):
 
     @staticmethod
-    def load_vault_config(vault_conf_yml):
+    def load_vault_config(vault_conf_yml: str) -> dict:
         if os.path.exists(vault_conf_yml):
             with open(vault_conf_yml) as f:
                 return yaml.safe_load(f)
         return None
 
     @staticmethod
-    def from_vault_type(app, vault_type, cfg):
+    def from_vault_type(app, vault_type: str, cfg: dict) -> Vault:
         if vault_type == "hashicorp":
             return HashicorpVault(cfg)
         elif vault_type == "database":
@@ -107,7 +116,7 @@ class VaultFactory(object):
             raise UnknownVaultTypeException(f"Unknown vault type: {vault_type}")
 
     @staticmethod
-    def from_app_config(app):
+    def from_app_config(app) -> Vault:
         vault_config = VaultFactory.load_vault_config(app.config.vault_config_file)
         if vault_config:
             return VaultFactory.from_vault_type(app, vault_config.get('type'), vault_config)
