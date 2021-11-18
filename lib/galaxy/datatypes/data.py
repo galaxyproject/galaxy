@@ -1120,7 +1120,7 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
                 line = line[:-1]
                 last_line_break = True
             elif not line_wrap:
-                for i in file_reader(temp, 1):
+                for i in file_reader(temp, 1, close=False):
                     if i == '\n':
                         last_line_break = True
                     if not i or i == '\n':

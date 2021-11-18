@@ -207,7 +207,7 @@ def iter_start_of_line(fh, chunk_size=None):
     yield from iter(partial(fh.readline, chunk_size), "")
 
 
-def file_reader(fp, chunk_size=CHUNK_SIZE):
+def file_reader(fp, chunk_size=CHUNK_SIZE, close=True):
     """This generator yields the open fileobject in chunks (default 64k). Closes the file at the end"""
     try:
         while True:
@@ -216,7 +216,8 @@ def file_reader(fp, chunk_size=CHUNK_SIZE):
                 break
             yield data
     finally:
-        fp.close()
+        if close:
+            fp.close()
 
 
 def chunk_iterable(it: typing.Iterable, size: int = 1000):
