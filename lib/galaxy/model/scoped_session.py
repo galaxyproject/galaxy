@@ -7,9 +7,9 @@ scoped_session objects that produce sessions that may have different binds
 from sqlalchemy.orm import scoped_session
 
 
-class gxy_scoped_session(scoped_session):
+class galaxy_scoped_session(scoped_session):
     """scoped_session used for galaxy model."""
 
 
-class tsi_scoped_session(scoped_session):
+class install_model_scoped_session(scoped_session):
     """scoped_session used for tool_shed_install model."""

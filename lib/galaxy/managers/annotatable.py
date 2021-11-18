@@ -5,7 +5,7 @@ Mixins for Annotatable model managers and serializers.
 import logging
 from typing import Dict
 
-from galaxy.model.scoped_session import gxy_scoped_session
+from galaxy.model.scoped_session import galaxy_scoped_session
 from .base import (
     Deserializer,
     FunctionFilterParsersType,
@@ -32,7 +32,7 @@ class AnnotatableManagerMixin:
     #: class of AnnotationAssociation (e.g. HistoryAnnotationAssociation)
     annotation_assoc: type
 
-    def session(self) -> gxy_scoped_session:
+    def session(self) -> galaxy_scoped_session:
         ...
 
     def annotation(self, item):

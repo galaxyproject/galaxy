@@ -35,8 +35,8 @@ from galaxy.model.base import SharedModelMapping
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.scoped_session import (
-    gxy_scoped_session,
-    tsi_scoped_session,
+    galaxy_scoped_session,
+    install_model_scoped_session,
 )
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import (
@@ -132,8 +132,8 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
         self._register_singleton(IdEncodingHelper, self.security)
         self._register_singleton(SharedModelMapping, self.model)
         self._register_singleton(GalaxyModelMapping, self.model)
-        self._register_singleton(gxy_scoped_session, self.model.context)
-        self._register_singleton(tsi_scoped_session, self.install_model.context)
+        self._register_singleton(galaxy_scoped_session, self.model.context)
+        self._register_singleton(install_model_scoped_session, self.install_model.context)
 
     def configure_fluent_log(self):
         if self.config.fluent_log:

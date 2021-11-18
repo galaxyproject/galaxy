@@ -47,7 +47,7 @@ from galaxy.model import (
     Role,
 )
 from galaxy.model.base import ModelMapping
-from galaxy.model.scoped_session import gxy_scoped_session
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import bunch
@@ -135,10 +135,10 @@ class ProvidesAppContext:
             self.sa_session.flush()
 
     @property
-    def sa_session(self) -> gxy_scoped_session:
+    def sa_session(self) -> galaxy_scoped_session:
         """Provide access to Galaxy's SQLAlchemy session.
 
-        :rtype: galaxy.model.scoped_session.gxy_scoped_session
+        :rtype: galaxy.model.scoped_session.galaxy_scoped_session
         """
         return self.app.model.session
 
