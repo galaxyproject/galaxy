@@ -485,6 +485,48 @@ INPUTS_DUPLICATE_NAMES = """
     </outputs>
 </tool>
 """
+INPUTS_FILTER_INCORRECT = """
+<tool>
+    <inputs>
+        <param name="select_param" type="select">
+            <options from_data_table="bowtie2_indexes">
+                <filter/><!--missing type-->
+                <filter type="typo"/><!--unknown type-->
+                <filter type="static_value" value="1" keep="true"/><!--missing required attrib (column)-->
+                <filter type="regexp" column="0" value=".*" keep="true" multiple="true"/><!-- unneded attrib (multiple) -->
+                <filter type="remove_value" value="x" key="y"/><!-- remove_value special case-->
+                <filter type="data_meta" column="0" ref="input" key="" multiple="true" separator="," /><!--absent ref-->
+                <filter type="regexp" column="0" value="(*" keep="true"/><!-- wrong regexp -->
+            </options>
+        </param>
+    </inputs>
+</tool>
+"""
+
+INPUTS_FILTER_CORRECT = """
+<tool>
+    <inputs>
+        <param name="select_param" type="select">
+            <options from_data_table="bowtie2_indexes">
+                <filter type="static_value" column="0" value="1" keep="true"/>
+                <filter type="regexp" column="0" value=".*" keep="true" />
+                <filter type="data_meta" column="0" ref="input" key="dbkey" multiple="true" separator="," />
+                <filter type="param_value" column="0" ref="input" ref_attribute="name" keep="true"/>
+                <filter type="unique_value" column="0"/>
+                <filter type="multiple_splitter" column="0" separator=","/>
+                <filter type="attribute_value_splitter" column="0" pair_separator="," name_val_separator=" "/>
+                <filter type="add_value" value="x" name="y" index="1"/>
+                <filter type="remove_value" value="1"/>
+                <filter type="remove_value" ref="input"/>
+                <filter type="remove_value" meta_ref="input" key="dbkey"/>
+                <filter type="sort_by" column="0"/>
+                <filter type="data_table" column="0" table_name="fasta_indices" data_table_column="1" keep="true"/>
+            </options>
+        </param>
+        <param argument="input" type="text"/>
+    </inputs>
+</tool>
+"""
 
 # test tool xml for outputs linter
 OUTPUTS_MISSING = """
@@ -1382,6 +1424,31 @@ def test_inputs_duplicate_names(lint_ctx):
         "Tool defines an output with a name equal to the name of an input: 'dup_in_output'" in lint_ctx.error_messages
     )
     assert len(lint_ctx.error_messages) == 2
+
+
+def test_inputs_filter_correct(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_FILTER_CORRECT)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_inputs_filter_correct(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_FILTER_INCORRECT)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert "Select parameter [select_param] 'regexp' filter specifies unnecessary attribute 'multiple'" in lint_ctx.warn_messages
+    assert len(lint_ctx.warn_messages) == 1
+    assert "Select parameter [select_param] contains filter without type." in lint_ctx.error_messages
+    assert "Select parameter [select_param] contains filter with unknown type 'typo'." in lint_ctx.error_messages
+    assert "Select parameter [select_param] 'static_value' filter misses required attribute 'column'" in lint_ctx.error_messages
+    assert "Select parameter [select_param] 'remove_value'' filter needs either the 'value'; 'ref'; or 'meta' and 'key' attribute(s)" in lint_ctx.error_messages
+    assert "Select parameter [select_param] 'data_meta'' filter attribute 'ref' refers to non existing parameter 'input'" in lint_ctx.error_messages
+    assert "Select parameter [select_param] 'regexp'' filter 'value' is not a valid regular expression (nothing to repeat at position 1)'" in lint_ctx.error_messages
+    assert len(lint_ctx.error_messages) == 6
 
 
 def test_inputs_repeats(lint_ctx):

@@ -19,7 +19,33 @@ FILTER_TYPES = [
     "add_value",
     "remove_value",
     "sort_by",
+    "data_table"
 ]
+
+FILTER_REQUIRED_ATTRIBUTES = {
+    "data_meta": ["type", "ref", "key"],  # column needs special treatment
+    "param_value": ["type", "ref", "column"],
+    "static_value": ["type", "column", "value"],
+    "regexp": ["type", "column", "value"],
+    "unique_value": ["type", "column"],
+    "multiple_splitter": ["type", "column"],
+    "attribute_value_splitter": ["type", "column"],
+    "add_value": ["type", "value"],
+    "remove_value": ["type"],  # this is handled separately
+    "sort_by": ["type", "column"],
+    "data_table": ["type", "column", "table_name", "data_table_column"],
+}
+
+FILTER_ALLOWED_ATTRIBUTES = deepcopy(FILTER_REQUIRED_ATTRIBUTES)
+FILTER_ALLOWED_ATTRIBUTES["static_value"].append("keep")
+FILTER_ALLOWED_ATTRIBUTES["regexp"].append("keep")
+FILTER_ALLOWED_ATTRIBUTES["data_meta"].extend(["column", "multiple", "separator"])
+FILTER_ALLOWED_ATTRIBUTES["param_value"].extend(["keep", "ref_attribute"])
+FILTER_ALLOWED_ATTRIBUTES["multiple_splitter"].append("separator")
+FILTER_ALLOWED_ATTRIBUTES["attribute_value_splitter"].extend(["pair_separator", "name_val_separator"])
+FILTER_ALLOWED_ATTRIBUTES["add_value"].extend(["name", "index"])
+FILTER_ALLOWED_ATTRIBUTES["remove_value"].extend(["value", "ref", "meta_ref", "key"])
+FILTER_ALLOWED_ATTRIBUTES["data_table"].append("keep")
 
 ATTRIB_VALIDATOR_COMPATIBILITY = {
     "check": ["metadata"],
@@ -125,6 +151,13 @@ def lint_inputs(tool_xml, lint_ctx):
     if tool_node is None:
         tool_node = tool_xml.getroot()
     num_inputs = 0
+
+    # get the set of param names 
+    param_names = set()
+    for param in inputs:
+        if "name" in param.attrib or "argument" in param.attrib:
+            param_names.add(_parse_name(param.attrib.get("name"), param.attrib.get("argument")))
+
     for param in inputs:
         num_inputs += 1
         param_attrib = param.attrib
@@ -261,7 +294,30 @@ def lint_inputs(tool_xml, lint_ctx):
                         continue
                     if ftype in ["add_value", "data_meta"]:
                         filter_adds_options = True
-                    # TODO more linting of filters
+                    # check for required attributes for filter (remove_value needs a bit more logic here)
+                    for attrib in FILTER_REQUIRED_ATTRIBUTES[ftype]:
+                        if attrib not in f.attrib:
+                            lint_ctx.error(f"Select parameter [{param_name}] '{ftype}' filter misses required attribute '{attrib}'")
+                    if ftype == "remove_value":
+                        if not (("value" in f.attrib and "ref" not in f.attrib and "meta_ref" not in f.attrib and "key" not in f.attrib)
+                                or ("value" not in f.attrib and "ref" in f.attrib and "meta_ref" not in f.attrib and "key" not in f.attrib)
+                                or ("value" not in f.attrib and "ref" not in f.attrib and "meta_ref" in f.attrib and "key" in f.attrib)):
+                            lint_ctx.error(f"Select parameter [{param_name}] '{ftype}'' filter needs either the 'value'; 'ref'; or 'meta' and 'key' attribute(s)")
+                    # check for allowed filter attributes (only warning because others are ignored)
+                    for attrib in f.attrib:
+                        if attrib not in FILTER_ALLOWED_ATTRIBUTES[ftype]:
+                            lint_ctx.warn(f"Select parameter [{param_name}] '{ftype}' filter specifies unnecessary attribute '{attrib}'")
+                    # check for references to other inputs
+                    # TODO: currently ref and metaref seem only to work for top level params,
+                    # once this is fixed the linter needs to be extended, e.g. `f.attrib[ref_attrib].split('|')[-1]`
+                    for ref_attrib in ["meta_ref", "ref"]:
+                        if ref_attrib in f.attrib and f.attrib[ref_attrib] not in param_names:
+                            lint_ctx.error(f"Select parameter [{param_name}] '{ftype}'' filter attribute '{ref_attrib}' refers to non existing parameter '{f.attrib[ref_attrib]}'")
+                    if ftype == "regexp" and "value" in f.attrib:
+                        try:
+                            re.compile(f.attrib["value"])
+                        except re.error as re_error:
+                            lint_ctx.error(f"Select parameter [{param_name}] '{ftype}'' filter 'value' is not a valid regular expression ({re_error})'")
 
                 from_file = options[0].get("from_file", None)
                 from_parameter = options[0].get("from_parameter", None)
