@@ -3597,6 +3597,10 @@ class DatasetInstance(_HasTable):
     metadata = property(get_metadata, set_metadata)
 
     @property
+    def has_metadata_files(self):
+        return len(self.metadata_file_types) > 0
+
+    @property
     def metadata_file_types(self):
         meta_types = []
         for meta_type in self.metadata.spec.keys():

@@ -4,7 +4,7 @@ import shutil
 import time
 from json import dumps
 from tempfile import mkdtemp
-from typing import Any, cast, Dict, Union
+from typing import Any, cast, Dict, Optional, Tuple, Union
 from uuid import uuid4
 
 import pytest
@@ -124,61 +124,13 @@ class BaseWorkflowsApiTestCase(ApiTestCase):
     def _upload_yaml_workflow(self, has_yaml, **kwds) -> str:
         return self.workflow_populator.upload_yaml_workflow(has_yaml, **kwds)
 
-    def _setup_workflow_run(self, workflow=None, inputs_by='step_id', history_id=None, workflow_id=None):
-        if not workflow_id:
-            workflow_id = self.workflow_populator.create_workflow(workflow)
-        if not history_id:
-            history_id = self.dataset_populator.new_history()
-        hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6")
-        workflow_request = dict(
-            history=f"hist_id={history_id}",
+    def _setup_workflow_run(self, workflow: Optional[Dict[str, Any]] = None, inputs_by: str = 'step_id', history_id: Optional[str] = None, workflow_id: Optional[str] = None) -> Tuple[Dict[str, Any], str, str]:
+        return self.workflow_populator.setup_workflow_run(
+            workflow, inputs_by, history_id, workflow_id
         )
-        label_map = {
-            'WorkflowInput1': self._ds_entry(hda1),
-            'WorkflowInput2': self._ds_entry(hda2)
-        }
-        if inputs_by == 'step_id':
-            ds_map = self._build_ds_map(workflow_id, label_map)
-            workflow_request["ds_map"] = ds_map
-        elif inputs_by == "step_index":
-            index_map = {
-                '0': self._ds_entry(hda1),
-                '1': self._ds_entry(hda2)
-            }
-            workflow_request["inputs"] = dumps(index_map)
-            workflow_request["inputs_by"] = 'step_index'
-        elif inputs_by == "name":
-            workflow_request["inputs"] = dumps(label_map)
-            workflow_request["inputs_by"] = 'name'
-        elif inputs_by in ["step_uuid", "uuid_implicitly"]:
-            uuid_map = {
-                workflow["steps"]["0"]["uuid"]: self._ds_entry(hda1),
-                workflow["steps"]["1"]["uuid"]: self._ds_entry(hda2),
-            }
-            workflow_request["inputs"] = dumps(uuid_map)
-            if inputs_by == "step_uuid":
-                workflow_request["inputs_by"] = "step_uuid"
-
-        return workflow_request, history_id, workflow_id
-
-    def _build_ds_map(self, workflow_id, label_map):
-        workflow_inputs = self._workflow_inputs(workflow_id)
-        ds_map = {}
-        for key, value in workflow_inputs.items():
-            label = value["label"]
-            if label in label_map:
-                ds_map[key] = label_map[label]
-        return dumps(ds_map)
 
     def _ds_entry(self, history_content):
         return self.dataset_populator.ds_entry(history_content)
-
-    def _workflow_inputs(self, uploaded_workflow_id):
-        workflow_show_resposne = self._get(f"workflows/{uploaded_workflow_id}")
-        self._assert_status_code_is(workflow_show_resposne, 200)
-        workflow_inputs = workflow_show_resposne.json()["inputs"]
-        return workflow_inputs
 
     def _invocation_details(self, workflow_id, invocation_id, **kwds):
         invocation_details_response = self._get(f"workflows/{workflow_id}/usage/{invocation_id}", data=kwds)
@@ -2507,7 +2459,7 @@ steps:
             label_map = {"input1": self._ds_entry(hdca1)}
             workflow_request = dict(
                 history=f"hist_id={history_id}",
-                ds_map=self._build_ds_map(workflow_id, label_map),
+                ds_map=self.workflow_populator.build_ds_map(workflow_id, label_map),
             )
             r = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
             self._assert_status_code_is(r, 200)
@@ -2981,7 +2933,7 @@ outer_input:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             label_map = {"list1": self._ds_entry(hdca1), "list2": self._ds_entry(hdca2)}
             workflow_request = dict(
-                ds_map=self._build_ds_map(workflow_id, label_map),
+                ds_map=self.workflow_populator.build_ds_map(workflow_id, label_map),
             )
             self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, request=workflow_request, assert_ok=True)
             self.assertEqual("1 2 3\n4 5 6\n7 8 9\n0 a b\n", self.dataset_populator.get_history_dataset_content(history_id))
@@ -4526,7 +4478,7 @@ input_c:
     def _setup_random_x2_workflow(self, name: str):
         workflow = self.workflow_populator.load_random_x2_workflow(name)
         uploaded_workflow_id = self.workflow_populator.create_workflow(workflow)
-        workflow_inputs = self._workflow_inputs(uploaded_workflow_id)
+        workflow_inputs = self.workflow_populator.workflow_inputs(uploaded_workflow_id)
         key = next(iter(workflow_inputs.keys()))
         history_id = self.dataset_populator.new_history()
         ten_lines = "\n".join(str(_) for _ in range(10))

@@ -411,14 +411,14 @@ class HistoriesContentsService(ServiceBase):
             self.decode_id(history_id), trans.user, current_history=trans.history
         )
 
-        type = payload.type
-        if type == HistoryContentType.dataset:
+        history_content_type = payload.type
+        if history_content_type == HistoryContentType.dataset:
             source = payload.source
             if source == HistoryContentSource.library_folder:
                 return self.__create_datasets_from_library_folder(trans, history, payload, serialization_params)
             else:
                 return self.__create_dataset(trans, history, payload, serialization_params)
-        elif type == HistoryContentType.dataset_collection:
+        elif history_content_type == HistoryContentType.dataset_collection:
             return self.__create_dataset_collection(trans, history, payload, serialization_params)
         raise exceptions.UnknownContentsType(f'Unknown contents type: {payload.type}')
 
