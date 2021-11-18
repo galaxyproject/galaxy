@@ -48,7 +48,7 @@ class QualityScoreSOLiD(QualityScore):
             line = line.strip()
             if not line.startswith('#'):  # first non-empty non-comment line
                 if line.startswith('>'):
-                    line = next(fh).strip()
+                    line = fh.readline().strip()
                     if line == '' or line.startswith('>'):
                         return False
                     try:

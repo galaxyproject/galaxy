@@ -354,14 +354,13 @@ class Fasta(Sequence):
             if line:  # first non-empty line
                 if line.startswith('>'):
                     # The next line.strip() must not be '', nor startwith '>'
-                    line = next(fh).strip()
+                    line = fh.readline().strip()
                     if line == '' or line.startswith('>'):
                         return False
 
                     # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file
-                    try:
-                        line = next(fh)
-                    except StopIteration:
+                    line = fh.readline()
+                    if not line:
                         return True
                     if not line.startswith('>') and re.search(r"[\(\)\[\]\.]", line):
                         return False

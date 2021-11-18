@@ -732,16 +732,16 @@ def handle_compressed_file(
     if is_compressed and is_valid and auto_decompress and not keep_compressed:
         assert compressed_type  # Tell type checker is_compressed will only be true if compressed_type is also set.
         with tempfile.NamedTemporaryFile(prefix=tmp_prefix, dir=tmp_dir, delete=False) as uncompressed:
-            compressed_file = DECOMPRESSION_FUNCTIONS[compressed_type](filename)
-            # TODO: it'd be ideal to convert to posix newlines and space-to-tab here as well
-            try:
-                for chunk in file_reader(compressed_file, CHUNK_SIZE):
-                    if not chunk:
-                        break
-                    uncompressed.write(chunk)
-            except OSError as e:
-                os.remove(uncompressed.name)
-                raise OSError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
+            with DECOMPRESSION_FUNCTIONS[compressed_type](filename) as compressed_file:
+                # TODO: it'd be ideal to convert to posix newlines and space-to-tab here as well
+                try:
+                    for chunk in file_reader(compressed_file, CHUNK_SIZE):
+                        if not chunk:
+                            break
+                        uncompressed.write(chunk)
+                except OSError as e:
+                    os.remove(uncompressed.name)
+                    raise OSError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
         uncompressed_path = uncompressed.name
         if in_place:
             # Replace the compressed file with the uncompressed file

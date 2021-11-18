@@ -87,7 +87,7 @@ class Sequences(sequence.Fasta):
                     if not re.match(r'>[^\t]+\t\d+\t\d+$', line):
                         return False
                     # The next line.strip() must not be '', nor startwith '>'
-                    line = next(fh).strip()
+                    line = fh.readline().strip()
                     if line == '' or line.startswith('>'):
                         return False
                     return True
@@ -118,10 +118,8 @@ class Roadmaps(data.Text):
                 if not re.match(r'\d+\t\d+\t\d+$', line):
                     return False
                 # The next line.strip() should be 'ROADMAP 1'
-                line = next(fh).strip()
-                if not re.match(r'ROADMAP \d+$', line):
-                    break
-                return True
+                line = fh.readline().strip()
+                return bool(re.match(r'ROADMAP \d+$', line))
             else:
                 return False  # we found a non-empty line, but it's not a fasta header
         return False

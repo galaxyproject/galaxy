@@ -521,9 +521,8 @@ class Sam(Tabular, _BamOrSam):
         >>> Sam().sniff( fname )
         True
         """
-        fh = file_prefix.string_io()
         count = 0
-        for line in fh:
+        for line in file_prefix.line_iterator():
             line = line.strip()
             if line:
                 if line[0] != '@':
