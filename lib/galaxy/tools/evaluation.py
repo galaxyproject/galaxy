@@ -684,7 +684,7 @@ class RemoteToolEvaluator(ToolEvaluator):
     def __init__(self, app, tool, job, local_working_directory, job_io: JobIO):
         super().__init__(app, tool, job, local_working_directory)
         self.job_io = job_io
-        self._compute_environment = None
+        self._compute_environment: Optional[SharedComputeEnvironment] = None
 
     @property
     def compute_environment(self):

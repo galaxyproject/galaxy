@@ -179,10 +179,10 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
     def _write_job_files(self, stdout="tool stdout", stderr="tool stderr"):
         with open(os.path.join(self.job_working_directory, "tool_script.sh"), 'w') as f:
             f.write("echo hi")
-        with open(os.path.join(self.job_working_directory, "tool_stdout"), "wb") as f:
-            f.write(stdout.encode("utf-8"))
-        with open(os.path.join(self.job_working_directory, "tool_stderr"), "wb") as f:
-            f.write(stderr.encode("utf-8"))
+        with open(os.path.join(self.job_working_directory, "tool_stdout"), "w") as f:
+            f.write(stdout)
+        with open(os.path.join(self.job_working_directory, "tool_stderr"), "w") as f:
+            f.write(stderr)
 
     def metadata_command(self, output_datasets, output_collections=None):
         output_collections = output_collections or {}
