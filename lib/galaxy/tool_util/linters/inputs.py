@@ -74,6 +74,7 @@ def lint_inputs(tool_xml, lint_ctx):
             options = param.findall("./options")
             filters = param.findall("./options/filter")
             select_options = param.findall('./option')
+            select_options_text = [option.text.strip() if option.text is not None else option.attrib.get("value", "").capitalize() for option in select_options]
 
             if dynamic_options is not None:
                 lint_ctx.warn(f"Select parameter [{param_name}] uses deprecated 'dynamic_options' attribute.")
@@ -131,7 +132,9 @@ def lint_inputs(tool_xml, lint_ctx):
             # lint statically defined options
             if any(['value' not in option.attrib for option in select_options]):
                 lint_ctx.error(f"Select parameter [{param_name}] has option without value")
-            if len({option.text.strip() for option in select_options if option.text is not None}) != len(select_options):
+            if any([option.text is None for option in select_options]):
+                lint_ctx.warn(f"Select parameter [{param_name}] has option without text")
+            if len(set(select_options_text)) != len(select_options_text):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same text content")
             if len({option.attrib.get("value") for option in select_options}) != len(select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value")
