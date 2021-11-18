@@ -680,6 +680,12 @@ class InputModule(WorkflowModule):
             formats = None
         if formats:
             rval["format"] = formats
+        if "tag" in inputs:
+            tag = inputs["tag"]
+        else:
+            tag = None
+        rval["tag"] = tag
+        print(rval)
         return rval
 
     def step_state_to_tool_state(self, state):
@@ -725,22 +731,27 @@ class InputDataModule(InputModule):
     def get_runtime_inputs(self, connections=None):
         parameter_def = self._parse_state_into_dict()
         optional = parameter_def["optional"]
+        tag = parameter_def["tag"]
         formats = parameter_def.get("format")
         if not formats:
             formats = self.get_filter_set(connections)
         else:
             formats = ",".join(listify(formats))
-        data_src = dict(name="input", label=self.label, multiple=False, type="data", format=formats, optional=optional)
+        data_src = dict(name="input", label=self.label, multiple=False, type="data", format=formats, tag=tag, optional=optional)
         input_param = DataToolParameter(None, data_src, self.trans)
         return dict(input=input_param)
 
 
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
+        tag = parameter_def["tag"]
         optional = parameter_def["optional"]
+        tag_source = dict(name="tag", label="Tag filter", type="text", value=tag, help="Tags to automatically filter inputs")
+        input_tag = TextToolParameter(None, tag_source)
         inputs = {}
         inputs["optional"] = optional_param(optional)
         inputs["format"] = format_param(self.trans, parameter_def.get("format"))
+        inputs["tag"] = input_tag
         return inputs
 
 
@@ -775,8 +786,9 @@ class InputDataCollectionModule(InputModule):
         parameter_def = self._parse_state_into_dict()
         collection_type = parameter_def["collection_type"]
         optional = parameter_def["optional"]
+        tag = parameter_def["tag"]
         formats = parameter_def.get("format")
-        collection_param_source = dict(name="input", label=self.label, type="data_collection", collection_type=collection_type, optional=optional)
+        collection_param_source = dict(name="input", label=self.label, type="data_collection", collection_type=collection_type, tag=tag, optional=optional)
         if formats:
             collection_param_source["format"] = ",".join(listify(formats))
         input_param = DataCollectionToolParameter(None, collection_param_source, self.trans)
