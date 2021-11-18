@@ -3,15 +3,13 @@ from functools import wraps
 from celery import shared_task
 from kombu import serialization
 from lagom import magic_bind_to_container
-from sqlalchemy.orm.scoping import (
-    scoped_session,
-)
 
 from galaxy import model
 from galaxy.app import MinimalManagerApp
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from . import get_galaxy_app
@@ -53,7 +51,7 @@ def galaxy_task(*args, **celery_task_kwd):
 
 
 @galaxy_task(ignore_result=True)
-def recalculate_user_disk_usage(session: scoped_session, user_id=None):
+def recalculate_user_disk_usage(session: galaxy_scoped_session, user_id=None):
     if user_id:
         user = session.query(model.User).get(user_id)
         if user:
@@ -83,7 +81,7 @@ def set_metadata(hda_manager: HDAManager, ldda_manager: LDDAManager, dataset_id,
 @galaxy_task(ignore_result=True)
 def export_history(
         app: MinimalManagerApp,
-        sa_session: scoped_session,
+        sa_session: galaxy_scoped_session,
         job_manager: JobManager,
         store_directory,
         history_id,
@@ -100,7 +98,7 @@ def export_history(
 
 
 @galaxy_task
-def prune_history_audit_table(sa_session: scoped_session):
+def prune_history_audit_table(sa_session: galaxy_scoped_session):
     """Prune ever growing history_audit table."""
     timer = ExecutionTimer()
     model.HistoryAudit.prune(sa_session)

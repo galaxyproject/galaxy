@@ -13,9 +13,9 @@ from sqlalchemy.orm import (
     defer,
     joinedload,
 )
-from sqlalchemy.orm.session import sessionmaker
 from sqlitedict import SqliteDict
 
+from galaxy.model.scoped_session import install_model_scoped_session
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.util import unicodify
@@ -286,7 +286,7 @@ class ToolShedRepositoryCache:
     repositories: List[ToolShedRepository]
     repos_by_tuple: Dict[Tuple[str, str, str], List[ToolConfRepository]]
 
-    def __init__(self, session: sessionmaker):
+    def __init__(self, session: install_model_scoped_session):
         self.session = session()
         # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
         self.local_repositories = []

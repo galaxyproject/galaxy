@@ -4,10 +4,6 @@ import sys
 import time
 from typing import Any, Callable, List, Tuple
 
-from sqlalchemy.orm.scoping import (
-    scoped_session,
-)
-
 import galaxy.model
 import galaxy.model.security
 import galaxy.queues
@@ -38,6 +34,10 @@ from galaxy.managers.workflows import (
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.mapping import GalaxyModelMapping
+from galaxy.model.scoped_session import (
+    galaxy_scoped_session,
+    install_model_scoped_session,
+)
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
@@ -132,7 +132,8 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
         self._register_singleton(IdEncodingHelper, self.security)
         self._register_singleton(SharedModelMapping, self.model)
         self._register_singleton(GalaxyModelMapping, self.model)
-        self._register_singleton(scoped_session, self.model.context)
+        self._register_singleton(galaxy_scoped_session, self.model.context)
+        self._register_singleton(install_model_scoped_session, self.install_model.context)
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
