@@ -1,0 +1,5 @@
+type: custos
+custos_host: service.staging.usecustos.org
+custos_port: 30170
+custos_client_id: ${custos_client_id}
+custos_client_sec: ${custos_client_secret}

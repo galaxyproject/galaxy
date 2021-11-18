@@ -6,6 +6,14 @@ import yaml
 from cryptography.fernet import Fernet, MultiFernet
 
 try:
+    from custos.clients.resource_secret_management_client import ResourceSecretManagementClient
+    from custos.transport.settings import CustosServerClientSettings
+    import custos.clients.utils.utilities as custos_util
+    custos_sdk_available = True
+except ImportError:
+    custos_sdk_available = False
+
+try:
     import hvac
 except ImportError:
     hvac = None
@@ -79,7 +87,35 @@ class DatabaseVault(Vault):
 
 
 class CustosVault(Vault):
-    pass
+
+    def __init__(self, config):
+        if not custos_sdk_available:
+            raise UnknownVaultTypeException("Custos sdk library 'custos-sdk' is not available. Make sure the custos-sdk is installed.")
+        self.custos_settings = CustosServerClientSettings(custos_host=config.get('custos_host'),
+                                                          custos_port=config.get('custos_port'),
+                                                          custos_client_id=config.get('custos_client_id'),
+                                                          custos_client_sec=config.get('custos_client_sec'))
+        self.b64_encoded_custos_token = custos_util.get_token(custos_settings=self.custos_settings)
+        self.client = ResourceSecretManagementClient(self.custos_settings)
+
+    def read_secret(self, path: str) -> dict:
+        try:
+            response = self.client.get_KV_credential(token=self.b64_encoded_custos_token,
+                                                     client_id=self.custos_settings.CUSTOS_CLIENT_ID,
+                                                     key=path)
+            return json.loads(json.loads(response)['value'])
+        except Exception:
+            return None
+
+    def write_secret(self, path: str, value: dict) -> None:
+        if self.read_secret(path):
+            self.client.update_KV_credential(token=self.b64_encoded_custos_token,
+                                             client_id=self.custos_settings.CUSTOS_CLIENT_ID,
+                                             key=path, value=json.dumps(value))
+        else:
+            self.client.set_KV_credential(token=self.b64_encoded_custos_token,
+                                          client_id=self.custos_settings.CUSTOS_CLIENT_ID,
+                                          key=path, value=json.dumps(value))
 
 
 class UserVaultWrapper(Vault):

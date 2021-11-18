@@ -1,5 +1,7 @@
 from abc import ABC
 import os
+import string
+import tempfile
 import unittest
 
 from galaxy.app_unittest_utils.galaxy_mock import MockApp, MockAppConfig
@@ -9,7 +11,6 @@ from galaxy.security import vault
 class VaultTestBase(ABC):
 
     def test_read_write_secret(self):
-        self.assertIsNone(self.vault.read_secret("my/test/secret"), "Vault secret should initially be empty")
         self.vault.write_secret("my/test/secret", {"value": "hello world"})
         self.assertEqual(self.vault.read_secret("my/test/secret"), {"value": "hello world"})
 
@@ -65,3 +66,22 @@ class TestDatabaseVault(VaultTestBase, unittest.TestCase):
         self.vault = vault.VaultFactory.from_app_config(app)
         with self.assertRaises(Exception):
             self.vault.read_secret("my/incorrect/secret")
+
+
+VAULT_CONF_CUSTOS = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_custos.yaml")
+
+
+class TestCustosVault(VaultTestBase, unittest.TestCase):
+
+    def setUp(self) -> None:
+        with tempfile.NamedTemporaryFile(mode="w", prefix="vault_custos", delete=False) as tempconf, open(VAULT_CONF_CUSTOS) as f:
+            content = string.Template(f.read()).safe_substitute(custos_client_id=os.environ.get('CUSTOS_CLIENT_ID'),
+                                                                custos_client_secret=os.environ.get('CUSTOS_CLIENT_SECRET'))
+            tempconf.write(content)
+            self.vault_temp_conf = tempconf.name
+        config = MockAppConfig(vault_config_file=self.vault_temp_conf)
+        app = MockApp(config=config)
+        self.vault = vault.VaultFactory.from_app_config(app)
+
+    def tearDown(self) -> None:
+        os.remove(self.vault_temp_conf)
