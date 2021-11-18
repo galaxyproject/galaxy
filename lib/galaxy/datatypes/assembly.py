@@ -167,28 +167,25 @@ class Velvet(Html):
         """
         log.debug(f"Velvet log info  {'JJ regenerate_primary_file'}")
         gen_msg = ''
-        try:
-            efp = dataset.extra_files_path
-            log_path = os.path.join(efp, 'Log')
-            with open(log_path) as f:
-                log_content = f.read(1000)
-            log_msg = re.sub(r'/\S*/', '', log_content)
-            log.debug(f"Velveth log info  {log_msg}")
-            paired_end_reads = re.search(r'-(short|long)Paired', log_msg) is not None
-            dataset.metadata.paired_end_reads = paired_end_reads
-            long_reads = re.search(r'-long', log_msg) is not None
-            dataset.metadata.long_reads = long_reads
-            short2_reads = re.search(r'-short(Paired)?2', log_msg) is not None
-            dataset.metadata.short2_reads = short2_reads
-            dataset.info = re.sub(r'.*velveth \S+', 'hash_length', re.sub(r'\n', ' ', log_msg))
-            if paired_end_reads:
-                gen_msg = f"{gen_msg} Paired-End Reads"
-            if long_reads:
-                gen_msg = f"{gen_msg} Long Reads"
-            if len(gen_msg) > 0:
-                gen_msg = f"Uses: {gen_msg}"
-        except Exception:
-            log.debug(f"Velveth could not read Log file in {efp}")
+        efp = dataset.extra_files_path
+        log_path = os.path.join(efp, 'Log')
+        with open(log_path) as f:
+            log_content = f.read(1000)
+        log_msg = re.sub(r'/\S*/', '', log_content)
+        log.debug(f"Velveth log info  {log_msg}")
+        paired_end_reads = re.search(r'-(short|long)Paired', log_msg) is not None
+        dataset.metadata.paired_end_reads = paired_end_reads
+        long_reads = re.search(r'-long', log_msg) is not None
+        dataset.metadata.long_reads = long_reads
+        short2_reads = re.search(r'-short(Paired)?2', log_msg) is not None
+        dataset.metadata.short2_reads = short2_reads
+        dataset.info = re.sub(r'.*velveth \S+', 'hash_length', re.sub(r'\n', ' ', log_msg))
+        if paired_end_reads:
+            gen_msg = f"{gen_msg} Paired-End Reads"
+        if long_reads:
+            gen_msg = f"{gen_msg} Long Reads"
+        if len(gen_msg) > 0:
+            gen_msg = f"Uses: {gen_msg}"
         log.debug(f"Velveth log info  {gen_msg}")
         rval = ['<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>']
         # rval.append('<div>Generated:<p/><code> %s </code></div>' %(re.sub('\n','<br>',log_msg)))
