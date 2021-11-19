@@ -178,6 +178,13 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         command_line, extra_filenames, _ = self.evaluator.build()
         self.assertEqual(command_line, "prog1 /new/path/human")
 
+    def test_version_command(self):
+        self.tool.version_string_cmd = "echo v.1.1"
+        self._setup_test_bwa_job()
+        self._set_compute_environment()
+        command_line, extra_filenames, _ = self.evaluator.build()
+        assert self.tool.version_string_cmd in command_line
+
     def test_template_property_app(self):
         self._assert_template_property_is("$__app__.config.new_file_path", self.app.config.new_file_path)
 
@@ -284,6 +291,9 @@ class ComputeEnvironment(SimpleComputeEnvironment):
 
     def galaxy_url(self):
         return TEST_GALAXY_URL
+
+    def version_path(self):
+        return "tool_version"
 
 
 class MockTool:

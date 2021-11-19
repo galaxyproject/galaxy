@@ -72,17 +72,6 @@ class BaseWrapperTestCase(UsesApp):
         pass
 
 
-class JobWrapperTestCase(BaseWrapperTestCase, TestCase):
-
-    def _wrapper(self):
-        return JobWrapper(self.job, self.queue)  # type: ignore[arg-type]
-
-    def test_prepare_sets_version_command(self):
-        # TODO: move into ToolEvaluator test(s)
-        with self._prepared_wrapper() as wrapper:
-            assert TEST_VERSION_COMMAND in wrapper.write_version_cmd, wrapper.write_version_cmd
-
-
 class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
 
     def setUp(self):
@@ -93,11 +82,6 @@ class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
 
     def _wrapper(self):
         return TaskWrapper(self.task, self.queue)
-
-    def test_prepare_sets_no_version_command(self):
-        # TODO: move into ToolEvaluator test(s)
-        with self._prepared_wrapper() as wrapper:
-            assert wrapper.write_version_cmd is None
 
 
 class MockEvaluator:

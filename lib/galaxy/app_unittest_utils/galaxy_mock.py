@@ -95,6 +95,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.auth_manager = AuthManager(self.config)
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
+        self.file_sources = Bunch(to_dict=lambda: {})
         self.is_job_handler = False
         rebind_container_to_task(self)
 
@@ -128,7 +129,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.enable_celery_tasks = False
         self.tool_data_path = os.path.join(self.root, 'tool-data')
         self.tool_dependency_dir = None
-        self.metadata_strategy = 'legacy'
+        self.metadata_strategy = 'directory'
 
         self.user_activation_on = False
         self.new_user_dataset_access_role_default_private = False
