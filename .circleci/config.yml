@@ -113,7 +113,7 @@ jobs:
       - run: tox -e test_galaxy_packages
   js_lint:
     docker:
-      - image: circleci/node:14-browsers
+      - image: cimg/node:14.15
     <<: *set_workdir
     steps:
       - *restore_yarn_cache
