@@ -45,7 +45,6 @@ from galaxy.schema.schema import (
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
-    expose_api_raw,
     expose_api_raw_anonymous,
 )
 from galaxy.webapps.base.controller import (
@@ -1147,7 +1146,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         delete_payload = DeleteHistoryContentPayload(purge=purge, recursive=recursive)
         return self.service.delete(trans, id, serialization_params, contents_type, delete_payload)
 
-    @expose_api_raw
+    @expose_api
     def archive(self, trans, history_id, filename='', format='zip', dry_run=True, **kwd):
         """
         archive( self, trans, history_id, filename='', format='zip', dry_run=True, **kwd )
@@ -1173,7 +1172,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             return archive.response()
         return archive
 
-    @expose_api_raw_anonymous
+    @expose_api_anonymous
     def contents_near(self, trans, history_id, direction, hid, limit, **kwd):
         """
         Returns the following data:
