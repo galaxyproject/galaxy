@@ -11,6 +11,7 @@ from typing import Optional, Type
 from sqlalchemy import (
     and_,
     select,
+    update,
 )
 from sqlalchemy.orm import class_mapper, object_session, relation
 
@@ -32,27 +33,33 @@ class_mapper(model.HistoryDatasetCollectionAssociation).add_property(
 
 
 # Helper methods.
-def db_next_hid(self, n=1):
+def db_next_hid(history, n=1):
     """
-    db_next_hid( self )
-
-    Override __next_hid to generate from the database in a concurrency safe way.
-    Loads the next history ID from the DB and returns it.
-    It also saves the future next_id into the DB.
+    Generate from the database in a concurrency safe way.
+    Load the next history ID from the database and return it.
+    Save the future next_id in the database.
 
     :rtype:     int
-    :returns:   the next history id
+    :returns:   the next hid
     """
-    session = object_session(self)
-    table = self.table
-    if "postgres" not in session.bind.dialect.name:
-        next_hid = select([table.c.hid_counter], table.c.id == model.cached_id(self)).with_for_update().scalar()
-        table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
-    else:
-        stmt = table.update().where(table.c.id == model.cached_id(self)).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
-        next_hid = session.execute(stmt).scalar() - n
-    session.expire(self, ['hid_counter'])
-    return next_hid
+    session = object_session(history)
+    engine = session.bind
+    table = history.__table__
+    history_id = model.cached_id(history)
+    update_stmt = update(table).where(table.c.id == history_id).values(hid_counter=table.c.hid_counter + n)
+
+    with engine.begin() as conn:
+        if engine.name in ['postgres', 'postgresql']:
+            stmt = update_stmt.returning(table.c.hid_counter)
+            hid = conn.execute(stmt).scalar()
+            hid -= n
+        else:
+            select_stmt = select(table.c.hid_counter).where(table.c.id == history_id).with_for_update()
+            hid = conn.execute(select_stmt).scalar()
+            conn.execute(update_stmt)
+
+    session.expire(history, ['hid_counter'])
+    return hid
 
 
 model.History._next_hid = db_next_hid  # type: ignore
