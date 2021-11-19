@@ -618,6 +618,7 @@ def format_param(trans, formats):
 class InputModuleState(TypedDict, total=False):
     optional: bool
     format: List[str]
+    tag: str
 
 
 class InputModule(WorkflowModule):
