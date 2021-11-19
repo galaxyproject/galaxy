@@ -621,7 +621,7 @@ class MappingTests(BaseModelTestCase):
         self.new_hda(h1, name="1")
         self.new_hda(h2, name="2")
         self.session().flush()
-        # db_next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
+        # _next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
 
         h1_audits = get_audit_table_entries(h1)
         h2_audits = get_audit_table_entries(h2)
