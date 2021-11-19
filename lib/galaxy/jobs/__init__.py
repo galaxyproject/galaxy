@@ -922,6 +922,7 @@ class JobWrapper(HasResourceParameters):
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.
     """
+    is_task = False
 
     def __init__(self, job, queue: 'JobHandlerQueue', use_persisted_destination=False):
         self.job_id = job.id
@@ -944,7 +945,6 @@ class JobWrapper(HasResourceParameters):
             self._setup_working_directory(job=job)
         # the path rewriter needs destination params, so it cannot be set up until after the destination has been
         # resolved
-        self._dataset_path_rewriter = None
         self._job_io = None
         self.tool_provided_job_metadata = None
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
@@ -1006,6 +1006,7 @@ class JobWrapper(HasResourceParameters):
                 check_job_script_integrity=self.app.config.check_job_script_integrity,
                 check_job_script_integrity_count=self.app.config.check_job_script_integrity_count,
                 check_job_script_integrity_sleep=self.app.config.check_job_script_integrity_sleep,
+                is_task=self.is_task,
             )
         return self._job_io
 
@@ -2251,6 +2252,8 @@ class TaskWrapper(JobWrapper):
     """
     # Abstract this to be more useful for running tasks that *don't* necessarily compose a job.
 
+    is_task = True
+
     def __init__(self, task, queue):
         self.task_id = task.id
         super().__init__(task.job, queue)
@@ -2259,12 +2262,6 @@ class TaskWrapper(JobWrapper):
         else:
             self.prepare_input_files_cmds = None
         self.status = task.states.NEW
-
-    @property
-    def dataset_path_rewriter(self):
-        if self._dataset_path_rewriter is None:
-            self._dataset_path_rewriter = TaskPathRewriter(self.working_directory, super().dataset_path_rewriter)
-        return self._dataset_path_rewriter
 
     def can_split(self):
         # Should the job handler split this job up? TaskWrapper should

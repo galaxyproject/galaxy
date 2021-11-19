@@ -33,6 +33,7 @@ class JobIO(Dictifiable):
         'check_job_script_integrity',
         'check_job_script_integrity_count',
         'check_job_script_integrity_sleep',
+        'is_task',
     )
 
     def __init__(
@@ -54,7 +55,8 @@ class JobIO(Dictifiable):
             _file_sources,
             check_job_script_integrity,
             check_job_script_integrity_count,
-            check_job_script_integrity_sleep):
+            check_job_script_integrity_sleep,
+            is_task=False):
         self.sa_session = sa_session
         self.job = job
         self.working_directory = working_directory
@@ -73,6 +75,7 @@ class JobIO(Dictifiable):
         self.check_job_script_integrity = check_job_script_integrity
         self.check_job_script_integrity_count = check_job_script_integrity_count
         self.check_job_script_integrity_sleep = check_job_script_integrity_sleep
+        self.is_task = is_task
         self.output_paths = None
         self.output_hdas_and_paths = None
         self._dataset_path_rewriter = None
@@ -98,7 +101,8 @@ class JobIO(Dictifiable):
             self._dataset_path_rewriter = get_path_rewriter(
                 outputs_to_working_directory=self.outputs_to_working_directory,
                 working_directory=self.working_directory,
-                outputs_directory=self.outputs_directory
+                outputs_directory=self.outputs_directory,
+                is_task=self.is_task,
             )
         return self._dataset_path_rewriter
 

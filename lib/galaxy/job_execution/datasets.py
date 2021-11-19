@@ -122,8 +122,8 @@ class TaskPathRewriter:
         return os.path.join(self.working_directory, os.path.basename(job_file_name))
 
 
-def get_path_rewriter(outputs_to_working_directory, working_directory=None, outputs_directory=None):
-    if outputs_to_working_directory:
-        return OutputsToWorkingDirectoryPathRewriter(working_directory, outputs_directory)
-    else:
-        return NullDatasetPathRewriter()
+def get_path_rewriter(outputs_to_working_directory, working_directory, outputs_directory, is_task):
+    job_dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(working_directory, outputs_directory) if outputs_to_working_directory else NullDatasetPathRewriter()
+    if is_task:
+        return TaskPathRewriter(working_directory, job_dataset_path_rewriter=job_dataset_path_rewriter)
+    return job_dataset_path_rewriter
