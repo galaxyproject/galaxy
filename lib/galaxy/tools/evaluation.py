@@ -8,11 +8,8 @@ from typing import Any, Dict, List
 
 from galaxy import model
 from galaxy.files import ProvidesUserFileSourcesUserContext
-from galaxy.job_execution.setup import (
-    ensure_configs_directory,
-    JobIO,
-)
-from galaxy.jobs import SharedComputeEnvironment
+from galaxy.job_execution.setup import ensure_configs_directory
+from galaxy.jobs import SharedComputeEnvironment, SimpleComputeEnvironment
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.tools import global_tool_errors
@@ -106,7 +103,7 @@ class ToolEvaluator:
         self.tool = tool
         self.local_working_directory = local_working_directory
 
-    def set_compute_environment(self, compute_environment, get_special=None):
+    def set_compute_environment(self, compute_environment: Union[SimpleComputeEnvironment, SharedComputeEnvironment], get_special: Optional[Callable] = None):
         """
         Setup the compute environment and established the outline of the param_dict
         for evaluating command and config cheetah templates.
@@ -680,45 +677,6 @@ class RemoteToolEvaluator(ToolEvaluator):
     """
     Evaluates tool inputs without access to database
     """
-
-    def __init__(self, app, tool, job, local_working_directory, job_io: JobIO):
-        super().__init__(app, tool, job, local_working_directory)
-        self.job_io = job_io
-        self._compute_environment: Optional[SharedComputeEnvironment] = None
-
-    @property
-    def compute_environment(self):
-        if self._compute_environment is None:
-            self._compute_environment = SharedComputeEnvironment(job_io=self.job_io, job=self.job)
-        return self._compute_environment
-
-    def setup(self):
-        job = self.job
-        incoming = {p.name: p.value for p in job.parameters}
-        incoming = self.tool.params_from_strings(incoming, self.app)
-
-        # Full parameter validation
-        request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
-        self.request_context = request_context
-
-        def validate_inputs(input, value, context, **kwargs):
-            value = input.from_json(value, request_context, context)
-            input.validate(value, request_context)
-        visit_input_values(self.tool.inputs, incoming, validate_inputs)
-
-        # Restore input / output data lists
-        inp_data, out_data, out_collections = job.io_dicts()
-
-        # These can be passed on the command line if wanted as $__user_*__
-        incoming.update(model.User.user_template_environment(self._user))
-
-        # Build params, done before hook so hook can use
-        self.param_dict = self.build_param_dict(
-            incoming,
-            inp_data,
-            out_data,
-            output_collections=out_collections,
-        )
 
     def __populate_non_job_params(self, param_dict):
         pass
