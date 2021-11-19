@@ -33,7 +33,6 @@ from galaxy.exceptions import (
     ObjectInvalid,
     ObjectNotFound,
 )
-from galaxy.job_execution.datasets import TaskPathRewriter
 from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,

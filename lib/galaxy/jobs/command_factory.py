@@ -176,7 +176,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
 def __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=False):
     if getattr(job_wrapper, 'remote_command_line', False):
         sep = "" if for_pulsar else "&&"
-        command = 'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/metadata/remote_tool_eval.py'
+        command = 'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
         if for_pulsar:
             # TODO: that's not how to do this, pulsar doesn't execute an externalized script by default.
             # This also breaks rewriting paths etc, so it doesn't really work if there are no shared paths
