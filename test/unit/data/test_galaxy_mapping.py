@@ -621,7 +621,7 @@ class MappingTests(BaseModelTestCase):
         self.new_hda(h1, name="1")
         self.new_hda(h2, name="2")
         self.session().flush()
-        # db_next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
+        # _next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
 
         h1_audits = get_audit_table_entries(h1)
         h2_audits = get_audit_table_entries(h2)
@@ -919,6 +919,31 @@ class MappingTests(BaseModelTestCase):
         self._make_private(security_agent, u_from, d1)
         assert security_agent.can_manage_dataset(u_from.all_roles(), d1.dataset)
         assert not security_agent.can_manage_dataset(u_other.all_roles(), d1.dataset)
+
+    def test_history_hid_counter_is_expired_after_next_hid_call(self):
+        u = model.User(email="hid_abuser@example.com", password="password")
+        h = model.History(name="History for hid testing", user=u)
+        self.persist(u, h)
+        state = inspect(h)
+        assert h.hid_counter == 1
+        assert 'hid_counter' not in state.unloaded
+        assert 'id' not in state.unloaded
+
+        h._next_hid()
+
+        assert 'hid_counter' in state.unloaded  # this attribute has been expired
+        assert 'id' not in state.unloaded  # but other attributes have NOT been expired
+        assert h.hid_counter == 2  # check this last: this causes thie hid_counter to be reloaded
+
+    def test_next_hid(self):
+        u = model.User(email="hid_abuser@example.com", password="password")
+        h = model.History(name="History for hid testing", user=u)
+        self.persist(u, h)
+        assert h.hid_counter == 1
+        h._next_hid()
+        assert h.hid_counter == 2
+        h._next_hid(n=3)
+        assert h.hid_counter == 5
 
     def _three_users(self, suffix):
         email_from = f"user_{suffix}e1@example.com"

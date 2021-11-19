@@ -8,10 +8,7 @@ import logging
 from threading import local
 from typing import Optional, Type
 
-from sqlalchemy import (
-    and_,
-    select,
-)
+from sqlalchemy import and_
 from sqlalchemy.orm import class_mapper, object_session, relation
 
 from galaxy import model
@@ -29,32 +26,6 @@ metadata = mapper_registry.metadata
 
 class_mapper(model.HistoryDatasetCollectionAssociation).add_property(
     "creating_job_associations", relation(model.JobToOutputDatasetCollectionAssociation, viewonly=True))
-
-
-# Helper methods.
-def db_next_hid(self, n=1):
-    """
-    db_next_hid( self )
-
-    Override __next_hid to generate from the database in a concurrency safe way.
-    Loads the next history ID from the DB and returns it.
-    It also saves the future next_id into the DB.
-
-    :rtype:     int
-    :returns:   the next history id
-    """
-    session = object_session(self)
-    table = self.table
-    if "postgres" not in session.bind.dialect.name:
-        next_hid = select([table.c.hid_counter], table.c.id == model.cached_id(self)).with_for_update().scalar()
-        table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
-    else:
-        stmt = table.update().where(table.c.id == model.cached_id(self)).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
-        next_hid = session.execute(stmt).scalar() - n
-    return next_hid
-
-
-model.History._next_hid = db_next_hid  # type: ignore
 
 
 def _workflow_invocation_update(self):

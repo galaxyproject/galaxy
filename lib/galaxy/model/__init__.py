@@ -68,6 +68,7 @@ from sqlalchemy import (
     type_coerce,
     Unicode,
     UniqueConstraint,
+    update,
     VARCHAR,
 )
 from sqlalchemy.exc import OperationalError
@@ -2440,15 +2441,33 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         self._pending_additions = []
 
     def _next_hid(self, n=1):
-        # this is overriden in mapping.py db_next_hid() method
-        if len(self.datasets) == 0:
-            return n
-        else:
-            last_hid = 0
-            for dataset in self.datasets:
-                if dataset.hid > last_hid:
-                    last_hid = dataset.hid
-            return last_hid + n
+        """
+        Generate next_hid from the database in a concurrency safe way:
+        1. Retrieve hid_counter from database
+        2. Increment hid_counter by n and store in database
+        3. Return retrieved hid_counter.
+
+        Handle with SQLAlchemy Core to keep this independent from current session state, except:
+        expire hid_counter attribute, since its value in the session is no longer valid.
+        """
+        session = object_session(self)
+        engine = session.bind
+        table = self.__table__
+        history_id = cached_id(self)
+        update_stmt = update(table).where(table.c.id == history_id).values(hid_counter=table.c.hid_counter + n)
+
+        with engine.begin() as conn:
+            if engine.name in ['postgres', 'postgresql']:
+                stmt = update_stmt.returning(table.c.hid_counter)
+                updated_hid = conn.execute(stmt).scalar()
+                hid = updated_hid - n
+            else:
+                select_stmt = select(table.c.hid_counter).where(table.c.id == history_id).with_for_update()
+                hid = conn.execute(select_stmt).scalar()
+                conn.execute(update_stmt)
+
+        session.expire(self, ['hid_counter'])
+        return hid
 
     def add_galaxy_session(self, galaxy_session, association=None):
         if association is None:
