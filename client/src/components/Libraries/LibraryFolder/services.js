@@ -1,6 +1,7 @@
 import axios from "axios";
 import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
+import { auto } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
 
 export class Services {
     constructor(options = {}) {
@@ -110,15 +111,24 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    async detectDatatype(datasetID, data, onSucess, onError) {
+    async updateDataset(datasetID, data, onSucess, onError) {
         const url = `${this.root}api/libraries/datasets/${datasetID}`;
         try {
             await axios
                 .patch(url, data)
-                .then(() => onSucess())
+                .then((response) => onSucess(response.data))
                 .catch((error) => {
                     onError(error.err_msg);
                 });
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+    async getDatatypes() {
+        const url = `${this.root}api/datatypes?extension_only=True`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
         } catch (e) {
             rethrowSimple(e);
         }
