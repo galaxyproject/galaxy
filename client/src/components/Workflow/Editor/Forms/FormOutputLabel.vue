@@ -1,5 +1,6 @@
 <template>
     <FormElement
+        :id="id"
         :value="label"
         :error="error"
         :title="title"
@@ -36,6 +37,9 @@ export default {
         };
     },
     computed: {
+        id() {
+            return `__label__${this.name}`;
+        },
         title() {
             if (this.showDetails) {
                 return `Label for: '${this.name}'`;
