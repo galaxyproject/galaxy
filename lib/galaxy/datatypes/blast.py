@@ -34,13 +34,16 @@ import logging
 import os
 from time import sleep
 
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.util import smart_str
 from .data import (
     Data,
     get_file_peek,
     Text
 )
-from .sniff import build_sniff_from_prefix
 from .xml import GenericXml
 
 log = logging.getLogger(__name__)
@@ -62,7 +65,7 @@ class BlastXml(GenericXml):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """Determines whether the file is blastxml
 
         >>> from galaxy.datatypes.sniff import get_test_fname

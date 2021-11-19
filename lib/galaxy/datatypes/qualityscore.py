@@ -3,9 +3,12 @@ Qualityscore class
 """
 import logging
 
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from . import (
     data,
-    sniff
 )
 
 log = logging.getLogger(__name__)
@@ -20,7 +23,7 @@ class QualityScore(data.Text):
     file_ext = "qual"
 
 
-@sniff.build_sniff_from_prefix
+@build_sniff_from_prefix
 class QualityScoreSOLiD(QualityScore):
     """
     until we know more about quality score formats
@@ -28,7 +31,7 @@ class QualityScoreSOLiD(QualityScore):
     edam_format = "format_3610"
     file_ext = "qualsolid"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
@@ -41,32 +44,26 @@ class QualityScoreSOLiD(QualityScore):
         fh = file_prefix.string_io()
         readlen = None
         goodblock = 0
-        while True:
-            line = fh.readline()
-            if not line:
-                if goodblock > 0:
-                    return True
-                else:
-                    break  # EOF
+        for line in fh:
             line = line.strip()
-            if line and not line.startswith('#'):  # first non-empty non-comment line
+            if not line.startswith('#'):  # first non-empty non-comment line
                 if line.startswith('>'):
                     line = fh.readline().strip()
                     if line == '' or line.startswith('>'):
-                        break
+                        return False
                     try:
                         [int(x) for x in line.split()]
-                        if not(readlen):
+                        if not readlen:
                             readlen = len(line.split())
                         assert len(line.split()) == readlen  # SOLiD reads should be of the same length
                     except Exception:
-                        break
+                        return False
                     goodblock += 1
                     if goodblock > 10:
                         return True
                 else:
-                    break  # we found a non-empty line, but it's not a header
-        return False
+                    return False
+        return goodblock > 0
 
     def set_meta(self, dataset, **kwd):
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
@@ -75,7 +72,7 @@ class QualityScoreSOLiD(QualityScore):
         return QualityScore.set_meta(self, dataset, **kwd)
 
 
-@sniff.build_sniff_from_prefix
+@build_sniff_from_prefix
 class QualityScore454(QualityScore):
     """
     until we know more about quality score formats
@@ -83,7 +80,7 @@ class QualityScore454(QualityScore):
     edam_format = "format_3611"
     file_ext = "qual454"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
@@ -94,10 +91,7 @@ class QualityScore454(QualityScore):
         True
         """
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
-            if not line:
-                break  # EOF
+        for line in fh:
             line = line.strip()
             if line and not line.startswith('#'):  # first non-empty non-comment line
                 if line.startswith('>'):
@@ -107,7 +101,7 @@ class QualityScore454(QualityScore):
                     try:
                         [int(x) for x in line.split()]
                     except Exception:
-                        break
+                        return False
                     return True
                 else:
                     break  # we found a non-empty line, but it's not a header

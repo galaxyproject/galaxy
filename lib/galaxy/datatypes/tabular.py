@@ -25,6 +25,7 @@ from galaxy.datatypes.metadata import (
 )
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
+    FilePrefix,
     get_headers,
     iter_headers,
     validate_tabular,
@@ -366,10 +367,7 @@ class Tabular(TabularData):
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
             with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
                 i = 0
-                while True:
-                    line = dataset_fh.readline()
-                    if not line:
-                        break
+                for line in dataset_fh:
                     line = line.rstrip('\r\n')
                     if i == 0:
                         column_names = self.get_column_names(first_line=line)
@@ -494,7 +492,7 @@ class Sam(Tabular, _BamOrSam):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in SAM format
 
@@ -523,13 +521,9 @@ class Sam(Tabular, _BamOrSam):
         >>> Sam().sniff( fname )
         True
         """
-        fh = file_prefix.string_io()
         count = 0
-        while True:
-            line = fh.readline()
+        for line in file_prefix.line_iterator():
             line = line.strip()
-            if not line:
-                break  # EOF
             if line:
                 if line[0] != '@':
                     line_pieces = line.split('\t')
@@ -698,7 +692,7 @@ class Pileup(Tabular):
         """Return options for removing errors along with a description"""
         return [("lines", "Remove erroneous lines")]
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Checks for 'pileup-ness'
 
@@ -831,7 +825,7 @@ class BaseVcf(Tabular):
 class Vcf(BaseVcf):
     file_ext = 'vcf'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         return self._sniff(file_prefix)
 
 
@@ -915,7 +909,7 @@ class Eland(Tabular):
             out = f"Can't create peek {exc}"
         return out
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in ELAND export format
 
@@ -928,13 +922,11 @@ class Eland(Tabular):
             - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
-        fh = file_prefix.string_io()
         count = 0
-        while True:
-            line = fh.readline()
+        for line in file_prefix.line_iterator():
             line = line.strip()
             if not line:
-                break  # EOF
+                break  # Had a EOF comment previously, but this does not indicate EOF. I assume empty lines are not valid and this was intentional.
             if line:
                 line_pieces = line.split('\t')
                 if len(line_pieces) != 22:
@@ -990,7 +982,7 @@ class Eland(Tabular):
 class ElandMulti(Tabular):
     file_ext = 'elandmulti'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         return False
 
 
@@ -1187,7 +1179,7 @@ class ConnectivityTable(Tabular):
 
         dataset.metadata.data_lines = data_lines
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         The ConnectivityTable (CT) is a file format used for describing
         RNA 2D structures by tools including MFOLD, UNAFOLD and
@@ -1310,7 +1302,7 @@ class MatrixMarket(TabularData):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         return file_prefix.startswith('%%MatrixMarket matrix coordinate')
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
@@ -1364,7 +1356,7 @@ class CMAP(TabularData):
     """
     file_ext = "cmap"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         handle = file_prefix.string_io()
         for line in handle:
             if not line.startswith('#'):

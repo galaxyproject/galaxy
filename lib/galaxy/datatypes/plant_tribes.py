@@ -3,7 +3,11 @@ import re
 
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix, get_headers
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+    get_headers,
+)
 from galaxy.datatypes.tabular import Tabular
 from galaxy.util import nice_size
 
@@ -28,7 +32,7 @@ class Smat(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         The use of ESTScan implies the creation of scores matrices which
         reflect the codons preferences in the studied organisms.  The

@@ -28,7 +28,6 @@ import xml.dom.minidom
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from functools import partial
 from hashlib import md5
 from os.path import relpath
 from urllib.parse import (
@@ -201,20 +200,24 @@ def synchronized(func):
 
 
 def iter_start_of_line(fh, chunk_size=None):
-    """
-    Iterate over fh and call readline(chunk_size)
-    """
-    yield from iter(partial(fh.readline, chunk_size), "")
+    """Iterate over fh and call readline(chunk_size)."""
+    while True:
+        data = fh.readline(chunk_size)
+        if not data:
+            break
+        if not data.endswith("\n"):
+            # Discard the rest of the line
+            fh.readline()
+        yield data
 
 
 def file_reader(fp, chunk_size=CHUNK_SIZE):
-    """This generator yields the open fileobject in chunks (default 64k). Closes the file at the end"""
-    while 1:
+    """This generator yields the open file object in chunks (default 64k)."""
+    while True:
         data = fp.read(chunk_size)
         if not data:
             break
         yield data
-    fp.close()
 
 
 def chunk_iterable(it: typing.Iterable, size: int = 1000):
@@ -1696,26 +1699,28 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
     except Exception:
         target_encoding = DEFAULT_ENCODING  # utf-8
     use_source_encoding = source_encoding is not None
-    while True:
-        chunk = stream.read(CHUNK_SIZE)
-        if not chunk:
-            break
-        if use_source_encoding:
-            # If a source encoding is given we use it to convert to the target encoding
-            try:
-                if not isinstance(chunk, str):
-                    chunk = chunk.decode(source_encoding, source_error)
-                os.write(fd, chunk.encode(target_encoding, target_error))
-            except UnicodeDecodeError:
-                use_source_encoding = False
+    try:
+        while True:
+            chunk = stream.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            if use_source_encoding:
+                # If a source encoding is given we use it to convert to the target encoding
+                try:
+                    if not isinstance(chunk, str):
+                        chunk = chunk.decode(source_encoding, source_error)
+                    os.write(fd, chunk.encode(target_encoding, target_error))
+                except UnicodeDecodeError:
+                    use_source_encoding = False
+                    os.write(fd, chunk)
+            else:
+                # Compressed files must be encoded after they are uncompressed in the upload utility,
+                # while binary files should not be encoded at all.
+                if isinstance(chunk, str):
+                    chunk = chunk.encode(target_encoding, target_error)
                 os.write(fd, chunk)
-        else:
-            # Compressed files must be encoded after they are uncompressed in the upload utility,
-            # while binary files should not be encoded at all.
-            if isinstance(chunk, str):
-                chunk = chunk.encode(target_encoding, target_error)
-            os.write(fd, chunk)
-    os.close(fd)
+    finally:
+        os.close(fd)
     return filename
 
 

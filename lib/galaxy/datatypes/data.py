@@ -13,11 +13,16 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.util import (
     compression_utils,
+    file_reader,
     FILENAME_VALID_CHARS,
     inflector,
+    iter_start_of_line,
     smart_str,
     unicodify
 )
@@ -867,10 +872,7 @@ class Text(Data):
             # causing set_meta process to fail otherwise OK jobs. A better solution than
             # a silent try/except is desirable.
             try:
-                while True:
-                    line = in_file.readline(CHUNK_SIZE)
-                    if not line:
-                        break
+                for line in iter_start_of_line(in_file, CHUNK_SIZE):
                     line = line.strip()
                     if line and not line.startswith('#'):
                         data_lines += 1
@@ -1050,7 +1052,7 @@ class Nexus(Text):
     edam_format = "format_1912"
     file_ext = "nex"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """All Nexus Files Simply puts a '#NEXUS' in its first line"""
         return file_prefix.string_io().read(6).upper() == "#NEXUS"
 
@@ -1116,8 +1118,7 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
                 line = line[:-1]
                 last_line_break = True
             elif not line_wrap:
-                while True:
-                    i = temp.read(1)
+                for i in file_reader(temp, 1):
                     if i == '\n':
                         last_line_break = True
                     if not i or i == '\n':
