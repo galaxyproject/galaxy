@@ -1864,11 +1864,13 @@ class DataToolParameter(BaseDataToolParameter):
         if not input_source.get_bool('no_validation', False):
             self.validators.append(validation.MetadataValidator())
         self._parse_formats(trans, input_source)
+        tag = input_source.get("tag")
         self.multiple = input_source.get_bool('multiple', False)
         if not self.multiple and (self.min is not None):
             raise ParameterValueError("cannot specify 'min' property on single data parameter. Set multiple=\"true\" to enable this option", self.name)
         if not self.multiple and (self.max is not None):
             raise ParameterValueError("cannot specify 'max' property on single data parameter. Set multiple=\"true\" to enable this option", self.name)
+        self.tag = tag
         self.is_dynamic = True
         self._parse_options(input_source)
         # Load conversions required for the dataset input
@@ -2047,6 +2049,7 @@ class DataToolParameter(BaseDataToolParameter):
             d['min'] = self.min
             d['max'] = self.max
         d['options'] = {'hda': [], 'hdca': []}
+        d['tag'] = self.tag
 
         # return dictionary without options if context is unavailable
         history = trans.history
@@ -2134,9 +2137,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         super().__init__(tool, input_source, trans)
         self._parse_formats(trans, input_source)
         collection_types = input_source.get("collection_type", None)
+        tag = input_source.get("tag")
         if collection_types:
             collection_types = [t.strip() for t in collection_types.split(",")]
         self._collection_types = collection_types
+        self.tag = tag
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
         self.is_dynamic = True
         self._parse_options(input_source)  # TODO: Review and test.
@@ -2228,6 +2233,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
         d['options'] = {'hda': [], 'hdca': [], 'dce': []}
+        d['tag'] = self.tag
 
         # return dictionary without options if context is unavailable
         history = trans.history

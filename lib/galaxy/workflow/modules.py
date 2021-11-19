@@ -685,7 +685,6 @@ class InputModule(WorkflowModule):
         else:
             tag = None
         rval["tag"] = tag
-        print(rval)
         return rval
 
     def step_state_to_tool_state(self, state):
