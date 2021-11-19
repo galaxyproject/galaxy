@@ -116,14 +116,14 @@
                             <li>
                                 {{ l("Click ") }}
                                 <i data-target=".reset">
-                                    <font-awesome-icon icon="redo"/>
+                                    <font-awesome-icon icon="redo" />
                                 </i>
                                 {{ l("to begin again as if you had just opened the interface.") }}
                             </li>
                             <li>
                                 {{ l("Click ") }}
                                 <i data-target=".sort-items">
-                                    <font-awesome-icon icon="sort-alpha-down"/>
+                                    <font-awesome-icon icon="sort-alpha-down" />
                                 </i>
                                 {{ l("to sort datasets alphabetically.") }}
                             </li>
