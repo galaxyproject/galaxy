@@ -742,15 +742,14 @@ class InputDataModule(InputModule):
 
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
-        if parameter_def["tag"]:
-            tag = parameter_def["tag"]
-            tag_source = dict(name="tag", label="Tag filter", type="text", value=tag, help="Tags to automatically filter inputs")
-            input_tag = TextToolParameter(None, tag_source)
-            inputs["tag"] = input_tag
+        tag = parameter_def["tag"]
+        tag_source = dict(name="tag", label="Tag filter", type="text", value=tag, help="Tags to automatically filter inputs")
+        input_tag = TextToolParameter(None, tag_source)
         optional = parameter_def["optional"]
         inputs = {}
         inputs["optional"] = optional_param(optional)
         inputs["format"] = format_param(self.trans, parameter_def.get("format"))
+        inputs["tag"] = input_tag
         return inputs
 
 
@@ -819,11 +818,6 @@ class InputDataCollectionModule(InputModule):
         else:
             collection_type = self.default_collection_type
         state_as_dict["collection_type"] = collection_type
-        if "tag" in inputs:
-            tag = inputs["tag"]
-        else:
-            tag = None
-        state_as_dict["tag"] = tag
         return state_as_dict
 
 
