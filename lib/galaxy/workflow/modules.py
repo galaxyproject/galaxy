@@ -740,7 +740,6 @@ class InputDataModule(InputModule):
         input_param = DataToolParameter(None, data_src, self.trans)
         return dict(input=input_param)
 
-
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
         tag = parameter_def["tag"]

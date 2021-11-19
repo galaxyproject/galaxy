@@ -125,9 +125,6 @@ const Configurations = {
 /** View for hda and dce content selector ui elements */
 const View = Backbone.View.extend({
     initialize: function (options) {
-        console.log('Workflow info');
-        console.log(options);
-        console.log(options.tag);
         const self = this;
         this.model =
             (options && options.model) ||
@@ -324,9 +321,6 @@ const View = Backbone.View.extend({
                 icon: c.icon,
                 tooltip: c.tooltip,
             });
-            console.log("Test location");
-            console.log(self.model);
-            console.log(self.model.attributes.tag);
             self.fields.push(
                 new Select.View({
                     optional: self.model.get("optional"),
@@ -431,7 +425,6 @@ const View = Backbone.View.extend({
         _.each(options, (items, src) => {
             _.each(items, (item) => {
                 self._patchValue(item);
-                console.log(item)
                 const current_src = item.src || src;
                 if (this.model.attributes.tag) {
                     if(item.tags.includes(this.model.attributes.tag)) {
@@ -443,7 +436,7 @@ const View = Backbone.View.extend({
                             origin: item.origin,
                             tags: item.tags,
                         });
-                    };
+                    }
                 }
                 else {
                     select_options[current_src].push({
