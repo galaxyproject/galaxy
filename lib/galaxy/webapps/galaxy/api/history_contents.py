@@ -60,6 +60,7 @@ from galaxy.webapps.galaxy.api.common import (
 from galaxy.webapps.galaxy.services.history_contents import (
     CreateHistoryContentPayload,
     DatasetDetailsType,
+    DirectionOptions,
     HistoriesContentsService,
     HistoryContentsFilterList,
     HistoryContentsIndexJobsSummaryParams,
@@ -672,7 +673,7 @@ class FastAPIHistoryContents:
 
     @router.get(
         '/api/histories/{history_id}/contents/{direction}/{hid}/{limit}',
-        summary='Get content items around (above and below) a particular `HID`.',
+        summary='Get content items around a particular `HID`.',
     )
     def contents_near(
         self,
@@ -703,15 +704,28 @@ class FastAPIHistoryContents:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> HistoryContentsResult:
         """
+        **Warning**: For internal use to support the scroller functionality.
+
         This endpoint provides random access to a large history without having
         to know exactly how many pages are in the final query. Pick a target HID
-        and filters, and the endpoint will get a maximum of `limit` history items "near" the `hid`.
-        The `direction` determines what items are selected:
-        - before: select items with hid < {hid}
-        - after:  select items with hid > {hid}
-        - near:   select items "around" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1
+        and filters, and the endpoint will get a maximum of `limit` history items "around" the `hid`.
 
         Additional counts are provided in the HTTP headers.
+
+        The `direction` determines what items are selected:
+
+        a) item counts:
+        - total matches-up:   hid < {hid}
+        - total matches-down: hid > {hid}
+        - total matches:      total matches-up + total matches-down + 1 (+1 for hid == {hid})
+        - displayed matches-up:   hid <= {hid} (hid == {hid} is included)
+        - displayed matches-down: hid > {hid}
+        - displayed matches:      displayed matches-up + displayed matches-down
+
+        b) {limit} history items:
+        - if direction == before: hid <= {hid}
+        - if direction == after:  hid > {hid}
+        - if direction == near:   "near" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1.
 
         **Note**: This endpoint uses slightly different filter params syntax. Instead of using `q`/`qv` parameters
                   it uses the following syntax for query parameters:

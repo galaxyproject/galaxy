@@ -2544,7 +2544,8 @@ class HistoryContentsArchiveDryRunResult(BaseModel):
 
     This is used for debugging purposes.
     """
-    __root__: List[Tuple[str, str]]
+    # TODO: Use Tuple again when https://github.com/tiangolo/fastapi/issues/3665 is fixed upstream
+    __root__: List[List[str]]  # List[Tuple[str, str]]
 
 
 class ContentsNearStats(BaseModel):
