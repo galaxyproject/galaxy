@@ -15,7 +15,10 @@ from galaxy.model import (
     MetadataFile,
     User,
 )
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    safe_contains,
+    string_as_bool
+)
 from . import validation
 
 log = logging.getLogger(__name__)
