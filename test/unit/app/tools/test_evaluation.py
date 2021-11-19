@@ -210,7 +210,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
             kwds["working_directory"] = self.test_directory
         if "new_file_path" not in kwds:
             kwds["new_file_path"] = self.app.config.new_file_path
-        self.evaluator.set_compute_environment(ComputeEnvironment(**kwds))
+        self.evaluator.set_compute_environment(ComputeEnvironment(**kwds))  # type: ignore[arg-type]
         assert "exec_before_job" in self.tool.hooks_called
 
     def _setup_test_bwa_job(self):
