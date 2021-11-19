@@ -567,7 +567,6 @@ class DataTableFilter(Filter):
 
         rval = []
         for o in options:
-            log.error(f"o {o}")
             if self.keep == (o[self.column] in entries):
                 rval.append(o)
         return rval
@@ -642,7 +641,6 @@ class DynamicOptions:
                         self.index_file = data_file
                         with open(full_path) as fh:
                             self.file_fields = self.parse_file_fields(fh)
-                        log.error(f"exists file_fields {self.file_fields}")
                     else:
                         self.missing_index_file = data_file
                 else:
