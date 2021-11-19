@@ -873,8 +873,6 @@ class Text(Data):
             # a silent try/except is desirable.
             try:
                 for line in iter_start_of_line(in_file, CHUNK_SIZE):
-                    if not line:
-                        break
                     line = line.strip()
                     if line and not line.startswith('#'):
                         data_lines += 1
