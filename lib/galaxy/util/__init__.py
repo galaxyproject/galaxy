@@ -28,7 +28,6 @@ import xml.dom.minidom
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from functools import partial
 from hashlib import md5
 from os.path import relpath
 from urllib.parse import (
@@ -203,8 +202,18 @@ def synchronized(func):
 def iter_start_of_line(fh, chunk_size=None):
     """
     Iterate over fh and call readline(chunk_size)
+
+    >>> from io import StringIO
+    >>> assert list(iter_start_of_line(StringIO(r"\n1\n\n12\n123\n1234\n"), 1)) == [r"\n", "1", r"\n", "1", "1", "1"]
     """
-    yield from iter(partial(fh.readline, chunk_size), "")
+    while True:
+        data = fh.readline(chunk_size)
+        if not data:
+            break
+        if not data.endswith("\n"):
+            # Discard the rest of the line
+            fh.readline()
+        yield data
 
 
 def file_reader(fp, chunk_size=CHUNK_SIZE):

@@ -468,4 +468,7 @@ class STL(data.Data):
 # Utility functions
 def get_next_line(fh):
     line = fh.readline(MAX_LINE_LEN)
+    if not line.endswith("\n"):
+        # Discard the rest of the line
+        fh.readline()
     return line.strip()
