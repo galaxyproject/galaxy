@@ -220,8 +220,9 @@ def parse_legacy_index_query_params(
     else:
         content_types = [e.value for e in HistoryContentType]
 
+    id_list: Optional[List[EncodedDatabaseIdField]] = None
     if ids:
-        ids = util.listify(ids)
+        id_list = util.listify(ids)
         # If explicit ids given, always used detailed result.
         dataset_details = 'all'
     else:
@@ -229,7 +230,7 @@ def parse_legacy_index_query_params(
 
     return LegacyHistoryContentsIndexParams(
         types=content_types,
-        ids=ids,
+        ids=id_list,
         deleted=deleted,
         visible=visible,
         dataset_details=dataset_details,
