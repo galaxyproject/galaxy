@@ -433,14 +433,7 @@ const View = Backbone.View.extend({
                 self._patchValue(item);
                 console.log(item)
                 const current_src = item.src || src;
-                let addOption = false;
-                if (this.model.attributes.tag) {
-                    if(item.tags.includes(this.model.attributes.tag)) {
-                        addOption = true
-                    };
-                } else {
-                    addOption = true;
-                }
+                const addOption = !this.model.attributes.tag || item.tags.includes(this.model.attributes.tag);
                 if (addOption) {
                     select_options[current_src].push({
                     hid: item.hid,
