@@ -51,6 +51,7 @@ def db_next_hid(self, n=1):
     else:
         stmt = table.update().where(table.c.id == model.cached_id(self)).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
         next_hid = session.execute(stmt).scalar() - n
+    session.expire(self, ['hid_counter'])
     return next_hid
 
 

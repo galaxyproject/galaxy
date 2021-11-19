@@ -920,6 +920,21 @@ class MappingTests(BaseModelTestCase):
         assert security_agent.can_manage_dataset(u_from.all_roles(), d1.dataset)
         assert not security_agent.can_manage_dataset(u_other.all_roles(), d1.dataset)
 
+    def test_history_hid_counter_is_expired_after_next_hid_call(self):
+        u = model.User(email="hid_abuser@example.com", password="password")
+        h = model.History(name="History for hid testing", user=u)
+        self.persist(u, h)
+        state = inspect(h)
+        assert h.hid_counter == 1
+        assert 'hid_counter' not in state.unloaded
+        assert 'id' not in state.unloaded
+
+        h._next_hid()
+
+        assert 'hid_counter' in state.unloaded  # this attribute has been expired
+        assert 'id' not in state.unloaded  # but other attributes have NOT been expired
+        assert h.hid_counter == 2  # check this last: this causes thie hid_counter to be reloaded
+
     def _three_users(self, suffix):
         email_from = f"user_{suffix}e1@example.com"
         email_to = f"user_{suffix}e2@example.com"
