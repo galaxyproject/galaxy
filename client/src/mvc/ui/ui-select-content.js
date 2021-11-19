@@ -426,19 +426,8 @@ const View = Backbone.View.extend({
             _.each(items, (item) => {
                 self._patchValue(item);
                 const current_src = item.src || src;
-                if (this.model.attributes.tag) {
-                    if(item.tags.includes(this.model.attributes.tag)) {
-                        select_options[current_src].push({
-                            hid: item.hid,
-                            keep: item.keep,
-                            label: `${item.hid || "Selected"}: ${item.name}`,
-                            value: item.id,
-                            origin: item.origin,
-                            tags: item.tags,
-                        });
-                    }
-                }
-                else {
+                const addOption = !this.model.attributes.tag || item.tags.includes(this.model.attributes.tag);
+                if (addOption) {
                     select_options[current_src].push({
                     hid: item.hid,
                     keep: item.keep,
