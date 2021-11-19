@@ -935,6 +935,16 @@ class MappingTests(BaseModelTestCase):
         assert 'id' not in state.unloaded  # but other attributes have NOT been expired
         assert h.hid_counter == 2  # check this last: this causes thie hid_counter to be reloaded
 
+    def test_next_hid(self):
+        u = model.User(email="hid_abuser@example.com", password="password")
+        h = model.History(name="History for hid testing", user=u)
+        self.persist(u, h)
+        assert h.hid_counter == 1
+        h._next_hid()
+        assert h.hid_counter == 2
+        h._next_hid(n=3)
+        assert h.hid_counter == 5
+
     def _three_users(self, suffix):
         email_from = f"user_{suffix}e1@example.com"
         email_to = f"user_{suffix}e2@example.com"
