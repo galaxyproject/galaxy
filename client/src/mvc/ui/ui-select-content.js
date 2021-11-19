@@ -429,13 +429,13 @@ const View = Backbone.View.extend({
                 const addOption = !this.model.attributes.tag || item.tags.includes(this.model.attributes.tag);
                 if (addOption) {
                     select_options[current_src].push({
-                    hid: item.hid,
-                    keep: item.keep,
-                    label: `${item.hid || "Selected"}: ${item.name}`,
-                    value: item.id,
-                    origin: item.origin,
-                    tags: item.tags,
-                   });
+                        hid: item.hid,
+                        keep: item.keep,
+                        label: `${item.hid || "Selected"}: ${item.name}`,
+                        value: item.id,
+                        origin: item.origin,
+                        tags: item.tags,
+                    });
                 }
                 self.cache[`${item.id}_${current_src}`] = item;
             });
