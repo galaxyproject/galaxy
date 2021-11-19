@@ -54,6 +54,7 @@ from galaxy.webapps.base.controller import (
 )
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
+    get_update_permission_payload,
     parse_serialization_params,
     query_serialization_params,
 )
@@ -314,20 +315,6 @@ def parse_content_filter_params(
         result.append([attr, op, val])
 
     return result
-
-
-def get_update_permission_payload(payload: Dict[str, Any]) -> UpdateDatasetPermissionsPayload:
-    """Coverts the generic payload dictionary into a UpdateDatasetPermissionsPayload model with custom parsing.
-
-    This is an attempt on supporting multiple aliases for the permissions params."""
-    # There are several allowed names for the same role list parameter, i.e.: `access`, `access_ids`, `access_ids[]`
-    # The `access_ids[]` name is not pydantic friendly, so this will be modelled as an alias but we can only set one alias
-    # TODO: Maybe we should choose only one way/naming and deprecate the others?
-    payload["access_ids"] = payload.get("access_ids[]") or payload.get("access")
-    payload["manage_ids"] = payload.get("manage_ids[]") or payload.get("manage")
-    payload["modify_ids"] = payload.get("modify_ids[]") or payload.get("modify")
-    update_payload = UpdateDatasetPermissionsPayload(**payload)
-    return update_payload
 
 
 @router.cbv
