@@ -922,9 +922,8 @@ class Eland(Tabular):
             - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
-        fh = file_prefix.string_io()
         count = 0
-        for line in fh:
+        for line in file_prefix.line_iterator():
             line = line.strip()
             if not line:
                 break  # Had a EOF comment previously, but this does not indicate EOF. I assume empty lines are not valid and this was intentional.
