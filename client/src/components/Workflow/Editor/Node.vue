@@ -240,6 +240,7 @@ export default {
     },
     methods: {
         onChange() {
+            this.onRedraw();
             this.$emit("onChange");
         },
         onAddInput(input, terminal) {
@@ -322,9 +323,6 @@ export default {
             this.label = data.label;
             this.setData(data);
             this.showLoading = false;
-        },
-        labelOutput(outputName, label) {
-            return this.activeOutputs.labelOutput(outputName, label);
         },
         onScrollTo() {
             this.scrolledTo = true;

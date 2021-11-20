@@ -113,7 +113,7 @@
                             </div>
                         </div>
                         <div class="unified-panel-body workflow-right" ref="right-panel">
-                            <div class="m-1">
+                            <div class="m-2">
                                 <FormTool
                                     v-if="hasActiveNodeTool"
                                     :key="activeNodeId"

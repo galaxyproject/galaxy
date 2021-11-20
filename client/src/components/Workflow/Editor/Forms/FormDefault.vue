@@ -44,6 +44,15 @@
                 @input="onAnnotation"
             />
             <FormDisplay :id="id" :inputs="inputs" @onChange="onChange" />
+            <div v-if="isSubworkflow">
+                <FormOutputLabel
+                    v-for="(output, index) in node.outputs"
+                    :key="index"
+                    :name="output.name"
+                    :active-outputs="node.activeOutputs"
+                    :show-details="true"
+                />
+            </div>
         </template>
     </FormCard>
 </template>
@@ -52,6 +61,7 @@
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
+import FormOutputLabel from "./FormOutputLabel";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import WorkflowIcons from "components/Workflow/icons";
 
@@ -60,6 +70,7 @@ export default {
         FormDisplay,
         FormCard,
         FormElement,
+        FormOutputLabel,
     },
     props: {
         datatypes: {
