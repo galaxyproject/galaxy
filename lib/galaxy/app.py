@@ -187,7 +187,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         # ConfiguredFileSources
         self.file_sources = self._register_singleton(ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config))
 
-        self.vault = self._register_singleton(Vault, VaultFactory.from_app_config(self.config))
+        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))
 
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
         # to setup the installed repositories ... this is not ideal

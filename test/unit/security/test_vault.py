@@ -28,7 +28,7 @@ class TestHashicorpVault(VaultTestBase, unittest.TestCase):
     def setUp(self) -> None:
         config = MockAppConfig(vault_config_file=VAULT_CONF_HASHICORP)
         app = MockApp(config=config)
-        self.vault = vault.VaultFactory.from_app_config(app)
+        self.vault = vault.VaultFactory.from_app(app)
 
 
 VAULT_CONF_DATABASE = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_database.yaml")
@@ -41,29 +41,29 @@ class TestDatabaseVault(VaultTestBase, unittest.TestCase):
     def setUp(self) -> None:
         config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
         app = MockApp(config=config)
-        self.vault = vault.VaultFactory.from_app_config(app)
+        self.vault = vault.VaultFactory.from_app(app)
 
     def test_rotate_keys(self):
         config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
         app = MockApp(config=config)
-        self.vault = vault.VaultFactory.from_app_config(app)
+        self.vault = vault.VaultFactory.from_app(app)
         self.vault.write_secret("my/rotated/secret", "hello rotated")
 
         # should succeed after rotation
         app.config.vault_config_file = VAULT_CONF_DATABASE_ROTATED
-        self.vault = vault.VaultFactory.from_app_config(app)
+        self.vault = vault.VaultFactory.from_app(app)
         self.assertEqual(self.vault.read_secret("my/rotated/secret"), "hello rotated")
         super().test_read_write_secret()
 
     def test_wrong_keys(self):
         config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
         app = MockApp(config=config)
-        self.vault = vault.VaultFactory.from_app_config(app)
+        self.vault = vault.VaultFactory.from_app(app)
         self.vault.write_secret("my/incorrect/secret", "hello incorrect")
 
         # should fail because decryption keys are the wrong
         app.config.vault_config_file = VAULT_CONF_DATABASE_INVALID
-        self.vault = vault.VaultFactory.from_app_config(app)
+        self.vault = vault.VaultFactory.from_app(app)
         with self.assertRaises(Exception):
             self.vault.read_secret("my/incorrect/secret")
 
@@ -81,7 +81,7 @@ class TestCustosVault(VaultTestBase, unittest.TestCase):
             self.vault_temp_conf = tempconf.name
         config = MockAppConfig(vault_config_file=self.vault_temp_conf)
         app = MockApp(config=config)
-        self.vault = vault.VaultFactory.from_app_config(app)
+        self.vault = vault.VaultFactory.from_app(app)
 
     def tearDown(self) -> None:
         os.remove(self.vault_temp_conf)

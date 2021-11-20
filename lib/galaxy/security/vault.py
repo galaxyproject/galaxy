@@ -152,7 +152,7 @@ class VaultFactory(object):
             raise UnknownVaultTypeException(f"Unknown vault type: {vault_type}")
 
     @staticmethod
-    def from_app_config(app) -> Vault:
+    def from_app(app) -> Vault:
         vault_config = VaultFactory.load_vault_config(app.config.vault_config_file)
         if vault_config:
             return VaultFactory.from_vault_type(app, vault_config.get('type'), vault_config)
