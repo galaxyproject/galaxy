@@ -12,10 +12,6 @@ import shutil
 import sys
 import time
 import traceback
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
 from json import loads
 from typing import Any, Dict, List, TYPE_CHECKING
 
@@ -33,6 +29,8 @@ from galaxy.exceptions import (
     ObjectInvalid,
     ObjectNotFound,
 )
+from galaxy.job_execution.actions.post import ActionBox
+from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
@@ -45,14 +43,13 @@ from galaxy.job_execution.setup import (  # noqa: F401
     TOOL_PROVIDED_JOB_METADATA_FILE,
     TOOL_PROVIDED_JOB_METADATA_KEYS,
 )
-from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import (
     JobMappingException,
     JobRunnerMapper,
 )
 from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
-from galaxy.model import Job, store
+from galaxy.model import store
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
@@ -60,6 +57,7 @@ from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
 )
+from galaxy.tools.evaluation import ToolEvaluator
 from galaxy.util import (
     parse_xml_string,
     RWXRWXRWX,
@@ -1294,11 +1292,6 @@ class JobWrapper(HasResourceParameters):
         return job
 
     def _get_tool_evaluator(self, job):
-        # Hacky way to avoid circular import for now.
-        # Placing ToolEvaluator in either jobs or tools
-        # result in circular dependency.
-        from galaxy.tools.evaluation import ToolEvaluator
-
         tool_evaluator = ToolEvaluator(
             app=self.app,
             job=job,
@@ -2428,154 +2421,6 @@ class TaskWrapper(JobWrapper):
         working_directory = task.working_directory
         safe_makedirs(working_directory)
         return working_directory
-
-
-class ComputeEnvironment(metaclass=ABCMeta):
-    """ Definition of the job as it will be run on the (potentially) remote
-    compute server.
-    """
-
-    @abstractmethod
-    def output_names(self):
-        """ Output unqualified filenames defined by job. """
-
-    @abstractmethod
-    def input_path_rewrite(self, dataset):
-        """Input path for specified dataset."""
-
-    @abstractmethod
-    def output_path_rewrite(self, dataset):
-        """Output path for specified dataset."""
-
-    @abstractmethod
-    def input_extra_files_rewrite(self, dataset):
-        """Input extra files path rewrite for specified dataset."""
-
-    @abstractmethod
-    def output_extra_files_rewrite(self, dataset):
-        """Output extra files path rewrite for specified dataset."""
-
-    @abstractmethod
-    def input_metadata_rewrite(self, dataset, metadata_value):
-        """Input metadata path rewrite for specified dataset."""
-
-    @abstractmethod
-    def unstructured_path_rewrite(self, path):
-        """Rewrite loc file paths, etc.."""
-
-    @abstractmethod
-    def working_directory(self):
-        """ Job working directory (potentially remote) """
-
-    @abstractmethod
-    def config_directory(self):
-        """ Directory containing config files (potentially remote) """
-
-    @abstractmethod
-    def env_config_directory(self):
-        """Working directory (possibly as environment variable evaluation)."""
-
-    @abstractmethod
-    def sep(self):
-        """ os.path.sep for the platform this job will execute in.
-        """
-
-    @abstractmethod
-    def new_file_path(self):
-        """ Absolute path to dump new files for this job on compute server. """
-
-    @abstractmethod
-    def tool_directory(self):
-        """ Absolute path to tool files for this job on compute server. """
-
-    @abstractmethod
-    def version_path(self):
-        """ Location of the version file for the underlying tool. """
-
-    @abstractmethod
-    def home_directory(self):
-        """Home directory of target job - none if HOME should not be set."""
-
-    @abstractmethod
-    def tmp_directory(self):
-        """Temp directory of target job - none if HOME should not be set."""
-
-    @abstractmethod
-    def galaxy_url(self):
-        """URL to access Galaxy API from for this compute environment."""
-
-
-class SimpleComputeEnvironment:
-
-    def config_directory(self):
-        return os.path.join(self.working_directory(), "configs")
-
-    def sep(self):
-        return os.path.sep
-
-
-class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
-    """ Default ComputeEnvironment for job and task wrapper to pass
-    to ToolEvaluator - valid when Galaxy and compute share all the relevant
-    file systems.
-    """
-
-    def __init__(self, job_io: JobIO, job: Job):
-        self.job_io = job_io
-        self.job = job
-
-    def output_names(self):
-        return self.job_io.get_output_basenames()
-
-    def output_paths(self):
-        return self.job_io.get_output_fnames()
-
-    def input_path_rewrite(self, dataset):
-        return self.job_io.get_input_path(dataset).false_path
-
-    def output_path_rewrite(self, dataset):
-        dataset_path = self.job_io.get_output_path(dataset)
-        if hasattr(dataset_path, "false_path"):
-            return dataset_path.false_path
-        else:
-            return dataset_path
-
-    def input_extra_files_rewrite(self, dataset):
-        return None
-
-    def output_extra_files_rewrite(self, dataset):
-        return None
-
-    def input_metadata_rewrite(self, dataset, metadata_value):
-        return None
-
-    def unstructured_path_rewrite(self, path):
-        return None
-
-    def working_directory(self):
-        return self.job_io.working_directory
-
-    def env_config_directory(self):
-        """Working directory (possibly as environment variable evaluation)."""
-        return "$_GALAXY_JOB_DIR"
-
-    def new_file_path(self):
-        return self.job_io.new_file_path
-
-    def version_path(self):
-        return self.job_io.version_path
-
-    def tool_directory(self):
-        return self.job_io.tool_directory
-
-    def home_directory(self):
-        return self.job_io.home_directory
-
-    def tmp_directory(self):
-        return self.job_io.tmp_directory
-
-    def galaxy_url(self):
-        return self.job_io.galaxy_url
 
 
 class NoopQueue:

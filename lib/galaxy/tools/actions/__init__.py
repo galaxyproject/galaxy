@@ -8,7 +8,7 @@ from typing import Any, cast, Dict, List, Set, Union
 
 from galaxy import model
 from galaxy.exceptions import ItemAccessibilityException
-from galaxy.jobs.actions.post import ActionBox
+from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.none_like import NoneDataset

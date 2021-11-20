@@ -32,10 +32,8 @@ from pulsar.client import (
 from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
 
 from galaxy import model
-from galaxy.jobs import (
-    ComputeEnvironment,
-    JobDestination
-)
+from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.jobs import JobDestination
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,

@@ -10,7 +10,7 @@ from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import PostJobAction
-from galaxy.tools import global_tool_errors
+from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,

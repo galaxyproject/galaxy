@@ -13,8 +13,8 @@ from sqlalchemy.orm import scoped_session
 from galaxy import model
 from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
+from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.setup import JobIO
-from galaxy.jobs import SharedComputeEnvironment
 from galaxy.metadata.set_metadata import (
     get_metadata_params,
     get_object_store,

@@ -9,7 +9,6 @@ import re
 import tarfile
 import tempfile
 import threading
-from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
@@ -68,6 +67,7 @@ from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.cache import ToolDocumentCache
+from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
 from galaxy.tools.parameters import (
     check_param,
@@ -239,25 +239,6 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     'Show tail1': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
     'sort1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.2.0")),
 }
-
-
-class ToolErrorLog:
-    def __init__(self):
-        self.error_stack = []
-        self.max_errors = 100
-
-    def add_error(self, file, phase, exception):
-        self.error_stack.insert(0, {
-            "file": file,
-            "time": str(datetime.now()),
-            "phase": phase,
-            "error": unicodify(exception)
-        })
-        if len(self.error_stack) > self.max_errors:
-            self.error_stack.pop()
-
-
-global_tool_errors = ToolErrorLog()
 
 
 class ToolNotFoundException(Exception):

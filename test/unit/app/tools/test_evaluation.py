@@ -2,8 +2,8 @@ import os
 from unittest import TestCase
 
 from galaxy.app_unittest_utils.tools_support import UsesApp
+from galaxy.job_execution.compute_environment import SimpleComputeEnvironment
 from galaxy.job_execution.datasets import DatasetPath
-from galaxy.jobs import SimpleComputeEnvironment
 from galaxy.model import (
     Dataset,
     History,
