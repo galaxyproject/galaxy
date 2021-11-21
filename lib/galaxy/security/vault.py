@@ -1,5 +1,6 @@
 from abc import ABC
 import json
+import logging
 import os
 import yaml
 
@@ -20,6 +21,8 @@ except ImportError:
 
 from galaxy import model
 
+log = logging.getLogger(__name__)
+
 
 class UnknownVaultTypeException(Exception):
     pass
@@ -28,10 +31,10 @@ class UnknownVaultTypeException(Exception):
 class Vault(ABC):
 
     def read_secret(self, key: str) -> str:
-        pass
+        raise UnknownVaultTypeException("No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml")
 
     def write_secret(self, key: str, value: str) -> None:
-        pass
+        raise UnknownVaultTypeException("No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml")
 
 
 class HashicorpVault(Vault):
@@ -156,4 +159,4 @@ class VaultFactory(object):
         vault_config = VaultFactory.load_vault_config(app.config.vault_config_file)
         if vault_config:
             return VaultFactory.from_vault_type(app, vault_config.get('type'), vault_config)
-        return None
+        log.warning("No vault configured. We recommend defining the vault_config_file setting in galaxy.yml")
