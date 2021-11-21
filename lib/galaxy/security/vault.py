@@ -1,9 +1,9 @@
-from abc import ABC
 import json
 import logging
 import os
-import yaml
+from abc import ABC
 
+import yaml
 from cryptography.fernet import Fernet, MultiFernet
 
 try:

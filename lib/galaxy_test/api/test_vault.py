@@ -2,14 +2,13 @@ import json
 import os
 
 from requests import (
-    delete,
     get,
     put
 )
 
 from ._framework import ApiTestCase
 
-TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
+TEST_USER_EMAIL = "vault_test_user@bx.psu.edu"
 
 
 class VaultApiTestCase(ApiTestCase):

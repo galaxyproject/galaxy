@@ -28,6 +28,7 @@ JOB_CONF_YAML = """
 runners:
   runner1:
     load: job_runner_A
+"""
 VAULT_CONF_CUSTOS = """
 type: custos
 """

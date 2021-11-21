@@ -1,8 +1,10 @@
-from abc import ABC
 import os
 import string
 import tempfile
 import unittest
+from abc import ABC
+
+from cryptography.fernet import InvalidToken
 
 from galaxy.app_unittest_utils.galaxy_mock import MockApp, MockAppConfig
 from galaxy.security import vault
@@ -53,7 +55,6 @@ class TestDatabaseVault(VaultTestBase, unittest.TestCase):
         app.config.vault_config_file = VAULT_CONF_DATABASE_ROTATED
         self.vault = vault.VaultFactory.from_app(app)
         self.assertEqual(self.vault.read_secret("my/rotated/secret"), "hello rotated")
-        super().test_read_write_secret()
 
     def test_wrong_keys(self):
         config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
@@ -64,7 +65,7 @@ class TestDatabaseVault(VaultTestBase, unittest.TestCase):
         # should fail because decryption keys are the wrong
         app.config.vault_config_file = VAULT_CONF_DATABASE_INVALID
         self.vault = vault.VaultFactory.from_app(app)
-        with self.assertRaises(Exception):
+        with self.assertRaises(InvalidToken):
             self.vault.read_secret("my/incorrect/secret")
 
 
