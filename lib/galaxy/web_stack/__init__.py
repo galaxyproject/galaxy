@@ -79,7 +79,7 @@ class ApplicationStack:
 
     def supports_returning(self):
         if self._supports_returning is None:
-            job_table = self.app.model.Job.table
+            job_table = self.app.model.Job.__table__
             stmt = job_table.update().where(job_table.c.id == -1).returning(job_table.c.id)
             try:
                 self.app.model.session.execute(stmt)
@@ -90,7 +90,7 @@ class ApplicationStack:
 
     def supports_skip_locked(self):
         if self._supports_skip_locked is None:
-            job_table = self.app.model.Job.table
+            job_table = self.app.model.Job.__table__
             stmt = job_table.select().where(job_table.c.id == -1).with_for_update(skip_locked=True)
             try:
                 self.app.model.session.execute(stmt)
