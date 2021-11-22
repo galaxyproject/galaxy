@@ -76,6 +76,9 @@ def lint_tsts(tool_xml, lint_ctx):
         else:
             num_valid_tests += 1
 
+    if "expect_failure" in test.attrib and found_output_test:
+        lint_ctx.error(f"Test {test_idx + 1}: Cannot specify outputs in a test expecting failure.")
+
     if num_valid_tests or datasource:
         lint_ctx.valid("%d test(s) found.", num_valid_tests)
     else:
