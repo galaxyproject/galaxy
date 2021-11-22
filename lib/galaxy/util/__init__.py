@@ -42,7 +42,7 @@ try:
     import grp
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
-    grp = None  # type: ignore
+    grp = None  # type: ignore[assignment]
 from boltons.iterutils import (
     default_enter,
     remap,
@@ -52,7 +52,7 @@ try:
     from lxml import etree
 except ImportError:
     LXML_AVAILABLE = False
-    import xml.etree.ElementTree as etree  # type: ignore
+    import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -60,8 +60,8 @@ try:
     import docutils.core as docutils_core
     import docutils.writers.html4css1 as docutils_html4css1
 except ImportError:
-    docutils_core = None  # type: ignore
-    docutils_html4css1 = None  # type: ignore
+    docutils_core = None  # type: ignore[assignment]
+    docutils_html4css1 = None  # type: ignore[assignment]
 
 try:
     import uwsgi
@@ -1542,8 +1542,8 @@ def safe_str_cmp(a, b):
 
 
 #  Don't use these two directly, prefer method version that "works" with packaged Galaxy.
-galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore
-galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore
+galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore[name-defined]
+galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore[name-defined]
 
 
 def galaxy_directory():

@@ -38,7 +38,7 @@ from galaxy_test.base.testcase import FunctionalTestCase
 try:
     from galaxy_test.driver.driver_util import GalaxyTestDriver
 except ImportError:
-    GalaxyTestDriver = None  # type: ignore
+    GalaxyTestDriver = None  # type: ignore[misc,assignment]
 
 DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")

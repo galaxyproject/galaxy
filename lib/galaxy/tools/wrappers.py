@@ -332,7 +332,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         if not dataset:
             try:
                 # TODO: allow this to work when working with grouping
-                ext = tool.inputs[name].extensions[0]  # type: ignore
+                ext = tool.inputs[name].extensions[0]  # type: ignore[union-attr]
             except Exception:
                 ext = "data"
             self.dataset = cast(

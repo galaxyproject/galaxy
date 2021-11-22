@@ -13,13 +13,13 @@ from typing import Any, Dict, Optional, Type
 try:
     import docker
 except ImportError:
-    docker = None  # type: ignore
+    docker = None  # type: ignore[assignment]
 
 try:
     from requests.exceptions import ConnectionError, ReadTimeout
 except ImportError:
-    ConnectionError = None  # type: ignore
-    ReadTimeout = None  # type: ignore
+    ConnectionError = None  # type: ignore[assignment,misc]
+    ReadTimeout = None  # type: ignore[assignment,misc]
 
 from galaxy.containers import Container, ContainerInterface
 from galaxy.containers.docker_decorators import (

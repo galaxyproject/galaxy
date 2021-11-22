@@ -1730,8 +1730,9 @@ class ToolModule(WorkflowModule):
                         # Pull out dataset instance (=HDA) from element and set a temporary element_identifier attribute
                         # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
                         replacement = dataset_instance
-                        if hasattr(iteration_elements[prefixed_name], 'element_identifier') and iteration_elements[prefixed_name].element_identifier:
-                            replacement.element_identifier = iteration_elements[prefixed_name].element_identifier  # type: ignore
+                        temp = iteration_elements[prefixed_name]
+                        if hasattr(temp, 'element_identifier') and temp.element_identifier:
+                            replacement.element_identifier = temp.element_identifier  # type: ignore[attr-defined]
                     else:
                         # If collection - just use element model object.
                         replacement = iteration_elements[prefixed_name]

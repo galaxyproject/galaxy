@@ -13,7 +13,7 @@ try:
 except ImportError:
 
     # Not in Galaxy, map Galaxy job states to Pulsar ones.
-    class job_states(str, Enum):  # type: ignore
+    class job_states(str, Enum):  # type: ignore[no-redef]
         RUNNING = 'running'
         OK = 'complete'
         QUEUED = 'queued'

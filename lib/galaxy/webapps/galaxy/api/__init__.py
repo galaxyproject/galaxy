@@ -269,8 +269,8 @@ def as_form(cls: Type[BaseModel]):
 
     sig = inspect.signature(_as_form)
     sig = sig.replace(parameters=new_params)
-    _as_form.__signature__ = sig    # type: ignore
-    cls.as_form = _as_form          # type: ignore
+    _as_form.__signature__ = sig    # type: ignore[attr-defined]
+    cls.as_form = _as_form          # type: ignore[attr-defined]
     return cls
 
 

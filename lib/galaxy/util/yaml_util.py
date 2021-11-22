@@ -6,7 +6,7 @@ import yaml
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
-    from yaml import SafeLoader  # type: ignore
+    from yaml import SafeLoader  # type: ignore[misc]
 from yaml.constructor import ConstructorError
 
 

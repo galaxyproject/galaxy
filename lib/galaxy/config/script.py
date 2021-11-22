@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 try:
     import pip
 except ImportError:
-    pip = None  # type: ignore
+    pip = None  # type: ignore[assignment]
 
 
 CONFIGURE_URL = "https://docs.galaxyproject.org/en/master/admin/"

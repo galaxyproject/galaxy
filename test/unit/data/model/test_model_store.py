@@ -494,7 +494,7 @@ def _mock_app(store_by="id"):
     app = GalaxyDataTestApp()
     test_object_store_config = TestConfig(store_by=store_by)
     app.object_store = test_object_store_config.object_store
-    app.model.Dataset.object_store = app.object_store  # type: ignore
+    app.model.Dataset.object_store = app.object_store
     return app
 
 
