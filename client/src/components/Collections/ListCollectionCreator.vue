@@ -211,7 +211,7 @@ import BootstrapVue from "bootstrap-vue";
 import draggable from "vuedraggable";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSortAlphaDown, faUndo} from "@fortawesome/free-solid-svg-icons";
+import { faSortAlphaDown, faUndo } from "@fortawesome/free-solid-svg-icons";
 
 library.add(faSortAlphaDown, faUndo);
 
