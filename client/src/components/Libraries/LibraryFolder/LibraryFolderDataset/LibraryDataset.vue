@@ -3,23 +3,28 @@
         <div v-if="!isEditMode">
             <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
             <!-- top bar icons -->
-            <button title="Download dataset" class="mr-1 mb-2" @click="download(datasetDownloadFormat, dataset_id)">
+            <b-button title="Download dataset" class="mr-1 mb-2" @click="download(datasetDownloadFormat, dataset_id)">
                 <font-awesome-icon icon="download" /> Download
-            </button>
-            <button @click="importToHistory" title="Import dataset into history" class="mr-1 mb-2">
+            </b-button>
+            <b-button @click="importToHistory" title="Import dataset into history" class="mr-1 mb-2">
                 <font-awesome-icon icon="book" />
                 to History
-            </button>
-            <button
-                @click="isEditMode = true"
+            </b-button>
+            <b-button
                 v-if="dataset.can_user_modify"
+                @click="isEditMode = true"
                 title="Modify library item"
                 class="mr-1 mb-2"
             >
                 <font-awesome-icon icon="pencil-alt" />
                 Modify
-            </button>
-            <b-button title="Attempt to detect the format of dataset" @click="detectDatatype" class="mr-1 mb-2">
+            </b-button>
+            <b-button
+                v-if="dataset.can_user_modify"
+                title="Attempt to detect the format of dataset"
+                @click="detectDatatype"
+                class="mr-1 mb-2"
+            >
                 <font-awesome-icon icon="redo" />
                 Auto-detect datatype
             </b-button>

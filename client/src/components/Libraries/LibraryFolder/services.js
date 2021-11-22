@@ -1,7 +1,6 @@
 import axios from "axios";
-import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
-import { auto } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
+import { rethrowSimple } from "utils/simple-error";
 
 export class Services {
     constructor(options = {}) {
