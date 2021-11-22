@@ -926,24 +926,23 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     user = relationship('User')
     galaxy_session = relationship('GalaxySession')
     history = relationship('History', back_populates='jobs')
-    library_folder = relationship('LibraryFolder', lazy=True)
-    parameters = relationship('JobParameter', lazy=True)
+    library_folder = relationship('LibraryFolder')
+    parameters = relationship('JobParameter')
     input_datasets = relationship('JobToInputDatasetAssociation', back_populates='job')
     input_dataset_collections = relationship('JobToInputDatasetCollectionAssociation',
-        back_populates='job', lazy=True)
+        back_populates='job')
     input_dataset_collection_elements = relationship('JobToInputDatasetCollectionElementAssociation',
-        back_populates='job', lazy=True)
+        back_populates='job')
     output_dataset_collection_instances = relationship('JobToOutputDatasetCollectionAssociation',
-        back_populates='job', lazy=True)
+        back_populates='job')
     output_dataset_collections = relationship('JobToImplicitOutputDatasetCollectionAssociation',
-        back_populates='job', lazy=True)
-    post_job_actions = relationship('PostJobActionAssociation', back_populates='job', lazy=False)
+        back_populates='job')
+    post_job_actions = relationship('PostJobActionAssociation', back_populates='job', lazy='joined')
     input_library_datasets = relationship('JobToInputLibraryDatasetAssociation',
         back_populates='job')
     output_library_datasets = relationship('JobToOutputLibraryDatasetAssociation',
-        back_populates='job', lazy=True)
-    external_output_metadata = relationship('JobExternalOutputMetadata',
-        lazy=True, back_populates='job')
+        back_populates='job')
+    external_output_metadata = relationship('JobExternalOutputMetadata', back_populates='job')
     tasks = relationship('Task', back_populates='job')
     output_datasets = relationship('JobToOutputDatasetAssociation', back_populates='job')
     state_history = relationship('JobStateHistory')
@@ -1776,7 +1775,7 @@ class JobToInputDatasetAssociation(Base, RepresentById):
         ForeignKey('history_dataset_association.id'), index=True)
     dataset_version = Column(Integer)
     name = Column(String(255))
-    dataset = relationship('HistoryDatasetAssociation', lazy=False, back_populates='dependent_jobs')
+    dataset = relationship('HistoryDatasetAssociation', lazy="joined", back_populates='dependent_jobs')
     job = relationship('Job', back_populates='input_datasets')
 
     def __init__(self, name, dataset):
@@ -1793,7 +1792,7 @@ class JobToOutputDatasetAssociation(Base, RepresentById):
     dataset_id = Column(Integer, ForeignKey('history_dataset_association.id'), index=True)
     name = Column(String(255))
     dataset = relationship('HistoryDatasetAssociation',
-        lazy=False, back_populates='creating_job_associations')
+        lazy="joined", back_populates='creating_job_associations')
     job = relationship('Job', back_populates='output_datasets')
 
     def __init__(self, name, dataset):
@@ -1813,7 +1812,7 @@ class JobToInputDatasetCollectionAssociation(Base, RepresentById):
     dataset_collection_id = Column(Integer,
         ForeignKey('history_dataset_collection_association.id'), index=True)
     name = Column(String(255))
-    dataset_collection = relationship('HistoryDatasetCollectionAssociation', lazy=False)
+    dataset_collection = relationship('HistoryDatasetCollectionAssociation', lazy="joined")
     job = relationship('Job', back_populates='input_dataset_collections')
 
     def __init__(self, name, dataset_collection):
@@ -1829,7 +1828,7 @@ class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
     dataset_collection_element_id = Column(Integer,
         ForeignKey('dataset_collection_element.id'), index=True)
     name = Column(Unicode(255))
-    dataset_collection_element = relationship('DatasetCollectionElement', lazy=False)
+    dataset_collection_element = relationship('DatasetCollectionElement', lazy="joined")
     job = relationship('Job', back_populates='input_dataset_collection_elements')
 
     def __init__(self, name, dataset_collection_element):
@@ -1847,7 +1846,7 @@ class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
     dataset_collection_id = Column(Integer,
         ForeignKey('history_dataset_collection_association.id'), index=True)
     name = Column(Unicode(255))
-    dataset_collection_instance = relationship('HistoryDatasetCollectionAssociation', lazy=False)
+    dataset_collection_instance = relationship('HistoryDatasetCollectionAssociation', lazy="joined")
     job = relationship('Job', back_populates='output_dataset_collection_instances')
 
     def __init__(self, name, dataset_collection_instance):
@@ -1886,7 +1885,7 @@ class JobToInputLibraryDatasetAssociation(Base, RepresentById):
     name = Column(Unicode(255))
     job = relationship('Job', back_populates='input_library_datasets')
     dataset = relationship(
-        'LibraryDatasetDatasetAssociation', lazy=False, back_populates='dependent_jobs')
+        'LibraryDatasetDatasetAssociation', lazy="joined", back_populates='dependent_jobs')
 
     def __init__(self, name, dataset):
         self.name = name
@@ -1902,7 +1901,7 @@ class JobToOutputLibraryDatasetAssociation(Base, RepresentById):
     name = Column(Unicode(255))
     job = relationship('Job', back_populates='output_library_datasets')
     dataset = relationship(
-        'LibraryDatasetDatasetAssociation', lazy=False, back_populates='creating_job_associations')
+        'LibraryDatasetDatasetAssociation', lazy="joined", back_populates='creating_job_associations')
 
     def __init__(self, name, dataset):
         self.name = name
@@ -2041,8 +2040,8 @@ class JobExternalOutputMetadata(Base, RepresentById):
     filename_kwds = Column(String(255))
     filename_override_metadata = Column(String(255))
     job_runner_external_pid = Column(String(255))
-    history_dataset_association = relationship('HistoryDatasetAssociation', lazy=False)
-    library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation', lazy=False)
+    history_dataset_association = relationship('HistoryDatasetAssociation', lazy="joined")
+    library_dataset_dataset_association = relationship('LibraryDatasetDatasetAssociation', lazy="joined")
     job = relationship('Job', back_populates='external_output_metadata')
 
     def __init__(self, job=None, dataset=None):
@@ -4558,20 +4557,17 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
         # on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>':
         # Cant use eager loading on a self referential relationship."""
         # TODO: This is no longer the case. Fix this: https://docs.sqlalchemy.org/en/14/orm/self_referential.html#configuring-self-referential-eager-loading
-        lazy=True,
         viewonly=True)
 
     datasets = relationship('LibraryDataset',
-        primaryjoin=(lambda: LibraryDataset.folder_id == LibraryFolder.id and LibraryDataset.library_dataset_dataset_association_id.isnot(None)),  # type: ignore
-        order_by=(lambda: asc(LibraryDataset._name)),  # type: ignore
-        lazy=True,
+        primaryjoin=(lambda: LibraryDataset.folder_id == LibraryFolder.id and LibraryDataset.library_dataset_dataset_association_id.isnot(None)),
+        order_by=(lambda: asc(LibraryDataset._name)),
         viewonly=True)
 
     active_datasets = relationship('LibraryDataset',
         primaryjoin=(
             'and_(LibraryDataset.folder_id == LibraryFolder.id, not_(LibraryDataset.deleted), LibraryDataset.library_dataset_dataset_association_id.isnot(None))'),
-        order_by=(lambda: asc(LibraryDataset._name)),  # type: ignore
-        lazy=True,
+        order_by=(lambda: asc(LibraryDataset._name)),
         viewonly=True)
 
     library_root = relationship('Library', back_populates='root_folder')
@@ -8864,7 +8860,7 @@ mapper_registry.map_imperatively(
     properties=dict(
         dataset=relationship(Dataset,
             primaryjoin=(Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id),
-            lazy=False,
+            lazy="joined",
             back_populates='history_associations'),
         copied_from_history_dataset_association=relationship(HistoryDatasetAssociation,
             primaryjoin=(HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id
