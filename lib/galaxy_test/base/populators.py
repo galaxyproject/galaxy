@@ -996,13 +996,13 @@ class BaseWorkflowPopulator(BasePopulator):
         api_asserts.assert_has_keys(bco['io_domain'], "input_subdomain", "output_subdomain")
 
     def invoke_workflow_raw(self, workflow_id: str, request: dict, assert_ok: bool = False) -> Response:
-        url = f"workflows/{workflow_id}/usage"
+        url = f"workflows/{workflow_id}/invocations"
         invocation_response = self._post(url, data=request)
         if assert_ok:
             invocation_response.raise_for_status()
         return invocation_response
 
-    def invoke_workflow(self, workflow_id: str, history_id: Optional[str] = None, inputs: Optional[dict] = None, request: Optional[dict] = None, assert_ok: bool = True):
+    def invoke_workflow(self, workflow_id: str, history_id: Optional[str] = None, inputs: Optional[dict] = None, request: Optional[dict] = None, assert_ok: bool = True, inputs_by: str = 'step_index'):
         if inputs is None:
             inputs = {}
 
@@ -1015,7 +1015,7 @@ class BaseWorkflowPopulator(BasePopulator):
 
         if inputs:
             request["inputs"] = json.dumps(inputs)
-            request["inputs_by"] = 'step_index'
+            request["inputs_by"] = inputs_by
         invocation_response = self.invoke_workflow_raw(workflow_id, request)
         if assert_ok:
             api_asserts.assert_status_code_is(invocation_response, 200)
