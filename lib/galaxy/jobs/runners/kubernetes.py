@@ -64,6 +64,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_config_path=dict(map=str, default=None),
             k8s_use_service_account=dict(map=bool, default=False),
             k8s_persistent_volume_claims=dict(map=str),
+            k8s_data_volume_claim=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
             k8s_pod_priority_class=dict(map=str, default=None),
             k8s_affinity=dict(map=str, default=None),
@@ -103,9 +104,11 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self._fs_group = self.__get_fs_group()
         self._default_pull_policy = self.__get_pull_policy()
 
-        self.setup_volumes()
+        self._init_monitor_thread()
+        self._init_worker_threads()
+        self.setup_base_volumes()
 
-    def setup_volumes(self):
+    def setup_base_volumes(self):
         if self.runner_params.get('k8s_persistent_volume_claims'):
             volume_claims = dict(volume.split(":") for volume in self.runner_params['k8s_persistent_volume_claims'].split(','))
         else:
@@ -122,6 +125,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 each["name"] = name
                 each["subPath"] = subpath
         self.runner_params['k8s_volume_mounts'] = volume_mounts
+        if self.runner_params.get('k8s_data_volume_claim'):
+            try:
+                param_claim = self.runner_params['k8s_data_volume_claim'].split(":")
+                princip_claim_name = param_claim[0]
+                base_mount = param_claim[1]
+            except Exception as e:
+                log.debug('Failed to parse `k8s_data_volume_claim` parameter in the kubernetes runner configuration')
+                raise e
+            principal_volume = {'name': princip_claim_name, 'persistentVolumeClaim': {'claimName': princip_claim_name}}
+            if princip_claim_name not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
+                self.runner_params['k8s_mountable_volumes'].append(principal_volume)
 
     def queue_job(self, job_wrapper):
         """Create job script and submit it to Kubernetes cluster"""
@@ -129,6 +143,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # We currently don't need to include_metadata or include_work_dir_outputs, as working directory is the same
         # where galaxy will expect results.
         log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
+
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory,
                                    job_wrapper=job_wrapper,
                                    job_destination=job_wrapper.job_destination)
@@ -450,6 +465,35 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """The default Kubernetes restart policy for Jobs"""
         return "Never"
 
+    def __get_volume_mounts_for_job(self, job_wrapper):
+        if self.runner_params.get('k8s_data_volume_claim'):
+            try:
+                param_claim = self.runner_params['k8s_data_volume_claim'].split(":")
+                claim_name = param_claim[0]
+                base_mount = param_claim[1]
+            except Exception as e:
+                log.debug('Failed to parse `k8s_data_volume_claim` parameter in the kubernetes runner configuration')
+                raise e
+            inputs = job_wrapper.get_input_fnames()
+            outputs = job_wrapper.get_output_fnames()
+            volume_mounts = []
+            for i in list(inputs):
+                file_path = str(i)
+                subpath = file_path.lstrip(base_mount).lstrip('/').rstrip('/')
+                volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath })
+            for o in list(outputs):
+                file_path = str(o).rstrip('/').split('/')
+                file_path = "/".join(file_path[:-1])
+                subpath = str(file_path).lstrip(base_mount).lstrip('/')
+                volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath })
+            wd_subpath = str(job_wrapper.working_directory).lstrip(base_mount).lstrip('/').rstrip('/')
+            volume_mounts.append({'name': claim_name,
+                                  'mountPath': str(job_wrapper.working_directory),
+                                  'subPath': wd_subpath })
+            return volume_mounts
+        else:
+            return {}
+
     def __get_k8s_containers(self, ajs):
         """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
            this has been set.
@@ -459,6 +503,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
            used to execute the tool inside the container.
         """
         container = self._find_container(ajs.job_wrapper)
+
+        mounts = self.__get_volume_mounts_for_job(ajs.job_wrapper)
+        mounts.extend(self.runner_params['k8s_volume_mounts'])
+
         k8s_container = {
             "name": self.__get_k8s_container_name(ajs.job_wrapper),
             "image": container.container_id,
@@ -468,8 +516,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "command": [ajs.job_wrapper.shell],
             "args": ["-c", ajs.job_file],
             "workingDir": ajs.job_wrapper.working_directory,
-            "volumeMounts": self.runner_params['k8s_volume_mounts']
+            "volumeMounts": mounts
         }
+
         resources = self.__get_resources(ajs.job_wrapper)
         if resources:
             envs = []
