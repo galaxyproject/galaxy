@@ -42,6 +42,7 @@ import json
 import os
 import random
 import string
+import time
 import unittest
 from abc import ABCMeta, abstractmethod
 from functools import wraps
@@ -1210,6 +1211,14 @@ class BaseWorkflowPopulator(BasePopulator):
                 workflow_request["inputs_by"] = "step_uuid"
 
         return workflow_request, history_id, workflow_id
+
+    def wait_for_invocation_and_jobs(self, history_id, workflow_id, invocation_id, assert_ok=True):
+        state = self.wait_for_invocation(workflow_id, invocation_id)
+        if assert_ok:
+            assert state == "scheduled", state
+        time.sleep(.5)
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
+        time.sleep(.5)
 
 
 class RunJobsSummary(NamedTuple):
