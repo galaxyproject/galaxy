@@ -116,7 +116,7 @@
                             <li>
                                 {{ l("Click ") }}
                                 <i data-target=".reset">
-                                    <font-awesome-icon icon="redo" />
+                                    <font-awesome-icon icon="undo" />
                                 </i>
                                 {{ l("to begin again as if you had just opened the interface.") }}
                             </li>
@@ -151,7 +151,7 @@
                     <template v-slot:middle-content>
                         <div class="collection-elements-controls">
                             <b-button class="reset" :title="titleUndoButton" @click="reset">
-                                <font-awesome-icon icon="redo" />
+                                <font-awesome-icon icon="undo" />
                             </b-button>
                             <b-button class="sort-items" :title="titleSortButton" @click="sortByName">
                                 <font-awesome-icon icon="sort-alpha-down" />
@@ -211,9 +211,9 @@ import BootstrapVue from "bootstrap-vue";
 import draggable from "vuedraggable";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSortAlphaDown, faRedo } from "@fortawesome/free-solid-svg-icons";
+import { faSortAlphaDown, faUndo} from "@fortawesome/free-solid-svg-icons";
 
-library.add(faSortAlphaDown, faRedo);
+library.add(faSortAlphaDown, faUndo);
 
 Vue.use(BootstrapVue);
 export default {
