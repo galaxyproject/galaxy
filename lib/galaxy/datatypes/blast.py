@@ -198,6 +198,7 @@ class _BlastDb(Data):
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
         """
+        headers = kwd.get("headers", {})
         if not preview:
             return super().display_data(trans,
                                         data=data,
@@ -226,7 +227,7 @@ class _BlastDb(Data):
         if not msg:
             msg = title
         # Galaxy assumes HTML for the display of composite datatypes,
-        return smart_str(f"<html><head><title>{title}</title></head><body><pre>{msg}</pre></body></html>")
+        return smart_str(f"<html><head><title>{title}</title></head><body><pre>{msg}</pre></body></html>"), headers
 
     def merge(split_files, output_file):
         """Merge BLAST databases (not implemented for now)."""

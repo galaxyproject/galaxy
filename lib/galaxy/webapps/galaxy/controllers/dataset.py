@@ -188,7 +188,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         # Ensure ck_size is an integer before passing through to datatypes.
         if ck_size:
             ck_size = int(ck_size)
-        return data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
+        display_data, headers = data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
+        trans.response.headers.update(headers)
+        return display_data
 
     @web.legacy_expose_api_anonymous
     def get_edit(self, trans, dataset_id=None, **kwd):

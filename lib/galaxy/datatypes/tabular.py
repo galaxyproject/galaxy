@@ -87,25 +87,26 @@ class TabularData(data.Text):
                       })
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+        headers = kwd.get("headers", {})
         preview = util.string_as_bool(preview)
         if offset is not None:
-            return self.get_chunk(trans, dataset, offset, ck_size)
+            return self.get_chunk(trans, dataset, offset, ck_size), headers
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(trans, dataset, to_ext, **kwd)
+            return self._serve_raw(dataset, to_ext, headers, **kwd)
         elif dataset.metadata.columns > 100:
             # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
             # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
             max_peek_size = 1000000  # 1 MB
             if os.stat(dataset.file_name).st_size < max_peek_size:
-                self._clean_and_set_mime_type(trans, dataset.get_mime())
-                return open(dataset.file_name, mode='rb')
+                self._clean_and_set_mime_type(trans, dataset.get_mime(), headers)
+                return open(dataset.file_name, mode='rb'), headers
             else:
-                trans.response.set_content_type("text/html")
+                headers["content-type"] = "text/html"
                 return trans.stream_template_mako("/dataset/large_file.mako",
                                                   truncated_data=open(dataset.file_name).read(max_peek_size),
-                                                  data=dataset)
+                                                  data=dataset), headers
         else:
             column_names = 'null'
             if dataset.metadata.column_names:
@@ -123,7 +124,7 @@ class TabularData(data.Text):
                                        chunk=self.get_chunk(trans, dataset, 0),
                                        column_number=column_number,
                                        column_names=column_names,
-                                       column_types=column_types)
+                                       column_types=column_types), headers
 
     def display_as_markdown(self, dataset_instance, markdown_format_helpers):
         with open(dataset_instance.file_name) as f:

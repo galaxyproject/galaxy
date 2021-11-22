@@ -125,6 +125,7 @@ class _SpalnDb(Data):
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
         """
+        headers = kwd.get("headers", {})
         if not preview:
             return super().display_data(
                 trans,
@@ -134,6 +135,7 @@ class _SpalnDb(Data):
                 to_ext=to_ext,
                 size=size,
                 offset=offset,
+                headers=headers,
                 **kwd
             )
         if self.file_ext == "spalndbn":
@@ -158,7 +160,7 @@ class _SpalnDb(Data):
         return smart_str(
             "<html><head><title>%s</title></head><body><pre>%s</pre></body></html>"
             % (title, msg)
-        )
+        ), headers
 
     def merge(split_files, output_file):
         """Merge spaln databases (not implemented)."""

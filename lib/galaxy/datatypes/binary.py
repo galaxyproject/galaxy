@@ -502,9 +502,10 @@ class BamNative(CompressedArchive, _BamOrSam):
                       'offset': offset})
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+        headers = kwd.get("headers", {})
         preview = util.string_as_bool(preview)
         if offset is not None:
-            return self.get_chunk(trans, dataset, offset, ck_size)
+            return self.get_chunk(trans, dataset, offset, ck_size), headers
         elif to_ext or not preview:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
         else:
@@ -522,7 +523,7 @@ class BamNative(CompressedArchive, _BamOrSam):
                                        chunk=self.get_chunk(trans, dataset, 0),
                                        column_number=column_number,
                                        column_names=column_names,
-                                       column_types=column_types)
+                                       column_types=column_types), headers
 
     def validate(self, dataset, **kwd):
         if not BamNative.is_bam(dataset.file_name):
@@ -1585,11 +1586,12 @@ class H5MLM(H5):
             return "HDF5 Model (%s)" % (nice_size(dataset.get_size()))
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        headers = kwd.get("headers", {})
         preview = util.string_as_bool(preview)
 
         if to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(trans, dataset, to_ext, **kwd)
+            return self._serve_raw(dataset, to_ext, headers, **kwd)
 
         rval = {}
         try:
@@ -1608,7 +1610,7 @@ class H5MLM(H5):
 
         repr_ = self.get_repr(dataset.file_name)
 
-        return f"<pre>{repr_}</pre><pre>{rval}</pre>"
+        return f"<pre>{repr_}</pre><pre>{rval}</pre>", headers
 
 
 class HexrdMaterials(H5):

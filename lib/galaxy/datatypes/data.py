@@ -6,17 +6,26 @@ import shutil
 import string
 import tempfile
 from inspect import isclass
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+)
 
-import webob.exc
 from markupsafe import escape
 
 from galaxy import util
-from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
+from galaxy.datatypes.metadata import (
+    MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
 )
+from galaxy.exceptions import ObjectNotFound
 from galaxy.util import (
     compression_utils,
     file_reader,
@@ -24,7 +33,7 @@ from galaxy.util import (
     inflector,
     iter_start_of_line,
     smart_str,
-    unicodify
+    unicodify,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.sanitize_html import sanitize_html
@@ -50,6 +59,8 @@ valid_strand = ['+', '-', '.']
 DOWNLOAD_FILENAME_PATTERN_DATASET = "Galaxy${hid}-[${name}].${ext}"
 DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}__${element_identifier}].${ext}"
 DEFAULT_MAX_PEEK_SIZE = 1000000  # 1 MB
+
+Headers = Dict[str, Any]
 
 
 class DatatypeConverterNotFoundException(Exception):
@@ -300,7 +311,7 @@ class Data(metaclass=DataMeta):
             messagetype = "error"
         return error, msg, messagetype
 
-    def _archive_composite_dataset(self, trans, data, do_action='zip'):
+    def _archive_composite_dataset(self, trans, data, headers: Headers, do_action='zip'):
         # save a composite object into a compressed archive for downloading
         outfname = data.name[0:150]
         outfname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in outfname)
@@ -332,9 +343,9 @@ class Data(metaclass=DataMeta):
                     msg = "Unable to create archive for download, please report this error"
                     continue
         if not error:
-            trans.response.headers.update(archive.get_headers())
-            return archive.response()
-        return trans.show_error_message(msg)
+            headers.update(archive.get_headers())
+            return archive.response(), headers
+        return trans.show_error_message(msg), headers
 
     def __archive_extra_files_path(self, extra_files_path):
         """Yield filepaths and relative filepaths for files in extra_files_path"""
@@ -344,12 +355,12 @@ class Data(metaclass=DataMeta):
                 rpath = os.path.relpath(fpath, extra_files_path)
                 yield fpath, rpath
 
-    def _serve_raw(self, trans, dataset, to_ext, **kwd):
-        trans.response.headers['Content-Length'] = str(os.stat(dataset.file_name).st_size)
-        trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
+    def _serve_raw(self, dataset, to_ext, headers: Headers, **kwd):
+        headers['Content-Length'] = str(os.stat(dataset.file_name).st_size)
+        headers["content-type"] = "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
         filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"), filename_pattern=kwd.get("filename_pattern"))
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-        return open(dataset.file_name, mode='rb')
+        headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return open(dataset.file_name, mode='rb'), headers
 
     def to_archive(self, dataset, name=""):
         """
@@ -383,14 +394,15 @@ class Data(metaclass=DataMeta):
         TOOD: Document alternatives to overridding this method (data
         providers?).
         """
+        headers = kwd.get("headers", {})
         # Relocate all composite datatype display to a common location.
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
         composite_extensions.append('html')  # for archiving composite datatypes
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
-        trans.response.headers['X-Content-Type-Options'] = 'nosniff'
+        headers['X-Content-Type-Options'] = 'nosniff'
         if isinstance(data, str):
-            return smart_str(data)
+            return smart_str(data), headers
         if filename and filename != "index":
             # For files in extra_files_path
             extra_dir = data.dataset.extra_files_path_name
@@ -417,39 +429,39 @@ class Data(metaclass=DataMeta):
                             # preview=preview, filename=fname, to_ext=to_ext)
                             tmp_fh.write(f'<tr bgcolor="{bgcolor}"><td>{escape(fname)}</td></tr>\n')
                         tmp_fh.write('</table></body></html>\n')
-                    return self._yield_user_file_content(trans, data, tmp_file_name)
+                    return self._yield_user_file_content(trans, data, tmp_file_name, headers), headers
                 mime = mimetypes.guess_type(file_path)[0]
                 if not mime:
                     try:
                         mime = trans.app.datatypes_registry.get_mimetype_by_extension(".".split(file_path)[-1])
                     except Exception:
                         mime = "text/plain"
-                self._clean_and_set_mime_type(trans, mime)
-                return self._yield_user_file_content(trans, data, file_path)
+                self._clean_and_set_mime_type(trans, mime, headers)
+                return self._yield_user_file_content(trans, data, file_path, headers), headers
             else:
-                return webob.exc.HTTPNotFound(f"Could not find '{filename}' on the extra files path {file_path}.")
-        self._clean_and_set_mime_type(trans, data.get_mime())
+                raise ObjectNotFound(f"Could not find '{filename}' on the extra files path {file_path}.")
+        self._clean_and_set_mime_type(trans, data.get_mime(), headers)
 
         trans.log_event(f"Display dataset id: {str(data.id)}")
-        from galaxy.datatypes import (
+        from galaxy.datatypes import (  # DBTODO REMOVE THIS AT REFACTOR
             binary,
             images,
             text,
-        )  # DBTODO REMOVE THIS AT REFACTOR
+        )
 
         if to_ext or isinstance(
             data.datatype, binary.Binary
         ):  # Saving the file, or binary file
             if data.extension in composite_extensions:
-                return self._archive_composite_dataset(trans, data, do_action=kwd.get('do_action', 'zip'))
+                return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get('do_action', 'zip'))
             else:
-                trans.response.headers['Content-Length'] = str(os.stat(data.file_name).st_size)
+                headers['Content-Length'] = str(os.stat(data.file_name).st_size)
                 filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"), filename_pattern=kwd.get("filename_pattern"))
-                trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
-                trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-                return open(data.file_name, 'rb')
+                headers['content-type'] = "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+                headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+                return open(data.file_name, 'rb'), headers
         if not os.path.exists(data.file_name):
-            raise webob.exc.HTTPNotFound(f"File Not Found ({data.file_name}).")
+            raise ObjectNotFound(f"File Not Found ({data.file_name}).")
         max_peek_size = DEFAULT_MAX_PEEK_SIZE  # 1 MB
         if isinstance(data.datatype, text.Html):
             max_peek_size = 10000000  # 10 MB for html
@@ -459,12 +471,12 @@ class Data(metaclass=DataMeta):
             or isinstance(data.datatype, images.Image)
             or os.stat(data.file_name).st_size < max_peek_size
         ):
-            return self._yield_user_file_content(trans, data, data.file_name)
+            return self._yield_user_file_content(trans, data, data.file_name, headers), headers
         else:
-            trans.response.set_content_type("text/html")
+            headers["content-type"] = "text/html"
             return trans.stream_template_mako("/dataset/large_file.mako",
                                               truncated_data=open(data.file_name, 'rb').read(max_peek_size),
-                                              data=data)
+                                              data=data), headers
 
     def display_as_markdown(self, dataset_instance, markdown_format_helpers):
         """Prepare for embedding dataset into a basic Markdown document.
@@ -494,9 +506,9 @@ class Data(metaclass=DataMeta):
                 result += markdown_format_helpers.indicate_data_truncated()
         return result
 
-    def _yield_user_file_content(self, trans, from_dataset, filename):
+    def _yield_user_file_content(self, trans, from_dataset, filename, headers: Headers):
         """This method is responsible for sanitizing the HTML if needed."""
-        if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
+        if trans.app.config.sanitize_all_html and headers.get("content-type", None) == "text/html":
             # Sanitize anytime we respond with plain text/html content.
             # Check to see if this dataset's parent job is allowlisted
             # We cannot currently trust imported datasets for rendering.
@@ -815,11 +827,11 @@ class Data(metaclass=DataMeta):
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.Base64ChunkDataProvider(dataset_source, **settings)
 
-    def _clean_and_set_mime_type(self, trans, mime):
+    def _clean_and_set_mime_type(self, trans, mime, headers: Headers):
         if mime.lower() in XSS_VULNERABLE_MIME_TYPES:
             if not getattr(trans.app.config, "serve_xss_vulnerable_mimetypes", True):
                 mime = DEFAULT_MIME_TYPE
-        trans.response.set_content_type(mime)
+        headers["content-type"] = mime
 
     def handle_dataset_as_image(self, hda) -> str:
         raise Exception("Unimplemented Method")
