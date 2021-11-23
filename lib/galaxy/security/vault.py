@@ -1,7 +1,8 @@
+import abc
 import json
 import logging
 import os
-from abc import ABC
+from typing import Optional
 
 import yaml
 from cryptography.fernet import Fernet, MultiFernet
@@ -28,9 +29,20 @@ class UnknownVaultTypeException(Exception):
     pass
 
 
-class Vault(ABC):
+class Vault(abc.ABC):
 
-    def read_secret(self, key: str) -> str:
+    @abc.abstractmethod
+    def read_secret(self, key: str) -> Optional[str]:
+        pass
+
+    @abc.abstractmethod
+    def write_secret(self, key: str, value: str) -> None:
+        pass
+
+
+class NullVault(Vault):
+
+    def read_secret(self, key: str) -> Optional[str]:
         raise UnknownVaultTypeException("No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml")
 
     def write_secret(self, key: str, value: str) -> None:
@@ -46,7 +58,7 @@ class HashicorpVault(Vault):
         self.vault_token = config.get('vault_token')
         self.client = hvac.Client(url=self.vault_address, token=self.vault_token)
 
-    def read_secret(self, key: str) -> str:
+    def read_secret(self, key: str) -> Optional[str]:
         try:
             response = self.client.secrets.kv.read_secret_version(path=key)
             return response['data']['data'].get('value')
@@ -76,7 +88,7 @@ class DatabaseVault(Vault):
         self.sa_session.merge(vault_entry)
         self.sa_session.flush()
 
-    def read_secret(self, key: str) -> str:
+    def read_secret(self, key: str) -> Optional[str]:
         key_obj = self.sa_session.query(model.Vault).filter_by(key=key).first()
         if key_obj:
             f = self._get_multi_fernet()
@@ -101,7 +113,7 @@ class CustosVault(Vault):
         self.b64_encoded_custos_token = custos_util.get_token(custos_settings=self.custos_settings)
         self.client = ResourceSecretManagementClient(self.custos_settings)
 
-    def read_secret(self, key: str) -> str:
+    def read_secret(self, key: str) -> Optional[str]:
         try:
             response = self.client.get_KV_credential(token=self.b64_encoded_custos_token,
                                                      client_id=self.custos_settings.CUSTOS_CLIENT_ID,
@@ -127,7 +139,7 @@ class UserVaultWrapper(Vault):
         self.vault = vault
         self.user = user
 
-    def read_secret(self, key: str) -> str:
+    def read_secret(self, key: str) -> Optional[str]:
         return self.vault.read_secret(f"user/{self.user.id}/{key}")
 
     def write_secret(self, key: str, value: str) -> None:
@@ -137,14 +149,14 @@ class UserVaultWrapper(Vault):
 class VaultFactory(object):
 
     @staticmethod
-    def load_vault_config(vault_conf_yml: str) -> dict:
+    def load_vault_config(vault_conf_yml: str) -> Optional[dict]:
         if os.path.exists(vault_conf_yml):
             with open(vault_conf_yml) as f:
                 return yaml.safe_load(f)
         return None
 
     @staticmethod
-    def from_vault_type(app, vault_type: str, cfg: dict) -> Vault:
+    def from_vault_type(app, vault_type: Optional[str], cfg: dict) -> Vault:
         if vault_type == "hashicorp":
             return HashicorpVault(cfg)
         elif vault_type == "database":
@@ -158,5 +170,6 @@ class VaultFactory(object):
     def from_app(app) -> Vault:
         vault_config = VaultFactory.load_vault_config(app.config.vault_config_file)
         if vault_config:
-            return VaultFactory.from_vault_type(app, vault_config.get('type'), vault_config)
+            return VaultFactory.from_vault_type(app, vault_config.get('type', None), vault_config)
         log.warning("No vault configured. We recommend defining the vault_config_file setting in galaxy.yml")
+        return NullVault()

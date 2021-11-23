@@ -1,5 +1,6 @@
 import json
 import os
+from typing import cast, Any
 
 from requests import (
     get,
@@ -21,7 +22,7 @@ class VaultApiTestCase(ApiTestCase):
     def test_extra_prefs_vault_storage(self):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
-        app = self._test_driver.app
+        app = cast(Any, self._test_driver.app if self._test_driver else None)
 
         # create some initial data
         put(url, data=json.dumps({

@@ -7,10 +7,13 @@ from abc import ABC
 from cryptography.fernet import InvalidToken
 
 from galaxy.app_unittest_utils.galaxy_mock import MockApp, MockAppConfig
-from galaxy.security import vault
+from galaxy.security.vault import NullVault, Vault, VaultFactory
 
 
-class VaultTestBase(ABC):
+class VaultTestBase(ABC, unittest.TestCase):
+
+    def __init__(self):
+        self.vault = NullVault()  # type: Vault
 
     def test_read_write_secret(self):
         self.vault.write_secret("my/test/secret", "hello world")
@@ -30,7 +33,7 @@ class TestHashicorpVault(VaultTestBase, unittest.TestCase):
     def setUp(self) -> None:
         config = MockAppConfig(vault_config_file=VAULT_CONF_HASHICORP)
         app = MockApp(config=config)
-        self.vault = vault.VaultFactory.from_app(app)
+        self.vault = VaultFactory.from_app(app)
 
 
 VAULT_CONF_DATABASE = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_database.yaml")
@@ -43,28 +46,28 @@ class TestDatabaseVault(VaultTestBase, unittest.TestCase):
     def setUp(self) -> None:
         config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
         app = MockApp(config=config)
-        self.vault = vault.VaultFactory.from_app(app)
+        self.vault = VaultFactory.from_app(app)
 
     def test_rotate_keys(self):
         config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
         app = MockApp(config=config)
-        self.vault = vault.VaultFactory.from_app(app)
+        self.vault = VaultFactory.from_app(app)
         self.vault.write_secret("my/rotated/secret", "hello rotated")
 
         # should succeed after rotation
         app.config.vault_config_file = VAULT_CONF_DATABASE_ROTATED
-        self.vault = vault.VaultFactory.from_app(app)
+        self.vault = VaultFactory.from_app(app)
         self.assertEqual(self.vault.read_secret("my/rotated/secret"), "hello rotated")
 
     def test_wrong_keys(self):
         config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
         app = MockApp(config=config)
-        self.vault = vault.VaultFactory.from_app(app)
+        self.vault = VaultFactory.from_app(app)
         self.vault.write_secret("my/incorrect/secret", "hello incorrect")
 
         # should fail because decryption keys are the wrong
         app.config.vault_config_file = VAULT_CONF_DATABASE_INVALID
-        self.vault = vault.VaultFactory.from_app(app)
+        self.vault = VaultFactory.from_app(app)
         with self.assertRaises(InvalidToken):
             self.vault.read_secret("my/incorrect/secret")
 
@@ -82,7 +85,7 @@ class TestCustosVault(VaultTestBase, unittest.TestCase):
             self.vault_temp_conf = tempconf.name
         config = MockAppConfig(vault_config_file=self.vault_temp_conf)
         app = MockApp(config=config)
-        self.vault = vault.VaultFactory.from_app(app)
+        self.vault = VaultFactory.from_app(app)
 
     def tearDown(self) -> None:
         os.remove(self.vault_temp_conf)
