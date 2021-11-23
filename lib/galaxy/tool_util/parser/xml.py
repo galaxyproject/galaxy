@@ -50,6 +50,8 @@ class XmlToolSource(ToolSource):
     """ Responsible for parsing a tool from classic Galaxy representation.
     """
 
+    language = 'xml'
+
     def __init__(self, xml_tree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
         self.root = xml_tree.getroot()
