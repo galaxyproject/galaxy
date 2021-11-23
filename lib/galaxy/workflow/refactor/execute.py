@@ -396,11 +396,11 @@ class WorkflowRefactorExecutor:
     def _apply_upgrade_all_steps(self, action: UpgradeAllStepsAction, execution: RefactorActionExecution):
         for step_order_index, step in self._as_dict["steps"].items():
             if step.get('type') == 'subworkflow':
-                step_action = UpgradeSubworkflowAction(action_type='upgrade_subworkflow', step={'order_index': step_order_index})
-                self._apply_upgrade_subworkflow(step_action, execution)
+                step_action_s = UpgradeSubworkflowAction(action_type='upgrade_subworkflow', step={'order_index': step_order_index})
+                self._apply_upgrade_subworkflow(step_action_s, execution)
             elif step.get('type') == 'tool':
-                step_action = UpgradeToolAction(action_type='upgrade_tool', step={'order_index': step_order_index})  # type: ignore
-                self._apply_upgrade_tool(step_action, execution)  # type: ignore
+                step_action_t = UpgradeToolAction(action_type='upgrade_tool', step={'order_index': step_order_index})
+                self._apply_upgrade_tool(step_action_t, execution)
 
     def _find_step(self, step_reference: step_reference_union):
         order_index = None

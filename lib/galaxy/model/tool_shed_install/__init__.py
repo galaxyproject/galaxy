@@ -663,9 +663,9 @@ class ToolVersion(Base, Dictifiable, _HasTable):
     tool_id = Column(String(255))
     tool_shed_repository_id = Column(ForeignKey('tool_shed_repository.id'), index=True, nullable=True)
     parent_tool_association = relationship('ToolVersionAssociation',
-        primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.tool_id))  # type: ignore
+        primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.tool_id))
     child_tool_association = relationship('ToolVersionAssociation',
-        primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.parent_id))  # type: ignore
+        primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.parent_id))
     tool_shed_repository = relationship('ToolShedRepository', back_populates='tool_versions')
 
     dict_element_visible_keys = ['id', 'tool_shed_repository']

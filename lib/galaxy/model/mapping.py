@@ -36,7 +36,7 @@ def _workflow_invocation_update(self):
     session.execute(stmt)
 
 
-model.WorkflowInvocation.update = _workflow_invocation_update  # type: ignore
+model.WorkflowInvocation.update = _workflow_invocation_update
 
 
 class GalaxyModelMapping(SharedModelMapping):

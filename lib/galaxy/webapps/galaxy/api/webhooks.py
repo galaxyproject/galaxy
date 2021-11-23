@@ -45,7 +45,7 @@ class WebhooksController(BaseGalaxyAPIController):
         )
 
         if webhook and webhook.helper != '':
-            return imp.load_source(webhook.path, webhook.helper).main(  # type: ignore
+            return imp.load_source(webhook.path, webhook.helper).main(  # type: ignore[attr-defined]
                 trans, webhook, params,
             )
         else:

@@ -16,8 +16,8 @@ from galaxy.schema.schema import TagCollection
 
 taggable_item_names = {item: item for item in ItemTagAssociation.associated_item_names}
 # This Enum is generated dynamically and mypy can not statically infer it's real type
-# so it should be ignored. See:https://github.com/python/mypy/issues/4865#issuecomment-592560696
-TaggableItemClass = Enum('TaggableItemClass', taggable_item_names)  # type: ignore
+# so it should be ignored. See: https://github.com/python/mypy/issues/4865#issuecomment-592560696
+TaggableItemClass = Enum('TaggableItemClass', taggable_item_names)  # type: ignore[misc]
 
 
 class ItemTagsPayload(BaseModel):

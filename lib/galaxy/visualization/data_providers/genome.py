@@ -234,7 +234,7 @@ class GenomeDataProvider(BaseDataProvider):
         """
         # Get column names.
         try:
-            column_names = self.original_dataset.datatype.column_names  # type: ignore
+            column_names = self.original_dataset.datatype.column_names  # type: ignore[attr-defined]
         except AttributeError:
             try:
                 column_names = list(range(self.original_dataset.metadata.columns))

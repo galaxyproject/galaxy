@@ -291,7 +291,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Tours registry
         tour_registry = build_tours_registry(self.config.tour_config_dir)
         self.tour_registry = tour_registry
-        self[ToursRegistry] = tour_registry  # type: ignore
+        self[ToursRegistry] = tour_registry  # type: ignore[misc]
         # Webhooks registry
         self.webhooks_registry = self._register_singleton(WebhooksRegistry, WebhooksRegistry(self.config.webhooks_dir))
         # Load security policy.

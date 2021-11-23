@@ -28,7 +28,7 @@ router = Router(tags=['tours'])
 @router.cbv
 class FastAPITours:
     # ugh - mypy https://github.com/python/mypy/issues/5374
-    registry: ToursRegistry = depends(ToursRegistry)  # type: ignore
+    registry: ToursRegistry = depends(ToursRegistry)  # type: ignore[misc]
 
     @router.get('/api/tours')
     def index(self) -> TourList:
@@ -47,7 +47,7 @@ class FastAPITours:
 
 
 class ToursController(BaseGalaxyAPIController):
-    registry: ToursRegistry = depends(ToursRegistry)  # type: ignore
+    registry: ToursRegistry = depends(ToursRegistry)  # type: ignore[misc]
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
