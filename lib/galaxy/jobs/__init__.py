@@ -997,8 +997,8 @@ class MinimalJobWrapper(HasResourceParameters):
         # resolved
         self._job_io = None
         self._dataset_path_rewriter = None
-        self.output_paths: List[DatasetPath] = None  # type: ignore
-        self.output_hdas_and_paths: Dict[str, Union[List, Tuple]] = None  # type: ignore
+        self.output_paths: List[DatasetPath] = None  # type: ignore[assignment]
+        self.output_hdas_and_paths: Dict[str, Union[List, Tuple]] = None  # type: ignore[assignment]
         self.tool_provided_job_metadata = None
         self.params = None
         if job.params:
@@ -2474,7 +2474,7 @@ class TaskWrapper(JobWrapper):
         if task.prepare_input_files_cmd is not None:
             self.prepare_input_files_cmds = [task.prepare_input_files_cmd]
         else:
-            self.prepare_input_files_cmds = None  # type: ignore
+            self.prepare_input_files_cmds = None  # type: ignore[assignment]
         self.status = task.states.NEW
 
     def can_split(self):
