@@ -27,6 +27,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Set,
     Tuple,
     Type,
     TYPE_CHECKING,
@@ -85,6 +86,8 @@ from sqlalchemy.orm import (
     reconstructor,
     registry,
     relationship,
+    RelationshipProperty,
+    Session,
 )
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm.decl_api import DeclarativeMeta
@@ -103,8 +106,10 @@ from galaxy.model.custom_types import (
     UUIDType,
 )
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
+from galaxy.model.metadata import MetadataCollection
 from galaxy.model.orm.now import now
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
+from galaxy.objectstore import ObjectStore
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
@@ -165,6 +170,8 @@ class Base(metaclass=DeclarativeMeta):
     registry = mapper_registry
     metadata = mapper_registry.metadata
     __init__ = mapper_registry.constructor
+    __table__: Table
+    table: Table
 
     @classmethod
     def __declare_last__(cls):
@@ -219,7 +226,7 @@ class HasTags:
     tags: List["ItemTagAssociation"]
 
     def to_dict(self, *args, **kwargs):
-        rval = super().to_dict(*args, **kwargs)
+        rval = super().to_dict(*args, **kwargs)  # type: ignore[misc]
         rval['tags'] = self.make_tag_string_list()
         return rval
 
@@ -309,6 +316,7 @@ class Serializable(RepresentById):
 
 
 class HasName:
+    name: str
 
     def get_display_name(self):
         """
@@ -321,6 +329,8 @@ class HasName:
 
 
 class UsesCreateAndUpdateTime:
+    update_time: datetime
+    create_time: datetime
 
     @property
     def seconds_since_updated(self):
@@ -374,6 +384,10 @@ def cached_id(galaxy_model_object):
 
 class JobLike:
     MAX_NUMERIC = 10**(JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
+    _numeric_metric: Callable
+    _text_metric: Callable
+    id: int
+    tool_id: int
 
     def _init_metrics(self):
         self.text_metrics = []
@@ -554,7 +568,7 @@ class User(Base, Dictifiable, RepresentById):
 
     @property
     def extra_preferences(self):
-        data = defaultdict(lambda: None)
+        data: Dict[str, Any] = defaultdict(lambda: None)
         extra_user_preferences = self.preferences.get('extra_user_preferences')
         if extra_user_preferences:
             try:
@@ -1325,7 +1339,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         if self.state == self.states.PAUSED:
             self.set_state(self.states.NEW)
             object_session(self).add(self)
-            jobs_to_resume = set()
+            jobs_to_resume: Set[Job] = set()
             for jtod in self.output_datasets:
                 jobs_to_resume.update(jtod.dataset.unpause_dependent_jobs(jobs_to_resume))
             for job in jobs_to_resume:
@@ -2632,7 +2646,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         rval = super().to_dict(view=view, value_mapper=value_mapper)
 
         if view == 'element':
-            rval['size'] = int(self.disk_size)
+            rval['size'] = int(self.disk_size)  # type: ignore[call-overload]
 
         return rval
 
@@ -3138,6 +3152,12 @@ class StorableObject:
 
 
 class Dataset(StorableObject, Serializable, _HasTable):
+    library_associations: List[Any]
+    history_associations: List[Any]
+    purged_history_associations: List[Any]
+    actions: List[Any]
+    object_store_id: str
+    created_from_basename: str
 
     class states(str, Enum):
         NEW = 'new'
@@ -3188,7 +3208,7 @@ class Dataset(StorableObject, Serializable, _HasTable):
 
     permitted_actions = get_permitted_actions(filter='DATASET')
     file_path = "/tmp/"
-    object_store = None  # This get initialized in mapping.py (method init) by app.py
+    object_store: ObjectStore  # This get initialized in mapping.py (method init) by app.py
     engine = None
 
     def __init__(self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None):
@@ -3240,7 +3260,7 @@ class Dataset(StorableObject, Serializable, _HasTable):
                 return self.object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_rel_path)
             return ''
         else:
-            return os.path.abspath(self.external_extra_files_path)
+            return os.path.abspath(self.external_extra_files_path)  # type: ignore[arg-type]
 
     def create_extra_files_path(self):
         if not self.extra_files_path_exists():
@@ -3495,6 +3515,12 @@ class DatasetInstance(_HasTable):
     states = Dataset.states
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
+    validation_errors: List[Any]
+    _metadata_collection: MetadataCollection
+    implicitly_converted_datasets: RelationshipProperty
+    purged: bool
+    creating_job_associations: RelationshipProperty
+    create_time: datetime
 
     class validated_states(str, Enum):
         UNKNOWN = 'unknown'
@@ -3515,11 +3541,11 @@ class DatasetInstance(_HasTable):
         self.extension = extension
         self.designation = designation
         # set private variable to None here, since the attribute may be needed in by MetadataCollection.__init__
-        self._metadata = None
+        self._metadata: Optional[Dict[str, str]] = None
         self.metadata = metadata or dict()
         self.extended_metadata = extended_metadata
         if dbkey:  # dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'
-            self._metadata['dbkey'] = dbkey
+            self._metadata = {'dbkey': dbkey}
         self.deleted = deleted
         self.visible = visible
         self.validated_state = validated_state
@@ -3553,8 +3579,8 @@ class DatasetInstance(_HasTable):
     def get_dataset_state(self):
         # self._state is currently only used when setting metadata externally
         # leave setting the state as-is, we'll currently handle this specially in the external metadata code
-        if self._state:
-            return self._state
+        if self._state:  # type: ignore[attr-defined]
+            return self._state  # type: ignore[attr-defined]
         return self.dataset.state
 
     def raw_set_dataset_state(self, state):
@@ -3955,7 +3981,7 @@ class DatasetInstance(_HasTable):
             else:
                 # Convert.
                 if isinstance(source_list, str):
-                    source_list = [source_list]
+                    source_list = [source_list]  # type: ignore[assignment]
 
                 # Loop through sources until viable one is found.
                 for source in source_list:
@@ -3987,16 +4013,13 @@ class DatasetInstance(_HasTable):
             return {'kind': self.conversion_messages.ERROR, 'message': dep_error.value}
 
         # Check dataset state and return any messages.
-        msg = None
         if converted_dataset and converted_dataset.state == Dataset.states.ERROR:
             job_id = trans.sa_session.query(JobToOutputDatasetAssociation) \
                 .filter_by(dataset_id=converted_dataset.id).first().job_id
             job = trans.sa_session.query(Job).get(job_id)
-            msg = {'kind': self.conversion_messages.ERROR, 'message': job.stderr}
+            return {'kind': self.conversion_messages.ERROR, 'message': job.stderr}
         elif not converted_dataset or converted_dataset.state != Dataset.states.OK:
-            msg = self.conversion_messages.PENDING
-
-        return msg
+            return self.conversion_messages.PENDING
 
     def _serialize(self, id_encoder, serialization_options):
         metadata = _prepare_metadata_for_serialization(id_encoder, serialization_options, self.metadata)
@@ -4042,6 +4065,13 @@ class DatasetInstance(_HasTable):
 
 class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnotations,
                                 HasName, Serializable):
+    implicitly_converted_parent_datasets: RelationshipProperty
+    dependent_jobs: RelationshipProperty
+    extended_metadata_id: int
+    version: int
+    visible: bool
+    deleted: bool
+
     """
     Resource class that creates a relation between a dataset and a user history.
     """
@@ -4080,7 +4110,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             changes[attr.key] = hist.deleted
         if self.update_time and self.state == self.states.OK:
             # We only record changes to HDAs that exist in the database and have a update_time
-            new_values = {}
+            new_values: Dict[str, Any] = {}
             new_values['name'] = changes.get('name', self.name)
             new_values['dbkey'] = changes.get('dbkey', self.dbkey)
             new_values['extension'] = changes.get('extension', self.extension)
@@ -4091,7 +4121,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             new_values['update_time'] = self.update_time
             new_values['version'] = self.version or 1
             new_values['metadata'] = self._metadata
-            past_hda = HistoryDatasetAssociationHistory(history_dataset_association_id=self.id,
+            past_hda = HistoryDatasetAssociationHistory(history_dataset_association_id=self.id,  # type: ignore[abstract]
                                                         **new_values)
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
@@ -4630,7 +4660,7 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
 
     @property
     def library_path(self):
-        l_path = []
+        l_path: List[str] = []
         f = self
         while f.parent:
             l_path.insert(0, f.name)
@@ -4763,6 +4793,9 @@ class LibraryDataset(Base, Serializable):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
+    tags: List[Any]
+    library_dataset_id: int
+    message: str
 
     def __init__(self,
                  copied_from_history_dataset_association=None,
@@ -5106,9 +5139,9 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
         if purge and self.dataset.deleted:  # do something with purging
             self.purged = True
             try:
-                os.unlink(self.file_name)
+                os.unlink(self.dataset.file_name)
             except Exception as e:
-                log.error(f"Failed to purge associated file ({self.file_name}) from disk: {unicodify(e)}")
+                log.error(f"Failed to purge associated file ({self.dataset.file_name}) from disk: {unicodify(e)}")
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
@@ -5449,6 +5482,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
 
 class DatasetCollectionInstance(HasName):
+    editable_keys: Tuple
+    collection: RelationshipProperty
+    id: int
+    name: str
 
     @property
     def state(self):
@@ -6447,7 +6484,7 @@ class WorkflowStep(Base, RepresentById):
         # Older Galaxy workflows may have multiple WorkflowOutputs
         # per "output_name", when serving these back to the editor
         # feed only a "best" output per "output_name.""
-        outputs = {}
+        outputs: Dict[str, WorkflowOutput] = {}
         for workflow_output in self.workflow_outputs:
             output_name = workflow_output.output_name
 
@@ -6480,7 +6517,7 @@ class WorkflowStep(Base, RepresentById):
         # Ensure input_connections has already been set.
 
         # Make connection information available on each step by input name.
-        input_connections_by_name = {}
+        input_connections_by_name: Dict[str, List[Any]] = {}
         for conn in self.input_connections:
             input_name = conn.input_name
             if input_name not in input_connections_by_name:
@@ -7636,7 +7673,7 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
     assoc_type = Column(VARCHAR(64))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
-    sa_session = None
+    sa_session: Session
 
     def save(self):
         self.sa_session.add(self)
@@ -7675,7 +7712,7 @@ class PSACode(Base, CodeMixin, RepresentById):
     code = Column(VARCHAR(32))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
-    sa_session = None
+    sa_session: Session
 
     def __init__(self, email, code):
         self.email = email
@@ -7699,7 +7736,7 @@ class PSANonce(Base, NonceMixin, RepresentById):
     salt = Column(VARCHAR(40))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
-    sa_session = None
+    sa_session: Session
 
     def __init__(self, server_url, timestamp, salt):
         self.server_url = server_url
@@ -7731,7 +7768,7 @@ class PSAPartial(Base, PartialMixin, RepresentById):
     backend = Column(VARCHAR(32))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
-    sa_session = None
+    sa_session: Session
 
     def __init__(self, token, data, next_step, backend):
         self.token = token
@@ -7768,7 +7805,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     user = relationship('User', back_populates='social_auth')
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
-    sa_session = None
+    sa_session: Session
 
     def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None):
         self.provider = provider
@@ -8166,9 +8203,11 @@ class ItemTagAssociation(Dictifiable):
     associated_item_names: List[str] = []
     user_tname: Column
     user_value = Column(TrimmedString(255), index=True)
+    tag_id: int
+    value: str
 
     def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
+        super().__init_subclass__(**kwargs)  # type: ignore[call-arg]
         cls.associated_item_names.append(cls.__name__.replace("TagAssociation", ""))
 
     def copy(self, cls=None):

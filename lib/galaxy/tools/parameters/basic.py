@@ -2353,7 +2353,6 @@ class LibraryDatasetToolParameter(ToolParameter):
             value = [value]
         lst: List[Dict[str, str]] = []
         for item in value:
-            lda_id = lda_name = None
             if isinstance(item, LibraryDatasetDatasetAssociation):
                 lda_id = app.security.encode_id(item.id) if use_security else item.id
                 lda_name = item.name
