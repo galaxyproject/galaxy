@@ -1917,7 +1917,7 @@ galaxy:
   # the tool wrappers installed on this Galaxy server. If you have only
   # installed tool wrappers from  public tool sheds and tools shipped
   # with Galaxy there you can enable this option.
-  #allow_tool_source_display: false
+  #enable_tool_source_display: false
 
   # XML config file that contains the job metric collection
   # configuration.

@@ -2821,7 +2821,7 @@ mapping:
           Details" option in the history. This option also exposes the command line to
           non-administrative users. Administrators can always see dataset paths.
 
-      allow_tool_source_display:
+      enable_tool_source_display:
         type: bool
         default: false
         required: false

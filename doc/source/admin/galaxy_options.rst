@@ -3908,9 +3908,9 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``allow_tool_source_display``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_source_display``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     This option allows users to view the tool wrapper source code.

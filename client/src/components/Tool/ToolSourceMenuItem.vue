@@ -1,7 +1,7 @@
 <template>
     <CurrentUser v-slot="{ user }">
         <ConfigProvider v-slot="{ config }">
-            <template v-if="config.allow_tool_source_display || (user && user.is_admin)">
+            <template v-if="config.enable_tool_source_display || (user && user.is_admin)">
                 <b-dropdown-item v-b-modal.tool-source-viewer
                     ><span class="fa fa-eye" /><span v-localize>View Tool source</span>
                 </b-dropdown-item>
