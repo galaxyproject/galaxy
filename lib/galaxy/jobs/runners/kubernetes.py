@@ -133,8 +133,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             except Exception as e:
                 log.debug('Failed to parse `k8s_data_volume_claim` parameter in the kubernetes runner configuration')
                 raise e
-            data_volume = {'name': data_claim_name, 'persistentVolumeClaim': {'claimName': data_claim_name}}
-            if data_claim_name not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
+            data_volume_name = data_claim_name if "/" not in data_claim_name else data_claim_name.split("/")[0]
+            data_volume = {'name': data_volume_name, 'persistentVolumeClaim': {'claimName': data_volume_name}}
+            if data_volume_name not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
                 self.runner_params['k8s_mountable_volumes'].append(data_volume)
         if self.runner_params.get('k8s_working_volume_claim'):
             try:
@@ -143,13 +144,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             except Exception as e:
                 log.debug('Failed to parse `k8s_working_volume_claim` parameter in the kubernetes runner configuration')
                 raise e
-            working_volume = {'name': working_claim_name, 'persistentVolumeClaim': {'claimName': working_claim_name}}
-            if "/" in working_volume:
-                name = working_volume.split("/")[0]
-                subpath = working_volume.split("/")[1]
-                working_volume["name"] = name
-                working_volume["subPath"] = subpath
-            if working_claim_name not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
+            working_volume_name = working_claim_name if "/" not in working_claim_name else working_claim_name.split("/")[0]
+            working_volume = {'name': working_volume_name, 'persistentVolumeClaim': {'claimName': working_volume_name}}
+            if working_volume_name not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
                 self.runner_params['k8s_mountable_volumes'].append(working_volume)
 
 
@@ -487,6 +484,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             try:
                 param_claim = self.runner_params['k8s_data_volume_claim'].split(":")
                 claim_name = param_claim[0]
+                if "/" in claim_name:
+                    base_subpath = claim_name.split("/")[1]
+                    claim_name = claim_name.split("/")[0]
                 base_mount = param_claim[1]
             except Exception as e:
                 log.debug('Failed to parse `k8s_data_volume_claim` parameter in the kubernetes runner configuration')
@@ -496,6 +496,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             for i in list(inputs):
                 file_path = str(i)
                 subpath = file_path.lstrip(base_mount).lstrip('/').rstrip('/')
+                if base_subpath:
+                    subpath = "{}/{}".format(base_subpath, subpath)
                 volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
             # for o in list(outputs):
             #     file_path = str(o).rstrip('/').split('/')
@@ -508,11 +510,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             try:
                 param_claim = self.runner_params['k8s_working_volume_claim'].split(":")
                 claim_name = param_claim[0]
+                if "/" in claim_name:
+                    base_subpath = claim_name.split("/")[1]
+                    claim_name = claim_name.split("/")[0]
+                base_mount = param_claim[1]
                 base_mount = param_claim[1]
             except Exception as e:
                 log.debug('Failed to parse `k8s_working_volume_claim` parameter in the kubernetes runner configuration')
                 raise e
             wd_subpath = str(job_wrapper.working_directory).lstrip(base_mount).lstrip('/').rstrip('/')
+            if base_subpath:
+                wd_subpath = "{}/{}".format(base_subpath, wd_subpath)
             volume_mounts.append({'name': claim_name,
                                   'mountPath': str(job_wrapper.working_directory),
                                   'subPath': wd_subpath})
