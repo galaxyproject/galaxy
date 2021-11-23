@@ -56,11 +56,8 @@ import FormHidden from "./Elements/FormHidden";
 import FormInput from "./Elements/FormInput";
 import FormParameter from "./Elements/FormParameter";
 import FormColor from "./Elements/FormColor";
-<<<<<<< HEAD
 import FormDirectory from "./Elements/FormDirectory";
-=======
 import FormNumber from "./Elements/FormNumber";
->>>>>>> 829f9e464f (implement slider in vue)
 
 export default {
     components: {
