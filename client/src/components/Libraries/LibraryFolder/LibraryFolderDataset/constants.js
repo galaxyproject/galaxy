@@ -1,8 +1,8 @@
-export const fieldsTitles = {
+export const fieldTitles = {
     name: "Name",
     file_ext: "Data type",
     genome_build: "Genome build",
-    size: "Size",
+    file_size: "Size",
     update_time: "Date last updated (UTC)",
     date_uploaded: "Date uploaded (UTC)",
     uploaded_by: "Uploaded by",
@@ -11,8 +11,8 @@ export const fieldsTitles = {
     metadata_columns: "Number of Columns",
     metadata_column_types: "Column Types",
     message: "Message",
-    misc_blurb: "Misc. blurb",
-    misc_info: "Misc. info",
+    misc_blurb: "Miscellaneous blurb",
+    misc_info: "Miscellaneous information",
     tags: "Tags",
     uuid: "UUID",
 };
