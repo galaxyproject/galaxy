@@ -396,7 +396,7 @@ class Bed(Interval):
         if dataset.has_data():
             i = 0
             with compression_utils.get_fileobj(dataset.file_name) as in_fh:
-                for i, line in enumerate(in_fh):
+                for i, line in enumerate(in_fh):  # noqa: B007
                     line = line.rstrip('\r\n')
                     if line and not line.startswith('#'):
                         elems = line.split('\t')
