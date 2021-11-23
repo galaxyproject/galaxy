@@ -4,7 +4,8 @@
             <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
             <!-- Toolbar -->
             <b-button title="Download dataset" class="mr-1 mb-2" @click="download(datasetDownloadFormat, dataset_id)">
-                <font-awesome-icon icon="download" /> Download
+                <font-awesome-icon icon="download" />
+                Download
             </b-button>
             <b-button @click="importToHistory" title="Import dataset into history" class="mr-1 mb-2">
                 <font-awesome-icon icon="book" />
@@ -70,12 +71,13 @@
                         v-model="modifiedDataset.name"
                     />
                     <multiselect
-                        v-else-if="row.item.name === fieldTitles.file_ext"
-                        v-model="modifiedDataset.file_ext"
+                        v-else-if="availableDatatypes.length > 1 && row.item.name === fieldTitles.file_ext"
+                        v-model="row.item.value"
                         deselect-label="Can't remove this value"
                         :options="availableDatatypes"
                         :searchable="true"
                         :allow-empty="false"
+                        @select="onTypeSelected"
                     />
                     <GenomeProvider v-slot="{ item, loading }" v-else-if="row.item.name === fieldTitles.genome_build">
                         <genome-selector
@@ -142,6 +144,7 @@ function buildFields(fieldTitles, data) {
         data[property] ? { name: title, value: data[property] } : []
     );
 }
+
 export default {
     props: {
         dataset_id: {
@@ -220,6 +223,9 @@ export default {
         },
         onSelectedGenome(genome) {
             this.modifiedDataset.genome_build = genome.id;
+        },
+        onTypeSelected(ext) {
+            this.modifiedDataset.file_ext = ext;
         },
     },
 };
