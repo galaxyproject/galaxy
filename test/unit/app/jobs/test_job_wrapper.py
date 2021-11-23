@@ -71,6 +71,12 @@ class BaseWrapperTestCase(UsesApp):
         pass
 
 
+class JobWrapperTestCase(BaseWrapperTestCase, TestCase):
+
+    def _wrapper(self):
+        return JobWrapper(self.job, self.queue)
+
+
 class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
 
     def setUp(self):
