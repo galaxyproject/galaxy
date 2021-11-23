@@ -1280,6 +1280,19 @@ steps:
             invocation_id = self.__invoke_workflow(workflow_id, inputs=inputs, history_id=history_id)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
 
+    @skip_without_tool("cat1")
+    @skip_without_tool("__FLATTEN__")
+    def test_workflow_input_tags(self):
+        workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_with_input_tags")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        downloaded_workflow = self._download_workflow(workflow_id)
+        count = 0
+        tag_test = ["tag1", "tag2"]
+        for step in downloaded_workflow["steps"]:
+            current = json.loads(downloaded_workflow["steps"][step]["tool_state"])
+            assert current["tag"] == tag_test[count]
+            count += 1
+
     @skip_without_tool('column_param')
     def test_empty_file_data_column_specified(self):
         # Regression test for https://github.com/galaxyproject/galaxy/pull/10981
