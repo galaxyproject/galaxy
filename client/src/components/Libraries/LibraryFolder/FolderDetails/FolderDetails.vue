@@ -51,6 +51,12 @@
                                 <b>{{ folderHeader }}</b>
                             </h4>
                         </template>
+                        <template v-slot:cell(value)="row">
+                            <div v-if="row.item.name === libraryFieldTitles.create_time_pretty">
+                                <UtcDate :date="row.item.value" mode="elapsed" />
+                            </div>
+                            <div v-else>{{ row.item.value }}</div>
+                        </template>
                     </b-table-lite>
                 </div>
             </div>
@@ -65,6 +71,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
+import UtcDate from "components/UtcDate";
 
 library.add(faInfoCircle);
 
@@ -83,6 +90,7 @@ function buildFields(fieldTitles, data) {
 export default {
     components: {
         FontAwesomeIcon,
+        UtcDate,
     },
     props: {
         id: {
