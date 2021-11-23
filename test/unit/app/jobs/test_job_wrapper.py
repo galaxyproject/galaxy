@@ -15,7 +15,6 @@ from galaxy.model import (
     Task,
     User
 )
-from galaxy.tools import evaluation
 from galaxy.util.bunch import Bunch
 
 TEST_TOOL_ID = "cufftest"
@@ -49,9 +48,9 @@ class BaseWrapperTestCase(UsesApp):
     @contextmanager
     def _prepared_wrapper(self):
         wrapper = self._wrapper()
-        with _mock_tool_evaluator(MockEvaluator):
-            wrapper.prepare()
-            yield wrapper
+        wrapper._get_tool_evaluator = lambda *args, **kwargs: MockEvaluator(wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory)  # type: ignore[assignment]
+        wrapper.prepare()
+        yield wrapper
 
     def test_version_path(self):
         wrapper = self._wrapper()
@@ -197,16 +196,3 @@ class MockObjectStore:
         if kwds.get("base_dir", "") == "job_work":
             return self.working_directory
         return None
-
-
-# Poor man's mocking. Need to get a real mocking library as real Galaxy development
-# dependency.
-@contextmanager
-def _mock_tool_evaluator(mock_constructor):
-    name = evaluation.ToolEvaluator.__name__
-    real_classs = getattr(evaluation, name)
-    try:
-        setattr(evaluation, name, mock_constructor)
-        yield
-    finally:
-        setattr(evaluation, name, real_classs)
