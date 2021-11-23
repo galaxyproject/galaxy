@@ -24,6 +24,7 @@
             <FormBoolean v-if="type == 'boolean'" v-model="currentValue" :id="id" />
             <FormHidden v-else-if="isHiddenType" v-model="currentValue" :id="id" :info="attrs['info']" />
             <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
+            <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter
                 v-else-if="backbonejs"
                 v-model="currentValue"
@@ -48,6 +49,7 @@ import FormHidden from "./Elements/FormHidden";
 import FormInput from "./Elements/FormInput";
 import FormParameter from "./Elements/FormParameter";
 import FormColor from "./Elements/FormColor";
+import FormDirectory from "./Elements/FormDirectory";
 
 export default {
     components: {
@@ -56,6 +58,7 @@ export default {
         FormInput,
         FormColor,
         FormParameter,
+        FormDirectory,
     },
     props: {
         id: {

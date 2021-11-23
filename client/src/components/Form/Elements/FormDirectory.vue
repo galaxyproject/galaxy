@@ -1,7 +1,9 @@
 <template>
     <div>
         <div v-if="!url">
-            <b-button id="select-btn" @click="reset"> <font-awesome-icon icon="folder-open" /> Select folder </b-button>
+            <b-button id="select-btn" @click="reset">
+                <font-awesome-icon icon="folder-open" /> {{ selectText }}
+            </b-button>
             <FilesDialog :key="modalKey" mode="directory" :callback="setUrl" :require-writable="true" />
         </div>
         <b-breadcrumb v-if="url">
@@ -41,6 +43,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faFolder, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import { FilesDialog } from "components/FilesDialog";
+import _l from "utils/localization";
 
 library.add(faFolder, faFolderOpen);
 
@@ -57,13 +60,7 @@ export default {
         FilesDialog,
     },
     data() {
-        return { ...getDefaultValues(), modalKey: 0 };
-    },
-    props: {
-        callback: {
-            type: Function,
-            required: true,
-        },
+        return { ...getDefaultValues(), modalKey: 0, selectText: _l("Select") };
     },
     computed: {
         isValidName() {
@@ -123,7 +120,7 @@ export default {
                 // create an string of path chunks separated by `/`
                 url = encodeURI(`${this.url.protocol}//${this.pathChunks.map(({ pathChunk }) => pathChunk).join("/")}`);
             }
-            this.callback(url);
+            this.$emit("input", url);
         },
     },
 };
