@@ -11,6 +11,8 @@ cat <<EOF
 '${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api directory, test_path
                                     can be pytest selector
+'${0##*/} -cwl (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api/cwl directory, test_path
+                                    can be pytest selector
 '${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
                                     can be pytest selector
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./lib/tool_shed/test directory
@@ -323,6 +325,7 @@ do
           GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
           export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          marker="not cwl_conformance"
           test_script="pytest"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
@@ -330,6 +333,22 @@ do
               shift 2
           else
               api_script="./lib/galaxy_test/api"
+              shift 1
+          fi
+          ;;
+      -cwl|--cwl)
+          GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
+          export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          marker="cwl_conformance"
+          test_script="pytest"
+          report_file="./run_cwl_tests.html"
+          generate_cwl_conformance_tests=1
+          if [ $# -gt 1 ]; then
+              api_script=$2
+              shift 2
+          else
+              api_script="./lib/galaxy_test/api/cwl"
               shift 1
           fi
           ;;
@@ -618,6 +637,9 @@ if [ -n "$structured_data_report_file" ]; then
     fi
 else
     structured_data_args=""
+fi
+if [ -n "$generate_cwl_conformance_tests" ]; then
+    make generate-cwl-conformance-tests
 fi
 export GALAXY_TEST_TOOL_CONF
 if [ "$test_script" = 'pytest' ]; then

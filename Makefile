@@ -13,6 +13,12 @@ OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 YARN := $(shell command -v yarn 2> /dev/null)
 YARN_INSTALL_OPTS=--network-timeout 300000 --check-files
+CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
+	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
+	test/functional/tools/cwl_tools/v1.2/conformance_tests.yaml \
+	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_0.py \
+	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_1.py \
+	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_2.py
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -129,6 +135,24 @@ update-lint-requirements:
 
 update-dependencies: update-lint-requirements ## update pinned and dev dependencies
 	$(IN_VENV) ./lib/galaxy/dependencies/update.sh
+
+$(CWL_TARGETS):
+	./scripts/update_cwl_conformance_tests.sh
+
+generate-cwl-conformance-tests: $(CWL_TARGETS)  ## Initialise CWL conformance tests
+
+clean-cwl-conformance-tests:  # Clean CWL conformance tests
+	for f in $(CWL_TARGETS); do \
+		if [ $$(basename "$$f") = conformance_tests.yaml ]; then \
+			rm -rf $$(dirname "$$f"); \
+		else \
+			rm -f "$$f"; \
+		fi \
+	done
+
+update-cwl-conformance-tests: ## update CWL conformance tests
+	$(MAKE) clean-cwl-conformance-tests
+	$(MAKE) generate-cwl-conformance-tests
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN

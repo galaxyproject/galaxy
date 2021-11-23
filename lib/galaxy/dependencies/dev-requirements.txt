@@ -50,11 +50,12 @@ commonmark==0.9.1; python_version >= "3.6" and python_version < "4.0"
 contextvars==2.4; python_version < "3.7" and python_version >= "3.6"
 coverage==6.1.1; python_version >= "3.6"
 cryptography==35.0.0; python_version >= "3.6"
+cwltest==2.2.20210901154959; python_version >= "3.6" and python_version < "4"
 cwltool==3.1.20211107152837; python_version >= "3.6" and python_version < "4"
 dataclasses==0.8; python_version >= "3.6" and python_version < "3.7" and python_full_version >= "3.6.1"
 debtcollector==2.3.0; python_version >= "3.6"
 decorator==5.1.0; python_version >= "3.6"
-defusedxml==0.7.1; python_version >= "3.0" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.0"
+defusedxml==0.7.1; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_full_version >= "3.5.0" and python_version >= "3.6" and python_version < "4"
 deprecated==1.2.13; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 deprecation==2.1.0
 dictobj==0.4
@@ -99,6 +100,7 @@ jmespath==0.10.0; python_version >= "3.6" and python_full_version < "3.0.0" or p
 jsonpatch==1.32; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 jsonpointer==2.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 jsonschema==4.0.0
+junit-xml==1.9; python_version >= "3.6" and python_version < "4"
 keystoneauth1==4.4.0; python_version >= "3.6"
 kombu==5.1.0; python_version >= "3.6"
 lagom==1.4.1; python_version >= "3.6" and python_version < "4.0"

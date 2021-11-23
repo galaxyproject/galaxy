@@ -77,7 +77,7 @@ class DynamicToolManager(ModelManager):
             tool_version = representation.get("version", None)
             value = representation
         else:
-            raise Exception("Unknown tool type encountered.")
+            raise Exception(f"Unknown tool format [{tool_format}] encountered.")
         # TODO: enforce via DB constraint and catch appropriate
         # exception.
         existing_tool = self.get_tool_by_uuid(uuid)
