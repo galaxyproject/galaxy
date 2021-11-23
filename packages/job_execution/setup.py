@@ -31,6 +31,7 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.job_execution',
+    'galaxy.job_execution.actions',
     'galaxy.job_execution.ports',
     'galaxy.metadata',
 ]

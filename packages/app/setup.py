@@ -38,7 +38,6 @@ PACKAGES = [
     'galaxy.dependencies',
     'galaxy.forms',
     'galaxy.jobs',
-    'galaxy.jobs.actions',
     'galaxy.jobs.rules',
     'galaxy.jobs.runners',
     'galaxy.jobs.runners.state_handlers',
