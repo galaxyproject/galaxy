@@ -16,6 +16,7 @@ concurrency:
 jobs:
   test:
     name: Test
+    if: ${{ false }}
     runs-on: ubuntu-latest
     continue-on-error: ${{ startsWith(matrix.marker, 'red') }}
     strategy:
