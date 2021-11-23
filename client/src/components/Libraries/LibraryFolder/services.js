@@ -132,21 +132,4 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    async getGenomes() {
-        const url = `${this.root}api/genomes`;
-        try {
-            const response = await axios.get(url);
-            const genomes = response.data;
-            const listGenomes = [];
-            for (var key in genomes) {
-                listGenomes.push({
-                    id: genomes[key][1],
-                    text: genomes[key][0],
-                });
-            }
-            return listGenomes;
-        } catch (e) {
-            rethrowSimple(e);
-        }
-    }
 }

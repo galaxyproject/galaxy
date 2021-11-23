@@ -77,16 +77,15 @@
                         :searchable="true"
                         :allow-empty="false"
                     />
-                    <multiselect
-                        v-else-if="row.item.name === fieldTitles.genome_build"
-                        v-model="selectedGenome"
-                        deselect-label="Can't remove this value"
-                        track-by="id"
-                        label="text"
-                        :options="availableGenomes"
-                        :searchable="true"
-                        :allow-empty="false"
-                    />
+                    <GenomeProvider v-slot="{ item, loading }" v-else-if="row.item.name === fieldTitles.genome_build">
+                        <genome-selector
+                            v-if="item"
+                            :loading="loading"
+                            :genomes="item"
+                            :current-genome-id="modifiedDataset.genome_build"
+                            @update:selected-genome="onSelectedGenome"
+                        />
+                    </GenomeProvider>
                     <b-form-input
                         v-else-if="row.item.name === fieldTitles.message"
                         :value="row.item.value"
@@ -127,13 +126,14 @@ import { faUsers, faRedo, faPencilAlt, faBook, faDownload, faTimes } from "@fort
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import mod_import_dataset from "components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
-
 import { Services } from "components/Libraries/LibraryFolder/services";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
 import download from "components/Libraries/LibraryFolder/TopToolbar/download";
 import CopyToClipboard from "components/CopyToClipboard";
 import { Toast } from "ui/toast";
 import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
+import { GenomeProvider } from "components/providers";
+import GenomeSelector from "components/Libraries/LibraryFolder/LibraryFolderDataset/GenomeSelector";
 
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
 
@@ -158,6 +158,8 @@ export default {
         CopyToClipboard,
         FontAwesomeIcon,
         Multiselect,
+        GenomeProvider,
+        GenomeSelector,
     },
     data() {
         return {
@@ -168,8 +170,6 @@ export default {
             download: download,
             table_items: [],
             availableDatatypes: [],
-            availableGenomes: [],
-            selectedGenome: {},
             modifiedDataset: {},
             isEditMode: false,
             fields: [{ key: "name" }, { key: "value" }],
@@ -182,8 +182,6 @@ export default {
         //TODO use providers
         this.availableDatatypes = await this.services.getDatatypes();
         this.availableDatatypes.unshift("auto");
-        this.availableGenomes = await this.services.getGenomes();
-        this.selectedGenome = this.availableGenomes.find((genome) => genome.id == this.dataset.genome_build);
     },
     methods: {
         populateDatasetDetailsTable(data) {
@@ -203,9 +201,6 @@ export default {
             );
         },
         updateDataset() {
-            if (this.selectedGenome.id !== this.dataset.genome_build) {
-                this.modifiedDataset.genome_build = this.selectedGenome.id;
-            }
             //TODO send only diff?
             this.services.updateDataset(
                 this.dataset_id,
@@ -222,6 +217,9 @@ export default {
             new mod_import_dataset.ImportDatasetModal({
                 selected: { dataset_ids: [this.dataset_id] },
             });
+        },
+        onSelectedGenome(genome) {
+            this.modifiedDataset.genome_build = genome.id;
         },
     },
 };
