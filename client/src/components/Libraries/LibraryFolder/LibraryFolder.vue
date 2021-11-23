@@ -90,9 +90,14 @@
                             >{{ row.item.name }}</b-link
                         >
 
-                        <b-link v-else :to="{ name: `LibraryDataset`, params: { folder_id: folder_id, dataset_id: `${row.item.id}` } }">{{
-                            row.item.name
-                        }}</b-link>
+                        <b-link
+                            v-else
+                            :to="{
+                                name: `LibraryDataset`,
+                                params: { folder_id: folder_id, dataset_id: `${row.item.id}` },
+                            }"
+                            >{{ row.item.name }}</b-link
+                        >
                     </div>
                     <!-- Deleted Item-->
                     <div v-else>
