@@ -1,8 +1,13 @@
 """Utilities to help job and tool code setup jobs."""
 import json
 import os
+from typing import Any, Dict, Union
 
-from galaxy import model
+from galaxy.model import (
+    Job,
+    JobExportHistoryArchive,
+    MetadataFile,
+)
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_execution.datasets import (
     DatasetPath,
@@ -29,7 +34,6 @@ class JobIO(Dictifiable):
         'new_file_path',
         'len_file_path',
         'builds_file_path',
-        '_file_sources',
         'check_job_script_integrity',
         'check_job_script_integrity_count',
         'check_job_script_integrity_sleep',
@@ -39,24 +43,26 @@ class JobIO(Dictifiable):
     def __init__(
             self,
             sa_session,
-            job,
-            working_directory,
-            outputs_directory,
-            outputs_to_working_directory,
-            galaxy_url,
-            version_path,
-            tool_directory,
-            home_directory,
-            tmp_directory,
-            tool_data_path,
-            new_file_path,
-            len_file_path,
-            builds_file_path,
-            _file_sources,
-            check_job_script_integrity,
-            check_job_script_integrity_count,
-            check_job_script_integrity_sleep,
+            job: Job,
+            working_directory: str,
+            outputs_directory: str,
+            outputs_to_working_directory: bool,
+            galaxy_url: str,
+            version_path: str,
+            tool_directory: str,
+            home_directory: str,
+            tmp_directory: str,
+            tool_data_path: str,
+            new_file_path: str,
+            len_file_path: str,
+            builds_file_path: str,
+            check_job_script_integrity: bool,
+            check_job_script_integrity_count: int,
+            check_job_script_integrity_sleep: float,
+            file_sources: Union[ConfiguredFileSources, Dict[str, Any]] = None,
             is_task=False):
+        if isinstance(file_sources, dict):
+            file_sources = ConfiguredFileSources.from_dict(file_sources)
         self.sa_session = sa_session
         self.job = job
         self.working_directory = working_directory
@@ -71,7 +77,7 @@ class JobIO(Dictifiable):
         self.new_file_path = new_file_path
         self.len_file_path = len_file_path
         self.builds_file_path = builds_file_path
-        self._file_sources = _file_sources
+        self.file_sources = file_sources
         self.check_job_script_integrity = check_job_script_integrity
         self.check_job_script_integrity_count = check_job_script_integrity_count
         self.check_job_script_integrity_sleep = check_job_script_integrity_sleep
@@ -81,15 +87,16 @@ class JobIO(Dictifiable):
         self._dataset_path_rewriter = None
 
     @classmethod
-    def from_json(cls, path, sa_session, job):
+    def from_json(cls, path, sa_session, job: Job):
         with open(path) as job_io_serialized:
             kwargs = json.load(job_io_serialized)
         kwargs.pop('model_class')
         return cls(sa_session=sa_session, job=job, **kwargs)
 
-    @property
-    def file_sources(self) -> ConfiguredFileSources:
-        return ConfiguredFileSources.from_dict(json.loads(self._file_sources))
+    def to_dict(self):
+        io_dict = super().to_dict()
+        io_dict['file_sources'] = self.file_sources.to_dict()
+        return io_dict
 
     def to_json(self, path):
         with open(path, 'w') as out:
@@ -112,7 +119,7 @@ class JobIO(Dictifiable):
         # we will need to stage in metadata file names also
         # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
         for value in ds.metadata.values():
-            if isinstance(value, model.MetadataFile):
+            if isinstance(value, MetadataFile):
                 filenames.append(value.file_name)
         return filenames
 
@@ -179,7 +186,7 @@ class JobIO(Dictifiable):
 
         job = self.job
         # Job output datasets are combination of history, library, and jeha datasets.
-        special = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=job).first()
+        special = self.sa_session.query(JobExportHistoryArchive).filter_by(job=job).first()
         false_path = None
 
         results = []

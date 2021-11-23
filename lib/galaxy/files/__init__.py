@@ -19,7 +19,7 @@ FileSourcePath = namedtuple('FileSourcePath', ['file_source', 'path'])
 class ConfiguredFileSources:
     """Load plugins and resolve Galaxy URIs to FileSource objects."""
 
-    def __init__(self, file_sources_config, conf_file=None, conf_dict=None, load_stock_plugins=False):
+    def __init__(self, file_sources_config: 'ConfiguredFileSourcesConfig', conf_file=None, conf_dict=None, load_stock_plugins=False):
         self._file_sources_config = file_sources_config
         self._plugin_classes = self._file_source_plugins_dict()
         file_sources = []
