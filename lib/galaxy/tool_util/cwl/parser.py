@@ -293,7 +293,6 @@ class ToolProxy(metaclass=ABCMeta):
             # tool_id = os.path.splitext(os.path.basename(raw_id))[0]
         if not tool_id:
             return self._uuid
-        assert tool_id
         if tool_id.startswith("#"):
             tool_id = tool_id[1:]
         return tool_id
