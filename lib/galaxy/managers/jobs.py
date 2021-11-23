@@ -742,15 +742,11 @@ def summarize_job_outputs(job: model.Job, tool, params, security):
     possible_outputs = (
         ('hda', 'dataset_id', job.output_datasets),
         ('ldda', 'ldda_id', job.output_library_datasets),
-        ('hdca', 'dataset_collection_id', job.output_dataset_collections),
         ('hdca', 'dataset_collection_id', job.output_dataset_collection_instances),
     )
     for src, attribute, output_associations in possible_outputs:
         for output_association in output_associations:
             output_name = output_association.name
-            if src == 'hdca' and output_name in outputs:
-                # Is a mapped over output, don't want to display both (for now?)
-                continue
             if output_name not in output_labels and tool:
                 tool_output = tool.output_collections if src == 'hdca' else tool.outputs
                 output_labels[output_name] = get_output_name(tool=tool, output=tool_output.get(output_name), params=params)

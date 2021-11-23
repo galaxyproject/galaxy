@@ -83,15 +83,15 @@ def export_history(
         app: MinimalManagerApp,
         sa_session: galaxy_scoped_session,
         job_manager: JobManager,
-        store_directory,
-        history_id,
-        job_id,
+        store_directory: str,
+        history_id: int,
+        job_id: int,
         include_hidden=False,
         include_deleted=False):
     history = sa_session.query(model.History).get(history_id)
     with model.store.DirectoryModelExportStore(store_directory, app=app, export_files="symlink") as export_store:
         export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
-    job = sa_session.query(model.Job).get(job_id)
+    job = sa_session.query(model.Job).filter_by(id=job_id).one()
     job.state = model.Job.states.NEW
     sa_session.flush()
     job_manager.enqueue(job)
