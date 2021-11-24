@@ -1,7 +1,7 @@
 <template>
     <div>
         <b-row align-v="center">
-            <b-col :sm="isSliderVisible ? defaultInputSizeWithSlider : false">
+            <b-col :sm="isRangeValid ? defaultInputSizeWithSlider : false">
                 <!-- regular dot and dot on numpad have different codes -->
                 <b-form-input
                     @change="onInputChange"
@@ -12,7 +12,7 @@
                     type="number"
                 />
             </b-col>
-            <b-col class="pl-0" v-if="isSliderVisible">
+            <b-col class="pl-0" v-if="isRangeValid">
                 <b-form-input v-model="currentValue" :min="min" :max="max" type="range" />
             </b-col>
         </b-row>
@@ -39,7 +39,7 @@ export default {
         type: {
             type: String,
             required: true,
-            validator: (prop) => ["integer", "float"].includes(prop),
+            validator: (prop) => ["integer", "float"].includes(prop.toLowerCase()),
         },
         min: {
             type: Number,
@@ -63,8 +63,8 @@ export default {
         };
     },
     computed: {
-        isSliderVisible() {
-            return this.min && this.max && this.max > this.min;
+        isRangeValid() {
+            return !isNaN(this.min) && !isNaN(this.max) && this.max > this.min;
         },
         isInteger() {
             return this.type.toLowerCase() === "integer";
@@ -80,9 +80,9 @@ export default {
         onInputChange(value) {
             // hide error message after value has changed
             this.dismissCountDown = 0;
-            if (this.max && this.min && (value > this.max || value < this.min)) {
+            if (this.isRangeValid && (value > this.max || value < this.min)) {
                 const errorMessage = this.getOutOfRangeWarning(value);
-                value > this.max ? (this.currentValue = this.max) : (this.currentValue = this.min);
+                this.currentValue = value > this.max ? this.max : this.min;
                 this.showAlert(errorMessage);
             }
             this.$emit("input", this.currentValue);
