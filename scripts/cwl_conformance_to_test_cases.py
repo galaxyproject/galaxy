@@ -342,19 +342,17 @@ RED_TESTS = {
 }
 
 
-def load_conformance_tests(directory, path="conformance_tests.yaml"):
-    conformance_tests_path = os.path.join(directory, path)
+def conformance_tests_gen(directory, filename="conformance_tests.yaml"):
+    conformance_tests_path = os.path.join(directory, filename)
     with open(conformance_tests_path) as f:
         conformance_tests = yaml.safe_load(f)
 
-    expanded_conformance_tests = []
     for conformance_test in conformance_tests:
         if "$import" in conformance_test:
             import_path = conformance_test["$import"]
-            expanded_conformance_tests.extend(load_conformance_tests(directory, import_path))
+            yield from conformance_tests_gen(directory, import_path)
         else:
-            expanded_conformance_tests.append(conformance_test)
-    return expanded_conformance_tests
+            yield conformance_test
 
 
 def main():
@@ -363,7 +361,6 @@ def main():
     conformance_tests_dir = sys.argv[1]
     version = sys.argv[2]
     version_simple = version.replace(".", "_")
-    conformance_tests = load_conformance_tests(os.path.join(conformance_tests_dir, version))
 
     red_tests_list = RED_TESTS[version]
     red_tests_found = set()
@@ -371,7 +368,7 @@ def main():
 
     tests = ""
 
-    for i, conformance_test in enumerate(conformance_tests):
+    for i, conformance_test in enumerate(conformance_tests_gen(os.path.join(conformance_tests_dir, version))):
         test_with_doc = conformance_test.copy()
         if 'doc' not in test_with_doc:
             raise Exception(f"No doc in test [{test_with_doc}]")

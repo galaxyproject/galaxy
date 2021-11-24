@@ -226,22 +226,18 @@ def _raise_skip_if(check, *args):
         raise SkipTest(*args)
 
 
-def load_conformance_tests(directory, path="conformance_tests.yaml"):
-    conformance_tests_path = os.path.join(directory, path)
+def conformance_tests_gen(directory, filename="conformance_tests.yaml"):
+    conformance_tests_path = os.path.join(directory, filename)
     with open(conformance_tests_path) as f:
         conformance_tests = yaml.safe_load(f)
 
-    expanded_conformance_tests = []
     for conformance_test in conformance_tests:
         if "$import" in conformance_test:
-            import_path = conformance_test["$import"]
-            expanded_conformance_tests.extend(load_conformance_tests(directory, import_path))
+            import_dir, import_filename = os.path.split(conformance_test["$import"])
+            yield from conformance_tests_gen(os.path.join(directory, import_dir), import_filename)
         else:
-            subdirectory = os.path.dirname(path)
-            if subdirectory:
-                conformance_test["relative_path"] = os.path.join(directory, subdirectory)
-            expanded_conformance_tests.append(conformance_test)
-    return expanded_conformance_tests
+            conformance_test["directory"] = directory
+            yield conformance_test
 
 
 class CwlRun:
@@ -287,8 +283,7 @@ class CwlPopulator:
         self.workflow_populator = workflow_populator
 
     def get_conformance_test(self, version, doc):
-        conformance_tests = load_conformance_tests(os.path.join(CWL_TOOL_DIRECTORY, str(version)))
-        for test in conformance_tests:
+        for test in conformance_tests_gen(os.path.join(CWL_TOOL_DIRECTORY, str(version))):
             if test.get("doc") == doc:
                 return test
         raise Exception(f"doc [{doc}] not found")
@@ -404,7 +399,7 @@ class CwlPopulator:
 
     def run_conformance_test(self, version, doc):
         test = self.get_conformance_test(version, doc)
-        directory = os.path.join(CWL_TOOL_DIRECTORY, version)
+        directory = test["directory"]
         artifact = os.path.join(directory, test["tool"])
         job_path = test.get("job")
         if job_path is not None:
