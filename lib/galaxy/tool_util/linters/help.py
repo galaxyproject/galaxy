@@ -7,31 +7,32 @@ from galaxy.util import (
 
 def lint_help(tool_xml, lint_ctx):
     """Ensure tool contains exactly one valid RST help block."""
+    # determine line to report for general problems with outputs
     root = tool_xml.getroot()
     helps = root.findall("help")
     if len(helps) > 1:
-        lint_ctx.error("More than one help section found, behavior undefined.")
+        lint_ctx.error("More than one help section found, behavior undefined.", line=helps[1].sourceline)
         return
 
     if len(helps) == 0:
-        lint_ctx.warn("No help section found, consider adding a help section to your tool.")
+        lint_ctx.warn("No help section found, consider adding a help section to your tool.", line=root.sourceline)
         return
 
     help = helps[0].text or ''
     if not help.strip():
-        lint_ctx.warn("Help section appears to be empty.")
+        lint_ctx.warn("Help section appears to be empty.", line=helps[0].sourceline)
         return
 
-    lint_ctx.valid("Tool contains help section.")
+    lint_ctx.valid("Tool contains help section.", line=root.sourceline)
     invalid_rst = rst_invalid(help)
 
     if "TODO" in help:
-        lint_ctx.warn("Help contains TODO text.")
+        lint_ctx.warn("Help contains TODO text.", line=helps[0].sourceline)
 
     if invalid_rst:
-        lint_ctx.warn(f"Invalid reStructuredText found in help - [{invalid_rst}].")
+        lint_ctx.warn(f"Invalid reStructuredText found in help - [{invalid_rst}].", line=helps[0].sourceline)
     else:
-        lint_ctx.valid("Help contains valid reStructuredText.")
+        lint_ctx.valid("Help contains valid reStructuredText.", line=helps[0].sourceline)
 
 
 def rst_invalid(text):

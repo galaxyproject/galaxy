@@ -4,13 +4,22 @@ from ._util import is_datasource
 
 # Misspelled so as not be picked up by nosetests.
 def lint_tsts(tool_xml, lint_ctx):
+    # determine line to report for general problems with tests
+    try:
+        tests_line = tool_xml.find("./tool").sourceline
+    except:
+        tests_line = 0
+    try:
+        tests_line = tool_xml.find("./tests").sourceline
+    except:
+        pass
+
     tests = tool_xml.findall("./tests/test")
     datasource = is_datasource(tool_xml)
-
     if not tests and not datasource:
-        lint_ctx.warn("No tests found, most tools should define test cases.")
+        lint_ctx.warn("No tests found, most tools should define test cases.", line=tool_xml.sourceline)
     elif datasource:
-        lint_ctx.info("No tests found, that should be OK for data_sources.")
+        lint_ctx.info("No tests found, that should be OK for data_sources.", line=tests_line)
 
     num_valid_tests = 0
     for test_idx, test in enumerate(tests, start=1):
@@ -30,7 +39,7 @@ def lint_tsts(tool_xml, lint_ctx):
         for param in test.findall("param"):
             name = param.attrib.get("name", None)
             if not name:
-                lint_ctx.error(f"Test {test_idx}: Found test param tag without a name defined.")
+                lint_ctx.error(f"Test {test_idx}: Found test param tag without a name defined.", line=param.sourceline)
                 continue
             name = name.split("|")[-1]
             xpaths = [f"@name='{name}'",
@@ -48,7 +57,7 @@ def lint_tsts(tool_xml, lint_ctx):
                     found = True
                     break
             if not found:
-                lint_ctx.error(f"Test {test_idx}: Test param {name} not found in the inputs")
+                lint_ctx.error(f"Test {test_idx}: Test param {name} not found in the inputs", line=param.sourceline)
 
         output_data_names, output_collection_names = _collect_output_names(tool_xml)
         found_output_test = False
@@ -56,23 +65,23 @@ def lint_tsts(tool_xml, lint_ctx):
             found_output_test = True
             name = output.attrib.get("name", None)
             if not name:
-                lint_ctx.warn(f"Test {test_idx}: Found output tag without a name defined.")
+                lint_ctx.warn("Test {test_idx}: Found output tag without a name defined.", line=output.sourceline)
             else:
                 if name not in output_data_names:
-                    lint_ctx.error(f"Test {test_idx}: Found output tag with unknown name [{name}], valid names [{output_data_names}]")
+                    lint_ctx.error(f"Test {test_idx}: Found output tag with unknown name [{name}], valid names [{output_data_names}]", line=output.sourceline)
 
         for output_collection in test.findall("output_collection"):
             found_output_test = True
             name = output_collection.attrib.get("name", None)
             if not name:
-                lint_ctx.warn(f"Test {test_idx}: Found output_collection tag without a name defined.")
+                lint_ctx.warn(f"Test {test_idx}: Found output_collection tag without a name defined.", line=output_collection.sourceline)
             else:
                 if name not in output_collection_names:
-                    lint_ctx.warn(f"Test {test_idx}: Found output_collection tag with unknown name [{name}], valid names [{output_collection_names}]")
+                    lint_ctx.warn(f"Test {test_idx}: Found output_collection tag with unknown name [{name}], valid names [{output_collection_names}]", line=output_collection.sourceline)
 
         has_test = has_test or found_output_test
         if not has_test:
-            lint_ctx.warn(f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.")
+            lint_ctx.warn("Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.", line=test.sourceline)
         else:
             num_valid_tests += 1
 
@@ -80,9 +89,9 @@ def lint_tsts(tool_xml, lint_ctx):
         lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.")
 
     if num_valid_tests or datasource:
-        lint_ctx.valid("%d test(s) found.", num_valid_tests)
+        lint_ctx.valid(f"{num_valid_tests} test(s) found.", line=tests_line)
     else:
-        lint_ctx.warn("No valid test(s) found.")
+        lint_ctx.warn("No valid test(s) found.", line=tests_line)
 
 
 def _collect_output_names(tool_xml):
