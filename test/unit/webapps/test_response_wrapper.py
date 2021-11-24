@@ -54,7 +54,11 @@ def test_change_content_type():
     assert response.status_code == 200
     assert "content-type" in response.headers
     assert "test-content-type" in response.headers["content-type"]
-    assert response.headers["content-type"] == "test-content-type"
+    # Since we are not explicitly returning a response in `/test/change_content_type`
+    # the default response will be JSONResponse, hence we will end up with both content types.
+    # If we don't want this behavior we must explicitly return a response
+    # like in `/test/change_content_type_custom_response`.
+    assert response.headers["content-type"] == "application/json, test-content-type"
 
 
 def test_change_content_type_custom_response():
