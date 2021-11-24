@@ -10,6 +10,7 @@ from galaxy.model.database_utils import (
 )
 from galaxy.model.migrations import (
     AlembicManager,
+    DatabaseStateCache,
     DatabaseVerifier,
     GXY,
     listify,
@@ -103,6 +104,38 @@ class TestAlembicManager:
         assert not am.is_up_to_date(TSI)  # False: only one is up-to-date
 
 
+class TestDatabaseStateCache:
+
+    def test_is_empty(self, url_factory, metadata_state1_gxy):
+        db_url, metadata = url_factory(), metadata_state1_gxy
+        assert DatabaseStateCache(db_url).is_database_empty()
+        with create_engine(db_url).connect() as conn:
+            metadata.create_all(bind=conn)
+        assert not DatabaseStateCache(db_url).is_database_empty()
+
+    def test_has_alembic_version_table(self, url_factory, metadata_state4_gxy):
+        db_url, metadata = url_factory(), metadata_state4_gxy
+        assert not DatabaseStateCache(db_url).has_alembic_version_table()
+        with create_engine(db_url).connect() as conn:
+            metadata.create_all(bind=conn)
+        assert DatabaseStateCache(db_url).has_alembic_version_table()
+
+    def test_has_sqlalchemymigrate_version_table(self, url_factory, metadata_state2_gxy):
+        db_url, metadata = url_factory(), metadata_state2_gxy
+        assert not DatabaseStateCache(db_url).has_sqlalchemymigrate_version_table()
+        with create_engine(db_url).connect() as conn:
+            metadata.create_all(bind=conn)
+        assert DatabaseStateCache(db_url).has_sqlalchemymigrate_version_table()
+
+    def test_is_last_sqlalchemymigrate_version(self, url_factory, metadata_state2_gxy):
+        db_url = url_factory()
+        load_metadata(db_url, metadata_state2_gxy)
+        load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION - 1)
+        assert not DatabaseStateCache(db_url).is_last_sqlalchemymigrate_version()
+        load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION)
+        assert DatabaseStateCache(db_url).is_last_sqlalchemymigrate_version()
+
+
 # Database fixture tests
 
 class TestDatabaseFixtures:
@@ -122,9 +155,9 @@ class TestDatabaseFixtures:
 
         def verify_state(self, db_url, metadata):
             assert is_metadata_loaded(db_url, metadata)
-            db = DatabaseVerifier(db_url)
-            assert not db._has_sqlalchemymigrate_version_table(db_url)
-            assert not db._has_alembic_version_table(db_url)
+            db = DatabaseStateCache(db_url)
+            assert not db.has_sqlalchemymigrate_version_table()
+            assert not db.has_alembic_version_table()
 
     class TestState2:
 
@@ -139,10 +172,10 @@ class TestDatabaseFixtures:
 
         def verify_state(self, db_url, metadata):
             assert is_metadata_loaded(db_url, metadata)
-            db = DatabaseVerifier(db_url)
-            assert db._has_sqlalchemymigrate_version_table(db_url)
-            assert not db._is_last_sqlalchemymigrate_version(db_url)
-            assert not db._has_alembic_version_table(db_url)
+            db = DatabaseStateCache(db_url)
+            assert db.has_sqlalchemymigrate_version_table()
+            assert not db.is_last_sqlalchemymigrate_version()
+            assert not db.has_alembic_version_table()
 
     class TestState3:
 
@@ -157,10 +190,10 @@ class TestDatabaseFixtures:
 
         def verify_state(self, db_url, metadata):
             assert is_metadata_loaded(db_url, metadata)
-            db = DatabaseVerifier(db_url)
-            assert db._has_sqlalchemymigrate_version_table(db_url)
-            assert db._is_last_sqlalchemymigrate_version(db_url)
-            assert not db._has_alembic_version_table(db_url)
+            db = DatabaseStateCache(db_url)
+            assert db.has_sqlalchemymigrate_version_table()
+            assert db.is_last_sqlalchemymigrate_version()
+            assert not db.has_alembic_version_table()
 
     class TestState4:
 
@@ -176,10 +209,10 @@ class TestDatabaseFixtures:
 
         def verify_state(self, db_url, metadata, revision):
             assert is_metadata_loaded(db_url, metadata)
-            db = DatabaseVerifier(db_url)
-            assert db._has_sqlalchemymigrate_version_table(db_url)
-            assert db._is_last_sqlalchemymigrate_version(db_url)
-            assert db._has_alembic_version_table(db_url)
+            db = DatabaseStateCache(db_url)
+            assert db.has_sqlalchemymigrate_version_table()
+            assert db.is_last_sqlalchemymigrate_version()
+            assert db.has_alembic_version_table()
             assert AlembicManagerForTests(db_url).is_at_revision(revision)
 
     class TestState5:
@@ -196,9 +229,9 @@ class TestDatabaseFixtures:
 
         def verify_state(self, db_url, metadata, revision):
             assert is_metadata_loaded(db_url, metadata)
-            db = DatabaseVerifier(db_url)
-            assert not db._has_sqlalchemymigrate_version_table(db_url)
-            assert db._has_alembic_version_table(db_url)
+            db = DatabaseStateCache(db_url)
+            assert not db.has_sqlalchemymigrate_version_table()
+            assert db.has_alembic_version_table()
             assert AlembicManagerForTests(db_url).is_at_revision(revision)
 
     class TestState6:
@@ -215,9 +248,9 @@ class TestDatabaseFixtures:
 
         def verify_state(self, db_url, metadata, revision):
             assert is_metadata_loaded(db_url, metadata)
-            db = DatabaseVerifier(db_url)
-            assert not db._has_sqlalchemymigrate_version_table(db_url)
-            assert db._has_alembic_version_table(db_url)
+            db = DatabaseStateCache(db_url)
+            assert not db.has_sqlalchemymigrate_version_table()
+            assert db.has_alembic_version_table()
             assert AlembicManagerForTests(db_url).is_at_revision(revision)
 
 
@@ -238,10 +271,12 @@ class TestNoDatabaseState:
 
     def test_separate_databases(self, url_factory, metadata_state6_gxy, metadata_state6_tsi):
         db1_url, db2_url = url_factory(), url_factory()
-        db = DatabaseVerifier(db1_url, db2_url)
         assert not database_exists(db1_url)
         assert not database_exists(db2_url)
+
+        db = DatabaseVerifier(db1_url, db2_url)
         db.verify()
+
         assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
         assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
@@ -256,7 +291,7 @@ class TestDatabaseState0:
         db = DatabaseVerifier(db_url)
         create_database(db_url)
         assert database_exists(db_url)
-        assert db._is_database_empty(db_url)
+        assert db._is_database_empty(GXY)
         db.verify()
         assert database_is_up_to_date(db_url, metadata_state6_combined)
 
@@ -267,8 +302,8 @@ class TestDatabaseState0:
         create_database(db2_url)
         assert database_exists(db1_url)
         assert database_exists(db2_url)
-        assert db._is_database_empty(db1_url)
-        assert db._is_database_empty(db2_url)
+        assert db._is_database_empty(GXY)
+        assert db._is_database_empty(TSI)
         db.verify()
         assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
         assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
@@ -489,58 +524,16 @@ class TestDatabaseState6:
         assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
 
-# Tests of misc. helper functions
+# Tests of misc. helpers
 
-def test_is_database_empty(url_factory, metadata_state1_gxy):
-    db_url, metadata = url_factory(), metadata_state1_gxy
-    db = DatabaseVerifier(db_url)
-    assert db._is_database_empty(db_url)
-    with create_engine(db_url).connect() as conn:
-        metadata.create_all(bind=conn)
-    assert not db._is_database_empty(db_url)
-
-
-def test_has_alembic_version_table(url_factory, metadata_state4_gxy):
-    db_url, metadata = url_factory(), metadata_state4_gxy
-    db = DatabaseVerifier(db_url)
-    assert not db._has_alembic_version_table(db_url)
-    with create_engine(db_url).connect() as conn:
-        metadata.create_all(bind=conn)
-    assert db._has_alembic_version_table(db_url)
-
-
-def test_has_sqlalchemymigrate_version_table(url_factory, metadata_state2_gxy):
-    db_url, metadata = url_factory(), metadata_state2_gxy
-    db = DatabaseVerifier(db_url)
-    assert not db._has_sqlalchemymigrate_version_table(db_url)
-    with create_engine(db_url).connect() as conn:
-        metadata.create_all(bind=conn)
-    assert db._has_sqlalchemymigrate_version_table(db_url)
-
-
-def test_combine_databases(url_factory):
+def test_is_one_database(url_factory):
     db1_url = url_factory()
     db2_url = url_factory()
     db = DatabaseVerifier(db1_url)  # we only need one for this test.
-    assert db._combine_databases(db1_url)  # only 1 database: combine
-    assert db._combine_databases(db1_url, db1_url)  # database1 == database2: combine
-    assert not db._combine_databases(db1_url, db2_url)  # 2 databases: do not combine
+    assert db._is_one_database(db1_url, db1_url)  # database1 == database2: combine
+    assert not db._is_one_database(db1_url, db2_url)  # 2 databases: do not combine
 
 
-def test_is_last_sqlalchemymigrate_version(url_factory, metadata_state2_gxy):
-    db_url = url_factory()
-    load_metadata(db_url, metadata_state2_gxy)
-    load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION - 1)
-    db = DatabaseVerifier(db_url)
-    assert not db._is_last_sqlalchemymigrate_version(db_url)
-    load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION)
-    assert db._is_last_sqlalchemymigrate_version(db_url)
-
-
-# def test_create_galaxy_database():
-#     pass # TODO
-#
-#
 # def test_is_automigrate_set():
 #     pass # TODO
 

@@ -39,18 +39,19 @@ class OutdatedDatabaseError(Exception):
 
 
 class AlembicManager:
-
+    """
+    Alembic operations on one database.
+    """
     def __init__(self, db_url, *, engine=None, config_dict=None):
-        self.url = db_url
-        self.alembic_cfg = self._load_config(config_dict)
+        self.alembic_cfg = self._load_config(config_dict, db_url)
         self.script_directory = script.ScriptDirectory.from_config(self.alembic_cfg)
         self.engine = engine or create_engine(db_url)
 
-    def _load_config(self, config_dict):
+    def _load_config(self, config_dict, db_url):
         alembic_root = os.path.dirname(__file__)
         _alembic_file = os.path.join(alembic_root, 'alembic.ini')
         config = Config(_alembic_file)
-        config.set_main_option('sqlalchemy.url', self.url)
+        config.set_main_option('sqlalchemy.url', db_url)
         if config_dict:
             for key, value in config_dict.items():
                 config.set_main_option(key, value)
@@ -62,6 +63,7 @@ class AlembicManager:
 
     def upgrade(self, model):
         """Partial proxy to alembic's upgrade command."""
+        # This works with or without an existing alembic version table.
         command.upgrade(self.alembic_cfg, f'{model}@head')
 
     def is_at_revision(self, revision):
@@ -100,98 +102,175 @@ class AlembicManager:
             return False
 
 
+class DatabaseStateCache:
+    """
+    Snapshot of database state.
+    """
+    def __init__(self, db_url, engine=None):
+        self.db_url = db_url
+        self.engine = engine or create_engine(db_url)
+        self._load_db()
+
+    def is_database_empty(self):
+        return not bool(self.db_metadata.tables)
+
+    def has_alembic_version_table(self):
+        return ALEMBIC_TABLE in self.db_metadata.tables
+
+    def has_sqlalchemymigrate_version_table(self):
+        return SQLALCHEMYMIGRATE_TABLE in self.db_metadata.tables
+
+    def is_last_sqlalchemymigrate_version(self):
+        return self.sqlalchemymigrate_version == SQLALCHEMYMIGRATE_LAST_VERSION
+
+    def _load_db(self):
+        with self.engine.connect() as conn:
+            self.db_metadata = self._load_db_metadata(conn)
+            self.sqlalchemymigrate_version = self._load_sqlalchemymigrate_version(conn)
+
+    def _load_db_metadata(self, conn):
+        metadata = MetaData()
+        metadata.reflect(bind=conn)
+        return metadata
+
+    def _load_sqlalchemymigrate_version(self, conn):
+        if self.has_sqlalchemymigrate_version_table():
+            sql = f"select version from {SQLALCHEMYMIGRATE_TABLE}"
+            return conn.execute(sql).scalar()
+
+
 class DatabaseVerifier:
 
-    def __init__(self, db1_url, db2_url=None, app_config=None):
-        self.db1_url = db1_url
-        self.db2_url = db2_url
+    def __init__(self, db_url, install_db_url=None, app_config=None):
+        self.gxy_url = db_url
+        self.tsi_url = install_db_url or db_url
+        assert self.gxy_url and self.tsi_url
         self.app_config = app_config
-        self.is_combined = self._combine_databases(db1_url, db2_url)
-        if self.is_combined:
-            self.db2_url = db1_url  # use 1 database for both
+        self._load()
+
+    def _load(self):
+        self.is_combined = self._is_one_database(self.gxy_url, self.tsi_url)
         self.gxy_metadata = get_gxy_metadata()
         self.tsi_metadata = get_tsi_metadata()
-        self._engines = self._load_engines()
+        self.db_state = self._load_database_state()
+
+    def _load_database_state(self):
+        db = {}
+        db[GXY] = DatabaseStateCache(self.gxy_url)
+        if not self.is_combined:
+            db[TSI] = DatabaseStateCache(self.tsi_url)
+        else:
+            db[TSI] = db[GXY]  # combined = same database
+        return db
 
     def verify(self):
         # 1. Check if database exists; if not, create new database.
-        self._check_and_create_database()
+        self._handle_no_databases()
         # 2. If database is empty, initialize it, upgrade to current, and mark as done.
-        gxy_done, tsi_done = self._handle_empty_database()
-        # 3: Handle non-empty database.
+        gxy_done, tsi_done = self._handle_empty_databases()
+        # 3: Handle nonempty databases that were not initialized in the previous step.
         if not gxy_done:
-            self._handle_nonempty_database(self.db1_url, self.gxy_metadata, GXY)
+            self._handle_nonempty_database(GXY)
         if not tsi_done:
-            self._handle_nonempty_database(self.db2_url, self.tsi_metadata, TSI)
+            if self.is_combined:  # If same database, Alembic has been initialized in the previous step.
+                self._handle_with_alembic(TSI)
+            else:
+                self._handle_nonempty_database(TSI)
 
-    def _check_and_create_database(self):
-        if not database_exists(self.db1_url):
-            self._create_galaxy_database(self.db1_url)
-        if not self.is_combined and not database_exists(self.db2_url):
-            self._create_galaxy_database(self.db2_url)
+    def _handle_no_databases(self):
+        # If galaxy-model database doesn't exist: create it.
+        # If database not combined and install-model database doesn't exist: create it.
+        if not database_exists(self.gxy_url):
+            self._create_database(self.gxy_url)
+        if not self.is_combined and not database_exists(self.tsi_url):
+            self._create_database(self.tsi_url)
 
-    def _handle_empty_database(self):
-
-        def initialize_empty_database(db_url, metadata, model):
-            load_metadata(db_url, metadata)
-            am = get_alembic_manager(db_url)  # TODO reuse (do lazy init)
-            am.stamp(f'{model}@head')
-
-        gxy_done, tsi_done = False, False
-
-        # if db1 is empty: initialize it for gxy and, if combined, for tsi.
-        if self._is_database_empty(self.db1_url):
-            initialize_empty_database(self.db1_url, self.gxy_metadata, GXY)
-            gxy_done = True
-            if self.is_combined:
-                initialize_empty_database(self.db1_url, self.tsi_metadata, TSI)  # use same db_url
+    def _handle_empty_databases(self):
+        # For each database: True if it has been initialized.
+        gxy_done = tsi_done = False
+        if self.is_combined:
+            if self._is_database_empty(GXY):
+                self._initialize_database(GXY)
+                self._initialize_database(TSI)
+                gxy_done = tsi_done = True
+        else:
+            if self._is_database_empty(GXY):
+                self._initialize_database(GXY)
+                gxy_done = True
+            if self._is_database_empty(TSI):
+                self._initialize_database(TSI)
                 tsi_done = True
-
-        # if not combined, check db2. If it's empty: initialize it for tsi.
-        if not self.is_combined and self._is_database_empty(self.db2_url):
-            initialize_empty_database(self.db2_url, self.tsi_metadata, TSI)  # use same db_url
-            tsi_done = True
-
         return gxy_done, tsi_done
 
-    def _handle_nonempty_database(self, db_url, metadata, model):
-        am = get_alembic_manager(db_url)  # TODO reuse (do lazy init)
+    def _handle_nonempty_database(self, model):
+        if self._has_alembic(model):
+            self._handle_with_alembic(model)
+        elif self._has_sqlalchemymigrate(model):
+            if self._is_last_sqlalchemymigrate_version(model):
+                self._handle_with_alembic(model, skip_version_check=True)
+            else:
+                self._handle_version_too_old(model)
+        else:
+            self._handle_no_version_table(model)
+
+    def _has_alembic(self, model):
+        return self.db_state[model].has_alembic_version_table()
+
+    def _has_sqlalchemymigrate(self, model):
+        return self.db_state[model].has_sqlalchemymigrate_version_table()
+
+    def _is_last_sqlalchemymigrate_version(self, model):
+        return self.db_state[model].is_last_sqlalchemymigrate_version()
+
+    def _handle_with_alembic(self, model, skip_version_check=False):
+        url = self._get_url(model)
+        am = get_alembic_manager(url)
         # first check if this model is up to date
-        if am.is_up_to_date(model):
+        if not skip_version_check and am.is_up_to_date(model):
             # TODO: log message: db is up-to-date
             return
-        # now check for alembic table
-        elif self._has_alembic_version_table(db_url):
-            # has alembic but outdated: try to upgrade
-            if not self._is_automigrate_set():
-                raise OutdatedDatabaseError()
-            else:
-                # TODO log message: upgrading
-                am.upgrade(model)
-                return
-        # if no alembic: check for SAMigrate
-        if not self._has_sqlalchemymigrate_version_table(db_url):
-            raise NoVersionTableError()
-        elif not self._is_last_sqlalchemymigrate_version(db_url):
-            raise VersionTooOldError()
-        elif not self._is_automigrate_set():
+        # is outdated: try to upgrade
+        if not self._is_automigrate_set():
             raise OutdatedDatabaseError()
         else:
-            # TODO log message: adding alembic + upgrading
+            # TODO log message: upgrading
             am.upgrade(model)
             return
 
-    def _load_engines(self):
-        engines = {}
-        engines[self.db1_url] = create_engine(self.db1_url)
-        if not self.is_combined:
-            engines[self.db2_url] = create_engine(self.db2_url)
-        return engines
+    def _handle_version_too_old(self, model):
+        log.error('version too old')  # TODO edit message
+        raise VersionTooOldError()
 
-    def _combine_databases(self, db1_url, db2_url=None):
-        return not (db1_url and db2_url and db1_url != db2_url)
+    def _handle_no_version_table(self, model):
+        log.error('no version table')  # TODO edit message
+        raise NoVersionTableError()
 
-    def _create_galaxy_database(self, url):
+    def _get_url(self, model):
+        if model == GXY:
+            return self.gxy_url
+        else:
+            return self.tsi_url
+
+    def _is_automigrate_set(self):
+        return False  # TODO fix this: env var?
+
+    def _initialize_database(self, model):
+
+        def initialize_database(url, metadata):
+            load_metadata(url, metadata)
+            am = get_alembic_manager(url)
+            am.stamp(f'{model}@head')
+
+        if model == GXY:
+            initialize_database(self.gxy_url, self.gxy_metadata)
+        elif model == TSI:
+            initialize_database(self.tsi_url, self.tsi_metadata)
+        return True
+
+    def _is_database_empty(self, model):
+        return self.db_state[model].is_database_empty()
+
+    def _create_database(self, url):
         template, encoding = None, None
         if self.app_config:
             template = self.app_config.database_template
@@ -207,32 +286,8 @@ class DatabaseVerifier:
         log.info(message)
         create_database(url, **create_kwds)
 
-    def _is_database_empty(self, db_url):
-        with self._engines[db_url].connect() as conn:
-            db_metadata = MetaData()
-            db_metadata.reflect(bind=conn)
-            return not bool(db_metadata.tables)
-
-    def _has_alembic_version_table(self, db_url):
-        with self._engines[db_url].connect() as conn:
-            db_metadata = MetaData()
-            db_metadata.reflect(bind=conn)
-            return ALEMBIC_TABLE in db_metadata.tables
-
-    def _is_automigrate_set(self):
-        return False  # TODO fix this: env var?
-
-    def _has_sqlalchemymigrate_version_table(self, db_url):
-        with self._engines[db_url].connect() as conn:
-            db_metadata = MetaData()
-            db_metadata.reflect(bind=conn)
-            return SQLALCHEMYMIGRATE_TABLE in db_metadata.tables
-
-    def _is_last_sqlalchemymigrate_version(self, db_url):
-        with self._engines[db_url].connect() as conn:
-            sql = f"select version from {SQLALCHEMYMIGRATE_TABLE}"
-            result = conn.execute(sql).scalar()
-            return result == SQLALCHEMYMIGRATE_LAST_VERSION
+    def _is_one_database(self, url1, url2):
+        return not (url1 and url2 and url1 != url2)
 
 
 def load_metadata(db_url, metadata, engine=None):
