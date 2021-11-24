@@ -837,8 +837,7 @@ class Tool(Dictifiable):
 
         profile = packaging.version.parse(str(self.profile))
         if profile >= packaging.version.parse("16.04") and packaging.version.parse(VERSION_MAJOR) < profile:
-            template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
-            message = template % (self.id, self.profile)
+            message = f"The tool [{self.id}] targets version {self.profile} of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             raise Exception(message)
 
         self.python_template_version = tool_source.parse_python_template_version()

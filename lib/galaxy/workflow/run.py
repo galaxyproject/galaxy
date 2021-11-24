@@ -301,8 +301,7 @@ class WorkflowProgress:
     def replacement_for_connection(self, connection, is_data=True):
         output_step_id = connection.output_step.id
         if output_step_id not in self.outputs:
-            template = "No outputs found for step id %s, outputs are %s"
-            message = template % (output_step_id, self.outputs)
+            message = f"No outputs found for step id {output_step_id}, outputs are {self.outputs}"
             raise Exception(message)
         step_outputs = self.outputs[output_step_id]
         if step_outputs is STEP_OUTPUT_DELAYED:

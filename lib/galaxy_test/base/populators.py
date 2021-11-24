@@ -1753,7 +1753,7 @@ class BaseDatasetCollectionPopulator:
         nested_collection_type = rank_type_0
 
         for i, rank_type in enumerate(reversed(rank_types[1:])):
-            name = "test_level_%d" % (i + 1) if rank_type == "list" else "paired"
+            name = f"test_level_{i + 1}" if rank_type == "list" else "paired"
             identifiers = [dict(
                 src="new_collection",
                 name=name,
@@ -1772,7 +1772,7 @@ class BaseDatasetCollectionPopulator:
             element_identifiers = []
             for i, pair in enumerate(collection):
                 element_identifiers.append(dict(
-                    name="test%d" % i,
+                    name=f"test{i}",
                     src="hdca",
                     id=pair
                 ))
@@ -1880,7 +1880,7 @@ class BaseDatasetCollectionPopulator:
                 else:
                     dataset_contents = contents_level
                     if collection_type == "list":
-                        element_identifier = "data%d" % i
+                        element_identifier = f"data{i}"
                     elif collection_type == "paired" and i == 0:
                         element_identifier = "forward"
                     else:
@@ -1950,7 +1950,7 @@ class BaseDatasetCollectionPopulator:
             hdas = self.__datasets(history_id, count=count, contents=contents)
 
             def hda_to_identifier(i, hda):
-                return dict(name="data%d" % (i + 1), src="hda", id=hda["id"])
+                return dict(name=f"data{i + 1}", src="hda", id=hda["id"])
         element_identifiers = [hda_to_identifier(i, hda) for (i, hda) in enumerate(hdas)]
         return element_identifiers
 
