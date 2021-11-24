@@ -189,6 +189,23 @@ export default {
         const datasetResponse = await this.services.getDataset(this.dataset_id);
         this.populateDatasetDetailsTable(datasetResponse);
     },
+    computed: {
+        datasetChanges: function () {
+            const changes = {};
+            for (var prop in this.dataset) {
+                if (this.dataset[prop] !== this.modifiedDataset[prop]) {
+                    changes[prop] = this.modifiedDataset[prop];
+                }
+            }
+            return changes;
+        },
+        hasChanges: function () {
+            for (var _ in this.datasetChanges) {
+                return true;
+            }
+            return false;
+        },
+    },
     methods: {
         populateDatasetDetailsTable(data) {
             this.dataset = data;
@@ -207,26 +224,18 @@ export default {
             );
         },
         updateDataset() {
-            //TODO send only diff?
-            this.services.updateDataset(
-                this.dataset_id,
-                this.modifiedDataset,
-                (response) => {
-                    this.populateDatasetDetailsTable(response);
-                    Toast.success("Changes to library dataset saved.");
-                },
-                (error) => Toast.error(error)
-            );
-            this.isEditMode = false;
-        },
-        getDatasetChanges() {
-            const changes = {};
-            for (var prop in this.dataset) {
-                if (this.dataset[prop] !== this.modifiedDataset[prop]) {
-                    changes[prop] = this.modifiedDataset[prop];
-                }
+            if (this.hasChanges) {
+                this.services.updateDataset(
+                    this.dataset_id,
+                    this.datasetChanges,
+                    (response) => {
+                        this.populateDatasetDetailsTable(response);
+                        Toast.success("Changes to library dataset saved.");
+                    },
+                    (error) => Toast.error(error)
+                );
             }
-            return changes;
+            this.isEditMode = false;
         },
         importToHistory() {
             new mod_import_dataset.ImportDatasetModal({
