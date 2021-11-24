@@ -82,6 +82,10 @@ class ComputeEnvironment(metaclass=ABCMeta):
     def galaxy_url(self):
         """URL to access Galaxy API from for this compute environment."""
 
+    @abstractmethod
+    def get_file_sources_dict(self):
+        """Return file sources dict for current user."""
+
 
 class SimpleComputeEnvironment:
 
@@ -101,6 +105,9 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
     def __init__(self, job_io: JobIO, job: Job):
         self.job_io = job_io
         self.job = job
+
+    def get_file_sources_dict(self):
+        return self.job_io.file_sources_dict
 
     def output_names(self):
         return self.job_io.get_output_basenames()

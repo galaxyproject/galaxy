@@ -29,6 +29,7 @@ from galaxy.exceptions import (
     ObjectInvalid,
     ObjectNotFound,
 )
+from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.output_collect import (
@@ -69,6 +70,7 @@ from galaxy.util.expressions import ExpressionContext
 from galaxy.util.path import external_chown
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
+from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
     from galaxy.jobs.handler import JobHandlerQueue
@@ -984,9 +986,12 @@ class JobWrapper(HasResourceParameters):
     @property
     def job_io(self):
         if self._job_io is None:
+            job = self.get_job()
+            work_request = WorkRequestContext(self.app, user=job.user)
+            user_context = ProvidesUserFileSourcesUserContext(work_request)
             self._job_io = JobIO(
                 sa_session=self.sa_session,
-                job=self.get_job(),
+                job=job,
                 working_directory=self.working_directory,
                 outputs_directory=self.outputs_directory,
                 outputs_to_working_directory=self.outputs_to_working_directory,
@@ -999,7 +1004,8 @@ class JobWrapper(HasResourceParameters):
                 new_file_path=self.app.config.new_file_path,
                 builds_file_path=self.app.config.builds_file_path,
                 len_file_path=self.app.config.len_file_path,
-                file_sources=self.app.file_sources,
+                file_sources_dict=self.app.file_sources.to_dict(for_serialization=True, user_context=user_context),
+                user_context=user_context,
                 check_job_script_integrity=self.app.config.check_job_script_integrity,
                 check_job_script_integrity_count=self.app.config.check_job_script_integrity_count,
                 check_job_script_integrity_sleep=self.app.config.check_job_script_integrity_sleep,

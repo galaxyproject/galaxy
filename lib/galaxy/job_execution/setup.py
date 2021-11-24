@@ -1,23 +1,31 @@
 """Utilities to help job and tool code setup jobs."""
 import json
 import os
-from typing import Any, Dict, Union
+from typing import Any, cast, Dict, List, Optional, Tuple, Union
 
-from galaxy.model import (
-    Job,
-    JobExportHistoryArchive,
-    MetadataFile,
+from galaxy.files import (
+    DictFileSourcesUserContext,
+    ProvidesUserFileSourcesUserContext,
 )
-from galaxy.files import ConfiguredFileSources
 from galaxy.job_execution.datasets import (
     DatasetPath,
     get_path_rewriter,
+)
+from galaxy.model import (
+    DatasetInstance,
+    Job,
+    JobExportHistoryArchive,
+    MetadataFile,
 )
 from galaxy.util import safe_makedirs
 from galaxy.util.dictifiable import Dictifiable
 
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
 TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey', 'created_from_basename']
+
+
+OutputHdasAndType = Dict[str, Tuple[DatasetInstance, DatasetPath]]
+OutputPaths = List[DatasetPath]
 
 
 class JobIO(Dictifiable):
@@ -34,6 +42,7 @@ class JobIO(Dictifiable):
         'new_file_path',
         'len_file_path',
         'builds_file_path',
+        'file_sources_dict',
         'check_job_script_integrity',
         'check_job_script_integrity_count',
         'check_job_script_integrity_sleep',
@@ -59,10 +68,16 @@ class JobIO(Dictifiable):
             check_job_script_integrity: bool,
             check_job_script_integrity_count: int,
             check_job_script_integrity_sleep: float,
-            file_sources: Union[ConfiguredFileSources, Dict[str, Any]] = None,
+            file_sources_dict: Dict[str, Any],
+            user_context: Union[ProvidesUserFileSourcesUserContext, Dict['str', Any]],
             is_task=False):
-        if isinstance(file_sources, dict):
-            file_sources = ConfiguredFileSources.from_dict(file_sources)
+        user_context_instance: Union[ProvidesUserFileSourcesUserContext, DictFileSourcesUserContext]
+        if isinstance(user_context, dict):
+            user_context_instance = DictFileSourcesUserContext(**user_context)
+        else:
+            user_context_instance = user_context
+        self.file_sources_dict = file_sources_dict
+        self.user_context = user_context_instance
         self.sa_session = sa_session
         self.job = job
         self.working_directory = working_directory
@@ -77,13 +92,12 @@ class JobIO(Dictifiable):
         self.new_file_path = new_file_path
         self.len_file_path = len_file_path
         self.builds_file_path = builds_file_path
-        self.file_sources = file_sources
         self.check_job_script_integrity = check_job_script_integrity
         self.check_job_script_integrity_count = check_job_script_integrity_count
         self.check_job_script_integrity_sleep = check_job_script_integrity_sleep
         self.is_task = is_task
-        self.output_paths = None
-        self.output_hdas_and_paths = None
+        self._output_paths: Optional[OutputPaths] = None
+        self._output_hdas_and_paths: Optional[OutputHdasAndType] = None
         self._dataset_path_rewriter = None
 
     @classmethod
@@ -95,7 +109,7 @@ class JobIO(Dictifiable):
 
     def to_dict(self):
         io_dict = super().to_dict()
-        io_dict['file_sources'] = self.file_sources.to_dict()
+        io_dict['user_context'] = self.user_context.to_dict()
         return io_dict
 
     def to_json(self, path):
@@ -113,8 +127,19 @@ class JobIO(Dictifiable):
             )
         return self._dataset_path_rewriter
 
-    def get_input_dataset_fnames(self, ds):
-        filenames = []
+    @property
+    def output_paths(self) -> OutputPaths:
+        if self._output_paths is None:
+            self.compute_outputs()
+        return cast(OutputPaths, self._output_paths)
+
+    @property
+    def output_hdas_and_paths(self) -> OutputHdasAndType:
+        if self._output_hdas_and_paths is None:
+            self.compute_outputs()
+        return cast(OutputHdasAndType, self._output_hdas_and_paths)
+
+    def get_input_dataset_fnames(self, ds: DatasetInstance):
         filenames = [ds.file_name]
         # we will need to stage in metadata file names also
         # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
@@ -139,7 +164,7 @@ class JobIO(Dictifiable):
                 paths.append(self.get_input_path(da.dataset))
         return paths
 
-    def get_input_path(self, dataset):
+    def get_input_path(self, dataset: DatasetInstance):
         real_path = dataset.file_name
         false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, 'input')
         return DatasetPath(
@@ -155,30 +180,21 @@ class JobIO(Dictifiable):
         return [os.path.basename(str(fname)) for fname in self.get_output_fnames()]
 
     def get_output_fnames(self):
-        if self.output_paths is None:
-            self.compute_outputs()
         return self.output_paths
 
     def get_output_path(self, dataset):
         if getattr(dataset, "fake_dataset_association", False):
             return dataset.file_name
         assert dataset.id is not None, f"{dataset} needs to be flushed to find output path"
-        if self.output_paths is None:
-            self.compute_outputs()
-        if self.output_hdas_and_paths is not None:
-            for (hda, dataset_path) in self.output_hdas_and_paths.values():
-                if hda.id == dataset.id:
-                    return dataset_path
+        for (hda, dataset_path) in self.output_hdas_and_paths.values():
+            if hda.id == dataset.id:
+                return dataset_path
         raise KeyError(f"Couldn't find job output for [{dataset}] in [{self.output_hdas_and_paths.values()}]")
 
     def get_mutable_output_fnames(self):
-        if self.output_paths is None:
-            self.compute_outputs()
-        return [dsp for dsp in self.output_paths or [] if dsp.mutable]
+        return [dsp for dsp in self.output_paths if dsp.mutable]
 
     def get_output_hdas_and_fnames(self):
-        if self.output_hdas_and_paths is None:
-            self.compute_outputs()
         return self.output_hdas_and_paths
 
     def compute_outputs(self):
@@ -196,19 +212,16 @@ class JobIO(Dictifiable):
             dataset_path = DatasetPath(da.dataset.dataset.id, da.dataset.file_name, false_path=da_false_path, mutable=mutable)
             results.append((da.name, da.dataset, dataset_path))
 
-        self.output_paths = [t[2] for t in results]
-        self.output_hdas_and_paths = {t[0]: t[1:] for t in results}
+        self._output_paths = [t[2] for t in results]
+        self._output_hdas_and_paths = {t[0]: t[1:] for t in results}
         if special:
             false_path = dataset_path_rewriter.rewrite_dataset_path(special, 'output')
             dsp = DatasetPath(special.dataset.id, special.dataset.file_name, false_path)
-            self.output_paths.append(dsp)
-            self.output_hdas_and_paths["output_file"] = [special.fda, dsp]
-        return self.output_paths
+            self._output_paths.append(dsp)
+            self._output_hdas_and_paths["output_file"] = (special.fda, dsp)
 
     def get_output_file_id(self, file):
-        if self.output_paths is None:
-            self.get_output_fnames()
-        for dp in self.output_paths or []:
+        for dp in self.output_paths:
             if self.outputs_to_working_directory and os.path.basename(dp.false_path) == file:
                 return dp.dataset_id
             elif os.path.basename(dp.real_path) == file:

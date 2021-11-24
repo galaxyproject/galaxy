@@ -10,6 +10,7 @@ from galaxy import exceptions
 from galaxy.util import (
     plugin_config
 )
+from galaxy.util.dictifiable import Dictifiable
 
 log = logging.getLogger(__name__)
 
@@ -221,7 +222,25 @@ class ConfiguredFileSourcesConfig:
         )
 
 
-class ProvidesUserFileSourcesUserContext:
+class FileSourceDictiable(Dictifiable):
+    dict_collection_visible_keys = ('email', 'username', 'ftp_dir', 'preferences', 'is_admin')
+
+    def to_dict(self, view='collection', value_mapper=None):
+        rval = super().to_dict(view=view, value_mapper=value_mapper)
+        rval['role_names'] = list(self.role_names)
+        rval['group_names'] = list(self.group_names)
+        return rval
+
+    @property
+    def role_names(self) -> Set[str]:
+        raise NotImplementedError
+
+    @property
+    def group_names(sefl) -> Set[str]:
+        raise NotImplementedError
+
+
+class ProvidesUserFileSourcesUserContext(FileSourceDictiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
     def __init__(self, trans):
@@ -264,7 +283,7 @@ class ProvidesUserFileSourcesUserContext:
         return self.trans.user_is_admin
 
 
-class DictFileSourcesUserContext:
+class DictFileSourcesUserContext(FileSourceDictiable):
 
     def __init__(self, **kwd):
         self._kwd = kwd
@@ -287,11 +306,11 @@ class DictFileSourcesUserContext:
 
     @property
     def role_names(self):
-        return self._kwd.get("role_names")
+        return set(self._kwd.get("role_names", []))
 
     @property
     def group_names(self):
-        return self._kwd.get("group_names")
+        return set(self._kwd.get("group_names", []))
 
     @property
     def is_admin(self):

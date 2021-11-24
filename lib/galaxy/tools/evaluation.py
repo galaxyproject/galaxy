@@ -8,7 +8,6 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
 from galaxy import model
-from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
@@ -121,6 +120,7 @@ class ToolEvaluator:
         self.job = job
         self.tool = tool
         self.local_working_directory = local_working_directory
+        self.file_sources_dict = {}
 
     def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Optional[Callable] = None):
         """
@@ -135,7 +135,7 @@ class ToolEvaluator:
 
         # Full parameter validation
         request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
-        self.request_context = request_context
+        self.file_sources_dict = compute_environment.get_file_sources_dict()
 
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
@@ -635,8 +635,7 @@ class ToolEvaluator:
                 message = template % content_format
                 raise Exception(message)
         elif config_type == "files":
-            user_context = ProvidesUserFileSourcesUserContext(self.request_context)
-            file_sources_dict = self.app.file_sources.to_dict(for_serialization=True, user_context=user_context)
+            file_sources_dict = self.file_sources_dict
             rval = json.dumps(file_sources_dict)
             return rval, False
         else:
