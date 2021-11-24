@@ -12,6 +12,7 @@ from sqlalchemy.orm import scoped_session
 
 from galaxy import model
 from galaxy.datatypes.registry import Registry
+from galaxy.files import ConfiguredFileSources
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.setup import JobIO
 from galaxy.metadata.set_metadata import (
@@ -56,6 +57,7 @@ class ToolApp:
         datatypes_registry: Registry,
         object_store: ObjectStore,
         tool_data_table_manager: ToolDataTableManager,
+        file_sources: ConfiguredFileSources,
     ):
         self.model.context = sa_session  # type: ignore[attr-defined]
         self.config = tool_app_config
@@ -63,6 +65,7 @@ class ToolApp:
         self.object_store = object_store
         self.genome_builds = GenomeBuilds(self)
         self.tool_data_tables = tool_data_table_manager
+        self.file_sources = file_sources
 
 
 def main(TMPDIR, WORKING_DIRECTORY):
@@ -86,7 +89,14 @@ def main(TMPDIR, WORKING_DIRECTORY):
         is_admin_user=lambda _: job_io.user_context.is_admin)
     with open(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'tool_data_tables.json')) as data_tables_json:
         tdtm = ToolDataTableManager.from_dict(json.load(data_tables_json))
-    app = ToolApp(sa_session=import_store.sa_session, tool_app_config=tool_app_config, datatypes_registry=datatypes_registry, object_store=object_store, tool_data_table_manager=tdtm)
+    app = ToolApp(
+        sa_session=import_store.sa_session,
+        tool_app_config=tool_app_config,
+        datatypes_registry=datatypes_registry,
+        object_store=object_store,
+        tool_data_table_manager=tdtm,
+        file_sources=job_io.file_sources,
+    )
     # TODO: could try to serialize just a minimal tool variant instead of the whole thing ?
     # FIXME: enable loading all supported tool types
     tool_source = get_tool_source(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'tool.xml'))

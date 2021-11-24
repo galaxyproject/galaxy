@@ -4,6 +4,7 @@ import os
 from typing import Any, cast, Dict, List, Optional, Tuple, Union
 
 from galaxy.files import (
+    ConfiguredFileSources,
     DictFileSourcesUserContext,
     ProvidesUserFileSourcesUserContext,
 )
@@ -115,6 +116,10 @@ class JobIO(Dictifiable):
     def to_json(self, path):
         with open(path, 'w') as out:
             out.write(json.dumps(self.to_dict()))
+
+    @property
+    def file_sources(self) -> ConfiguredFileSources:
+        return ConfiguredFileSources.from_dict(self.file_sources_dict)
 
     @property
     def dataset_path_rewriter(self):

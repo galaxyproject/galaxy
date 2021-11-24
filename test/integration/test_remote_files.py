@@ -38,10 +38,10 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
         config["user_library_import_dir"] = cls.user_library_dir
         config["ftp_upload_dir"] = cls.ftp_upload_dir
         config["ftp_upload_site"] = "ftp://cow.com"
-
         # driver_util sets this to False, though the Galaxy default is True.
         # Restore default for these tests.
         config["ftp_upload_purge"] = True
+        config['metadata_strategy'] = 'extended'
 
     def setUp(self):
         super().setUp()

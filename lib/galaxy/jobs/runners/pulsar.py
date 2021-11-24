@@ -1132,6 +1132,9 @@ class PulsarComputeEnvironment(ComputeEnvironment):
     def galaxy_url(self):
         return self.job_wrapper.get_destination_configuration("galaxy_infrastructure_url")
 
+    def get_file_sources_dict(self):
+        return self.job_wrapper.job_io.file_sources_dict
+
 
 class UnsupportedPulsarException(Exception):
 

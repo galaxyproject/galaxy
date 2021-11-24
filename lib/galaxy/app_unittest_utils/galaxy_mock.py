@@ -95,7 +95,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.auth_manager = AuthManager(self.config)
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
-        self.file_sources = Bunch(to_dict=lambda: {})
+        self.file_sources = Bunch(to_dict=lambda *args, **kwargs: {})
         self.is_job_handler = False
         rebind_container_to_task(self)
 

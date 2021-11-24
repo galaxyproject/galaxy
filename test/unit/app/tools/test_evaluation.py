@@ -295,6 +295,9 @@ class ComputeEnvironment(SimpleComputeEnvironment):
     def version_path(self):
         return "tool_version"
 
+    def get_file_sources_dict(self):
+        return {}
+
 
 class MockTool:
 
