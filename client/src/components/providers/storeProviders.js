@@ -106,6 +106,32 @@ export const GenomeProvider = {
     },
 };
 
+export const DatatypesProvider = {
+    mixins: [SimpleProviderMixin],
+    props: {
+        id: null,
+    },
+    async mounted() {
+        await this.load();
+    },
+    methods: {
+        ...mapCacheActions(["fetchUploadDatatypes"]),
+        async load() {
+            this.loading = true;
+            let datatypes = this.getUploadDatatypes();
+            if (datatypes == null || datatypes.length == 0) {
+                await this.fetchUploadDatatypes();
+                datatypes = this.getUploadDatatypes();
+            }
+            this.item = datatypes;
+            this.loading = false;
+        },
+    },
+    computed: {
+        ...mapGetters(["getUploadDatatypes"]),
+    },
+};
+
 export const SuitableConvertersProvider = {
     mixins: [SimpleProviderMixin],
     computed: {
