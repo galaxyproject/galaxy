@@ -53,6 +53,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         except ImportError:
             raise SkipTest("watchdog library is not available")
         cls.configure_shed_and_conda(config)
+        config['metadata_strategy'] = 'extended'
         config["tool_data_path"] = cls.shed_tool_data_dir
         config["watch_tool_data_dir"] = True
         cls.username = cls.get_secure_ascii_digits()
