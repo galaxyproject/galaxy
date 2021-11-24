@@ -70,21 +70,27 @@
                         :value="row.item.value"
                         v-model="modifiedDataset.name"
                     />
-                    <multiselect
-                        v-else-if="availableDatatypes.length > 1 && row.item.name === fieldTitles.file_ext"
-                        v-model="row.item.value"
-                        deselect-label="Can't remove this value"
-                        :options="availableDatatypes"
-                        :searchable="true"
-                        :allow-empty="false"
-                        @select="onTypeSelected"
-                    />
-                    <GenomeProvider v-slot="{ item, loading }" v-else-if="row.item.name === fieldTitles.genome_build">
-                        <genome-selector
-                            v-if="item"
+                    <DatatypesProvider
+                        v-else-if="row.item.name === fieldTitles.file_ext"
+                        v-slot="{ item: datatypes, loading }"
+                    >
+                        <DatatypeSelector
+                            v-if="datatypes"
                             :loading="loading"
-                            :genomes="item"
-                            :current-genome-id="modifiedDataset.genome_build"
+                            :datatypes="datatypes"
+                            :current-datatype="dataset.file_ext"
+                            @update:selected-datatype="onSelectedDatatype"
+                        />
+                    </DatatypesProvider>
+                    <GenomeProvider
+                        v-else-if="row.item.name === fieldTitles.genome_build"
+                        v-slot="{ item: genomes, loading }"
+                    >
+                        <GenomeSelector
+                            v-if="genomes"
+                            :loading="loading"
+                            :genomes="genomes"
+                            :current-genome-id="dataset.genome_build"
                             @update:selected-genome="onSelectedGenome"
                         />
                     </GenomeProvider>
@@ -122,7 +128,6 @@
 </template>
 
 <script>
-import Multiselect from "vue-multiselect";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faUsers, faRedo, faPencilAlt, faBook, faDownload, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { faSave } from "@fortawesome/free-regular-svg-icons";
@@ -134,8 +139,9 @@ import download from "components/Libraries/LibraryFolder/TopToolbar/download";
 import CopyToClipboard from "components/CopyToClipboard";
 import { Toast } from "ui/toast";
 import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
-import { GenomeProvider } from "components/providers";
+import { GenomeProvider, DatatypesProvider } from "components/providers";
 import GenomeSelector from "components/Libraries/LibraryFolder/LibraryFolderDataset/GenomeSelector";
+import DatatypeSelector from "components/Libraries/LibraryFolder/LibraryFolderDataset/DatatypeSelector";
 
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
 
@@ -160,9 +166,10 @@ export default {
         LibraryBreadcrumb,
         CopyToClipboard,
         FontAwesomeIcon,
-        Multiselect,
         GenomeProvider,
         GenomeSelector,
+        DatatypesProvider,
+        DatatypeSelector,
     },
     data() {
         return {
@@ -172,7 +179,6 @@ export default {
             datasetDownloadFormat: "uncompressed",
             download: download,
             table_items: [],
-            availableDatatypes: [],
             modifiedDataset: {},
             isEditMode: false,
             fields: [{ key: "name" }, { key: "value" }],
@@ -182,9 +188,6 @@ export default {
         this.services = new Services({ root: this.root });
         const datasetResponse = await this.services.getDataset(this.dataset_id);
         this.populateDatasetDetailsTable(datasetResponse);
-        //TODO use providers
-        this.availableDatatypes = await this.services.getDatatypes();
-        this.availableDatatypes.unshift("auto");
     },
     methods: {
         populateDatasetDetailsTable(data) {
@@ -216,6 +219,15 @@ export default {
             );
             this.isEditMode = false;
         },
+        getDatasetChanges() {
+            const changes = {};
+            for (var prop in this.dataset) {
+                if (this.dataset[prop] !== this.modifiedDataset[prop]) {
+                    changes[prop] = this.modifiedDataset[prop];
+                }
+            }
+            return changes;
+        },
         importToHistory() {
             new mod_import_dataset.ImportDatasetModal({
                 selected: { dataset_ids: [this.dataset_id] },
@@ -224,8 +236,8 @@ export default {
         onSelectedGenome(genome) {
             this.modifiedDataset.genome_build = genome.id;
         },
-        onTypeSelected(ext) {
-            this.modifiedDataset.file_ext = ext;
+        onSelectedDatatype(datatype) {
+            this.modifiedDataset.file_ext = datatype.id;
         },
     },
 };
