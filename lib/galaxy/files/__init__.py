@@ -222,7 +222,7 @@ class ConfiguredFileSourcesConfig:
         )
 
 
-class FileSourceDictiable(Dictifiable):
+class FileSourceDictifiable(Dictifiable):
     dict_collection_visible_keys = ('email', 'username', 'ftp_dir', 'preferences', 'is_admin')
 
     def to_dict(self, view='collection', value_mapper=None):
@@ -240,7 +240,7 @@ class FileSourceDictiable(Dictifiable):
         raise NotImplementedError
 
 
-class ProvidesUserFileSourcesUserContext(FileSourceDictiable):
+class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
     def __init__(self, trans):
@@ -283,7 +283,7 @@ class ProvidesUserFileSourcesUserContext(FileSourceDictiable):
         return self.trans.user_is_admin
 
 
-class DictFileSourcesUserContext(FileSourceDictiable):
+class DictFileSourcesUserContext(FileSourceDictifiable):
 
     def __init__(self, **kwd):
         self._kwd = kwd
