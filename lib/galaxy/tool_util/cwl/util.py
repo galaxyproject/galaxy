@@ -86,9 +86,9 @@ def abs_path_or_uri(path_or_uri, relative_to):
     """Return an absolute path if this isn't a URI, otherwise keep the URI the same.
     """
     is_uri = "://" in path_or_uri
-    if not is_uri and not os.path.isabs(path_or_uri):
-        path_or_uri = os.path.join(relative_to, path_or_uri)
     if not is_uri:
+        if not os.path.isabs(path_or_uri):
+            path_or_uri = os.path.abspath(os.path.join(relative_to, path_or_uri))
         _ensure_file_exists(path_or_uri)
     return path_or_uri
 
