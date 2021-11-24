@@ -74,6 +74,9 @@ class LintMessage:
         rval = f".. {self.level.upper()}: {self.message}"
         if self.line is not None:
             rval += f" (line {self.line})"
+        if self.xpath is not None:
+            rval += f" [{self.xpath}]"
+
         return rval
 
 
@@ -95,7 +98,7 @@ class LintContext:
             return
         self.printed_linter_info = False
         self.message_list = []
-        
+
         # call linter
         lint_func(lint_target, self)
         # TODO: colorful emoji if in click CLI.
