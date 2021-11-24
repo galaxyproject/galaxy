@@ -10,8 +10,7 @@
                 <span
                     v-for="(label, index) in tool.labels"
                     :class="['badge', 'badge-primary', `badge-${label}`]"
-                    :key="index"
-                >
+                    :key="index">
                     {{ label }}
                 </span>
             </span>
@@ -21,8 +20,7 @@
                 v-b-tooltip.hover
                 :class="['operation', 'float-right', operationIcon]"
                 :title="operationTitle"
-                @click.stop.prevent="onOperation"
-            />
+                @click.stop.prevent="onOperation" />
         </a>
     </div>
 </template>

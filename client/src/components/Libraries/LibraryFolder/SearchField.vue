@@ -6,8 +6,7 @@
             type="search"
             id="filterInput"
             :placeholder="titleSearch"
-            @keyup.enter="startSearch()"
-        />
+            @keyup.enter="startSearch()" />
     </b-input-group>
 </template>
 

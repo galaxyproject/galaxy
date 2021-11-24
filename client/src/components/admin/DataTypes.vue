@@ -6,8 +6,7 @@
             :columns="columns"
             :rows="dataTypes"
             :is-loaded="isDataLoaded"
-            id="data-types-grid"
-        >
+            id="data-types-grid">
             <template v-slot:title>
                 <p>Current data types registry contains {{ dataTypes.length }} data types.</p>
                 <input type="checkbox" id="showAllColumns" v-model="showAllColumns" />

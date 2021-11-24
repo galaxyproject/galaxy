@@ -9,8 +9,7 @@
                     class="fa fa-print ml-1 invocation-pdf-link"
                     :href="invocationPdfLink"
                     v-b-tooltip
-                    title="Download PDF"
-                />
+                    title="Download PDF" />
             </span>
         </div>
         <div v-else>
@@ -21,30 +20,26 @@
                 v-if="!invocationSchedulingTerminal"
                 v-b-tooltip.hover
                 title="Cancel scheduling of workflow invocation"
-                @click="cancelWorkflowScheduling"
-            ></span>
+                @click="cancelWorkflowScheduling"></span>
         </div>
         <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
         <progress-bar
             v-else-if="invocationState == 'cancelled'"
             note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
             :error-count="1"
-            class="steps-progress"
-        />
+            class="steps-progress" />
         <progress-bar
             v-else-if="invocationState == 'failed'"
             note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
             :error-count="1"
-            class="steps-progress"
-        />
+            class="steps-progress" />
         <progress-bar
             v-else
             :note="stepStatesStr"
             :total="stepCount"
             :ok-count="stepStates.scheduled"
             :loading="!invocationSchedulingTerminal"
-            class="steps-progress"
-        />
+            class="steps-progress" />
         <progress-bar
             :note="jobStatesStr"
             :total="jobCount"
@@ -53,16 +48,14 @@
             :new-count="newCount"
             :error-count="errorCount"
             :loading="!invocationAndJobTerminal"
-            class="jobs-progress"
-        />
+            class="jobs-progress" />
         <span v-if="invocationAndJobTerminal">
             <a class="bco-json" :href="bcoJSON"><b>Download BioCompute Object</b></a>
         </span>
         <workflow-invocation-details
             v-if="invocation"
             :invocation="invocation"
-            :invocation-and-job-terminal="invocationAndJobTerminal"
-        />
+            :invocation-and-job-terminal="invocationAndJobTerminal" />
     </div>
 </template>
 <script>

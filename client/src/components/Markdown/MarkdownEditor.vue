@@ -16,8 +16,7 @@
                                 variant="link"
                                 role="button"
                                 v-b-tooltip.hover.bottom
-                                @click="onHelp"
-                            >
+                                @click="onHelp">
                                 <font-awesome-icon icon="question" />
                             </b-button>
                         </div>
@@ -32,8 +31,7 @@
                         id="workflow-report-editor"
                         v-model="content"
                         @input="onUpdate"
-                        ref="text-area"
-                    />
+                        ref="text-area" />
                 </div>
             </div>
         </div>

@@ -15,8 +15,7 @@
             <b-breadcrumb-item
                 v-for="({ pathChunk, editable }, index) in pathChunks"
                 :key="index"
-                class="existent-url-path align-items-center"
-            >
+                class="existent-url-path align-items-center">
                 <b-button class="regular-path-chunk" @click="removePath(index)" :disabled="!editable" variant="dark">
                     {{ pathChunk }}</b-button
                 >
@@ -31,8 +30,7 @@
                     @keydown.8.capture="removeLastPath"
                     v-model="currentDirectoryName"
                     placeholder="enter directory name"
-                    trim
-                />
+                    trim />
             </b-breadcrumb-item>
         </b-breadcrumb>
     </div>

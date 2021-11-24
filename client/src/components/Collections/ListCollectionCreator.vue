@@ -65,8 +65,7 @@
                     :oncancel="oncancel"
                     :hide-source-items="hideSourceItems"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
-                    @clicked-create="clickedCreate"
-                >
+                    @clicked-create="clickedCreate">
                     <template v-slot:help-content>
                         <p>
                             {{
@@ -162,8 +161,7 @@
                                 href="javascript:void(0);"
                                 role="button"
                                 :title="titleDeselectButton"
-                                @click="clickClearAll"
-                            >
+                                @click="clickClearAll">
                                 {{ l("Clear selected") }}
                             </a>
                         </div>
@@ -171,8 +169,7 @@
                             v-model="workingElements"
                             class="collection-elements scroll-container flex-row drop-zone"
                             @start="drag = true"
-                            @end="drag = false"
-                        >
+                            @end="drag = false">
                             <div v-if="noMoreValidDatasets">
                                 <b-alert show variant="warning" dismissible>
                                     {{ discardedElementsHeader }}
@@ -190,8 +187,7 @@
                                 @element-is-discarded="elementDiscarded"
                                 @onRename="(name) => (element.name = name)"
                                 :class="{ selected: getSelectedDatasetElems.includes(element.id) }"
-                                :element="element"
-                            />
+                                :element="element" />
                         </draggable>
                     </template>
                 </collection-creator>

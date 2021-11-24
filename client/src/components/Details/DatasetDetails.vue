@@ -2,8 +2,7 @@
     <ConfigProvider v-slot="{ config }">
         <DatasetProvider
             :id="datasetId"
-            v-slot="{ item: dataset, loading: isDatasetLoading, error: datasetLoadingError }"
-        >
+            v-slot="{ item: dataset, loading: isDatasetLoading, error: datasetLoadingError }">
             <div>
                 <LoadingSpan v-if="isDatasetLoading" />
                 <Alert v-else-if="datasetLoadingError" :message="datasetLoadingError" variant="error" />
@@ -12,8 +11,7 @@
                         v-if="!isDatasetLoading && dataset.creating_job !== null"
                         :jobid="dataset.creating_job"
                         v-slot="{ result: job, loading: isJobLoading }"
-                        :use-cache="false"
-                    >
+                        :use-cache="false">
                         <div v-if="!isJobLoading">
                             <dataset-information class="detail" :hda_id="datasetId" />
                             <job-parameters class="detail" dataset_type="hda" :dataset-id="datasetId" />
@@ -24,13 +22,11 @@
                                 class="detail"
                                 v-if="config"
                                 :aws_estimate="config.aws_estimate"
-                                :dataset-id="datasetId"
-                            />
+                                :dataset-id="datasetId" />
                             <job-destination-params
                                 class="detail"
                                 v-if="user.is_admin"
-                                :job-id="dataset.creating_job"
-                            />
+                                :job-id="dataset.creating_job" />
                             <job-dependencies class="detail" :dependencies="job.dependencies"></job-dependencies>
                             <div class="detail" v-if="dataset.peek">
                                 <h3>Dataset Peek:</h3>

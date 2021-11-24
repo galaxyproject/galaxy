@@ -38,8 +38,7 @@
                 class="upload-rule-source-content form-control"
                 style="height: 100%"
                 v-model="sourceContent"
-                :disabled="selectionType != 'paste'"
-            ></textarea>
+                :disabled="selectionType != 'paste'"></textarea>
         </span>
         <template v-slot:buttons>
             <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
@@ -51,8 +50,7 @@
                 id="btn-build"
                 @click="_eventBuild"
                 :disabled="!sourceContent"
-                :variant="sourceContent ? 'primary' : ''"
-            >
+                :variant="sourceContent ? 'primary' : ''">
                 {{ btnBuildTitle | l }}
             </b-button>
             <b-button
@@ -60,8 +58,7 @@
                 class="ui-button-default"
                 id="btn-reset"
                 @click="_eventReset"
-                :disabled="!enableReset"
-            >
+                :disabled="!enableReset">
                 {{ btnResetTitle | l }}
             </b-button>
         </template>

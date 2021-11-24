@@ -6,15 +6,13 @@
                 :rule="rule"
                 :index="index"
                 :key="index"
-                :col-headers="columnData.colHeadersPerRule[index]"
-            />
+                :col-headers="columnData.colHeadersPerRule[index]" />
             <identifier-display-preview
                 v-for="(map, index) in mapping"
                 v-bind="map"
                 :index="index"
                 :key="map.type"
-                :col-headers="colHeaders"
-            />
+                :col-headers="colHeaders" />
         </ol>
     </div>
 </template>

@@ -6,16 +6,14 @@
         :aria-label="title | localize"
         :title="title | localize"
         class="upload-button"
-        size="sm"
-    >
+        size="sm">
         <div class="progress">
             <div
                 class="progress-bar progress-bar-notransition"
                 :class="`progress-bar-${status}`"
                 :style="{
                     width: `${percentage}%`,
-                }"
-            />
+                }" />
         </div>
         <span class="position-relative">
             <font-awesome-icon icon="upload" class="mr-1" />

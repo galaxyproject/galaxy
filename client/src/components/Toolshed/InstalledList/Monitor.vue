@@ -10,8 +10,7 @@
                 sticky-header
                 thead-class="installation-monitor-header"
                 :items="items"
-                :fields="fields"
-            >
+                :fields="fields">
                 <template v-slot:cell(name)="row">
                     <b-link @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </b-link>
                 </template>
@@ -19,8 +18,7 @@
                     <InstallationButton
                         class="float-right"
                         :status="row.item.status"
-                        @onUninstall="uninstallRepository(row.item)"
-                    />
+                        @onUninstall="uninstallRepository(row.item)" />
                 </template>
             </b-table>
         </b-card>

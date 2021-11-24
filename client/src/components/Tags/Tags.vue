@@ -6,8 +6,7 @@
         @tag-click="onClick"
         @tag-input-changed="updateTagSearch"
         @before-adding-tag="beforeAddingTag"
-        @before-deleting-tag="beforeDeletingTag"
-    />
+        @before-deleting-tag="beforeDeletingTag" />
 </template>
 
 <script>

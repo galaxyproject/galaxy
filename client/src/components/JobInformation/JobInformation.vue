@@ -10,8 +10,7 @@
                         <copy-to-clipboard
                             message="Tool ID was copied to your clipboard"
                             :text="job.tool_id"
-                            title="Copy Tool ID"
-                        />
+                            title="Copy Tool ID" />
                     </td>
                 </tr>
                 <tr v-if="job && job.tool_version">
@@ -43,8 +42,7 @@
                     id="traceback"
                     v-if="job && job.traceback"
                     :code-label="'Unexpected Job Errors'"
-                    :code-item="job.traceback"
-                />
+                    :code-item="job.traceback" />
                 <tr v-if="job">
                     <td>Tool Exit Code:</td>
                     <td id="exist-code">{{ job.exit_code }}</td>

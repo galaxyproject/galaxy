@@ -19,8 +19,7 @@
                             v-if="item && databaseKeyFromElements"
                             :database-key-from-elements="databaseKeyFromElements"
                             :genomes="item"
-                            @clicked-save="clickedSave"
-                        />
+                            @clicked-save="clickedSave" />
                     </div>
                 </GenomeProvider>
             </b-tab>

@@ -33,14 +33,12 @@
                     :use-job-cache="simpleFormUseJobCache"
                     @submissionSuccess="handleInvocations"
                     @submissionError="handleSubmissionError"
-                    @showAdvanced="showAdvanced"
-                />
+                    @showAdvanced="showAdvanced" />
                 <workflow-run-form
                     v-else
                     :model="model"
                     @submissionSuccess="handleInvocations"
-                    @submissionError="handleSubmissionError"
-                />
+                    @submissionError="handleSubmissionError" />
             </div>
         </span>
     </span>

@@ -9,8 +9,7 @@
                         :title="actionLongDescription(transformAction)"
                         class="dataset-source-transform-element"
                         :data-transform-action="transformAction.action"
-                        v-b-tooltip.hover.noninteractive.nofade.bottom
-                    >
+                        v-b-tooltip.hover.noninteractive.nofade.bottom>
                         {{ actionShortDescription(transformAction) }}
                     </span>
                 </li>

@@ -2,8 +2,7 @@
     <div
         class="galaxy-loader"
         :class="[`galaxy-loader_${style}`, { 'galaxy-loader_center': center }]"
-        :style="{ transform: `scale(${size / 100})` }"
-    >
+        :style="{ transform: `scale(${size / 100})` }">
         <div class="galaxy-loader_strip-1"></div>
         <div class="galaxy-loader_strip-2"></div>
         <div class="galaxy-loader_strip-3"></div>

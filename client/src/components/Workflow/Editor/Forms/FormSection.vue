@@ -6,16 +6,14 @@
             title="Email notification"
             type="boolean"
             help="An email notification will be sent when the job has completed."
-            @input="onInput"
-        />
+            @input="onInput" />
         <FormElement
             :id="deleteActionKey"
             :value="deleteActionValue"
             title="Output cleanup"
             type="boolean"
             help="Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
-            @input="onInput"
-        />
+            @input="onInput" />
         <FormOutput
             v-for="(output, index) in outputs"
             :key="index"
@@ -25,8 +23,7 @@
             :datatypes="datatypes"
             :form-data="formData"
             @onInput="onInput"
-            @onDatatype="onDatatype"
-        />
+            @onDatatype="onDatatype" />
     </div>
 </template>
 

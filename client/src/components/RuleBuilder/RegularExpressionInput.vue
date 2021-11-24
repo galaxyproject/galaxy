@@ -9,8 +9,7 @@
             class="rule-regular-expression"
             type="text"
             :value="target"
-            @input="$emit('update:target', $event.target.value)"
-        />
+            @input="$emit('update:target', $event.target.value)" />
     </div>
 </template>
 

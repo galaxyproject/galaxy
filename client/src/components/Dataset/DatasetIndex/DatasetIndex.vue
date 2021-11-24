@@ -6,8 +6,7 @@
             striped
             hover
             :fields="fields"
-            :items="directoryContent"
-        >
+            :items="directoryContent">
         </b-table>
         <div v-if="errorMessage">
             <b v-if="path">{{ path }}</b> {{ errorMessage }}

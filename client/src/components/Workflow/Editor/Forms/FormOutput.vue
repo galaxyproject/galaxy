@@ -8,8 +8,7 @@
                 :help="renameHelp"
                 title="Rename dataset"
                 type="text"
-                @input="onInput"
-            />
+                @input="onInput" />
             <FormElement
                 :id="actionNames.ChangeDatatypeAction__newtype"
                 :value="formData[actionNames.ChangeDatatypeAction__newtype]"
@@ -18,24 +17,21 @@
                 type="select"
                 backbonejs
                 help="This action will change the datatype of the output to the indicated datatype."
-                @input="onDatatype"
-            />
+                @input="onDatatype" />
             <FormElement
                 :id="actionNames.TagDatasetAction__tags"
                 :value="formData[actionNames.TagDatasetAction__tags]"
                 title="Add Tags"
                 type="text"
                 help="This action will set tags for the dataset."
-                @input="onInput"
-            />
+                @input="onInput" />
             <FormElement
                 :id="actionNames.RemoveTagDatasetAction__tags"
                 :value="formData[actionNames.RemoveTagDatasetAction__tags]"
                 title="Remove Tags"
                 type="text"
                 help="This action will remove tags for the dataset."
-                @input="onInput"
-            />
+                @input="onInput" />
             <FormCard title="Assign columns" collapsible :expanded.sync="expandedColumn">
                 <template v-slot:body>
                     <FormElement
@@ -45,8 +41,7 @@
                         type="integer"
                         backbonejs
                         help="This action will set the chromosome column."
-                        @input="onInput"
-                    />
+                        @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__startCol"
                         :value="formData[actionNames.ColumnSetAction__startCol]"
@@ -54,8 +49,7 @@
                         type="integer"
                         backbonejs
                         help="This action will set the start column."
-                        @input="onInput"
-                    />
+                        @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__endCol"
                         :value="formData[actionNames.ColumnSetAction__endCol]"
@@ -63,8 +57,7 @@
                         type="integer"
                         backbonejs
                         help="This action will set the end column."
-                        @input="onInput"
-                    />
+                        @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__strandCol"
                         :value="formData[actionNames.ColumnSetAction__strandCol]"
@@ -72,8 +65,7 @@
                         type="integer"
                         backbonejs
                         help="This action will set the strand column."
-                        @input="onInput"
-                    />
+                        @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__nameCol"
                         :value="formData[actionNames.ColumnSetAction__nameCol]"
@@ -81,8 +73,7 @@
                         type="integer"
                         backbonejs
                         help="This action will set the name column."
-                        @input="onInput"
-                    />
+                        @input="onInput" />
                 </template>
             </FormCard>
         </template>

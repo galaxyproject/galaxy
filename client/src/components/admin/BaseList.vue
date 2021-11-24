@@ -8,8 +8,7 @@
                 :disabled="busy"
                 @click.prevent="executeAll()"
                 :title="tooltipAll"
-                data-placement="bottom"
-            >
+                data-placement="bottom">
                 <span :class="icon" />
             </b-button>
             {{ plural }} available.
@@ -21,8 +20,7 @@
                     :disabled="busy"
                     :title="tooltip"
                     data-placement="bottom"
-                    @click.prevent="execute([data.item.id])"
-                >
+                    @click.prevent="execute([data.item.id])">
                     <span :class="icon" />
                 </b-button>
             </template>

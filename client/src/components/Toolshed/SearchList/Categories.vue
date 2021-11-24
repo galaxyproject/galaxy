@@ -7,8 +7,7 @@
                     href="javascript:void(0)"
                     role="button"
                     class="font-weight-bold"
-                    @click="onCategory(data.value)"
-                >
+                    @click="onCategory(data.value)">
                     {{ data.value }}
                 </b-link>
             </template>

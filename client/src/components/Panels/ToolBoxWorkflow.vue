@@ -7,8 +7,7 @@
                         :panel-views="panelViews"
                         :current-panel-view="currentPanelView"
                         @updatePanelView="updatePanelView"
-                        v-if="panelViews && Object.keys(panelViews).length > 1"
-                    />
+                        v-if="panelViews && Object.keys(panelViews).length > 1" />
                 </div>
                 <div class="panel-header-text">Tools</div>
             </div>
@@ -18,8 +17,7 @@
                 :current-panel-view="currentPanelView"
                 placeholder="search tools"
                 @onQuery="onQuery"
-                @onResults="onResults"
-            />
+                @onResults="onResults" />
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
@@ -32,23 +30,20 @@
                     :query-filter="query"
                     :disable-filter="true"
                     :key="category.name"
-                    @onClick="onInsertModule"
-                />
+                    @onClick="onInsertModule" />
                 <tool-section
                     v-if="hasDataManagerSection"
                     :category="dataManagerSection"
                     :key="dataManagerSection.id"
                     :query-filter="query"
                     :disable-filter="true"
-                    @onClick="onInsertTool"
-                />
+                    @onClick="onInsertTool" />
                 <tool-section
                     v-for="section in sections"
                     :category="section"
                     :query-filter="query"
                     :key="section.id"
-                    @onClick="onInsertTool"
-                />
+                    @onClick="onInsertTool" />
                 <tool-section
                     v-if="hasWorkflowSection"
                     :category="workflowSection"
@@ -59,8 +54,7 @@
                     :query-filter="query"
                     :disable-filter="true"
                     @onClick="onInsertWorkflow"
-                    @onOperation="onInsertWorkflowSteps"
-                />
+                    @onOperation="onInsertWorkflowSteps" />
             </div>
         </div>
     </div>

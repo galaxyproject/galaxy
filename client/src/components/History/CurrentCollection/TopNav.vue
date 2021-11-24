@@ -5,8 +5,7 @@
         text="Return to..."
         boundary="viewport"
         data-description="collection breadcrumbs menu"
-        no-caret
-    >
+        no-caret>
         <template v-slot:button-content>
             <Icon icon="arrow-up" class="mr-1" />
             <b class="text-nowrap" v-localize>Return to...</b>
@@ -27,8 +26,7 @@
         size="sm"
         title="`Return to: ${history.name}`"
         @click="close"
-        data-description="back to history"
-    >
+        data-description="back to history">
         <Icon icon="arrow-up" class="mr-1" />
         <b class="text-nowrap">Return to: {{ history.name }}</b>
     </b-button>

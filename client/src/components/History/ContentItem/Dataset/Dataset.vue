@@ -8,8 +8,7 @@
         @delete="onDelete"
         @undelete="onUndelete"
         @unhide="onUnhide"
-        @copy-link="onCopyLink"
-    />
+        @copy-link="onCopyLink" />
 </template>
 
 <script>

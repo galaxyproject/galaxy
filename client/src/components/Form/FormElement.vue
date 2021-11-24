@@ -32,8 +32,7 @@
                 :data-label="title"
                 :type="type"
                 :attributes="attrs"
-                ref="params"
-            />
+                ref="params" />
             <FormInput v-else v-model="currentValue" :id="id" :area="attrs['area']" />
         </div>
         <div v-if="showPreview" class="ui-form-preview" v-html="previewText" />

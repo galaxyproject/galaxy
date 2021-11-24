@@ -12,8 +12,7 @@
                         v-if="showSuccess"
                         :job-def="jobDef"
                         :job-response="jobResponse"
-                        :tool-name="toolName"
-                    />
+                        :tool-name="toolName" />
                     <Webhook v-if="showSuccess" type="tool" :tool-id="jobDef.tool_id" />
                     <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
                         <b-alert show variant="danger">
@@ -40,40 +39,35 @@
                         @onChangeVersion="onChangeVersion"
                         @onUpdateFavorites="onUpdateFavorites"
                         itemscope="itemscope"
-                        itemtype="https://schema.org/CreativeWork"
-                    >
+                        itemtype="https://schema.org/CreativeWork">
                         <template v-slot:body>
                             <FormDisplay
                                 :id="formConfig.id"
                                 :inputs="formConfig.inputs"
                                 :validation-scroll-to="validationScrollTo"
                                 @onChange="onChange"
-                                @onValidation="onValidation"
-                            />
+                                @onValidation="onValidation" />
                             <FormElement
                                 v-if="emailAllowed(config, user)"
                                 id="send_email_notification"
                                 title="Email notification"
                                 help="Send an email notification when the job completes."
                                 type="boolean"
-                                v-model="useEmail"
-                            />
+                                v-model="useEmail" />
                             <FormElement
                                 v-if="remapAllowed"
                                 id="rerun_remap_job_id"
                                 :title="remapTitle"
                                 :help="remapHelp"
                                 type="boolean"
-                                v-model="useJobRemapping"
-                            />
+                                v-model="useJobRemapping" />
                             <FormElement
                                 v-if="reuseAllowed(user)"
                                 id="use_cached_job"
                                 title="Attempt to re-use jobs with identical parameters?"
                                 help="This may skip executing jobs that you have already run."
                                 type="boolean"
-                                v-model="useCachedJobs"
-                            />
+                                v-model="useCachedJobs" />
                         </template>
                         <template v-slot:buttons>
                             <ButtonSpinner
@@ -81,8 +75,7 @@
                                 title="Execute"
                                 @onClick="onExecute(config, currentHistoryId)"
                                 :wait="showExecuting"
-                                :tooltip="tooltip"
-                            />
+                                :tooltip="tooltip" />
                         </template>
                     </ToolCard>
                 </div>

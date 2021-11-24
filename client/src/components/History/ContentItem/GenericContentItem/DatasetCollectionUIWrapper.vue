@@ -10,8 +10,7 @@
             @hide="onHide(datasetCollection)"
             @unhide="onUnhide(datasetCollection)"
             @delete="onDelete(datasetCollection, $event)"
-            @undelete="onUndelete(datasetCollection)"
-        />
+            @undelete="onUndelete(datasetCollection)" />
         <DatasetCollectionContentProvider v-if="expand" :id="datasetCollection.contents_url" v-slot="{ item, loading }">
             <b-spinner v-if="loading">Loading Dataset Collection...</b-spinner>
             <DatasetCollectionContents v-else :collection-contents="item" />

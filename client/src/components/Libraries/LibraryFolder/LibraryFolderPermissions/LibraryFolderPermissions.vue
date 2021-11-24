@@ -12,8 +12,7 @@
                     :api-root-url="apiRootUrl"
                     alert="User with <strong>any</strong> of these roles can manage permissions on this folder."
                     title="Roles that can manage permissions on this folder"
-                    @input="setUserPermissionsPreferences"
-                />
+                    @input="setUserPermissionsPreferences" />
 
                 <PermissionsInputField
                     v-if="add_library_item_role_list"
@@ -24,8 +23,7 @@
                     title="Roles that can add items to this folder"
                     alert="User with <strong>any</strong> of these roles can add items to this folder (folders and
                                 datasets)."
-                    @input="setUserPermissionsPreferences"
-                />
+                    @input="setUserPermissionsPreferences" />
 
                 <PermissionsInputField
                     v-if="modify_folder_role_list"
@@ -35,16 +33,14 @@
                     :api-root-url="apiRootUrl"
                     title="Roles that can modify this folder"
                     alert="User with <strong>any</strong> of these roles can modify this folder (name, etc.)."
-                    @input="setUserPermissionsPreferences"
-                />
+                    @input="setUserPermissionsPreferences" />
                 <button
                     data-toggle="tooltip"
                     data-placement="top"
                     title="Save modifications"
                     class="btn btn-secondary toolbtn_save_permissions primary-button"
                     type="button"
-                    @click="postPermissions"
-                >
+                    @click="postPermissions">
                     <font-awesome-icon :icon="['far', 'save']" />
                     &nbsp;Save
                 </button>

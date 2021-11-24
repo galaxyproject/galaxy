@@ -18,8 +18,7 @@
                                 <b-form-input
                                     v-model="filter"
                                     placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''"
-                                />
+                                    @keyup.esc.native="filter = ''" />
                                 <b-input-group-append>
                                     <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
                                 </b-input-group-append>
@@ -37,8 +36,7 @@
                                     :href="dataManager['toolUrl']"
                                     target="_blank"
                                     variant="primary"
-                                    :id="kebabCase(dataManager['name'])"
-                                >
+                                    :id="kebabCase(dataManager['name'])">
                                     <div>{{ dataManager["name"] }}</div>
                                     <div v-if="dataManager['description']">
                                         <i>{{ dataManager["description"] }}</i>
@@ -49,8 +47,7 @@
                                         name: 'DataManagerJobs',
                                         params: { id: encodeURIComponent(dataManager['id']) },
                                     }"
-                                    :id="kebabCase(dataManager['name']) + '-jobs'"
-                                >
+                                    :id="kebabCase(dataManager['name']) + '-jobs'">
                                     Jobs
                                 </b-button>
                             </b-button-group>
@@ -64,8 +61,7 @@
                             :key="index"
                             :to="{ name: 'DataManagerTable', params: { name: dataTable['name'] } }"
                             :id="kebabCase(dataTable['name']) + '-table'"
-                            :variant="dataTable['managed'] === true ? 'primary' : 'link'"
-                        >
+                            :variant="dataTable['managed'] === true ? 'primary' : 'link'">
                             {{ dataTable["name"] }}
                             <b-badge v-if="dataTable['managed'] === true" variant="primary" pill
                                 ><span class="fa fa-exchange"

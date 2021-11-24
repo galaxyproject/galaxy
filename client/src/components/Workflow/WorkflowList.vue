@@ -17,8 +17,7 @@
                             :placeholder="titleSearchWorkflows"
                             autocomplete="off"
                             type="text"
-                            v-model="filter"
-                        />
+                            v-model="filter" />
                     </b-col>
                     <b-col>
                         <span class="float-right">
@@ -39,8 +38,7 @@
                     :fields="fields"
                     :items="workflows"
                     :filter="filter"
-                    @filtered="filtered"
-                >
+                    @filtered="filtered">
                     <template v-slot:cell(name)="row">
                         <WorkflowDropdown
                             :workflow="row.item"
@@ -48,8 +46,7 @@
                             @onRemove="onRemove"
                             @onUpdate="onUpdate"
                             @onSuccess="onSuccess"
-                            @onError="onError"
-                        />
+                            @onError="onError" />
                     </template>
                     <template v-slot:cell(tags)="row">
                         <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
@@ -74,8 +71,7 @@
                             v-b-tooltip.hover.bottom
                             :title="titleRunWorkflow"
                             class="workflow-run btn-sm btn-primary fa fa-play"
-                            @click.stop="executeWorkflow(row.item)"
-                        />
+                            @click.stop="executeWorkflow(row.item)" />
                     </template>
                 </b-table>
                 <div v-if="showNotFound">

@@ -6,8 +6,7 @@
                 <button
                     class="save-collection-edit btn btn-primary"
                     @click="clickedSave"
-                    :disabled="selectedGenome.id == databaseKeyFromElements"
-                >
+                    :disabled="selectedGenome.id == databaseKeyFromElements">
                     {{ l("Save") }}
                 </button>
             </div>
@@ -20,8 +19,7 @@
             label="text"
             :options="genomes"
             :searchable="true"
-            :allow-empty="false"
-        >
+            :allow-empty="false">
             {{ selectedGenome.text }}
         </multiselect>
     </div>
