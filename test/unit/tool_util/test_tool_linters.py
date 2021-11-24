@@ -280,6 +280,34 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
 </tool>
 """
 
+TESTS_EXPECT_NUM_OUTPUTS_FILTER = """
+<tool>
+    <outputs>
+        <data>
+            <filter/>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_failure="false">
+        </test>
+    </tests>
+</tool>
+"""
+
+TESTS_EXPECT_NUM_OUTPUTS_DISCOVERED_DATASETS = """
+<tool>
+    <outputs>
+        <data>
+            <discover_datasets/>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_failure="false">
+        </test>
+    </tests>
+</tool>
+"""
+
 TESTS = [
     (
         WHITESPACE_IN_VERSIONS_AND_NAMES, general.lint_general,
@@ -396,6 +424,18 @@ TESTS = [
         lambda x:
             "Test 1: Cannot specify outputs in a test expecting failure." in x.error_messages
             and len(x.warn_messages) == 0 and len(x.error_messages) == 1
+    ),
+    (
+        TESTS_EXPECT_NUM_OUTPUTS_FILTER, tests.lint_tsts,
+        lambda x:
+            "Test should specify 'expect_num_outputs' if outputs have filters or use discover_datasets" in x.warn_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        TESTS_EXPECT_NUM_OUTPUTS_DISCOVERED_DATASETS, tests.lint_tsts,
+        lambda x:
+            "Test should specify 'expect_num_outputs' if outputs have filters or use discover_datasets" in x.warn_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 0
     )
 ]
 
@@ -416,6 +456,8 @@ TEST_IDS = [
     'test without expectations',
     'test param missing from inputs',
     'test expecting failure with outputs',
+    'test missing expect_num_outputs for filtered outputs',
+    'test missing expect_num_outputs for discovered outputs',
 ]
 
 
