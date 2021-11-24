@@ -7,4 +7,5 @@ pycryptodome
 pyyaml
 requests
 routes
+typing-extensions
 zipstream-new

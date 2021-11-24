@@ -5,3 +5,4 @@ fastapi-utils
 Mako
 python-multipart  # required to support form parsing in FastAPI/Starlette
 starlette
+typing-extensions
