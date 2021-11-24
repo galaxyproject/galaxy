@@ -265,8 +265,8 @@ class ProvidesUserFileSourcesUserContext:
 
     @property
     def vault(self):
-        user = self.trans.user
-        return user and user.personal_vault or defaultdict(lambda: None)
+        user_vault = self.trans.user_vault
+        return user_vault or defaultdict(lambda: None)
 
 
 class DictFileSourcesUserContext:

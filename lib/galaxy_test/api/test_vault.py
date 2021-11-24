@@ -1,6 +1,6 @@
 import json
 import os
-from typing import cast, Any
+from typing import Any, cast
 
 from requests import (
     get,

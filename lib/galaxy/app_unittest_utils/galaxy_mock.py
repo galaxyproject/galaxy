@@ -182,7 +182,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.enable_tool_shed_check = False
         self.monitor_thread_join_timeout = 1
         self.integrated_tool_panel_config = None
-        self.vault_config_file = None
+        self.vault_config_file = kwargs.get('vault_config_file')
 
     @property
     def config_dict(self):
