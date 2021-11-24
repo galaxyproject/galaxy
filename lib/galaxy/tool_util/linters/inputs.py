@@ -56,6 +56,9 @@ def lint_inputs(tool_xml, lint_ctx):
             lint_ctx.error("Found param input with no name specified.")
             continue
         param_name = _parse_name(param_attrib.get("name"), param_attrib.get("argument"))
+        if "name" in param_attrib and "argument" in param_attrib:
+            if param_attrib.get("name") == _parse_name(None, param_attrib.get("argument")):
+                lint_ctx.warn(f"Param input [{param_name}] 'name' attribute is redundant if argument implies the same name.")
 
         if "type" not in param_attrib:
             lint_ctx.error(f"Param input [{param_name}] input with no type specified.")
