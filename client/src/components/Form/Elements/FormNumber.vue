@@ -2,9 +2,11 @@
     <div>
         <b-row align-v="center">
             <b-col :sm="isSliderVisible ? defaultInputSizeWithSlider : false">
+                <!-- regular dot and dot on numpad have different codes -->
                 <b-form-input
-                    @keydown="onInput"
+                    @change="onInputChange"
                     @keydown.190.capture="onFloatInput"
+                    @keydown.110.capture="onFloatInput"
                     v-model="currentValue"
                     size="sm"
                     type="number"
@@ -57,7 +59,7 @@ export default {
             dismissCountDown: 0,
             errorMessage: "",
             fractionWarning: "This output doesn't allow fractions!",
-            // currentValue: this.value,
+            currentValue: this.value,
         };
     },
     computed: {
@@ -65,15 +67,7 @@ export default {
             return this.min && this.max && this.max > this.min;
         },
         isInteger() {
-            return this.type === "integer";
-        },
-        currentValue: {
-            get() {
-                return this.value;
-            },
-            set(val) {
-                this.$emit("input", val);
-            },
+            return this.type.toLowerCase() === "integer";
         },
     },
     methods: {
@@ -83,16 +77,15 @@ export default {
                 this.showAlert(this.fractionWarning);
             }
         },
-        onInput(e) {
-            // hide error msg on any input
+        onInputChange(value) {
+            // hide error message after value has changed
             this.dismissCountDown = 0;
-            // the solution far from ideal, any suggestions here would be highly appreciated
-            const value = Number("" + this.currentValue + e.key);
             if (this.max && this.min && (value > this.max || value < this.min)) {
-                e.preventDefault();
                 const errorMessage = this.getOutOfRangeWarning(value);
+                value > this.max ? (this.currentValue = this.max) : (this.currentValue = this.min);
                 this.showAlert(errorMessage);
             }
+            this.$emit("input", this.currentValue);
         },
         showAlert(error) {
             if (error) {
