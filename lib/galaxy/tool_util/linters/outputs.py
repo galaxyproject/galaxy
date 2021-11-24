@@ -9,7 +9,7 @@ def lint_output(tool_xml, lint_ctx):
     # determine line to report for general problems with outputs
     try:
         tool_line = tool_xml.find("./tool").sourceline
-    except:
+    except AttributeError:
         tool_line = 0
     outputs = tool_xml.findall("./outputs")
     if len(outputs) == 0:

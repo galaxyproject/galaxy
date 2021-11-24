@@ -8,13 +8,17 @@ of the tool publish results.
 def lint_citations(tool_xml, lint_ctx):
     """Ensure tool contains at least one valid citation."""
     root = tool_xml.getroot()
+    if root is not None:
+        root_line = root.sourceline
+    else:
+        root_line = 1
     citations = root.findall("citations")
     if len(citations) > 1:
         lint_ctx.error("More than one citation section found, behavior undefined.", line=citations[1].sourceline)
         return
 
     if len(citations) == 0:
-        lint_ctx.warn("No citations found, consider adding citations to your tool.", line=root.sourceline)
+        lint_ctx.warn("No citations found, consider adding citations to your tool.", line=root_line)
         return
 
     valid_citations = 0
@@ -32,4 +36,4 @@ def lint_citations(tool_xml, lint_ctx):
         valid_citations += 1
 
     if valid_citations > 0:
-        lint_ctx.valid(f"Found {valid_citations} likely valid citations.", line=root.sourceline)
+        lint_ctx.valid(f"Found {valid_citations} likely valid citations.", line=root_line)

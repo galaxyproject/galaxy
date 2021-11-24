@@ -6,14 +6,13 @@ from ._util import is_datasource
 def lint_tsts(tool_xml, lint_ctx):
     # determine line to report for general problems with tests
     try:
-        tests_line = tool_xml.find("./tool").sourceline
-    except:
-        tests_line = 0
-    try:
         tests_line = tool_xml.find("./tests").sourceline
-    except:
+    except AttributeError:
+        tests_line = 1
+    try:
+        tests_line = tool_xml.find("./tool").sourceline
+    except AttributeError:
         pass
-
     tests = tool_xml.findall("./tests/test")
     datasource = is_datasource(tool_xml)
     if not tests and not datasource:

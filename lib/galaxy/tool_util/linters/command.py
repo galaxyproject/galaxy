@@ -8,13 +8,17 @@ from supplied inputs.
 def lint_command(tool_xml, lint_ctx):
     """Ensure tool contains exactly one command and check attributes."""
     root = tool_xml.getroot()
+    if root is not None:
+        root_line = root.sourceline
+    else:
+        root_line = 1
     commands = root.findall("command")
     if len(commands) > 1:
         lint_ctx.error("More than one command tag found, behavior undefined.", line=commands[1].sourceline)
         return
 
     if len(commands) == 0:
-        lint_ctx.error("No command tag found, must specify a command template to execute.", line=root.sourceline)
+        lint_ctx.error("No command tag found, must specify a command template to execute.", line=root_line)
         return
 
     command = get_command(tool_xml)

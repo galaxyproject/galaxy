@@ -7,7 +7,7 @@ def lint_stdio(tool_source, lint_ctx):
     # determine line to report for general problems with stdio
     try:
         tool_line = tool_xml.find("./tool").sourceline
-    except:
+    except AttributeError:
         tool_line = 0
     
     stdios = tool_xml.findall("./stdio") if tool_xml else []

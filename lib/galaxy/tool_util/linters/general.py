@@ -31,7 +31,7 @@ def lint_general(tool_source, lint_ctx):
     tool_xml = getattr(tool_source, "xml_tree", None)
     try:
         tool_line = tool_xml.find("./tool").sourceline
-    except:
+    except AttributeError:
         tool_line = 0
     version = tool_source.parse_version() or ''
     parsed_version = packaging.version.parse(version)

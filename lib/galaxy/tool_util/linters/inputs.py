@@ -49,7 +49,7 @@ def lint_inputs(tool_xml, lint_ctx):
     # determine line to report for general problems with outputs
     try:
         tool_line = tool_xml.find("./tool").sourceline
-    except:
+    except AttributeError:
         tool_line = 0
     datasource = is_datasource(tool_xml)
     inputs = tool_xml.findall("./inputs//param")
