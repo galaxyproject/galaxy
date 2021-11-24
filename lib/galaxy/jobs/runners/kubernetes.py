@@ -479,11 +479,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return "Never"
 
     def __get_volume_mounts_for_job(self, job_wrapper):
+        DATA_BASE_PATH = "objects/"
         volume_mounts = []
         if self.runner_params.get('k8s_data_volume_claim'):
             try:
                 param_claim = self.runner_params['k8s_data_volume_claim'].split(":")
                 claim_name = param_claim[0]
+                base_subpath = ""
                 if "/" in claim_name:
                     base_subpath = claim_name.split("/")[1]
                     claim_name = claim_name.split("/")[0]
@@ -492,38 +494,47 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 log.debug('Failed to parse `k8s_data_volume_claim` parameter in the kubernetes runner configuration')
                 raise e
             inputs = job_wrapper.get_input_fnames()
-            # outputs = job_wrapper.get_output_fnames()
             for i in list(inputs):
                 file_path = str(i)
                 subpath = file_path.lstrip(base_mount).lstrip('/').rstrip('/')
                 if base_subpath:
                     subpath = "{}/{}".format(base_subpath, subpath)
-                volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
-            # for o in list(outputs):
-            #     file_path = str(o).rstrip('/').split('/')
-            #     file_path = "/".join(file_path[:-1])
-            #     subpath = str(file_path).lstrip(base_mount).lstrip('/')
-            #     # Avoid mounting the same output directory twice for two output files using same dir
-            #     if subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
-            #         volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
+                if file_path not in [each['mountPath'] for each in volume_mounts]:
+                    volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
+            outputs = job_wrapper.get_output_fnames()
+            for o in list(outputs):
+                file_path = str(o).rstrip('/').split('/')
+                file_path = "/".join(file_path[:-1])
+                subpath = str(file_path).lstrip(base_mount).lstrip('/')
+                # Avoid mounting the same output directory twice for two output files using same dir
+                if DATA_BASE_PATH in subpath and subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
+                    volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
         if self.runner_params.get('k8s_working_volume_claim'):
             try:
                 param_claim = self.runner_params['k8s_working_volume_claim'].split(":")
                 claim_name = param_claim[0]
+                wd_base_subpath = ""
                 if "/" in claim_name:
-                    base_subpath = claim_name.split("/")[1]
+                    wd_base_subpath = claim_name.split("/")[1]
                     claim_name = claim_name.split("/")[0]
-                base_mount = param_claim[1]
                 base_mount = param_claim[1]
             except Exception as e:
                 log.debug('Failed to parse `k8s_working_volume_claim` parameter in the kubernetes runner configuration')
                 raise e
             wd_subpath = str(job_wrapper.working_directory).lstrip(base_mount).lstrip('/').rstrip('/')
-            if base_subpath:
-                wd_subpath = "{}/{}".format(base_subpath, wd_subpath)
+            if wd_base_subpath:
+                wd_subpath = "{}/{}".format(wd_base_subpath, wd_subpath)
             volume_mounts.append({'name': claim_name,
                                   'mountPath': str(job_wrapper.working_directory),
                                   'subPath': wd_subpath})
+            outputs = job_wrapper.get_output_fnames()
+            for o in list(outputs):
+                file_path = str(o).rstrip('/').split('/')
+                file_path = "/".join(file_path[:-1])
+                subpath = str(file_path).lstrip(base_mount).lstrip('/')
+                # Avoid mounting the same output directory twice for two output files using same dir
+                if wd_subpath not in subpath and DATA_BASE_PATH not in subpath and subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
+                    volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
         return volume_mounts
 
     def __get_k8s_containers(self, ajs):
@@ -538,7 +549,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         mounts = self.__get_volume_mounts_for_job(ajs.job_wrapper)
         mounts.extend(self.runner_params['k8s_volume_mounts'])
-        log.debug(mounts)
 
         k8s_container = {
             "name": self.__get_k8s_container_name(ajs.job_wrapper),
