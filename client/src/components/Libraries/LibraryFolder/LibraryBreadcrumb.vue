@@ -6,7 +6,7 @@
                 :key="path_item[0]"
                 :title="isCurrentId(path_item[0]) ? `You are here` : `Return to this folder`"
                 :active="isCurrentId(path_item[0])"
-                :to="{ name: `LibraryFolder`, params: { folder_id: `${path_item[0]}` } }"
+                :to="{ path: `/folders/${path_item[0]}` }"
                 href="#"
                 >{{ path_item[1] }}</b-breadcrumb-item
             >
