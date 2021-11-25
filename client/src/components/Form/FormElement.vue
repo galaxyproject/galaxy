@@ -212,6 +212,9 @@ export default {
     created() {
         this.initialState();
     },
+    mounted() {
+        this.setValue(this.currentValue);
+    },
     methods: {
         /** Submits a changed value. */
         setValue(value) {
