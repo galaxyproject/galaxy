@@ -356,8 +356,8 @@ class JobHandlerQueue(Monitors):
             job_filter_conditions = (
                 (model.Job.state == model.Job.states.NEW),
                 (model.Job.handler == self.app.config.server_name),
-                ~model.Job.table.c.id.in_(hda_not_ready),
-                ~model.Job.table.c.id.in_(ldda_not_ready))
+                ~model.Job.table.c.id.in_(select(hda_not_ready)),
+                ~model.Job.table.c.id.in_(select(ldda_not_ready)))
             if self.app.config.user_activation_on:
                 job_filter_conditions = job_filter_conditions + (
                     or_((model.Job.user_id == null()), (model.User.active == true())),)
