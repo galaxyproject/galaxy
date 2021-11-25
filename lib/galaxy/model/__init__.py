@@ -5304,17 +5304,24 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     def element_identifiers_extensions_paths_and_metadata_files(
         self,
     ) -> List[List[Any]]:
-        q = self._get_nested_collection_attributes(
-            element_attributes=('element_identifier',),
-            hda_attributes=('extension',),
-            return_entities=(HistoryDatasetAssociation, Dataset)
-        )
         results = []
-        for row in q:
-            result = [row[:-3], row.extension, row.Dataset.file_name]
-            hda = row.HistoryDatasetAssociation
-            result.append(hda.get_metadata_file_paths_and_extensions())
-            results.append(result)
+        if object_session(self):
+            q = self._get_nested_collection_attributes(
+                element_attributes=('element_identifier',),
+                hda_attributes=('extension',),
+                return_entities=(HistoryDatasetAssociation, Dataset)
+            )
+            # element_identifiers, extension, path
+            for row in q:
+                result = [row[:-3], row.extension, row.Dataset.file_name]
+                hda = row.HistoryDatasetAssociation
+                result.append(hda.get_metadata_file_paths_and_extensions())
+                results.append(result)
+        else:
+            # This will be in a remote tool evaluation context, so can't query database
+            for dataset_element in self.dataset_elements_and_identifiers():
+                # Let's pretend name is element identifier
+                results.append([dataset_element._identifiers, dataset_element.hda.extension, dataset_element.hda.file_name, dataset_element.hda.get_metadata_file_paths_and_extensions()])
         return results
 
     @property
@@ -5365,6 +5372,21 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             if element.is_collection:
                 elements.extend(element.child_collection.dataset_elements)
             else:
+                elements.append(element)
+        return elements
+
+    def dataset_elements_and_identifiers(self, identifiers=None):
+        # Used only in remote tool evaluation context
+        elements = []
+        if identifiers is None:
+            identifiers = []
+        for element in self.elements:
+            _identifiers = identifiers[:]
+            _identifiers.append(element.element_identifier)
+            if element.is_collection:
+                elements.extend(element.child_collection.dataset_elements_and_identifiers(_identifiers))
+            else:
+                element._identifiers = _identifiers
                 elements.append(element)
         return elements
 
