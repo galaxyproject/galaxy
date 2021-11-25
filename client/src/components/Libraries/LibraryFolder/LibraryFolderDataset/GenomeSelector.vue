@@ -1,26 +1,29 @@
 <template>
     <div>
-        <div v-if="loading"><b-spinner label="Loading Genomes..."></b-spinner></div>
-        <div v-else>
-            <multiselect
-                v-model="selectedGenome"
-                deselect-label="Can't remove this value"
-                track-by="id"
-                label="text"
-                :options="genomes"
-                :searchable="true"
-                :allow-empty="false"
-                @select="selectGenome"
-            />
-        </div>
+        <LoadingSpan v-if="loading" message="Loading Genomes..." />
+        <multiselect
+            v-if="genomes"
+            v-model="selectedGenome"
+            deselect-label="Can't remove this value"
+            track-by="id"
+            label="text"
+            :options="genomes"
+            :searchable="true"
+            :allow-empty="false"
+            @select="selectGenome"
+        />
     </div>
 </template>
 
 <script>
 import Multiselect from "vue-multiselect";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
-    components: { Multiselect },
+    components: {
+        Multiselect,
+        LoadingSpan,
+    },
     props: {
         loading: {
             type: Boolean,
@@ -28,7 +31,8 @@ export default {
         },
         genomes: {
             type: Array,
-            required: true,
+            required: false,
+            default: null,
         },
         currentGenomeId: {
             type: String,
@@ -40,12 +44,16 @@ export default {
             selectedGenome: {},
         };
     },
-    created() {
-        this.selectedGenome = this.genomes.find((genome) => genome.id == this.currentGenomeId);
-    },
     methods: {
         selectGenome(genome) {
             this.$emit("update:selected-genome", genome);
+        },
+    },
+    watch: {
+        genomes: function (val) {
+            if (val) {
+                this.selectedGenome = this.genomes.find((genome) => genome.id == this.currentGenomeId);
+            }
         },
     },
 };

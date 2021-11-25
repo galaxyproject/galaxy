@@ -72,11 +72,10 @@
                     />
                     <DatatypesProvider
                         v-else-if="row.item.name === fieldTitles.file_ext"
-                        v-slot="{ item: datatypes, loading }"
+                        v-slot="{ item: datatypes, loading: loadingDatatypes }"
                     >
                         <DatatypeSelector
-                            v-if="datatypes"
-                            :loading="loading"
+                            :loading="loadingDatatypes"
                             :datatypes="datatypes"
                             :current-datatype="dataset.file_ext"
                             @update:selected-datatype="onSelectedDatatype"
@@ -84,11 +83,10 @@
                     </DatatypesProvider>
                     <GenomeProvider
                         v-else-if="row.item.name === fieldTitles.genome_build"
-                        v-slot="{ item: genomes, loading }"
+                        v-slot="{ item: genomes, loading: loadingGenomes }"
                     >
                         <GenomeSelector
-                            v-if="genomes"
-                            :loading="loading"
+                            :loading="loadingGenomes"
                             :genomes="genomes"
                             :current-genome-id="dataset.genome_build"
                             @update:selected-genome="onSelectedGenome"

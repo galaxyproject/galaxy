@@ -1,26 +1,29 @@
 <template>
     <div>
-        <div v-if="loading"><b-spinner label="Loading data types..."></b-spinner></div>
-        <div v-else>
-            <multiselect
-                v-model="selectedDatatype"
-                deselect-label="Can't remove this value"
-                track-by="id"
-                label="text"
-                :options="datatypes"
-                :searchable="true"
-                :allow-empty="false"
-                @select="onSelect"
-            />
-        </div>
+        <LoadingSpan v-if="loading" message="Loading data types..." />
+        <multiselect
+            v-if="datatypes"
+            v-model="selectedDatatype"
+            deselect-label="Can't remove this value"
+            track-by="id"
+            label="text"
+            :options="datatypes"
+            :searchable="true"
+            :allow-empty="false"
+            @select="onSelect"
+        />
     </div>
 </template>
 
 <script>
 import Multiselect from "vue-multiselect";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
-    components: { Multiselect },
+    components: {
+        Multiselect,
+        LoadingSpan,
+    },
     props: {
         loading: {
             type: Boolean,
@@ -28,7 +31,8 @@ export default {
         },
         datatypes: {
             type: Array,
-            required: true,
+            required: false,
+            default: null,
         },
         currentDatatype: {
             type: String,
@@ -40,12 +44,16 @@ export default {
             selectedDatatype: {},
         };
     },
-    created() {
-        this.selectedDatatype = this.datatypes.find((datatype) => datatype.id == this.currentDatatype);
-    },
     methods: {
         onSelect(datatype) {
             this.$emit("update:selected-datatype", datatype);
+        },
+    },
+    watch: {
+        datatypes: function (val) {
+            if (val) {
+                this.selectedDatatype = this.datatypes.find((datatype) => datatype.id == this.currentDatatype);
+            }
         },
     },
 };
