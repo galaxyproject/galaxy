@@ -172,17 +172,19 @@ class Ipynb(Json):
                 return False
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        headers = kwd.get("headers", {})
         config = trans.app.config
         trust = getattr(config, 'trust_jupyter_notebook_conversion', False)
         if trust:
-            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
+            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, headers=headers, **kwd)
         else:
-            return super().display_data(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
+            return super().display_data(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, headers=headers, **kwd)
 
     def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        headers = kwd.get("headers", {})
         preview = string_as_bool(preview)
         if to_ext or not preview:
-            return self._serve_raw(trans, dataset, to_ext, **kwd)
+            return self._serve_raw(dataset, to_ext, headers, **kwd)
         else:
             with tempfile.NamedTemporaryFile(delete=False) as ofile_handle:
                 ofilename = ofile_handle.name
@@ -193,7 +195,7 @@ class Ipynb(Json):
             except subprocess.CalledProcessError:
                 ofilename = dataset.file_name
                 log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex.quote, cmd)))
-            return open(ofilename, mode='rb')
+            return open(ofilename, mode='rb'), headers
 
     def set_meta(self, dataset, **kwd):
         """

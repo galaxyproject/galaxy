@@ -157,9 +157,11 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
         raw = util.string_as_bool(raw)
-        return self.service.display(
+        display_data, headers = self.service.display(
             trans, history_content_id, history_id, preview, filename, to_ext, raw, **kwd
         )
+        trans.response.headers.update(headers)
+        return display_data
 
     @web.expose_api
     def get_content_as_text(self, trans, dataset_id):

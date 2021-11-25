@@ -716,16 +716,17 @@ class BaseFastq(Sequence):
         return self.check_first_block(file_prefix)
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        headers = kwd.get("headers", {})
         if preview:
             with compression_utils.get_fileobj(dataset.file_name) as fh:
                 max_peek_size = 1000000  # 1 MB
                 if os.stat(dataset.file_name).st_size < max_peek_size:
                     mime = "text/plain"
-                    self._clean_and_set_mime_type(trans, mime)
-                    return fh.read()
+                    self._clean_and_set_mime_type(trans, mime, headers)
+                    return fh.read(), headers
                 return trans.stream_template_mako("/dataset/large_file.mako",
                                                   truncated_data=fh.read(max_peek_size),
-                                                  data=dataset)
+                                                  data=dataset), headers
         else:
             return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 

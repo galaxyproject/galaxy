@@ -367,6 +367,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
         decoded_content_id = self.decode_id(history_content_id)
+        headers = {}
         rval: Any = ''
         try:
             hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
@@ -384,14 +385,14 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 display_kwd = kwd.copy()
                 if 'key' in display_kwd:
                     del display_kwd["key"]
-                rval = hda.datatype.display_data(trans, hda, preview, filename, to_ext, **display_kwd)
+                rval, headers = hda.datatype.display_data(trans, hda, preview, filename, to_ext, **display_kwd)
         except galaxy_exceptions.MessageException:
             raise
         except Exception as e:
             log.exception("Server error getting display data for dataset (%s) from history (%s)",
                           history_content_id, history_id)
             raise galaxy_exceptions.InternalServerError(f"Could not get display data for dataset: {util.unicodify(e)}")
-        return rval
+        return rval, headers
 
     def get_content_as_text(
         self,
