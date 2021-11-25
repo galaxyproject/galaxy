@@ -18,7 +18,7 @@ from abc import (
     abstractmethod,
 )
 from json import loads
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TYPE_CHECKING
 
 import packaging.version
 import yaml
@@ -77,6 +77,9 @@ from galaxy.util.expressions import ExpressionContext
 from galaxy.util.path import external_chown
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
+
+if TYPE_CHECKING:
+    from galaxy.jobs.handler import JobHandlerQueue
 
 log = logging.getLogger(__name__)
 
@@ -925,7 +928,7 @@ class JobWrapper(HasResourceParameters):
     state management.
     """
 
-    def __init__(self, job, queue, use_persisted_destination=False):
+    def __init__(self, job, queue: 'JobHandlerQueue', use_persisted_destination=False):
         self.job_id = job.id
         self.session_id = job.session_id
         self.user_id = job.user_id
@@ -933,9 +936,8 @@ class JobWrapper(HasResourceParameters):
         self.queue = queue
         self.app = queue.app
         self.sa_session = self.app.model.context
-        self.extra_filenames = []
+        self.extra_filenames: List[str] = []
         self.command_line = None
-        self.dependencies = []
         self._dependency_shell_commands = None
         # Tool versioning variables
         self.write_version_cmd = None
