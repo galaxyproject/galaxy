@@ -48,48 +48,6 @@ from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
 
-PLAN = """
-Create job prolog script,
-- runs metadata script on inputs if necessary
-  - stages remote inputs
-- builds command line script
-  - takes as input:
-    - Job inputs / outputs, parameters
-    - Serialized tool ?
-- read command line back in set_metadata script
-
-======
-AND/OR
-======
-
-Schedule remote celery worker with one-time job handler, could do staging ... but yikes, I don't think that's atomic in any way
-Probably better to implement the above thing, then turn it into celery tasks for faster startup / less dependencies on worker.
-
-
-Problems:
-Do we want to build a full app ? Probably not.
-Do we want to supply galaxy config file ? Probably not.
-Dataset conversions ... would need to move outside of ToolEvaluator
-Access to secrets in general ... but we do serialize the object_store config, so maybe we don't care ?
-Input validation seems to require WorkRequestContext
-How do I get a ComputeEnvironment for the running job ?
-Maybe I need to reconstruct the interface ?
-
-
-Questions:
-Do we do parameter validation ?
-  - Should be pointless
-
-Implementation:
-Split up ToolEvaluator, run input validation before job ?
- - Might not be possible if validation depends on metadata (it does, but not for all tools)
- - Performance penalty if check fails in submitted DRM job as opposed to in job handler (OTOH DRM should have more capacity than handler)
-
-What won't work:
-- Can't just serialize param_dict and overwrite inputs (I think), too many custom methods that could be called
-
-"""
-
 
 class ToolErrorLog:
     def __init__(self):
