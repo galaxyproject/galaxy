@@ -74,7 +74,7 @@ class BaseWrapperTestCase(UsesApp):
 class JobWrapperTestCase(BaseWrapperTestCase, TestCase):
 
     def _wrapper(self):
-        return JobWrapper(self.job, self.queue)
+        return JobWrapper(self.job, self.queue)  # type: ignore[arg-type]
 
 
 class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):

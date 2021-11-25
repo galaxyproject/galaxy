@@ -932,6 +932,7 @@ class JobWrapper(HasResourceParameters):
         self.app = queue.app
         self.sa_session = self.app.model.context
         self.extra_filenames: List[str] = []
+        self.environment_variables = []
         self.command_line = None
         self._dependency_shell_commands = None
         # Tool versioning variables
@@ -1143,17 +1144,17 @@ class JobWrapper(HasResourceParameters):
     def get_version_string_path_legacy(self):
         return os.path.abspath(os.path.join(self.working_directory, COMMAND_VERSION_FILENAME))
 
-    def __prepare_upload_paramfile(self, tool_evaluator):
-        """Special case paramfile handling for the upload tool. Moves the paramfile to the working directory
+    def __prepare_upload_paramfile(self, job):
+        """Special case paramfile handling for the upload tool. Copies the paramfile to the working directory
         """
         new = os.path.join(self.working_directory, 'upload_params.json')
+        param_file_path = json.loads(next(iter(param.value for param in job.parameters if param.name == 'paramfile')))
         try:
-            shutil.copy2(tool_evaluator.param_dict['paramfile'], new)
+            shutil.copy2(param_file_path, new)
         except OSError as exc:
             # It won't exist at the old path if setup was interrupted and tried again later
             if exc.errno != errno.ENOENT or not os.path.exists(new):
                 raise
-        tool_evaluator.param_dict['paramfile'] = new
 
     def prepare(self, compute_environment=None):
         """
@@ -1173,17 +1174,10 @@ class JobWrapper(HasResourceParameters):
                 return jeha.fda
             return self.sa_session.query(model.GenomeIndexToolData).filter_by(job=job).first()
 
-        tool_evaluator = self._get_tool_evaluator(job)
-        compute_environment = compute_environment or self.default_compute_environment(job)
-        tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
-
-        self.sa_session.flush()
-
         # TODO: The upload tool actions that create the paramfile can probably be turned in to a configfile to remove this special casing
         if job.tool_id == 'upload1':
-            self.__prepare_upload_paramfile(tool_evaluator)
+            self.__prepare_upload_paramfile(job)
 
-        command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
         if self.tool.requires_galaxy_python_environment or self.remote_command_line:
@@ -1195,18 +1189,18 @@ class JobWrapper(HasResourceParameters):
             self.job_io.to_json(path=os.path.join(self.working_directory, 'metadata', 'outputs_new', 'job_io.json'))
             self.app.tool_data_tables.to_json(path=os.path.join(self.working_directory, 'metadata', 'outputs_new', 'tool_data_tables.json'))
         else:
+            tool_evaluator = self._get_tool_evaluator(job)
+            self.interactivetools = getattr(tool_evaluator, 'interactivetools', None)
+            compute_environment = compute_environment or self.default_compute_environment(job)
+            tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
             # We need command_line persisted to the db in order for Galaxy to re-queue the job
             # if the server was stopped and restarted before the job finished
-            self.command_line = command_line
-            job.command_line = unicodify(command_line)
+            self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
+            job.command_line = self.command_line
         job.dependencies = self.tool.dependencies
-        self.interactivetools = getattr(tool_evaluator, 'interactivetools', None)
         self.sa_session.add(job)
         self.sa_session.flush()
-        # Return list of all extra files
-        self.param_dict = tool_evaluator.param_dict
         log.debug(f"Job wrapper for Job [{job.id}] prepared {prepare_timer}")
-        return self.extra_filenames
 
     def _setup_working_directory(self, job=None):
         if job is None:
@@ -1372,7 +1366,7 @@ class JobWrapper(HasResourceParameters):
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
             job.set_final_state(job.states.ERROR, supports_skip_locked=self.app.application_stack.supports_skip_locked())
-            job.command_line = unicodify(self.command_line)
+            job.command_line = self.command_line
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
             # (not duplicated with the finish method).
@@ -2296,8 +2290,9 @@ class TaskWrapper(JobWrapper):
 
         self.sa_session.flush()
 
-        self.command_line, extra_filenames, self.environment_variables = tool_evaluator.build()
-        self.extra_filenames.extend(extra_filenames)
+        if not self.remote_command_line:
+            self.command_line, extra_filenames, self.environment_variables = tool_evaluator.build()
+            self.extra_filenames.extend(extra_filenames)
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
@@ -2308,7 +2303,6 @@ class TaskWrapper(JobWrapper):
         self.sa_session.add(task)
         self.sa_session.flush()
 
-        self.param_dict = tool_evaluator.param_dict
         self.status = 'prepared'
         return self.extra_filenames
 
