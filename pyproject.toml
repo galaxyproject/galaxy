@@ -69,7 +69,7 @@ PyYAML = "*"
 refgenconf = ">=0.12.0"
 requests = "*"
 Routes = "*"
-social-auth-core = {version = "==3.3.0", extras = ["openidconnect"]}
+social-auth-core = {version = "==4.0.3", extras = ["openidconnect"]}
 sortedcontainers = "*"
 SQLAlchemy = ">=1.4.20,<2"
 sqlalchemy-migrate = "*"
