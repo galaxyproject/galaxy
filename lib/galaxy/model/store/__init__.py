@@ -26,6 +26,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
 
 from galaxy.exceptions import MalformedContents, ObjectNotFound
+from galaxy.model.metadata import MetadataCollection
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import in_directory
@@ -79,6 +80,16 @@ class SessionlessContext:
             return Bunch(first=lambda: next(iter(self.objects.get(model_class, {None: None}))))
 
         return Bunch(find=find, get=find, filter_by=filter_by)
+
+
+def replace_metadata_file(metadata: Dict[str, Any], dataset_instance: model.DatasetInstance):
+
+    def remap_objects(p, k, obj):
+        if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
+            return (k, model.MetadataFile(dataset=dataset_instance, uuid=obj["uuid"]))
+        return (k, obj)
+
+    return remap(metadata, remap_objects)
 
 
 class ModelImportStore(metaclass=abc.ABCMeta):
@@ -278,13 +289,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     if attribute in dataset_attrs:
                         value = dataset_attrs.get(attribute)
                         if attribute == "metadata":
-                            def remap_objects(p, k, obj):
-                                if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
-                                    return (k, model.MetadataFile(dataset=dataset_instance, uuid=obj["uuid"]))
-                                return (k, obj)
-
-                            value = remap(value, remap_objects)
-
+                            value = replace_metadata_file(value, dataset_instance)
                         setattr(dataset_instance, attribute, value)
 
                 handle_dataset_object_edit(dataset_instance)
@@ -305,11 +310,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                        deleted=dataset_attrs.get('deleted', False),
                                                                        dbkey=metadata['dbkey'],
                                                                        tool_version=metadata.get('tool_version'),
-                                                                       metadata=metadata,
                                                                        history=history,
                                                                        create_dataset=True,
                                                                        flush=False,
                                                                        sa_session=self.sa_session)
+                    dataset_instance._metadata = metadata
                 elif model_class == "LibraryDatasetDatasetAssociation":
                     # Create dataset and LDDA.
                     dataset_instance = model.LibraryDatasetDatasetAssociation(name=dataset_attrs['name'],
@@ -323,12 +328,15 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                                                               dbkey=metadata['dbkey'],
                                                                               tool_version=metadata.get('tool_version'),
                                                                               user=self.user,
-                                                                              metadata=metadata,
                                                                               create_dataset=True,
                                                                               flush=False,
                                                                               sa_session=self.sa_session)
                 else:
                     raise Exception("Unknown dataset instance type encountered")
+                if self.sessionless:
+                    dataset_instance._metadata_collection = MetadataCollection(dataset_instance, session=self.sa_session)
+                    metadata = replace_metadata_file(metadata, dataset_instance)
+                dataset_instance._metadata = metadata
                 self._attach_raw_id_if_editing(dataset_instance, dataset_attrs)
 
                 # Older style...
