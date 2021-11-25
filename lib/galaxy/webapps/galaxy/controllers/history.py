@@ -578,7 +578,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             else:
                 error_msg = ('An error occurred getting the history data from the server. '
                              + 'Please contact a Galaxy administrator if the problem persists.')
-            return trans.show_error_message(error_msg, use_panels=use_panels)
+            return {"error_msg": error_msg}
 
         return {
             "history": history_dictionary,
