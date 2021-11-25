@@ -806,7 +806,7 @@ libraries:
   dataset:
     selectors:
       table: '.dataset_table'
-      table_rows: '.dataset_table table tbody tr'
+      table_rows: '.dataset_table tbody tr'
 
 grids:
   selectors:

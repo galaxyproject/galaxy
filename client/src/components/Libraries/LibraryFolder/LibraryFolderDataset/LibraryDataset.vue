@@ -55,7 +55,7 @@
             v-if="table_items"
             :fields="fields"
             :items="table_items"
-            class="mt-2"
+            class="dataset_table mt-2"
             thead-class="d-none"
             striped
             small
