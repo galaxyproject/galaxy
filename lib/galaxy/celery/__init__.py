@@ -27,15 +27,17 @@ def get_galaxy_app():
 @lru_cache(maxsize=1)
 def get_app_properties():
     config_file = os.environ.get("GALAXY_CONFIG_FILE")
-    if not config_file:
-        galaxy_root_dir = os.environ.get('GALAXY_ROOT_DIR')
-        if galaxy_root_dir:
-            config_file = find_config(config_file, galaxy_root_dir)
+    galaxy_root_dir = os.environ.get('GALAXY_ROOT_DIR')
+    if not config_file and galaxy_root_dir:
+        config_file = find_config(config_file, galaxy_root_dir)
     if config_file:
-        return load_app_properties(
+        properties = load_app_properties(
             config_file=os.path.abspath(config_file),
             config_section='galaxy',
         )
+        if galaxy_root_dir:
+            properties['root_dir'] = galaxy_root_dir
+        return properties
 
 
 @lru_cache(maxsize=1)
