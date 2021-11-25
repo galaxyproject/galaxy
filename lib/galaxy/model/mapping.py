@@ -8,35 +8,17 @@ import logging
 from threading import local
 from typing import Optional, Type
 
-from sqlalchemy import and_
-from sqlalchemy.orm import class_mapper, object_session, relation
-
 from galaxy import model
 from galaxy.model import mapper_registry
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.migrate.triggers.update_audit_table import install as install_timestamp_triggers
 from galaxy.model.orm.engine_factory import build_engine
-from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.view.utils import install_views
 
 log = logging.getLogger(__name__)
 
 metadata = mapper_registry.metadata
-
-class_mapper(model.HistoryDatasetCollectionAssociation).add_property(
-    "creating_job_associations", relation(model.JobToOutputDatasetCollectionAssociation, viewonly=True))
-
-
-def _workflow_invocation_update(self):
-    session = object_session(self)
-    table = self.table
-    now_val = now()
-    stmt = table.update().values(update_time=now_val).where(and_(table.c.id == self.id, table.c.update_time < now_val))
-    session.execute(stmt)
-
-
-model.WorkflowInvocation.update = _workflow_invocation_update
 
 
 class GalaxyModelMapping(SharedModelMapping):

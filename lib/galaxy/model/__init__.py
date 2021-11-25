@@ -5572,6 +5572,7 @@ class HistoryDatasetCollectionAssociation(
         order_by=lambda: HistoryDatasetCollectionRatingAssociation.id,  # type: ignore[has-type]
         back_populates='dataset_collection',
     )
+    creating_job_associations = relationship('JobToOutputDatasetCollectionAssociation', viewonly=True)
 
     dict_dbkeysandextensions_visible_keys = ['dbkeys', 'extensions']
     editable_keys = ('name', 'deleted', 'visible')
