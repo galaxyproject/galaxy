@@ -652,7 +652,7 @@ class BaseDatasetPopulator(BasePopulator):
         history_id = create_history_response.json()["id"]
         return history_id
 
-    def upload_payload(self, history_id: str, content: str = None, **kwds) -> dict:
+    def upload_payload(self, history_id: str, content: Optional[str] = None, **kwds) -> dict:
         name = kwds.get("name", "Test_Dataset")
         dbkey = kwds.get("dbkey", "?")
         file_type = kwds.get("file_type", 'txt')
@@ -872,7 +872,7 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in role, role
         return role["id"]
 
-    def create_role(self, user_ids: list, description: str = None) -> dict:
+    def create_role(self, user_ids: list, description: Optional[str] = None) -> dict:
         payload = {
             "name": self.get_random_name(prefix="testpop"),
             "description": description or "Test Role",
@@ -1114,7 +1114,7 @@ class BaseWorkflowPopulator(BasePopulator):
         workflow = self.load_workflow(name)
         return self.create_workflow(workflow, **create_kwds)
 
-    def import_workflow_from_path_raw(self, from_path: str, object_id: str = None) -> Response:
+    def import_workflow_from_path_raw(self, from_path: str, object_id: Optional[str] = None) -> Response:
         data = dict(
             from_path=from_path,
             object_id=object_id,
@@ -1122,7 +1122,7 @@ class BaseWorkflowPopulator(BasePopulator):
         import_response = self._post("workflows", data=data)
         return import_response
 
-    def import_workflow_from_path(self, from_path: str, object_id: str = None) -> str:
+    def import_workflow_from_path(self, from_path: str, object_id: Optional[str] = None) -> str:
         import_response = self.import_workflow_from_path_raw(from_path, object_id)
         api_asserts.assert_status_code_is(import_response, 200)
         return import_response.json()["id"]
