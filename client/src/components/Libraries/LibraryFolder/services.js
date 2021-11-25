@@ -123,13 +123,4 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    async getDatatypes() {
-        const url = `${this.root}api/datatypes?extension_only=True`;
-        try {
-            const response = await axios.get(url);
-            return response.data;
-        } catch (e) {
-            rethrowSimple(e);
-        }
-    }
 }
