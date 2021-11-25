@@ -226,22 +226,18 @@ def _raise_skip_if(check, *args):
         raise SkipTest(*args)
 
 
-def load_conformance_tests(directory, path="conformance_tests.yaml"):
-    conformance_tests_path = os.path.join(directory, path)
+def conformance_tests_gen(directory, filename="conformance_tests.yaml"):
+    conformance_tests_path = os.path.join(directory, filename)
     with open(conformance_tests_path) as f:
         conformance_tests = yaml.safe_load(f)
 
-    expanded_conformance_tests = []
     for conformance_test in conformance_tests:
         if "$import" in conformance_test:
-            import_path = conformance_test["$import"]
-            expanded_conformance_tests.extend(load_conformance_tests(directory, import_path))
+            import_dir, import_filename = os.path.split(conformance_test["$import"])
+            yield from conformance_tests_gen(os.path.join(directory, import_dir), import_filename)
         else:
-            subdirectory = os.path.dirname(path)
-            if subdirectory:
-                conformance_test["relative_path"] = os.path.join(directory, subdirectory)
-            expanded_conformance_tests.append(conformance_test)
-    return expanded_conformance_tests
+            conformance_test["directory"] = directory
+            yield conformance_test
 
 
 class CwlRun:
@@ -287,8 +283,7 @@ class CwlPopulator:
         self.workflow_populator = workflow_populator
 
     def get_conformance_test(self, version, doc):
-        conformance_tests = load_conformance_tests(os.path.join(CWL_TOOL_DIRECTORY, str(version)))
-        for test in conformance_tests:
+        for test in conformance_tests_gen(os.path.join(CWL_TOOL_DIRECTORY, str(version))):
             if test.get("doc") == doc:
                 return test
         raise Exception(f"doc [{doc}] not found")
@@ -350,20 +345,27 @@ class CwlPopulator:
 
     def run_cwl_job(
         self,
-        artifact_path: str,
+        artifact: str,
         job_path: Optional[str] = None,
         job: Optional[Dict] = None,
         test_data_directory: Optional[str] = None,
         history_id: Optional[str] = None,
         assert_ok=True,
     ):
+        """
+        :param artifact: CWL tool id, or (absolute or relative) path to a CWL
+          tool or workflow file
+        """
         if history_id is None:
             history_id = self.dataset_populator.new_history()
-        if not os.path.isabs(artifact_path):
-            artifact_path = os.path.join(CWL_TOOL_DIRECTORY, artifact_path)
-        tool_or_workflow = guess_artifact_type(artifact_path)
-        if job_path and not os.path.isabs(job_path):
-            job_path = os.path.join(CWL_TOOL_DIRECTORY, job_path)
+        artifact_without_id = artifact.split("#", 1)[0]
+        if not os.path.exists(artifact_without_id):
+            # Assume it's a tool id
+            tool_or_workflow = "tool"
+        else:
+            tool_or_workflow = guess_artifact_type(artifact)
+        if job_path and not os.path.exists(job_path):
+            raise ValueError(f"job_path [{job_path}] does not exist")
         if test_data_directory is None and job_path is not None:
             test_data_directory = os.path.dirname(job_path)
         if job_path is not None:
@@ -387,14 +389,14 @@ class CwlPopulator:
             self.dataset_populator.wait_for_history(history_id=history_id, assert_ok=True)
         if tool_or_workflow == "tool":
             run_object = self._run_cwl_tool_job(
-                artifact_path,
+                artifact,
                 job,
                 history_id,
                 assert_ok=assert_ok,
             )
         else:
             run_object = self._run_cwl_workflow_job(
-                artifact_path,
+                artifact,
                 job,
                 history_id,
                 assert_ok=assert_ok,
@@ -404,7 +406,7 @@ class CwlPopulator:
 
     def run_conformance_test(self, version, doc):
         test = self.get_conformance_test(version, doc)
-        directory = os.path.join(CWL_TOOL_DIRECTORY, version)
+        directory = test["directory"]
         artifact = os.path.join(directory, test["tool"])
         job_path = test.get("job")
         if job_path is not None:
@@ -652,7 +654,7 @@ class BaseDatasetPopulator(BasePopulator):
         history_id = create_history_response.json()["id"]
         return history_id
 
-    def upload_payload(self, history_id: str, content: str = None, **kwds) -> dict:
+    def upload_payload(self, history_id: str, content: Optional[str] = None, **kwds) -> dict:
         name = kwds.get("name", "Test_Dataset")
         dbkey = kwds.get("dbkey", "?")
         file_type = kwds.get("file_type", 'txt')
@@ -872,7 +874,7 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in role, role
         return role["id"]
 
-    def create_role(self, user_ids: list, description: str = None) -> dict:
+    def create_role(self, user_ids: list, description: Optional[str] = None) -> dict:
         payload = {
             "name": self.get_random_name(prefix="testpop"),
             "description": description or "Test Role",
@@ -1114,7 +1116,7 @@ class BaseWorkflowPopulator(BasePopulator):
         workflow = self.load_workflow(name)
         return self.create_workflow(workflow, **create_kwds)
 
-    def import_workflow_from_path_raw(self, from_path: str, object_id: str = None) -> Response:
+    def import_workflow_from_path_raw(self, from_path: str, object_id: Optional[str] = None) -> Response:
         data = dict(
             from_path=from_path,
             object_id=object_id,
@@ -1122,7 +1124,7 @@ class BaseWorkflowPopulator(BasePopulator):
         import_response = self._post("workflows", data=data)
         return import_response
 
-    def import_workflow_from_path(self, from_path: str, object_id: str = None) -> str:
+    def import_workflow_from_path(self, from_path: str, object_id: Optional[str] = None) -> str:
         import_response = self.import_workflow_from_path_raw(from_path, object_id)
         api_asserts.assert_status_code_is(import_response, 200)
         return import_response.json()["id"]
@@ -1753,7 +1755,7 @@ class BaseDatasetCollectionPopulator:
         nested_collection_type = rank_type_0
 
         for i, rank_type in enumerate(reversed(rank_types[1:])):
-            name = "test_level_%d" % (i + 1) if rank_type == "list" else "paired"
+            name = f"test_level_{i + 1}" if rank_type == "list" else "paired"
             identifiers = [dict(
                 src="new_collection",
                 name=name,
@@ -1772,7 +1774,7 @@ class BaseDatasetCollectionPopulator:
             element_identifiers = []
             for i, pair in enumerate(collection):
                 element_identifiers.append(dict(
-                    name="test%d" % i,
+                    name=f"test{i}",
                     src="hdca",
                     id=pair
                 ))
@@ -1880,7 +1882,7 @@ class BaseDatasetCollectionPopulator:
                 else:
                     dataset_contents = contents_level
                     if collection_type == "list":
-                        element_identifier = "data%d" % i
+                        element_identifier = f"data{i}"
                     elif collection_type == "paired" and i == 0:
                         element_identifier = "forward"
                     else:
@@ -1950,7 +1952,7 @@ class BaseDatasetCollectionPopulator:
             hdas = self.__datasets(history_id, count=count, contents=contents)
 
             def hda_to_identifier(i, hda):
-                return dict(name="data%d" % (i + 1), src="hda", id=hda["id"])
+                return dict(name=f"data{i + 1}", src="hda", id=hda["id"])
         element_identifiers = [hda_to_identifier(i, hda) for (i, hda) in enumerate(hdas)]
         return element_identifiers
 
