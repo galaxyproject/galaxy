@@ -345,20 +345,27 @@ class CwlPopulator:
 
     def run_cwl_job(
         self,
-        artifact_path: str,
+        artifact: str,
         job_path: Optional[str] = None,
         job: Optional[Dict] = None,
         test_data_directory: Optional[str] = None,
         history_id: Optional[str] = None,
         assert_ok=True,
     ):
+        """
+        :param artifact: CWL tool id, or (absolute or relative) path to a CWL
+          tool or workflow file
+        """
         if history_id is None:
             history_id = self.dataset_populator.new_history()
-        if not os.path.isabs(artifact_path):
-            artifact_path = os.path.join(CWL_TOOL_DIRECTORY, artifact_path)
-        tool_or_workflow = guess_artifact_type(artifact_path)
-        if job_path and not os.path.isabs(job_path):
-            job_path = os.path.join(CWL_TOOL_DIRECTORY, job_path)
+        artifact_without_id = artifact.split("#", 1)[0]
+        if not os.path.exists(artifact_without_id):
+            # Assume it's a tool id
+            tool_or_workflow = "tool"
+        else:
+            tool_or_workflow = guess_artifact_type(artifact)
+        if job_path and not os.path.exists(job_path):
+            raise ValueError(f"job_path [{job_path}] does not exist")
         if test_data_directory is None and job_path is not None:
             test_data_directory = os.path.dirname(job_path)
         if job_path is not None:
@@ -382,14 +389,14 @@ class CwlPopulator:
             self.dataset_populator.wait_for_history(history_id=history_id, assert_ok=True)
         if tool_or_workflow == "tool":
             run_object = self._run_cwl_tool_job(
-                artifact_path,
+                artifact,
                 job,
                 history_id,
                 assert_ok=assert_ok,
             )
         else:
             run_object = self._run_cwl_workflow_job(
-                artifact_path,
+                artifact,
                 job,
                 history_id,
                 assert_ok=assert_ok,
