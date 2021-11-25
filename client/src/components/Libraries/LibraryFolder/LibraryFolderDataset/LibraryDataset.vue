@@ -74,22 +74,24 @@
                         v-else-if="row.item.name === fieldTitles.file_ext"
                         v-slot="{ item: datatypes, loading: loadingDatatypes }"
                     >
-                        <DatatypeSelector
+                        <SingleItemSelector
+                            collection-name="Data Types"
                             :loading="loadingDatatypes"
-                            :datatypes="datatypes"
-                            :current-datatype="dataset.file_ext"
-                            @update:selected-datatype="onSelectedDatatype"
+                            :items="datatypes"
+                            :current-item-id="dataset.file_ext"
+                            @update:selected-item="onSelectedDatatype"
                         />
                     </DatatypesProvider>
                     <GenomeProvider
                         v-else-if="row.item.name === fieldTitles.genome_build"
                         v-slot="{ item: genomes, loading: loadingGenomes }"
                     >
-                        <GenomeSelector
+                        <SingleItemSelector
+                            collection-name="Genomes"
                             :loading="loadingGenomes"
-                            :genomes="genomes"
-                            :current-genome-id="dataset.genome_build"
-                            @update:selected-genome="onSelectedGenome"
+                            :items="genomes"
+                            :current-item-id="dataset.genome_build"
+                            @update:selected-item="onSelectedGenome"
                         />
                     </GenomeProvider>
                     <b-form-input
@@ -138,8 +140,7 @@ import CopyToClipboard from "components/CopyToClipboard";
 import { Toast } from "ui/toast";
 import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
 import { GenomeProvider, DatatypesProvider } from "components/providers";
-import GenomeSelector from "components/Libraries/LibraryFolder/LibraryFolderDataset/GenomeSelector";
-import DatatypeSelector from "components/Libraries/LibraryFolder/LibraryFolderDataset/DatatypeSelector";
+import SingleItemSelector from "components/SingleItemSelector";
 
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
 
@@ -165,20 +166,19 @@ export default {
         CopyToClipboard,
         FontAwesomeIcon,
         GenomeProvider,
-        GenomeSelector,
         DatatypesProvider,
-        DatatypeSelector,
+        SingleItemSelector,
     },
     data() {
         return {
-            fieldTitles: fieldTitles,
             dataset: undefined,
+            modifiedDataset: {},
             currentRouteName: window.location.href,
             datasetDownloadFormat: "uncompressed",
             download: download,
-            table_items: [],
-            modifiedDataset: {},
             isEditMode: false,
+            fieldTitles: fieldTitles,
+            table_items: [],
             fields: [{ key: "name" }, { key: "value" }],
         };
     },
@@ -188,7 +188,7 @@ export default {
         this.populateDatasetDetailsTable(datasetResponse);
     },
     computed: {
-        datasetChanges: function () {
+        datasetChanges() {
             const changes = {};
             for (var prop in this.dataset) {
                 if (this.dataset[prop] !== this.modifiedDataset[prop]) {
@@ -197,7 +197,7 @@ export default {
             }
             return changes;
         },
-        hasChanges: function () {
+        hasChanges() {
             for (var _ in this.datasetChanges) {
                 return true;
             }
