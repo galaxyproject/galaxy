@@ -8,13 +8,17 @@ import json
 import os
 import tarfile
 import tempfile
+import urllib.parse
 from collections import namedtuple
 from typing import Any, List, Optional
 
 import yaml
 from typing_extensions import TypedDict
 
-from galaxy.util import unicodify
+from galaxy.util import (
+    str_removeprefix,
+    unicodify,
+)
 
 STORE_SECONDARY_FILES_WITH_BASENAME = True
 SECONDARY_FILES_EXTRA_PREFIX = "__secondary_files__"
@@ -594,15 +598,28 @@ def download_output(galaxy_output, get_metadata, get_dataset, get_extra_files, o
 
 
 def guess_artifact_type(path):
-    # TODO: Handle IDs within files.
     tool_or_workflow = "workflow"
-    try:
-        with open(path) as f:
-            artifact = yaml.safe_load(f)
+    path, object_id = urllib.parse.urldefrag(path)
+    with open(path) as f:
+        document = yaml.safe_load(f)
 
-        tool_or_workflow = "tool" if artifact["class"] != "Workflow" else "workflow"
+    if '$graph' in document:
+        # Packed document without a process object at the root
+        objects = document['$graph']
+        if not object_id:
+            object_id = 'main'  # default object id
 
-    except Exception as e:
-        print(e)
+        # Have to use str_removeprefix() instead of rstrip() because only the
+        # first '#' should be removed from the object id
+        matching_objects = [o for o in objects if str_removeprefix(o['id'], '#') == object_id]
+        if len(matching_objects) == 0:
+            raise Exception(f"No process object with id [{object_id}]")
+        if len(matching_objects) > 1:
+            raise Exception(f"Multiple process objects with id [{object_id}]")
+        object_ = matching_objects[0]
+    else:
+        object_ = document
+
+    tool_or_workflow = "tool" if object_["class"] != "Workflow" else "workflow"
 
     return tool_or_workflow

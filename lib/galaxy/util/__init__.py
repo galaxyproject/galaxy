@@ -102,6 +102,17 @@ XML = etree.XML
 defaultdict = collections.defaultdict
 
 
+def str_removeprefix(s: str, prefix: str):
+    """
+    str.removeprefix() equivalent for Python < 3.9
+    """
+    if sys.version_info >= (3, 9):
+        return s.removeprefix(prefix)
+    if s.startswith(prefix):
+        return s[len(prefix):]
+    return s
+
+
 def remove_protocol_from_url(url):
     """ Supplied URL may be null, if not ensure http:// or https://
     etc... is stripped off.
