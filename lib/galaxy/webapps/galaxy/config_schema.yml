@@ -2821,6 +2821,17 @@ mapping:
           Details" option in the history. This option also exposes the command line to
           non-administrative users. Administrators can always see dataset paths.
 
+      enable_tool_source_display:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          This option allows users to view the tool wrapper source code. This is
+          safe to enable if you have not hardcoded any secrets in any of the tool
+          wrappers installed on this Galaxy server. If you have only installed tool
+          wrappers from  public tool sheds and tools shipped with Galaxy there you
+          can enable this option.
+
       job_metrics_config_file:
         type: str
         default: job_metrics_conf.xml

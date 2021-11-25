@@ -1,12 +1,12 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
-import DirectoryPathEditableBreadcrumb from "./DirectoryPathEditableBreadcrumb";
-import FilesDialog from "./FilesDialog";
+import FormDirectory from "./FormDirectory";
+import FilesDialog from "components/FilesDialog/FilesDialog";
 
 import flushPromises from "flush-promises";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import { rootResponse } from "./testingData";
+import { rootResponse } from "components/FilesDialog/testingData";
 const localVue = getLocalVue();
 jest.mock("app");
 
@@ -46,14 +46,14 @@ describe("DirectoryPathEditableBreadcrumb", () => {
 
     beforeEach(async () => {
         const axiosMock = new MockAdapter(axios);
-        spyOnUrlSet = jest.spyOn(DirectoryPathEditableBreadcrumb.methods, "setUrl");
-        spyOnAddPath = jest.spyOn(DirectoryPathEditableBreadcrumb.methods, "addPath");
-        spyOnUpdateURL = jest.spyOn(DirectoryPathEditableBreadcrumb.methods, "updateURL");
+        spyOnUrlSet = jest.spyOn(FormDirectory.methods, "setUrl");
+        spyOnAddPath = jest.spyOn(FormDirectory.methods, "addPath");
+        spyOnUpdateURL = jest.spyOn(FormDirectory.methods, "updateURL");
 
         // register axios paths
         axiosMock.onGet("/api/remote_files/plugins").reply(200, rootResponse);
 
-        wrapper = mount(DirectoryPathEditableBreadcrumb, {
+        wrapper = mount(FormDirectory, {
             propsData: {
                 callback: () => {},
             },

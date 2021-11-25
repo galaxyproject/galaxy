@@ -32,6 +32,9 @@ describe("ToolCard", () => {
                 messageVariant: "warning",
                 disabled: false,
             },
+            stubs: {
+                ToolSourceMenuItem: { template: "<div></div>" },
+            },
             localVue,
         });
     });

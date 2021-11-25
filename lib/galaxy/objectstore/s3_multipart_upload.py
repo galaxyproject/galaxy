@@ -14,7 +14,7 @@ try:
     import boto
     from boto.s3.connection import S3Connection
 except ImportError:
-    boto = None  # type: ignore
+    boto = None  # type: ignore[assignment]
 
 
 def mp_from_ids(s3server, mp_id, mp_keyname, mp_bucketname):

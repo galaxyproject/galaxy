@@ -75,7 +75,7 @@ class BaseWrapperTestCase(UsesApp):
 class JobWrapperTestCase(BaseWrapperTestCase, TestCase):
 
     def _wrapper(self):
-        return JobWrapper(self.job, self.queue)
+        return JobWrapper(self.job, self.queue)  # type: ignore[arg-type]
 
     def test_prepare_sets_version_command(self):
         with self._prepared_wrapper() as wrapper:

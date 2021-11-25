@@ -2,9 +2,9 @@ import hash from "object-hash";
 
 /**
  * Builds a provider that gets its result from a single promise-based query function and
- * caches the result of lookup for subsequent instantitations.
+ * caches the result of lookup for subsequent instantiations.
  *
- * @param   {Function}  lookup  async function that loads the result, paramters will be an object
+ * @param   {Function}  lookup  async function that loads the result, parameters will be an object
  *                              whose properties are the attributes assigned to the provider component
  * @return  {VueComponentOptions} Vue component options definition
  */

@@ -125,12 +125,13 @@ tool-data/**/*.fa
 .pytest_cache/
 assets/
 test-data-cache
+run_api_tests.html
+run_cwl_tests.html
 run_framework_tests.html
 run_functional_tests.html
 run_integration_tests.html
 run_selenium_tests.html
 run_toolshed_tests.html
-run_api_tests.html
 test/tool_shed/tmp/*
 .coverage
 htmlcov
@@ -192,3 +193,7 @@ config/plugins/**/static/*.map
 # viz-specific build artifacts to ignore (until these are removed from codebase)
 config/plugins/visualizations/annotate_image/static/jquery.contextMenu.css
 config/plugins/visualizations/nvd3/nvd3_bar/static/nvd3.js
+
+# CWL conformance tests
+lib/galaxy_test/api/cwl/test_cwl_conformance_v1_?.py
+test/functional/tools/cwl_tools/v1.?/

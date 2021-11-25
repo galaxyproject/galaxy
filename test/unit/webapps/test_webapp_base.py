@@ -3,6 +3,7 @@ Unit tests for ``galaxy.web.framework.webapp``
 """
 import logging
 import re
+import sys
 import unittest
 
 import galaxy.config
@@ -59,12 +60,10 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         hostnames = config._parse_allowed_origin_hostnames({
             "allowed_origin_hostnames": r"/host\d{2}/,geocities.com,miskatonic.edu"
         })
-        # TODO: remove the following type ignore statement after dropping Python 3.6 support.
-        # re._pattern_type has been changed to re.Pattern in python 3.7
-        try:
-            Pattern = re.Pattern  # type: ignore
-        except AttributeError:
-            Pattern = re._pattern_type  # type: ignore
+        if sys.version_info >= (3, 7):
+            Pattern = re.Pattern
+        else:
+            Pattern = re._pattern_type
         self.assertTrue(isinstance(hostnames[0], Pattern))
         self.assertTrue(isinstance(hostnames[1], str))
         self.assertTrue(isinstance(hostnames[2], str))

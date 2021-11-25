@@ -49,7 +49,7 @@ class LibrariesApiTestCase(ApiTestCase):
     def test_nonadmin(self):
         # Anons can't create libs
         data = dict(name="CreateTestLibrary")
-        create_response = self._post("libraries", data=data, admin=False, anon=True, json=True)
+        create_response = self._post("libraries", data=data, admin=False, anon=True)
         self._assert_status_code_is(create_response, 403)
         # Anons can't delete libs
         library = self.library_populator.new_library("AnonDeleteTestLibrary")

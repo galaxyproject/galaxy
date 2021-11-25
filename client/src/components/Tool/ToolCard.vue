@@ -26,6 +26,7 @@
                         <b-dropdown-item v-if="showDownload" @click="onDownload"
                             ><span class="fa fa-download" /><span v-localize>Download</span>
                         </b-dropdown-item>
+                        <ToolSourceMenuItem :tool-id="id" />
                         <b-dropdown-item v-if="showLink" @click="onLink"
                             ><span class="fa fa-external-link" /><span v-localize
                                 >See in Tool Shed</span
@@ -87,6 +88,7 @@
                     </span>
                 </div>
             </div>
+
             <div class="portlet-content">
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormMessage :message="messageText" :variant="messageVariant" />
@@ -114,6 +116,7 @@ import { copyLink, downloadTool, openLink } from "./utilities";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
+import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
 import Webhooks from "mvc/webhooks";
 import { addFavorite, removeFavorite } from "components/Tool/services";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -128,6 +131,7 @@ export default {
         FormMessage,
         ToolFooter,
         ToolHelp,
+        ToolSourceMenuItem,
     },
     props: {
         id: {

@@ -18,6 +18,7 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
+from galaxy.web.framework.decorators import expose_api_raw
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from . import BaseGalaxyAPIController, depends
@@ -489,6 +490,15 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         download_file = open(tool_tarball, "rb")
         trans.response.headers["Content-Disposition"] = f'attachment; filename="{id}.tgz"'
         return download_file
+
+    @expose_api_raw
+    def raw_tool_source(self, trans: GalaxyWebTransaction, id, **kwds):
+        """Returns tool source. ``language`` is included in the response header."""
+        if not trans.app.config.enable_tool_source_display and not trans.user_is_admin:
+            raise exceptions.InsufficientPermissionsException("Only administrators may display tool sources on this Galaxy server.")
+        tool = self._get_tool(id, user=trans.user, tool_version=kwds.get('tool_version'))
+        trans.response.headers['language'] = tool.tool_source.language
+        return tool.tool_source.to_string()
 
     @expose_api_anonymous
     def fetch(self, trans: GalaxyWebTransaction, payload, **kwd):

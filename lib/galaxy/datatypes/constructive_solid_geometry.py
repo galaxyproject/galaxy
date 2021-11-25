@@ -1,11 +1,11 @@
 # TODO: revisit ignoring type and write some tests for this, the multi-inheritance in this
 # this file is challenging, it should be broken into true mixins.
-# type: ignore
 """
 Constructive Solid Geometry file formats.
 """
 
 import abc
+from typing import List
 
 from galaxy import util
 from galaxy.datatypes import data
@@ -122,7 +122,7 @@ class Ply:
             return f"Ply file ({nice_size(dataset.get_size())})"
 
 
-class PlyAscii(Ply, data.Text):
+class PlyAscii(Ply, data.Text):  # type: ignore[misc]
     file_ext = "plyascii"
     subtype = 'ascii'
 
@@ -130,7 +130,7 @@ class PlyAscii(Ply, data.Text):
         data.Text.__init__(self, **kwd)
 
 
-class PlyBinary(Ply, Binary):
+class PlyBinary(Ply, Binary):  # type: ignore[misc]
     file_ext = "plybinary"
     subtype = 'binary'
 
@@ -313,7 +313,7 @@ class Vtk:
                                 # FIELD FieldData 2
                                 processing_field_section = True
                                 num_fields = int(items[-1])
-                                fields_processed = []
+                                fields_processed: List[str] = []
                             elif processing_field_section:
                                 if len(fields_processed) == num_fields:
                                     processing_field_section = False
@@ -445,7 +445,7 @@ class Vtk:
             return f"Vtk file ({nice_size(dataset.get_size())})"
 
 
-class VtkAscii(Vtk, data.Text):
+class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
     file_ext = "vtkascii"
     subtype = 'ASCII'
 
@@ -453,7 +453,7 @@ class VtkAscii(Vtk, data.Text):
         data.Text.__init__(self, **kwd)
 
 
-class VtkBinary(Vtk, Binary):
+class VtkBinary(Vtk, Binary):   # type: ignore[misc]
     file_ext = "vtkbinary"
     subtype = 'BINARY'
 

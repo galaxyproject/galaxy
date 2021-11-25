@@ -83,14 +83,18 @@ class UsesTools(UsesApp):
         tool_id="test_tool",
         extra_file_contents=None,
         extra_file_path=None,
+        tool_path=None,
     ):
+        if tool_path is None:
+            self.tool_file = os.path.join(self.test_directory, filename)
+            contents_template = string.Template(tool_contents)
+            tool_contents = contents_template.safe_substitute(dict(version=version, profile=profile, tool_id=tool_id))
+            self.__write_tool(tool_contents)
+            if extra_file_contents and extra_file_path:
+                self.__write_tool(extra_file_contents, path=os.path.join(self.test_directory, extra_file_path))
+        else:
+            self.tool_file = tool_path
         self._init_app_for_tools()
-        self.tool_file = os.path.join(self.test_directory, filename)
-        contents_template = string.Template(tool_contents)
-        tool_contents = contents_template.safe_substitute(dict(version=version, profile=profile, tool_id=tool_id))
-        self.__write_tool(tool_contents)
-        if extra_file_contents and extra_file_path:
-            self.__write_tool(extra_file_contents, path=os.path.join(self.test_directory, extra_file_path))
         return self.__setup_tool()
 
     def _init_tool_for_path(self, tool_file):

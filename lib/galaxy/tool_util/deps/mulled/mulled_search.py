@@ -18,7 +18,7 @@ from .util import (
 try:
     from conda.cli.python_api import run_command
 except ImportError:
-    run_command = None  # type: ignore
+    run_command = None
 
 try:
     from whoosh.fields import Schema
@@ -27,7 +27,7 @@ try:
     from whoosh.index import create_in
     from whoosh.qparser import QueryParser
 except ImportError:
-    Schema = TEXT = STORED = create_in = QueryParser = None  # type: ignore
+    Schema = TEXT = STORED = create_in = QueryParser = None
 
 QUAY_API_URL = 'https://quay.io/api/v1/repository'
 

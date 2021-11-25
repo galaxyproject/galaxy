@@ -122,10 +122,10 @@ def collection_consists_of_objects(collection, *objects):
 
     # Sort, then compare each member by its 'id' attribute, which must be its primary key.
     collection.sort(key=lambda item: item.id)
-    objects = list(objects)  # type: ignore
-    objects.sort(key=lambda item: item.id)  # type: ignore
+    objects_l = list(objects)
+    objects_l.sort(key=lambda item: item.id)
 
-    for item1, item2 in zip(collection, objects):
+    for item1, item2 in zip(collection, objects_l):
         if item1.id is None or item2.id is None or item1.id != item2.id:
             return False
     return True

@@ -17,8 +17,8 @@ try:
     from jinja2 import Template
     from jinja2.exceptions import UndefinedError
 except ImportError:
-    Template = None  # type: ignore
-    UndefinedError = Exception  # type: ignore
+    Template = None  # type: ignore[assignment,misc]
+    UndefinedError = Exception  # type: ignore[assignment,misc]
 
 from .util import (
     get_file_from_recipe_url,

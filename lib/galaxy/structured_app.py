@@ -66,6 +66,7 @@ class MinimalManagerApp(MinimalApp):
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     user_manager: Any
+    job_config: Any  # 'galaxy.jobs.JobConfiguration'
     job_manager: Any  # galaxy.jobs.manager.JobManager
 
     @property
@@ -113,13 +114,13 @@ class StructuredApp(MinimalManagerApp):
     tool_data_tables: Any  # 'galaxy.tools.data.ToolDataTableManager'
     genomes: Any  # 'galaxy.visualization.genomes.Genomes'
     error_reports: Any  # 'galaxy.tools.error_reports.ErrorReports'
-    job_config: Any  # 'galaxy.jobs.JobConfiguration'
     tool_cache: Any  # 'galaxy.tools.cache.ToolCache'
     tool_shed_repository_cache: Any  # 'galaxy.tools.cache.ToolShedRepositoryCache'
     watchers: Any  # 'galaxy.config_watchers.ConfigWatchers'
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     interactivetool_manager: Any
+    job_config: Any  # 'galaxy.jobs.JobConfiguration'
     job_manager: Any  # galaxy.jobs.manager.JobManager
     user_manager: Any
     api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'
