@@ -35,6 +35,7 @@ TEST_TOOL_IDS = [
     "collection_creates_dynamic_nested",
     "collection_creates_dynamic_nested_from_json",
     "collection_creates_dynamic_nested_from_json_elements",
+    "implicit_conversion",
 ]
 
 
