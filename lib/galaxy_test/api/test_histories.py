@@ -193,7 +193,7 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
 
     def test_create_anonymous_fails(self):
         post_data = dict(name="CannotCreate")
-        create_response = self._post("histories", data=post_data, anon=True, json=True)
+        create_response = self._post("histories", data=post_data, anon=True)
         self._assert_status_code_is(create_response, 403)
 
     def test_create_without_session_fails(self):
