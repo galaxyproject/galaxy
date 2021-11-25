@@ -183,7 +183,7 @@ setuptools-scm==5.0.2; python_version >= "2.7" and python_full_version < "3.0.0"
 shellescape==3.8.1; python_version >= "3.6" and python_version < "4"
 simplejson==3.17.5; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.3.0" and python_version >= "3.6"
 six==1.16.0; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_full_version >= "3.6.0" and python_version >= "3.6" and python_version < "4"
-social-auth-core==3.3.0
+social-auth-core==4.0.3
 sortedcontainers==2.4.0
 sqlalchemy-migrate==0.13.0
 sqlalchemy==1.4.26; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.6.0")
