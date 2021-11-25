@@ -929,10 +929,11 @@ steps:
             inputs = {"thebool": "false",
                       "failbool": "false",
                       "rerun_remap_job_id": failed_dataset_one['creating_job']}
-            self.dataset_populator.run_tool(tool_id='job_properties',
-                                            inputs=inputs,
-                                            history_id=history_id,
-                                            assert_ok=True)
+            self.dataset_populator.run_tool(
+                tool_id='job_properties',
+                inputs=inputs,
+                history_id=history_id,
+            )
             unpaused_dataset_1 = self.dataset_populator.get_history_dataset_details(history_id, hid=5, wait=True, assert_ok=False)
             assert unpaused_dataset_1['state'] == 'ok'
             self.dataset_populator.wait_for_history(history_id, assert_ok=False)
@@ -973,10 +974,11 @@ steps:
             inputs = {"thebool": "false",
                       "failbool": "false",
                       "rerun_remap_job_id": failed_dataset_one['creating_job']}
-            self.dataset_populator.run_tool(tool_id='job_properties',
-                                            inputs=inputs,
-                                            history_id=history_id,
-                                            assert_ok=True)
+            self.dataset_populator.run_tool(
+                tool_id='job_properties',
+                inputs=inputs,
+                history_id=history_id,
+            )
             paused_colletion = self.dataset_populator.get_history_collection_details(history_id, hid=7, wait=True, assert_ok=False)
             first_paused_element = paused_colletion['elements'][0]['object']
             assert first_paused_element['state'] == 'ok'
@@ -1027,10 +1029,11 @@ test_data:
                                  },
                       "failbool": "false",
                       "rerun_remap_job_id": failed_dataset['creating_job']}
-            run_dict = self.dataset_populator.run_tool(tool_id='fail_identifier',
-                                                       inputs=inputs,
-                                                       history_id=history_id,
-                                                       assert_ok=True)
+            run_dict = self.dataset_populator.run_tool(
+                tool_id='fail_identifier',
+                inputs=inputs,
+                history_id=history_id,
+            )
             unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=False)
             assert unpaused_dataset['state'] == 'ok'
             contents = self.dataset_populator.get_history_dataset_content(history_id, hid=7, assert_ok=False)
@@ -1085,7 +1088,7 @@ test_data:
                 tool_id='collection_creates_list_of_pairs',
                 inputs=inputs,
                 history_id=history_id,
-                assert_ok=True)
+            )
             assert not run_response["output_collections"][0]["visible"]
             self.dataset_populator.wait_for_job(paused_step['jobs'][0]['id'])
             invocation = self.workflow_populator.get_invocation(job_summary.invocation_id, step_details=True)
@@ -3348,10 +3351,11 @@ input1:
                                  },
                       "failbool": "false",
                       "rerun_remap_job_id": job_id}
-            self.dataset_populator.run_tool(tool_id='fail_identifier',
-                                            inputs=inputs,
-                                            history_id=history_id,
-                                            assert_ok=True)
+            self.dataset_populator.run_tool(
+                tool_id='fail_identifier',
+                inputs=inputs,
+                history_id=history_id,
+            )
             unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=False)
             assert unpaused_dataset['state'] == 'ok'
             assert unpaused_dataset['name'] == f"{name} suffix"

@@ -33,7 +33,6 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
             "cat_data_and_sleep",
             ok_inputs,
             history_id,
-            assert_ok=True,
         )
         ok_hid = ok_response["implicit_collections"][0]["hid"]
 
@@ -57,11 +56,10 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
             "input1": {'batch': True, 'values': [{"src": "hdca", "id": input_collection["id"]}]},
             "sleep_time": 60,
         }
-        running_response = self.dataset_populator.run_tool(
+        running_response = self.dataset_populator.run_tool_raw(
             "cat_data_and_sleep",
             running_inputs,
             history_id,
-            assert_ok=False,
         )
         try:
             assert_status_code_is(running_response, 200)
@@ -119,15 +117,11 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         running_inputs = {
             "sleep_time": 180,
         }
-        running_response = self.dataset_populator.run_tool(
+        payload = self.dataset_populator.run_tool(
             "collection_creates_dynamic_nested",
             running_inputs,
             history_id,
-            assert_ok=False,
         )
-        assert_status_code_is(running_response, 200)
-
-        payload = running_response.json()
         assert payload["output_collections"]
         assert payload["jobs"]
         assert len(payload["jobs"]) > 0

@@ -277,7 +277,7 @@ class ImportExportTests(BaseHistories):
     def test_import_export_failed_job(self):
         history_name = "for_export_include_failed_job"
         history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.run_tool('job_properties', inputs={'failbool': True}, history_id=history_id, assert_ok=False)
+        self.dataset_populator.run_tool_raw('job_properties', inputs={'failbool': True}, history_id=history_id)
         self.dataset_populator.wait_for_history(history_id, assert_ok=False)
 
         imported_history_id = self._reimport_history(history_id, history_name, assert_ok=False, wait_on_history_length=4, export_kwds={"include_deleted": "True"})

@@ -256,11 +256,10 @@ class CwlToolRun(CwlRun):
 
     @property
     def job_id(self):
-        return self.run_response["jobs"][0]["id"]
+        return self.run_response.json()["jobs"][0]["id"]
 
     def wait(self):
-        final_state = self.dataset_populator.wait_for_job(self.job_id)
-        assert final_state == "ok"
+        self.dataset_populator.wait_for_job(self.job_id, assert_ok=True)
 
 
 class CwlWorkflowRun(CwlRun):
@@ -312,17 +311,10 @@ class CwlPopulator:
                 galaxy_tool_id = None
                 tool_uuid = dynamic_tool["uuid"]
 
-        run_response = self.dataset_populator.run_tool(galaxy_tool_id, job, history_id, assert_ok=assert_ok, tool_uuid=tool_uuid)
-        run_object = CwlToolRun(self.dataset_populator, history_id, run_response)
+        run_response = self.dataset_populator.run_tool_raw(galaxy_tool_id, job, history_id, tool_uuid=tool_uuid)
         if assert_ok:
-            try:
-                final_state = self.dataset_populator.wait_for_job(run_object.job_id)
-                assert final_state == "ok"
-            except Exception:
-                self.dataset_populator._summarize_history(history_id)
-                raise
-
-        return run_object
+            run_response.raise_for_status()
+        return CwlToolRun(self.dataset_populator, history_id, run_response)
 
     def _run_cwl_workflow_job(
         self,
@@ -400,7 +392,12 @@ class CwlPopulator:
                 history_id,
                 assert_ok=assert_ok,
             )
-        run_object.wait()
+        if assert_ok:
+            try:
+                run_object.wait()
+            except Exception:
+                self.dataset_populator._summarize_history(history_id)
+                raise
         return run_object
 
     def run_conformance_test(self, version, doc):
@@ -712,14 +709,14 @@ class BaseDatasetPopulator(BasePopulator):
         response.raise_for_status()
         return response.json()
 
-    def run_tool(self, tool_id: str, inputs: dict, history_id: str, assert_ok: bool = True, **kwds):
+    def run_tool_raw(self, tool_id: str, inputs: dict, history_id: str, **kwds) -> Response:
         payload = self.run_tool_payload(tool_id, inputs, history_id, **kwds)
-        tool_response = self.tools_post(payload)
-        if assert_ok:
-            api_asserts.assert_status_code_is(tool_response, 200)
-            return tool_response.json()
-        else:
-            return tool_response
+        return self.tools_post(payload)
+
+    def run_tool(self, tool_id: str, inputs: dict, history_id: str, **kwds):
+        tool_response = self.run_tool_raw(tool_id, inputs, history_id, **kwds)
+        api_asserts.assert_status_code_is(tool_response, 200)
+        return tool_response.json()
 
     def tools_post(self, payload: dict, url="tools") -> Response:
         tool_response = self._post(url, data=payload)
@@ -789,7 +786,7 @@ class BaseDatasetPopulator(BasePopulator):
         exit_code_inputs = {
             "input": {'batch': True, 'values': [{"src": "hdca", "id": hdca_id}]},
         }
-        response = self.run_tool("exit_code_from_file", exit_code_inputs, history_id, assert_ok=False).json()
+        response = self.run_tool("exit_code_from_file", exit_code_inputs, history_id)
         self.wait_for_history(history_id, assert_ok=False)
         return response
 
