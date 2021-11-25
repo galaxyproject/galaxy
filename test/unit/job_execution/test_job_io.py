@@ -2,7 +2,6 @@ import tempfile
 
 import pytest
 
-from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConfig,
@@ -10,6 +9,7 @@ from galaxy.files import (
 )
 from galaxy.job_execution.setup import JobIO
 from galaxy.model import Job
+from galaxy.model.unittest_utils import GalaxyDataTestApp
 
 
 WORKING_DIRECTORY = '/tmp'
@@ -26,7 +26,7 @@ USER_CONTEXT = {
 }
 
 
-class FileSourcesMockApp(MockApp):
+class FileSourcesMockApp(GalaxyDataTestApp):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
