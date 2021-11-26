@@ -208,6 +208,7 @@ class FastAPIDatasets:
 
     @router.get(
         '/api/histories/{history_id}/contents/{history_content_id}/display',
+        name="history_contents_display",
         summary='Displays dataset (preview) content.',
         tags=["histories"],
         response_class=StreamingResponse,
@@ -220,7 +221,10 @@ class FastAPIDatasets:
         history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
         preview: bool = Query(
             default=False,
-            description="TODO",
+            description=(
+                "Whether to get preview contents to be directly displayed on the web. "
+                "If preview is False (default) the contents will be downloaded instead."
+            ),
         ),
         filename: Optional[str] = Query(
             default=None,
@@ -228,7 +232,10 @@ class FastAPIDatasets:
         ),
         to_ext: Optional[str] = Query(
             default=None,
-            description="TODO",
+            description=(
+                "The file extension when downloading the display data. Use the value `data` to "
+                "let the server infer it from the data type."
+            )
         ),
         raw: bool = Query(
             default=False,
@@ -241,8 +248,8 @@ class FastAPIDatasets:
     ):
         """Streams the preview contents of a dataset to be displayed in a browser."""
         extra_params = get_query_parameters_from_request_excluding(request, {"preview", "filename", "to_ext", "raw"})
-        display_content = self.service.display(trans, history_content_id, history_id, preview, filename, to_ext, raw, **extra_params)
-        return StreamingResponse(display_content)
+        display_data, headers = self.service.display(trans, history_content_id, history_id, preview, filename, to_ext, raw, **extra_params)
+        return StreamingResponse(display_data, headers=headers)
 
     @router.get(
         '/api/histories/{history_id}/contents/{history_content_id}/metadata_file',
