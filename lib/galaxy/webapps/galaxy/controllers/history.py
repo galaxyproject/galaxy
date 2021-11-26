@@ -547,7 +547,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         }
 
     @expose_api
-    @web.json
     def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
         """
         View a history. If a history is importable, then it is viewable by any user.
