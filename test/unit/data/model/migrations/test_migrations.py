@@ -1,3 +1,4 @@
+import os
 from typing import Union
 
 import pytest
@@ -566,11 +567,17 @@ def set_tsi_metadata(monkeypatch, metadata_state6_tsi):
 class AlembicManagerForTests(AlembicManager):
 
     def __init__(self, db_url):
-        config_dict = {
-            'version_locations':
-                'test/unit/data/model/migrations/versions/db1 test/unit/data/model/migrations/versions/db2'
-        }
+        path1, path2 = self._get_paths_to_version_locations()
+        config_dict = {'version_locations': f'{path1} {path2}'}
         super().__init__(db_url, config_dict=config_dict)
+
+    def _get_paths_to_version_locations(self):
+        # One does not simply use a relative path for both tests and package tests.
+        basepath = os.path.abspath(os.path.dirname(__file__))
+        basepath = os.path.join(basepath, 'versions')
+        path1 = os.path.join(basepath, 'db1')
+        path2 = os.path.join(basepath, 'db2')
+        return path1, path2
 
 
 def load_sqlalchemymigrate_version(db_url, version):
