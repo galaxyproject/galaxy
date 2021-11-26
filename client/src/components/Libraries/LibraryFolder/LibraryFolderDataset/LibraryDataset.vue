@@ -3,32 +3,44 @@
         <div v-if="!isEditMode">
             <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
             <!-- Toolbar -->
-            <b-button title="Download dataset" class="mr-1 mb-2" @click="download(datasetDownloadFormat, dataset_id)">
+            <b-button
+                title="Download dataset"
+                class="mr-1 mb-2"
+                @click="download(datasetDownloadFormat, dataset_id)"
+                data-test-id="download-btn"
+            >
                 <font-awesome-icon icon="download" />
                 Download
             </b-button>
-            <b-button @click="importToHistory" title="Import dataset into history" class="mr-1 mb-2">
+            <b-button
+                @click="importToHistory"
+                title="Import dataset into history"
+                class="mr-1 mb-2"
+                data-test-id="import-history-btn"
+            >
                 <font-awesome-icon icon="book" />
                 to History
             </b-button>
-            <b-button
-                v-if="dataset.can_user_modify"
-                @click="isEditMode = true"
-                title="Modify library item"
-                class="mr-1 mb-2"
-            >
-                <font-awesome-icon icon="pencil-alt" />
-                Modify
-            </b-button>
-            <b-button
-                v-if="dataset.can_user_modify"
-                title="Attempt to detect the format of dataset"
-                @click="detectDatatype"
-                class="mr-1 mb-2"
-            >
-                <font-awesome-icon icon="redo" />
-                Auto-detect datatype
-            </b-button>
+            <span v-if="dataset.can_user_modify">
+                <b-button
+                    @click="isEditMode = true"
+                    title="Modify library item"
+                    class="mr-1 mb-2"
+                    data-test-id="modify-btn"
+                >
+                    <font-awesome-icon icon="pencil-alt" />
+                    Modify
+                </b-button>
+                <b-button
+                    title="Attempt to detect the format of dataset"
+                    @click="detectDatatype"
+                    class="mr-1 mb-2"
+                    data-test-id="auto-detect-btn"
+                >
+                    <font-awesome-icon icon="redo" />
+                    Auto-detect datatype
+                </b-button>
+            </span>
             <b-button
                 title="Manage permissions"
                 v-if="dataset.can_user_manage"
@@ -37,12 +49,13 @@
                     name: 'LibraryFolderDatasetPermissions',
                     params: { folder_id: folder_id, dataset_id: dataset_id },
                 }"
+                data-test-id="permissions-btn"
             >
                 <font-awesome-icon icon="users" />
                 Permissions
             </b-button>
         </div>
-        <div v-if="dataset.is_unrestricted">
+        <div v-if="dataset.is_unrestricted" data-test-id="unrestricted-msg">
             This dataset is unrestricted so everybody with the link can access it.
             <copy-to-clipboard
                 message="A link to current dataset was copied to your clipboard"
@@ -59,6 +72,7 @@
             thead-class="d-none"
             striped
             small
+            data-test-id="dataset-table"
         >
             <template v-slot:cell(name)="row">
                 <strong>{{ row.item.name }}</strong>
@@ -123,7 +137,7 @@
             </b-button>
         </div>
         <!-- Peek View -->
-        <div v-if="dataset.peek" v-html="dataset.peek" />
+        <div v-if="dataset.peek" v-html="dataset.peek" data-test-id="peek-view" />
     </div>
 </template>
 
