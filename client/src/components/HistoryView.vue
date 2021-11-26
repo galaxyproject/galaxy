@@ -69,27 +69,12 @@ export default {
         ajaxCall: function (url) {
             axios
                 .get(url)
-                .then((response) => {
-                    if (response.data.error_msg) {
-                        this.errorMessages.push(response.data.error_msg);
-                    } else {
-                        this.updateHistoryView(response);
-                    }
-                })
-                .catch((e) => {
-                    this.showError(
-                        "Error fetching histories -- reload the page to retry this request.  Please contact an administrator if the problem persists.",
-                        e
-                    );
-                });
+                .then((response) => this.updateHistoryView(response))
+                .catch((error) => this.errorMessages.push(error));
         },
         updateHistoryView: function (response) {
             this.historyData = response.data;
             this.historyHistory = response.data.history;
-        },
-        showError: function (errorMsg, verbose) {
-            console.error(verbose);
-            this.errorMessages.push(errorMsg);
         },
         makeHistoryView: function (history) {
             const options = {

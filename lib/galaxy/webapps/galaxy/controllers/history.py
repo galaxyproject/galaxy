@@ -29,7 +29,10 @@ from galaxy.util import (
     string_as_bool,
     unicodify
 )
-from galaxy.web import url_for
+from galaxy.web import (
+    expose_api,
+    url_for
+)
 from galaxy.web.framework.helpers import (
     grids,
     iff,
@@ -543,7 +546,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             'template': html_template
         }
 
-    @web.expose
+    @expose_api
     @web.json
     def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
         """
@@ -555,30 +558,19 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
 
         history_dictionary = {}
         user_is_owner = False
-        try:
-            if id:
-                history_to_view = self.history_manager.get_accessible(self.decode_id(id), trans.user,
-                    current_history=trans.history)
-                user_is_owner = history_to_view.user == trans.user
-                history_is_current = history_to_view == trans.history
-            else:
-                history_to_view = trans.history
-                user_is_owner = True
-                history_is_current = True
+        if id:
+            history_to_view = self.history_manager.get_accessible(self.decode_id(id), trans.user,
+                current_history=trans.history)
+            user_is_owner = history_to_view.user == trans.user
+            history_is_current = history_to_view == trans.history
+        else:
+            history_to_view = trans.history
+            user_is_owner = True
+            history_is_current = True
 
-            # include all datasets: hidden, deleted, and purged
-            history_dictionary = self.history_serializer.serialize_to_view(history_to_view,
-                view='dev-detailed', user=trans.user, trans=trans)
-
-        except Exception as exc:
-            user_id = str(trans.user.id) if trans.user else '(anonymous)'
-            log.exception('Error bootstrapping history for user %s', user_id)
-            if isinstance(exc, exceptions.ItemAccessibilityException):
-                error_msg = 'You do not have permission to view this history.'
-            else:
-                error_msg = ('An error occurred getting the history data from the server. '
-                             + 'Please contact a Galaxy administrator if the problem persists.')
-            return {"error_msg": error_msg}
+        # include all datasets: hidden, deleted, and purged
+        history_dictionary = self.history_serializer.serialize_to_view(history_to_view,
+            view='dev-detailed', user=trans.user, trans=trans)
 
         return {
             "history": history_dictionary,
