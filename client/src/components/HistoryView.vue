@@ -70,7 +70,7 @@ export default {
             axios
                 .get(url)
                 .then((response) => this.updateHistoryView(response))
-                .catch((error) => this.errorMessages.push(error));
+                .catch((error) => this.errorMessages.push(error.response.data.err_msg));
         },
         updateHistoryView: function (response) {
             this.historyData = response.data;
