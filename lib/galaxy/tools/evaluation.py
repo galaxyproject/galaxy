@@ -79,6 +79,7 @@ class ToolEvaluator:
         self.tool = tool
         self.local_working_directory = local_working_directory
         self.file_sources_dict = {}
+        self.param_dict: Dict[str, Any] = {}
 
     def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Optional[Callable] = None):
         """
@@ -139,7 +140,7 @@ class ToolEvaluator:
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
 
-        param_dict: Dict[str, Any] = {}
+        param_dict = self.param_dict
 
         def input():
             raise SyntaxError("Unbound variable input.")  # Don't let $input hang Python evaluation process.
@@ -164,8 +165,6 @@ class ToolEvaluator:
         self.__sanitize_param_dict(param_dict)
         # Parameters added after this line are not sanitized
         self.__populate_non_job_params(param_dict)
-        # Populate and store templated InteractiveTools values
-        self.__populate_interactivetools(param_dict)
 
         # Return the dictionary of parameters
         return param_dict
@@ -353,7 +352,6 @@ class ToolEvaluator:
             """
             Queries and returns an entry in a data table.
             """
-
             if table_name in self.app.tool_data_tables:
                 return self.app.tool_data_tables[table_name].get_entry(query_attr, query_val, return_attr)
 
@@ -387,7 +385,7 @@ class ToolEvaluator:
             # the paths rewritten.
             self.__walk_inputs(self.tool.inputs, param_dict, rewrite_unstructured_paths)
 
-    def __populate_interactivetools(self, param_dict):
+    def populate_interactivetools(self):
         """
         Populate InteractiveTools templated values.
         """
@@ -397,7 +395,7 @@ class ToolEvaluator:
             for key in 'port', 'name', 'url', 'requires_domain':
                 val = ep.get(key, None)
                 if val is not None and not isinstance(val, bool):
-                    val = fill_template(val, context=param_dict, python_template_version=self.tool.python_template_version)
+                    val = fill_template(val, context=self.param_dict, python_template_version=self.tool.python_template_version)
                     clean_val = []
                     for line in val.split('\n'):
                         clean_val.append(line.strip())
@@ -405,10 +403,6 @@ class ToolEvaluator:
                     val = val.replace("\n", " ").replace("\r", " ").strip()
                 ep_dict[key] = val
             it.append(ep_dict)
-        self.interactivetools = it
-        it_man = getattr(self.app, "interactivetool_manager", None)
-        if it_man:
-            it_man.create_interactivetool(self.job, self.tool, it)
         return it
 
     def __sanitize_param_dict(self, param_dict):
@@ -649,15 +643,3 @@ class ToolEvaluator:
             return history.user
         else:
             return self.job.user
-
-
-class RemoteToolEvaluator(ToolEvaluator):
-    """
-    Evaluates tool inputs without access to database
-    """
-
-    def __populate_non_job_params(self, param_dict):
-        pass
-
-    def __populate_interactivetools(self, param_dict):
-        pass

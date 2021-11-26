@@ -96,6 +96,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
         self.file_sources = Bunch(to_dict=lambda *args, **kwargs: {})
+        self.interactivetool_manager = Bunch(create_interactivetool=lambda *args, **kwargs: None)
         self.is_job_handler = False
         rebind_container_to_task(self)
 

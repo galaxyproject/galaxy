@@ -932,7 +932,8 @@ class JobWrapper(HasResourceParameters):
         self.app = queue.app
         self.sa_session = self.app.model.context
         self.extra_filenames: List[str] = []
-        self.environment_variables = []
+        self.environment_variables: List[Dict[str, str]] = []
+        self.interactivetools: List[Dict[str, Any]] = []
         self.command_line = None
         self._dependency_shell_commands = None
         # Tool versioning variables
@@ -1190,9 +1191,10 @@ class JobWrapper(HasResourceParameters):
             self.app.tool_data_tables.to_json(path=os.path.join(self.working_directory, 'metadata', 'outputs_new', 'tool_data_tables.json'))
         else:
             tool_evaluator = self._get_tool_evaluator(job)
-            self.interactivetools = getattr(tool_evaluator, 'interactivetools', None)
             compute_environment = compute_environment or self.default_compute_environment(job)
             tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
+            self.interactivetools = tool_evaluator.populate_interactivetools()
+            self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
             # We need command_line persisted to the db in order for Galaxy to re-queue the job
             # if the server was stopped and restarted before the job finished
             self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()

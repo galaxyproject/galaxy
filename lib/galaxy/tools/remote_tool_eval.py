@@ -101,7 +101,7 @@ def main(TMPDIR, WORKING_DIRECTORY):
     # FIXME: enable loading all supported tool types
     tool_source = get_tool_source(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'tool.xml'))
     tool = create_tool_from_source(app, tool_source=tool_source)
-    tool_evaluator = evaluation.RemoteToolEvaluator(app=app, tool=tool, job=job, local_working_directory=WORKING_DIRECTORY)
+    tool_evaluator = evaluation.ToolEvaluator(app=app, tool=tool, job=job, local_working_directory=WORKING_DIRECTORY)
     tool_evaluator.set_compute_environment(compute_environment=SharedComputeEnvironment(job_io=job_io, job=job))
     with open(os.path.join(WORKING_DIRECTORY, 'tool_script.sh'), 'w') as out:
         command_line, extra_filenames, environment_variables = tool_evaluator.build()

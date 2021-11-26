@@ -98,6 +98,9 @@ class MockEvaluator:
         self.local_working_directory = local_working_directory
         self.param_dict = {}
 
+    def populate_interactivetools(self):
+        return []
+
     def set_compute_environment(self, *args, **kwds):
         pass
 
