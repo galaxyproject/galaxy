@@ -29,7 +29,7 @@
 
         ## change into the directory where the notebooks are located
         export HOME=/home/jovyan &&
-        export PATH=${HOME}/.local/bin:\${PATH} &&
+        export PATH=\${HOME}/.local/bin:\${PATH} &&
         cd ./jupyter/ &&
         cp \${HOME}/examples/* ./ &&
 
