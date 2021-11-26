@@ -91,9 +91,9 @@ def lint_tsts(tool_xml, lint_ctx):
         lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.")
 
     if num_valid_tests or datasource:
-        lint_ctx.valid(f"{num_valid_tests} test(s) found.", line=tests_line, xpath=tool_xml.getpath(test))
+        lint_ctx.valid(f"{num_valid_tests} test(s) found.", line=tests_line, xpath=tests_path)
     else:
-        lint_ctx.warn("No valid test(s) found.", line=tests_line, xpath=tool_xml.getpath(test))
+        lint_ctx.warn("No valid test(s) found.", line=tests_line, xpath=tests_path)
 
 
 def _collect_output_names(tool_xml):
