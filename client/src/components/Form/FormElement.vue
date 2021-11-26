@@ -212,9 +212,6 @@ export default {
     created() {
         this.initialState();
     },
-    mounted() {
-        this.setValue(this.currentValue);
-    },
     methods: {
         /** Submits a changed value. */
         setValue(value) {
@@ -225,6 +222,7 @@ export default {
          * Determines to wether expand or collapse the input.
          */
         initialState() {
+            this.setValue(this.value);
             const collapsibleValue = this.collapsibleValue;
             const value = JSON.stringify(this.value);
             this.connected = value == JSON.stringify(this.connectedValue);

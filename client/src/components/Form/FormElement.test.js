@@ -47,9 +47,10 @@ describe("FormElement", () => {
         await wrapper.setProps({ default_value: "default_value", collapsible_value: "collapsible_value" });
         expect(wrapper.find(".ui-form-title-text").text()).toEqual("title_text");
         expect(wrapper.findAll("span[title='Disable']").length).toEqual(1);
+        expect(wrapper.emitted().input[0][0]).toEqual("initial_value");
         wrapper.find(".ui-form-collapsible-icon").trigger("click");
-        expect(wrapper.emitted().input[0][0]).toEqual("collapsible_value");
-        expect(wrapper.emitted().input[0][1]).toEqual("input");
+        expect(wrapper.emitted().input[1][0]).toEqual("collapsible_value");
+        expect(wrapper.emitted().input[1][1]).toEqual("input");
         await Vue.nextTick();
         await wrapper.setProps({
             collapsedEnableText: "Enable Collapsible",
@@ -58,7 +59,7 @@ describe("FormElement", () => {
         expect(wrapper.findAll("span[title='Enable Collapsible']").length).toEqual(1);
         expect(wrapper.findAll("span[title='Disable Collapsible']").length).toEqual(0);
         wrapper.find(".ui-form-collapsible-icon").trigger("click");
-        expect(wrapper.emitted().input[1][0]).toEqual("default_value");
+        expect(wrapper.emitted().input[2][0]).toEqual("default_value");
         await Vue.nextTick();
         expect(wrapper.findAll("span[title='Disable Collapsible']").length).toEqual(1);
         expect(wrapper.findAll("span[title='Enable Collapsible']").length).toEqual(0);
