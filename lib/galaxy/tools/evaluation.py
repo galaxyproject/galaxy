@@ -68,6 +68,15 @@ class ToolErrorLog:
 global_tool_errors = ToolErrorLog()
 
 
+def global_tool_logs(func, config_file, action_str):
+    try:
+        return func()
+    except Exception as e:
+        # capture and log parsing errors
+        global_tool_errors.add_error(config_file, action_str, e)
+        raise e
+
+
 class ToolEvaluator:
     """ An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
@@ -80,6 +89,9 @@ class ToolEvaluator:
         self.local_working_directory = local_working_directory
         self.file_sources_dict = {}
         self.param_dict: Dict[str, Any] = {}
+        self.extra_filenames: List[str] = []
+        self.environment_variables: List[Dict[str, str]] = []
+        self.command_line: Optional[str] = None
 
     def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Optional[Callable] = None):
         """
@@ -113,21 +125,21 @@ class ToolEvaluator:
         incoming.update(model.User.user_template_environment(self._user))
 
         # Build params, done before hook so hook can use
-        param_dict = self.build_param_dict(
+        self.param_dict = self.build_param_dict(
             incoming,
             inp_data,
             out_data,
             output_collections=out_collections,
         )
+        self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
 
+    def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
-        self.tool.exec_before_job(self.app, inp_data, out_data, param_dict)
+        self.tool.exec_before_job(self.app, inp_data, out_data, self.param_dict)
         # Run the before queue ("exec_before_job") hook
         self.tool.call_hook('exec_before_job', self.app, inp_data=inp_data,
                             out_data=out_data, tool=self.tool, param_dict=incoming)
-
-        self.param_dict = param_dict
 
     def build_param_dict(self, incoming, input_datasets, output_datasets, output_collections):
         """
@@ -429,36 +441,14 @@ class ToolEvaluator:
         config templates corresponding to this tool with these inputs on this
         compute environment.
         """
-        self.extra_filenames: List[str] = []
-        self.command_line = None
-
-        try:
-            self.__build_config_files()
-        except Exception as e:
-            # capture and log parsing errors
-            global_tool_errors.add_error(self.tool.config_file, "Building Config Files", e)
-            raise e
-        try:
-            self.__build_param_file()
-        except Exception as e:
-            # capture and log parsing errors
-            global_tool_errors.add_error(self.tool.config_file, "Building Param File", e)
-            raise e
-        try:
-            self.__build_command_line()
-        except Exception as e:
-            # capture and log parsing errors
-            global_tool_errors.add_error(self.tool.config_file, "Building Command Line", e)
-            raise e
-        try:
-            self.__build_environment_variables()
-        except Exception as e:
-            global_tool_errors.add_error(self.tool.config_file, "Building Environment Variables", e)
-            raise e
-
+        config_file = self.tool.config_file
+        global_tool_logs(self._build_config_files, config_file, "Building Config Files")
+        global_tool_logs(self._build_param_file, config_file, 'Building Param File')
+        global_tool_logs(self._build_command_line, config_file, "Building Command Line")
+        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
         return self.command_line, self.extra_filenames, self.environment_variables
 
-    def __build_command_line(self):
+    def _build_command_line(self):
         """
         Build command line to invoke this tool given a populated param_dict
         """
@@ -495,7 +485,7 @@ class ToolEvaluator:
             command_line = command_line.replace(executable, f"{interpreter} {shlex.quote(abs_executable)}", 1)
         self.command_line = command_line
 
-    def __build_config_files(self):
+    def _build_config_files(self):
         """
         Build temporary file for file based parameter transfer if needed
         """
@@ -517,9 +507,9 @@ class ToolEvaluator:
             config_filenames.append(config_filename)
         return config_filenames
 
-    def __build_environment_variables(self):
+    def _build_environment_variables(self):
         param_dict = self.param_dict
-        environment_variables = []
+        environment_variables = self.environment_variables
         for environment_variable_def in self.tool.environment_variables:
             directory = self.local_working_directory
             environment_variable = environment_variable_def.copy()
@@ -553,10 +543,8 @@ class ToolEvaluator:
             for tmp_directory_var in self.tool.tmp_directory_vars:
                 environment_variable = dict(name=tmp_directory_var, value=f'"{tmp_dir}"', raw=True)
                 environment_variables.append(environment_variable)
-        self.environment_variables = environment_variables
-        return environment_variables
 
-    def __build_param_file(self):
+    def _build_param_file(self):
         """
         Build temporary file for file based parameter transfer if needed
         """
@@ -643,3 +631,29 @@ class ToolEvaluator:
             return history.user
         else:
             return self.job.user
+
+
+class PartialToolEvaluator(ToolEvaluator):
+    """
+    ToolEvaluator that only builds Environment Variables.
+    """
+
+    def build(self):
+        config_file = self.tool.config_file
+        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
+        return self.command_line, self.extra_filenames, self.environment_variables
+
+
+class RemoteToolEvaluator(ToolEvaluator):
+    """ToolEvaluator that skips unnecessary steps already executed during job setup."""
+
+    def execute_tool_hooks(self, inp_data, out_data, incoming):
+        # These have already run while preparing the job
+        pass
+
+    def build(self):
+        config_file = self.tool.config_file
+        global_tool_logs(self._build_config_files, config_file, "Building Config Files")
+        global_tool_logs(self._build_param_file, config_file, 'Building Param File')
+        global_tool_logs(self._build_command_line, config_file, "Building Command Line")
+        return self.command_line, self.extra_filenames, self.environment_variables

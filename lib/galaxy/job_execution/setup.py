@@ -40,6 +40,7 @@ class JobIO(Dictifiable):
         'home_directory',
         'tmp_directory',
         'tool_data_path',
+        'galaxy_data_manager_data_path',
         'new_file_path',
         'len_file_path',
         'builds_file_path',
@@ -47,6 +48,7 @@ class JobIO(Dictifiable):
         'check_job_script_integrity',
         'check_job_script_integrity_count',
         'check_job_script_integrity_sleep',
+        'tool_dir',
         'is_task',
     )
 
@@ -63,6 +65,7 @@ class JobIO(Dictifiable):
             home_directory: str,
             tmp_directory: str,
             tool_data_path: str,
+            galaxy_data_manager_data_path: str,
             new_file_path: str,
             len_file_path: str,
             builds_file_path: str,
@@ -71,6 +74,7 @@ class JobIO(Dictifiable):
             check_job_script_integrity_sleep: float,
             file_sources_dict: Dict[str, Any],
             user_context: Union[ProvidesUserFileSourcesUserContext, Dict['str', Any]],
+            tool_dir: Optional[str] = None,
             is_task=False):
         user_context_instance: Union[ProvidesUserFileSourcesUserContext, DictFileSourcesUserContext]
         if isinstance(user_context, dict):
@@ -90,12 +94,14 @@ class JobIO(Dictifiable):
         self.home_directory = home_directory
         self.tmp_directory = tmp_directory
         self.tool_data_path = tool_data_path
+        self.galaxy_data_manager_data_path = galaxy_data_manager_data_path
         self.new_file_path = new_file_path
         self.len_file_path = len_file_path
         self.builds_file_path = builds_file_path
         self.check_job_script_integrity = check_job_script_integrity
         self.check_job_script_integrity_count = check_job_script_integrity_count
         self.check_job_script_integrity_sleep = check_job_script_integrity_sleep
+        self.tool_dir = tool_dir
         self.is_task = is_task
         self._output_paths: Optional[OutputPaths] = None
         self._output_hdas_and_paths: Optional[OutputHdasAndType] = None

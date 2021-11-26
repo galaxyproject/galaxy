@@ -61,6 +61,7 @@ def job_io(app: FileSourcesMockApp, job: Job) -> JobIO:
         home_directory=WORKING_DIRECTORY,
         tmp_directory=WORKING_DIRECTORY,
         tool_data_path=WORKING_DIRECTORY,
+        galaxy_data_manager_data_path=WORKING_DIRECTORY,
         new_file_path=WORKING_DIRECTORY,
         len_file_path=WORKING_DIRECTORY,
         builds_file_path=WORKING_DIRECTORY,
@@ -69,6 +70,7 @@ def job_io(app: FileSourcesMockApp, job: Job) -> JobIO:
         check_job_script_integrity=False,
         check_job_script_integrity_count=1,
         check_job_script_integrity_sleep=1,
+        tool_dir=WORKING_DIRECTORY,
         is_task=False,
     )
 

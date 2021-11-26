@@ -37,6 +37,7 @@ from galaxy.util.dbkeys import GenomeBuilds
 class ToolAppConfig(NamedTuple):
     name: str
     tool_data_path: str
+    galaxy_data_manager_data_path: str
     nginx_upload_path: str
     len_file_path: str
     builds_file_path: str
@@ -82,6 +83,7 @@ def main(TMPDIR, WORKING_DIRECTORY):
     tool_app_config = ToolAppConfig(
         name='tool_app',
         tool_data_path=job_io.tool_data_path,
+        galaxy_data_manager_data_path=job_io.galaxy_data_manager_data_path,
         nginx_upload_path=TMPDIR,
         len_file_path=job_io.len_file_path,
         builds_file_path=job_io.builds_file_path,
@@ -100,8 +102,8 @@ def main(TMPDIR, WORKING_DIRECTORY):
     # TODO: could try to serialize just a minimal tool variant instead of the whole thing ?
     # FIXME: enable loading all supported tool types
     tool_source = get_tool_source(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'tool.xml'))
-    tool = create_tool_from_source(app, tool_source=tool_source)
-    tool_evaluator = evaluation.ToolEvaluator(app=app, tool=tool, job=job, local_working_directory=WORKING_DIRECTORY)
+    tool = create_tool_from_source(app, tool_source=tool_source, tool_dir=job_io.tool_dir)
+    tool_evaluator = evaluation.RemoteToolEvaluator(app=app, tool=tool, job=job, local_working_directory=WORKING_DIRECTORY)
     tool_evaluator.set_compute_environment(compute_environment=SharedComputeEnvironment(job_io=job_io, job=job))
     with open(os.path.join(WORKING_DIRECTORY, 'tool_script.sh'), 'w') as out:
         command_line, extra_filenames, environment_variables = tool_evaluator.build()

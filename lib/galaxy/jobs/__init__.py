@@ -58,7 +58,10 @@ from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
 )
-from galaxy.tools.evaluation import ToolEvaluator
+from galaxy.tools.evaluation import (
+    PartialToolEvaluator,
+    ToolEvaluator,
+)
 from galaxy.util import (
     parse_xml_string,
     RWXRWXRWX,
@@ -1003,6 +1006,7 @@ class JobWrapper(HasResourceParameters):
                 home_directory=self.home_directory(),
                 tmp_directory=self.tmp_directory(),
                 tool_data_path=self.app.config.tool_data_path,
+                galaxy_data_manager_data_path=self.app.config.galaxy_data_manager_data_path,
                 new_file_path=self.app.config.new_file_path,
                 builds_file_path=self.app.config.builds_file_path,
                 len_file_path=self.app.config.len_file_path,
@@ -1011,6 +1015,7 @@ class JobWrapper(HasResourceParameters):
                 check_job_script_integrity=self.app.config.check_job_script_integrity,
                 check_job_script_integrity_count=self.app.config.check_job_script_integrity_count,
                 check_job_script_integrity_sleep=self.app.config.check_job_script_integrity_sleep,
+                tool_dir=self.tool.tool_dir,
                 is_task=self.is_task,
             )
         return self._job_io
@@ -1179,26 +1184,23 @@ class JobWrapper(HasResourceParameters):
         if job.tool_id == 'upload1':
             self.__prepare_upload_paramfile(job)
 
+        tool_evaluator = self._get_tool_evaluator(job)
+        compute_environment = compute_environment or self.default_compute_environment(job)
+        tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
+        self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
+        job.command_line = self.command_line
+        self.interactivetools = tool_evaluator.populate_interactivetools()
+        self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
+
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
         if self.tool.requires_galaxy_python_environment or self.remote_command_line:
             # These tools (upload, metadata, data_source) may need access to the datatypes registry.
             self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, 'registry.xml'))
         if self.remote_command_line:
-            job.command_line = None
-            os.makedirs(os.path.join(self.working_directory, 'metadata', 'outputs_new'))
+            os.makedirs(os.path.join(self.working_directory, 'metadata', 'outputs_new'), exist_ok=True)
             self.job_io.to_json(path=os.path.join(self.working_directory, 'metadata', 'outputs_new', 'job_io.json'))
             self.app.tool_data_tables.to_json(path=os.path.join(self.working_directory, 'metadata', 'outputs_new', 'tool_data_tables.json'))
-        else:
-            tool_evaluator = self._get_tool_evaluator(job)
-            compute_environment = compute_environment or self.default_compute_environment(job)
-            tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
-            self.interactivetools = tool_evaluator.populate_interactivetools()
-            self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
-            # We need command_line persisted to the db in order for Galaxy to re-queue the job
-            # if the server was stopped and restarted before the job finished
-            self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
-            job.command_line = self.command_line
         job.dependencies = self.tool.dependencies
         self.sa_session.add(job)
         self.sa_session.flush()
@@ -1294,7 +1296,8 @@ class JobWrapper(HasResourceParameters):
         return job
 
     def _get_tool_evaluator(self, job):
-        tool_evaluator = ToolEvaluator(
+        klass = PartialToolEvaluator if self.remote_command_line else ToolEvaluator
+        tool_evaluator = klass(
             app=self.app,
             job=job,
             tool=self.tool,

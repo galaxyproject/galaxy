@@ -523,15 +523,15 @@ class Tool(Dictifiable):
     job_search: 'JobSearch'
     version: str
 
-    def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, tool_shed_repository=None, allow_code_files=True, dynamic=False):
+    def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, tool_shed_repository=None, allow_code_files=True, dynamic=False, tool_dir=None):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         if config_file is not None:
             self.config_file = config_file
-            self.tool_dir = os.path.dirname(config_file)
+            self.tool_dir = tool_dir or os.path.dirname(config_file)
         else:
             self.config_file = None
-            self.tool_dir = None
+            self.tool_dir = tool_dir
 
         self.app = app
         self.repository_id = repository_id
