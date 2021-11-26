@@ -44,6 +44,7 @@ import random
 import string
 import time
 import unittest
+import urllib.parse
 from abc import ABCMeta, abstractmethod
 from functools import wraps
 from io import StringIO
@@ -330,9 +331,7 @@ class CwlPopulator:
         history_id: str,
         assert_ok: bool = True,
     ):
-        object_id = None
-        if "#" in workflow_path:
-            workflow_path, object_id = workflow_path.split("#", 1)
+        workflow_path, object_id = urllib.parse.urldefrag(workflow_path)
         workflow_id = self.workflow_populator.import_workflow_from_path(workflow_path, object_id)
 
         request = {

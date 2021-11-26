@@ -1,13 +1,7 @@
 """The module describes the ``github`` error plugin plugin."""
 
 import logging
-import sys
-if sys.version_info[0] < 3:
-    import urllib as urllib
-    import urlparse as urlparse
-else:
-    import urllib.parse as urllib
-    urlparse = urllib
+from urllib.parse import urlparse
 
 from galaxy.util import string_as_bool, unicodify
 from .base_git import BaseGitPlugin
@@ -70,7 +64,7 @@ class GithubPlugin(BaseGitPlugin):
             ts_repourl = self._get_gitrepo_from_ts(job, ts_url)
 
             # Determine the GitLab project URL and the issue cache key
-            github_projecturl = urlparse.urlparse(ts_repourl).path[1:] if (ts_repourl and not self.git_default_repo_only) \
+            github_projecturl = urlparse(ts_repourl).path[1:] if (ts_repourl and not self.git_default_repo_only) \
                 else "/".join((self.git_default_repo_owner, self.git_default_repo_name))
             issue_cache_key = self._get_issue_cache_key(job, ts_repourl)
 
