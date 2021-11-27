@@ -233,6 +233,7 @@ export default {
         },
         onUpdate() {
             this.disabled = true;
+            console.debug("ToolForm - Updating input parameters.", this.formData);
             updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData)
                 .then((data) => {
                     this.formConfig = data;
@@ -250,6 +251,7 @@ export default {
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
             this.disabled = true;
+            console.debug("ToolForm - Requesting tool.", this.id);
             return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
                 .then((data) => {
                     this.formConfig = data;
