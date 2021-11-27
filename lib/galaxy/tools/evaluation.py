@@ -3,14 +3,14 @@ import logging
 import os
 import shlex
 import tempfile
-from typing import Any, cast, Dict, List
+from typing import Any, Dict, List
 
 from galaxy import model
 from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
-from galaxy.tools import global_tool_errors, Tool
+from galaxy.tools import global_tool_errors
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -42,7 +42,6 @@ from galaxy.util import (
     safe_makedirs,
     unicodify,
 )
-from galaxy.util.bunch import Bunch
 from galaxy.util.template import fill_template
 from galaxy.work.context import WorkRequestContext
 
@@ -187,40 +186,6 @@ class ToolEvaluator:
                                        formats=input.formats)
 
             elif isinstance(input, DataToolParameter):
-                # FIXME: We're populating param_dict with conversions when
-                #        wrapping values, this should happen as a separate
-                #        step before wrapping (or call this wrapping step
-                #        something more generic) (but iterating this same
-                #        list twice would be wasteful)
-                # Add explicit conversions by name to current parent
-                for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
-                    # If we are at building cmdline step, then converters
-                    # have already executed
-                    direct_match, conv_ext, converted_dataset = input_values[input.name].find_conversion_destination(conversion_datatypes)
-                    # When dealing with optional inputs, we'll provide a
-                    # valid extension to be used for None converted dataset
-                    if not direct_match and not conv_ext:
-                        conv_ext = conversion_extensions[0]
-                    # input_values[ input.name ] is None when optional
-                    # dataset, 'conversion' of optional dataset should
-                    # create wrapper around NoneDataset for converter output
-                    if input_values[input.name] and not converted_dataset:
-                        # Input that converter is based from has a value,
-                        # but converted dataset does not exist
-                        raise Exception('A path for explicit datatype conversion has not been found: %s --/--> %s'
-                                        % (input_values[input.name].extension, conversion_extensions))
-                    else:
-                        # Trick wrapper into using target conv ext (when
-                        # None) without actually being a tool parameter
-                        input_values[conversion_name] = DatasetFilenameWrapper(
-                            converted_dataset,
-                            datatypes_registry=self.app.datatypes_registry,
-                            tool=cast(
-                                Tool, Bunch(conversion_name=Bunch(extensions=conv_ext))
-                            ),
-                            name=conversion_name,
-                        )
-                # Wrap actual input dataset
                 dataset = input_values[input.name]
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
