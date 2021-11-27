@@ -56,7 +56,6 @@ class ObjectStoreJobsIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
                 "create_10",
                 create_10_inputs,
                 history_id,
-                assert_ok=True,
             )
             self.dataset_populator.wait_for_history(history_id)
 

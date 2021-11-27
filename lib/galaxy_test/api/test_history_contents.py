@@ -704,8 +704,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
                 "cat_data_and_sleep",
                 inputs,
                 history_id,
-                assert_ok=False,
-            ).json()
+            )
             update_time = datetime.utcnow().isoformat()
             collection_id = response['implicit_collections'][0]['id']
             for _ in range(20):
@@ -723,8 +722,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
                 "collection_creates_dynamic_nested",
                 inputs,
                 history_id,
-                assert_ok=False,
-            ).json()
+            )
             update_time = datetime.utcnow().isoformat()
             collection_id = response['output_collections'][0]['id']
             for _ in range(20):

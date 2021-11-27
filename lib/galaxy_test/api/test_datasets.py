@@ -160,11 +160,10 @@ class DatasetsApiTestCase(ApiTestCase):
             'input1': {'src': 'hda', 'id': hda_id},
             'sleep_time': 10,
         }
-        run_response = self.dataset_populator.run_tool(
+        run_response = self.dataset_populator.run_tool_raw(
             "cat_data_and_sleep",
             inputs,
             self.history_id,
-            assert_ok=False,
         )
         queued_id = run_response.json()["outputs"][0]["id"]
 

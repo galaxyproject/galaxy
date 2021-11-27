@@ -211,10 +211,11 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_data_manager")
 
         with self.dataset_populator.test_history() as history_id:
-            run_response = self.dataset_populator.run_tool(tool_id="data_manager",
-                                                           inputs={"ignored_value": "test"},
-                                                           history_id=history_id,
-                                                           assert_ok=False)
+            run_response = self.dataset_populator.run_tool_raw(
+                tool_id="data_manager",
+                inputs={"ignored_value": "test"},
+                history_id=history_id,
+            )
             job_id = run_response.json()["jobs"][0]["id"]
             self.dataset_populator.wait_for_tool_run(history_id=history_id,
                                                      run_response=run_response,

@@ -239,8 +239,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
                 "cat_data_and_sleep",
                 running_inputs,
                 history_id,
-                assert_ok=False,
-            ).json()
+            )
             job_dict = running_response["jobs"][0]
 
             app = self._app
@@ -273,11 +272,10 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
                 "input1": {"src": "hda", "id": hda1["id"]},
                 "sleep_time": 240,
             }
-            running_response = self.dataset_populator.run_tool(
+            running_response = self.dataset_populator.run_tool_raw(
                 "cat_data_and_sleep",
                 running_inputs,
                 history_id,
-                assert_ok=False,
             )
             job_dict = running_response.json()["jobs"][0]
 
@@ -306,11 +304,10 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         inputs = {
             'failbool': True
         }
-        running_response = self.dataset_populator.run_tool(
+        running_response = self.dataset_populator.run_tool_raw(
             "job_properties",
             inputs,
             self.history_id,
-            assert_ok=False,
         )
         result = self.dataset_populator.wait_for_tool_run(run_response=running_response, history_id=self.history_id, assert_ok=False).json()
         details = self.dataset_populator.get_job_details(result['jobs'][0]['id'], full=True).json()
@@ -329,7 +326,6 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
                 {'input': {"src": "hda", "id": hda1["id"]},
                  'column': [1]},
                 self.history_id,
-                assert_ok=True,
             )
 
     @skip_without_tool('galaxy_slots_and_memory')
@@ -338,7 +334,6 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             'galaxy_slots_and_memory',
             {},
             self.history_id,
-            assert_ok=True
         )
         dataset_content = self.dataset_populator.get_history_dataset_content(self.history_id, hid=1).strip()
         CPU = '2'
@@ -356,11 +351,10 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
     @skip_without_tool('create_2')
     def test_walltime_limit(self):
-        running_response = self.dataset_populator.run_tool(
+        running_response = self.dataset_populator.run_tool_raw(
             'create_2',
             {'sleep_time': 60},
             self.history_id,
-            assert_ok=False
         )
         result = self.dataset_populator.wait_for_tool_run(run_response=running_response,
                                                           history_id=self.history_id,

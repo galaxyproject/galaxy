@@ -84,7 +84,6 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
                     tool_id,
                     inputs,
                     history_id,
-                    assert_ok=True,
                 )
                 self.dataset_populator.wait_for_history(history_id)
 
