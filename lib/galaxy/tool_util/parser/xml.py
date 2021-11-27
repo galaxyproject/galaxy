@@ -117,9 +117,6 @@ class XmlToolSource(ToolSource):
     def parse_description(self):
         return xml_text(self.root, "description")
 
-    def parse_is_multi_byte(self):
-        return self._get_attribute_as_bool("is_multi_byte", self.default_is_multi_byte)
-
     def parse_display_interface(self, default):
         return self._get_attribute_as_bool("display_interface", default)
 

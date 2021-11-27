@@ -56,9 +56,6 @@ class YamlToolSource(ToolSource):
         xrefs = self.root_dict.get("xrefs", [])
         return [dict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
 
-    def parse_is_multi_byte(self):
-        return self.root_dict.get("is_multi_byte", self.default_is_multi_byte)
-
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
 
