@@ -57,8 +57,8 @@ def lint_general(tool_source, lint_ctx):
         lint_ctx.error(ERROR_ID_MSG, line=tool_line)
     else:
         lint_ctx.valid(VALID_ID_MSG % tool_id, line=tool_line)
-    if re.search(r"\s", tool_id):
-        lint_ctx.warn(WARN_ID_WHITESPACE_MSG % tool_id, line=tool_line)
+        if re.search(r"\s", tool_id):
+            lint_ctx.warn(WARN_ID_WHITESPACE_MSG % tool_id, line=tool_line)
 
     profile = tool_source.parse_profile()
     profile_valid = PROFILE_PATTERN.match(profile) is not None
