@@ -13,7 +13,7 @@ from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
 
 WHITESPACE_IN_VERSIONS_AND_NAMES = """
-<tool name=" BWA Mapper " id="bwa tool" version=" 1.0.1 " is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name=" BWA Mapper " id="bwa tool" version=" 1.0.1 " display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <requirements>
         <requirement type="package" version=" 1.2.5 "> bwa </requirement>
@@ -30,7 +30,7 @@ WHITESPACE_IN_VERSIONS_AND_NAMES = """
 """
 
 REQUIREMENT_WO_VERSION = """
-<tool name="BWA Mapper" id="bwa_tool" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name="BWA Mapper" id="bwa_tool" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <requirements>
         <requirement type="package">bwa</requirement>
@@ -48,14 +48,14 @@ REQUIREMENT_WO_VERSION = """
 """
 
 NO_SECTIONS_XML = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
 </tool>
 """
 
 NO_WHEN_IN_CONDITIONAL_XML = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
     <inputs>
@@ -100,7 +100,7 @@ SELECT_DUPLICATED_OPTIONS = """
 """
 
 SELECT_DEPRECATIONS = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
     <inputs>
@@ -139,7 +139,7 @@ SELECT_OPTION_DEFINITIONS = """
 """
 
 VALIDATOR_INCOMPATIBILITIES = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
     <inputs>
@@ -152,7 +152,7 @@ VALIDATOR_INCOMPATIBILITIES = """
 """
 
 VALIDATOR_CORRECT = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
     <inputs>
@@ -199,7 +199,7 @@ VALIDATOR_CORRECT = """
 # check that linter accepts format source for collection elements as means to specify format
 # and that the linter warns if format and format_source are used
 OUTPUTS_COLLECTION_FORMAT_SOURCE = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
     <outputs>
@@ -213,7 +213,7 @@ OUTPUTS_COLLECTION_FORMAT_SOURCE = """
 
 # check that linter does not complain about missing format if from_tool_provided_metadata is used
 OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
     <outputs>
