@@ -83,7 +83,7 @@ class MzTab(Text):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -133,7 +133,7 @@ class MzTab2(MzTab):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -601,7 +601,7 @@ class ProteomicsXml(GenericXml):
         pattern = r'<(\w*:)?%s' % self.root
         return re.search(pattern, line) is not None
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -759,7 +759,7 @@ class Mgf(Text):
     edam_format = "format_3651"
     file_ext = "mgf"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -787,7 +787,7 @@ class MascotDat(Text):
     edam_format = "format_3713"
     file_ext = "mascotdat"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -829,7 +829,7 @@ class ThermoRAW(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = "Thermo Finnigan RAW file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -869,7 +869,7 @@ class SPLibNoIndex(Text):
     """SPlib without index file """
     file_ext = "splib_noindex"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -910,7 +910,7 @@ class SPLib(Msp):
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)

@@ -94,7 +94,7 @@ class _SpalnDb(Data):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "spaln database (multiple files)"

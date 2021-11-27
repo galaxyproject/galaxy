@@ -46,7 +46,7 @@ class Shapefile(Binary):
         rval.append('</ul></div></html>\n')
         return "\n".join(rval)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "Shapefile data"

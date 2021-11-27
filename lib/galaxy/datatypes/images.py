@@ -50,7 +50,7 @@ class Image(data.Data):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = f'Image in {dataset.extension} format'
             dataset.blurb = nice_size(dataset.get_size())
@@ -354,7 +354,7 @@ class Gmaj(data.Data):
     file_ext = "gmaj.zip"
     copy_safe_peek = False
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             if hasattr(dataset, 'history_id'):
                 params = {
@@ -539,7 +539,7 @@ class Star(data.Text):
     https://relion.readthedocs.io/en/latest/Reference/Conventions.html"""
     file_ext = "star"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -595,7 +595,7 @@ class Laj(data.Text):
     file_ext = "laj"
     copy_safe_peek = False
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             if hasattr(dataset, 'history_id'):
                 params = {

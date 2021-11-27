@@ -61,7 +61,7 @@ class AnvioComposite(Html):
         """Returns the mime type of the datatype"""
         return 'text/html'
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = 'Anvio database (multiple files)'
