@@ -134,7 +134,7 @@ export default {
             this.setEmailAction(this.formData);
             if (changed) {
                 this.formData = Object.assign({}, this.formData);
-                this.$emit("onChange", this.formData, true);
+                this.$emit("onChange", this.formData);
             }
         },
         onDatatype(pjaKey, outputName, newDatatype) {
