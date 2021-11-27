@@ -12,20 +12,13 @@ from galaxy.tool_util.linters import (
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
 
+# tests tool xml for general linter
 WHITESPACE_IN_VERSIONS_AND_NAMES = """
 <tool name=" BWA Mapper " id="bwa tool" version=" 1.0.1 " display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <requirements>
         <requirement type="package" version=" 1.2.5 "> bwa </requirement>
     </requirements>
-    <version_command interpreter="python">bwa.py --version</version_command>
-    <inputs>
-        <param name="select_fd_op" type="select">
-            <options from_dataset="xyz"/>
-            <options from_data_table="xyz"/>
-            <option value="x">x</option>
-        </param>
-    </inputs>
 </tool>
 """
 
@@ -36,21 +29,12 @@ REQUIREMENT_WO_VERSION = """
         <requirement type="package">bwa</requirement>
         <requirement type="package" version="1.2.5"></requirement>
     </requirements>
-    <version_command interpreter="python">bwa.py --version</version_command>
-    <inputs>
-        <param name="select_fd_op" type="select">
-            <options from_dataset="xyz"/>
-            <options from_data_table="xyz"/>
-            <option value="x">x</option>
-        </param>
-    </inputs>
 </tool>
 """
 
-NO_SECTIONS_XML = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
-    <version_command interpreter="python">bwa.py --version</version_command>
+# test tool xml for inputs linter  
+NO_INPUTS_SECTION_XML = """
+<tool>
 </tool>
 """
 
@@ -63,9 +47,7 @@ INPUTS_REDUNDANT_NAME = """
 """
 
 NO_WHEN_IN_CONDITIONAL_XML = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
-    <version_command interpreter="python">bwa.py --version</version_command>
+<tool>
     <inputs>
         <conditional name="labels">
             <param name="label_select" type="select" label="Points to label">
@@ -119,9 +101,7 @@ SELECT_DUPLICATED_OPTIONS_WITH_DIFF_SELECTED = """
 """
 
 SELECT_DEPRECATIONS = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
-    <version_command interpreter="python">bwa.py --version</version_command>
+<tool>
     <inputs>
         <param name="select_do" type="select" dynamic_options="blah()"/>
         <param name="select_ff" type="select">
@@ -215,12 +195,12 @@ VALIDATOR_CORRECT = """
 </tool>
 """
 
+# test tool xml for outputs linter
+
 # check that linter accepts format source for collection elements as means to specify format
 # and that the linter warns if format and format_source are used
 OUTPUTS_COLLECTION_FORMAT_SOURCE = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
-    <version_command interpreter="python">bwa.py --version</version_command>
+<tool>
     <outputs>
         <collection name="output_collection" type="paired">
             <data name="forward" format_source="input_readpair" />
@@ -232,9 +212,7 @@ OUTPUTS_COLLECTION_FORMAT_SOURCE = """
 
 # check that linter does not complain about missing format if from_tool_provided_metadata is used
 OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
-    <version_command interpreter="python">bwa.py --version</version_command>
+<tool>
     <outputs>
         <data name="output">
             <discover_datasets from_tool_provided_metadata="true"/>
@@ -309,7 +287,7 @@ TESTS = [
             and len(x.warn_messages) == 1 and len(x.error_messages) == 1
     ),
     (
-        NO_SECTIONS_XML, inputs.lint_inputs,
+        NO_INPUTS_SECTION_XML, inputs.lint_inputs,
         lambda x:
             'Found no input parameters.' in x.warn_messages
             and len(x.warn_messages) == 1 and len(x.error_messages) == 0
