@@ -244,11 +244,29 @@ TESTS_PARAM = """
             </when>
         </conditional>
     </inputs>
+    <outputs>
+        <data name="existent_output"/>
+    </outputs>
     <tests>
         <test expect_num_outputs="1">
             <param name="existent_test_name"/>
             <param name="cond_name|another_existent_test_name"/>
             <param name="non_existent_test_name"/>
+            <output name="existent_output"/>
+            <output name="nonexistent_output"/>
+        </test>
+    </tests>
+</tool>
+"""
+
+TESTS_EXPECT_FAILURE_OUTPUT = """
+<tool>
+    <outputs>
+        <data name="test"/>
+    </outputs>
+    <tests>
+        <test expect_failure="true">
+            <output name="test"/>
         </test>
     </tests>
 </tool>
@@ -348,14 +366,21 @@ TESTS = [
     (
         TESTS_WO_EXPECTATIONS, tests.lint_tsts,
         lambda x:
-            'No outputs or expectations defined for tests, this test is likely invalid.' in x.warn_messages
+            'Test 1: No outputs or expectations defined for tests, this test is likely invalid.' in x.warn_messages
             and 'No valid test(s) found.' in x.warn_messages
             and len(x.warn_messages) == 2 and len(x.error_messages) == 0
     ),
     (
         TESTS_PARAM, tests.lint_tsts,
         lambda x:
-            "Test param non_existent_test_name not found in the inputs" in x.error_messages
+            "Test 1: Test param non_existent_test_name not found in the inputs" in x.error_messages
+            and "Test 1: Found output tag with unknown name [nonexistent_output], valid names [['existent_output']]" in x.error_messages
+            and len(x.warn_messages) == 0 and len(x.error_messages) == 2
+    ),
+    (
+        TESTS_EXPECT_FAILURE_OUTPUT, tests.lint_tsts,
+        lambda x:
+            "Test 1: Cannot specify outputs in a test expecting failure." in x.error_messages
             and len(x.warn_messages) == 0 and len(x.error_messages) == 1
     )
 ]
@@ -375,6 +400,7 @@ TEST_IDS = [
     'outputs discover datatsets with tool provided metadata',
     'test without expectations',
     'test param missing from inputs',
+    'test expecting failure with outputs',
 ]
 
 
