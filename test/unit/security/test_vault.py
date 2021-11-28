@@ -6,7 +6,7 @@ from abc import ABC
 
 from cryptography.fernet import InvalidToken
 
-from galaxy.app_unittest_utils.galaxy_mock import MockApp, MockAppConfig
+from galaxy.model.unittest_utils.data_app import GalaxyDataTestApp, GalaxyDataTestConfig
 from galaxy.security.vault import Vault, VaultFactory
 
 
@@ -16,6 +16,11 @@ class VaultTestBase(ABC):
     def test_read_write_secret(self):
         self.vault.write_secret("my/test/secret", "hello world")
         self.assertEqual(self.vault.read_secret("my/test/secret"), "hello world")  # type: ignore
+
+    def test_overwrite_secret(self):
+        self.vault.write_secret("my/new/secret", "hello world")
+        self.vault.write_secret("my/new/secret", "hello overwritten")
+        self.assertEqual(self.vault.read_secret("my/new/secret"), "hello overwritten")  # type: ignore
 
     def test_overwrite_secret(self):
         self.vault.write_secret("my/new/secret", "hello world")
@@ -38,8 +43,8 @@ class TestHashicorpVault(VaultTestBase, unittest.TestCase):
                 vault_token=os.environ.get('VAULT_TOKEN'))
             tempconf.write(content)
             self.vault_temp_conf = tempconf.name
-        config = MockAppConfig(vault_config_file=self.vault_temp_conf)
-        app = MockApp(config=config)
+        config = GalaxyDataTestConfig(vault_config_file=self.vault_temp_conf)
+        app = GalaxyDataTestApp(config=config)
         self.vault = VaultFactory.from_app(app)
 
     def tearDown(self) -> None:
@@ -54,13 +59,13 @@ VAULT_CONF_DATABASE_INVALID = os.path.join(os.path.dirname(__file__), "fixtures/
 class TestDatabaseVault(VaultTestBase, unittest.TestCase):
 
     def setUp(self) -> None:
-        config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
-        app = MockApp(config=config)
+        config = GalaxyDataTestConfig(vault_config_file=VAULT_CONF_DATABASE)
+        app = GalaxyDataTestApp(config=config)
         self.vault = VaultFactory.from_app(app)
 
     def test_rotate_keys(self):
-        config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
-        app = MockApp(config=config)
+        config = GalaxyDataTestConfig(vault_config_file=VAULT_CONF_DATABASE)
+        app = GalaxyDataTestApp(config=config)
         self.vault = VaultFactory.from_app(app)
         self.vault.write_secret("my/rotated/secret", "hello rotated")
 
@@ -70,8 +75,8 @@ class TestDatabaseVault(VaultTestBase, unittest.TestCase):
         self.assertEqual(self.vault.read_secret("my/rotated/secret"), "hello rotated")
 
     def test_wrong_keys(self):
-        config = MockAppConfig(vault_config_file=VAULT_CONF_DATABASE)
-        app = MockApp(config=config)
+        config = GalaxyDataTestConfig(vault_config_file=VAULT_CONF_DATABASE)
+        app = GalaxyDataTestApp(config=config)
         self.vault = VaultFactory.from_app(app)
         self.vault.write_secret("my/incorrect/secret", "hello incorrect")
 
@@ -97,8 +102,8 @@ class TestCustosVault(VaultTestBase, unittest.TestCase):
                 custos_client_secret=os.environ.get('CUSTOS_CLIENT_SECRET'))
             tempconf.write(content)
             self.vault_temp_conf = tempconf.name
-        config = MockAppConfig(vault_config_file=self.vault_temp_conf)
-        app = MockApp(config=config)
+        config = GalaxyDataTestConfig(vault_config_file=self.vault_temp_conf)
+        app = GalaxyDataTestApp(config=config)
         self.vault = VaultFactory.from_app(app)
 
     def tearDown(self) -> None:
