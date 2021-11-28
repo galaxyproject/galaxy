@@ -264,9 +264,16 @@ class ProvidesUserFileSourcesUserContext:
         return self.trans.user_is_admin
 
     @property
-    def vault(self):
+    def user_vault(self):
+        """User vault namespace"""
         user_vault = self.trans.user_vault
         return user_vault or defaultdict(lambda: None)
+
+    @property
+    def app_vault(self):
+        """App vault namespace"""
+        vault = self.trans.app.vault
+        return vault or defaultdict(lambda: None)
 
 
 class DictFileSourcesUserContext:
@@ -303,5 +310,9 @@ class DictFileSourcesUserContext:
         return self._kwd.get("is_admin")
 
     @property
-    def vault(self):
-        return self._kwd.get("vault")
+    def user_vault(self):
+        return self._kwd.get("user_vault")
+
+    @property
+    def app_vault(self):
+        return self._kwd.get("app_vault")
