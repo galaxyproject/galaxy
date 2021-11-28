@@ -23,7 +23,7 @@ class VaultTestBase(ABC):
         self.assertEqual(self.vault.read_secret("my/new/secret"), "hello overwritten")  # type: ignore
 
 
-VAULT_CONF_HASHICORP = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_hashicorp.yaml")
+VAULT_CONF_HASHICORP = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_hashicorp.yml")
 
 
 @unittest.skipIf(not os.environ.get('VAULT_ADDRESS') or not os.environ.get('VAULT_TOKEN'),
@@ -46,9 +46,9 @@ class TestHashicorpVault(VaultTestBase, unittest.TestCase):
         os.remove(self.vault_temp_conf)
 
 
-VAULT_CONF_DATABASE = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_database.yaml")
-VAULT_CONF_DATABASE_ROTATED = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_database_rotated.yaml")
-VAULT_CONF_DATABASE_INVALID = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_database_invalid_keys.yaml")
+VAULT_CONF_DATABASE = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_database.yml")
+VAULT_CONF_DATABASE_ROTATED = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_database_rotated.yml")
+VAULT_CONF_DATABASE_INVALID = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_database_invalid_keys.yml")
 
 
 class TestDatabaseVault(VaultTestBase, unittest.TestCase):
@@ -82,7 +82,7 @@ class TestDatabaseVault(VaultTestBase, unittest.TestCase):
             self.vault.read_secret("my/incorrect/secret")
 
 
-VAULT_CONF_CUSTOS = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_custos.yaml")
+VAULT_CONF_CUSTOS = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_custos.yml")
 
 
 @unittest.skipIf(not os.environ.get('CUSTOS_CLIENT_ID') or not os.environ.get('CUSTOS_CLIENT_SECRET'),
