@@ -54,6 +54,14 @@ NO_SECTIONS_XML = """
 </tool>
 """
 
+INPUTS_REDUNDANT_NAME = """
+<tool>
+    <inputs>
+        <param name="param_name" argument="--param-name" type="text"/>
+    </inputs>
+</tool>
+"""
+
 NO_WHEN_IN_CONDITIONAL_XML = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
@@ -296,6 +304,12 @@ TESTS = [
             and len(x.warn_messages) == 1 and len(x.error_messages) == 0
     ),
     (
+        INPUTS_REDUNDANT_NAME, inputs.lint_inputs,
+        lambda x:
+            "Param input [param_name] 'name' attribute is redundant if argument implies the same name." in x.warn_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
         NO_WHEN_IN_CONDITIONAL_XML, inputs.lint_inputs,
         lambda x:
             "Conditional [labels] no <when /> block found for select option 'none'" in x.warn_messages
@@ -389,6 +403,7 @@ TEST_IDS = [
     'hazardous whitespace',
     'requirement without version',
     'lint no sections',
+    'input with redundant name',
     'lint no when',
     'radio select incompatibilities',
     'select duplicated options',
