@@ -568,7 +568,7 @@ class AlembicManagerForTests(AlembicManager):
 
     def __init__(self, db_url):
         path1, path2 = self._get_paths_to_version_locations()
-        config_dict = {'version_locations': f'{path1} {path2}'}
+        config_dict = {'version_locations': f'{path1};{path2}'}
         super().__init__(db_url, config_dict=config_dict)
 
     def _get_paths_to_version_locations(self):
