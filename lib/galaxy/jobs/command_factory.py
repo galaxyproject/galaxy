@@ -148,13 +148,11 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         source_command,
         tool_commands,
     )
-    if commands_builder.raw_command:
-        # if no raw_command the command will be built as a job prolog, so we don't need to write the script
-        write_script(
-            local_container_script,
-            script_contents,
-            job_io=job_wrapper.job_io,
-        )
+    write_script(
+        local_container_script,
+        script_contents,
+        job_io=job_wrapper.job_io,
+    )
     commands = f"{shell} {local_container_script}"
     # TODO: Cleanup for_pulsar hack.
     # - Integrate Pulsar sending tool_stdout/tool_stderr back
