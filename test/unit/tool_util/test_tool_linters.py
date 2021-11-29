@@ -75,8 +75,14 @@ HELP_INVALID_RST = """
 """
 
 # test tool xml for inputs linter
-NO_INPUTS_SECTION_XML = """
+INPUTS_NO_INPUTS = """
 <tool>
+</tool>
+"""
+
+INPUTS_NO_INPUTS_DATASOURCE = """
+<tool tool_type="data_source">
+    <inputs/>
 </tool>
 """
 
@@ -88,19 +94,99 @@ INPUTS_REDUNDANT_NAME = """
 </tool>
 """
 
-NO_WHEN_IN_CONDITIONAL_XML = """
+INPUTS_VALID = """
 <tool>
     <inputs>
-        <conditional name="labels">
-            <param name="label_select" type="select" label="Points to label">
+        <param name="txt_param" type="text"/>
+        <param name="int_param" type="integer"/>
+    </inputs>
+</tool>
+"""
+
+INPUTS_PARAM_NAME = """
+<tool>
+    <inputs>
+        <param type="text"/>
+        <param name="" type="text"/>
+        <param name="2" type="text"/>
+        <param argument="--valid" type="text"/>
+    </inputs>
+</tool>
+"""
+
+INPUTS_PARAM_TYPE = """
+<tool>
+    <inputs>
+        <param name="valid_name"/>
+        <param argument="--another-valid-name" type=""/>
+    </inputs>
+</tool>
+"""
+
+INPUTS_DATA_PARAM = """
+<tool>
+    <inputs>
+        <param name="valid_name" type="data"/>
+    </inputs>
+</tool>
+"""
+
+INPUTS_CONDITIONAL = """
+<tool>
+    <inputs>
+        <conditional>
+            <param name="select" type="select"/>
+        </conditional>
+        <conditional name="cond_wo_param">
+        </conditional>
+        <conditional name="cond_w_mult_param">
+            <param name="select3" type="select"><option value="A">A</option><option value="B">B</option></param>
+            <param name="select4" type="select"><option value="A">A</option><option value="B">B</option></param>
+            <when value="A"/>
+            <when value="B"/>
+        </conditional>
+        <conditional name="cond_boolean">
+            <param name="bool" type="boolean"/>
+            <when value="true"/>
+            <when value="false"/>
+            <when value="False"/>
+        </conditional>
+        <conditional name="cond_text">
+            <param name="text" type="text"/>
+        </conditional>
+        <conditional name="cond_w_optional_select">
+            <param name="optionalselect" type="select" optional="true"><option value="A">A</option><option value="B">B</option></param>
+            <when value="A"/>
+            <when value="B"/>
+        </conditional>
+        <conditional name="cond_w_multiple_select">
+            <param name="multipleselect" type="select" multiple="true"><option value="A">A</option><option value="B">B</option></param>
+            <when value="A"/>
+            <when value="B"/>
+        </conditional>
+        <conditional name="when_wo_value">
+            <param name="select3" type="select"><option value="A">A</option><option value="B">B</option></param>
+            <when/>
+            <when value="A"/>
+            <when value="B"/>
+        </conditional>
+        <conditional name="missing_when">
+            <param name="label_select" type="select">
                 <option value="none" selected="True">None</option>
             </param>
+        </conditional>
+        <conditional name="missing_option">
+            <param name="missing_option" type="select">
+                <option value="none" selected="True">None</option>
+            </param>
+            <when value="none"/>
+            <when value="absent"/>
         </conditional>
     </inputs>
 </tool>
 """
 
-RADIO_SELECT_INCOMPATIBILITIES = """
+INPUTS_SELECT_INCOMPATIBLE_DISPLAY = """
 <tool>
     <inputs>
         <param name="radio_select" type="select" display="radio" optional="true" multiple="true">
@@ -120,7 +206,7 @@ RADIO_SELECT_INCOMPATIBILITIES = """
 </tool>
 """
 
-SELECT_DUPLICATED_OPTIONS = """
+INPUTS_SELECT_DUPLICATED_OPTIONS = """
 <tool>
     <inputs>
         <param name="select" type="select" optional="true" multiple="true">
@@ -143,6 +229,7 @@ SELECT_DUPLICATED_OPTIONS_WITH_DIFF_SELECTED = """
 """
 
 SELECT_DEPRECATIONS = """
+INPUTS_SELECT_DEPRECATIONS = """
 <tool>
     <inputs>
         <param name="select_do" type="select" dynamic_options="blah()"/>
@@ -156,7 +243,7 @@ SELECT_DEPRECATIONS = """
 </tool>
 """
 
-SELECT_OPTION_DEFINITIONS = """
+INPUTS_SELECT_OPTION_DEFINITIONS = """
 <tool>
     <inputs>
         <param name="select_noopt" type="select"/>
@@ -175,27 +262,44 @@ SELECT_OPTION_DEFINITIONS = """
             <option>option wo value</option>
             <option value="value"/>
         </param>
-    </inputs>
-</tool>
-"""
-
-VALIDATOR_INCOMPATIBILITIES = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
-    <version_command interpreter="python">bwa.py --version</version_command>
-    <inputs>
-        <param name="param_name" type="text">
-            <validator type="in_range">TEXT</validator>
-            <validator type="regex" filename="blah"/>
+        <param name="select_meta_file_key_incomp" type="select">
+            <options from_data_table="xyz" meta_file_key="dbkey"/>
         </param>
     </inputs>
 </tool>
 """
 
-VALIDATOR_CORRECT = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
-    <version_command interpreter="python">bwa.py --version</version_command>
+INPUTS_SELECT_FILTER = """
+<tool>
+    <inputs>
+        <param name="select_filter_types" type="select">
+            <options from_data_table="xyz">
+                <filter/>
+                <filter type="unknown_filter_type"/>
+            </options>
+        </param>
+    </inputs>
+</tool>
+"""
+
+INPUTS_VALIDATOR_INCOMPATIBILITIES = """
+<tool>
+    <inputs>
+        <param name="param_name" type="text">
+            <validator type="in_range">TEXT</validator>
+            <validator type="regex" filename="blah"/>
+            <validator type="expression"/>
+            <validator type="value_in_data_table"/>
+        </param>
+        <param name="another_param_name" type="data" format="bed">
+            <validator type="metadata"/>
+        </param>
+    </inputs>
+</tool>
+"""
+
+INPUTS_VALIDATOR_CORRECT = """
+<tool>
     <inputs>
         <param name="data_param" type="data" format="data">
             <validator type="metadata" check="md1,md2" skip="md3,md4" message="cutom validation message" negate="true"/>
@@ -233,6 +337,16 @@ VALIDATOR_CORRECT = """
             <validator type="in_range" min="0" max="100" exclude_min="true" exclude_max="true" negate="true"/>
             <validator type="expression" message="cutom validation message">somepythonexpression</validator>
         </param>
+    </inputs>
+</tool>
+"""
+
+REPEATS = """
+<tool>
+    <inputs>
+        <repeat>
+            <param name="another_param_name" type="data" format="bed"/>
+        </repeat>
     </inputs>
 </tool>
 """
@@ -385,10 +499,18 @@ TESTS = [
             and len(x.info_messages) == 0 and len(x.valid_messages) == 1 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
     ),
     (
-        NO_INPUTS_SECTION_XML, inputs.lint_inputs,
+        INPUTS_NO_INPUTS, inputs.lint_inputs,
         lambda x:
             'Found no input parameters.' in x.warn_messages
-            and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        INPUTS_NO_INPUTS_DATASOURCE, inputs.lint_inputs,
+        lambda x:
+            'No input parameters, OK for data sources' in x.info_messages
+            and 'display tag usually present in data sources' in x.info_messages
+            and 'uihints tag usually present in data sources' in x.info_messages
+            and len(x.info_messages) == 3 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
         INPUTS_REDUNDANT_NAME, inputs.lint_inputs,
@@ -397,13 +519,53 @@ TESTS = [
             and len(x.warn_messages) == 1 and len(x.error_messages) == 0
     ),
     (
-        NO_WHEN_IN_CONDITIONAL_XML, inputs.lint_inputs,
+        INPUTS_VALID, inputs.lint_inputs,
         lambda x:
-            "Conditional [labels] no <when /> block found for select option 'none'" in x.warn_messages
-            and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+            "Found 2 input parameters." in x.info_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
-        RADIO_SELECT_INCOMPATIBILITIES, inputs.lint_inputs,
+        INPUTS_PARAM_NAME, inputs.lint_inputs,
+        lambda x:
+            "Found 4 input parameters." in x.info_messages
+            and 'Param input [2] is not a valid Cheetah placeholder.' in x.warn_messages
+            and 'Found param input with no name specified.' in x.error_messages
+            and 'Param input with empty name.' in x.error_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 2
+    ),
+    (
+        INPUTS_PARAM_TYPE, inputs.lint_inputs,
+        lambda x:
+            "Found 2 input parameters." in x.info_messages
+            and 'Param input [valid_name] input with no type specified.' in x.error_messages
+            and 'Param input [another_valid_name] with empty type specified.' in x.error_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 2
+    ),
+    (
+        INPUTS_DATA_PARAM, inputs.lint_inputs,
+        lambda x:
+            "Found 1 input parameters." in x.info_messages
+            and "Param input [valid_name] with no format specified - 'data' format will be assumed." in x.warn_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        INPUTS_CONDITIONAL, inputs.lint_inputs,
+        lambda x:
+            "Conditional without a name" in x.error_messages
+            and "Select parameter of a conditional [select] options have to be defined by 'option' children elements." in x.error_messages
+            and 'Conditional [cond_wo_param] needs exactly one child <param> found 0' in x.error_messages
+            and 'Conditional [cond_w_mult_param] needs exactly one child <param> found 2' in x.error_messages
+            and 'Conditional [cond_text] first param should have type="select" (or type="boolean" which is discouraged)' in x.error_messages
+            and 'Conditional [cond_boolean] first param of type="boolean" is discouraged, use a select' in x.warn_messages
+            and "Conditional [cond_boolean] no truevalue/falsevalue found for when block 'False'" in x.warn_messages
+            and 'Conditional [cond_w_optional_select] test parameter cannot be optional="true"' in x.warn_messages
+            and 'Conditional [cond_w_multiple_select] test parameter cannot be multiple="true"' in x.warn_messages
+            and "Conditional [when_wo_value] when without value" in x.error_messages
+            and "Conditional [missing_when] no <when /> block found for select option 'none'" in x.warn_messages
+            and len(x.warn_messages) == 6 and len(x.error_messages) == 6
+    ),
+    (
+        INPUTS_SELECT_INCOMPATIBLE_DISPLAY, inputs.lint_inputs,
         lambda x:
             'Select [radio_select] display="radio" is incompatible with optional="true"' in x.error_messages
             and 'Select [radio_select] display="radio" is incompatible with multiple="true"' in x.error_messages
@@ -412,7 +574,7 @@ TESTS = [
             and len(x.warn_messages) == 0 and len(x.error_messages) == 4
     ),
     (
-        SELECT_DUPLICATED_OPTIONS, inputs.lint_inputs,
+        INPUTS_SELECT_DUPLICATED_OPTIONS, inputs.lint_inputs,
         lambda x:
             'Select parameter [select] has multiple options with the same text content' in x.error_messages
             and 'Select parameter [select] has multiple options with the same value' in x.error_messages
@@ -425,6 +587,7 @@ TESTS = [
     ),
     (
         SELECT_DEPRECATIONS, inputs.lint_inputs,
+        INPUTS_SELECT_DEPRECATIONS, inputs.lint_inputs,
         lambda x:
             "Select parameter [select_do] uses deprecated 'dynamic_options' attribute." in x.warn_messages
             and "Select parameter [select_ff] options uses deprecated 'from_file' attribute." in x.warn_messages
@@ -434,29 +597,47 @@ TESTS = [
             and len(x.warn_messages) == 5 and len(x.error_messages) == 0
     ),
     (
-        SELECT_OPTION_DEFINITIONS, inputs.lint_inputs,
+        INPUTS_SELECT_OPTION_DEFINITIONS, inputs.lint_inputs,
         lambda x:
             "Select parameter [select_noopt] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute." in x.error_messages
             and "Select parameter [select_noopts] options tag defines no options. Use 'from_dataset', 'from_data_table', or a filter that adds values." in x.error_messages
             and "Select parameter [select_fd_op] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute." in x.error_messages
-            and "Select parameter [select_fd_op] contains multiple options elements" in x.error_messages
+            and "Select parameter [select_fd_op] contains multiple options elements." in x.error_messages
             and "Select parameter [select_fd_fdt] options uses 'from_dataset' and 'from_data_table' attribute." in x.error_messages
             and "Select parameter [select_noval_notext] has option without value" in x.error_messages
             and "Select parameter [select_noval_notext] has option without text" in x.warn_messages
-            and len(x.warn_messages) == 1 and len(x.error_messages) == 6
+            and "Select parameter [select_meta_file_key_incomp] 'meta_file_key' is only compatible with 'from_dataset'." in x.error_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 7
     ),
     (
-        VALIDATOR_INCOMPATIBILITIES, inputs.lint_inputs,
+        INPUTS_SELECT_FILTER, inputs.lint_inputs,
+        lambda x:
+            "Select parameter [select_filter_types] contains filter without type." in x.error_messages
+            and "Select parameter [select_filter_types] contains filter with unknown type 'unknown_filter_type'." in x.error_messages
+            and len(x.warn_messages) == 0 and len(x.error_messages) == 2
+    ),
+    (
+        INPUTS_VALIDATOR_INCOMPATIBILITIES, inputs.lint_inputs,
         lambda x:
             "Parameter [param_name]: 'in_range' validators are not expected to contain text (found 'TEXT')" in x.warn_messages
             and "Parameter [param_name]: validator with an incompatible type 'in_range'" in x.error_messages
             and "Parameter [param_name]: 'in_range' validators need to define the 'min' or 'max' attribute(s)" in x.error_messages
             and "Parameter [param_name]: attribute 'filename' is incompatible with validator of type 'regex'" in x.error_messages
-            and len(x.warn_messages) == 1 and len(x.error_messages) == 3
+            and "Parameter [param_name]: expression validator without content" in x.error_messages
+            and "Parameter [another_param_name]: 'metadata' validators need to define the 'check' or 'skip' attribute(s)" in x.error_messages
+            and "Parameter [param_name]: 'value_in_data_table' validators need to define the 'table_name' attribute" in x.error_messages
+            and len(x.warn_messages) == 1 and len(x.error_messages) == 6
     ),
     (
-        VALIDATOR_CORRECT, inputs.lint_inputs,
+        INPUTS_VALIDATOR_CORRECT, inputs.lint_inputs,
         lambda x: len(x.warn_messages) == 0 and len(x.error_messages) == 0
+    ),
+    (
+        REPEATS, inputs.lint_repeats,
+        lambda x:
+            "Repeat does not specify name attribute." in x.error_messages
+            and "Repeat does not specify title attribute." in x.error_messages
+            and len(x.warn_messages) == 0 and len(x.error_messages) == 2
     ),
     (
         OUTPUTS_COLLECTION_FORMAT_SOURCE, outputs.lint_output,
@@ -501,16 +682,23 @@ TEST_IDS = [
     'help: empty',
     'help: with todo',
     'help: with invalid restructured text',
-    'lint no sections',
-    'input with redundant name',
-    'lint no when',
-    'radio select incompatibilities',
-    'select duplicated options',
-    'select duplicated options with different selected',
-    'select deprecations',
-    'select option definitions',
-    'validator imcompatibilities',
-    'validator all correct',
+    'inputs: no inputs sections',
+    'inputs: no inputs sections for datasource',
+    'inputs: redundant param name',
+    'inputs: valid',
+    'inputs: param name',
+    'inputs: param type',
+    'inputs: data param',
+    'inputs: conditional',
+    'inputs: select with incompatible display',
+    'inputs: select duplicated options',
+    'inputs: select duplicated options with different selected',
+    'inputs: select deprecations',
+    'inputs: select option definitions',
+    'inputs: select filter',
+    'inputs: validator incompatibilities',
+    'inputs: validator all correct',
+    'repeats',
     'outputs collection static elements with format_source',
     'outputs discover datatsets with tool provided metadata',
     'test without expectations',
