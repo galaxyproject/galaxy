@@ -110,7 +110,7 @@ pytest-shard = "*"
 recommonmark = "*"
 responses = "*"
 selenium = "*"
-Sphinx = "*"
+Sphinx = ">=4.0"  # support docutils 0.17
 sphinx_markdown_tables = "*"
 sphinx_rtd_theme = "*"
 statsd = "*"
