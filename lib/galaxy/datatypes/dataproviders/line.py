@@ -121,7 +121,7 @@ class RegexLineDataProvider(FilteredLineDataProvider):
         return line
 
     def filter_by_regex(self, line):
-        matches = any([regex.match(line) for regex in self.compiled_regex_list])
+        matches = any(regex.match(line) for regex in self.compiled_regex_list)
         if self.invert:
             return line if not matches else None
         return line if matches else None

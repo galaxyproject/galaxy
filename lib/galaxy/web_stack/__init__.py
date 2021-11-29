@@ -180,7 +180,7 @@ class ApplicationStack:
         return {}
 
     def has_base_pool(self, pool_name):
-        return self.has_pool(pool_name) or any([pool.startswith(f"{pool_name}.") for pool in self.configured_pools])
+        return self.has_pool(pool_name) or any(pool.startswith(f"{pool_name}.") for pool in self.configured_pools)
 
     def has_pool(self, pool_name):
         return pool_name in self.configured_pools

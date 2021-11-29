@@ -66,7 +66,7 @@ def test_get_env_shell_file_paths_from_setup_environment_elem():
         # Verify new ones added.
         assert r_env_sh in all_env_paths
         # env_shell_file_paths includes everything
-        assert all([env in action_dict['env_shell_file_paths'] for env in all_env_paths])
+        assert all(env in action_dict['env_shell_file_paths'] for env in all_env_paths)
         # for every given repository there should be one env
         # file + the required_for_install_env_sh file
         assert len(action_dict['env_shell_file_paths']) == 3

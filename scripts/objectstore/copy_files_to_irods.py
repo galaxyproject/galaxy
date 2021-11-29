@@ -257,7 +257,7 @@ def get_irods_resource(conn, objectid, object_store_id, irods_info):
         irods_tape_resc_cuttoff_dt = datetime.strptime(irods_tape_resc_cuttoff, "%m/%d/%Y")
 
         read_cursor = conn.cursor()
-        args = ('ok', objectid, objectid, tuple([object_store_id]), 'ok', objectid, objectid, tuple([object_store_id]))
+        args = ('ok', objectid, objectid, (object_store_id, ), 'ok', objectid, objectid, (object_store_id, ))
         read_cursor.execute(last_accessed_sql_statement, args)
         row = read_cursor.fetchone()
         if row is None:

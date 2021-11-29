@@ -2539,11 +2539,11 @@ class RDS(CompressedArchive):
         version = header_bytes[2:6]
         rversion = header_bytes[6:10]
         minrversion = header_bytes[10:14]
-        version = int("".join([str(_) for _ in version]))
+        version = int("".join(str(_) for _ in version))
         if version not in [2, 3]:
             raise Exception()
-        rversion = int("".join([str(_) for _ in rversion]))
-        minrversion = int("".join([str(_) for _ in minrversion]))
+        rversion = int("".join(str(_) for _ in rversion))
+        minrversion = int("".join(str(_) for _ in minrversion))
         version = ".".join(str(version))
         rversion = ".".join(str(rversion))
         minrversion = ".".join(str(minrversion))

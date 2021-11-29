@@ -265,7 +265,7 @@ class CustosAuthnz(IdentityProvider):
 
     def _load_config_for_custos(self):
         self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_from_url(self.config['provider'])
-        self.config['credential_url'] = '/'.join([self.config['url'].rstrip('/'), 'credentials'])
+        self.config['credential_url'] = f"{self.config['url'].rstrip('/')}/credentials"
         self._get_custos_credentials()
         # Set custos endpoints
         clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"

@@ -193,7 +193,7 @@ class AGPFile:
     @property
     def num_lines(self):
         """ Calculate the number of lines in the current state of the AGP file. """
-        return sum([len(self._comment_lines)] + [obj.num_lines for obj in self._objects])
+        return len(self._comment_lines) + sum(obj.num_lines for obj in self._objects)
 
     def iterate_objs(self):
         """ Iterate over the objects of the AGP file. """
@@ -238,7 +238,7 @@ class AGPObject:
         self.add_line(in_agp_line)
 
     def __str__(self):
-        return "\n".join([str(i) for i in self._agp_lines])
+        return "\n".join(str(i) for i in self._agp_lines)
 
     def __repr__(self):
         return f"AGP Object: {self.obj}"

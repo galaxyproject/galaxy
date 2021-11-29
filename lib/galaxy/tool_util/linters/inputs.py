@@ -130,9 +130,9 @@ def lint_inputs(tool_xml, lint_ctx):
                 lint_ctx.error(f"Select parameter [{param_name}] contains multiple options elements")
 
             # lint statically defined options
-            if any(['value' not in option.attrib for option in select_options]):
+            if any('value' not in option.attrib for option in select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has option without value")
-            if any([option.text is None for option in select_options]):
+            if any(option.text is None for option in select_options):
                 lint_ctx.warn(f"Select parameter [{param_name}] has option without text")
             if len(set(select_options_text)) != len(select_options_text):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same text content")
@@ -222,7 +222,7 @@ def lint_inputs(tool_xml, lint_ctx):
 
     if datasource:
         for datasource_tag in ('display', 'uihints'):
-            if not any([param.tag == datasource_tag for param in inputs]):
+            if not any(param.tag == datasource_tag for param in inputs):
                 lint_ctx.info(f"{datasource_tag} tag usually present in data sources")
 
     if num_inputs:
