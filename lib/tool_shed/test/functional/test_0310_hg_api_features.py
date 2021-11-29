@@ -37,8 +37,8 @@ class TestHgWebFeatures(ShedTwillTestCase):
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_filtering_repository(self):
-        '''Create and populate the filtering_0310 repository.'''
-        '''
+        '''Create and populate the filtering_0310 repository.
+
         We are at step 1 - Create a repository.
         Create and populate the filtering_0310 repository.
         '''
@@ -70,8 +70,8 @@ class TestHgWebFeatures(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_clone(self):
-        '''Clone the repository to a local path.'''
-        '''
+        '''Clone the repository to a local path.
+
         We are at step 2 - Clone the repository to a local path.
         The repository should have the following files:
 

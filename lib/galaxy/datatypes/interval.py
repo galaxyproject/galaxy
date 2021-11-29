@@ -63,7 +63,6 @@ class Interval(Tabular):
     track_type = "FeatureTrack"
     data_sources = {"data": "tabix", "index": "bigwig"}
 
-    """Add metadata elements"""
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
@@ -383,7 +382,6 @@ class Bed(Interval):
 
     column_names = ['Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'ThickStart', 'ThickEnd', 'ItemRGB', 'BlockCount', 'BlockSizes', 'BlockStarts']
 
-    """Add metadata elements"""
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
@@ -626,7 +624,6 @@ class Gff(Tabular, _RemoteCallMixin):
     data_sources = {"data": "interval_index", "index": "bigwig", "feature_search": "fli"}
     track_type = Interval.track_type
 
-    """Add metadata elements"""
     MetadataElement(name="columns", default=9, desc="Number of columns", readonly=True, visible=False)
     MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'int', 'str', 'str', 'str'],
                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
@@ -885,7 +882,6 @@ class Gff3(Gff):
     column_names = ['Seqid', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes']
     track_type = Interval.track_type
 
-    """Add metadata elements"""
     MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
 
@@ -1006,7 +1002,6 @@ class Gtf(Gff):
     column_names = ['Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Attributes']
     track_type = Interval.track_type
 
-    """Add metadata elements"""
     MetadataElement(name="columns", default=9, desc="Number of columns", readonly=True, visible=False)
     MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
@@ -1421,7 +1416,6 @@ class ENCODEPeak(Interval):
     column_names = ['Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'SignalValue', 'pValue', 'qValue', 'Peak']
     data_sources = {"data": "tabix", "index": "bigwig"}
 
-    """Add metadata elements"""
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
@@ -1441,7 +1435,6 @@ class ChromatinInteractions(Interval):
     data_sources = {"data": "tabix", "index": "bigwig"}
     column_names = ['Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value']
 
-    """Add metadata elements"""
     MetadataElement(name="chrom1Col", default=1, desc="Chrom1 column", param=metadata.ColumnParameter)
     MetadataElement(name="start1Col", default=2, desc="Start1 column", param=metadata.ColumnParameter)
     MetadataElement(name="end1Col", default=3, desc="End1 column", param=metadata.ColumnParameter)

@@ -71,8 +71,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         self.test_db_util.get_private_role(test_user_1)
 
     def test_0005_create_libx11_repository(self):
-        '''Create and populate package_x11_client_1_5_proto_7_0_0470.'''
-        '''
+        '''Create and populate package_x11_client_1_5_proto_7_0_0470.
+
         This is step 1 - Create and populate a repository named package_x11_client_1_5_proto_7_0.
 
         Create and populate a repository named package_x11_client_1_5_proto_7_0 that contains only a single file named tool_dependencies.xml.
@@ -97,8 +97,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_create_emboss_5_0_0_repository(self):
-        '''Create and populate package_emboss_5_0_0_0470.'''
-        '''
+        '''Create and populate package_emboss_5_0_0_0470.
+
         This is step 2 - Create a repository named package_emboss_5_0_0 of type "Unrestricted".
 
         Create a repository named package_emboss_5_0_0 of type "Unrestricted" that has a repository dependency definition that defines the
@@ -124,8 +124,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0015_create_emboss_5_repository(self):
-        '''Create and populate emboss_5_0470.'''
-        '''
+        '''Create and populate emboss_5_0470.
+
         This is step 3 - Create a repository named emboss_5 of type "Unrestricted".
 
         Create a repository named emboss_5 of type "Unrestricted" that has a tool-dependencies.xml file defining a complex repository dependency
@@ -151,8 +151,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0020_upload_updated_tool_dependency_to_package_x11(self):
-        '''Upload a new tool_dependencies.xml to package_x11_client_1_5_proto_7_0_0470.'''
-        '''
+        '''Upload a new tool_dependencies.xml to package_x11_client_1_5_proto_7_0_0470.
+
         This is step 4 - Add a comment to the tool_dependencies.xml file to be uploaded to the package_x11_client_1_5_prot_7_0 repository, creating
         a new installable changeset revision at the repository tip.
         '''
@@ -172,8 +172,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
             len(package_x11_repository.metadata_revisions)
 
     def test_0025_upload_updated_tool_dependency_to_package_emboss(self):
-        '''Upload a new tool_dependencies.xml to package_emboss_5_0_0_0470.'''
-        '''
+        '''Upload a new tool_dependencies.xml to package_emboss_5_0_0_0470.
+
         This is step 5 - Add a comment to the tool_dependencies.xml file for the package_emboss_5_0_0 repository, eliminating
         the change set_revision attribute so that it gets automatically populated when uploaded. After uploading the file,
         the package_emboss_5_0_0 repository should have 2 installable changeset revisions.
@@ -194,8 +194,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
             len(package_emboss_repository.metadata_revisions)
 
     def test_0030_upload_updated_tool_dependency_to_emboss_5_repository(self):
-        '''Upload a new tool_dependencies.xml to emboss_5_0470.'''
-        '''
+        '''Upload a new tool_dependencies.xml to emboss_5_0470.
+
         This is step 6 - Add a comment to the tool_dependencies.xml file in the emboss_5 repository, eliminating the
         changeset_revision attribute so that it gets automatically populated when uploaded. After uploading the file,
         the emboss5 repository should have 2 installable metadata revisions.
@@ -214,24 +214,24 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         assert len(emboss_repository.metadata_revisions) == 2, 'package_emboss_5_0_0_0470 has incorrect number of metadata revisions'
 
     def test_0035_modify_package_x11_repository_type(self):
-        '''Set package_x11_client_1_5_proto_7_0 type tool_dependency_definition.'''
-        '''
+        '''Set package_x11_client_1_5_proto_7_0 type tool_dependency_definition.
+
         This is step 7 - Change the repository type of the package_x11_client_1_5_proto_7_0 repository to be tool_dependency_definition.
         '''
         package_x11_repository = self.test_db_util.get_repository_by_name_and_owner(package_libx11_repository_name, common.test_user_1_name)
         self.edit_repository_information(package_x11_repository, repository_type='tool_dependency_definition')
 
     def test_0040_modify_package_emboss_repository_type(self):
-        '''Set package_emboss_5_0_0 to type tool_dependency_definition.'''
-        '''
+        '''Set package_emboss_5_0_0 to type tool_dependency_definition.
+
         This is step 8 - Change the repository type of the package_emboss_5_0_0 repository to be tool_dependency_definition.
         '''
         package_emboss_repository = self.test_db_util.get_repository_by_name_and_owner(package_emboss_repository_name, common.test_user_1_name)
         self.edit_repository_information(package_emboss_repository, repository_type='tool_dependency_definition')
 
     def test_0045_reset_repository_metadata(self):
-        '''Reset metadata on package_emboss_5_0_0_0470 and package_x11_client_1_5_proto_7_0.'''
-        '''
+        '''Reset metadata on package_emboss_5_0_0_0470 and package_x11_client_1_5_proto_7_0.
+
         This is step 9 - Reset metadata on the package_emboss_5_0_0 and package_x11_client_1_5_proto_7_0 repositories. They should
         now have only their tip as the installable revision.
         '''
@@ -245,8 +245,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
             len(package_x11_repository.metadata_revisions)
 
     def test_0050_reset_emboss_5_metadata(self):
-        '''Reset metadata on emboss_5.'''
-        '''
+        '''Reset metadata on emboss_5.
+
         This is step 10 - Reset metadata on the emboss_5 repository. It should now have only its tip as the installable revision.
         '''
         emboss_repository = self.test_db_util.get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)

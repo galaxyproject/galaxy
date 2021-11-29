@@ -31,8 +31,8 @@ running_standalone = False
 class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
 
     def test_0000_initiate_users(self):
-        """Create necessary user accounts and login as an admin user."""
-        """
+        """Create necessary user accounts and login as an admin user.
+
         Create all the user accounts that are needed for this test script to run independently of other tests.
         Previously created accounts will not be re-created.
         """
@@ -50,8 +50,8 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_datatypes_repository(self):
-        """Create and populate the blast_datatypes_0120 repository"""
-        """
+        """Create and populate the blast_datatypes_0120 repository
+
         We are at step 1.
         Create and populate blast_datatypes.
         """
@@ -76,8 +76,8 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
                              strings_not_displayed=[])
 
     def test_0010_verify_datatypes_repository(self):
-        '''Verify the blast_datatypes_0120 repository.'''
-        '''
+        '''Verify the blast_datatypes_0120 repository.
+
         We are at step 1a.
         Check for appropriate strings, most importantly BlastXml, BlastNucDb, and BlastProtDb,
         the datatypes that are defined in datatypes_conf.xml.
@@ -89,8 +89,8 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         repository_datatypes_count = int(self.get_repository_datatypes_count(repository))
 
     def test_0015_create_tool_repository(self):
-        """Create and populate the blastxml_to_top_descr_0120 repository"""
-        """
+        """Create and populate the blastxml_to_top_descr_0120 repository
+
         We are at step 2.
         Create and populate blastxml_to_top_descr_0120.
         """
@@ -117,8 +117,8 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
                              strings_not_displayed=[])
 
     def test_0020_verify_tool_repository(self):
-        '''Verify the blastxml_to_top_descr_0120 repository.'''
-        '''
+        '''Verify the blastxml_to_top_descr_0120 repository.
+
         We are at step 2a.
         Check for appropriate strings, such as tool name, description, and version.
         '''
@@ -128,8 +128,8 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0025_create_repository_dependency(self):
-        '''Create a repository dependency on blast_datatypes_0120.'''
-        '''
+        '''Create a repository dependency on blast_datatypes_0120.
+
         We are at step 3.
         Create a simple repository dependency for blastxml_to_top_descr_0120 that defines a dependency on blast_datatypes_0120.
         '''
@@ -142,8 +142,8 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
             self.create_repository_dependency(repository=tool_repository, repository_tuples=[datatypes_tuple], filepath=dependency_xml_path)
 
     def test_0040_verify_repository_dependency(self):
-        '''Verify the created repository dependency.'''
-        '''
+        '''Verify the created repository dependency.
+
         We are at step 3a.
         Check the newly created repository dependency to ensure that it was defined and displays correctly.
         '''
@@ -152,8 +152,8 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         self.check_repository_dependency(tool_repository, datatypes_repository)
 
     def test_0045_install_blastxml_to_top_descr(self):
-        '''Install the blastxml_to_top_descr_0120 repository to Galaxy.'''
-        '''
+        '''Install the blastxml_to_top_descr_0120 repository to Galaxy.
+
         We are at step 1, Galaxy side.
         Install blastxml_to_top_descr_0120 to Galaxy, with repository dependencies, so that the datatypes repository is also installed.
         '''
@@ -169,8 +169,8 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
                                 new_tool_panel_section_label='Test 0120')
 
     def test_0050_verify_repository_installation(self):
-        '''Verify installation of blastxml_to_top_descr_0120 and blast_datatypes_0120.'''
-        '''
+        '''Verify installation of blastxml_to_top_descr_0120 and blast_datatypes_0120.
+
         We are at step 1a, Galaxy side.
         Check that the blastxml_to_top_descr_0120 and blast_datatypes_0120 repositories installed correctly, and that there
         are now new datatypes in the registry matching the ones defined in blast_datatypes_0120. Also check that

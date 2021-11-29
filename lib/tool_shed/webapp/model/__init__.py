@@ -156,7 +156,7 @@ class User(Base, Dictifiable, _HasTable):
         message = validate_password_str(cleartext)
         if message:
             raise Exception(f"Invalid password: {message}")
-        """Set 'self.password' to the digest of 'cleartext'."""
+        # Set 'self.password' to the digest of 'cleartext'.
         self.password = new_secure_hash(text_type=cleartext)
 
 

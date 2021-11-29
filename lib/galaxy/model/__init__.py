@@ -462,13 +462,13 @@ class JobLike:
 
 
 class User(Base, Dictifiable, RepresentById):
-    use_pbkdf2 = True
-    bootstrap_admin_user = False
-    # api_keys: 'List[APIKeys]'  already declared as relationship()
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.
     """
+    use_pbkdf2 = True
+    bootstrap_admin_user = False
+    # api_keys: 'List[APIKeys]'  already declared as relationship()
 
     __tablename__ = 'galaxy_user'
 

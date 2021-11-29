@@ -19,8 +19,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
     '''Test repository component review features.'''
 
     def test_0000_initiate_users(self):
-        """Create necessary user accounts and login as an admin user."""
-        """
+        """Create necessary user accounts and login as an admin user.
+
         Create all the user accounts that are needed for this test script to run independently of other test.
         Previously created accounts will not be re-created.
         """
@@ -42,28 +42,28 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_grant_reviewer_role(self):
-        '''Grant the repository reviewer role to test_user_2.'''
-        """
+        '''Grant the repository reviewer role to test_user_2.
+
         We now have an admin user (admin_user) and three non-admin users (test_user_1, test_user_2, and test_user_3). Grant the repository
         reviewer role to test_user_2, who will not be the owner of the reviewed repositories, and do not grant any roles to test_user_3 yet.
-        """
+        '''
         reviewer_role = self.test_db_util.get_role_by_name('Repository Reviewer')
         test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
         self.grant_role_to_user(test_user_2, reviewer_role)
 
     def test_0010_verify_repository_review_components(self):
-        '''Ensure that the required review components exist.'''
-        """
+        '''Ensure that the required review components exist.
+
         Make sure all the components we are to review are recorded in the database.
-        """
+        '''
         self.add_repository_review_component(name='Repository dependencies',
                                              description='Repository dependencies defined in a file named repository_dependencies.xml included in the repository')
         strings_displayed = ['Data types', 'Functional tests', 'README', 'Repository dependencies', 'Tool dependencies', 'Tools', 'Workflows']
         self.manage_review_components(strings_displayed=strings_displayed)
 
     def test_0015_create_repository(self):
-        """Create and populate the filtering repository"""
-        """
+        """Create and populate the filtering repository
+
         We are at step 1.
         Log in as test_user_1 and create the filtering repository, then upload a basic set of
         components to be reviewed in subsequent tests.
@@ -106,8 +106,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0020_review_repository(self):
-        '''Complete a review of the filtering repository.'''
-        '''
+        '''Complete a review of the filtering repository.
+
         We are at step 2 - Have test_user_2 complete a review of the repository.
         Review all components of the filtering repository, with the appropriate contents and approved/not approved/not applicable status.
         '''
@@ -123,8 +123,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.create_repository_review(repository, review_contents_dict)
 
     def test_0025_verify_repository_review(self):
-        '''Verify that the review was completed and displays properly.'''
-        '''
+        '''Verify that the review was completed and displays properly.
+
         We are at step 3 - Have test_user_1 browse the review.
         Verify that all the review components were submitted, and that the repository owner can see the review.
         '''
@@ -139,8 +139,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed)
 
     def test_0030_browse_with_other_user(self):
-        '''Verify that test_user_3 is blocked from browsing the review.'''
-        '''
+        '''Verify that test_user_3 is blocked from browsing the review.
+
         We are at step 4 - Have test_user_3 browse the repository and make sure they are not allowed to browse the review.
         '''
         self.login(email=common.test_user_3_email, username=common.test_user_3_name)
@@ -155,8 +155,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.browse_component_review(review, strings_not_displayed=strings_not_displayed)
 
     def test_0035_grant_write_access_to_other_user(self):
-        '''Grant write access on the filtering_0410 repository to test_user_3.'''
-        '''
+        '''Grant write access on the filtering_0410 repository to test_user_3.
+
         We are at step 5 - Have test_user_1 give write permission on the repository to the test_user_3.
         '''
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
@@ -164,8 +164,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.grant_write_access(repository, usernames=[common.test_user_3_name])
 
     def test_0040_verify_test_user_3_can_browse_reviews(self):
-        '''Check that test_user_3 can now browse reviews.'''
-        '''
+        '''Check that test_user_3 can now browse reviews.
+
         We are at step 6 - Have test_user_3 browse the repository again and they should now have the ability to browse the review.
         '''
         self.login(email=common.test_user_3_email, username=common.test_user_3_name)
@@ -174,8 +174,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0045_verify_browse_review_with_write_access(self):
-        '''Check that test_user_3 can now display reviews.'''
-        '''
+        '''Check that test_user_3 can now display reviews.
+
         We are at step 7 - Have test_user_3 browse the review.
         '''
         self.login(email=common.test_user_3_email, username=common.test_user_3_name)

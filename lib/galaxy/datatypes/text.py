@@ -310,15 +310,16 @@ class Biom1(Json):
 
 @build_sniff_from_prefix
 class ImgtJson(Json):
+    """
+    https://github.com/repseqio/library-imgt/releases
+    Data coming from IMGT server may be used for academic research only,
+    provided that it is referred to IMGT®, and cited as:
+    "IMGT®, the international ImMunoGeneTics information system®
+    http://www.imgt.org (founder and director: Marie-Paule Lefranc, Montpellier, France)."
+    """
     file_ext = "imgt.json"
+
     MetadataElement(name="taxon_names", default=[], desc="taxonID: names", readonly=True, visible=True, no_value=[])
-    """
-        https://github.com/repseqio/library-imgt/releases
-        Data coming from IMGT server may be used for academic research only,
-        provided that it is referred to IMGT®, and cited as:
-        "IMGT®, the international ImMunoGeneTics information system®
-        http://www.imgt.org (founder and director: Marie-Paule Lefranc, Montpellier, France)."
-    """
 
     def set_peek(self, dataset, is_multi_byte=False):
         super().set_peek(dataset)
@@ -464,13 +465,12 @@ class Obo(Text):
 @build_sniff_from_prefix
 class Arff(Text):
     """
-        An ARFF (Attribute-Relation File Format) file is an ASCII text file that describes a list of instances sharing a set of attributes.
-        http://weka.wikispaces.com/ARFF
+    An ARFF (Attribute-Relation File Format) file is an ASCII text file that describes a list of instances sharing a set of attributes.
+    http://weka.wikispaces.com/ARFF
     """
     edam_format = "format_3581"
     file_ext = "arff"
 
-    """Add metadata elements"""
     MetadataElement(name="comment_lines", default=0, desc="Number of comment lines", readonly=True, optional=True, no_value=0)
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0)
 
@@ -636,24 +636,27 @@ class SnpEffDb(Text):
 
 
 class SnpSiftDbNSFP(Text):
-    """Class describing a dbNSFP database prepared fpr use by SnpSift dbnsfp """
+    """
+    Class describing a dbNSFP database prepared fpr use by SnpSift dbnsfp
+
+    The dbNSFP file is a tabular file with 1 header line.
+    The first 4 columns are required to be: chrom	pos	ref	alt
+    These match columns 1,2,4,5 of the VCF file
+    SnpSift requires the file to be block-gzipped and the indexed with samtools tabix
+
+    Example:
+    - Compress using block-gzip algorithm:
+    $ bgzip dbNSFP2.3.txt
+    - Create tabix index
+    $ tabix -s 1 -b 2 -e 2 dbNSFP2.3.txt.gz
+    """
+    file_ext = "snpsiftdbnsfp"
+    composite_type = 'auto_primary_file'
+
     MetadataElement(name='reference_name', default='dbSNFP', desc='Reference Name', readonly=True, visible=True, set_in_upload=True, no_value='dbSNFP')
     MetadataElement(name="bgzip", default=None, desc="dbNSFP bgzip", readonly=True, visible=True, no_value=None)
     MetadataElement(name="index", default=None, desc="Tabix Index File", readonly=True, visible=True, no_value=None)
     MetadataElement(name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[])
-    file_ext = "snpsiftdbnsfp"
-    composite_type = 'auto_primary_file'
-    """
-    ## The dbNSFP file is a tabular file with 1 header line
-    ## The first 4 columns are required to be: chrom	pos	ref	alt
-    ## These match columns 1,2,4,5 of the VCF file
-    ## SnpSift requires the file to be block-gzipped and the indexed with samtools tabix
-    ## Example:
-    ## Compress using block-gzip algorithm
-    bgzip dbNSFP2.3.txt
-    ## Create tabix index
-    tabix -s 1 -b 2 -e 2 dbNSFP2.3.txt.gz
-    """
 
     def __init__(self, **kwd):
         super().__init__(**kwd)

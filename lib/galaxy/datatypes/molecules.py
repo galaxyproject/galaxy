@@ -745,6 +745,11 @@ class InChI(Tabular):
 
 
 class SMILES(Tabular):
+    # It is hard or impossible to sniff a SMILES File. We can try to import the
+    # first SMILES and check if it is a molecule, but currently it is not
+    # possible to use external libraries in datatype definition files.
+    # Moreover it seems impossible to include OpenBabel as Python library
+    # because OpenBabel is GPL licensed.
     file_ext = "smi"
     column_names = ['SMILES', 'TITLE']
     MetadataElement(name="columns", default=2, desc="Number of columns", readonly=True, visible=False)
@@ -767,40 +772,6 @@ class SMILES(Tabular):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
-
-    '''
-    def sniff(self, filename):
-        """
-        Its hard or impossible to sniff a SMILES File. We can
-        try to import the first SMILES and check if it is a molecule, but
-        currently its not possible to use external libraries in datatype definition files.
-        Moreover it seems mpossible to inlcude OpenBabel as python library because OpenBabel
-        is GPL licensed.
-        """
-        self.molecule_number = count_lines(filename, non_empty = True)
-        word_count = count_lines(filename)
-
-        if self.molecule_number != word_count:
-            return False
-
-        if self.molecule_number > 0:
-            # test first 3 SMILES
-            smiles_lines = get_headers(filename, sep='\t', count=3)
-            for smiles_line in smiles_lines:
-                if len(smiles_line) > 2:
-                    return False
-                smiles = smiles_line[0]
-                try:
-                    # if we have atoms, we have a molecule
-                    if not len(pybel.readstring('smi', smiles).atoms) > 0:
-                        return False
-                except Exception:
-                    # if convert fails its not a smiles string
-                    return False
-            return True
-        else:
-            return False
-    '''
 
 
 @build_sniff_from_prefix

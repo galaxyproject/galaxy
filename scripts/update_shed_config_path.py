@@ -37,7 +37,6 @@ def create_database(config_file):
         print('Unable to determine correct database connection.')
         exit(1)
 
-    '''Initialize the database file.'''
     # Initialize the database connection.
     engine = create_engine(database_connection)
     MetaData(bind=engine)
