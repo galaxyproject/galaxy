@@ -144,11 +144,9 @@ export default {
             this.mainValues = values;
             this.postChanges();
         },
-        onChangeSection(values, refreshOnChange = false) {
+        onChangeSection(values) {
             this.sectionValues = values;
-            if (refreshOnChange) {
-                this.postChanges();
-            }
+            this.postChanges();
         },
         onChangeVersion(newVersion) {
             this.messageText = `Now you are using '${this.node.config_form.name}' version ${newVersion}.`;
