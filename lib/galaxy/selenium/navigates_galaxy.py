@@ -365,7 +365,7 @@ class NavigatesGalaxy(HasDriver):
 
         def history_has_hid(driver):
             hids = get_hids()
-            return any([h == hid for h in hids])
+            return any(h == hid for h in hids)
 
         timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
         try:
@@ -1698,7 +1698,7 @@ class NavigatesGalaxy(HasDriver):
         if contains is not None:
 
             if type(element) == list:
-                assert any([contains in el.text for el in element]), \
+                assert any(contains in el.text for el in element), \
                     f"{contains} was not found in {[el.text for el in element]}"
                 return
 

@@ -93,7 +93,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
-        assert any([True for d in response if d['dependency_type'] == 'conda'])
+        assert any(True for d in response if d['dependency_type'] == 'conda')
         endpoint = "tools/%s/build_dependency_cache" % tool_id
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
@@ -105,7 +105,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
-        assert any([True for d in response if d['dependency_type'] == 'conda'])
+        assert any(True for d in response if d['dependency_type'] == 'conda')
         endpoint = "tools/%s/dependencies" % tool_id
         create_response = self._delete(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
@@ -131,7 +131,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
-        assert any([True for d in response if d['dependency_type'] == 'conda'])
+        assert any(True for d in response if d['dependency_type'] == 'conda')
         # Now that we know install was successfullt we can also doube check that the uninstall works
         self._uninstall_mulled_example_multi_1(resolver_type='conda')
 

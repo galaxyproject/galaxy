@@ -360,7 +360,7 @@ def main():
             raise Exception(f"No doc in test [{test_with_doc}]")
         del test_with_doc["doc"]
         cwl_test_def = yaml.dump(test_with_doc, default_flow_style=False)
-        cwl_test_def = "\n".join([f"            {line}" for line in cwl_test_def.splitlines()])
+        cwl_test_def = "\n".join(f"            {line}" for line in cwl_test_def.splitlines())
         label = conformance_test.get("label", str(i))
         tags = conformance_test.get("tags", [])
         is_red = label in red_tests_list

@@ -921,7 +921,7 @@ class GenotypeMatrix(LinkageStudies):
             return False
 
         try:
-            return all([int(sid) > 0 for sid in header_elems[1:]])
+            return all(int(sid) > 0 for sid in header_elems[1:])
         except ValueError:
             return False
 

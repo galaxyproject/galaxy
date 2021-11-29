@@ -652,7 +652,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # Following check is a hack for jobs started during 19.01 or earlier release
             # and finishing with a 19.05 code base. Eliminate the hack in 19.09 or later
             # along with hacks for legacy metadata compute strategy.
-            if not os.path.exists(job_metrics_directory) or not any(["__instrument" in f for f in os.listdir(job_metrics_directory)]):
+            if not os.path.exists(job_metrics_directory) or not any("__instrument" in f for f in os.listdir(job_metrics_directory)):
                 job_metrics_directory = job_wrapper.working_directory
             job_wrapper.finish(
                 stdout,

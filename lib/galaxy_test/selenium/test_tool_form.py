@@ -163,7 +163,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         tbody_element = tool_parameters_table.find_element_by_css_selector("tbody")
         tds = tbody_element.find_elements_by_css_selector("td")
         assert tds
-        assert any([expected_value in td.text for td in tds])
+        assert any(expected_value in td.text for td in tds)
 
     def _run_environment_test_tool(self, inttest_value="42"):
         self.home()

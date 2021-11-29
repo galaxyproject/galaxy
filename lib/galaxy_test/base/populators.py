@@ -739,19 +739,19 @@ class BaseDatasetPopulator(BasePopulator):
     def get_history_dataset_source_transform_actions(self, history_id: str, **kwd) -> Set[str]:
         details = self.get_history_dataset_details(history_id, **kwd)
         if "sources" not in details:
-            return set([])
+            return set()
         sources = details["sources"]
         assert len(sources) <= 1  # We don't handle this use case yet.
         if len(sources) == 0:
-            return set([])
+            return set()
 
         source_0 = sources[0]
         assert "transform" in source_0
         transform = source_0["transform"]
         if transform is None:
-            return set([])
+            return set()
         assert isinstance(transform, list)
-        return set([t["action"] for t in transform])
+        return {t["action"] for t in transform}
 
     def get_history_dataset_details(self, history_id: str, **kwds) -> dict:
         dataset_id = self.__history_content_id(history_id, **kwds)

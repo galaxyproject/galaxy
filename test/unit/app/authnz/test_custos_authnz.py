@@ -32,10 +32,10 @@ class CustosAuthnzTestCase(unittest.TestCase):
         return 'https://iam.scigap.org/auth'
 
     def _get_credential_url(self):
-        return '/'.join([self._get_idp_url(), 'credentials'])
+        return f"{self._get_idp_url()}/credentials"
 
     def _get_well_known_url(self):
-        return '/'.join([self._get_idp_url(), '.well-known/openid-configuration'])
+        return f"{self._get_idp_url()}/.well-known/openid-configuration"
 
     def setUp(self):
         self.orig_requests_get = requests.get

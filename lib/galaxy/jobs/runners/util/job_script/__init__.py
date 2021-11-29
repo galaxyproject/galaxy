@@ -86,7 +86,7 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     >>> script.find('GALAXY_MEMORY_MB="32768"\\n') > 0
     True
     """
-    if any([param not in kwds for param in REQUIRED_TEMPLATE_PARAMS]):
+    if any(param not in kwds for param in REQUIRED_TEMPLATE_PARAMS):
         raise Exception("Failed to create job_script, a required parameter is missing.")
     job_instrumenter = kwds.get("job_instrumenter", None)
     if job_instrumenter:

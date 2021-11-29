@@ -567,7 +567,7 @@ class DatasetListWrapper(
         if not self._dataset_elements_cache.get(group):
             wrappers = []
             for element in self:
-                if any([t for t in element.tags if t.user_tname.lower() == 'group' and t.value.lower() == group]):
+                if any(t for t in element.tags if t.user_tname.lower() == 'group' and t.value.lower() == group):
                     wrappers.append(element)
             self._dataset_elements_cache[group] = wrappers
         return self._dataset_elements_cache[group]
@@ -652,7 +652,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         if not self._dataset_elements_cache.get(group):
             wrappers = []
             for element in self.collection.dataset_elements:
-                if any([t for t in element.dataset_instance.tags if t.user_tname.lower() == 'group' and t.value.lower() == group]):
+                if any(t for t in element.dataset_instance.tags if t.user_tname.lower() == 'group' and t.value.lower() == group):
                     wrappers.append(self._dataset_wrapper(element.element_object, identifier=element.element_identifier, **self.kwargs))
             self._dataset_elements_cache[group] = wrappers
         return self._dataset_elements_cache[group]
