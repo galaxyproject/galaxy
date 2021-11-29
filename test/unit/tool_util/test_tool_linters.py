@@ -5,6 +5,7 @@ import pytest
 from galaxy.tool_util.lint import LintContext
 from galaxy.tool_util.linters import (
     general,
+    help,
     inputs,
     outputs,
     tests,
@@ -37,6 +38,39 @@ GENERAL_REQUIREMENT_WO_VERSION = """
 
 GENERAL_VALID = """
 <tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="21.09">
+</tool>
+"""
+
+# test tool xml for help linter
+HELP_MULTIPLE = """
+<tool>
+    <help>Help</help>
+    <help>More help</help>
+</tool>
+"""
+
+HELP_ABSENT = """
+<tool>
+</tool>
+"""
+
+HELP_EMPTY = """
+<tool>
+    <help> </help>
+</tool>
+"""
+
+HELP_TODO = """
+<tool>
+    <help>TODO</help>
+</tool>
+"""
+
+HELP_INVALID_RST = """
+<tool>
+    <help>
+        **xxl__
+    </help>
 </tool>
 """
 
@@ -318,6 +352,39 @@ TESTS = [
             and len(x.info_messages) == 0 and len(x.valid_messages) == 4 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
+        HELP_MULTIPLE, help.lint_help,
+        lambda x:
+            'More than one help section found, behavior undefined.' in x.error_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 1
+    ),
+    (
+        HELP_ABSENT, help.lint_help,
+        lambda x:
+            'No help section found, consider adding a help section to your tool.' in x.warn_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        HELP_EMPTY, help.lint_help,
+        lambda x:
+            'Help section appears to be empty.' in x.warn_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        HELP_TODO, help.lint_help,
+        lambda x:
+            'Tool contains help section.' in x.valid_messages
+            and 'Help contains valid reStructuredText.' in x.valid_messages
+            and "Help contains TODO text." in x.warn_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 2 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        HELP_INVALID_RST, help.lint_help,
+        lambda x:
+            'Tool contains help section.' in x.valid_messages
+            and "Invalid reStructuredText found in help - [<string>:2: (WARNING/2) Inline strong start-string without end-string.\n]." in x.warn_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 1 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
         NO_INPUTS_SECTION_XML, inputs.lint_inputs,
         lambda x:
             'Found no input parameters.' in x.warn_messages
@@ -429,6 +496,11 @@ TEST_IDS = [
     'general: whitespace in version, id, name',
     'general: requirement without version',
     'general: valid name, id, profile',
+    'help: multiple',
+    'help: absent',
+    'help: empty',
+    'help: with todo',
+    'help: with invalid restructured text',
     'lint no sections',
     'input with redundant name',
     'lint no when',
