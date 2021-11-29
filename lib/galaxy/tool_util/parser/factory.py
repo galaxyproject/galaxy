@@ -8,7 +8,7 @@ from galaxy.tool_util.loader import load_tool_with_refereces
 from galaxy.util import parse_xml_string_to_etree
 from galaxy.util.yaml_util import ordered_load
 from .cwl import CwlToolSource, tool_proxy
-from .interface import InputSource
+from .interface import InputSource, ToolSource
 from .xml import XmlInputSource, XmlToolSource
 from .yaml import YamlInputSource, YamlToolSource
 from ..fetcher import ToolLocationFetcher
@@ -45,7 +45,7 @@ def get_tool_source(
     macro_paths=None,
     tool_source_class=None,
     raw_tool_source=None,
-):
+) -> ToolSource:
     """Return a ToolSource object corresponding to supplied source.
 
     The supplied source may be specified as a file path (using the config_file
