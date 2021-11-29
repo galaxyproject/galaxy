@@ -1,12 +1,21 @@
 import os
-from functools import lru_cache
+from functools import (
+    lru_cache,
+    wraps,
+)
 
-from celery import Celery
+from celery import (
+    Celery,
+    shared_task,
+)
+from kombu import serialization
+from lagom import magic_bind_to_container
 
 from galaxy.config import Configuration
 from galaxy.main_config import find_config
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.properties import load_app_properties
+from ._serialization import schema_dumps, schema_loads
 
 log = get_logger(__name__)
 
@@ -73,6 +82,40 @@ if prune_interval > 0:
         },
     }
 celery_app.conf.timezone = 'UTC'
+
+
+CELERY_TASKS = []
+PYDANTIC_AWARE_SERIALIER_NAME = 'pydantic-aware-json'
+
+
+serialization.register(
+    PYDANTIC_AWARE_SERIALIER_NAME,
+    encoder=schema_dumps,
+    decoder=schema_loads,
+    content_type='application/json'
+)
+
+
+def galaxy_task(*args, **celery_task_kwd):
+    if 'serializer' not in celery_task_kwd:
+        celery_task_kwd['serializer'] = PYDANTIC_AWARE_SERIALIER_NAME
+
+    def decorate(func):
+        CELERY_TASKS.append(func.__name__)
+
+        @shared_task(**celery_task_kwd)
+        @wraps(func)
+        def wrapper(*args, **kwds):
+            app = get_galaxy_app()
+            assert app
+            return magic_bind_to_container(app)(func)(*args, **kwds)
+
+        return wrapper
+
+    if len(args) == 1 and callable(args[0]):
+        return decorate(args[0])
+    else:
+        return decorate
 
 
 if __name__ == '__main__':

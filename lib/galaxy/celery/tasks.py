@@ -1,53 +1,14 @@
-from functools import wraps
-
-from celery import shared_task
-from kombu import serialization
-from lagom import magic_bind_to_container
-
 from galaxy import model
-from galaxy.app import MinimalManagerApp
+from galaxy.celery import galaxy_task
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
-from . import get_galaxy_app
-from ._serialization import schema_dumps, schema_loads
 
 log = get_logger(__name__)
-CELERY_TASKS = []
-PYDANTIC_AWARE_SERIALIER_NAME = 'pydantic-aware-json'
-
-
-serialization.register(
-    PYDANTIC_AWARE_SERIALIER_NAME,
-    encoder=schema_dumps,
-    decoder=schema_loads,
-    content_type='application/json'
-)
-
-
-def galaxy_task(*args, **celery_task_kwd):
-    if 'serializer' not in celery_task_kwd:
-        celery_task_kwd['serializer'] = PYDANTIC_AWARE_SERIALIER_NAME
-
-    def decorate(func):
-        CELERY_TASKS.append(func.__name__)
-
-        @shared_task(**celery_task_kwd)
-        @wraps(func)
-        def wrapper(*args, **kwds):
-            app = get_galaxy_app()
-            assert app
-            return magic_bind_to_container(app)(func)(*args, **kwds)
-
-        return wrapper
-
-    if len(args) == 1 and callable(args[0]):
-        return decorate(args[0])
-    else:
-        return decorate
 
 
 @galaxy_task(ignore_result=True)

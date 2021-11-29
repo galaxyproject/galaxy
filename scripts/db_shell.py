@@ -36,7 +36,8 @@ from galaxy.model.orm.scripts import get_config
 registry = Registry()
 registry.load_datatypes()
 set_datatypes_registry(registry)
-db_url = get_config(sys.argv)['db_url']
+config = get_config(sys.argv)
+db_url = config['db_url']
 sa_session = init('/tmp/', db_url).context
 
 
