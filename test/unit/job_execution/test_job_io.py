@@ -85,7 +85,7 @@ def test_job_io_serialization(job_io: JobIO):
 def test_job_io_deserialization(job_io: JobIO):
     with tempfile.NamedTemporaryFile() as temp:
         job_io.to_json(temp.name)
-        new_job_io = JobIO.from_json(temp.name, job_io.sa_session, job_io.job)
+        new_job_io = JobIO.from_json(temp.name, job_io.sa_session)
     assert isinstance(new_job_io, JobIO)
     assert isinstance(new_job_io.file_sources_dict, dict)
     assert isinstance(new_job_io.file_sources, ConfiguredFileSources)

@@ -20,17 +20,15 @@ from galaxy.metadata.set_metadata import (
     get_object_store,
     validate_and_load_datatypes_config,
 )
-from galaxy.model import (
-    Job,
-    store,
-)
+from galaxy.model import store
 from galaxy.objectstore import ObjectStore
-from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tools import (
     create_tool_from_source,
     evaluation,
 )
 from galaxy.tools.data import ToolDataTableManager
+from galaxy.util import parse_xml_string_to_etree
 from galaxy.util.dbkeys import GenomeBuilds
 
 
@@ -77,9 +75,8 @@ def main(TMPDIR, WORKING_DIRECTORY):
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
     object_store = get_object_store(WORKING_DIRECTORY)
     import_store = store.imported_store_for_metadata(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new'))
-    job = next(iter(import_store.sa_session.objects[Job].values()))
     # TODO: clean up random places from which we read files in the working directory
-    job_io = JobIO.from_json(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'job_io.json'), sa_session=import_store.sa_session, job=job)
+    job_io = JobIO.from_json(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'job_io.json'), sa_session=import_store.sa_session)
     tool_app_config = ToolAppConfig(
         name='tool_app',
         tool_data_path=job_io.tool_data_path,
@@ -101,10 +98,11 @@ def main(TMPDIR, WORKING_DIRECTORY):
     )
     # TODO: could try to serialize just a minimal tool variant instead of the whole thing ?
     # FIXME: enable loading all supported tool types
-    tool_source = get_tool_source(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'tool.xml'))
+    xml_tree = parse_xml_string_to_etree(job_io.tool_source)
+    tool_source = get_tool_source(xml_tree=xml_tree)
     tool = create_tool_from_source(app, tool_source=tool_source, tool_dir=job_io.tool_dir)
-    tool_evaluator = evaluation.RemoteToolEvaluator(app=app, tool=tool, job=job, local_working_directory=WORKING_DIRECTORY)
-    tool_evaluator.set_compute_environment(compute_environment=SharedComputeEnvironment(job_io=job_io, job=job))
+    tool_evaluator = evaluation.RemoteToolEvaluator(app=app, tool=tool, job=job_io.job, local_working_directory=WORKING_DIRECTORY)
+    tool_evaluator.set_compute_environment(compute_environment=SharedComputeEnvironment(job_io=job_io, job=job_io.job))
     with open(os.path.join(WORKING_DIRECTORY, 'tool_script.sh'), 'w') as out:
         command_line, extra_filenames, environment_variables = tool_evaluator.build()
         out.write(command_line)

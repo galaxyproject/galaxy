@@ -167,6 +167,7 @@ class MockTool:
         self.id = 'mock_id'
         self.home_target = None
         self.tmp_target = None
+        self.tool_source = Bunch(to_string=lambda: '')
 
     def get_job_destination(self, params):
         return Bunch(runner='local', id='local', params={})

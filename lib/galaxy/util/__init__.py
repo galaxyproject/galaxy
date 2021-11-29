@@ -302,6 +302,10 @@ def parse_xml_string(xml_string, strip_whitespace=True):
     return tree
 
 
+def parse_xml_string_to_etree(xml_string, strip_whitespace=True):
+    return etree.ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
+
+
 def xml_to_string(elem, pretty=False):
     """
     Returns a string from an xml tree.

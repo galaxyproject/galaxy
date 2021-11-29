@@ -31,6 +31,7 @@ OutputPaths = List[DatasetPath]
 
 class JobIO(Dictifiable):
     dict_collection_visible_keys = (
+        'job_id',
         'working_directory',
         'outputs_directory',
         'outputs_to_working_directory',
@@ -48,6 +49,7 @@ class JobIO(Dictifiable):
         'check_job_script_integrity',
         'check_job_script_integrity_count',
         'check_job_script_integrity_sleep',
+        'tool_source',
         'tool_dir',
         'is_task',
     )
@@ -74,8 +76,9 @@ class JobIO(Dictifiable):
             check_job_script_integrity_sleep: float,
             file_sources_dict: Dict[str, Any],
             user_context: Union[ProvidesUserFileSourcesUserContext, Dict['str', Any]],
+            tool_source: Optional[str] = None,
             tool_dir: Optional[str] = None,
-            is_task=False):
+            is_task: bool = False):
         user_context_instance: Union[ProvidesUserFileSourcesUserContext, DictFileSourcesUserContext]
         if isinstance(user_context, dict):
             user_context_instance = DictFileSourcesUserContext(**user_context)
@@ -85,6 +88,7 @@ class JobIO(Dictifiable):
         self.user_context = user_context_instance
         self.sa_session = sa_session
         self.job = job
+        self.job_id = job.id
         self.working_directory = working_directory
         self.outputs_directory = outputs_directory
         self.outputs_to_working_directory = outputs_to_working_directory
@@ -103,16 +107,23 @@ class JobIO(Dictifiable):
         self.check_job_script_integrity_sleep = check_job_script_integrity_sleep
         self.tool_dir = tool_dir
         self.is_task = is_task
+        self.tool_source = tool_source
         self._output_paths: Optional[OutputPaths] = None
         self._output_hdas_and_paths: Optional[OutputHdasAndType] = None
         self._dataset_path_rewriter = None
 
     @classmethod
-    def from_json(cls, path, sa_session, job: Job):
+    def from_json(cls, path, sa_session):
         with open(path) as job_io_serialized:
-            kwargs = json.load(job_io_serialized)
-        kwargs.pop('model_class')
-        return cls(sa_session=sa_session, job=job, **kwargs)
+            io_dict = json.load(job_io_serialized)
+        return cls.from_dict(io_dict=io_dict, sa_session=sa_session)
+
+    @classmethod
+    def from_dict(cls, io_dict, sa_session):
+        io_dict.pop('model_class')
+        job_id = io_dict.pop('job_id')
+        job = sa_session.query(Job).get(job_id)
+        return cls(sa_session=sa_session, job=job, **io_dict)
 
     def to_dict(self):
         io_dict = super().to_dict()
