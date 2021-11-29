@@ -60,7 +60,7 @@ deprecated==1.2.13; python_version >= "3.6" and python_full_version < "3.0.0" or
 deprecation==2.1.0
 dictobj==0.4
 docopt==0.6.2
-docutils==0.18.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
+docutils==0.16; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 dogpile.cache==1.1.4; python_version >= "3.6"
 ecdsa==0.17.0; python_version >= "2.6" and python_full_version < "3.0.0" or python_full_version >= "3.3.0"
 edam-ontology==1.25.2
@@ -222,14 +222,14 @@ snowballstemmer==2.2.0; python_version >= "3.5"
 social-auth-core==4.0.3
 sortedcontainers==2.4.0
 sphinx-markdown-tables==0.0.15
-sphinx-rtd-theme==0.5.1
-sphinx==3.5.3; python_version >= "3.5"
-sphinxcontrib-applehelp==1.0.2; python_version >= "3.5"
-sphinxcontrib-devhelp==1.0.2; python_version >= "3.5"
-sphinxcontrib-htmlhelp==2.0.0; python_version >= "3.6"
-sphinxcontrib-jsmath==1.0.1; python_version >= "3.5"
-sphinxcontrib-qthelp==1.0.3; python_version >= "3.5"
-sphinxcontrib-serializinghtml==1.1.5; python_version >= "3.5"
+sphinx-rtd-theme==1.0.0; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
+sphinx==4.3.1; python_version >= "3.6"
+sphinxcontrib-applehelp==1.0.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
+sphinxcontrib-devhelp==1.0.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
+sphinxcontrib-htmlhelp==2.0.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
+sphinxcontrib-jsmath==1.0.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
+sphinxcontrib-qthelp==1.0.3; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
+sphinxcontrib-serializinghtml==1.1.5; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 sqlalchemy-migrate==0.13.0
 sqlalchemy==1.4.27; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.6.0")
 sqlitedict==1.7.0
