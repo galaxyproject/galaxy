@@ -2,30 +2,100 @@
     <div>
         <b-button-group>
             <IconButton
-                v-if="notIn(STATES.NOT_VIEWABLE, STATES.DISCARDED)"
-                icon="eye"
-                :title="displayButtonTitle"
-                :disabled="dataset.purged || isIn(STATES.UPLOAD, STATES.NEW)"
-                @click.stop="viewData"
-                variant="link"
-                class="px-1 display-btn" />
+                v-if="isIn(STATES.ERROR)"
+                key="show-error"
+                title="Show Error"
+                icon="exclamation-triangle"
+                @click.stop="
+                    backboneRoute('datasets/error', {
+                        dataset_id: dataset.id,
+                    })
+                " />
+
             <IconButton
-                v-if="writable && notIn(STATES.DISCARDED)"
-                icon="pen"
-                :title="editButtonTitle"
-                :disabled="dataset.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
-                @click.stop="$emit('edit')"
+                v-else-if="showDownloads"
+                title="Download"
+                :href="prependPath(dataset.getUrl('download'))"
+                target="_blank"
                 variant="link"
-                class="px-1 edit-btn" />
+                class="download-btn"
+                icon="download"
+                download />
+
             <IconButton
-                v-if="writable && dataset.accessible"
-                :icon="dataset.deleted ? 'trash-restore' : 'trash'"
-                :title="deleteButtonTitle"
-                :disabled="dataset.purged"
-                v-b-modal="bsId('delete-modal')"
+                v-if="showDownloads && dataset.getUrl('download')"
+                title="Copy Link"
+                icon="link"
                 variant="link"
-                class="px-1 delete-btn"
-                @click.stop />
+                class="px-1"
+                @click.stop="$emit('copy-link')" />
+
+            <IconButton
+                v-if="notIn(STATES.NOT_VIEWABLE)"
+                key="dataset-details"
+                title="View Dataset Details"
+                class="params-btn"
+                icon="info-circle"
+                variant="link"
+                @click.stop.prevent="showDetails" />
+
+            <IconButton
+                v-if="dataset.rerunnable && dataset.creating_job && notIn(STATES.UPLOAD, STATES.NOT_VIEWABLE)"
+                title="Run job again"
+                icon="play"
+                variant="link"
+                :href="prependPath(dataset.getUrl('rerun'))"
+                @click.stop.prevent="
+                    backboneRoute('/', {
+                        job_id: dataset.creating_job,
+                    })
+                " />
+
+            <IconButton
+                v-if="showViz && hasViz && isIn(STATES.OK, STATES.FAILED_METADATA)"
+                title="Visualize Data"
+                icon="chart-area"
+                variant="link"
+                @click.stop.prevent="visualize" />
+
+            <IconButton
+                v-if="currentUser && currentUser.id && dataset.creating_job"
+                title="Tool Help"
+                icon="question"
+                variant="link"
+                @click.stop="showToolHelp(dataset.creating_job)" />
+
+            <IconButton
+                v-if="isIn(STATES.ERROR)"
+                key="show-error"
+                title="Error"
+                icon="exclamation-triangle"
+                @click.stop="
+                    backboneRoute('datasets/error', {
+                        dataset_id: dataset.id,
+                    })
+                " />
+
+            <b-dropdown
+                right
+                size="sm"
+                variant="link"
+                :text="'Dataset Operations' | l"
+                toggle-class="p-1 pl-2"
+                class="flex-grow-0 dataset-operations-dropdown"
+                v-if="showDownloads && dataset.hasMetaData"
+                boundary="window">
+                <b-dropdown-item
+                    v-for="mf in dataset.meta_files"
+                    :key="'download-' + mf.download_url"
+                    :title="'Download ' + mf.file_type"
+                    :href="prependPath(dataset.getUrl('meta_download') + mf.file_type)"
+                    target="_blank"
+                    download>
+                    <Icon icon="download" class="mr-1" />
+                    <span v-localize>{{ "Download " + mf.file_type }}</span>
+                </b-dropdown-item>
+            </b-dropdown>
         </b-button-group>
 
         <!-- modals -->
@@ -152,9 +222,8 @@ export default {
 
         // wierd iframe navigation
         visualize() {
-            const showDetailsUrl = `/datasets/${this.dataset.id}/details`;
             const redirectParams = {
-                path: showDetailsUrl,
+                path: this.dataset.getUrl("show_params"),
                 title: "Dataset details",
                 tryIframe: false,
             };
@@ -166,14 +235,13 @@ export default {
         },
 
         showDetails() {
-            const showDetailsUrl = `/datasets/${this.dataset.id}/details`;
             const redirectParams = {
-                path: showDetailsUrl,
+                path: this.dataset.getUrl("show_params"),
                 title: "Dataset details",
                 tryIframe: false,
             };
             if (!this.iframeAdd(redirectParams)) {
-                this.backboneRoute(showDetailsUrl);
+                this.backboneRoute(this.dataset.getUrl("show_params"));
             }
         },
 

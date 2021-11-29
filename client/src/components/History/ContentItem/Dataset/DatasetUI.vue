@@ -21,12 +21,6 @@ either through the props, and make updates through the events -->
                     <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)"></b-check>
                 </div>
 
-                <StatusIcon
-                    v-if="!collapsed"
-                    class="status-icon px-1"
-                    :state="dataset.state"
-                    @click.stop="onStatusClick" />
-
                 <IconButton
                     v-if="!collapsed && !dataset.visible"
                     class="px-1"
@@ -44,7 +38,8 @@ either through the props, and make updates through the events -->
                     @click.stop="$emit('undelete')" />
 
                 <div class="content-title title p-1 overflow-hidden">
-                    <h5 class="text-truncate" v-if="collapsed">
+                    <h5>
+                        <!-- class="text-truncate"> -->
                         <span class="hid" data-description="dataset hid">{{ dataset.hid }}</span>
                         <span class="name" data-description="dataset name">{{ dataset.title }}</span>
                     </h5>
@@ -67,66 +62,49 @@ either through the props, and make updates through the events -->
         <div v-if="collapsed && dataset.nameTags.length" class="nametags px-2 pb-2">
             <Nametag v-for="tag in dataset.nameTags" :key="tag" :tag="tag" />
         </div>
+        <div class="detailwrapper" :class="{ expanded, collapsed, selected }">
+            <div v-if="expanded" class="p-2 details">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <template v-if="!editing">
+                            <p v-if="annotation">{{ annotation }}</p>
+                            <div v-if="dataset.nameTags.length" class="nametags mt-2">
+                                <Nametag v-for="tag in dataset.nameTags" :key="tag" :tag="tag" />
+                            </div>
+                        </template>
 
-        <div v-if="expanded" class="p-3 details">
-            <div class="d-flex">
-                <div class="flex-grow-1">
-                    <h4 data-description="dataset name">{{ name || "(Dataset Name)" }}</h4>
+                        <div v-else class="my-3">
+                            <b-textarea
+                                class="mb-2"
+                                v-model="name"
+                                placeholder="Dataset Name"
+                                trim
+                                max-rows="4"></b-textarea>
 
-                    <template v-if="!editing">
-                        <p v-if="annotation">{{ annotation }}</p>
-                        <div v-if="dataset.nameTags.length" class="nametags mt-2">
-                            <Nametag v-for="tag in dataset.nameTags" :key="tag" :tag="tag" />
+                            <b-textarea
+                                class="mb-2"
+                                v-model="annotation"
+                                placeholder="Annotation (optional)"
+                                trim
+                                max-rows="4"></b-textarea>
+
+                            <StatelessTags class="mt-2" v-model="tags" />
                         </div>
-                    </template>
-
-                    <div v-else class="my-3">
-                        <b-textarea
-                            class="mb-3"
-                            v-model="name"
-                            placeholder="Dataset Name"
-                            trim
-                            max-rows="4"></b-textarea>
-
-                        <b-textarea
-                            class="mb-3"
-                            v-model="annotation"
-                            placeholder="Annotation (optional)"
-                            trim
-                            max-rows="4"></b-textarea>
-
-                        <StatelessTags class="mt-2" v-model="tags" />
                     </div>
                 </div>
 
-                <EditorMenu
-                    class="ml-3 flex-grow-0 d-flex flex-column"
-                    v-if="writable"
-                    model-name="Dataset"
-                    :editing.sync="editing"
-                    :writable="writable"
-                    :valid="valid"
-                    :dirty="dirty"
-                    @save="save"
-                    @revert="revert" />
-            </div>
-
-            <div class="details">
-                <DatasetSummary :dataset="dataset" class="summary" @edit="edit" />
-
-                <div class="display-applications" v-if="dataset.displayLinks.length">
-                    <div class="display-application" v-for="app in dataset.displayLinks" :key="app.label">
-                        <span class="display-application-location">
-                            {{ app.label }}
-                        </span>
-                        <span class="display-application-links">
-                            <a v-for="l in app.links" :key="l.href" :href="l.href" :target="l.target">
-                                {{ l.text }}
-                            </a>
-                        </span>
+                <div class="details">
+                    <DatasetSummary :dataset="dataset" class="summary" @edit="edit" />
+                    <div class="d-flex mb-2">
+                        <DatasetDetailMenu
+                            :dataset="dataset"
+                            :expanded="expanded"
+                            :writable="writable"
+                            @edit="edit"
+                            v-on="$listeners" />
                     </div>
+                    <pre v-if="dataset.peek" class="dataset-peek p-1" v-html="dataset.peek"></pre>
                 </div>
-                <pre v-if="dataset.peek" class="dataset-peek p-1" v-html="dataset.peek"></pre>
             </div>
         </div>
     </div>
@@ -135,23 +113,21 @@ either through the props, and make updates through the events -->
 <script>
 import { Dataset, STATES } from "../../model";
 import { Nametag } from "components/Nametags";
-import StatusIcon from "../../StatusIcon";
 import DatasetMenu from "./DatasetMenu";
+import DatasetDetailMenu from "./DatasetDetailMenu";
 import DatasetSummary from "./Summary";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import IconButton from "components/IconButton";
-import EditorMenu from "../../EditorMenu";
 import { StatelessTags } from "components/Tags";
 
 export default {
     mixins: [legacyNavigationMixin],
     components: {
-        StatusIcon,
         DatasetMenu,
+        DatasetDetailMenu,
         DatasetSummary,
         Nametag,
         IconButton,
-        EditorMenu,
         StatelessTags,
     },
     props: {
@@ -247,3 +223,14 @@ export default {
     },
 };
 </script>
+<style lang="scss" scoped>
+.detailwrapper {
+    overflow: hidden;
+    transition: max-height 0.5s ease-out;
+    height: auto;
+    max-height: 400px;
+}
+.detailwrapper.collapsed {
+    max-height: 0;
+}
+</style>
