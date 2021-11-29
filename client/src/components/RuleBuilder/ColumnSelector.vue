@@ -21,8 +21,7 @@
                 <span
                     class="fa fa-arrow-down rule-column-selector-down"
                     v-if="index < target.length - 1"
-                    @click="moveUp(index + 1)"
-                ></span>
+                    @click="moveUp(index + 1)"></span>
             </li>
             <li v-if="this.target.length < this.colHeaders.length">
                 <span class="rule-column-selector-target-add" v-if="!orderedEdit">

@@ -7,8 +7,7 @@
                 :multiple="multiple"
                 :has-callback="hasCallback"
                 :selectable="selectable"
-                v-on="$listeners"
-            />
+                v-on="$listeners" />
         </b-tab>
         <b-tab title="Composite" id="composite" button-id="tab-title-link-composite" v-if="showComposite">
             <composite :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />

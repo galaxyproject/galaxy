@@ -6,8 +6,7 @@
             <ExpandedItems
                 :scope-key="selectedCollection.id"
                 :get-item-key="(item) => item.type_id"
-                v-slot="{ isExpanded, setExpanded }"
-            >
+                v-slot="{ isExpanded, setExpanded }">
                 <Layout class="dataset-collection-panel">
                     <template v-slot:globalNav>
                         <TopNav :history="history" :selected-collections="selectedCollections" v-on="$listeners" />
@@ -18,8 +17,7 @@
                             icon="download"
                             title="Download Collection"
                             :href="downloadCollectionUrl"
-                            download
-                        />
+                            download />
                     </template>
 
                     <template v-slot:details>
@@ -32,8 +30,7 @@
                             :class="{ loadingBackground: loading }"
                             v-bind="payload"
                             @scroll="setScrollPos"
-                            :debug="false"
-                        >
+                            :debug="false">
                             <template v-slot="{ item, index, rowKey }">
                                 <CollectionContentItem
                                     :item="item"
@@ -45,8 +42,7 @@
                                     @update:expanded="setExpanded(item, $event)"
                                     @viewCollection="$emit('viewCollection', item)"
                                     :data-index="index"
-                                    :data-row-key="rowKey"
-                                />
+                                    :data-row-key="rowKey" />
                             </template>
                         </Scroller>
                     </template>

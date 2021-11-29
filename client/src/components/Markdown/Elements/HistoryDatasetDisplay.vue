@@ -10,8 +10,7 @@
                     title="Download Dataset"
                     type="button"
                     class="py-0 px-1"
-                    v-b-tooltip.hover
-                >
+                    v-b-tooltip.hover>
                     <span class="fa fa-download" />
                 </b-button>
                 <b-button
@@ -21,8 +20,7 @@
                     title="Import Dataset"
                     type="button"
                     class="py-0 px-1"
-                    v-b-tooltip.hover
-                >
+                    v-b-tooltip.hover>
                     <span class="fa fa-file-import" />
                 </b-button>
                 <b-button
@@ -34,8 +32,7 @@
                     type="button"
                     class="py-0 px-1"
                     v-b-tooltip.hover
-                    @click="onExpand"
-                >
+                    @click="onExpand">
                     <span class="fa fa-angle-double-up" />
                 </b-button>
                 <b-button
@@ -47,8 +44,7 @@
                     type="button"
                     class="py-0 px-1"
                     v-b-tooltip.hover
-                    @click="onExpand"
-                >
+                    @click="onExpand">
                     <span class="fa fa-angle-double-down" />
                 </b-button>
             </span>
@@ -69,14 +65,12 @@
                                 v-if="isSubTypeOfAny(datasetType, ['pdf', 'html'], datatypesModel)"
                                 type="iframe"
                                 aspect="16by9"
-                                :src="displayUrl"
-                            />
+                                :src="displayUrl" />
                             <div v-else-if="itemContent.item_data">
                                 <div v-if="isSubTypeOfAny(datasetType, ['tabular'], datatypesModel)">
                                     <UrlDataProvider
                                         :url="metaUrl"
-                                        v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
-                                    >
+                                        v-slot="{ result: metaData, loading: metaLoading, error: metaError }">
                                         <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
                                         <div v-else-if="metaError">{{ metaError }}</div>
                                         <b-table
@@ -84,8 +78,7 @@
                                             striped
                                             hover
                                             :fields="getFields(metaData)"
-                                            :items="getItems(itemContent.item_data, metaData)"
-                                        />
+                                            :items="getItems(itemContent.item_data, metaData)" />
                                     </UrlDataProvider>
                                 </div>
                                 <pre v-else>

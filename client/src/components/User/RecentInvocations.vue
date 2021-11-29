@@ -3,8 +3,7 @@
         :invocation-items="invocationItems"
         :loading="loading"
         @reload-invocations="fetchRecentInvocations"
-        no-invocations-message="There are no invocations to be shown."
-    >
+        no-invocations-message="There are no invocations to be shown.">
     </invocations>
 </template>
 

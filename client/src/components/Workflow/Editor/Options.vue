@@ -8,8 +8,7 @@
             aria-label="Edit Attributes"
             class="editor-button-attributes"
             v-b-tooltip.hover
-            @click="$emit('onAttributes')"
-        >
+            @click="$emit('onAttributes')">
             <span class="fa fa-pencil-alt" />
         </b-button>
         <b-button-group class="editor-button-save-group" v-b-tooltip title="Save Workflow">
@@ -20,8 +19,7 @@
                 aria-label="Save Workflow"
                 class="editor-button-save"
                 :disabled="!hasChanges"
-                @click="$emit('onSave')"
-            >
+                @click="$emit('onSave')">
                 <span class="fa fa-floppy-o" />
             </b-button>
         </b-button-group>
@@ -33,8 +31,7 @@
             aria-label="Edit Report"
             class="editor-button-report"
             v-b-tooltip.hover
-            @click="$emit('onReport')"
-        >
+            @click="$emit('onReport')">
             <span class="fa fa-edit" />
         </b-button>
         <b-dropdown
@@ -46,8 +43,7 @@
             variant="link"
             aria-label="Workflow Options"
             class="editor-button-options"
-            v-b-tooltip.hover
-        >
+            v-b-tooltip.hover>
             <template v-slot:button-content>
                 <span class="fa fa-cog" />
             </template>
@@ -75,8 +71,7 @@
             aria-label="Run Workflow"
             class="editor-button-run"
             v-b-tooltip.hover
-            @click="$emit('onRun')"
-        >
+            @click="$emit('onRun')">
             <span class="fa fa-play" />
         </b-button>
     </div>

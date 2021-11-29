@@ -9,8 +9,7 @@
                 size="sm"
                 class="float-right py-0 px-1"
                 v-b-tooltip.hover
-                @click="onEditSubworkflow"
-            >
+                @click="onEditSubworkflow">
                 <span class="fa fa-pencil-alt" />
             </b-button>
             <b-button
@@ -21,8 +20,7 @@
                 size="sm"
                 class="float-right py-0 px-1"
                 v-b-tooltip.hover
-                @click="onUpgradeSubworkflow"
-            >
+                @click="onUpgradeSubworkflow">
                 <span class="fa fa-sync" />
             </b-button>
         </template>
@@ -33,16 +31,14 @@
                 title="Label"
                 help="Add a step label."
                 @input="onLabel"
-                :error="errorLabel"
-            />
+                :error="errorLabel" />
             <FormElement
                 id="__annotation"
                 :value="node.annotation"
                 title="Step Annotation"
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-                @input="onAnnotation"
-            />
+                @input="onAnnotation" />
             <FormDisplay :id="id" :inputs="inputs" @onChange="onChange" />
             <div v-if="isSubworkflow">
                 <FormOutputLabel
@@ -50,8 +46,7 @@
                     :key="index"
                     :name="output.name"
                     :active-outputs="node.activeOutputs"
-                    :show-details="true"
-                />
+                    :show-details="true" />
             </div>
         </template>
     </FormCard>

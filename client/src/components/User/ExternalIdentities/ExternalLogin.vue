@@ -13,8 +13,7 @@
                             v-model="selected"
                             :options="cilogon_idps"
                             label="DisplayName"
-                            track-by="EntityID"
-                        >
+                            track-by="EntityID">
                         </multiselect>
                     </b-form-group>
 
@@ -49,8 +48,7 @@
                             v-model="selected"
                             :options="cilogon_idps"
                             label="DisplayName"
-                            track-by="EntityID"
-                        >
+                            track-by="EntityID">
                         </multiselect>
 
                         <b-button

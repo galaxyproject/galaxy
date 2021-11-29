@@ -4,8 +4,7 @@
         :title="description"
         v-b-tooltip.topright.hover
         @mouseover="hover = true"
-        @mouseleave="hover = false"
-    >
+        @mouseleave="hover = false">
         {{ definition.text }}
         <ToolPanelLinks :show="hover" :links="definition.links" />
     </div>

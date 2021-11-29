@@ -9,8 +9,7 @@
                     v-model="queryInput"
                     @input="delayQuery"
                     @change="setQuery"
-                    @keydown.esc="setQuery()"
-                />
+                    @keydown.esc="setQuery()" />
                 <b-input-group-append v-b-tooltip.hover :title="titleClearSearch">
                     <b-btn @click="setQuery()">
                         <i class="fa fa-times" />

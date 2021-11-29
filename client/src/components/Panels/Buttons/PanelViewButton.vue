@@ -8,8 +8,7 @@
         aria-label="View all tool panel configurations"
         class="tool-panel-dropdown float-right"
         size="sm"
-        v-b-tooltip.hover
-    >
+        v-b-tooltip.hover>
         <template v-slot:button-content>
             <span class="fa fa-list" />
             <!-- Maybe cog? -->
@@ -17,8 +16,7 @@
         <PanelViewMenuItem
             :current-panel-view="currentPanelView"
             :panel-view="defaultPanelView"
-            @onSelect="updatePanelView"
-        />
+            @onSelect="updatePanelView" />
         <b-dropdown-divider></b-dropdown-divider>
         <b-dropdown-group v-for="group in groupedPanelViews" :key="group.type" :id="group.type" :header="group.title">
             <PanelViewMenuItem
@@ -26,8 +24,7 @@
                 :key="key"
                 :current-panel-view="currentPanelView"
                 :panel-view="panelView"
-                @onSelect="updatePanelView"
-            />
+                @onSelect="updatePanelView" />
         </b-dropdown-group>
         <b-dropdown-divider v-if="groupedPanelViews.length > 0"></b-dropdown-divider>
         <PanelViewMenuItem
@@ -35,8 +32,7 @@
             :key="key"
             :current-panel-view="currentPanelView"
             :panel-view="panelView"
-            @onSelect="updatePanelView"
-        />
+            @onSelect="updatePanelView" />
     </b-dropdown>
 </template>
 

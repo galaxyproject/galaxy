@@ -6,8 +6,7 @@
         ok-only
         ok-title="Close"
         :static="modalStatic"
-        @hide="hideModal"
-    >
+        @hide="hideModal">
         <template v-slot:modal-header>
             <slot name="search"> </slot>
         </template>

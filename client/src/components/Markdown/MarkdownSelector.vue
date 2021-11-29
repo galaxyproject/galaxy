@@ -10,8 +10,7 @@
                         class="my-2"
                         name="labels"
                         :key="index"
-                        :value="index"
-                    >
+                        :value="index">
                         {{ label }}
                     </b-form-radio>
                 </div>

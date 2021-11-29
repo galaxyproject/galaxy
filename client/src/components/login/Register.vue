@@ -28,8 +28,7 @@
                             </b-form-group>
                             <b-form-group
                                 v-if="mailing_join_addr && server_mail_configured"
-                                label="Subscribe to mailing list"
-                            >
+                                label="Subscribe to mailing list">
                                 <input name="subscribe" type="checkbox" v-model="subscribe" />
                             </b-form-group>
                             <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>

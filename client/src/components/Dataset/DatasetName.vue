@@ -5,20 +5,17 @@
             class="workflow-dropdown font-weight-bold p-2"
             data-toggle="dropdown"
             aria-haspopup="true"
-            aria-expanded="false"
-        >
+            aria-expanded="false">
             <span
                 v-if="isError"
                 class="dataset-icon error fa fa-times-circle text-danger"
                 v-b-tooltip.hover
-                title="An error occurred for this dataset."
-            />
+                title="An error occurred for this dataset." />
             <span
                 v-else-if="isPaused"
                 class="dataset-icon pause fa fa-pause text-info"
                 v-b-tooltip.hover
-                title="The creation of this dataset has been paused."
-            />
+                title="The creation of this dataset has been paused." />
             <span v-else class="dataset-icon fa fa-caret-down" />
             <span class="name">{{ this.getName }}</span>
         </b-link>

@@ -8,8 +8,7 @@
         @update:dsc="onUpdate"
         @delete="onDelete"
         @undelete="onUndelete"
-        @unhide="onUnhide"
-    />
+        @unhide="onUnhide" />
 </template>
 
 <script>

@@ -7,8 +7,7 @@
         :size="size"
         :pressed="pressed"
         :disabled="disabled"
-        :variant="localVariant"
-    >
+        :variant="localVariant">
         <Icon :icon="icon" />
         <span class="sr-only">{{ title | l }}</span>
     </b-button>

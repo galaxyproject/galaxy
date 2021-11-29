@@ -9,8 +9,7 @@
                     :placeholder="titleSearchVisualizations"
                     autocomplete="off"
                     type="text"
-                    v-model="search"
-                />
+                    v-model="search" />
             </div>
             <div v-for="plugin in plugins" :key="plugin.name">
                 <table v-if="match(plugin)">
@@ -20,8 +19,7 @@
                                 v-if="plugin.logo"
                                 alt="ui thumbnails"
                                 class="ui-thumbnails-image"
-                                :src="plugin.logo"
-                            />
+                                :src="plugin.logo" />
                             <div v-else class="ui-thumbnails-icon fa fa-eye" />
                         </td>
                         <td>
@@ -45,8 +43,7 @@
                                 <button
                                     type="button"
                                     class="ui-button-default float-left mt-3 btn btn-primary"
-                                    @click="create(plugin)"
-                                >
+                                    @click="create(plugin)">
                                     <i class="icon fa fa-check" />
                                     <span class="title">{{ titleCreateVisualization }}</span>
                                 </button>

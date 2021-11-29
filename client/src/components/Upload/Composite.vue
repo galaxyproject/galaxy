@@ -21,8 +21,7 @@
                 container-class="upload-footer-extension"
                 ref="footerExtension"
                 v-model="extension"
-                :enabled="!running"
-            >
+                :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" ref="footerExtensionInfo" />
@@ -43,8 +42,7 @@
                 @click="_eventStart"
                 id="btn-start"
                 :disabled="!readyStart"
-                :variant="readyStart ? 'primary' : ''"
-            >
+                :variant="readyStart ? 'primary' : ''">
                 {{ btnStartTitle }}
             </b-button>
             <b-button ref="btnReset" class="ui-button-default" id="btn-reset" @click="_eventReset">

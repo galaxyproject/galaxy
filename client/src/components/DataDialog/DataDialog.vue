@@ -3,8 +3,7 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="onCancel"
-    >
+        :hide-modal="onCancel">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
@@ -15,8 +14,7 @@
                 :multiple="multiple"
                 :filter="filter"
                 @clicked="onClick"
-                @load="load"
-            />
+                @load="load" />
         </template>
         <template v-slot:buttons>
             <b-btn size="sm" class="float-left" v-if="undoShow" @click="load()">
@@ -33,8 +31,7 @@
                 class="float-right ml-1"
                 variant="primary"
                 @click="onOk"
-                :disabled="!hasValue"
-            >
+                :disabled="!hasValue">
                 Ok
             </b-btn>
         </template>

@@ -7,8 +7,7 @@
                         v-on="handlers"
                         :histories="histories"
                         :current-history="currentHistory"
-                        title="Histories"
-                    />
+                        title="Histories" />
                 </template>
             </HistoryPanel>
 

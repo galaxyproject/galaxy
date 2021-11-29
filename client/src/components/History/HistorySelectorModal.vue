@@ -19,8 +19,7 @@
             :selectable="true"
             select-mode="single"
             selected-variant="success"
-            @row-selected="switchToHistory"
-        >
+            @row-selected="switchToHistory">
             <template v-slot:cell(tags)="row">
                 <stateless-tags :value="row.item.tags" :disabled="true" />
             </template>

@@ -10,8 +10,7 @@
                     :title="`Tool Source for ${toolId}`"
                     size="lg"
                     ok-only
-                    ok-title="Close"
-                >
+                    ok-title="Close">
                     <ToolSource :tool-id="toolId" />
                 </b-modal>
             </div>

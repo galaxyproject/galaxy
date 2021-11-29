@@ -5,8 +5,7 @@
             variant="link"
             text="Histories"
             toggle-class="text-decoration-none"
-            data-description="history menu"
-        >
+            data-description="history menu">
             <template v-slot:button-content>
                 <Icon fixed-width icon="cog" />
                 <span class="sr-only">Operations on the current history</span>
@@ -82,8 +81,7 @@
             id="history-privacy-modal"
             title="Make History Private"
             title-tag="h2"
-            @ok="$emit('secureHistory', history)"
-        >
+            @ok="$emit('secureHistory', history)">
             <p v-localize>
                 This will make all the data in this history private (excluding library datasets), and will set
                 permissions such that all new data is created as private. Any datasets within that are currently shared
@@ -99,8 +97,7 @@
             id="purge-history-modal"
             title="Permanently Delete History?"
             title-tag="h2"
-            @ok="$emit('purgeHistory', history)"
-        >
+            @ok="$emit('purgeHistory', history)">
             <p v-localize>Really delete the current history permanently? This cannot be undone.</p>
         </b-modal>
 

@@ -6,8 +6,7 @@
         :icon="stateIcon"
         :variant="variant"
         v-on="$listeners"
-        v-bind="$attrs"
-    />
+        v-bind="$attrs" />
 </template>
 
 <script>

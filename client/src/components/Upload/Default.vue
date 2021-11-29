@@ -21,8 +21,7 @@
                 container-class="upload-footer-extension"
                 ref="footerExtension"
                 v-model="extension"
-                :enabled="!running"
-            >
+                :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
@@ -42,8 +41,7 @@
                 class="ui-button-default"
                 id="btn-reset"
                 @click="_eventReset"
-                :disabled="!enableReset"
-            >
+                :disabled="!enableReset">
                 {{ btnResetTitle }}
             </b-button>
             <b-button
@@ -51,8 +49,7 @@
                 class="ui-button-default"
                 id="btn-stop"
                 @click="_eventStop"
-                :disabled="counterRunning == 0"
-            >
+                :disabled="counterRunning == 0">
                 {{ btnStopTitle }}
             </b-button>
             <b-button
@@ -62,8 +59,7 @@
                 @click="_eventSelect"
                 v-if="selectable"
                 :disabled="!enableBuild"
-                :variant="enableBuild ? 'primary' : ''"
-            >
+                :variant="enableBuild ? 'primary' : ''">
                 {{ btnSelectTitle }}
             </b-button>
             <b-button
@@ -72,8 +68,7 @@
                 id="btn-start"
                 @click="_eventStart"
                 :disabled="!enableStart"
-                :variant="enableStart ? 'primary' : ''"
-            >
+                :variant="enableStart ? 'primary' : ''">
                 {{ btnStartTitle }}
             </b-button>
             <b-button
@@ -81,8 +76,7 @@
                 class="ui-button-default"
                 id="btn-new"
                 @click="_eventCreate(true)"
-                :disabled="!enableSources"
-            >
+                :disabled="!enableSources">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
             </b-button>
             <b-button
@@ -91,8 +85,7 @@
                 id="btn-ftp"
                 @click="_eventRemoteFiles"
                 :disabled="!enableSources"
-                v-if="remoteFiles"
-            >
+                v-if="remoteFiles">
                 <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
             </b-button>
             <b-button
@@ -101,8 +94,7 @@
                 id="btn-local"
                 :title="btnLocalTitle"
                 @click="uploadSelect"
-                :disabled="!enableSources"
-            >
+                :disabled="!enableSources">
                 <span class="fa fa-laptop"></span>{{ btnLocalTitle }}
             </b-button>
         </template>

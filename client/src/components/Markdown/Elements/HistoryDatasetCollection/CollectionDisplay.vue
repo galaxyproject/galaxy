@@ -10,8 +10,7 @@
                     title="Download Collection"
                     type="button"
                     class="py-0 px-1"
-                    v-b-tooltip.hover
-                >
+                    v-b-tooltip.hover>
                     <span class="fa fa-download" />
                 </b-button>
                 <CurrentUser v-slot="{ user }">
@@ -25,8 +24,7 @@
                             title="Import Collection"
                             type="button"
                             class="py-0 px-1"
-                            v-b-tooltip.hover
-                        >
+                            v-b-tooltip.hover>
                             <span class="fa fa-file-import" />
                         </b-button>
                     </UserHistories>

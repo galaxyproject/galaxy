@@ -11,8 +11,7 @@
                     placeholder="Search Interactive Tool"
                     autocomplete="off"
                     type="text"
-                    v-model="filter"
-                />
+                    v-model="filter" />
             </b-col>
         </b-row>
         <b-table
@@ -21,8 +20,7 @@
             :fields="fields"
             :items="activeInteractiveTools"
             :filter="filter"
-            @filtered="filtered"
-        >
+            @filtered="filtered">
             <template v-slot:cell(checkbox)="row">
                 <b-form-checkbox :id="createId('checkbox', row.item.id)" v-model="row.item.marked" />
             </template>

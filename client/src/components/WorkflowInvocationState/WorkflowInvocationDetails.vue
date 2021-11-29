@@ -12,8 +12,7 @@
                 <div
                     v-for="(input, key) in invocation.inputs"
                     :key="input.id"
-                    :data-label="dataInputStepLabel(key, input)"
-                >
+                    :data-label="dataInputStepLabel(key, input)">
                     <b>{{ dataInputStepLabel(key, input) }}</b>
                     <generic-history-content :data_item="input" />
                 </div>
@@ -46,8 +45,7 @@
                     :ordered-steps="orderedSteps"
                     :key="step.id"
                     :workflow="workflow"
-                    :workflow-step="step"
-                />
+                    :workflow-step="step" />
             </details>
         </div>
     </div>

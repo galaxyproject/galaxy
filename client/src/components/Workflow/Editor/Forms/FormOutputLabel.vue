@@ -6,8 +6,7 @@
         :title="title"
         type="text"
         help="Provide a short, unique name to describe this output."
-        @input="onInput"
-    />
+        @input="onInput" />
 </template>
 
 <script>

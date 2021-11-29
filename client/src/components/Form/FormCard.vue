@@ -11,8 +11,7 @@
                     size="sm"
                     class="float-right"
                     v-b-tooltip.hover.bottom
-                    @click="onCollapse"
-                >
+                    @click="onCollapse">
                     <font-awesome-icon v-if="expanded" icon="eye-slash" class="fa-fw" />
                     <font-awesome-icon v-else icon="eye" class="fa-fw" />
                 </b-button>

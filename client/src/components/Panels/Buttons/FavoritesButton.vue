@@ -6,8 +6,7 @@
         :title="tooltipText"
         href="javascript:void(0)"
         role="button"
-        aria-label="Show favorite tools"
-    >
+        aria-label="Show favorite tools">
         <font-awesome-icon v-if="toggle" :icon="['fas', 'star']" />
         <font-awesome-icon v-else :icon="['far', 'star']" />
     </a>
