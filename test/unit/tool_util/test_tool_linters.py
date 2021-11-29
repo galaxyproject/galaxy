@@ -13,18 +13,21 @@ from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
 
 # tests tool xml for general linter
-WHITESPACE_IN_VERSIONS_AND_NAMES = """
-<tool name=" BWA Mapper " id="bwa tool" version=" 1.0.1 " display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
+GENERAL_MISSING_TOOL_ID_NAME_VERSION = """
+<tool profile="2109">
+</tool>
+"""
+
+GENERAL_WHITESPACE_IN_VERSIONS_AND_NAMES = """
+<tool name=" BWA Mapper " id="bwa tool" version=" 1.0.1 " is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
     <requirements>
         <requirement type="package" version=" 1.2.5 "> bwa </requirement>
     </requirements>
 </tool>
 """
 
-REQUIREMENT_WO_VERSION = """
-<tool name="BWA Mapper" id="bwa_tool" version="1.0.1" display_interface="true" require_login="true" hidden="true">
-    <description>The BWA Mapper</description>
+GENERAL_REQUIREMENT_WO_VERSION = """
+<tool name="BWA Mapper" id="bwa_tool" version="1.0.1blah" is_multi_byte="true" display_interface="true" require_login="true" hidden="true" profile="20.09">
     <requirements>
         <requirement type="package">bwa</requirement>
         <requirement type="package" version="1.2.5"></requirement>
@@ -32,7 +35,12 @@ REQUIREMENT_WO_VERSION = """
 </tool>
 """
 
-# test tool xml for inputs linter  
+GENERAL_VALID = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="21.09">
+</tool>
+"""
+
+# test tool xml for inputs linter
 NO_INPUTS_SECTION_XML = """
 <tool>
 </tool>
@@ -271,20 +279,43 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
 
 TESTS = [
     (
-        WHITESPACE_IN_VERSIONS_AND_NAMES, general.lint_general,
+        GENERAL_MISSING_TOOL_ID_NAME_VERSION, general.lint_general,
         lambda x:
-            "Tool version contains whitespace, this may cause errors: [ 1.0.1 ]." in x.warn_messages
-            and "Tool name contains whitespace, this may cause errors: [ BWA Mapper ]." in x.warn_messages
-            and "Requirement version contains whitespace, this may cause errors: [ 1.2.5 ]." in x.warn_messages
-            and "Tool ID contains whitespace - this is discouraged: [bwa tool]." in x.warn_messages
-            and len(x.warn_messages) == 4 and len(x.error_messages) == 0
+            'Tool version is missing or empty.' in x.error_messages
+            and 'Tool name is missing or empty.' in x.error_messages
+            and 'Tool does not define an id attribute.' in x.error_messages
+            and 'Tool specifies an invalid profile version [2109].' in x.error_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 4
     ),
     (
-        REQUIREMENT_WO_VERSION, general.lint_general,
+        GENERAL_WHITESPACE_IN_VERSIONS_AND_NAMES, general.lint_general,
         lambda x:
-            "Requirement bwa defines no version" in x.warn_messages
+            "Tool version is pre/suffixed by whitespace, this may cause errors: [ 1.0.1 ]." in x.warn_messages
+            and "Tool name is pre/suffixed by whitespace, this may cause errors: [ BWA Mapper ]." in x.warn_messages
+            and "Requirement version contains whitespace, this may cause errors: [ 1.2.5 ]." in x.warn_messages
+            and "Tool ID contains whitespace - this is discouraged: [bwa tool]." in x.warn_messages
+            and "Tool targets 16.01 Galaxy profile." in x.valid_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 1 and len(x.warn_messages) == 4 and len(x.error_messages) == 0
+    ),
+    (
+        GENERAL_REQUIREMENT_WO_VERSION, general.lint_general,
+        lambda x:
+            'Tool version [1.0.1blah] is not compliant with PEP 440.' in x.warn_messages
+            and "Requirement bwa defines no version" in x.warn_messages
             and "Requirement without name found" in x.error_messages
-            and len(x.warn_messages) == 1 and len(x.error_messages) == 1
+            and "Tool specifies profile version [20.09]." in x.valid_messages
+            and "Tool defines an id [bwa_tool]." in x.valid_messages
+            and "Tool defines a name [BWA Mapper]." in x.valid_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 3 and len(x.warn_messages) == 2 and len(x.error_messages) == 1
+    ),
+    (
+        GENERAL_VALID, general.lint_general,
+        lambda x:
+            'Tool defines a version [1.0+galaxy1].' in x.valid_messages
+            and "Tool specifies profile version [21.09]." in x.valid_messages
+            and "Tool defines an id [valid_id]." in x.valid_messages
+            and "Tool defines a name [valid name]." in x.valid_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 4 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
         NO_INPUTS_SECTION_XML, inputs.lint_inputs,
@@ -394,8 +425,10 @@ TESTS = [
 ]
 
 TEST_IDS = [
-    'hazardous whitespace',
-    'requirement without version',
+    'general: missing tool id, name, version; invalid profile',
+    'general: whitespace in version, id, name',
+    'general: requirement without version',
+    'general: valid name, id, profile',
     'lint no sections',
     'input with redundant name',
     'lint no when',
@@ -425,6 +458,8 @@ def test_tool_xml(tool_xml, lint_func, assert_func):
         lint_target = XmlToolSource(lint_target)
     lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=lint_target)
     assert assert_func(lint_ctx), (
+        f"Valid: {lint_ctx.valid_messages}\n"
+        f"Info: {lint_ctx.info_messages}\n"
         f"Warnings: {lint_ctx.warn_messages}\n"
         f"Errors: {lint_ctx.error_messages}"
     )

@@ -19,6 +19,7 @@ PROFILE_INFO_SPECIFIED_MSG = "Tool specifies profile version [%s]."
 PROFILE_INVALID_MSG = "Tool specifies an invalid profile version [%s]."
 
 WARN_WHITESPACE_MSG = "%s contains whitespace, this may cause errors: [%s]."
+WARN_WHITESPACE_PRESUFFIX = "%s is pre/suffixed by whitespace, this may cause errors: [%s]."
 WARN_ID_WHITESPACE_MSG = (
     "Tool ID contains whitespace - this is discouraged: [%s].")
 
@@ -40,7 +41,7 @@ def lint_general(tool_source, lint_ctx):
     elif isinstance(parsed_version, packaging.version.LegacyVersion):
         lint_ctx.warn(WARN_VERSION_MSG % version, line=tool_line)
     elif version != version.strip():
-        lint_ctx.warn(WARN_WHITESPACE_MSG % ('Tool version', version), line=tool_line)
+        lint_ctx.warn(WARN_WHITESPACE_PRESUFFIX % ('Tool version', version), line=tool_line)
     else:
         lint_ctx.valid(VALID_VERSION_MSG % version, line=tool_line)
 
@@ -48,22 +49,22 @@ def lint_general(tool_source, lint_ctx):
     if not name:
         lint_ctx.error(ERROR_NAME_MSG, line=tool_line)
     elif name != name.strip():
-        lint_ctx.warn(WARN_WHITESPACE_MSG % ('Tool name', name), line=tool_line)
+        lint_ctx.warn(WARN_WHITESPACE_PRESUFFIX % ('Tool name', name), line=tool_line)
     else:
         lint_ctx.valid(VALID_NAME_MSG % name, line=tool_line)
 
     tool_id = tool_source.parse_id()
     if not tool_id:
         lint_ctx.error(ERROR_ID_MSG, line=tool_line)
+    elif re.search(r"\s", tool_id):
+        lint_ctx.warn(WARN_ID_WHITESPACE_MSG % tool_id, line=tool_line)
     else:
         lint_ctx.valid(VALID_ID_MSG % tool_id, line=tool_line)
-        if re.search(r"\s", tool_id):
-            lint_ctx.warn(WARN_ID_WHITESPACE_MSG % tool_id, line=tool_line)
 
     profile = tool_source.parse_profile()
     profile_valid = PROFILE_PATTERN.match(profile) is not None
     if not profile_valid:
-        lint_ctx.error(PROFILE_INVALID_MSG, line=tool_line)
+        lint_ctx.error(PROFILE_INVALID_MSG % profile, line=tool_line)
     elif profile == "16.01":
         lint_ctx.valid(PROFILE_INFO_DEFAULT_MSG, line=tool_line)
     else:
