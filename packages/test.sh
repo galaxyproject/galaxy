@@ -53,7 +53,9 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     pip install -r test-requirements.txt
 
     if [[ "${RUN_TESTS[$i]}" == "1" ]]; then
-        pytest --doctest-modules galaxy tests
+        # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
+        unit_extra='--doctest-modules --ignore galaxy/model/migrations/alembic'
+        pytest $unit_extra galaxy tests
     fi
     if [[ "${RUN_MYPY[$i]}" == "1" ]]; then
         make mypy
