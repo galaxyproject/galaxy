@@ -50,6 +50,7 @@ class JobIO(Dictifiable):
         'check_job_script_integrity_count',
         'check_job_script_integrity_sleep',
         'tool_source',
+        'tool_source_class',
         'tool_dir',
         'is_task',
     )
@@ -77,6 +78,7 @@ class JobIO(Dictifiable):
             file_sources_dict: Dict[str, Any],
             user_context: Union[ProvidesUserFileSourcesUserContext, Dict['str', Any]],
             tool_source: Optional[str] = None,
+            tool_source_class: Optional['str'] = 'XmlToolSource',
             tool_dir: Optional[str] = None,
             is_task: bool = False):
         user_context_instance: Union[ProvidesUserFileSourcesUserContext, DictFileSourcesUserContext]
@@ -108,6 +110,7 @@ class JobIO(Dictifiable):
         self.tool_dir = tool_dir
         self.is_task = is_task
         self.tool_source = tool_source
+        self.tool_source_class = tool_source_class
         self._output_paths: Optional[OutputPaths] = None
         self._output_hdas_and_paths: Optional[OutputHdasAndType] = None
         self._dataset_path_rewriter = None

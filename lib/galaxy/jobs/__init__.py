@@ -1016,6 +1016,7 @@ class JobWrapper(HasResourceParameters):
                 check_job_script_integrity_count=self.app.config.check_job_script_integrity_count,
                 check_job_script_integrity_sleep=self.app.config.check_job_script_integrity_sleep,
                 tool_source=self.tool.tool_source.to_string(),
+                tool_source_class=type(self.tool.tool_source).__name__,
                 tool_dir=self.tool.tool_dir,
                 is_task=self.is_task,
             )

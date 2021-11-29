@@ -28,7 +28,6 @@ from galaxy.tools import (
     evaluation,
 )
 from galaxy.tools.data import ToolDataTableManager
-from galaxy.util import parse_xml_string_to_etree
 from galaxy.util.dbkeys import GenomeBuilds
 
 
@@ -98,8 +97,7 @@ def main(TMPDIR, WORKING_DIRECTORY):
     )
     # TODO: could try to serialize just a minimal tool variant instead of the whole thing ?
     # FIXME: enable loading all supported tool types
-    xml_tree = parse_xml_string_to_etree(job_io.tool_source)
-    tool_source = get_tool_source(xml_tree=xml_tree)
+    tool_source = get_tool_source(tool_source_class=job_io.tool_source_class, raw_tool_source=job_io.tool_source)
     tool = create_tool_from_source(app, tool_source=tool_source, tool_dir=job_io.tool_dir)
     tool_evaluator = evaluation.RemoteToolEvaluator(app=app, tool=tool, job=job_io.job, local_working_directory=WORKING_DIRECTORY)
     tool_evaluator.set_compute_environment(compute_environment=SharedComputeEnvironment(job_io=job_io, job=job_io.job))
