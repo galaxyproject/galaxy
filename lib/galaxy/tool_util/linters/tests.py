@@ -83,7 +83,7 @@ def lint_tsts(tool_xml, lint_ctx):
 
         has_test = has_test or found_output_test
         if not has_test:
-            lint_ctx.warn("Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.", line=test.sourceline, xpath=tool_xml.getpath(test))
+            lint_ctx.warn(f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.", line=test.sourceline, xpath=tool_xml.getpath(test))
         else:
             num_valid_tests += 1
 
