@@ -42,16 +42,17 @@ class AlembicManager:
     """
     Alembic operations on one database.
     """
-    def __init__(self, db_url, *, engine=None, config_dict=None):
-        self.alembic_cfg = self._load_config(config_dict, db_url)
+    def __init__(self, engine, config_dict=None):
+        self.engine = engine
+        self.alembic_cfg = self._load_config(config_dict)
         self.script_directory = script.ScriptDirectory.from_config(self.alembic_cfg)
-        self.engine = engine or create_engine(db_url)
 
-    def _load_config(self, config_dict, db_url):
+    def _load_config(self, config_dict):
         alembic_root = os.path.dirname(__file__)
         _alembic_file = os.path.join(alembic_root, 'alembic.ini')
         config = Config(_alembic_file)
-        config.set_main_option('sqlalchemy.url', db_url)
+        url = str(self.engine.url)
+        config.set_main_option('sqlalchemy.url', url)
         if config_dict:
             for key, value in config_dict.items():
                 config.set_main_option(key, value)
@@ -231,8 +232,7 @@ class DatabaseVerifier:
         return self.db_state[model].is_last_sqlalchemymigrate_version()
 
     def _handle_with_alembic(self, model, skip_version_check=False):
-        url = self._get_url(model)
-        am = get_alembic_manager(url)
+        am = get_alembic_manager(self.engines[model])
         # first check if this model is up to date
         if not skip_version_check and am.is_up_to_date(model):
             # TODO: log message: db is up-to-date
@@ -266,7 +266,7 @@ class DatabaseVerifier:
 
         def initialize_database(url, metadata, engine):
             load_metadata(url, metadata, engine)
-            am = get_alembic_manager(url)
+            am = get_alembic_manager(engine)
             am.stamp(f'{model}@head')
 
         if model == GXY:
@@ -313,8 +313,8 @@ def listify(data):
     return data
 
 
-def get_alembic_manager(db_url):
-    return AlembicManager(db_url)
+def get_alembic_manager(engine):
+    return AlembicManager(engine)
 
 
 def get_gxy_metadata():

@@ -38,7 +38,8 @@ class TestAlembicManager:
     def test_is_at_revision__one_head_one_revision(self, url_factory):
         """ Use case: Check if separate tsi database is at a given revision."""
         db_url = url_factory()
-        am = AlembicManagerForTests(db_url)
+        engine = create_engine(db_url)
+        am = AlembicManagerForTests(engine)
         revision = GXY_REVISION_0
         assert not am.is_at_revision(revision)
         am.stamp(revision)
@@ -47,7 +48,8 @@ class TestAlembicManager:
     def test_is_at_revision__two_heads_one_revision(self, url_factory):
         """ Use case: Check if combined gxy and tsi database is at a given gxy revision."""
         db_url = url_factory()
-        am = AlembicManagerForTests(db_url)
+        engine = create_engine(db_url)
+        am = AlembicManagerForTests(engine)
         revision = GXY_REVISION_0
         revisions = [GXY_REVISION_0, TSI_REVISION_0]
         assert not am.is_at_revision(revision)
@@ -57,7 +59,8 @@ class TestAlembicManager:
     def test_is_at_revision__two_heads_two_revisions(self, url_factory):
         """ Use case: Check if combined gxy and tsi database is at given gxy and tsi revisions."""
         db_url = url_factory()
-        am = AlembicManagerForTests(db_url)
+        engine = create_engine(db_url)
+        am = AlembicManagerForTests(engine)
         revisions = [GXY_REVISION_0, TSI_REVISION_0]
         assert not am.is_at_revision(revisions)
         am.stamp(revisions)
@@ -66,7 +69,8 @@ class TestAlembicManager:
     def test_is_up_to_date_single_revision(self, url_factory):
         db_url = url_factory()
         model = GXY
-        am = AlembicManagerForTests(db_url)
+        engine = create_engine(db_url)
+        am = AlembicManagerForTests(engine)
         assert not am.is_up_to_date(model)
         am.stamp(GXY_REVISION_1)
         assert not am.is_up_to_date(model)
@@ -75,7 +79,8 @@ class TestAlembicManager:
 
     def test_not_is_up_to_date_wrong_model(self, url_factory):
         db_url = url_factory()
-        am = AlembicManagerForTests(db_url)
+        engine = create_engine(db_url)
+        am = AlembicManagerForTests(engine)
         assert not am.is_up_to_date(GXY)
         assert not am.is_up_to_date(TSI)
         am.stamp(GXY_REVISION_2)
@@ -84,7 +89,8 @@ class TestAlembicManager:
 
     def test_is_up_to_date_multiple_revisions(self, url_factory):
         db_url = url_factory()
-        am = AlembicManagerForTests(db_url)
+        engine = create_engine(db_url)
+        am = AlembicManagerForTests(engine)
         assert not am.is_up_to_date(GXY)  # False: no head revisions in database
         am.stamp([GXY_REVISION_2, TSI_REVISION_2])
         assert am.is_up_to_date(GXY)  # True: both are up-to-date
@@ -92,14 +98,16 @@ class TestAlembicManager:
 
     def test_is_not_up_to_date_multiple_revisions_both(self, url_factory):
         db_url = url_factory()
-        am = AlembicManagerForTests(db_url)
+        engine = create_engine(db_url)
+        am = AlembicManagerForTests(engine)
         am.stamp([GXY_REVISION_1, TSI_REVISION_1])
         assert not am.is_up_to_date(GXY)  # False: both are not up-to-date
         assert not am.is_up_to_date(TSI)  # False: both are not up-to-date
 
     def test_is_not_up_to_date_multiple_revisions_one(self, url_factory):
         db_url = url_factory()
-        am = AlembicManagerForTests(db_url)
+        engine = create_engine(db_url)
+        am = AlembicManagerForTests(engine)
         am.stamp([GXY_REVISION_2, TSI_REVISION_1])
         assert am.is_up_to_date(GXY)  # True
         assert not am.is_up_to_date(TSI)  # False: only one is up-to-date
@@ -222,7 +230,7 @@ class TestDatabaseFixtures:
             assert db.has_sqlalchemymigrate_version_table()
             assert db.is_last_sqlalchemymigrate_version()
             assert db.has_alembic_version_table()
-            assert AlembicManagerForTests(db_url).is_at_revision(revision)
+            assert AlembicManagerForTests(engine).is_at_revision(revision)
 
     class TestState5:
 
@@ -242,7 +250,7 @@ class TestDatabaseFixtures:
             db = DatabaseStateCache(engine)
             assert not db.has_sqlalchemymigrate_version_table()
             assert db.has_alembic_version_table()
-            assert AlembicManagerForTests(db_url).is_at_revision(revision)
+            assert AlembicManagerForTests(engine).is_at_revision(revision)
 
     class TestState6:
 
@@ -262,7 +270,7 @@ class TestDatabaseFixtures:
             db = DatabaseStateCache(engine)
             assert not db.has_sqlalchemymigrate_version_table()
             assert db.has_alembic_version_table()
-            assert AlembicManagerForTests(db_url).is_at_revision(revision)
+            assert AlembicManagerForTests(engine).is_at_revision(revision)
 
 
 # Tests of primary function under different scenarios and database state
@@ -273,12 +281,12 @@ class TestNoDatabaseState:
     Expect: database created, initialized, versioned w/alembic.
     (we use `metadata_state6_{gxy|tsi|combined}` for final database schema)
     """
-#    def test_combined_database(self, url_factory, metadata_state6_combined):
-#        db_url = url_factory()
-#        assert not database_exists(db_url)
-#        db = DatabaseVerifier(db_url)
-#        db.verify()
-#        assert database_is_up_to_date(db_url, metadata_state6_combined)
+    def test_combined_database(self, url_factory, metadata_state6_combined):
+        db_url = url_factory()
+        assert not database_exists(db_url)
+        db = DatabaseVerifier(db_url)
+        db.verify()
+        assert database_is_up_to_date(db_url, metadata_state6_combined)
 
     def test_separate_databases(self, url_factory, metadata_state6_gxy, metadata_state6_tsi):
         db1_url, db2_url = url_factory(), url_factory()
@@ -559,7 +567,7 @@ def set_automigrate(monkeypatch):
 @pytest.fixture(autouse=True)  # always override AlembicManager
 def set_alembic_manager(monkeypatch):
     monkeypatch.setattr(
-        migrations, 'get_alembic_manager', lambda db_url: AlembicManagerForTests(db_url))
+        migrations, 'get_alembic_manager', lambda engine: AlembicManagerForTests(engine))
 
 
 @pytest.fixture(autouse=True)  # always override gxy_metadata
@@ -576,10 +584,10 @@ def set_tsi_metadata(monkeypatch, metadata_state6_tsi):
 
 class AlembicManagerForTests(AlembicManager):
 
-    def __init__(self, db_url):
+    def __init__(self, engine):
         path1, path2 = self._get_paths_to_version_locations()
         config_dict = {'version_locations': f'{path1};{path2}'}
-        super().__init__(db_url, config_dict=config_dict)
+        super().__init__(engine, config_dict)
 
     def _get_paths_to_version_locations(self):
         # One does not simply use a relative path for both tests and package tests.
@@ -625,7 +633,8 @@ def database_is_up_to_date(db_url, current_state_metadata, model=None):
     metadata_tables = set(current_state_metadata.tables)
     gxy_tables = {'gxy_table1', 'gxy_table2', 'gxy_table3'}
     tsi_tables = {'tsi_table1', 'tsi_table2', 'tsi_table3'}
-    am = AlembicManagerForTests(db_url)
+    engine = create_engine(db_url)
+    am = AlembicManagerForTests(engine)
 
     is_loaded = is_metadata_loaded(db_url, current_state_metadata)
     is_gxy_subset = gxy_tables <= metadata_tables
@@ -640,19 +649,21 @@ def database_is_up_to_date(db_url, current_state_metadata, model=None):
 
 def test_database_is_up_to_date(url_factory, metadata_state6_gxy):
     db_url, metadata = url_factory(), metadata_state6_gxy
+    engine = create_engine(db_url)
     assert not database_is_up_to_date(db_url, metadata, GXY)
     load_metadata(db_url, metadata)
-    am = AlembicManagerForTests(db_url)
+    am = AlembicManagerForTests(engine)
     am.stamp('heads')
     assert database_is_up_to_date(db_url, metadata, GXY)
 
 
 def test_database_is_up_to_date_for_passed_model_only(url_factory, metadata_state6_gxy):
     db_url, metadata = url_factory(), metadata_state6_gxy
+    engine = create_engine(db_url)
     assert not database_is_up_to_date(db_url, metadata, GXY)
     assert not database_is_up_to_date(db_url, metadata, TSI)
     load_metadata(db_url, metadata)
-    am = AlembicManagerForTests(db_url)
+    am = AlembicManagerForTests(engine)
     am.stamp('heads')
     assert database_is_up_to_date(db_url, metadata, GXY)
     assert not database_is_up_to_date(db_url, metadata, TSI)
@@ -660,24 +671,27 @@ def test_database_is_up_to_date_for_passed_model_only(url_factory, metadata_stat
 
 def test_database_is_up_to_date_checks_both_if_no_model_passed(url_factory, metadata_state6_combined):
     db_url, metadata = url_factory(), metadata_state6_combined
+    engine = create_engine(db_url)
     assert not database_is_up_to_date(db_url, metadata)
     load_metadata(db_url, metadata)
-    am = AlembicManagerForTests(db_url)
+    am = AlembicManagerForTests(engine)
     am.stamp('heads')
     assert database_is_up_to_date(db_url, metadata)
 
 
 def test_database_is_not_up_to_date_if_noncurrent_metadata_passed(url_factory, metadata_state5_gxy):
     db_url, metadata = url_factory(), metadata_state5_gxy
+    engine = create_engine(db_url)
     load_metadata(db_url, metadata)
-    am = AlembicManagerForTests(db_url)
+    am = AlembicManagerForTests(engine)
     am.stamp('heads')
     assert not database_is_up_to_date(db_url, metadata, GXY)
 
 
 def test_database_is_not_up_to_date_if_metadata_not_loaded(url_factory, metadata_state6_gxy):
     db_url, metadata = url_factory(), metadata_state6_gxy
-    am = AlembicManagerForTests(db_url)
+    engine = create_engine(db_url)
+    am = AlembicManagerForTests(engine)
     am.stamp('heads')
     assert not database_is_up_to_date(db_url, metadata, GXY)
 
@@ -836,6 +850,7 @@ def db_state4_combined(url_factory, metadata_state4_combined):
 
 
 def _setup_db_state4(db_url, metadata, model=None):
+    engine = create_engine(db_url)
     create_database(db_url)
     load_metadata(db_url, metadata)
     load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION)
@@ -847,7 +862,7 @@ def _setup_db_state4(db_url, metadata, model=None):
         revisions = TSI_REVISION_0
     else:
         revisions = [GXY_REVISION_0, TSI_REVISION_0]
-    am = AlembicManagerForTests(db_url)
+    am = AlembicManagerForTests(engine)
     am.stamp(revisions)
 
     return db_url
@@ -870,6 +885,7 @@ def db_state5_combined(url_factory, metadata_state5_combined):
 
 
 def _setup_db_state5(db_url, metadata, model=None):
+    engine = create_engine(db_url)
     create_database(db_url)
     load_metadata(db_url, metadata)
 
@@ -880,7 +896,7 @@ def _setup_db_state5(db_url, metadata, model=None):
         revisions = TSI_REVISION_1
     else:
         revisions = [GXY_REVISION_1, TSI_REVISION_1]
-    am = AlembicManagerForTests(db_url)
+    am = AlembicManagerForTests(engine)
     am.stamp(revisions)
 
     return db_url
@@ -903,6 +919,7 @@ def db_state6_combined(url_factory, metadata_state6_combined):
 
 
 def _setup_db_state6(db_url, metadata, model=None):
+    engine = create_engine(db_url)
     create_database(db_url)
     load_metadata(db_url, metadata)
 
@@ -913,7 +930,7 @@ def _setup_db_state6(db_url, metadata, model=None):
         revisions = TSI_REVISION_2
     else:
         revisions = [GXY_REVISION_2, TSI_REVISION_2]
-    am = AlembicManagerForTests(db_url)
+    am = AlembicManagerForTests(engine)
     am.stamp(revisions)
 
     return db_url
