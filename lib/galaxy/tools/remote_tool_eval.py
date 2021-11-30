@@ -10,7 +10,6 @@ from typing import (
 
 from sqlalchemy.orm import scoped_session
 
-from galaxy import model
 from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
@@ -28,6 +27,7 @@ from galaxy.tools import (
     evaluation,
 )
 from galaxy.tools.data import ToolDataTableManager
+from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 
 
@@ -46,7 +46,6 @@ class ToolAppConfig(NamedTuple):
 class ToolApp:
     """Dummy App that allows loading tools"""
     name = 'tool_app'
-    model = model
 
     def __init__(
         self,
@@ -57,7 +56,7 @@ class ToolApp:
         tool_data_table_manager: ToolDataTableManager,
         file_sources: ConfiguredFileSources,
     ):
-        self.model.context = sa_session  # type: ignore[attr-defined]
+        self.model = Bunch(context=sa_session)
         self.config = tool_app_config
         self.datatypes_registry = datatypes_registry
         self.object_store = object_store
