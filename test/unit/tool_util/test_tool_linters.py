@@ -4,6 +4,7 @@ import pytest
 
 from galaxy.tool_util.lint import LintContext
 from galaxy.tool_util.linters import (
+    citations,
     general,
     help,
     inputs,
@@ -14,6 +15,36 @@ from galaxy.tool_util.linters import (
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
 
+# tests tool xml for citations linter
+# tests tool xml for general linter
+CITATIONS_MULTIPLE = """
+<tool>
+    <citations/>
+    <citations/>
+</tool>
+"""
+
+CITATIONS_ABSENT = """
+<tool/>
+"""
+
+CITATIONS_ERRORS = """
+<tool>
+    <citations>
+        <nonsense/>
+        <citation type="hoerensagen"/>
+        <citation type="doi"> </citation>
+    </citations>
+</tool>
+"""
+
+CITATIONS_VALID = """
+<tool>
+    <citations>
+        <citation type="doi">DOI</citation>
+    </citations>
+</tool>
+"""
 # tests tool xml for general linter
 GENERAL_MISSING_TOOL_ID_NAME_VERSION = """
 <tool profile="2109">
@@ -456,6 +487,33 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
 
 TESTS = [
     (
+        CITATIONS_MULTIPLE, citations.lint_citations,
+        lambda x:
+            "More than one citation section found, behavior undefined." in x.error_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 1
+    ),
+    (
+        CITATIONS_ABSENT, citations.lint_citations,
+        lambda x:
+            "No citations found, consider adding citations to your tool." in x.warn_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        CITATIONS_ERRORS, citations.lint_citations,
+        lambda x:
+            "Unknown tag discovered in citations block [nonsense], will be ignored." in x.warn_messages
+            and "Unknown citation type discovered [hoerensagen], will be ignored." in x.warn_messages
+            and 'Empty doi citation.' in x.error_messages
+            and 'Found no valid citations.' in x.warn_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 3 and len(x.error_messages) == 1
+    ),
+    (
+        CITATIONS_VALID, citations.lint_citations,
+        lambda x:
+            'Found 1 likely valid citations.' in x.valid_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 1 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
+    ),
+    (
         GENERAL_MISSING_TOOL_ID_NAME_VERSION, general.lint_general,
         lambda x:
             'Tool version is missing or empty.' in x.error_messages
@@ -732,6 +790,10 @@ TESTS = [
 ]
 
 TEST_IDS = [
+    'citations: multiple',
+    'citations: absent',
+    'citations: errors',
+    'citations: valid',
     'general: missing tool id, name, version; invalid profile',
     'general: whitespace in version, id, name',
     'general: requirement without version',

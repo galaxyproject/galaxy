@@ -39,3 +39,5 @@ def lint_citations(tool_xml, lint_ctx):
 
     if valid_citations > 0:
         lint_ctx.valid(f"Found {valid_citations} likely valid citations.", line=root_line, xpath=root_xpath)
+    else:
+        lint_ctx.warn("Found no valid citations.", line=root_line, xpath=root_xpath)
