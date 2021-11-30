@@ -145,14 +145,6 @@ INPUTS_NO_INPUTS_DATASOURCE = """
 </tool>
 """
 
-INPUTS_REDUNDANT_NAME = """
-<tool>
-    <inputs>
-        <param name="param_name" argument="--param-name" type="text"/>
-    </inputs>
-</tool>
-"""
-
 INPUTS_VALID = """
 <tool>
     <inputs>
@@ -169,6 +161,7 @@ INPUTS_PARAM_NAME = """
         <param name="" type="text"/>
         <param name="2" type="text"/>
         <param argument="--valid" type="text"/>
+        <param name="param_name" argument="--param-name" type="text"/>
     </inputs>
 </tool>
 """
@@ -697,12 +690,6 @@ TESTS = [
             and len(x.info_messages) == 3 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
-        INPUTS_REDUNDANT_NAME, inputs.lint_inputs,
-        lambda x:
-            "Param input [param_name] 'name' attribute is redundant if argument implies the same name." in x.warn_messages
-            and len(x.warn_messages) == 1 and len(x.error_messages) == 0
-    ),
-    (
         INPUTS_VALID, inputs.lint_inputs,
         lambda x:
             "Found 2 input parameters." in x.info_messages
@@ -711,11 +698,12 @@ TESTS = [
     (
         INPUTS_PARAM_NAME, inputs.lint_inputs,
         lambda x:
-            "Found 4 input parameters." in x.info_messages
+            "Found 5 input parameters." in x.info_messages
             and 'Param input [2] is not a valid Cheetah placeholder.' in x.warn_messages
             and 'Found param input with no name specified.' in x.error_messages
             and 'Param input with empty name.' in x.error_messages
-            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 2
+            and "Param input [param_name] 'name' attribute is redundant if argument implies the same name." in x.warn_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 2 and len(x.error_messages) == 2
     ),
     (
         INPUTS_PARAM_TYPE, inputs.lint_inputs,
@@ -951,7 +939,6 @@ TEST_IDS = [
     'help: with invalid restructured text',
     'inputs: no inputs sections',
     'inputs: no inputs sections for datasource',
-    'inputs: redundant param name',
     'inputs: valid',
     'inputs: param name',
     'inputs: param type',
