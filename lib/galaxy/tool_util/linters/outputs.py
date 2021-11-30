@@ -27,9 +27,9 @@ def lint_output(tool_xml, lint_ctx):
         num_outputs += 1
         if "name" not in output.attrib:
             lint_ctx.warn("Tool output doesn't define a name - this is likely a problem.", line=output.sourceline, xpath=tool_xml.getpath(output))
-        else:
-            if not is_valid_cheetah_placeholder(output.attrib["name"]):
-                lint_ctx.warn("Tool output name [%s] is not a valid Cheetah placeholder.", output.attrib["name"], line=output.sourceline, xpath=tool_xml.getpath(output))
+            # TODO make this an error if there is no discover_datasets / from_work_dir (is this then still a problem)
+        elif not is_valid_cheetah_placeholder(output.attrib["name"]):
+            lint_ctx.warn(f'Tool output name [{output.attrib["name"]}] is not a valid Cheetah placeholder.', line=output.sourceline, xpath=tool_xml.getpath(output))
 
         format_set = False
         if __check_format(tool_xml, output, lint_ctx):
@@ -62,7 +62,7 @@ def __check_format(tool_xml, node, lint_ctx, allow_ext=False):
     return true (node defines format/ext) / false (else)
     """
     if "format_source" in node.attrib and ("ext" in node.attrib or "format" in node.attrib):
-        lint_ctx.warn(f"Tool {node.tag} output {node.attrib.get('name', 'with missing name')} should use either format_source or format/ext", line=node.sourceline, xpath=tool_xml.getpath(node))
+        lint_ctx.warn(f"Tool {node.tag} output '{node.attrib.get('name', 'with missing name')}' should use either format_source or format/ext", line=node.sourceline, xpath=tool_xml.getpath(node))
     if "format_source" in node.attrib:
         return True
     # if allowed (e.g. for discover_datasets), ext takes precedence over format
@@ -90,5 +90,6 @@ def __check_pattern(node):
         return False
     pattern = node.attrib["pattern"]
     regex_pattern = NAMED_PATTERNS.get(pattern, pattern)
+    # TODO error on wrong pattern or non-regexp
     if "(?P<ext>" in regex_pattern:
         return True

@@ -399,17 +399,39 @@ INPUTS_VALIDATOR_CORRECT = """
 </tool>
 """
 
-REPEATS = """
-<tool>
-    <inputs>
-        <repeat>
-            <param name="another_param_name" type="data" format="bed"/>
-        </repeat>
-    </inputs>
-</tool>
-"""
 
 # test tool xml for outputs linter
+OUTPUTS_MISSING = """
+<tool/>
+"""
+OUTPUTS_MULTIPLE = """
+<tool>
+    <outputs/>
+    <outputs/>
+</tool>
+"""
+OUTPUTS_UNKNOWN_TAG = """
+<tool>
+    <outputs>
+        <output/>
+    </outputs>
+</tool>
+"""
+OUTPUTS_UNNAMED_INVALID_NAME = """
+<tool>
+    <outputs>
+        <data/>
+        <collection name="2output"/>
+    </outputs>
+</tool>
+"""
+OUTPUTS_FORMAT_INPUT = """
+<tool>
+    <outputs>
+        <data name="valid_name" format="input"/>
+    </outputs>
+</tool>
+"""
 
 # check that linter accepts format source for collection elements as means to specify format
 # and that the linter warns if format and format_source are used
@@ -432,6 +454,17 @@ OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA = """
             <discover_datasets from_tool_provided_metadata="true"/>
         </data>
     </outputs>
+</tool>
+"""
+
+# tool xml for repeats linter
+REPEATS = """
+<tool>
+    <inputs>
+        <repeat>
+            <param name="another_param_name" type="data" format="bed"/>
+        </repeat>
+    </inputs>
 </tool>
 """
 
@@ -774,22 +807,60 @@ TESTS = [
         lambda x: len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
-        REPEATS, inputs.lint_repeats,
+        OUTPUTS_MISSING, outputs.lint_output,
         lambda x:
-            "Repeat does not specify name attribute." in x.error_messages
-            and "Repeat does not specify title attribute." in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 2
+            'Tool contains no outputs section, most tools should produce outputs.' in x.warn_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        OUTPUTS_MULTIPLE, outputs.lint_output,
+        lambda x:
+            '0 outputs found.' in x.info_messages
+            and 'Tool contains multiple output sections, behavior undefined.' in x.warn_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        OUTPUTS_UNKNOWN_TAG, outputs.lint_output,
+        lambda x:
+            '0 outputs found.' in x.info_messages
+            and 'Unknown element found in outputs [output]' in x.warn_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        OUTPUTS_UNNAMED_INVALID_NAME, outputs.lint_output,
+        lambda x:
+            '2 outputs found.' in x.info_messages
+            and "Tool output doesn't define a name - this is likely a problem." in x.warn_messages
+            and "Tool data output with missing name doesn't define an output format." in x.warn_messages
+            and 'Tool output name [2output] is not a valid Cheetah placeholder.' in x.warn_messages
+            and "Collection output with undefined 'type' found." in x.warn_messages
+            and "Tool collection output 2output doesn't define an output format." in x.warn_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 5 and len(x.error_messages) == 0
+    ),
+    (
+        OUTPUTS_FORMAT_INPUT, outputs.lint_output,
+        lambda x:
+            '1 outputs found.' in x.info_messages
+            and "Using format='input' on data, format_source attribute is less ambiguous and should be used instead." in x.warn_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
     ),
     (
         OUTPUTS_COLLECTION_FORMAT_SOURCE, outputs.lint_output,
         lambda x:
-            "Tool data output reverse should use either format_source or format/ext" in x.warn_messages
-            and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+            "Tool data output 'reverse' should use either format_source or format/ext" in x.warn_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
     ),
     (
         OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA, outputs.lint_output,
         lambda x:
             len(x.warn_messages) == 0 and len(x.error_messages) == 0
+    ),
+    (
+        REPEATS, inputs.lint_repeats,
+        lambda x:
+            "Repeat does not specify name attribute." in x.error_messages
+            and "Repeat does not specify title attribute." in x.error_messages
+            and len(x.warn_messages) == 0 and len(x.error_messages) == 2
     ),
     (
         STDIO_DEFAULT_FOR_DEFAULT_PROFILE, stdio.lint_stdio,
@@ -877,9 +948,14 @@ TEST_IDS = [
     'inputs: select filter',
     'inputs: validator incompatibilities',
     'inputs: validator all correct',
-    'repeats',
+    'outputs: missing outputs tag',
+    'outputs: multiple outputs tags',
+    'outputs: unknow tag in outputs',
+    'outputs: unnamed or invalid output',
+    'outputs: format="input"',
     'outputs collection static elements with format_source',
     'outputs discover datatsets with tool provided metadata',
+    'repeats',
     'stdio: default for default profile',
     'stdio: default for non-legacy profile',
     'stdio: multiple stdio',
