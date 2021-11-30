@@ -18,7 +18,7 @@ from galaxy.model.base import SharedModelMapping
 from galaxy.model.tags import CommunityTagHandler
 from galaxy.quota import NoQuotaAgent, QuotaAgent
 from galaxy.security import idencoding
-from galaxy.structured_app import BasicApp
+from galaxy.structured_app import BasicSharedApp
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
@@ -28,12 +28,12 @@ from . import config
 log = logging.getLogger(__name__)
 
 
-class UniverseApplication(BasicApp):
+class UniverseApplication(BasicSharedApp):
     """Encapsulates the state of a Universe application"""
 
     def __init__(self, **kwd) -> None:
         super().__init__()
-        self[BasicApp] = self
+        self[BasicSharedApp] = self
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "tool_shed"
         # will be overwritten when building WSGI app

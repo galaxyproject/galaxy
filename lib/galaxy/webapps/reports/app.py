@@ -6,19 +6,19 @@ import galaxy.model
 from galaxy.config import configure_logging
 from galaxy.model.base import SharedModelMapping
 from galaxy.security import idencoding
-from galaxy.structured_app import BasicApp
+from galaxy.structured_app import BasicSharedApp
 from galaxy.web_stack import application_stack_instance
 from . import config
 
 log = logging.getLogger(__name__)
 
 
-class UniverseApplication(BasicApp):
+class UniverseApplication(BasicSharedApp):
     """Encapsulates the state of a Universe application"""
 
     def __init__(self, **kwargs):
         super().__init__()
-        self[BasicApp] = self
+        self[BasicSharedApp] = self
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "reports"
         # Read config file and check for errors

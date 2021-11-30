@@ -8,8 +8,6 @@ from typing import (
     NamedTuple,
 )
 
-from sqlalchemy.orm import scoped_session
-
 from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
@@ -20,7 +18,9 @@ from galaxy.metadata.set_metadata import (
     validate_and_load_datatypes_config,
 )
 from galaxy.model import store
+from galaxy.model.store import SessionlessContext
 from galaxy.objectstore import ObjectStore
+from galaxy.structured_app import MinimalToolApp
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tools import (
     create_tool_from_source,
@@ -43,13 +43,13 @@ class ToolAppConfig(NamedTuple):
     admin_users: list = []
 
 
-class ToolApp:
+class ToolApp(MinimalToolApp):
     """Dummy App that allows loading tools"""
     name = 'tool_app'
 
     def __init__(
         self,
-        sa_session: scoped_session,
+        sa_session: SessionlessContext,
         tool_app_config: ToolAppConfig,
         datatypes_registry: Registry,
         object_store: ObjectStore,

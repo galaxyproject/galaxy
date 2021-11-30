@@ -43,7 +43,7 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.model import mapping
 from galaxy.model.database_utils import database_exists
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
-from galaxy.structured_app import BasicApp
+from galaxy.structured_app import BasicSharedApp
 from galaxy.util import (
     ExecutionTimer,
     listify,
@@ -1248,8 +1248,8 @@ class ConfiguresGalaxyMixin:
         from galaxy.tool_util.deps.dependencies import AppInfo
         import galaxy.tools.search
 
-        if not isinstance(self, BasicApp):
-            raise Exception("Must inherit from BasicApp")
+        if not isinstance(self, BasicSharedApp):
+            raise Exception("Must inherit from BasicSharedApp")
 
         self.citations_manager = CitationsManager(self)
         self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
