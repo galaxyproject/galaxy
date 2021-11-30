@@ -1,0 +1,27 @@
+<tool id="input_is_symlink" name="input_is_symlink" version="1.0.0">
+    <command><![CDATA[
+if [ -h '$input_data' ]; then
+    echo "input is symlink: $input_data";
+    echo 'OK' > 1;
+else
+    echo "input is not symlink: $input_data";
+    echo 'ERROR' > 1;
+fi
+    ]]></command>
+    <inputs>
+        <param name="input_data" type="data" format="data" label="input_data" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" from_work_dir="1" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_data" value="1.fastqsanger" ftype="fastqsanger" />
+            <output name="output" ftype="txt">
+                <assert_contents>
+                    <has_line line="OK" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

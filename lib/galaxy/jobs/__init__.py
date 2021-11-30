@@ -36,6 +36,8 @@ from galaxy.exceptions import (
 )
 from galaxy.job_execution.datasets import (
     DatasetPath,
+    DatasetPathRewriterRouter,
+    InputsToWorkingDirectoryPathRewriter,
     NullDatasetPathRewriter,
     OutputsToWorkingDirectoryPathRewriter,
     TaskPathRewriter
@@ -985,9 +987,20 @@ class JobWrapper(HasResourceParameters):
     def _job_dataset_path_rewriter(self):
         if self._dataset_path_rewriter is None:
             outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
+            inputs_to_working_directory = self.get_destination_configuration("inputs_to_working_directory", False)
+            path_rewriters = {}
             if outputs_to_working_directory:
                 output_directory = self.outputs_directory
-                self._dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(self.working_directory, output_directory)
+                path_rewriters['output'] = OutputsToWorkingDirectoryPathRewriter(self.working_directory, output_directory)
+            if inputs_to_working_directory:
+                # A boolean True is equivalent to 'link'
+                style = 'link' if inputs_to_working_directory is True else inputs_to_working_directory
+                input_directory = self.inputs_directory
+                path_rewriters['input'] = InputsToWorkingDirectoryPathRewriter(self.working_directory, input_directory, style=style)
+            if len(path_rewriters) > 1:
+                self._dataset_path_rewriter = DatasetPathRewriterRouter(path_rewriters)
+            elif path_rewriters:
+                self._dataset_path_rewriter = next(iter(path_rewriters.values()))
             else:
                 self._dataset_path_rewriter = NullDatasetPathRewriter()
         return self._dataset_path_rewriter
@@ -1001,6 +1014,10 @@ class JobWrapper(HasResourceParameters):
         """Default location of ``outputs_to_working_directory``.
         """
         return None if self.created_with_galaxy_version < packaging.version.parse("20.01") else "outputs"
+
+    @property
+    def inputs_directory(self):
+        return "inputs"
 
     @property
     def created_with_galaxy_version(self):

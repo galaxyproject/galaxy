@@ -4213,9 +4213,25 @@
     This is necessary (for example) if jobs run on a cluster and
     datasets can not be created by the user running the jobs (e.g. if
     the filesystem is mounted read-only or the jobs are run by a
-    different user than the galaxy user).
+    different user than the galaxy user). This can be set as a job
+    destination/environment parameter in the job configuration.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``inputs_to_working_directory``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This option will override tool input paths to read inputs from the
+    job working directory (instead of to the file_path). Set to 'link'
+    to symbolically link to inputs, or set to 'copy' to copy inputs
+    (warning: copying can be very slow and should not be necessary in
+    most cases). This can be set as a job destination/environment
+    parameter in the job configuration.
+:Default: ``false``
+:Type: any
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

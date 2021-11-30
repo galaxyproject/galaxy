@@ -1,11 +1,16 @@
 """
 Utility classes allowing Job interface to reason about datasets.
 """
+import logging
+import os
 import os.path
+import shutil
 from abc import (
     ABCMeta,
     abstractmethod
 )
+
+log = logging.getLogger(__name__)
 
 
 def dataset_path_rewrites(dataset_paths):
@@ -58,6 +63,17 @@ class DatasetPath:
         return dataset_path
 
 
+class DatasetPathRewriterRouter:
+    def __init__(self, path_rewriters):
+        self.path_rewriters = path_rewriters
+
+    def rewrite_dataset_path(self, dataset, dataset_type):
+        rewriter = self.path_rewriters.get(dataset_type)
+        if rewriter:
+            return rewriter.rewrite_dataset_path(dataset, dataset_type)
+        return None
+
+
 class DatasetPathRewriter(metaclass=ABCMeta):
     """ Used by runner to rewrite paths. """
 
@@ -77,6 +93,35 @@ class NullDatasetPathRewriter:
         """ Keep path the same.
         """
         return None
+
+
+class InputsToWorkingDirectoryPathRewriter:
+    def __init__(self, working_directory, inputs_directory_name, style='link'):
+        self.working_directory = working_directory
+        self.inputs_directory_name = inputs_directory_name
+        assert style in ('link', 'copy'), f"Unknown input rewrite style: {style}"
+        self.style = style
+
+    def rewrite_dataset_path(self, dataset, dataset_type):
+        """ Keep path the same.
+        """
+        # TODO: what about efps?
+        if dataset_type == 'input':
+            base_input_directory = os.path.abspath(self.working_directory)
+            if self.inputs_directory_name is not None:
+                base_input_directory = os.path.join(base_input_directory, self.inputs_directory_name)
+            # set false_path to uuid, no harm even if object store uses id
+            false_path = os.path.join(base_input_directory, f"galaxy_dataset_{dataset.dataset.uuid}.{dataset.ext}")
+            os.makedirs(base_input_directory, exist_ok=True)
+            if self.style == 'link':
+                log.debug(f"Linking '{dataset.file_name}' to '{false_path}'")
+                os.symlink(dataset.file_name, false_path)
+            elif self.style == 'copy':
+                log.debug(f"Copying '{dataset.file_name}' to '{false_path}'")
+                shutil.copy(dataset.file_name, false_path)
+            return false_path
+        else:
+            return None
 
 
 class OutputsToWorkingDirectoryPathRewriter:

@@ -145,6 +145,8 @@
   <tool file="implicit_conversion_format_input.xml" />
   <tool file="implicit_collection_conversion.xml" />
   <tool file="implicit_nested_list_conversion.xml" />
+  <tool file="input_in_job_dir.xml" />
+  <tool file="input_is_symlink.xml" />
   <tool file="explicit_conversion.xml" />
   <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
