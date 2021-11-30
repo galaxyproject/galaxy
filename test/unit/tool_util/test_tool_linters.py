@@ -735,7 +735,8 @@ TESTS = [
     (
         INPUTS_CONDITIONAL, inputs.lint_inputs,
         lambda x:
-            "Conditional without a name" in x.error_messages
+            'Found 10 input parameters.' in x.info_messages
+            and "Conditional without a name" in x.error_messages
             and "Select parameter of a conditional [select] options have to be defined by 'option' children elements." in x.error_messages
             and 'Conditional [cond_wo_param] needs exactly one child <param> found 0' in x.error_messages
             and 'Conditional [cond_w_mult_param] needs exactly one child <param> found 2' in x.error_messages
@@ -746,23 +747,25 @@ TESTS = [
             and 'Conditional [cond_w_multiple_select] test parameter cannot be multiple="true"' in x.warn_messages
             and "Conditional [when_wo_value] when without value" in x.error_messages
             and "Conditional [missing_when] no <when /> block found for select option 'none'" in x.warn_messages
-            and len(x.warn_messages) == 6 and len(x.error_messages) == 6
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 6 and len(x.error_messages) == 6
     ),
     (
         INPUTS_SELECT_INCOMPATIBLE_DISPLAY, inputs.lint_inputs,
         lambda x:
-            'Select [radio_select] display="radio" is incompatible with optional="true"' in x.error_messages
+            'Found 3 input parameters.' in x.info_messages
+            and 'Select [radio_select] display="radio" is incompatible with optional="true"' in x.error_messages
             and 'Select [radio_select] display="radio" is incompatible with multiple="true"' in x.error_messages
             and 'Select [checkboxes_select] `display="checkboxes"` is incompatible with `optional="false"`, remove the `display` attribute' in x.error_messages
             and 'Select [checkboxes_select] `display="checkboxes"` is incompatible with `multiple="false"`, remove the `display` attribute' in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 4
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 4
     ),
     (
         INPUTS_SELECT_DUPLICATED_OPTIONS, inputs.lint_inputs,
         lambda x:
-            'Select parameter [select] has multiple options with the same text content' in x.error_messages
+            'Found 1 input parameters.' in x.info_messages
+            and 'Select parameter [select] has multiple options with the same text content' in x.error_messages
             and 'Select parameter [select] has multiple options with the same value' in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 2
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 2
     ),
     (
         SELECT_DUPLICATED_OPTIONS_WITH_DIFF_SELECTED, inputs.lint_inputs,
@@ -773,17 +776,19 @@ TESTS = [
         SELECT_DEPRECATIONS, inputs.lint_inputs,
         INPUTS_SELECT_DEPRECATIONS, inputs.lint_inputs,
         lambda x:
-            "Select parameter [select_do] uses deprecated 'dynamic_options' attribute." in x.warn_messages
+            'Found 3 input parameters.' in x.info_messages
+            and "Select parameter [select_do] uses deprecated 'dynamic_options' attribute." in x.warn_messages
             and "Select parameter [select_ff] options uses deprecated 'from_file' attribute." in x.warn_messages
             and "Select parameter [select_fp] options uses deprecated 'from_parameter' attribute." in x.warn_messages
             and "Select parameter [select_ff] options uses deprecated 'transform_lines' attribute." in x.warn_messages
             and "Select parameter [select_fp] options uses deprecated 'options_filter_attribute' attribute." in x.warn_messages
-            and len(x.warn_messages) == 5 and len(x.error_messages) == 0
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 5 and len(x.error_messages) == 0
     ),
     (
         INPUTS_SELECT_OPTION_DEFINITIONS, inputs.lint_inputs,
         lambda x:
-            "Select parameter [select_noopt] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute." in x.error_messages
+            'Found 6 input parameters.' in x.info_messages
+            and "Select parameter [select_noopt] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute." in x.error_messages
             and "Select parameter [select_noopts] options tag defines no options. Use 'from_dataset', 'from_data_table', or a filter that adds values." in x.error_messages
             and "Select parameter [select_fd_op] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute." in x.error_messages
             and "Select parameter [select_fd_op] contains multiple options elements." in x.error_messages
@@ -791,30 +796,34 @@ TESTS = [
             and "Select parameter [select_noval_notext] has option without value" in x.error_messages
             and "Select parameter [select_noval_notext] has option without text" in x.warn_messages
             and "Select parameter [select_meta_file_key_incomp] 'meta_file_key' is only compatible with 'from_dataset'." in x.error_messages
-            and len(x.warn_messages) == 1 and len(x.error_messages) == 7
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 7
     ),
     (
         INPUTS_SELECT_FILTER, inputs.lint_inputs,
         lambda x:
-            "Select parameter [select_filter_types] contains filter without type." in x.error_messages
+            'Found 1 input parameters.' in x.info_messages
+            and "Select parameter [select_filter_types] contains filter without type." in x.error_messages
             and "Select parameter [select_filter_types] contains filter with unknown type 'unknown_filter_type'." in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 2
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 2
     ),
     (
         INPUTS_VALIDATOR_INCOMPATIBILITIES, inputs.lint_inputs,
         lambda x:
-            "Parameter [param_name]: 'in_range' validators are not expected to contain text (found 'TEXT')" in x.warn_messages
+            'Found 2 input parameters.' in x.info_messages
+            and "Parameter [param_name]: 'in_range' validators are not expected to contain text (found 'TEXT')" in x.warn_messages
             and "Parameter [param_name]: validator with an incompatible type 'in_range'" in x.error_messages
             and "Parameter [param_name]: 'in_range' validators need to define the 'min' or 'max' attribute(s)" in x.error_messages
             and "Parameter [param_name]: attribute 'filename' is incompatible with validator of type 'regex'" in x.error_messages
             and "Parameter [param_name]: expression validator without content" in x.error_messages
             and "Parameter [another_param_name]: 'metadata' validators need to define the 'check' or 'skip' attribute(s)" in x.error_messages
             and "Parameter [param_name]: 'value_in_data_table' validators need to define the 'table_name' attribute" in x.error_messages
-            and len(x.warn_messages) == 1 and len(x.error_messages) == 6
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 6
     ),
     (
         INPUTS_VALIDATOR_CORRECT, inputs.lint_inputs,
-        lambda x: len(x.warn_messages) == 0 and len(x.error_messages) == 0
+        lambda x:
+            'Found 5 input parameters.' in x.info_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
         OUTPUTS_MISSING, outputs.lint_output,
@@ -863,34 +872,35 @@ TESTS = [
     (
         OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA, outputs.lint_output,
         lambda x:
-            len(x.warn_messages) == 0 and len(x.error_messages) == 0
+            '1 outputs found.' in x.info_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
         REPEATS, inputs.lint_repeats,
         lambda x:
             "Repeat does not specify name attribute." in x.error_messages
             and "Repeat does not specify title attribute." in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 2
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 2
     ),
     (
         STDIO_DEFAULT_FOR_DEFAULT_PROFILE, stdio.lint_stdio,
         lambda x:
             "No stdio definition found, tool indicates error conditions with output written to stderr." in x.info_messages
-            and len(x.info_messages) == 1 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
 
     ),
     (
         STDIO_DEFAULT_FOR_NONLEGACY_PROFILE, stdio.lint_stdio,
         lambda x:
             "No stdio definition found, tool indicates error conditions with non-zero exit codes." in x.info_messages
-            and len(x.info_messages) == 1 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
 
     ),
     (
         STDIO_MULTIPLE_STDIO, stdio.lint_stdio,
         lambda x:
             "More than one stdio tag found, behavior undefined." in x.error_messages
-            and len(x.info_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 1
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 1
 
     ),
     (
@@ -899,7 +909,7 @@ TESTS = [
             "Unknown stdio child tag discovered [reqex]. Valid options are exit_code and regex." in x.warn_messages
             and "Unknown attribute [descriptio] encountered on exit_code tag." in x.warn_messages
             and "Unknown attribute [descriptio] encountered on regex tag." in x.warn_messages
-            and len(x.info_messages) == 0 and len(x.warn_messages) == 3 and len(x.error_messages) == 0
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 3 and len(x.error_messages) == 0
 
     ),
     (
