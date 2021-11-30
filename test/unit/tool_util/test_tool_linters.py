@@ -12,6 +12,7 @@ from galaxy.tool_util.linters import (
     outputs,
     stdio,
     tests,
+    xml_order,
 )
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
@@ -544,6 +545,15 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
 </tool>
 """
 
+# tool xml for xml_order linter
+XML_ORDER = """
+<tool>
+    <wrong_tag/>
+    <command/>
+    <stdio/>
+</tool>
+"""
+
 TESTS = [
     (
         CITATIONS_MULTIPLE, citations.lint_citations,
@@ -911,6 +921,13 @@ TESTS = [
         lambda x:
             "Test 1: Cannot specify outputs in a test expecting failure." in x.error_messages
             and len(x.warn_messages) == 0 and len(x.error_messages) == 1
+    ),
+    (
+        XML_ORDER, xml_order.lint_xml_order,
+        lambda x:
+            'Unknown tag [wrong_tag] encountered, this may result in a warning in the future.' in x.info_messages
+            and 'Best practice violation [stdio] elements should come before [command]' in x.warn_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
     )
 ]
 
@@ -963,6 +980,7 @@ TEST_IDS = [
     'test without expectations',
     'test param missing from inputs',
     'test expecting failure with outputs',
+    'xml_order'
 ]
 
 
