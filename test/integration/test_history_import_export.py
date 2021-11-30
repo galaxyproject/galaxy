@@ -11,4 +11,5 @@ class ImportExportHistoryOutputsToWorkingDirTestCase(ImportExportTests, Integrat
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        config['metadata_strategy'] = 'extended'
         config['outputs_to_working_directory'] = True
