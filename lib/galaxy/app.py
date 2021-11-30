@@ -72,7 +72,7 @@ from galaxy.web_stack import application_stack_instance, ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 from .di import Container
-from .structured_app import BasicApp, MinimalManagerApp, StructuredApp
+from .structured_app import BasicSharedApp, MinimalManagerApp, StructuredApp
 
 log = logging.getLogger(__name__)
 app = None
@@ -97,7 +97,7 @@ class HaltableContainer(Container):
             raise exception
 
 
-class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableContainer):
+class MinimalGalaxyApplication(BasicSharedApp, config.ConfiguresGalaxyMixin, HaltableContainer):
     """Encapsulates the state of a minimal Galaxy application"""
 
     def __init__(self, fsmon=False, configure_logging=True, **kwargs) -> None:
@@ -106,7 +106,7 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
             ("object store", self._shutdown_object_store),
             ("database connection", self._shutdown_model),
         ]
-        self._register_singleton(BasicApp, self)
+        self._register_singleton(BasicSharedApp, self)
         if not log.handlers:
             # Paste didn't handle it, so we need a temporary basic log
             # configured.  The handler added here gets dumped and replaced with

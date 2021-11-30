@@ -16,7 +16,7 @@ from galaxy import (
     web
 )
 from galaxy.exceptions import ToolMissingException
-from galaxy.jobs.actions.post import ActionBox
+from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import PostJobAction, Workflow
 from galaxy.model.dataset_collections import matching
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput

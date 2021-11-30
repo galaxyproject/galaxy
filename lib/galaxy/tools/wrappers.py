@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from galaxy.tools import Tool
     from galaxy.tools.parameters.basic import SelectToolParameter, ToolParameter
     from galaxy.datatypes.registry import Registry
-    from galaxy.jobs import ComputeEnvironment
+    from galaxy.job_execution.compute_environment import ComputeEnvironment
     from galaxy.model.metadata import MetadataCollection
 
 log = logging.getLogger(__name__)

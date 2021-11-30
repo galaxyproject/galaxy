@@ -26,7 +26,7 @@ from galaxy import (
     model,
     util
 )
-from galaxy.jobs.actions.post import ActionBox
+from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (

@@ -28,6 +28,10 @@ class DefaultJobAction:
         pass
 
     @classmethod
+    def execute_on_mapped_over(cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict, final_job_state=None):
+        pass
+
+    @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments:
             return f"{pja.action_type} -> {escape(pja.action_arguments)}"

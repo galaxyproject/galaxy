@@ -236,7 +236,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         efile = f"{self.app.config.cluster_files_directory}/{job_wrapper.job_id}.e"
         ecfile = f"{self.app.config.cluster_files_directory}/{job_wrapper.job_id}.ec"
 
-        output_fnames = job_wrapper.get_output_fnames()
+        output_fnames = job_wrapper.job_io.get_output_fnames()
 
         # If an application server is set, we're staging
         if self.app.config.pbs_application_server:
@@ -244,7 +244,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             pbs_efile = f"{self.app.config.pbs_application_server}:{efile}"
             output_files = [str(o) for o in output_fnames]
             output_files.append(ecfile)
-            stagein = self.get_stage_in_out(job_wrapper.get_input_fnames() + output_files, symlink=True)
+            stagein = self.get_stage_in_out(job_wrapper.job_io.get_input_fnames() + output_files, symlink=True)
             stageout = self.get_stage_in_out(output_files)
             attrs = [
                 dict(name=pbs.ATTR_o, value=pbs_ofile),
@@ -276,7 +276,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                 os.utime(ecfile, None)
 
             stage_commands = pbs_symlink_template % (
-                " ".join(job_wrapper.get_input_fnames() + output_files),
+                " ".join(job_wrapper.job_io.get_input_fnames() + output_files),
                 self.app.config.pbs_stage_path,
                 exec_dir,
             )
@@ -286,7 +286,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         env_setup_commands = [stage_commands]
         script = self.get_job_file(job_wrapper, exit_code_path=ecfile, env_setup_commands=env_setup_commands, shell=job_wrapper.shell)
         job_file = f"{self.app.config.cluster_files_directory}/{job_wrapper.job_id}.sh"
-        self.write_executable_script(job_file, script)
+        self.write_executable_script(job_file, script, job_io=job_wrapper.job_io)
         # job was deleted while we were preparing it
         if job_wrapper.get_state() in (model.Job.states.DELETED, model.Job.states.STOPPED):
             log.debug(f"Job {job_wrapper.job_id} deleted/stopped by user before it entered the PBS queue")

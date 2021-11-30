@@ -142,7 +142,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file, shell=job_wrapper.shell, galaxy_virtual_env=None)
         try:
-            self.write_executable_script(ajs.job_file, script)
+            self.write_executable_script(ajs.job_file, script, job_io=job_wrapper.job_io)
         except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
             log.exception(f"({job_wrapper.get_id_tag()}) failure writing job script")

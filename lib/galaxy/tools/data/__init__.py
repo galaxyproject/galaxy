@@ -8,6 +8,7 @@ to modify the tool configurations.
 
 import errno
 import hashlib
+import json
 import logging
 import os
 import os.path
@@ -68,7 +69,7 @@ class ToolDataPathFiles:
             return os.path.exists(path)
 
 
-class ToolDataTableManager:
+class ToolDataTableManager(Dictifiable):
     """Manages a collection of tool data tables"""
 
     def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None):
@@ -104,6 +105,19 @@ class ToolDataTableManager:
 
     def get_tables(self):
         return self.data_tables
+
+    def to_dict(self):
+        return {name: data_table.to_dict(view='export') for name, data_table in self.data_tables.items()}
+
+    def to_json(self, path):
+        with open(path, 'w') as out:
+            out.write(json.dumps(self.to_dict()))
+
+    @classmethod
+    def from_dict(cls, d):
+        tdtm = cls.__new__(cls)
+        tdtm.data_tables = {name: ToolDataTable.from_dict(data) for name, data in d.items()}
+        return tdtm
 
     def load_from_config_file(self, config_filename, tool_data_path, from_shed_config=False):
         """
@@ -250,6 +264,16 @@ class ToolDataTable:
         assert table_type in tool_data_table_types, f"Unknown data table type '{table_type}'"
         return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files, other_config_dict=other_config_dict)
 
+    @classmethod
+    def from_dict(cls, d):
+        data_table_class = globals()[d['model_class']]
+        data_table = data_table_class.__new__(data_table_class)
+        for attr, val in d.items():
+            if not attr == 'model_class':
+                setattr(data_table, attr, val)
+        data_table._loaded_content_version = 1
+        return data_table
+
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
         self.name = config_element.get('name')
         self.comment_char = config_element.get('comment_char')
@@ -331,6 +355,8 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
     """
     dict_collection_visible_keys = ['name']
+    dict_element_visible_keys = ['name', 'fields']
+    dict_export_visible_keys = ['name', 'data', 'largest_index', 'columns', 'missing_index_file']
 
     type_key = 'tabular'
 
@@ -740,7 +766,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         return util.xml_to_string(self.config_element)
 
     def to_dict(self, view='collection'):
-        rval = super().to_dict()
+        rval = super().to_dict(view=view)
         if view == 'element':
             rval['columns'] = sorted(self.columns.keys(), key=lambda x: self.columns[x])
             rval['fields'] = self.get_fields()
@@ -814,6 +840,8 @@ class RefgenieToolDataTable(TabularToolDataTable):
         </table>
     """
     dict_collection_visible_keys = ['name']
+    dict_element_visible_keys = ['name', 'fields']
+    dict_export_visible_keys = ['name', 'data', 'rg_asset', 'largest_index', 'columns', 'missing_index_file']
 
     type_key = 'refgenie'
 

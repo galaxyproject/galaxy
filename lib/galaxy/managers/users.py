@@ -29,7 +29,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
-from galaxy.structured_app import BasicApp, MinimalManagerApp
+from galaxy.structured_app import BasicSharedApp, MinimalManagerApp
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web import url_for
 
@@ -58,7 +58,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
     # TODO: incorp CreatesApiKeysMixin
     # TODO: incorporate UsesFormDefinitionsMixin?
-    def __init__(self, app: BasicApp):
+    def __init__(self, app: BasicSharedApp):
         self.model_class = app.model.User
         super().__init__(app)
 
