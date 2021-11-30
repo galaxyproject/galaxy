@@ -106,10 +106,8 @@ class DatabaseStateCache:
     """
     Snapshot of database state.
     """
-    def __init__(self, db_url, engine=None):
-        self.db_url = db_url
-        self.engine = engine or create_engine(db_url)
-        self._load_db()
+    def __init__(self, engine):
+        self._load_db(engine)
 
     def is_database_empty(self):
         return not bool(self.db_metadata.tables)
@@ -123,8 +121,8 @@ class DatabaseStateCache:
     def is_last_sqlalchemymigrate_version(self):
         return self.sqlalchemymigrate_version == SQLALCHEMYMIGRATE_LAST_VERSION
 
-    def _load_db(self):
-        with self.engine.connect() as conn:
+    def _load_db(self, engine):
+        with engine.connect() as conn:
             self.db_metadata = self._load_db_metadata(conn)
             self.sqlalchemymigrate_version = self._load_sqlalchemymigrate_version(conn)
 
@@ -152,13 +150,23 @@ class DatabaseVerifier:
         self.is_combined = self._is_one_database(self.gxy_url, self.tsi_url)
         self.gxy_metadata = get_gxy_metadata()
         self.tsi_metadata = get_tsi_metadata()
+        self.engines = self._load_engines()
         self.db_state = self._load_database_state()
+
+    def _load_engines(self):
+        engines = {}
+        engines[GXY] = create_engine(self.gxy_url)
+        if not self.is_combined:
+            engines[TSI] = create_engine(self.tsi_url)
+        else:
+            engines[TSI] = engines[GXY]  # combined = same engine
+        return engines
 
     def _load_database_state(self):
         db = {}
-        db[GXY] = DatabaseStateCache(self.gxy_url)
+        db[GXY] = DatabaseStateCache(engine=self.engines[GXY])
         if not self.is_combined:
-            db[TSI] = DatabaseStateCache(self.tsi_url)
+            db[TSI] = DatabaseStateCache(engine=self.engines[TSI])
         else:
             db[TSI] = db[GXY]  # combined = same database
         return db
@@ -256,15 +264,15 @@ class DatabaseVerifier:
 
     def _initialize_database(self, model):
 
-        def initialize_database(url, metadata):
-            load_metadata(url, metadata)
+        def initialize_database(url, metadata, engine):
+            load_metadata(url, metadata, engine)
             am = get_alembic_manager(url)
             am.stamp(f'{model}@head')
 
         if model == GXY:
-            initialize_database(self.gxy_url, self.gxy_metadata)
+            initialize_database(self.gxy_url, self.gxy_metadata, self.engines[GXY])
         elif model == TSI:
-            initialize_database(self.tsi_url, self.tsi_metadata)
+            initialize_database(self.tsi_url, self.tsi_metadata, self.engines[TSI])
         return True
 
     def _is_database_empty(self, model):
