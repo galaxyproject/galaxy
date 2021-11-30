@@ -27,14 +27,30 @@ JobEnvironmentProperties = collections.namedtuple("JobEnvironmentProperties", [
 ])
 
 
-class RunsEnvironmentJobs:
+class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase):
+
+    framework_tool_and_types = True
+
+    @classmethod
+    def setUpClass(cls):
+        os.environ["SOME_ENV_VAR"] = "Value from env"
+        super().setUpClass()
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def _run_and_get_environment_properties(self, tool_id="job_environment_default"):
         with self.dataset_populator.test_history() as history_id:
             self.dataset_populator.run_tool(tool_id, {}, history_id)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             self._check_completed_history(history_id)
-            return self._environment_properties(history_id)
+            job_env_properties = self._environment_properties(history_id)
+            # TODO: Remove the `if` after the Pulsar PR is merged
+            if not isinstance(self, EmbeddedPulsarDefaultJobEnvironmentIntegrationTestCase):
+                # Check that the job hasn't inherited env variables from Galaxy
+                assert job_env_properties.some_env != "Value from env"
+            return job_env_properties
 
     def _environment_properties(self, history_id):
         user_id = self.dataset_populator.get_history_dataset_content(history_id, hid=1).strip()
@@ -47,15 +63,6 @@ class RunsEnvironmentJobs:
 
     def _check_completed_history(self, history_id):
         """Extension point that lets subclasses investigate the completed job."""
-
-
-class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase, RunsEnvironmentJobs):
-
-    framework_tool_and_types = True
-
-    def setUp(self):
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
 
 class DefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
@@ -89,12 +96,7 @@ class DefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTest
     def test_default_environment_legacy(self):
         job_env = self._run_and_get_environment_properties("job_environment_default_legacy")
 
-        euid = os.geteuid()
-        egid = os.getgid()
         home = os.getenv("HOME")
-
-        assert job_env.user_id == str(euid), job_env.user_id
-        assert job_env.group_id == str(egid), job_env.group_id
         assert job_env.home == home, job_env.home
 
     @skip_without_tool("job_environment_explicit_shared_home")
@@ -175,8 +177,8 @@ class TmpDirAsShellCommandJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIn
     def test_default_environment_1801(self):
         job_env = self._run_and_get_environment_properties()
 
-        # Since job_conf sets tmp_dir parameter to $(mktemp cooltmpXXXXXXXXXXXX) should
-        # start with cooltmp.
+        # Since job_conf sets tmp_dir parameter to $(mktemp cooltmpXXXXXXXXXXXX)
+        # the tmp directory base name should start with 'cooltmp'.
         basename = os.path.basename(job_env.tmp)
         assert basename.startswith("cooltmp"), job_env.tmp
 
@@ -236,7 +238,6 @@ class JobIOEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase)
         job = jobs[0]
         job_details = self.dataset_populator.get_job_details(job["id"], full=True)
         job_details = job_details.json()
-        print(job_details)
         assert 'moo std cow' in job_details['job_stdout']
         assert 'moo err cow' in job_details['job_stderr']
         assert 'Writing environment properties to output files.' in job_details['tool_stdout']
