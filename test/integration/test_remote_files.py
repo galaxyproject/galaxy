@@ -42,6 +42,7 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
         # Restore default for these tests.
         config["ftp_upload_purge"] = True
         config['metadata_strategy'] = 'extended'
+        config["tool_evaluation_strategy"] = "remote"
 
     def setUp(self):
         super().setUp()

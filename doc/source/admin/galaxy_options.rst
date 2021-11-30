@@ -4233,6 +4233,24 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_evaluation_strategy``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Determines which process will evaluate the tool command line. If
+    set to "local" the tool command line, configuration files and
+    other dynamic values will be templated in the job handler process.
+    If set to ``remote`` the tool command line will be built as part
+    of the submitted job. Note that ``remote`` is a beta setting that
+    will be useful for materializing deferred datasets as part of the
+    submitted job. Note also that you have to set
+    ``metadata_strategy`` to ``extended`` if you set this option to
+    ``remote``.
+:Default: ``local``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``preserve_python_environment``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -980,8 +980,9 @@ class JobWrapper(HasResourceParameters):
 
     @property
     def remote_command_line(self):
+        use_remote = self.get_destination_configuration('tool_evaluation_strategy') == 'remote'
         # It wouldn't be hard to support history export, but we want to do this in task queue workers anyway ...
-        return self.external_output_metadata.extended and not self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=self.get_job()).first()
+        return use_remote and self.external_output_metadata.extended and not self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=self.get_job()).first()
 
     def tool_directory(self):
         tool_dir = self.tool.tool_dir

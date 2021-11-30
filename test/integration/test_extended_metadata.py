@@ -49,6 +49,7 @@ class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["metadata_strategy"] = "extended"
+        config["tool_evaluation_strategy"] = "remote"
         config["object_store_store_by"] = "uuid"
         config["retry_metadata_internally"] = False
 
@@ -83,6 +84,7 @@ class ExtendedMetadataIntegrationInstance(integration_util.IntegrationInstance):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["metadata_strategy"] = "extended"
+        config["tool_evaluation_strategy"] = "remote"
         config["object_store_store_by"] = "uuid"
         config["retry_metadata_internally"] = False
 
