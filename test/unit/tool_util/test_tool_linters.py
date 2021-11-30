@@ -491,6 +491,12 @@ STDIO_INVALID_CHILD_OR_ATTRIB = """
 """
 
 # check that linter does complain about tests wo assumptions
+TESTS_ABSENT = """
+<tool/>
+"""
+TESTS_ABSENT_DATA_SOURCE = """
+<tool tool_type="data_source"/>
+"""
 TESTS_WO_EXPECTATIONS = """
 <tool>
     <tests>
@@ -500,7 +506,7 @@ TESTS_WO_EXPECTATIONS = """
 </tool>
 """
 
-TESTS_PARAM = """
+TESTS_PARAM_OUTPUT_NAMES = """
 <tool>
     <inputs>
         <param argument="--existent-test-name"/>
@@ -512,14 +518,20 @@ TESTS_PARAM = """
     </inputs>
     <outputs>
         <data name="existent_output"/>
+        <collection name="existent_collection"/>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
+            <param/>
             <param name="existent_test_name"/>
             <param name="cond_name|another_existent_test_name"/>
             <param name="non_existent_test_name"/>
+            <output/>
             <output name="existent_output"/>
             <output name="nonexistent_output"/>
+            <output_collection/>
+            <output_collection name="existent_collection"/>
+            <output_collection name="nonexistent_collection"/>
         </test>
     </tests>
 </tool>
@@ -891,24 +903,42 @@ TESTS = [
 
     ),
     (
+        TESTS_ABSENT, tests.lint_tsts,
+        lambda x:
+            'No tests found, most tools should define test cases.' in x.warn_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        TESTS_ABSENT_DATA_SOURCE, tests.lint_tsts,
+        lambda x:
+            'No tests found, that should be OK for data_sources.' in x.info_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
+    ),
+    (
         TESTS_WO_EXPECTATIONS, tests.lint_tsts,
         lambda x:
             'Test 1: No outputs or expectations defined for tests, this test is likely invalid.' in x.warn_messages
             and 'No valid test(s) found.' in x.warn_messages
-            and len(x.warn_messages) == 2 and len(x.error_messages) == 0
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 2 and len(x.error_messages) == 0
     ),
     (
-        TESTS_PARAM, tests.lint_tsts,
+        TESTS_PARAM_OUTPUT_NAMES, tests.lint_tsts,
         lambda x:
-            "Test 1: Test param non_existent_test_name not found in the inputs" in x.error_messages
+            '1 test(s) found.' in x.valid_messages
+            and "Test 1: Found test param tag without a name defined." in x.error_messages
+            and "Test 1: Test param non_existent_test_name not found in the inputs" in x.error_messages
+            and "Test 1: Found output tag without a name defined." in x.error_messages
             and "Test 1: Found output tag with unknown name [nonexistent_output], valid names [['existent_output']]" in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 2
+            and "Test 1: Found output_collection tag without a name defined." in x.error_messages
+            and "Test 1: Found output_collection tag with unknown name [nonexistent_collection], valid names [['existent_collection']]" in x.error_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 1 and len(x.warn_messages) == 0 and len(x.error_messages) == 6
     ),
     (
         TESTS_EXPECT_FAILURE_OUTPUT, tests.lint_tsts,
         lambda x:
-            "Test 1: Cannot specify outputs in a test expecting failure." in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 1
+            'No valid test(s) found.' in x.warn_messages
+            and "Test 1: Cannot specify outputs in a test expecting failure." in x.error_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 1
     ),
     (
         XML_ORDER, xml_order.lint_xml_order,
@@ -964,9 +994,11 @@ TEST_IDS = [
     'stdio: default for non-legacy profile',
     'stdio: multiple stdio',
     'stdio: invalid tag or attribute',
-    'test without expectations',
-    'test param missing from inputs',
-    'test expecting failure with outputs',
+    'tests: absent',
+    'tests: absent data_source',
+    'tests: without expectations',
+    'tests: param and output names',
+    'tests: expecting failure with outputs',
     'xml_order'
 ]
 
