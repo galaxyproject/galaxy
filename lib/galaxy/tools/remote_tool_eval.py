@@ -65,16 +65,16 @@ class ToolApp(MinimalToolApp):
         self.file_sources = file_sources
 
 
-def main(TMPDIR, WORKING_DIRECTORY):
+def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY):
     metadata_params = get_metadata_params(WORKING_DIRECTORY)
     datatypes_config = metadata_params["datatypes_config"]
     if not os.path.exists(datatypes_config):
         datatypes_config = os.path.join(WORKING_DIRECTORY, 'configs', datatypes_config)
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
     object_store = get_object_store(WORKING_DIRECTORY)
-    import_store = store.imported_store_for_metadata(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new'))
+    import_store = store.imported_store_for_metadata(IMPORT_STORE_DIRECTORY)
     # TODO: clean up random places from which we read files in the working directory
-    job_io = JobIO.from_json(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'job_io.json'), sa_session=import_store.sa_session)
+    job_io = JobIO.from_json(os.path.join(IMPORT_STORE_DIRECTORY, 'job_io.json'), sa_session=import_store.sa_session)
     tool_app_config = ToolAppConfig(
         name='tool_app',
         tool_data_path=job_io.tool_data_path,
@@ -84,7 +84,7 @@ def main(TMPDIR, WORKING_DIRECTORY):
         builds_file_path=job_io.builds_file_path,
         root=TMPDIR,
         is_admin_user=lambda _: job_io.user_context.is_admin)
-    with open(os.path.join(WORKING_DIRECTORY, 'metadata', 'outputs_new', 'tool_data_tables.json')) as data_tables_json:
+    with open(os.path.join(IMPORT_STORE_DIRECTORY, 'tool_data_tables.json')) as data_tables_json:
         tdtm = ToolDataTableManager.from_dict(json.load(data_tables_json))
     app = ToolApp(
         sa_session=import_store.sa_session,
@@ -111,10 +111,14 @@ if __name__ == "__main__":
     if not os.path.isdir("working") and os.path.isdir(os.path.join(WORKING_PARENT, 'working')):
         # We're probably in pulsar
         WORKING_DIRECTORY = WORKING_PARENT
+    METADATA_DIRECTORY = os.path.join(WORKING_DIRECTORY, 'metadata')
+    IMPORT_STORE_DIRECTORY = os.path.join(METADATA_DIRECTORY, 'outputs_new')
+    EXPORT_STORE_DIRECTORY = os.path.join(METADATA_DIRECTORY, 'outputs_populated')
     try:
-        main(TMPDIR, WORKING_DIRECTORY)
+        main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY)
     except Exception:
-        with open(os.path.join(WORKING_DIRECTORY, 'traceback.txt'), 'w') as out:
+        os.makedirs(EXPORT_STORE_DIRECTORY, exist_ok=True)
+        with open(os.path.join(EXPORT_STORE_DIRECTORY, 'traceback.txt'), 'w') as out:
             out.write(traceback.format_exc())
         raise
     finally:

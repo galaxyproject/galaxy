@@ -46,6 +46,7 @@ ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS = 'implicit_collection_jobs_attrs.txt'
 ATTRS_FILENAME_COLLECTIONS = 'collections_attrs.txt'
 ATTRS_FILENAME_EXPORT = 'export_attrs.txt'
 ATTRS_FILENAME_LIBRARIES = 'libraries_attrs.txt'
+TRACEBACK = 'traceback.txt'
 GALAXY_EXPORT_VERSION = "2"
 
 
@@ -867,14 +868,14 @@ class FileTracebackException(Exception):
 
 
 def get_import_model_store_for_directory(archive_dir, **kwd):
-    traceback_file = os.path.join(archive_dir, os.pardir, os.pardir, 'traceback.txt')
+    traceback_file = os.path.join(archive_dir, TRACEBACK)
     if not os.path.isdir(archive_dir):
         raise Exception(f"Could not find import model store for directory [{archive_dir}] (full path [{os.path.abspath(archive_dir)}])")
     if os.path.exists(os.path.join(archive_dir, ATTRS_FILENAME_EXPORT)):
+        if os.path.exists(traceback_file):
+            with open(traceback_file) as tb:
+                raise FileTracebackException(traceback=tb.read())
         return DirectoryImportModelStoreLatest(archive_dir, **kwd)
-    elif os.path.exists(traceback_file):
-        with open(traceback_file) as tb:
-            raise FileTracebackException(traceback=tb.read())
     else:
         return DirectoryImportModelStore1901(archive_dir, **kwd)
 
