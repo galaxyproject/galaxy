@@ -28,8 +28,8 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
     '''Test repository citable url features.'''
 
     def test_0000_initiate_users(self):
-        """Create necessary user accounts and login as an admin user."""
-        """
+        """Create necessary user accounts and login as an admin user.
+
         Create all the user accounts that are needed for this test script to run independently of other tests.
         Previously created accounts will not be re-created.
         """
@@ -43,8 +43,8 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_repository(self):
-        """Create and populate the filtering_0420 repository"""
-        """
+        """Create and populate the filtering_0420 repository
+
         We are at step 1.
         Add and populate a repository to the tool shed with change set revision 0 (assume owner is test_user_1).
         """
@@ -72,8 +72,8 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         first_changeset_hash = self.get_repository_tip(repository)
 
     def test_0010_upload_new_file_to_repository(self):
-        '''Upload a readme file to the repository in order to create a second changeset revision.'''
-        '''
+        '''Upload a readme file to the repository in order to create a second changeset revision.
+
         We are at step 2.
         Add valid change set revision 1.
         The repository should now contain two changeset revisions, 0:<revision hash> and 1:<revision hash>.
@@ -90,8 +90,8 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0015_load_user_view_page(self):
-        '''Load the /view/<username> page amd check for strings.'''
-        '''
+        '''Load the /view/<username> page amd check for strings.
+
         We are at step 3.
         Visit the following url and check for appropriate strings: <tool shed base url>/view/user1
         '''
@@ -112,8 +112,8 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
                               strings_displayed_in_iframe=strings_displayed_in_iframe)
 
     def test_0020_load_repository_view_page(self):
-        '''Load the /view/<user>/<repository> page and check for the appropriate strings.'''
-        '''
+        '''Load the /view/<user>/<repository> page and check for the appropriate strings.
+
         We are at step 4.
         Visit the following url and check for strings: <tool shed base url>/view/user1/filtering_0420
             Resulting page should contain change set revision 1
@@ -139,8 +139,8 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
                               strings_displayed_in_iframe=strings_displayed_in_iframe)
 
     def test_0025_load_view_page_for_previous_revision(self):
-        '''Load a citable url for a past changeset revision and verify that strings display.'''
-        '''
+        '''Load a citable url for a past changeset revision and verify that strings display.
+
         We are at step 5.
         Visit the following url and check for appropriate strings: <tool shed base url>/view/user1/filtering_0420/<revision 0>
             Resulting page should not contain change set revision 1, but should contain change set revision 0.
@@ -187,8 +187,8 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
                               strings_displayed=strings_displayed)
 
     def test_0035_load_sharable_url_with_invalid_repository_name(self):
-        '''Load a citable url with an invalid changeset revision specified.'''
-        '''
+        '''Load a citable url with an invalid changeset revision specified.
+
         We are at step 7
         Visit the following url and check for appropriate strings: <tool shed base url>/view/user1/!!invalid!!
         '''
@@ -210,8 +210,8 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
                               strings_displayed_in_iframe=strings_displayed_in_iframe)
 
     def test_0040_load_sharable_url_with_invalid_owner(self):
-        '''Load a citable url with an invalid owner.'''
-        '''
+        '''Load a citable url with an invalid owner.
+
         We are at step 8.
         Visit the following url and check for appropriate strings: <tool shed base url>/view/!!invalid!!
         '''

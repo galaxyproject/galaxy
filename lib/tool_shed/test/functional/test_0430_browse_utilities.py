@@ -28,8 +28,8 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
     '''Test browsing for Galaxy utilities.'''
 
     def test_0000_initiate_users(self):
-        """Create necessary user accounts and login as an admin user."""
-        """
+        """Create necessary user accounts and login as an admin user.
+
         Create all the user accounts that are needed for this test script to run independently of other tests.
         Previously created accounts will not be re-created.
         """
@@ -43,8 +43,8 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_datatypes_repository(self):
-        """Create and populate the emboss_datatypes_0430 repository"""
-        """
+        """Create and populate the emboss_datatypes_0430 repository
+
         We are at step 1.
         Create and populate the repository that will contain one or more datatypes.
         """
@@ -69,8 +69,8 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_create_emboss_repository(self):
-        """Create and populate the emboss_0430 repository"""
-        """
+        """Create and populate the emboss_0430 repository
+
         We are at step 1.
         Create the emboss_0430 repository, and populate it with tools.
         """
@@ -104,8 +104,8 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         self.check_repository_dependency(emboss_repository, datatypes_repository)
 
     def test_0020_create_tool_dependency_repository(self):
-        """Create and populate the freebayes_0430 repository"""
-        """
+        """Create and populate the freebayes_0430 repository
+
         We are at step 1.
         Create and populate the repository that will have a tool dependency defined.
         """
@@ -130,8 +130,8 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0025_browse_custom_datatypes(self):
-        '''Load the page to browse custom datatypes.'''
-        '''
+        '''Load the page to browse custom datatypes.
+
         We are at step 2.
         Verify that the uploaded emboss datatypes repository has added to the custom datatypes page.
         '''
@@ -141,8 +141,8 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         self.browse_custom_datatypes(strings_displayed=strings_displayed)
 
     def test_0030_browse_tools(self):
-        '''Load the page to browse tools.'''
-        '''
+        '''Load the page to browse tools.
+
         We are at step 3.
         Verify the existence of emboss tools in the browse tools page.
         '''
@@ -152,8 +152,8 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         self.browse_tools(strings_displayed=strings_displayed)
 
     def test_0035_browse_repository_dependencies(self):
-        '''Browse repository dependencies and look for a dependency on emboss_datatypes_0430.'''
-        '''
+        '''Browse repository dependencies and look for a dependency on emboss_datatypes_0430.
+
         We are at step 3.
         Verify that the browse repository dependencies page shows emboss_datatypes_0430 as a dependency of emboss_0430.
         '''
@@ -165,8 +165,8 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         self.browse_repository_dependencies(strings_displayed=strings_displayed)
 
     def test_0040_browse_tool_dependencies(self):
-        '''Browse tool dependencies and look for the right versions of freebayes and samtools.'''
-        '''
+        '''Browse tool dependencies and look for the right versions of freebayes and samtools.
+
         We are at step 4.
         Verify that the browse tool dependencies page shows the correct dependencies defined for freebayes_0430.
         '''

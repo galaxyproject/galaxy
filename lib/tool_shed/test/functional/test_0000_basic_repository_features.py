@@ -265,8 +265,8 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.check_for_strings(strings_displayed=[error_message])
 
     def test_0105_contact_repository_owner(self):
-        '''Fill out and submit the form to contact the owner of a repository.'''
-        '''
+        '''Fill out and submit the form to contact the owner of a repository.
+
         This test should not actually send the email, since functional tests are designed to function without
         any external network connection. The embedded tool shed server these tests are running against has been configured
         with an SMTP server address that will not and should not resolve correctly. However, since the successful sending of

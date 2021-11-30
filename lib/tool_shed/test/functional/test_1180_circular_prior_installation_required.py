@@ -129,8 +129,8 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
                              strings_not_displayed=[])
 
     def test_0020_create_repository_dependency(self):
-        '''Create a repository dependency specifying convert_chars.'''
-        '''
+        '''Create a repository dependency specifying convert_chars.
+
         Each of the three repositories should depend on the other two, to make this as circular as possible.
         '''
         global running_standalone

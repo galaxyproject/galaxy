@@ -87,7 +87,6 @@ class Sequence(data.Text):
     """Class describing a sequence"""
     edam_data = "data_2044"
 
-    """Add metadata elements"""
     MetadataElement(name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0)
 
     def set_meta(self, dataset, **kwd):
@@ -298,7 +297,6 @@ class Alignment(data.Text):
     """Class describing an alignment"""
     edam_data = "data_0863"
 
-    """Add metadata elements"""
     MetadataElement(name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
@@ -535,8 +533,8 @@ class csFasta(Sequence):
 
 @build_sniff_from_prefix
 class Fastg(Sequence):
-    """ Class representing a FASTG sequence """
-    """ http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf """
+    """ Class representing a FASTG sequence
+    http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf """
     edam_format = "format_3823"
     file_ext = "fastg"
 
@@ -548,14 +546,14 @@ class Fastg(Sequence):
            #FASTG:begin;
            #FASTG:version=*.*;
            #FASTG:properties;
-        """
-        """Or these can be combined on a line:
+
+        Or these can be combined on a line:
            #FASTG:begin:version=*.*:properties;
-        """
-        """FASTG must end with line:
+
+        FASTG must end with line:
            #FASTG:end;
-        """
-        """ Example FASTG file:
+
+        Example FASTG file:
             #FASTG:begin;
             #FASTG:version=1.0:assembly_name="tiny example";
             >chr1:chr1;
@@ -563,8 +561,7 @@ class Fastg(Sequence):
             >chr2;
             ACATACGCATATATATATATATATATAT[20:tandem:size=(10,8..12)|AT]TCAGGCA[1:alt|A,T,TT]GGAC
             #FASTG:end;
-        """
-        """
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
         >>> Fastg().sniff( fname )

@@ -700,16 +700,14 @@ class ProBam(Bam):
 
 
 class BamInputSorted(BamNative):
-
-    sort_flag = '-n'
-    file_ext = 'qname_input_sorted.bam'
-
     """
     A class for BAM files that can formally be unsorted or queryname sorted.
     Alignments are either ordered based on the order with which the queries appear when producing the alignment,
     or ordered by their queryname.
     This notaby keeps alignments produced by paired end sequencing adjacent.
     """
+    sort_flag = '-n'
+    file_ext = 'qname_input_sorted.bam'
 
     def sniff(self, file_name):
         # We never want to sniff to this datatype

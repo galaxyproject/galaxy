@@ -83,13 +83,11 @@ def main():
         round_val.append(do_round)
         default_val.append(float(default) if default != '' else None)
 
-    """
-    At this point, ops, cols and rounds will look something like this:
-    ops:  ['mean', 'min', 'c']
-    cols: ['1', '3', '4']
-    round_val: ['no', 'yes' 'no']
-    default_val: [0, 1, None]
-    """
+    # At this point, ops, cols and rounds will look something like this:
+    # ops:  ['mean', 'min', 'c']
+    # cols: ['1', '3', '4']
+    # round_val: ['no', 'yes' 'no']
+    # default_val: [0, 1, None]
 
     try:
         group_col = int(sys.argv[3]) - 1

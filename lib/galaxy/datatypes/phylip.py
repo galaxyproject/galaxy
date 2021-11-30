@@ -24,7 +24,6 @@ class Phylip(Text):
     edam_format = "format_1997"
     file_ext = "phylip"
 
-    """Add metadata elements"""
     MetadataElement(name="sequences", default=0, desc="Number of sequences", readonly=True,
                     visible=False, optional=True, no_value=0)
 

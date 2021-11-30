@@ -45,7 +45,6 @@ class TabularData(data.Text):
     data_line_offset = 0
     max_peek_columns = 50
 
-    """Add metadata elements"""
     MetadataElement(name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0)
     MetadataElement(name="data_lines", default=0, desc="Number of data lines", readonly=True, visible=False, optional=True, no_value=0)
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=False, no_value=0)
@@ -676,7 +675,6 @@ class Pileup(Tabular):
     line_class = "genomic coordinate"
     data_sources = {"data": "tabix"}
 
-    """Add metadata elements"""
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
     MetadataElement(name="endCol", default=2, desc="End column", param=metadata.ColumnParameter)
@@ -852,7 +850,7 @@ class VcfGz(BaseVcf, binary.Binary):
 
     def set_meta(self, dataset, **kwd):
         super().set_meta(dataset, **kwd)
-        """ Creates the index for the VCF file. """
+        # Creates the index for the VCF file.
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.tabix_index
         if not index_file:
@@ -1079,16 +1077,14 @@ class BaseCSV(TabularData):
             return False
         if (auto_dialect.quotechar != self.dialect.quotechar):
             return False
-        """
-        Not checking for other dialect options
-        They may be mis detected from just the sample.
-        Or not effect the read such as doublequote
+        # Not checking for other dialect options
+        # They may be mis detected from just the sample.
+        # Or not effect the read such as doublequote
 
-        Optional: Check for headers as in the past.
-        Note No way around Python's csv calling Sniffer.sniff again.
-        Note Without checking the dialect returned by sniff
-              this test may be checking the wrong dialect.
-        """
+        # Optional: Check for headers as in the past.
+        # Note: No way around Python's csv calling Sniffer.sniff again.
+        # Note: Without checking the dialect returned by sniff
+        #       this test may be checking the wrong dialect.
         if not csv.Sniffer().has_header(big_peek):
             return False
         return True
@@ -1335,13 +1331,6 @@ class MatrixMarket(TabularData):
 
 @build_sniff_from_prefix
 class CMAP(TabularData):
-    MetadataElement(name="cmap_version", default='0.2', desc="version of cmap", readonly=True, visible=True, optional=False, no_value='0.2')
-    MetadataElement(name="label_channels", default=1, desc="the number of label channels", readonly=True, visible=True, optional=False, no_value=1)
-    MetadataElement(name="nickase_recognition_site_1", default=[], desc="comma separated list of label motif recognition sequences for channel 1", readonly=True, visible=True, optional=False, no_value=[])
-    MetadataElement(name="number_of_consensus_nanomaps", default=0, desc="the total number of consensus genome maps in the CMAP file", readonly=True, visible=True, optional=False, no_value=0)
-    MetadataElement(name="nickase_recognition_site_2", default=[], desc="comma separated list of label motif recognition sequences for channel 2", readonly=True, visible=True, optional=True, no_value=[])
-    MetadataElement(name="channel_1_color", default=[], desc="channel 1 color", readonly=True, visible=True, optional=True, no_value=[])
-    MetadataElement(name="channel_2_color", default=[], desc="channel 2 color", readonly=True, visible=True, optional=True, no_value=[])
     """
     # CMAP File Version:    2.0
     # Label Channels:   1
@@ -1356,6 +1345,14 @@ class CMAP(TabularData):
     182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
     """
     file_ext = "cmap"
+
+    MetadataElement(name="cmap_version", default='0.2', desc="version of cmap", readonly=True, visible=True, optional=False, no_value='0.2')
+    MetadataElement(name="label_channels", default=1, desc="the number of label channels", readonly=True, visible=True, optional=False, no_value=1)
+    MetadataElement(name="nickase_recognition_site_1", default=[], desc="comma separated list of label motif recognition sequences for channel 1", readonly=True, visible=True, optional=False, no_value=[])
+    MetadataElement(name="number_of_consensus_nanomaps", default=0, desc="the total number of consensus genome maps in the CMAP file", readonly=True, visible=True, optional=False, no_value=0)
+    MetadataElement(name="nickase_recognition_site_2", default=[], desc="comma separated list of label motif recognition sequences for channel 2", readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="channel_1_color", default=[], desc="channel 1 color", readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="channel_2_color", default=[], desc="channel 2 color", readonly=True, visible=True, optional=True, no_value=[])
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         handle = file_prefix.string_io()

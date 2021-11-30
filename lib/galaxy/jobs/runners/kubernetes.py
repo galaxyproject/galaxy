@@ -91,7 +91,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             kwargs['runner_param_specs'] = dict()
         kwargs['runner_param_specs'].update(runner_param_specs)
 
-        """Start the job runner parent object """
+        # Start the job runner parent object
         super().__init__(app, nworkers, **kwargs)
 
         self._pykube_api = pykube_client_from_dict(self.runner_params)

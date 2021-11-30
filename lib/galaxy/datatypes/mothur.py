@@ -318,7 +318,7 @@ class AlignReport(Tabular):
 
 class DistanceMatrix(Text):
     file_ext = 'mothur.dist'
-    """Add metadata elements"""
+
     MetadataElement(name="sequence_count", default=0, desc="Number of sequences", readonly=True, visible=True, optional=True, no_value='?')
 
     def init_meta(self, dataset, copy_from=None):
@@ -965,28 +965,29 @@ class Axes(Tabular):
 
 
 class SffFlow(Tabular):
+    """
+    https://mothur.org/wiki/flow_file/
+    The first line is the total number of flow values - 800 for Titanium data. For GS FLX it would be 400.
+    Following lines contain:
+
+    - SequenceName
+    - the number of useable flows as defined by 454's software
+    - the flow intensity for each base going in the order of TACG.
+
+    Example:
+
+    .. code-block::
+
+        800
+        GQY1XT001CQL4K 85 1.04 0.00 1.00 0.02 0.03 1.02 0.05 ...
+        GQY1XT001CQIRF 84 1.02 0.06 0.98 0.06 0.09 1.05 0.07 ...
+        GQY1XT001CF5YW 88 1.02 0.02 1.01 0.04 0.06 1.02 0.03 ...
+
+    """
+    file_ext = 'mothur.sff.flow'
+
     MetadataElement(name="flow_values", default="", no_value="", optional=True, desc="Total number of flow values", readonly=True)
     MetadataElement(name="flow_order", default="TACG", no_value="TACG", desc="Total number of flow values", readonly=False)
-    file_ext = 'mothur.sff.flow'
-    """
-        https://mothur.org/wiki/flow_file/
-        The first line is the total number of flow values - 800 for Titanium data. For GS FLX it would be 400.
-        Following lines contain:
-
-        - SequenceName
-        - the number of useable flows as defined by 454's software
-        - the flow intensity for each base going in the order of TACG.
-
-        Example:
-
-        .. code-block::
-
-          800
-          GQY1XT001CQL4K 85 1.04 0.00 1.00 0.02 0.03 1.02 0.05 ...
-          GQY1XT001CQIRF 84 1.02 0.06 0.98 0.06 0.09 1.05 0.07 ...
-          GQY1XT001CF5YW 88 1.02 0.02 1.01 0.04 0.06 1.02 0.03 ...
-
-    """
 
     def __init__(self, **kwd):
         super().__init__(**kwd)

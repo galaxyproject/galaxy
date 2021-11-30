@@ -976,13 +976,11 @@ class ImzML(Binary):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-        """The metadata"""
         self.add_composite_file(
             'imzml',
             description='The imzML metadata component.',
             is_binary=False)
 
-        """The mass spectral data"""
         self.add_composite_file(
             'ibd',
             description='The mass spectral data component.',
