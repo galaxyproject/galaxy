@@ -140,7 +140,7 @@ def _expand_macros(elements, macros, tokens):
 def _expand_macro(element, expand_el, macros, tokens):
     macro_name = expand_el.get('macro')
     assert macro_name is not None, "Attempted to expand macro with no 'macro' attribute defined."
-    assert macro_name in macros, f"No macro named {macro_name} found, known marcos are {', '.join(macros.keys())}."
+    assert macro_name in macros, f"No macro named {macro_name} found, known macros are {', '.join(macros.keys())}."
     macro_def = macros[macro_name]
     expanded_elements = deepcopy(macro_def.elements)
 
