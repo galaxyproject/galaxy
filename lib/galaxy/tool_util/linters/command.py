@@ -24,7 +24,9 @@ def lint_command(tool_xml, lint_ctx):
         return
 
     command = get_command(tool_xml)
-    if "TODO" in command:
+    if command.text is None:
+        lint_ctx.error("Command is empty.", line=root_line, xpath=root_path)
+    elif "TODO" in command.text:
         lint_ctx.warn("Command template contains TODO text.", line=command.sourceline, xpath=tool_xml.getpath(command))
 
     command_attrib = command.attrib
@@ -41,7 +43,7 @@ def lint_command(tool_xml, lint_ctx):
     if interpreter_type:
         interpreter_info = f" with interpreter of type [{interpreter_type}]"
     if interpreter_type:
-        lint_ctx.info("Command uses deprecated 'interpreter' attribute.", line=command.sourceline, xpath=tool_xml.getpath(command))
+        lint_ctx.warn("Command uses deprecated 'interpreter' attribute.", line=command.sourceline, xpath=tool_xml.getpath(command))
     lint_ctx.info(f"Tool contains a command{interpreter_info}.", line=command.sourceline, xpath=tool_xml.getpath(command))
 
 

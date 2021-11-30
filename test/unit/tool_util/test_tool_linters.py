@@ -5,6 +5,7 @@ import pytest
 from galaxy.tool_util.lint import LintContext
 from galaxy.tool_util.linters import (
     citations,
+    command,
     general,
     help,
     inputs,
@@ -45,6 +46,31 @@ CITATIONS_VALID = """
     </citations>
 </tool>
 """
+
+# tests tool xml for command linter
+COMMAND_MULTIPLE = """
+<tool>
+    <command/>
+    <command/>
+</tool>
+"""
+COMMAND_MISSING = """
+<tool/>
+"""
+COMMAND_TODO = """
+<tool>
+    <command>
+        ## TODO
+    </command>
+</tool>
+"""
+COMMAND_DETECT_ERRORS_INTERPRETER = """
+<tool>
+    <command detect_errors="nonsense" interpreter="python"/>
+</tool>
+"""
+
+
 # tests tool xml for general linter
 GENERAL_MISSING_TOOL_ID_NAME_VERSION = """
 <tool profile="2109">
@@ -514,6 +540,34 @@ TESTS = [
             and len(x.info_messages) == 0 and len(x.valid_messages) == 1 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
+        COMMAND_MULTIPLE, command.lint_command,
+        lambda x:
+            'More than one command tag found, behavior undefined.' in x.error_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 1
+    ),
+    (
+        COMMAND_MISSING, command.lint_command,
+        lambda x:
+            'No command tag found, must specify a command template to execute.' in x.error_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 1
+    ),
+    (
+        COMMAND_TODO, command.lint_command,
+        lambda x:
+            'Tool contains a command.' in x.info_messages
+            and 'Command template contains TODO text.' in x.warn_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
+    ),
+    (
+        COMMAND_DETECT_ERRORS_INTERPRETER, command.lint_command,
+        lambda x:
+            "Command uses deprecated 'interpreter' attribute." in x.warn_messages
+            and 'Tool contains a command with interpreter of type [python].' in x.info_messages
+            and 'Unknown detect_errors attribute [nonsense]' in x.warn_messages
+            and 'Command is empty.' in x.error_messages
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 2 and len(x.error_messages) == 1
+    ),
+    (
         GENERAL_MISSING_TOOL_ID_NAME_VERSION, general.lint_general,
         lambda x:
             'Tool version is missing or empty.' in x.error_messages
@@ -794,6 +848,10 @@ TEST_IDS = [
     'citations: absent',
     'citations: errors',
     'citations: valid',
+    'command: multiple',
+    'command: missing',
+    'command: todo',
+    'command: detect_errors and interpreter',
     'general: missing tool id, name, version; invalid profile',
     'general: whitespace in version, id, name',
     'general: requirement without version',
