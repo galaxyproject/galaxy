@@ -42,9 +42,13 @@ def _lint_exit_code(tool_xml, child, lint_ctx):
     for key in child.attrib.keys():
         if key not in ["description", "level", "range"]:
             lint_ctx.warn(f"Unknown attribute [{key}] encountered on exit_code tag.", line=child.sourceline, xpath=tool_xml.getpath(child))
+        # TODO lint range, or is regexp in xsd sufficient?
+        # TODO lint required attributes
 
 
 def _lint_regex(tool_xml, child, lint_ctx):
     for key in child.attrib.keys():
         if key not in ["description", "level", "match", "source"]:
             lint_ctx.warn(f"Unknown attribute [{key}] encountered on regex tag.", line=child.sourceline, xpath=tool_xml.getpath(child))
+        # TODO lint match (re.compile)
+        # TODO lint required attributes

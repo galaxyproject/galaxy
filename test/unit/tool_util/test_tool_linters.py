@@ -8,6 +8,7 @@ from galaxy.tool_util.linters import (
     help,
     inputs,
     outputs,
+    stdio,
     tests,
 )
 from galaxy.tool_util.parser.xml import XmlToolSource
@@ -377,6 +378,34 @@ OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA = """
 </tool>
 """
 
+# tool xml for stdio linter
+STDIO_DEFAULT_FOR_DEFAULT_PROFILE = """
+<tool>
+</tool>
+"""
+
+STDIO_DEFAULT_FOR_NONLEGACY_PROFILE = """
+<tool profile="21.09">
+</tool>
+"""
+
+STDIO_MULTIPLE_STDIO = """
+<tool profile="21.09">
+    <stdio/>
+    <stdio/>
+</tool>
+"""
+
+STDIO_INVALID_CHILD_OR_ATTRIB = """
+<tool profile="21.09">
+    <stdio>
+        <reqex/>
+        <regex descriptio="blah" level="fatal" match="error" source="stdio"/>
+        <exit_code descriptio="blah" level="fatal" range="1:"/>
+    </stdio>
+</tool>
+"""
+
 # check that linter does complain about tests wo assumptions
 TESTS_WO_EXPECTATIONS = """
 <tool>
@@ -651,6 +680,36 @@ TESTS = [
             len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
+        STDIO_DEFAULT_FOR_DEFAULT_PROFILE, stdio.lint_stdio,
+        lambda x:
+            "No stdio definition found, tool indicates error conditions with output written to stderr." in x.info_messages
+            and len(x.info_messages) == 1 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
+
+    ),
+    (
+        STDIO_DEFAULT_FOR_NONLEGACY_PROFILE, stdio.lint_stdio,
+        lambda x:
+            "No stdio definition found, tool indicates error conditions with non-zero exit codes." in x.info_messages
+            and len(x.info_messages) == 1 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
+
+    ),
+    (
+        STDIO_MULTIPLE_STDIO, stdio.lint_stdio,
+        lambda x:
+            "More than one stdio tag found, behavior undefined." in x.error_messages
+            and len(x.info_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 1
+
+    ),
+    (
+        STDIO_INVALID_CHILD_OR_ATTRIB, stdio.lint_stdio,
+        lambda x:
+            "Unknown stdio child tag discovered [reqex]. Valid options are exit_code and regex." in x.warn_messages
+            and "Unknown attribute [descriptio] encountered on exit_code tag." in x.warn_messages
+            and "Unknown attribute [descriptio] encountered on regex tag." in x.warn_messages
+            and len(x.info_messages) == 0 and len(x.warn_messages) == 3 and len(x.error_messages) == 0
+
+    ),
+    (
         TESTS_WO_EXPECTATIONS, tests.lint_tsts,
         lambda x:
             'Test 1: No outputs or expectations defined for tests, this test is likely invalid.' in x.warn_messages
@@ -701,6 +760,10 @@ TEST_IDS = [
     'repeats',
     'outputs collection static elements with format_source',
     'outputs discover datatsets with tool provided metadata',
+    'stdio: default for default profile',
+    'stdio: default for non-legacy profile',
+    'stdio: multiple stdio',
+    'stdio: invalid tag or attribute',
     'test without expectations',
     'test param missing from inputs',
     'test expecting failure with outputs',
