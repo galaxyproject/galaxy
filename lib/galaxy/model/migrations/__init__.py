@@ -264,15 +264,15 @@ class DatabaseVerifier:
 
     def _initialize_database(self, model):
 
-        def initialize_database(url, metadata, engine):
-            load_metadata(url, metadata, engine)
+        def initialize_database(metadata, engine):
+            load_metadata(metadata, engine)
             am = get_alembic_manager(engine)
             am.stamp(f'{model}@head')
 
         if model == GXY:
-            initialize_database(self.gxy_url, self.gxy_metadata, self.engines[GXY])
+            initialize_database(self.gxy_metadata, self.engines[GXY])
         elif model == TSI:
-            initialize_database(self.tsi_url, self.tsi_metadata, self.engines[TSI])
+            initialize_database(self.tsi_metadata, self.engines[TSI])
         return True
 
     def _is_database_empty(self, model):
@@ -298,9 +298,8 @@ class DatabaseVerifier:
         return not (url1 and url2 and url1 != url2)
 
 
-def load_metadata(db_url, metadata, engine=None):
+def load_metadata(metadata, engine):
     metadata = listify(metadata)
-    engine = engine or create_engine(db_url)
     with engine.connect() as conn:
         for md in metadata:
             md.create_all(bind=conn)

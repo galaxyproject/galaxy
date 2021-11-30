@@ -142,7 +142,7 @@ class TestDatabaseStateCache:
     def test_is_last_sqlalchemymigrate_version(self, url_factory, metadata_state2_gxy):
         db_url = url_factory()
         engine = create_engine(db_url)
-        load_metadata(db_url, metadata_state2_gxy)
+        load_metadata(metadata_state2_gxy, engine)
         load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION - 1)
         assert not DatabaseStateCache(engine).is_last_sqlalchemymigrate_version()
         load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION)
@@ -608,7 +608,8 @@ def load_sqlalchemymigrate_version(db_url, version):
 
 def test_load_sqlalchemymigrate_version(url_factory, metadata_state2_gxy):
     db_url = url_factory()
-    load_metadata(db_url, metadata_state2_gxy)
+    engine = create_engine(db_url)
+    load_metadata(metadata_state2_gxy, engine)
     sql = f"select version from {SQLALCHEMYMIGRATE_TABLE}"
     version = 42
     with create_engine(db_url).connect() as conn:
@@ -651,7 +652,7 @@ def test_database_is_up_to_date(url_factory, metadata_state6_gxy):
     db_url, metadata = url_factory(), metadata_state6_gxy
     engine = create_engine(db_url)
     assert not database_is_up_to_date(db_url, metadata, GXY)
-    load_metadata(db_url, metadata)
+    load_metadata(metadata, engine)
     am = AlembicManagerForTests(engine)
     am.stamp('heads')
     assert database_is_up_to_date(db_url, metadata, GXY)
@@ -662,7 +663,7 @@ def test_database_is_up_to_date_for_passed_model_only(url_factory, metadata_stat
     engine = create_engine(db_url)
     assert not database_is_up_to_date(db_url, metadata, GXY)
     assert not database_is_up_to_date(db_url, metadata, TSI)
-    load_metadata(db_url, metadata)
+    load_metadata(metadata, engine)
     am = AlembicManagerForTests(engine)
     am.stamp('heads')
     assert database_is_up_to_date(db_url, metadata, GXY)
@@ -673,7 +674,7 @@ def test_database_is_up_to_date_checks_both_if_no_model_passed(url_factory, meta
     db_url, metadata = url_factory(), metadata_state6_combined
     engine = create_engine(db_url)
     assert not database_is_up_to_date(db_url, metadata)
-    load_metadata(db_url, metadata)
+    load_metadata(metadata, engine)
     am = AlembicManagerForTests(engine)
     am.stamp('heads')
     assert database_is_up_to_date(db_url, metadata)
@@ -682,7 +683,7 @@ def test_database_is_up_to_date_checks_both_if_no_model_passed(url_factory, meta
 def test_database_is_not_up_to_date_if_noncurrent_metadata_passed(url_factory, metadata_state5_gxy):
     db_url, metadata = url_factory(), metadata_state5_gxy
     engine = create_engine(db_url)
-    load_metadata(db_url, metadata)
+    load_metadata(metadata, engine)
     am = AlembicManagerForTests(engine)
     am.stamp('heads')
     assert not database_is_up_to_date(db_url, metadata, GXY)
@@ -698,7 +699,8 @@ def test_database_is_not_up_to_date_if_metadata_not_loaded(url_factory, metadata
 
 def test_database_is_not_up_to_date_if_alembic_not_added(url_factory, metadata_state6_gxy):
     db_url, metadata = url_factory(), metadata_state6_gxy
-    load_metadata(db_url, metadata)
+    engine = create_engine(db_url)
+    load_metadata(metadata, engine)
     assert not database_is_up_to_date(db_url, metadata, GXY)
 
 
@@ -742,16 +744,18 @@ def test_is_multiple_metadata_loaded(url_factory, metadata_state1_gxy, metadata_
 
 def test_load_metadata(url_factory, metadata_state1_gxy):
     db_url, metadata = url_factory(), metadata_state1_gxy
+    engine = create_engine(db_url)
     assert not is_metadata_loaded(db_url, metadata)
-    load_metadata(db_url, metadata)
+    load_metadata(metadata, engine)
     assert is_metadata_loaded(db_url, metadata)
 
 
 def test_load_multiple_metadata(url_factory, metadata_state1_gxy, metadata_state1_tsi):
     db_url = url_factory()
+    engine = create_engine(db_url)
     metadata = [metadata_state1_gxy, metadata_state1_tsi]
     assert not is_metadata_loaded(db_url, metadata)
-    load_metadata(db_url, [metadata_state1_gxy, metadata_state1_tsi])
+    load_metadata([metadata_state1_gxy, metadata_state1_tsi], engine)
     assert is_metadata_loaded(db_url, metadata)
 
 
@@ -783,8 +787,9 @@ def db_state1_combined(url_factory, metadata_state1_combined):
 
 
 def _setup_db_state1(db_url, metadata):
+    engine = create_engine(db_url)
     create_database(db_url)
-    load_metadata(db_url, metadata)
+    load_metadata(metadata, engine)
     return db_url
 
 
@@ -805,8 +810,9 @@ def db_state2_combined(url_factory, metadata_state2_combined):
 
 
 def _setup_db_state2(db_url, metadata):
+    engine = create_engine(db_url)
     create_database(db_url)
-    load_metadata(db_url, metadata)
+    load_metadata(metadata, engine)
     return db_url
 
 
@@ -827,8 +833,9 @@ def db_state3_combined(url_factory, metadata_state3_combined):
 
 
 def _setup_db_state3(db_url, metadata):
+    engine = create_engine(db_url)
     create_database(db_url)
-    load_metadata(db_url, metadata)
+    load_metadata(metadata, engine)
     load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION)
     return db_url
 
@@ -852,7 +859,7 @@ def db_state4_combined(url_factory, metadata_state4_combined):
 def _setup_db_state4(db_url, metadata, model=None):
     engine = create_engine(db_url)
     create_database(db_url)
-    load_metadata(db_url, metadata)
+    load_metadata(metadata, engine)
     load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION)
 
     revisions: Union[str, list]
@@ -887,7 +894,7 @@ def db_state5_combined(url_factory, metadata_state5_combined):
 def _setup_db_state5(db_url, metadata, model=None):
     engine = create_engine(db_url)
     create_database(db_url)
-    load_metadata(db_url, metadata)
+    load_metadata(metadata, engine)
 
     revisions: Union[str, list]
     if model == GXY:
@@ -921,7 +928,7 @@ def db_state6_combined(url_factory, metadata_state6_combined):
 def _setup_db_state6(db_url, metadata, model=None):
     engine = create_engine(db_url)
     create_database(db_url)
-    load_metadata(db_url, metadata)
+    load_metadata(metadata, engine)
 
     revisions: Union[str, list]
     if model == GXY:
