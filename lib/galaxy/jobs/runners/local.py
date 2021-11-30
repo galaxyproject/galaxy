@@ -14,6 +14,7 @@ from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.util import (
     asbool,
 )
+from galaxy.util.commands import new_clean_env
 from . import (
     BaseJobRunner,
     JobState
@@ -42,14 +43,10 @@ class LocalJobRunner(BaseJobRunner):
     def __init__(self, app, nworkers):
         """Start the job runner """
 
-        # create a local copy of os.environ to use as env for subprocess.Popen
-        self._environ = os.environ.copy()
         self._proc_lock = threading.Lock()
         self._procs = []
 
-        # Set TEMP if a valid temp value is not already set
-        if not ('TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ):
-            self._environ['TEMP'] = os.path.abspath(tempfile.gettempdir())
+        self._environ = new_clean_env()
 
         super().__init__(app, nworkers)
 
