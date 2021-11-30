@@ -97,7 +97,31 @@ class HaltableContainer(Container):
             raise exception
 
 
-class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableContainer):
+class SentryClientMixin:
+    def configure_sentry_client(self):
+        self.sentry_client = None
+        if self.config.sentry_dsn:
+            event_level = self.config.sentry_event_level.upper()
+            assert event_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], f"Invalid sentry event level '{self.config.sentry.event_level}'"
+
+            def postfork_sentry_client():
+                import sentry_sdk
+                from sentry_sdk.integrations.logging import LoggingIntegration
+
+                sentry_logging = LoggingIntegration(
+                    level=logging.INFO,  # Capture info and above as breadcrumbs
+                    event_level=getattr(logging, event_level)  # Send errors as events
+                )
+                self.sentry_client = sentry_sdk.init(
+                    self.config.sentry_dsn,
+                    release=f"{self.config.version_major}.{self.config.version_minor}",
+                    integrations=[sentry_logging]
+                )
+
+            self.application_stack.register_postfork_function(postfork_sentry_client)
+
+
+class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableContainer, SentryClientMixin):
     """Encapsulates the state of a minimal Galaxy application"""
 
     def __init__(self, fsmon=False, configure_logging=True, **kwargs) -> None:
@@ -190,27 +214,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self._configure_datatypes_registry(self.installed_repository_manager)
         self._register_singleton(Registry, self.datatypes_registry)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
-
-        self.sentry_client = None
-        if self.config.sentry_dsn:
-            event_level = self.config.sentry_event_level.upper()
-            assert event_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], f"Invalid sentry event level '{self.config.sentry.event_level}'"
-
-            def postfork_sentry_client():
-                import sentry_sdk
-                from sentry_sdk.integrations.logging import LoggingIntegration
-
-                sentry_logging = LoggingIntegration(
-                    level=logging.INFO,  # Capture info and above as breadcrumbs
-                    event_level=getattr(logging, event_level)  # Send errors as events
-                )
-                self.sentry_client = sentry_sdk.init(
-                    self.config.sentry_dsn,
-                    release=f"{self.config.version_major}.{self.config.version_minor}",
-                    integrations=[sentry_logging]
-                )
-
-            self.application_stack.register_postfork_function(postfork_sentry_client)
+        self.configure_sentry_client()
 
 
 class UniverseApplication(StructuredApp, GalaxyManagerApplication):

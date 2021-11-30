@@ -578,6 +578,14 @@ mapping:
           indicated sentry instance.  This connection string is available in your
           sentry instance under <project_name> -> Settings -> API Keys.
 
+      sentry_event_level:
+        type: str
+        default: ERROR
+        required: false
+        desc: |
+          Determines the minimum log level that will be sent as an event to Sentry.
+          Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
+
       session_duration:
         type: int
         default: 0
