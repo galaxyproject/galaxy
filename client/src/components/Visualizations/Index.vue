@@ -1,5 +1,6 @@
 <template>
     <div>
+        <DisplayApplications v-if="datasetId" :dataset-id="datasetId" />
         <PluginList :dataset-id="datasetId" />
     </div>
 </template>
@@ -9,6 +10,7 @@ import PluginList from "./PluginList";
 export default {
     components: {
         PluginList,
+        DisplayApplications,
     },
     props: {
         datasetId: {
