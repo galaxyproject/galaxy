@@ -180,7 +180,9 @@ class DatabaseVerifier:
         gxy_url = str(self.gxy_engine.url)
         tsi_url = str(self.tsi_engine.url)
         if not database_exists(gxy_url):
-            self._create_database(gxy_url)
+            template = self.app_config.database_template if self.app_config else None
+            encoding = self.app_config.database_encoding if self.app_config else None
+            self._create_database(gxy_url, template, encoding)
         if not self.is_combined and not database_exists(tsi_url):
             self._create_database(tsi_url)
 
@@ -263,11 +265,7 @@ class DatabaseVerifier:
     def _is_database_empty(self, model):
         return self.db_state[model].is_database_empty()
 
-    def _create_database(self, url):
-        template, encoding = None, None
-        if self.app_config:
-            template = self.app_config.database_template
-            encoding = self.app_config.database_encoding  # TODO add to config_schema
+    def _create_database(self, url, template=None, encoding=None):
         create_kwds = {}
         message = f'Creating database for URI [{url}]'
         if template:
