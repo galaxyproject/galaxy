@@ -1,4 +1,5 @@
 type: custos
+path_prefix: /my_galaxy_instance
 custos_host: service.staging.usecustos.org
 custos_port: 30170
 custos_client_id: ${custos_client_id}

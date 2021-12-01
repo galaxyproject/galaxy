@@ -1,5 +1,6 @@
 # to run tests, start vault with:
 # $ vault server -dev -dev-root-token-id=galaxy_test_token
 type: hashicorp
+path_prefix: /my_galaxy_instance
 vault_address: ${vault_address}
 vault_token: ${vault_token}

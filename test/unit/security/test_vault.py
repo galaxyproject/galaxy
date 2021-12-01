@@ -72,25 +72,25 @@ class TestDatabaseVault(VaultTestBase, unittest.TestCase):
     def test_rotate_keys(self):
         config = GalaxyDataTestConfig(vault_config_file=VAULT_CONF_DATABASE)
         app = GalaxyDataTestApp(config=config)
-        self.vault = VaultFactory.from_app(app)
-        self.vault.write_secret("my/rotated/secret", "hello rotated")
+        vault = VaultFactory.from_app(app)
+        vault.write_secret("my/rotated/secret", "hello rotated")
 
         # should succeed after rotation
         app.config.vault_config_file = VAULT_CONF_DATABASE_ROTATED
-        self.vault = VaultFactory.from_app(app)
-        self.assertEqual(self.vault.read_secret("my/rotated/secret"), "hello rotated")
+        vault = VaultFactory.from_app(app)
+        self.assertEqual(vault.read_secret("my/rotated/secret"), "hello rotated")
 
     def test_wrong_keys(self):
         config = GalaxyDataTestConfig(vault_config_file=VAULT_CONF_DATABASE)
         app = GalaxyDataTestApp(config=config)
-        self.vault = VaultFactory.from_app(app)
-        self.vault.write_secret("my/incorrect/secret", "hello incorrect")
+        vault = VaultFactory.from_app(app)
+        vault.write_secret("my/incorrect/secret", "hello incorrect")
 
         # should fail because decryption keys are the wrong
         app.config.vault_config_file = VAULT_CONF_DATABASE_INVALID
-        self.vault = VaultFactory.from_app(app)
+        vault = VaultFactory.from_app(app)
         with self.assertRaises(InvalidToken):
-            self.vault.read_secret("my/incorrect/secret")
+            vault.read_secret("my/incorrect/secret")
 
 
 VAULT_CONF_CUSTOS = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_custos.yml")

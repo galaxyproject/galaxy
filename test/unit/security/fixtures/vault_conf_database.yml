@@ -1,4 +1,5 @@
 type: database
+path_prefix: /my_galaxy_instance
 # Encryption keys must be valid fernet keys
 # To generate a valid key:
 # >>> from cryptography.fernet import Fernet

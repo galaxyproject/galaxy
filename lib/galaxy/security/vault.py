@@ -38,20 +38,6 @@ class InvalidVaultKeyException(Exception):
 
 class Vault(abc.ABC):
 
-    def validate_key(self, key):
-        if not key:
-            return False
-        return not VAULT_KEY_REGEX.search(key)
-
-    def normalize_key(self, key):
-        # remove leading and trailing slashes
-        key = key.strip("/")
-        if not self.validate_key(key):
-            raise InvalidVaultKeyException(
-                f"Vault key: {key} is invalid. Make sure that it is not empty, contains double slashes or contains"
-                "whitespace before or after the separator.")
-        return key
-
     @abc.abstractmethod
     def read_secret(self, key: str) -> Optional[str]:
         pass
@@ -80,7 +66,6 @@ class HashicorpVault(Vault):
         self.client = hvac.Client(url=self.vault_address, token=self.vault_token)
 
     def read_secret(self, key: str) -> Optional[str]:
-        key = self.normalize_key(key)
         try:
             response = self.client.secrets.kv.read_secret_version(path=key)
             return response['data']['data'].get('value')
@@ -88,7 +73,6 @@ class HashicorpVault(Vault):
             return None
 
     def write_secret(self, key: str, value: str) -> None:
-        key = self.normalize_key(key)
         self.client.secrets.kv.v2.create_or_update_secret(path=key, secret={'value': value})
 
 
@@ -112,7 +96,6 @@ class DatabaseVault(Vault):
         self.sa_session.flush()
 
     def read_secret(self, key: str) -> Optional[str]:
-        key = self.normalize_key(key)
         key_obj = self.sa_session.query(model.Vault).filter_by(key=key).first()
         if key_obj:
             f = self._get_multi_fernet()
@@ -120,7 +103,6 @@ class DatabaseVault(Vault):
         return None
 
     def write_secret(self, key: str, value: str) -> None:
-        key = self.normalize_key(key)
         f = self._get_multi_fernet()
         token = f.encrypt(value.encode('utf-8'))
         self._update_or_create(key=key, value=token.decode('utf-8'))
@@ -139,7 +121,6 @@ class CustosVault(Vault):
         self.client = ResourceSecretManagementClient(self.custos_settings)
 
     def read_secret(self, key: str) -> Optional[str]:
-        key = self.normalize_key(key)
         try:
             response = self.client.get_KV_credential(token=self.b64_encoded_custos_token,
                                                      client_id=self.custos_settings.CUSTOS_CLIENT_ID,
@@ -149,7 +130,6 @@ class CustosVault(Vault):
             return None
 
     def write_secret(self, key: str, value: str) -> None:
-        key = self.normalize_key(key)
         if self.read_secret(key):
             self.client.update_KV_credential(token=self.b64_encoded_custos_token,
                                              client_id=self.custos_settings.CUSTOS_CLIENT_ID,
@@ -173,6 +153,54 @@ class UserVaultWrapper(Vault):
         return self.vault.write_secret(f"user/{self.user.id}/{key}", value)
 
 
+class VaultKeyValidationDecorator(Vault):
+    """
+    A decorator to standardize and validate vault key paths
+    """
+
+    def __init__(self, vault: Vault):
+        self.vault = vault
+
+    @staticmethod
+    def validate_key(key):
+        if not key:
+            return False
+        return not VAULT_KEY_REGEX.search(key)
+
+    def normalize_key(self, key):
+        # remove leading and trailing slashes
+        key = key.strip("/")
+        if not self.validate_key(key):
+            raise InvalidVaultKeyException(
+                f"Vault key: {key} is invalid. Make sure that it is not empty, contains double slashes or contains"
+                "whitespace before or after the separator.")
+        return key
+
+    def read_secret(self, key: str) -> Optional[str]:
+        key = self.normalize_key(key)
+        return self.vault.read_secret(key)
+
+    def write_secret(self, key: str, value: str) -> None:
+        key = self.normalize_key(key)
+        return self.vault.write_secret(key, value)
+
+
+class VaultKeyPrefixDecorator(Vault):
+    """
+    Adds a prefix to all vault keys, such as the galaxy instance id
+    """
+
+    def __init__(self, vault: Vault, prefix: str):
+        self.vault = vault
+        self.prefix = prefix.strip("/")
+
+    def read_secret(self, key: str) -> Optional[str]:
+        return self.vault.read_secret(f"/{self.prefix}/{key}")
+
+    def write_secret(self, key: str, value: str) -> None:
+        return self.vault.write_secret(f"/{self.prefix}/{key}", value)
+
+
 class VaultFactory(object):
 
     @staticmethod
@@ -185,13 +213,15 @@ class VaultFactory(object):
     @staticmethod
     def from_vault_type(app, vault_type: Optional[str], cfg: dict) -> Vault:
         if vault_type == "hashicorp":
-            return HashicorpVault(cfg)
+            vault = HashicorpVault(cfg)
         elif vault_type == "database":
-            return DatabaseVault(app.model.context, cfg)
+            vault = DatabaseVault(app.model.context, cfg)
         elif vault_type == "custos":
-            return CustosVault(cfg)
+            vault = CustosVault(cfg)
         else:
             raise UnknownVaultTypeException(f"Unknown vault type: {vault_type}")
+        vault_prefix = cfg.get('path_prefix') or "/galaxy"
+        return VaultKeyValidationDecorator(VaultKeyPrefixDecorator(vault, prefix=vault_prefix))
 
     @staticmethod
     def from_app(app) -> Vault:
