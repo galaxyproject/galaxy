@@ -586,12 +586,6 @@ class TestDatabaseState6:
         assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
 
-# Tests of misc. helpers
-
-# def test_is_automigrate_set():
-#     pass # TODO
-
-
 # Test helpers + their tests, misc. fixtures
 
 @pytest.fixture

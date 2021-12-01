@@ -247,7 +247,9 @@ class DatabaseVerifier:
         raise NoVersionTableError()
 
     def _is_automigrate_set(self):
-        return False  # TODO fix this: env var?
+        if self.app_config:
+            return self.app_config.database_auto_migrate
+        return False
 
     def _initialize_database(self, model):
 
