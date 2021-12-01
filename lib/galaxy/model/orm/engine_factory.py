@@ -44,7 +44,7 @@ def pretty_stack():
     return rval
 
 
-def build_engine(url, engine_options, database_query_profiling_proxy=False, trace_logger=None, slow_query_log_threshold=0, thread_local_log=None, log_query_counts=False):
+def build_engine(url, engine_options=None, database_query_profiling_proxy=False, trace_logger=None, slow_query_log_threshold=0, thread_local_log=None, log_query_counts=False):
     if database_query_profiling_proxy or slow_query_log_threshold or thread_local_log or log_query_counts:
 
         @event.listens_for(Engine, "before_cursor_execute")
@@ -92,6 +92,7 @@ def build_engine(url, engine_options, database_query_profiling_proxy=False, trac
     if 'sqlite://' in url:
         connect_args['check_same_thread'] = False
     # Create the database engine
+    engine_options = engine_options or {}
     engine = create_engine(url, connect_args=connect_args, **engine_options)
     register_after_fork(engine, lambda e: e.dispose())
     return engine
