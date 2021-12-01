@@ -317,6 +317,11 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                         for data_item in user.extra_preferences:
                             if field in data_item:
                                 input['value'] = user.extra_preferences[data_item]
+                    # regardless of the store, do not send secret type values to client
+                    if input.get('type') == 'secret':
+                        input['value'] = "__SECRET_PLACEHOLDER__"
+                        # let the client treat it as a password field
+                        input['type'] = "password"
                 extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': input_fields})
         return extra_pref_inputs
 
@@ -479,10 +484,11 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                             input = matching_input[0]
                             if input.get('required') and payload[item] == "":
                                 raise exceptions.ObjectAttributeMissingException("Please fill the required field")
-                            if input.get('store') == 'vault':
-                                user_vault.write_secret(f'preferences/{keys[0]}/{keys[1]}', str(payload[item]))
-                            else:
-                                extra_user_pref_data[item] = payload[item]
+                            if not (input.get('type') == 'secret' and payload[item] == "__SECRET_PLACEHOLDER__"):
+                                if input.get('store') == 'vault':
+                                    user_vault.write_secret(f'preferences/{keys[0]}/{keys[1]}', str(payload[item]))
+                                else:
+                                    extra_user_pref_data[item] = payload[item]
                         else:
                             extra_user_pref_data[item] = payload[item]
             user.preferences["extra_user_preferences"] = json.dumps(extra_user_pref_data)

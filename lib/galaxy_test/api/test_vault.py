@@ -23,11 +23,13 @@ class VaultApiTestCase(ApiTestCase):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
+        db_user = app.model.context.query(app.model.User).filter(app.model.User.email == user['email']).first()
 
         # create some initial data
         put(url, data=json.dumps({
             "vaulttestsection|client_id": "hello_client_id",
             "vaulttestsection|client_secret": "hello_client_secret",
+            "vaulttestsection|refresh_token": "a_super_secret_value",
         }))
 
         # retrieve saved data
@@ -37,7 +39,6 @@ class VaultApiTestCase(ApiTestCase):
             return [input for input in inputs if input['name'] == name][0]
 
         inputs = [section for section in response["inputs"] if section['name'] == 'vaulttestsection'][0]["inputs"]
-        db_user = app.model.context.query(app.model.User).filter(app.model.User.email == user['email']).first()
 
         # value should be what we saved
         input_client_id = get_input_by_name(inputs, 'client_id')
@@ -55,6 +56,44 @@ class VaultApiTestCase(ApiTestCase):
             f"user/{db_user.id}/preferences/vaulttestsection/client_secret"), "hello_client_secret")
         # it should not be stored in the user preferences model
         self.assertIsNone(db_user.extra_preferences['vaulttestsection|client_secret'])
+
+        # secret type values should not be retrievable by the client
+        input_refresh_token = get_input_by_name(inputs, 'refresh_token')
+        self.assertNotEqual(input_refresh_token['value'], "a_super_secret_value")
+        self.assertEqual(input_refresh_token['value'], "__SECRET_PLACEHOLDER__")
+
+        # however, that secret value should be correctly stored on the server
+        self.assertEqual(app.vault.read_secret(
+            f"user/{db_user.id}/preferences/vaulttestsection/refresh_token"), "a_super_secret_value")
+
+    def test_extra_prefs_vault_storage_update_secret(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        url = self.__url("information/inputs", user)
+        app = cast(Any, self._test_driver.app if self._test_driver else None)
+        db_user = app.model.context.query(app.model.User).filter(app.model.User.email == user['email']).first()
+
+        # write the initial secret value
+        put(url, data=json.dumps({
+            "vaulttestsection|refresh_token": "a_new_secret_value",
+        }))
+
+        # attempt to overwrite it with placeholder
+        put(url, data=json.dumps({
+            "vaulttestsection|refresh_token": "__SECRET_PLACEHOLDER__",
+        }))
+
+        # value should not have been overwritten
+        self.assertEqual(app.vault.read_secret(
+            f"user/{db_user.id}/preferences/vaulttestsection/refresh_token"), "a_new_secret_value")
+
+        # write a new value
+        put(url, data=json.dumps({
+            "vaulttestsection|refresh_token": "an_updated_secret_value",
+        }))
+
+        # value should now be overwritten
+        self.assertEqual(app.vault.read_secret(
+            f"user/{db_user.id}/preferences/vaulttestsection/refresh_token"), "an_updated_secret_value")
 
     def __url(self, action, user):
         return self._api_url(f"users/{user['id']}/{action}", params=dict(key=self.master_api_key))

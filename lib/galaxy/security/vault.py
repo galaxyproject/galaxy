@@ -25,7 +25,7 @@ from galaxy import model
 
 log = logging.getLogger(__name__)
 
-VAULT_KEY_REGEX = re.compile(r"\s\/|\/\s|\/\/")
+VAULT_KEY_INVALID_REGEX = re.compile(r"\s\/|\/\s|\/\/")
 
 
 class UnknownVaultTypeException(Exception):
@@ -173,7 +173,7 @@ class VaultKeyValidationDecorator(Vault):
     def validate_key(key):
         if not key:
             return False
-        return not VAULT_KEY_REGEX.search(key)
+        return not VAULT_KEY_INVALID_REGEX.search(key)
 
     def normalize_key(self, key):
         # remove leading and trailing slashes
