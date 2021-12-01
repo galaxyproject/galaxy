@@ -6,7 +6,8 @@ import re
 def _has_todo(txt):
     """
     check if text contains a TODO
-    the todo needs to be delimited by whitespaces or be at the begin/end
+    the todo needs to be delimited by a non-alphanumerical character (whitespaces, #, ...)
+    or be at the begin/end of txt
     """
     return re.search(r"(^|\W)(todo|TODO)(\W|$)", txt) is not None
 
