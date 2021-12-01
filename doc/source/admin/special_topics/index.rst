@@ -13,6 +13,7 @@ Special Topics
    gtn
    job_metrics
    webhooks
+   vault
    performance_tracking
    bug_reports
    gdpr_compliance
