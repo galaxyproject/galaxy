@@ -2,6 +2,7 @@ import abc
 import json
 import logging
 import os
+import re
 from typing import Optional
 
 import yaml
@@ -24,12 +25,32 @@ from galaxy import model
 
 log = logging.getLogger(__name__)
 
+VAULT_KEY_REGEX = re.compile(r"\s\/|\/\s|\/\/")
+
 
 class UnknownVaultTypeException(Exception):
     pass
 
 
+class InvalidVaultKeyException(Exception):
+    pass
+
+
 class Vault(abc.ABC):
+
+    def validate_key(self, key):
+        if not key:
+            return False
+        return not VAULT_KEY_REGEX.search(key)
+
+    def normalize_key(self, key):
+        # remove leading and trailing slashes
+        key = key.strip("/")
+        if not self.validate_key(key):
+            raise InvalidVaultKeyException(
+                f"Vault key: {key} is invalid. Make sure that it is not empty, contains double slashes or contains"
+                "whitespace before or after the separator.")
+        return key
 
     @abc.abstractmethod
     def read_secret(self, key: str) -> Optional[str]:
@@ -59,6 +80,7 @@ class HashicorpVault(Vault):
         self.client = hvac.Client(url=self.vault_address, token=self.vault_token)
 
     def read_secret(self, key: str) -> Optional[str]:
+        key = self.normalize_key(key)
         try:
             response = self.client.secrets.kv.read_secret_version(path=key)
             return response['data']['data'].get('value')
@@ -66,6 +88,7 @@ class HashicorpVault(Vault):
             return None
 
     def write_secret(self, key: str, value: str) -> None:
+        key = self.normalize_key(key)
         self.client.secrets.kv.v2.create_or_update_secret(path=key, secret={'value': value})
 
 
@@ -89,6 +112,7 @@ class DatabaseVault(Vault):
         self.sa_session.flush()
 
     def read_secret(self, key: str) -> Optional[str]:
+        key = self.normalize_key(key)
         key_obj = self.sa_session.query(model.Vault).filter_by(key=key).first()
         if key_obj:
             f = self._get_multi_fernet()
@@ -96,6 +120,7 @@ class DatabaseVault(Vault):
         return None
 
     def write_secret(self, key: str, value: str) -> None:
+        key = self.normalize_key(key)
         f = self._get_multi_fernet()
         token = f.encrypt(value.encode('utf-8'))
         self._update_or_create(key=key, value=token.decode('utf-8'))
@@ -114,6 +139,7 @@ class CustosVault(Vault):
         self.client = ResourceSecretManagementClient(self.custos_settings)
 
     def read_secret(self, key: str) -> Optional[str]:
+        key = self.normalize_key(key)
         try:
             response = self.client.get_KV_credential(token=self.b64_encoded_custos_token,
                                                      client_id=self.custos_settings.CUSTOS_CLIENT_ID,
@@ -123,6 +149,7 @@ class CustosVault(Vault):
             return None
 
     def write_secret(self, key: str, value: str) -> None:
+        key = self.normalize_key(key)
         if self.read_secret(key):
             self.client.update_KV_credential(token=self.b64_encoded_custos_token,
                                              client_id=self.custos_settings.CUSTOS_CLIENT_ID,

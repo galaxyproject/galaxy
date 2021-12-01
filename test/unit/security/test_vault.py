@@ -7,7 +7,7 @@ from abc import ABC
 from cryptography.fernet import InvalidToken
 
 from galaxy.model.unittest_utils.data_app import GalaxyDataTestApp, GalaxyDataTestConfig
-from galaxy.security.vault import Vault, VaultFactory
+from galaxy.security.vault import InvalidVaultKeyException, Vault, VaultFactory
 
 
 class VaultTestBase(ABC):
@@ -22,10 +22,16 @@ class VaultTestBase(ABC):
         self.vault.write_secret("my/new/secret", "hello overwritten")
         self.assertEqual(self.vault.read_secret("my/new/secret"), "hello overwritten")  # type: ignore
 
-    def test_overwrite_secret(self):
-        self.vault.write_secret("my/new/secret", "hello world")
-        self.vault.write_secret("my/new/secret", "hello overwritten")
-        self.assertEqual(self.vault.read_secret("my/new/secret"), "hello overwritten")  # type: ignore
+    def test_valid_paths(self):
+        with self.assertRaises(InvalidVaultKeyException):
+            self.vault.write_secret("", "hello world")
+        with self.assertRaises(InvalidVaultKeyException):
+            self.vault.write_secret("my//new/secret", "hello world")
+        with self.assertRaises(InvalidVaultKeyException):
+            self.vault.write_secret("my/ /new/secret", "hello world")
+        # leading and trailing slashes should be ignored
+        self.vault.write_secret("/my/new/secret with space/", "hello overwritten")
+        self.assertEqual(self.vault.read_secret("my/new/secret with space"), "hello overwritten")  # type: ignore
 
 
 VAULT_CONF_HASHICORP = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_hashicorp.yml")
