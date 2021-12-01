@@ -4,7 +4,7 @@ import os
 from alembic import command, script
 from alembic.config import Config
 from alembic.runtime import migration
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import MetaData
 
 from galaxy.model import Base as gxy_base
 from galaxy.model.database_utils import create_database, database_exists
@@ -140,34 +140,20 @@ class DatabaseStateCache:
 
 class DatabaseVerifier:
 
-    def __init__(self, db_url, install_db_url=None, app_config=None):
-        self.gxy_url = db_url
-        self.tsi_url = install_db_url or db_url
-        assert self.gxy_url and self.tsi_url
+    def __init__(self, engine, install_engine=None, app_config=None):
         self.app_config = app_config
-        self._load()
-
-    def _load(self):
-        self.is_combined = self._is_one_database(self.gxy_url, self.tsi_url)
+        self.is_combined = self._is_one_database(engine, install_engine)
+        self.gxy_engine = engine
+        self.tsi_engine = install_engine if not self.is_combined else engine
         self.gxy_metadata = get_gxy_metadata()
         self.tsi_metadata = get_tsi_metadata()
-        self.engines = self._load_engines()
         self.db_state = self._load_database_state()
-
-    def _load_engines(self):
-        engines = {}
-        engines[GXY] = create_engine(self.gxy_url)
-        if not self.is_combined:
-            engines[TSI] = create_engine(self.tsi_url)
-        else:
-            engines[TSI] = engines[GXY]  # combined = same engine
-        return engines
 
     def _load_database_state(self):
         db = {}
-        db[GXY] = DatabaseStateCache(engine=self.engines[GXY])
+        db[GXY] = DatabaseStateCache(engine=self.gxy_engine)
         if not self.is_combined:
-            db[TSI] = DatabaseStateCache(engine=self.engines[TSI])
+            db[TSI] = DatabaseStateCache(engine=self.tsi_engine)
         else:
             db[TSI] = db[GXY]  # combined = same database
         return db
@@ -189,10 +175,12 @@ class DatabaseVerifier:
     def _handle_no_databases(self):
         # If galaxy-model database doesn't exist: create it.
         # If database not combined and install-model database doesn't exist: create it.
-        if not database_exists(self.gxy_url):
-            self._create_database(self.gxy_url)
-        if not self.is_combined and not database_exists(self.tsi_url):
-            self._create_database(self.tsi_url)
+        gxy_url = str(self.gxy_engine.url)
+        tsi_url = str(self.tsi_engine.url)
+        if not database_exists(gxy_url):
+            self._create_database(gxy_url)
+        if not self.is_combined and not database_exists(tsi_url):
+            self._create_database(tsi_url)
 
     def _handle_empty_databases(self):
         # For each database: True if it has been initialized.
@@ -232,7 +220,8 @@ class DatabaseVerifier:
         return self.db_state[model].is_last_sqlalchemymigrate_version()
 
     def _handle_with_alembic(self, model, skip_version_check=False):
-        am = get_alembic_manager(self.engines[model])
+        engine = self.gxy_engine if model == GXY else self.tsi_engine
+        am = get_alembic_manager(engine)
         # first check if this model is up to date
         if not skip_version_check and am.is_up_to_date(model):
             # TODO: log message: db is up-to-date
@@ -253,12 +242,6 @@ class DatabaseVerifier:
         log.error('no version table')  # TODO edit message
         raise NoVersionTableError()
 
-    def _get_url(self, model):
-        if model == GXY:
-            return self.gxy_url
-        else:
-            return self.tsi_url
-
     def _is_automigrate_set(self):
         return False  # TODO fix this: env var?
 
@@ -270,9 +253,9 @@ class DatabaseVerifier:
             am.stamp(f'{model}@head')
 
         if model == GXY:
-            initialize_database(self.gxy_metadata, self.engines[GXY])
+            initialize_database(self.gxy_metadata, self.gxy_engine)
         elif model == TSI:
-            initialize_database(self.tsi_metadata, self.engines[TSI])
+            initialize_database(self.tsi_metadata, self.tsi_engine)
         return True
 
     def _is_database_empty(self, model):
@@ -294,8 +277,8 @@ class DatabaseVerifier:
         log.info(message)
         create_database(url, **create_kwds)
 
-    def _is_one_database(self, url1, url2):
-        return not (url1 and url2 and url1 != url2)
+    def _is_one_database(self, engine1, engine2):
+        return not (engine1 and engine2 and engine1 != engine2)
 
 
 def load_metadata(metadata, engine):

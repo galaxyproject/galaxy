@@ -283,8 +283,9 @@ class TestNoDatabaseState:
     """
     def test_combined_database(self, url_factory, metadata_state6_combined):
         db_url = url_factory()
+        engine = create_engine(db_url)
         assert not database_exists(db_url)
-        db = DatabaseVerifier(db_url)
+        db = DatabaseVerifier(engine)
         db.verify()
         assert database_is_up_to_date(db_url, metadata_state6_combined)
 
@@ -293,7 +294,9 @@ class TestNoDatabaseState:
         assert not database_exists(db1_url)
         assert not database_exists(db2_url)
 
-        db = DatabaseVerifier(db1_url, db2_url)
+        engine1 = create_engine(db1_url)
+        engine2 = create_engine(db2_url)
+        db = DatabaseVerifier(engine1, engine2)
         db.verify()
 
         assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
@@ -307,7 +310,8 @@ class TestDatabaseState0:
     """
     def test_combined_database(self, url_factory, metadata_state6_combined):
         db_url = url_factory()
-        db = DatabaseVerifier(db_url)
+        engine = create_engine(db_url)
+        db = DatabaseVerifier(engine)
         create_database(db_url)
         assert database_exists(db_url)
         assert db._is_database_empty(GXY)
@@ -316,7 +320,9 @@ class TestDatabaseState0:
 
     def test_separate_databases(self, url_factory, metadata_state6_gxy, metadata_state6_tsi):
         db1_url, db2_url = url_factory(), url_factory()
-        db = DatabaseVerifier(db1_url, db2_url)
+        engine1 = create_engine(db1_url)
+        engine2 = create_engine(db2_url)
+        db = DatabaseVerifier(engine1, engine2)
         create_database(db1_url)
         create_database(db2_url)
         assert database_exists(db1_url)
@@ -335,17 +341,22 @@ class TestDatabaseState1:
     """
     def test_combined_database(self, db_state1_combined):
         with pytest.raises(NoVersionTableError):
-            db = DatabaseVerifier(db_state1_combined)
+            engine = create_engine(db_state1_combined)
+            db = DatabaseVerifier(engine)
             db.verify()
 
     def test_separate_databases_gxy_raises_error(self, db_state1_gxy, db_state6_tsi):
         with pytest.raises(NoVersionTableError):
-            db = DatabaseVerifier(db_state1_gxy, db_state6_tsi)
+            engine1 = create_engine(db_state1_gxy)
+            engine2 = create_engine(db_state6_tsi)
+            db = DatabaseVerifier(engine1, engine2)
             db.verify()
 
     def test_separate_databases_tsi_raises_error(self, db_state6_gxy, db_state1_tsi):
         with pytest.raises(NoVersionTableError):
-            db = DatabaseVerifier(db_state6_gxy, db_state1_tsi)
+            engine1 = create_engine(db_state6_gxy)
+            engine2 = create_engine(db_state1_tsi)
+            db = DatabaseVerifier(engine1, engine2)
             db.verify()
 
 
@@ -357,17 +368,22 @@ class TestDatabaseState2:
     """
     def test_combined_database(self, db_state2_combined):
         with pytest.raises(VersionTooOldError):
-            db = DatabaseVerifier(db_state2_combined)
+            engine = create_engine(db_state2_combined)
+            db = DatabaseVerifier(engine)
             db.verify()
 
     def test_separate_databases_gxy_raises_error(self, db_state2_gxy, db_state6_tsi):
         with pytest.raises(VersionTooOldError):
-            db = DatabaseVerifier(db_state2_gxy, db_state6_tsi)
+            engine1 = create_engine(db_state2_gxy)
+            engine2 = create_engine(db_state6_tsi)
+            db = DatabaseVerifier(engine1, engine2)
             db.verify()
 
     def test_separate_databases_tsi_raises_error(self, db_state6_gxy, db_state2_tsi):
         with pytest.raises(VersionTooOldError):
-            db = DatabaseVerifier(db_state6_gxy, db_state2_tsi)
+            engine1 = create_engine(db_state6_gxy)
+            engine2 = create_engine(db_state2_tsi)
+            db = DatabaseVerifier(engine1, engine2)
             db.verify()
 
 
@@ -386,7 +402,8 @@ class TestDatabaseState3:
         set_automigrate,
     ):
         db_url = db_state3_combined
-        db = DatabaseVerifier(db_url)
+        engine = create_engine(db_url)
+        db = DatabaseVerifier(engine)
         db.verify()
         assert database_is_up_to_date(db_url, metadata_state6_combined)
 
@@ -399,24 +416,31 @@ class TestDatabaseState3:
         set_automigrate,
     ):
         db1_url, db2_url = db_state3_gxy, db_state3_tsi
-        db = DatabaseVerifier(db1_url, db2_url)
+        engine1 = create_engine(db1_url)
+        engine2 = create_engine(db2_url)
+        db = DatabaseVerifier(engine1, engine2)
         db.verify()
         assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
         assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
     def test_combined_database_no_automigrate(self, db_state3_combined):
         with pytest.raises(OutdatedDatabaseError):
-            db = DatabaseVerifier(db_state3_combined)
+            engine = create_engine(db_state3_combined)
+            db = DatabaseVerifier(engine)
             db.verify()
 
     def test_separate_databases_no_automigrate_gxy_raises_error(self, db_state3_gxy, db_state6_tsi):
         with pytest.raises(OutdatedDatabaseError):
-            db = DatabaseVerifier(db_state3_gxy, db_state6_tsi)
+            engine1 = create_engine(db_state3_gxy)
+            engine2 = create_engine(db_state6_tsi)
+            db = DatabaseVerifier(engine1, engine2)
             db.verify()
 
     def test_separate_databases_no_automigrate_tsi_raises_error(self, db_state6_gxy, db_state3_tsi):
         with pytest.raises(OutdatedDatabaseError):
-            db = DatabaseVerifier(db_state6_gxy, db_state3_tsi)
+            engine1 = create_engine(db_state6_gxy)
+            engine2 = create_engine(db_state3_tsi)
+            db = DatabaseVerifier(engine1, engine2)
             db.verify()
 
 
@@ -435,7 +459,8 @@ class TestDatabaseState4:
         set_automigrate,
     ):
         db_url = db_state4_combined
-        db = DatabaseVerifier(db_url)
+        engine = create_engine(db_url)
+        db = DatabaseVerifier(engine)
         db.verify()
         assert database_is_up_to_date(db_url, metadata_state6_combined)
 
@@ -448,24 +473,31 @@ class TestDatabaseState4:
         set_automigrate,
     ):
         db1_url, db2_url = db_state4_gxy, db_state4_tsi
-        db = DatabaseVerifier(db1_url, db2_url)
+        engine1 = create_engine(db1_url)
+        engine2 = create_engine(db2_url)
+        db = DatabaseVerifier(engine1, engine2)
         db.verify()
         assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
         assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
     def test_combined_database_no_automigrate(self, db_state4_combined):
         with pytest.raises(OutdatedDatabaseError):
-            db = DatabaseVerifier(db_state4_combined)
+            engine = create_engine(db_state4_combined)
+            db = DatabaseVerifier(engine)
             db.verify()
 
     def test_separate_databases_no_automigrate_gxy_raises_error(self, db_state4_gxy, db_state6_tsi):
         with pytest.raises(OutdatedDatabaseError):
-            db = DatabaseVerifier(db_state4_gxy, db_state6_tsi)
+            engine1 = create_engine(db_state4_gxy)
+            engine2 = create_engine(db_state6_tsi)
+            db = DatabaseVerifier(engine1, engine2)
             db.verify()
 
     def test_separate_databases_no_automigrate_tsi_raises_error(self, db_state6_gxy, db_state4_tsi):
         with pytest.raises(OutdatedDatabaseError):
-            db = DatabaseVerifier(db_state6_gxy, db_state4_tsi)
+            engine1 = create_engine(db_state6_gxy)
+            engine2 = create_engine(db_state4_tsi)
+            db = DatabaseVerifier(engine1, engine2)
             db.verify()
 
 
@@ -484,7 +516,8 @@ class TestDatabaseState5:
         set_automigrate
     ):
         db_url = db_state5_combined
-        db = DatabaseVerifier(db_url)
+        engine = create_engine(db_url)
+        db = DatabaseVerifier(engine)
         db.verify()
         assert database_is_up_to_date(db_url, metadata_state6_combined)
 
@@ -497,24 +530,31 @@ class TestDatabaseState5:
         set_automigrate
     ):
         db1_url, db2_url = db_state5_gxy, db_state5_tsi
-        db = DatabaseVerifier(db1_url, db2_url)
+        engine1 = create_engine(db1_url)
+        engine2 = create_engine(db2_url)
+        db = DatabaseVerifier(engine1, engine2)
         db.verify()
         assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
         assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
     def test_combined_database_no_automigrate(self, db_state5_combined):
         with pytest.raises(OutdatedDatabaseError):
-            db = DatabaseVerifier(db_state5_combined)
+            engine = create_engine(db_state5_combined)
+            db = DatabaseVerifier(engine)
             db.verify()
 
     def test_separate_databases_no_automigrate_gxy_raises_error(self, db_state5_gxy, db_state6_tsi):
         with pytest.raises(OutdatedDatabaseError):
-            db = DatabaseVerifier(db_state5_gxy, db_state6_tsi)
+            engine1 = create_engine(db_state5_gxy)
+            engine2 = create_engine(db_state6_tsi)
+            db = DatabaseVerifier(engine1, engine2)
             db.verify()
 
     def test_separate_databases_no_automigrate_tsi_raises_error(self, db_state6_gxy, db_state5_tsi):
         with pytest.raises(OutdatedDatabaseError):
-            db = DatabaseVerifier(db_state6_gxy, db_state5_tsi)
+            engine1 = create_engine(db_state6_gxy)
+            engine2 = create_engine(db_state5_tsi)
+            db = DatabaseVerifier(engine1, engine2)
             db.verify()
 
 
@@ -525,7 +565,8 @@ class TestDatabaseState6:
     """
     def test_combined_database(self, db_state6_combined, metadata_state6_combined):
         db_url = db_state6_combined
-        db = DatabaseVerifier(db_url)
+        engine = create_engine(db_url)
+        db = DatabaseVerifier(engine)
         db.verify()
         assert database_is_up_to_date(db_url, metadata_state6_combined)
 
@@ -537,7 +578,9 @@ class TestDatabaseState6:
         metadata_state6_tsi
     ):
         db1_url, db2_url = db_state6_gxy, db_state6_tsi
-        db = DatabaseVerifier(db1_url, db2_url)
+        engine1 = create_engine(db1_url)
+        engine2 = create_engine(db2_url)
+        db = DatabaseVerifier(engine1, engine2)
         db.verify()
         assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
         assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
@@ -546,11 +589,12 @@ class TestDatabaseState6:
 # Tests of misc. helpers
 
 def test_is_one_database(url_factory):
-    db1_url = url_factory()
-    db2_url = url_factory()
-    db = DatabaseVerifier(db1_url)  # we only need one for this test.
-    assert db._is_one_database(db1_url, db1_url)  # database1 == database2: combine
-    assert not db._is_one_database(db1_url, db2_url)  # 2 databases: do not combine
+    db_url = url_factory()
+    engine = create_engine(db_url)
+    db = DatabaseVerifier(engine)
+    assert db._is_one_database('a', 'a')  # engine1 == engine2: combine
+    assert db._is_one_database('a', None)  # engine2 is None: combine
+    assert not db._is_one_database('a', 'b')  # 2 different engines: do not combine
 
 
 # def test_is_automigrate_set():
