@@ -86,18 +86,26 @@ class DatabaseVault(Vault):
     def _get_multi_fernet(self) -> MultiFernet:
         return MultiFernet(self.fernet_keys)
 
-    def _update_or_create(self, key: str, value: str):
+    def _update_or_create(self, key: str, value: Optional[str]) -> model.Vault:
         vault_entry = self.sa_session.query(model.Vault).filter_by(key=key).first()
         if vault_entry:
-            vault_entry.value = value
+            if value:
+                vault_entry.value = value
+                self.sa_session.merge(vault_entry)
+                self.sa_session.flush()
         else:
-            vault_entry = model.Vault(key=key, value=value)
-        self.sa_session.merge(vault_entry)
-        self.sa_session.flush()
+            # recursively create parent keys
+            parent_key, _, _ = key.rpartition("/")
+            if parent_key:
+                self._update_or_create(parent_key, None)
+            vault_entry = model.Vault(key=key, value=value, parent_key=parent_key)
+            self.sa_session.merge(vault_entry)
+            self.sa_session.flush()
+        return vault_entry
 
     def read_secret(self, key: str) -> Optional[str]:
         key_obj = self.sa_session.query(model.Vault).filter_by(key=key).first()
-        if key_obj:
+        if key_obj and key_obj.value:
             f = self._get_multi_fernet()
             return f.decrypt(key_obj.value.encode('utf-8')).decode('utf-8')
         return None

@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import Column, DateTime, Integer, MetaData, Table, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table, Text
 
 now = datetime.datetime.utcnow
 meta = MetaData()
@@ -11,7 +11,8 @@ vault = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now),
     Column('key', Text, index=True, unique=True),
-    Column('value', Text),
+    Column('value', Text, nullable=True),
+    Column('parent_key', Text, ForeignKey('vault.key'), index=True, nullable=True)
 )
 
 
