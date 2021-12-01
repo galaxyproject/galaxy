@@ -8421,16 +8421,15 @@ class LibraryDatasetCollectionAnnotationAssociation(Base, RepresentById):
     user = relationship('User')
 
 
-class Vault(Base, RepresentById):
+class Vault(Base):
     __tablename__ = 'vault'
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    key = Column(Text, index=True, unique=True)
-    parent_key = Column(Text, ForeignKey('vault.key'), index=True, nullable=True)
+    key = Column(Text, primary_key=True)
+    parent_key = Column(Text, ForeignKey(key), index=True, nullable=True)
     children = relationship('Vault', backref=backref('parent', remote_side=[key]))
     value = Column(Text, nullable=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
 
 
 # Item rating classes.

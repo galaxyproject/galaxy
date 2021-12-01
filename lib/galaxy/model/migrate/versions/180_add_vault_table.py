@@ -7,12 +7,11 @@ meta = MetaData()
 
 vault = Table(
     'vault', meta,
-    Column('id', Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column('key', Text, index=True, unique=True),
+    Column('key', Text, primary_key=True),
+    Column('parent_key', Text, ForeignKey('vault.key'), index=True, nullable=True),
     Column('value', Text, nullable=True),
-    Column('parent_key', Text, ForeignKey('vault.key'), index=True, nullable=True)
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now)
 )
 
 
