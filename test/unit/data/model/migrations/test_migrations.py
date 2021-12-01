@@ -588,15 +588,6 @@ class TestDatabaseState6:
 
 # Tests of misc. helpers
 
-def test_is_one_database(url_factory):
-    db_url = url_factory()
-    engine = create_engine(db_url)
-    db = DatabaseVerifier(engine)
-    assert db._is_one_database('a', 'a')  # engine1 == engine2: combine
-    assert db._is_one_database('a', None)  # engine2 is None: combine
-    assert not db._is_one_database('a', 'b')  # 2 different engines: do not combine
-
-
 # def test_is_automigrate_set():
 #     pass # TODO
 

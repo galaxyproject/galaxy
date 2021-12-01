@@ -141,10 +141,12 @@ class DatabaseStateCache:
 class DatabaseVerifier:
 
     def __init__(self, engine, install_engine=None, app_config=None):
-        self.app_config = app_config
-        self.is_combined = self._is_one_database(engine, install_engine)
+        # Assume separate databases for `galaxy model` and `install_model` if install_engine is set.
+        # Caller is responsible for verifying engines are not referring to the same database.
+        self.is_combined = install_engine is None
         self.gxy_engine = engine
         self.tsi_engine = install_engine if not self.is_combined else engine
+        self.app_config = app_config
         self.gxy_metadata = get_gxy_metadata()
         self.tsi_metadata = get_tsi_metadata()
         self.db_state = self._load_database_state()
@@ -276,9 +278,6 @@ class DatabaseVerifier:
             create_kwds['encoding'] = encoding
         log.info(message)
         create_database(url, **create_kwds)
-
-    def _is_one_database(self, engine1, engine2):
-        return not (engine1 and engine2 and engine1 != engine2)
 
 
 def load_metadata(metadata, engine):
