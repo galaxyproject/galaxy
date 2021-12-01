@@ -251,10 +251,10 @@ class WorkflowsManager:
         return workflow_invocation_step
 
     def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, job_id=None, user_id=None,
-                                include_terminal=True, limit=None):
+                                include_terminal=True, limit=None, offset=None, sort_by=None, sort_desc=None):
         """Get invocations owned by the current user."""
         sa_session = trans.sa_session
-        invocations_query = sa_session.query(model.WorkflowInvocation).order_by(model.WorkflowInvocation.table.c.id.desc())
+        invocations_query = sa_session.query(model.WorkflowInvocation)
         if stored_workflow_id is not None:
             stored_workflow = sa_session.query(model.StoredWorkflow).get(stored_workflow_id)
             if not stored_workflow:
@@ -264,36 +264,41 @@ class WorkflowsManager:
             ).filter(
                 model.Workflow.table.c.stored_workflow_id == stored_workflow_id
             )
-
         if user_id is not None:
             invocations_query = invocations_query.join(
                 model.History
             ).filter(
                 model.History.table.c.user_id == user_id
             )
-
         if history_id is not None:
             invocations_query = invocations_query.filter(
                 model.WorkflowInvocation.table.c.history_id == history_id
             )
-
         if job_id is not None:
             invocations_query = invocations_query.join(
                 model.WorkflowInvocationStep
             ).filter(model.WorkflowInvocationStep.table.c.job_id == job_id)
-
         if not include_terminal:
             invocations_query = invocations_query.filter(
                 model.WorkflowInvocation.table.c.state.in_(model.WorkflowInvocation.non_terminal_states)
             )
-
+        total_matches = invocations_query.count()
+        if sort_by:
+            sort_column = getattr(model.WorkflowInvocation, sort_by)
+            if sort_desc:
+                sort_column = sort_column.desc()
+            invocations_query = invocations_query.order_by(sort_column)
+        else:
+            invocations_query = invocations_query.order_by(model.WorkflowInvocation.table.c.id.desc())
         if limit is not None:
             invocations_query = invocations_query.limit(limit)
-
-        return [inv for inv in invocations_query if self.check_security(trans,
+        if offset is not None:
+            invocations_query = invocations_query.offset(offset)
+        invocations = [inv for inv in invocations_query if self.check_security(trans,
                                                                         inv,
                                                                         check_ownership=True,
                                                                         check_accessible=False)]
+        return invocations, total_matches
 
     def serialize_workflow_invocation(self, invocation, **kwd):
         app = self.app

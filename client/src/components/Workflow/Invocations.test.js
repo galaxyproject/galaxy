@@ -1,7 +1,9 @@
 import Invocations from "../Workflow/Invocations";
 import { mount } from "@vue/test-utils";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import { getLocalVue } from "jest/helpers";
-import invocationData from "./test/json/invocation.json";
+import mockInvocationData from "./test/json/invocation.json";
 import moment from "moment";
 
 const localVue = getLocalVue();
@@ -13,7 +15,6 @@ describe("Invocations.vue without invocation", () => {
     beforeEach(async () => {
         propsData = {
             ownerGrid: false,
-            loading: true,
         };
         wrapper = mount(Invocations, {
             propsData,
@@ -21,21 +22,11 @@ describe("Invocations.vue without invocation", () => {
         });
     });
 
-    it("loading should be true", async () => {
-        expect(wrapper.vm.loading).toBeTruthy();
-    });
-
     it("title should be shown", async () => {
         expect(wrapper.find("#invocations-title").text()).toBe("Workflow Invocations");
     });
 
-    it("no invocations message should not be shown", async () => {
-        expect(wrapper.find("#no-invocations").exists()).toBe(false);
-    });
-
     it("no invocations message should be shown when not loading", async () => {
-        propsData.loading = false;
-        await wrapper.setProps({ loading: false });
         expect(wrapper.find("#no-invocations").exists()).toBe(true);
     });
 });
@@ -43,12 +34,14 @@ describe("Invocations.vue without invocation", () => {
 describe("Invocations.vue with invocation", () => {
     let wrapper;
     let propsData;
+    let axiosMock;
 
     beforeEach(async () => {
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onGet("/api/invocations").reply(200, [mockInvocationData], { total_matches: "1" });
         propsData = {
             ownerGrid: false,
             loading: false,
-            invocationItems: [invocationData],
         };
         wrapper = mount(Invocations, {
             propsData,
@@ -75,8 +68,8 @@ describe("Invocations.vue with invocation", () => {
         const columns = row.findAll("td");
         expect(columns.at(1).text()).toBe("workflow name");
         expect(columns.at(2).text()).toBe("history name");
-        expect(columns.at(3).text()).toBe(moment.utc(invocationData.create_time).fromNow());
-        expect(columns.at(4).text()).toBe(moment.utc(invocationData.update_time).fromNow());
+        expect(columns.at(3).text()).toBe(moment.utc(mockInvocationData.create_time).fromNow());
+        expect(columns.at(4).text()).toBe(moment.utc(mockInvocationData.update_time).fromNow());
         expect(columns.at(5).text()).toBe("scheduled");
         expect(columns.at(6).text()).toBe("");
     });
