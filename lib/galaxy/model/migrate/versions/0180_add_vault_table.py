@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table, Text
+from sqlalchemy import Column, DateTime, ForeignKey, MetaData, Table, Text
 
 now = datetime.datetime.utcnow
 meta = MetaData()

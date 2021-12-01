@@ -98,7 +98,7 @@ class DatabaseVault(Vault):
             parent_key, _, _ = key.rpartition("/")
             if parent_key:
                 self._update_or_create(parent_key, None)
-            vault_entry = model.Vault(key=key, value=value, parent_key=parent_key)
+            vault_entry = model.Vault(key=key, value=value, parent_key=parent_key or None)
             self.sa_session.merge(vault_entry)
             self.sa_session.flush()
         return vault_entry
@@ -220,6 +220,7 @@ class VaultFactory(object):
 
     @staticmethod
     def from_vault_type(app, vault_type: Optional[str], cfg: dict) -> Vault:
+        vault: Vault
         if vault_type == "hashicorp":
             vault = HashicorpVault(cfg)
         elif vault_type == "database":
