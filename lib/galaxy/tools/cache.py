@@ -289,7 +289,7 @@ class ToolShedRepositoryCache:
     repos_by_tuple: Dict[Tuple[str, str, str], List[ToolConfRepository]]
 
     def __init__(self, session: install_model_scoped_session):
-        engine = session().bind
+        engine = session.get_bind()
         self.session = scoped_session(sessionmaker(engine))
         # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
         self.local_repositories = []
