@@ -8,9 +8,7 @@
                         <span class="font-weight-bold">{{ displayKey + 1 }}. {{ displayApp.label }}</span>
                         <span v-for="(link, linkKey) in displayApp.links" :key="linkKey">
                             <span v-if="linkKey == 0">(</span>
-                            <b-link :href="link.href" :target="link.target" variant="primary" size="sm">{{
-                                link.text
-                            }}</b-link>
+                            <b-link :href="link.href" :target="link.target">{{ link.text }}</b-link>
                             <span v-if="linkKey != displayApp.links.length - 1">, </span>
                             <span v-else>)</span>
                         </span>
