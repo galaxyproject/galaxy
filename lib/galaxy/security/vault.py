@@ -1,5 +1,4 @@
 import abc
-import json
 import logging
 import os
 import re
@@ -10,8 +9,8 @@ from cryptography.fernet import Fernet, MultiFernet
 
 try:
     from custos.clients.resource_secret_management_client import ResourceSecretManagementClient
+    from custos.clients.utils.exceptions.CustosExceptions import KeyDoesNotExist
     from custos.transport.settings import CustosServerClientSettings
-    import custos.clients.utils.utilities as custos_util
     custos_sdk_available = True
 except ImportError:
     custos_sdk_available = False
@@ -121,31 +120,21 @@ class CustosVault(Vault):
     def __init__(self, config):
         if not custos_sdk_available:
             raise UnknownVaultTypeException("Custos sdk library 'custos-sdk' is not available. Make sure the custos-sdk is installed.")
-        self.custos_settings = CustosServerClientSettings(custos_host=config.get('custos_host'),
-                                                          custos_port=config.get('custos_port'),
-                                                          custos_client_id=config.get('custos_client_id'),
-                                                          custos_client_sec=config.get('custos_client_sec'))
-        self.b64_encoded_custos_token = custos_util.get_token(custos_settings=self.custos_settings)
-        self.client = ResourceSecretManagementClient(self.custos_settings)
+        custos_settings = CustosServerClientSettings(custos_host=config.get('custos_host'),
+                                                     custos_port=config.get('custos_port'),
+                                                     custos_client_id=config.get('custos_client_id'),
+                                                     custos_client_sec=config.get('custos_client_sec'))
+        self.client = ResourceSecretManagementClient(custos_settings)
 
     def read_secret(self, key: str) -> Optional[str]:
         try:
-            response = self.client.get_KV_credential(token=self.b64_encoded_custos_token,
-                                                     client_id=self.custos_settings.CUSTOS_CLIENT_ID,
-                                                     key=key)
-            return json.loads(response).get('value')
-        except Exception:
+            response = self.client.get_kv_credential(key=key)
+            return response.get('value')
+        except KeyDoesNotExist:
             return None
 
     def write_secret(self, key: str, value: str) -> None:
-        if self.read_secret(key):
-            self.client.update_KV_credential(token=self.b64_encoded_custos_token,
-                                             client_id=self.custos_settings.CUSTOS_CLIENT_ID,
-                                             key=key, value=value)
-        else:
-            self.client.set_KV_credential(token=self.b64_encoded_custos_token,
-                                          client_id=self.custos_settings.CUSTOS_CLIENT_ID,
-                                          key=key, value=value)
+        self.client.set_kv_credential(key=key, value=value)
 
 
 class UserVaultWrapper(Vault):
