@@ -19,7 +19,6 @@ TSI = 'tsi'  # tool_shed_install model identifier
 ALEMBIC_TABLE = 'alembic_version'  # TODO this should come from alembic config
 SQLALCHEMYMIGRATE_TABLE = 'migrate_version'
 SQLALCHEMYMIGRATE_LAST_VERSION = 999  # TODO this should be the actual last SA-M revision
-
 log = logging.getLogger(__name__)
 
 
@@ -281,10 +280,8 @@ class DatabaseVerifier:
 
 
 def load_metadata(metadata, engine):
-    metadata = listify(metadata)
     with engine.connect() as conn:
-        for md in metadata:
-            md.create_all(bind=conn)
+        metadata.create_all(bind=conn)
 
 
 # TODO galaxy has this (reuse, don't test)

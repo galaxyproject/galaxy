@@ -779,15 +779,6 @@ def test_load_metadata(url_factory, metadata_state1_gxy):
     assert is_metadata_loaded(db_url, metadata)
 
 
-def test_load_multiple_metadata(url_factory, metadata_state1_gxy, metadata_state1_tsi):
-    db_url = url_factory()
-    engine = create_engine(db_url)
-    metadata = [metadata_state1_gxy, metadata_state1_tsi]
-    assert not is_metadata_loaded(db_url, metadata)
-    load_metadata([metadata_state1_gxy, metadata_state1_tsi], engine)
-    assert is_metadata_loaded(db_url, metadata)
-
-
 """
 # Fixtures: databases loaded with a given state.
 Each state has 3 versions: gxy, tsi, combined (see fixtures/schemas.py)
