@@ -94,15 +94,14 @@ class UsesTools(UsesApp):
                 self.__write_tool(extra_file_contents, path=os.path.join(self.test_directory, extra_file_path))
         else:
             self.tool_file = tool_path
-        self._init_app_for_tools()
         return self.__setup_tool()
 
     def _init_tool_for_path(self, tool_file):
-        self._init_app_for_tools()
         self.tool_file = tool_file
         return self.__setup_tool()
 
-    def _init_app_for_tools(self):
+    def setup_app(self):
+        super().setup_app()
         self.app.config.drmaa_external_runjob_script = ""
         self.app.config.tool_secret = "testsecret"
         self.app.config.track_jobs_in_database = False
