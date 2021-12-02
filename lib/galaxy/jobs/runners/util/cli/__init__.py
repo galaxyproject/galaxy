@@ -82,15 +82,13 @@ class CliInterface:
         return self.active_cli_shells[requested_shell_settings]
 
     def get_job_interface(self, job_params):
-        job_plugin = job_params.get('plugin', None)
+        job_plugin = job_params.get('plugin')
         if not job_plugin:
             raise ValueError(ERROR_MESSAGE_NO_JOB_PLUGIN)
-        job_plugin_class = self.cli_job_interfaces.get(job_plugin, None)
+        job_plugin_class = self.cli_job_interfaces.get(job_plugin)
         if not job_plugin_class:
             raise ValueError(ERROR_MESSAGE_NO_SUCH_JOB_PLUGIN % (job_plugin, list(self.cli_job_interfaces.keys())))
-        job_interface = job_plugin_class(**job_params)
-
-        return job_interface
+        return job_plugin_class(**job_params)
 
 
 def split_params(params):
