@@ -57,9 +57,6 @@ jobs:
         yarn-lock-file: 'galaxy root/client/yarn.lock'
     - name: Install tox
       run: pip install tox
-      # Use this job to test the latest migrations
-    - run: wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0141.sqlite
-    - run: mv db_gx_rev_0141.sqlite 'galaxy root'/database/universe.sqlite
     - name: run tests
       run: tox -e first_startup
       working-directory: 'galaxy root'
