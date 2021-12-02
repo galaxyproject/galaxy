@@ -439,7 +439,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         return rval
 
-    @web.expose_api_raw_anonymous
+    @web.expose_api_raw_anonymous_and_sessionless
     def display(self, trans, history_content_id, history_id,
                 preview=False, filename=None, to_ext=None, raw=False, **kwd):
         """
