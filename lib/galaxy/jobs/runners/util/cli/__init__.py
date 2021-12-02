@@ -75,7 +75,10 @@ class CliInterface:
         shell_plugin = shell_params.get('plugin', DEFAULT_SHELL_PLUGIN)
         requested_shell_settings = json.dumps(shell_params, sort_keys=True)
         if requested_shell_settings not in self.active_cli_shells:
-            self.active_cli_shells[requested_shell_settings] = self.cli_shells[shell_plugin](**shell_params)
+            shell_plugin_class = self.cli_shells.get(shell_plugin)
+            if not shell_plugin_class:
+                raise ValueError(f"Unknown shell_plugin [{shell_plugin}], available plugins are {list(self.cli_shells.keys())}")
+            self.active_cli_shells[requested_shell_settings] = shell_plugin_class(**shell_params)
         return self.active_cli_shells[requested_shell_settings]
 
     def get_job_interface(self, job_params):
