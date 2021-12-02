@@ -2567,7 +2567,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         else:
             hdcas = self.active_dataset_collections
         for hdca in hdcas:
-            new_hdca = hdca.copy(flush=False, element_destination=new_history, set_hid=False)
+            new_hdca = hdca.copy(flush=False, element_destination=new_history, set_hid=False, minimize_copies=True)
             new_history.add_dataset_collection(new_hdca, set_hid=False)
             db_session.add(new_hdca)
 
@@ -5383,7 +5383,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
         error_message = f"Dataset collection has no {get_by_attribute} with key {key}."
         raise KeyError(error_message)
 
-    def copy(self, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
+    def copy(self, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True, minimize_copies=False):
         new_collection = DatasetCollection(
             collection_type=self.collection_type,
             element_count=self.element_count
@@ -5394,7 +5394,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
                 destination=destination,
                 element_destination=element_destination,
                 dataset_instance_attributes=dataset_instance_attributes,
-                flush=flush
+                flush=flush,
+                minimize_copies=minimize_copies,
             )
         object_session(self).add(new_collection)
         if flush:
@@ -5708,7 +5709,7 @@ class HistoryDatasetCollectionAssociation(
                 break
         return matching_collection
 
-    def copy(self, element_destination=None, dataset_instance_attributes=None, flush=True, set_hid=True):
+    def copy(self, element_destination=None, dataset_instance_attributes=None, flush=True, set_hid=True, minimize_copies=False):
         """
         Create a copy of this history dataset collection association. Copy
         underlying collection.
@@ -5731,6 +5732,7 @@ class HistoryDatasetCollectionAssociation(
             element_destination=element_destination,
             dataset_instance_attributes=dataset_instance_attributes,
             flush=False,
+            minimize_copies=minimize_copies,
         )
         hdca.collection = collection_copy
         object_session(self).add(hdca)
@@ -5931,7 +5933,7 @@ class DatasetCollectionElement(Base, Dictifiable, RepresentById):
         else:
             return [element_object]
 
-    def copy_to_collection(self, collection, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
+    def copy_to_collection(self, collection, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True, minimize_copies=False):
         dataset_instance_attributes = dataset_instance_attributes or {}
         element_object = self.element_object
         if element_destination:
@@ -5940,10 +5942,13 @@ class DatasetCollectionElement(Base, Dictifiable, RepresentById):
                     destination=destination,
                     element_destination=element_destination,
                     dataset_instance_attributes=dataset_instance_attributes,
-                    flush=flush
+                    flush=flush,
+                    minimize_copies=minimize_copies,
                 )
             else:
-                new_element_object = element_destination.get_dataset_by_hid(element_object.hid)
+                new_element_object = None
+                if minimize_copies:
+                    new_element_object = element_destination.get_dataset_by_hid(element_object.hid)
                 if new_element_object and new_element_object.dataset and new_element_object.dataset.id == element_object.dataset_id:
                     element_object = new_element_object
                 else:
