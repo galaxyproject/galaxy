@@ -141,7 +141,7 @@ $(CWL_TARGETS):
 
 generate-cwl-conformance-tests: $(CWL_TARGETS)  ## Initialise CWL conformance tests
 
-clean-cwl-conformance-tests:  # Clean CWL conformance tests
+clean-cwl-conformance-tests:  ## Clean CWL conformance tests
 	for f in $(CWL_TARGETS); do \
 		if [ $$(basename "$$f") = conformance_tests.yaml ]; then \
 			rm -rf $$(dirname "$$f"); \
