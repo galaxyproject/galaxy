@@ -1,6 +1,6 @@
 <template>
     <div>
-        <DatasetProvider :id="datasetId" v-slot="{ item: dataset, loading }">
+        <DatasetProvider :id="datasetId" v-slot="{ item: dataset }">
             <b-alert v-if="dataset && dataset.display_apps && dataset.display_apps.length > 0" variant="info" show>
                 You can display your dataset with the following links:
                 <div class="p-2">
