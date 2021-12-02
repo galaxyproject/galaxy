@@ -18,7 +18,7 @@ TSI = 'tsi'  # tool_shed_install model identifier
 
 ALEMBIC_TABLE = 'alembic_version'  # TODO this should come from alembic config
 SQLALCHEMYMIGRATE_TABLE = 'migrate_version'
-SQLALCHEMYMIGRATE_LAST_VERSION = 999  # TODO this should be the actual last SA-M revision
+SQLALCHEMYMIGRATE_LAST_VERSION = 179
 log = logging.getLogger(__name__)
 
 
