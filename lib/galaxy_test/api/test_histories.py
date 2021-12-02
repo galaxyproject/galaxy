@@ -230,9 +230,7 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         assert source_hda['name'] == copied_hda['name'] == 'data0'
         assert source_hda['id'] != copied_hda['id']
         assert source_hda['history_id'] != copied_hda['history_id']
-        # FIXME: history copy doesn't necessarily maintain the same hid order,
-        # since it first copies the relevant datasets and then the collections.
-        # assert source_hda['hid'] == copied_hda['hid'] == 2
+        assert source_hda['hid'] == copied_hda['hid'] == 2
 
 
 class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
