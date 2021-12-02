@@ -34,6 +34,11 @@ class BaseHistories:
 
 class HistoriesApiTestCase(ApiTestCase, BaseHistories):
 
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+
     def test_create_history(self):
         # Create a history.
         create_response = self._create_history("TestHistory1")
@@ -205,7 +210,29 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         tag_create_response = self._post(tag_url, data=tag_data)
         self._assert_status_code_is(tag_create_response, 200)
 
-    # TODO: (CE) test_create_from_copy
+    def test_copy_history(self):
+        history_id = self.dataset_populator.new_history()
+        fetch_response = self.dataset_collection_populator.create_list_in_history(history_id, contents=["Hello", "World"], direct_upload=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response.json())
+        copied_history_response = self.dataset_populator.copy_history(history_id)
+        copied_history_response.raise_for_status()
+        copied_history = copied_history_response.json()
+        copied_collection = self.dataset_populator.get_history_collection_details(history_id=copied_history['id'], history_content_type="dataset_collection")
+        assert dataset_collection['name'] == copied_collection['name']
+        assert dataset_collection['id'] != copied_collection['id']
+        assert len(dataset_collection['elements']) == len(copied_collection['elements']) == 2
+        source_element = dataset_collection['elements'][0]
+        copied_element = copied_collection['elements'][0]
+        assert source_element['element_identifier'] == copied_element['element_identifier'] == 'data0'
+        assert source_element['id'] != copied_element['id']
+        source_hda = source_element['object']
+        copied_hda = copied_element['object']
+        assert source_hda['name'] == copied_hda['name'] == 'data0'
+        assert source_hda['id'] != copied_hda['id']
+        assert source_hda['history_id'] != copied_hda['history_id']
+        # FIXME: history copy doesn't necessarily maintain the same hid order,
+        # since it first copies the relevant datasets and then the collections.
+        # assert source_hda['hid'] == copied_hda['hid'] == 2
 
 
 class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):

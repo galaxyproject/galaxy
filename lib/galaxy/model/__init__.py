@@ -2566,7 +2566,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         else:
             hdcas = self.active_dataset_collections
         for hdca in hdcas:
-            new_hdca = hdca.copy(flush=False)
+            new_hdca = hdca.copy(flush=False, element_destination=new_history)
             new_history.add_dataset_collection(new_hdca, set_hid=False)
             db_session.add(new_hdca)
 
