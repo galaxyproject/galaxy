@@ -1,8 +1,8 @@
 <template>
     <div>
-        <UrlDataProvider :url="url" v-slot="{ result: dataset, loading }">
+        <DatasetProvider :id="datasetId" v-slot="{ item: dataset, loading }">
             <b-alert v-if="dataset && dataset.display_apps && dataset.display_apps.length > 0" variant="info" show>
-                You may visualize your dataset using the following external links:
+                You can display your dataset with the following links:
                 <div class="p-2">
                     <div v-for="(displayApp, displayKey) in dataset.display_apps" :key="displayKey">
                         <span class="font-weight-bold">{{ displayKey + 1 }}. {{ displayApp.label }}</span>
@@ -16,26 +16,21 @@
                         </span>
                     </div>
                 </div>
-                <div>or select a local visualization from below.</div>
+                <div>or select a visualization from below.</div>
             </b-alert>
-        </UrlDataProvider>
+        </DatasetProvider>
     </div>
 </template>
 <script>
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import { DatasetProvider } from "components/providers";
 export default {
     components: {
-        UrlDataProvider,
+        DatasetProvider,
     },
     props: {
         datasetId: {
             type: String,
             required: true,
-        },
-    },
-    computed: {
-        url() {
-            return `api/datasets/${this.datasetId}`;
         },
     },
 };

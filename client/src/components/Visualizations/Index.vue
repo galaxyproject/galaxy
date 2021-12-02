@@ -15,7 +15,7 @@ export default {
     props: {
         datasetId: {
             type: String,
-            required: true,
+            default: null,
         },
     },
 };
